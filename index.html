@@ -29,6 +29,12 @@
             font-family: Arial, Helvetica, sans-serif;
             /* You could also adjust font-weight if needed, e.g., font-weight: normal; or font-weight: 500; */
         }
+        /* New wrapper for responsive table */
+        .table-responsive-container {
+            width: 100%; /* Occupy full width of its parent */
+            overflow-x: auto; /* Enable horizontal scroll if content overflows */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS for better UX */
+        }
         table {
             width: 80%; /* Or a fixed width like 800px */
             margin: 20px auto; /* Center the table */
@@ -66,89 +72,119 @@
         .hidden {
             display: none;
         }
+
+        /* Media Query for mobile devices */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px; /* Reduce body padding on smaller screens */
+            }
+            .table-responsive-container {
+                margin: 15px 0; /* Adjust top/bottom margin, remove horizontal auto-margin */
+            }
+            table {
+                width: 100%; /* Table takes full width of its scrollable container */
+                min-width: 650px; /* Ensures table content isn't too squished before scrolling starts */
+                margin: 0; /* Remove auto margin as container handles layout */
+            }
+            th, td {
+                padding: 6px 4px; /* Reduce cell padding */
+                font-size: 0.9em; /* Slightly smaller font */
+            }
+            #fundPieChartContainer {
+                width: 100%; /* Allow chart to take full width */
+                max-width: 100%;
+                margin: 10px auto; /* Adjust margin */
+            }
+            h2 { /* For the total portfolio value */
+                font-size: 1.1em; /* Adjust font size */
+                margin-top: 10px; /* Adjust margin */
+            }
+        }
     </style>
 </head>
 <body>
     <div id="fundPieChartContainer"><canvas id="fundPieChart"></canvas></div>
-    <table class="hidden">
-        <thead>
-            <tr>
-                <th scope="col">Ticker</th>
-                <th scope="col">Allocation</th>
-                <th scope="col">Price</th>
-                <th scope="col">Cost</th>
-                <th scope="col">Shares</th>
-                <th scope="col">Value</th>
-                <th scope="col">PnL</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Example Row: You can add more rows like this -->
-            <tr data-ticker="VT">
-                <td>VT</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$95.65</td>
-                <td class="shares">2601.642</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="ANET">
-                <td>ANET</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$65.18</td>
-                <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="GOOG">
-                <td>GOOG</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$172.54</td>
-                <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="PDD">
-                <td>PDD</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$107.17</td>
-                <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="BRK-B">
-                <td>BRK-B</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$334.96</td>
-                <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="OXY">
-                <td>OXY</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$49.39</td>
-                <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-            <tr data-ticker="GEO">
-                <td>GEO</td>
-                <td class="allocation">0.00</td>
-                <td class="price">$0.00</td>
-                <td class="cost">$18.76</td>
-                <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
-                <td class="value">$0.00</td>
-                <td class="pnl">$0.00</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="table-responsive-container">
+        <table class="hidden">
+            <thead>
+                <tr>
+                    <th scope="col">Ticker</th>
+                    <th scope="col">Allocation</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Shares</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">PnL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Example Row: You can add more rows like this -->
+                <tr data-ticker="VT">
+                    <td>VT</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$95.65</td>
+                    <td class="shares">2601.642</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="ANET">
+                    <td>ANET</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$65.18</td>
+                    <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="GOOG">
+                    <td>GOOG</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$172.54</td>
+                    <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="PDD">
+                    <td>PDD</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$107.17</td>
+                    <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="BRK-B">
+                    <td>BRK-B</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$334.96</td>
+                    <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="OXY">
+                    <td>OXY</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$49.39</td>
+                    <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+                <tr data-ticker="GEO">
+                    <td>GEO</td>
+                    <td class="allocation">0.00</td>
+                    <td class="price">$0.00</td>
+                    <td class="cost">$18.76</td>
+                    <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
+                    <td class="value">$0.00</td>
+                    <td class="pnl">$0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <h2 style="text-align: center;" class="hidden"><span id="total-portfolio-value">$0.00</span></h2>
 
     <!-- Include Chart.js library -->
