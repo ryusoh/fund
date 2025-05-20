@@ -381,11 +381,33 @@
                             const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
                             const portfolioSummaryElement = document.getElementById('total-portfolio-value').parentElement; // This is the H2
 
-                            // Default to hidden state for table and summary
-                            let showElements = false;
-                            let rowToShow = null;
+                            const mouseX = event.x; // Chart.js provides canvas-relative coordinates
+                            const mouseY = event.y;
 
-                            if (activeElements.length > 0 && chart.data.labels && chart.data.labels.length > 0) {
+                            let isOverCenter = false;
+                            // Check if chart has data and elements are rendered to get dimensions
+                            if (chart.getDatasetMeta(0) && chart.getDatasetMeta(0).data.length > 0) {
+                                const firstArc = chart.getDatasetMeta(0).data[0];
+                                // Ensure firstArc properties are available
+                                if (firstArc && typeof firstArc.x === 'number' && typeof firstArc.y === 'number' && typeof firstArc.innerRadius === 'number') {
+                                    const centerX = firstArc.x;
+                                    const centerY = firstArc.y;
+                                    const innerRadius = firstArc.innerRadius;
+
+                                    const distance = Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2));
+                                    if (distance < innerRadius) {
+                                        isOverCenter = true;
+                                    }
+                                }
+                            }
+
+                            if (isOverCenter) {
+                                // Show whole table and summary
+                                tableElement.classList.remove('hidden');
+                                if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
+                                allDataRows.forEach(row => row.classList.remove('hidden'));
+                            } else if (activeElements.length > 0 && chart.data.labels && chart.data.labels.length > 0) {
+                                // Original logic: Show specific row for hovered slice
                                 const activeSegment = activeElements[0];
                                 const dataIndex = activeSegment.index;
 
@@ -393,21 +415,20 @@
                                     const ticker = chart.data.labels[dataIndex];
                                     const targetRow = document.querySelector(`tbody tr[data-ticker="${ticker}"]`);
                                     if (targetRow) {
-                                        rowToShow = targetRow;
-                                        showElements = true;
+                                        tableElement.classList.remove('hidden');
+                                        if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
+                                        allDataRows.forEach(row => {
+                                            row.classList.toggle('hidden', row !== targetRow);
+                                        });
+                                        return; // Exit early as we've handled this case
                                     }
                                 }
                             }
-
-                            // Apply visibility changes
-                            if (showElements && rowToShow) {
+                            // If not over center and no specific slice is active (or if targetRow not found), hide everything.
+                            // This also handles mouseout from the chart area.
+                            if (!isOverCenter && activeElements.length === 0) {
                                 tableElement.classList.remove('hidden');
                                 if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
-
-                                allDataRows.forEach(row => {
-                                    row.classList.toggle('hidden', row !== rowToShow);
-                                });
-                            } else {
                                 tableElement.classList.add('hidden');
                                 if (portfolioSummaryElement) portfolioSummaryElement.classList.add('hidden');
                                 allDataRows.forEach(row => row.classList.add('hidden'));
