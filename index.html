@@ -59,6 +59,10 @@
             padding: 10px 16px; /* Specific padding for headers */
             border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
         }
+        thead tr th { /* Apply gradient to all header cells */
+            background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
+            background-repeat: no-repeat; /* Good practice for gradients */
+        }
 
         /* Column width optimizations */
         table {
@@ -88,6 +92,7 @@
         }
         tbody tr:hover {
             background-color: rgba(60, 60, 63, 0.75); /* Subtle hover, based on System Gray 4 */
+            background-image: none; /* Override any gradient on hover for a uniform background */
         }
         /* Styling for the table footer */
         tfoot td {
@@ -99,6 +104,16 @@
             letter-spacing: 0.08em; /* Match header letter-spacing */
             text-align: right; /* Align total to the right */
             padding: 10px 16px; /* Match header padding */
+        }
+        tfoot tr {
+            background-image: linear-gradient(to left, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
+            background-repeat: no-repeat;
+        }
+        /* Hover effect for footer row and all header cells */
+        tfoot tr:hover,
+        thead tr th:hover { /* Apply hover to all header cells */
+            background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color */
+            background-image: none; /* Remove gradient on hover */
         }
         #fundPieChartContainer {
             width: 90%; /* Increased width */
@@ -248,7 +263,7 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="7" id="table-footer-summary">Total Holdings: <span id="total-portfolio-value-in-table">$0.00</span></td>
+                    <td colspan="7" id="table-footer-summary">Total Holdings <span id="total-portfolio-value-in-table">$0.00</span></td>
                 </tr>
             </tfoot>
         </table>
