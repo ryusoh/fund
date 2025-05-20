@@ -11,6 +11,7 @@
             margin: 0; /* Remove default browser margins */
             height: 100vh; /* Ensure the body takes up the full viewport height */
             font-family: Arial, Helvetica, sans-serif; /* Standard font stack */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
             padding: 20px; /* Add some padding so table isn't at the very edge */
         }
         /* Ensure table and h2 also use the custom font */
@@ -50,6 +51,7 @@
         th, td {
             border: none; /* Remove all default borders */
             padding: 12px 15px; /* More spacious padding */
+            font-size: 0.9em; /* Base font size for table cells */
             text-align: left;
             border-bottom: 1px solid #282828; /* Subtle bottom border for row separation */
         }
@@ -57,7 +59,7 @@
             background-color: transparent; /* No specific background for header cells */
             color: #b0b0b0; /* Lighter grey for header text */
             font-weight: 600; /* Semi-bold */
-            font-size: 0.85em; /* Slightly smaller header font */
+            font-size: 0.8em; /* Adjusted header font size */
             text-transform: uppercase; /* Uppercase for a more formal look */
             letter-spacing: 0.05em; /* Slight letter spacing */
             border-bottom: 1px solid #383838; /* Slightly more prominent border for header */
@@ -84,43 +86,85 @@
         tbody tr:hover {
             background-color: #1a1a1a; /* Subtle hover effect for data rows */
         }
+        /* Styling for the table footer */
+        tfoot td {
+            border-top: 1px solid #383838; /* Separator line above the footer */
+            /* Match header styling for coherence */
+            color: #b0b0b0; /* Lighter grey for text, same as th */
+            font-weight: 600; /* Semi-bold, same as th */
+            font-size: 0.8em; /* Same font size as th */
+            text-transform: uppercase; /* Uppercase, same as th */
+            letter-spacing: 0.05em; /* Slight letter spacing, same as th */
+            text-align: right; /* Align total to the right */
+            padding-top: 15px; /* More top padding for footer */
+            padding-bottom: 15px; /* More bottom padding for footer */
+        }
         #fundPieChartContainer {
             width: 100%; /* Increased width */
             max-width: 700px; /* Increased max-width */
-            margin: 20px auto; /* Center the chart */
+            margin: 10px auto 10px; /* Horizontally center, top margin 0, bottom margin 20px */
         }
         .hidden {
             display: none;
         }
+        /* .no-scroll class removed as JS will handle body overflow directly */
 
         /* Media Query for mobile devices */
         @media (max-width: 768px) {
+            html {
+                /* Ensure html element also restricts overflow on mobile */
+                height: 100vh !important; /* Full viewport height */
+                overflow: hidden !important; /* Prevent all scroll on html */
+                position: relative; /* Helps iOS honor overflow */
+                overscroll-behavior-y: contain !important; /* Prevents scroll chaining/bounce */
+                touch-action: none !important; /* Disable touch-based scrolling/panning */
+            }
             body {
-                padding: 10px; /* Reduce body padding on smaller screens */
+                position: fixed !important; /* Pin body to viewport */
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important; /* Full viewport width */
+                height: 100% !important; /* Full viewport height */
+                overflow-y: hidden !important; /* Still hide vertical overflow */
+                overscroll-behavior-y: contain !important; /* Prevent bounce */
+                touch-action: none !important; /* Disable touch actions */
+                /* Existing body styles like background, padding, box-sizing will apply to this fixed container */
             }
             .table-responsive-container {
-                width: 95%; /* More width on mobile */
-                margin: 20px auto; /* Adjust margin for mobile */
-                padding: 5px; /* Reduce internal padding */
+                width: 90%;
+                margin: 0 auto; /* Top and bottom margin 0, centered horizontally */
+                padding: 0 5px 0 5px; /* Reduce bottom padding, keep top minimal for header */
+            }
+            th, td {
+                padding: 8px 6px; /* Further reduce cell padding */
+                font-size: 0.8em; /* Adjusted font size for mobile cells */
+            }
+            th { 
+                font-size: 0.7em; /* Adjusted font size for mobile headers */
+                padding-top: 8px; /* Ensure header has some top padding */
+                padding-bottom: 8px;
+            }
+            #fundPieChartContainer { /* mobile styles are fine */
+                width: 90%; /* Allow chart to take full width */
+                max-width: 90%; /* Max width for mobile */
+                margin: 0 auto 5px; /* Horizontally center, top margin 0, reduced bottom margin to 5px */
+                touch-action: none; /* Disable touch-based scrolling/panning */
+            }
+            h2 { /* For the total portfolio value */
+                font-size: 1em; /* Reduce font size */
+                margin: 5px auto 10px auto; /* Center and adjust vertical margins */
+            }
+            /* Adjust tfoot for mobile */
+            tfoot td {
+                padding: 10px 8px;
+                font-size: 0.7em;
+                text-align: left;
             }
             table {
                 width: 100%; /* Table takes full width of its scrollable container */
                 min-width: 650px; /* Ensures table content isn't too squished before scrolling starts */
                 margin: 0; /* Remove auto margin as container handles layout */
-            }
-            th, td {
-                padding: 10px 8px; /* Adjust cell padding for mobile */
-                font-size: 0.9em; /* Slightly smaller font */
-            }
-            th { font-size: 0.8em; } /* Even smaller for headers on mobile */
-            #fundPieChartContainer {
-                width: 100%; /* Allow chart to take full width */
-                max-width: 100%;
-                margin: 10px auto; /* Adjust margin */
-            }
-            h2 { /* For the total portfolio value */
-                font-size: 1.1em; /* Adjust font size */
-                margin-top: 10px; /* Adjust margin */
+                touch-action: pan-x; /* Allow horizontal pan for table content */
             }
         }
     </style>
@@ -206,9 +250,13 @@
                     <td class="pnl">$0.00</td>
                 </tr>
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7" id="table-footer-summary">Total Holdings: <span id="total-portfolio-value-in-table">$0.00</span></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
-    <h2 style="text-align: center;" class="hidden"><span id="total-portfolio-value">$0.00</span></h2>
 
     <!-- Include Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -282,7 +330,7 @@
                 });
 
                 // Update total portfolio value display
-                document.getElementById('total-portfolio-value').textContent = '$' + totalPortfolioValue.toFixed(2);
+                document.getElementById('total-portfolio-value-in-table').textContent = '$' + totalPortfolioValue.toFixed(2);
 
                 // Sort rows by currentValue in descending order
                 rowsArray.sort((a, b) => {
@@ -316,6 +364,9 @@
                 // Update or create the pie chart
                 updatePieChart(chartData);
 
+                // After initial load and potential DOM changes, check scroll
+                checkAndToggleVerticalScroll();
+
             } catch (error) {
                 console.error('Error fetching or processing fund data:', error);
             }
@@ -338,9 +389,7 @@
                         responsive: true,
                         layout: {
                             padding: {
-                                top: 35,
                                 right: 35,
-                                bottom: 35,
                                 left: 35
                             }
                         },
@@ -403,21 +452,18 @@
                         onHover: (event, activeElements, chart) => {
                             const tableElement = document.querySelector('table');
                             const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
-                            const portfolioSummaryElement = document.getElementById('total-portfolio-value').parentElement; // This is the H2
+                            // const portfolioSummaryElement = document.getElementById('total-portfolio-value').parentElement; // No longer needed
 
-                            const mouseX = event.x; // Chart.js provides canvas-relative coordinates
+                            const mouseX = event.x;
                             const mouseY = event.y;
-
                             let isOverCenter = false;
-                            // Check if chart has data and elements are rendered to get dimensions
-                            if (chart.getDatasetMeta(0) && chart.getDatasetMeta(0).data.length > 0) {
+
+                            if (chart.getDatasetMeta(0)?.data[0]) { // Optional chaining for safety
                                 const firstArc = chart.getDatasetMeta(0).data[0];
-                                // Ensure firstArc properties are available
                                 if (firstArc && typeof firstArc.x === 'number' && typeof firstArc.y === 'number' && typeof firstArc.innerRadius === 'number') {
                                     const centerX = firstArc.x;
                                     const centerY = firstArc.y;
                                     const innerRadius = firstArc.innerRadius;
-
                                     const distance = Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2));
                                     if (distance < innerRadius) {
                                         isOverCenter = true;
@@ -425,38 +471,38 @@
                                 }
                             }
 
+                            let tableShouldBeVisible = false;
+                            // let summaryShouldBeVisible = false; // Summary is part of the table now
+                            let specificRowToShow = null;
+
                             if (isOverCenter) {
-                                // Show whole table and summary
-                                tableElement.classList.remove('hidden');
-                                if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
+                                tableShouldBeVisible = true;
+                                // summaryShouldBeVisible = true;
                                 allDataRows.forEach(row => row.classList.remove('hidden'));
-                            } else if (activeElements.length > 0 && chart.data.labels && chart.data.labels.length > 0) {
-                                // Original logic: Show specific row for hovered slice
+                            } else if (activeElements.length > 0 && chart.data.labels?.length > 0) {
                                 const activeSegment = activeElements[0];
                                 const dataIndex = activeSegment.index;
-
                                 if (dataIndex >= 0 && dataIndex < chart.data.labels.length) {
                                     const ticker = chart.data.labels[dataIndex];
-                                    const targetRow = document.querySelector(`tbody tr[data-ticker="${ticker}"]`);
-                                    if (targetRow) {
-                                        tableElement.classList.remove('hidden');
-                                        if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
-                                        allDataRows.forEach(row => {
-                                            row.classList.toggle('hidden', row !== targetRow);
-                                        });
-                                        return; // Exit early as we've handled this case
+                                    specificRowToShow = document.querySelector(`tbody tr[data-ticker="${ticker}"]`);
+                                    if (specificRowToShow) {
+                                        tableShouldBeVisible = true;
+                                        // summaryShouldBeVisible = true;
+                                        allDataRows.forEach(row => row.classList.toggle('hidden', row !== specificRowToShow));
                                     }
                                 }
-                            }
-                            // If not over center and no specific slice is active (or if targetRow not found), hide everything.
-                            // This also handles mouseout from the chart area.
-                            if (!isOverCenter && activeElements.length === 0) {
+                            } 
+                            
+                            // Apply visibility based on determined states
+                            if (tableShouldBeVisible) {
                                 tableElement.classList.remove('hidden');
-                                if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
+                            } else {
                                 tableElement.classList.add('hidden');
-                                if (portfolioSummaryElement) portfolioSummaryElement.classList.add('hidden');
-                                allDataRows.forEach(row => row.classList.add('hidden'));
+                                allDataRows.forEach(row => row.classList.add('hidden')); // Ensure all rows are hidden if table is hidden
                             }
+
+                            // Visibility of the summary (now tfoot) is handled by tableElement's visibility
+                            checkAndToggleVerticalScroll();
                         }
                     }
                 });
@@ -497,9 +543,26 @@
             }
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
+
+        function checkAndToggleVerticalScroll() {
+            const isMobile = window.innerWidth <= 768;
+            const htmlElement = document.documentElement;
+            const bodyElement = document.body;
+            
+            if (isMobile) { // Only on mobile layout
+                htmlElement.style.setProperty('overflow-y', 'hidden', 'important');
+                bodyElement.style.setProperty('overflow-y', 'hidden', 'important');
+            } else {
+                // Ensure scrolling is enabled on desktop
+                htmlElement.style.overflowY = '';
+                bodyElement.style.overflowY = '';
+            }
+        }
+
         // Fetch prices when the page loads
         document.addEventListener('DOMContentLoaded', fetchAndUpdatePrices);
-
+        // Check scroll on window resize
+        window.addEventListener('resize', checkAndToggleVerticalScroll);
         // Optional: Refresh prices every 5 minutes (300000 milliseconds)
         // setInterval(fetchAndUpdatePrices, 300000);
     </script>
