@@ -334,10 +334,11 @@
                             const initialCostValue = cost * shares;
                             const pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
 
-                            const pnlAmountString = formatCurrency(pnlValue);
+                            const formattedPnlCurrency = formatCurrency(pnlValue);
                             let pnlPrefix = pnlValue >= 0 ? '+' : ''; // For the percentage part
+                            const displayPnlAmount = pnlValue >= 0 ? `+${formattedPnlCurrency}` : formattedPnlCurrency;
 
-                            pnlCell.textContent = `${pnlAmountString} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
+                            pnlCell.textContent = `${displayPnlAmount} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
                             if (pnlValue > 0) {
                                 pnlCell.style.color = '#30D158'; // Apple System Green (Dark Mode)
                             } else if (pnlValue < 0) {
