@@ -280,6 +280,16 @@
         Chart.register(ChartDataLabels);
         // Chart.defaults.color = '#FFFFFF'; // Default color for chart text
 
+        function formatCurrency(value) {
+            // Use toLocaleString for currency formatting with commas
+            // Ensure the value is a number
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                return typeof value === 'string' ? value : '$0.00'; // Fallback for non-numeric or keep original string
+            }
+            return numValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        }
+
         async function fetchAndUpdatePrices() {
             try {
                 const response = await fetch('./fund_data.json?t=' + new Date().getTime()); // Add cache buster
@@ -313,10 +323,10 @@
                         const currentPrice = parseFloat(prices[ticker]);
                         const cost = parseFloat(costCell.textContent.replace('$', ''));
 
-                        if (priceCell) priceCell.textContent = '$' + currentPrice.toFixed(2);
+                        if (priceCell) priceCell.textContent = formatCurrency(currentPrice);
 
                         const currentValue = shares * currentPrice;
-                        if (valueCell) valueCell.textContent = '$' + currentValue.toFixed(2);
+                        if (valueCell) valueCell.textContent = formatCurrency(currentValue);
                         
                         // Calculate PnL
                         if (!isNaN(cost) && pnlCell) {
@@ -324,12 +334,8 @@
                             const initialCostValue = cost * shares;
                             const pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
 
-                            let pnlPrefix = pnlValue >= 0 ? '+' : '';
-                            // Get the absolute value for the dollar amount, prefix handles the sign for percentage
-                            const absPnlValueFormatted = Math.abs(pnlValue).toFixed(2);
-                            
-                            // Construct the PnL amount string with the correct sign and dollar placement
-                            const pnlAmountString = pnlValue < 0 ? `-$${absPnlValueFormatted}` : `${pnlPrefix}$${absPnlValueFormatted}`;
+                            const pnlAmountString = formatCurrency(pnlValue);
+                            let pnlPrefix = pnlValue >= 0 ? '+' : ''; // For the percentage part
 
                             pnlCell.textContent = `${pnlAmountString} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
                             if (pnlValue > 0) {
@@ -346,7 +352,7 @@
                 });
 
                 // Update total portfolio value display
-                document.getElementById('total-portfolio-value-in-table').textContent = '$' + totalPortfolioValue.toFixed(2);
+                document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValue);
 
                 // Sort rows by currentValue in descending order
                 rowsArray.sort((a, b) => {
