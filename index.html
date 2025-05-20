@@ -10,8 +10,24 @@
             color: #FFFFFF; /* Set default text color to white for visibility */
             margin: 0; /* Remove default browser margins */
             height: 100vh; /* Ensure the body takes up the full viewport height */
-            font-family: sans-serif; /* Optional: a common sans-serif font */
+            font-family: Arial, Helvetica, sans-serif; /* Standard font stack */
             padding: 20px; /* Add some padding so table isn't at the very edge */
+        }
+        /* Ensure table and h2 also use the custom font */
+        table, th, td, h2 {
+            font-family: Arial, Helvetica, sans-serif; /* Standard font stack */
+        }
+
+        /* Use a clearer, standard font for numerical data for better readability */
+        td.allocation,
+        td.price,
+        td.cost,
+        td.shares,
+        td.value,
+        td.pnl,
+        #total-portfolio-value {
+            font-family: Arial, Helvetica, sans-serif;
+            /* You could also adjust font-weight if needed, e.g., font-weight: normal; or font-weight: 500; */
         }
         table {
             width: 80%; /* Or a fixed width like 800px */
@@ -31,12 +47,12 @@
             table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
         }
         th:nth-child(1) { width: 20%; } /* Ticker */
-        th:nth-child(2) { width: 10%; } /* Price */
-        th:nth-child(3) { width: 10%; } /* Cost */
-        th:nth-child(4) { width: 10%; } /* Shares */
-        th:nth-child(5) { width: 10%; } /* PnL - needs more space for "value (percentage%)" */
+        th:nth-child(2) { width: 15%; } /* Allocation */
+        th:nth-child(3) { width: 10%; } /* Price */
+        th:nth-child(4) { width: 10%; } /* Cost */
+        th:nth-child(5) { width: 10%; } /* Shares */
         th:nth-child(6) { width: 20%; } /* Value */
-        th:nth-child(7) { width: 20%; } /* Allocation */
+        th:nth-child(7) { width: 15%; } /* PnL */
 
         /* Prevent wrapping in data cells for a more compact look */
         td.price, td.cost, td.shares, td.pnl, td.value, td.allocation {
@@ -54,7 +70,7 @@
 </head>
 <body>
     <div id="fundPieChartContainer"><canvas id="fundPieChart"></canvas></div>
-    <table>
+    <table class="hidden">
         <thead>
             <tr>
                 <th scope="col">Ticker</th>
@@ -133,15 +149,19 @@
             </tr>
         </tbody>
     </table>
-    <h2 style="text-align: center;" class="hidden">Total Portfolio Value: <span id="total-portfolio-value">$0.00</span></h2>
+    <h2 style="text-align: center;" class="hidden"><span id="total-portfolio-value">$0.00</span></h2>
 
     <!-- Include Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Include Chart.js Datalabels plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 
 
     <script>
+        // Register ChartDataLabels plugin once globally
+        Chart.register(ChartDataLabels);
+        // Chart.defaults.color = '#FFFFFF'; // Default color for chart text
+
         async function fetchAndUpdatePrices() {
             try {
                 const response = await fetch('./fund_data.json?t=' + new Date().getTime()); // Add cache buster
@@ -244,8 +264,6 @@
         let fundChartInstance = null;
         function updatePieChart(data) {
             const ctx = document.getElementById('fundPieChart').getContext('2d');
-            // Register the datalabels plugin
-            Chart.register(ChartDataLabels);
             
             if (fundChartInstance) {
                 fundChartInstance.data.labels = data.labels;
@@ -272,19 +290,41 @@
                                 display: false,
                             },
                             datalabels: {
-                                display: true,
+                                display: false, // <--- Set this to false to hide all datalabels
                                 formatter: (value, context) => {
+                                    // This function now returns an array of objects
+                                    // to style the ticker and percentage differently.
                                     const label = context.chart.data.labels[context.dataIndex];
-                                    return label + '\n' + value.toFixed(2) + '%';
+                                    const percentageText = value.toFixed(2) + '%';
+                                    const defaultFontSize = context.chart.options.plugins.datalabels.font.size || 10;
+                                    const defaultFontColor = context.chart.options.plugins.datalabels.color || '#fff';
+
+                                    return [
+                                        {
+                                            text: label,
+                                            font: {
+                                                // family: 'P22UndergroundProThin', // Removed custom font
+                                                size: defaultFontSize
+                                            },
+                                            color: defaultFontColor
+                                        },
+                                        {
+                                            text: percentageText,
+                                            font: {
+                                                family: 'Arial, Helvetica, sans-serif', // Standard font for numbers
+                                                size: defaultFontSize
+                                            },
+                                            color: defaultFontColor
+                                        }
+                                    ];
                                 },
                                 color: '#fff', // Label text color
+                                // The font object here acts as a default if not specified in the formatter's array elements
+                                font: { size: 10 }, // Default size, family is now set per segment
                                 anchor: 'end', // Anchor the label connection at the end of the slice
                                 align: 'end', // Align the label text to the end of the connector
                                 offset: 8, // Distance from the slice
-                                textAlign: 'center',
-                                font: {
-                                    size: 10,
-                                },
+                                textAlign: 'center', // This will center the block of text (ticker \n percentage)
                                 connector: {
                                     display: true,
                                     color: (context) => context.dataset.backgroundColor[context.dataIndex], // Line color same as slice
@@ -294,7 +334,47 @@
                             title: {
                                 display: false, // Hide the chart title
                                 text: 'Fund Allocation',
-                                color: '#FFFFFF' // White title
+                                color: '#FFFFFF', // White title
+                                font: {
+                                    // family: 'P22UndergroundProThin' // Removed custom font
+                                }
+                            },
+                        },
+                        onHover: (event, activeElements, chart) => {
+                            const tableElement = document.querySelector('table');
+                            const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+                            const portfolioSummaryElement = document.getElementById('total-portfolio-value').parentElement; // This is the H2
+
+                            // Default to hidden state for table and summary
+                            let showElements = false;
+                            let rowToShow = null;
+
+                            if (activeElements.length > 0 && chart.data.labels && chart.data.labels.length > 0) {
+                                const activeSegment = activeElements[0];
+                                const dataIndex = activeSegment.index;
+
+                                if (dataIndex >= 0 && dataIndex < chart.data.labels.length) {
+                                    const ticker = chart.data.labels[dataIndex];
+                                    const targetRow = document.querySelector(`tbody tr[data-ticker="${ticker}"]`);
+                                    if (targetRow) {
+                                        rowToShow = targetRow;
+                                        showElements = true;
+                                    }
+                                }
+                            }
+
+                            // Apply visibility changes
+                            if (showElements && rowToShow) {
+                                tableElement.classList.remove('hidden');
+                                if (portfolioSummaryElement) portfolioSummaryElement.classList.remove('hidden');
+
+                                allDataRows.forEach(row => {
+                                    row.classList.toggle('hidden', row !== rowToShow);
+                                });
+                            } else {
+                                tableElement.classList.add('hidden');
+                                if (portfolioSummaryElement) portfolioSummaryElement.classList.add('hidden');
+                                allDataRows.forEach(row => row.classList.add('hidden'));
                             }
                         }
                     }
