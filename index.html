@@ -10,11 +10,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Fund</title>
     <style>
+        /* JetBrains Mono – regular and italics */
+        @font-face{
+            font-family:'JetBrains Mono';
+            src:url('./fonts/webfonts/JetBrainsMono-Thin.woff2') format('woff2');
+            font-weight:100;font-style:normal;font-display:swap;
+        }
+        @font-face{
+            font-family:'JetBrains Mono';
+            src:url('./fonts/webfonts/JetBrainsMono-ThinItalic.woff2') format('woff2');
+            font-weight:100;font-style:italic;font-display:swap;
+        }
+
+        /* repeat for 200,300,400,500,600,700,800 … */
+        @font-face{
+            font-family:'JetBrains Mono';
+            src:url('./fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight:400;font-style:normal;font-display:swap;
+        }
+        @font-face{
+            font-family:'JetBrains Mono';
+            src:url('./fonts/webfonts/JetBrainsMono-Italic.woff2') format('woff2');
+            font-weight:400;font-style:italic;font-display:swap;
+        }
+        /* …continue through 800 */
         body {
             color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
             margin: 0; /* Remove default browser margins */
             height: 100vh; /* Ensure the body takes up the full viewport height */
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
             padding: 20px; /* Add some padding so table isn't at the very edge */
             background: #000000 url(background.jpg) center center no-repeat !important;
@@ -82,7 +106,7 @@
         }
         td {
             color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
-            font-size: 0.8em; /* Data cells slightly larger for hierarchy */
+            font-size: 0.75em; /* Data cells slightly larger for hierarchy */
         }
         tbody tr {
             border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color for rows */
