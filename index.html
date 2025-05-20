@@ -6,30 +6,22 @@
     <title>Fund</title>
     <style>
         body {
-            background-color: #000000; 
-            color: #FFFFFF; /* Set default text color to white for visibility */
+            background-color: #000000;
+            color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
             margin: 0; /* Remove default browser margins */
             height: 100vh; /* Ensure the body takes up the full viewport height */
-            font-family: Arial, Helvetica, sans-serif; /* Standard font stack */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
             padding: 20px; /* Add some padding so table isn't at the very edge */
-        }
-        /* Ensure table and h2 also use the custom font */
-        table, th, td, h2 {
-            font-family: Arial, Helvetica, sans-serif; /* Standard font stack */
+            background: url(background.jpg) center center no-repeat !important;
+            background-size: cover !important;
         }
 
-        /* Use a clearer, standard font for numerical data for better readability */
-        td.allocation,
-        td.price,
-        td.cost,
-        td.shares,
-        td.value,
-        td.pnl,
-        #total-portfolio-value {
-            font-family: Arial, Helvetica, sans-serif;
-            /* You could also adjust font-weight if needed, e.g., font-weight: normal; or font-weight: 500; */
+        /* h2 will inherit font from body */
+        h2 {
+            /* You can add specific h2 styles here if needed, e.g., margin, font-size */
         }
+
         /* New wrapper for responsive table */
         .table-responsive-container {
             width: 85%; /* Adjust width for desktop */
@@ -37,10 +29,10 @@
             margin: 30px auto; /* Center the container and add vertical spacing */
             overflow-x: auto; /* Enable horizontal scroll if content overflows */
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS for better UX */
-            background-color: #121212; /* Slightly off-black background for the container */
+            background-color: rgba(44, 44, 46, 0.9); /* Apple System Gray 5 Dark, slightly more transparent */
             border-radius: 8px; /* Rounded corners for the container */
-            padding: 5px 10px 10px 10px; /* Internal padding (less on top for table header) */
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); /* Softer shadow */
+            padding: 0; /* Padding will be handled by table/cells if needed, or keep minimal for container */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Softer, more standard shadow */
         }
         table {
             width: 100%; /* Table fills the responsive container */
@@ -50,20 +42,20 @@
         }
         th, td {
             border: none; /* Remove all default borders */
-            padding: 12px 15px; /* More spacious padding */
-            font-size: 0.9em; /* Base font size for table cells */
+            padding: 12px 16px; /* Adjusted padding */
             text-align: left;
-            border-bottom: 1px solid #282828; /* Subtle bottom border for row separation */
+            /* border-bottom will be handled by tbody tr */
         }
         th {
-            background-color: transparent; /* No specific background for header cells */
-            color: #b0b0b0; /* Lighter grey for header text */
-            font-weight: 600; /* Semi-bold */
-            font-size: 0.8em; /* Adjusted header font size */
-            text-transform: uppercase; /* Uppercase for a more formal look */
-            letter-spacing: 0.05em; /* Slight letter spacing */
-            border-bottom: 1px solid #383838; /* Slightly more prominent border for header */
+            color: rgba(235, 235, 245, 0.6); /* Apple's secondary label color in dark mode */
+            font-weight: 600; /* Semibold is common */
+            font-size: 0.75em; /* Typically smaller for headers */
+            text-transform: uppercase; /* Common for table headers in Apple design */
+            letter-spacing: 0.08em; /* Slight tracking */
+            padding: 10px 16px; /* Specific padding for headers */
+            border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
         }
+
         /* Column width optimizations */
         table {
             table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
@@ -77,27 +69,32 @@
         th:nth-child(7) { width: 15%; } /* PnL */
 
         /* Prevent wrapping in data cells for a more compact look */
-        td.price, td.cost, td.shares, td.pnl, td.value, td.allocation {
+        td.price, td.cost, td.shares, td.pnl, td.value, td.allocation, th { /* Apply to th too for consistency */
             white-space: nowrap;
         }
-        tbody tr:last-child td {
+        td {
+            color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
+            font-size: 0.8em; /* Data cells slightly larger for hierarchy */
+        }
+        tbody tr {
+            border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color for rows */
+        }
+        tbody tr:last-child {
             border-bottom: none; /* Remove border from the last row's cells */
         }
         tbody tr:hover {
-            background-color: #1a1a1a; /* Subtle hover effect for data rows */
+            background-color: rgba(60, 60, 63, 0.75); /* Subtle hover, based on System Gray 4 */
         }
         /* Styling for the table footer */
         tfoot td {
-            border-top: 1px solid #383838; /* Separator line above the footer */
-            /* Match header styling for coherence */
-            color: #b0b0b0; /* Lighter grey for text, same as th */
-            font-weight: 600; /* Semi-bold, same as th */
-            font-size: 0.8em; /* Same font size as th */
-            text-transform: uppercase; /* Uppercase, same as th */
-            letter-spacing: 0.05em; /* Slight letter spacing, same as th */
+            border-top: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color */
+            color: rgba(235, 235, 245, 0.6); /* Match header text color */
+            font-weight: 600; /* Match header font-weight */
+            font-size: 0.75em; /* Match header font-size */
+            text-transform: uppercase; /* Match header text-transform */
+            letter-spacing: 0.08em; /* Match header letter-spacing */
             text-align: right; /* Align total to the right */
-            padding-top: 15px; /* More top padding for footer */
-            padding-bottom: 15px; /* More bottom padding for footer */
+            padding: 10px 16px; /* Match header padding */
         }
         #fundPieChartContainer {
             width: 90%; /* Increased width */
@@ -131,18 +128,17 @@
                 /* Existing body styles like background, padding, box-sizing will apply to this fixed container */
             }
             .table-responsive-container {
-                width: 90%;
+                width: 95%; /* Slightly wider for mobile */
                 margin: 0 auto; /* Top and bottom margin 0, centered horizontally */
-                padding: 0 5px 0 5px; /* Reduce bottom padding, keep top minimal for header */
+                padding: 0;
             }
             th, td {
-                padding: 8px 6px; /* Further reduce cell padding */
-                font-size: 0.8em; /* Adjusted font size for mobile cells */
+                padding: 8px 14px; /* Increased mobile padding for better touch and readability */
+                /* font-size for td will be 0.8em from global td style */
             }
             th { 
-                font-size: 0.7em; /* Adjusted font size for mobile headers */
-                padding-top: 8px; /* Ensure header has some top padding */
-                padding-bottom: 8px;
+                font-size: 0.75em; /* Mobile header font size */
+                padding: 8px 10px; /* Mobile specific header padding */
             }
             #fundPieChartContainer { /* mobile styles are fine */
                 width: 90%; /* Allow chart to take full width */
@@ -150,14 +146,10 @@
                 margin: 0 auto 5px; /* Horizontally center, top margin 0, reduced bottom margin to 5px */
                 touch-action: none; /* Disable touch-based scrolling/panning */
             }
-            h2 { /* For the total portfolio value */
-                font-size: 1em; /* Reduce font size */
-                margin: 5px auto 10px auto; /* Center and adjust vertical margins */
-            }
             /* Adjust tfoot for mobile */
             tfoot td {
-                padding: 10px 8px;
-                font-size: 0.7em;
+                padding: 10px 10px; /* Unified mobile padding */
+                font-size: 0.75em; /* Consistent with th mobile */
                 text-align: left;
             }
             table {
@@ -314,12 +306,17 @@
                             const pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
 
                             let pnlPrefix = pnlValue >= 0 ? '+' : '';
-                            pnlCell.textContent = `${pnlPrefix}${pnlValue.toFixed(2)} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
+                            // Get the absolute value for the dollar amount, prefix handles the sign for percentage
+                            const absPnlValueFormatted = Math.abs(pnlValue).toFixed(2);
+                            
+                            // Construct the PnL amount string with the correct sign and dollar placement
+                            const pnlAmountString = pnlValue < 0 ? `-$${absPnlValueFormatted}` : `${pnlPrefix}$${absPnlValueFormatted}`;
 
+                            pnlCell.textContent = `${pnlAmountString} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
                             if (pnlValue > 0) {
-                                pnlCell.style.color = '#4CAF50'; // Darker Green
+                                pnlCell.style.color = '#30D158'; // Apple System Green (Dark Mode)
                             } else if (pnlValue < 0) {
-                                pnlCell.style.color = '#D32F2F'; // Darker Red
+                                pnlCell.style.color = '#FF453A'; // Apple System Red (Dark Mode)
                             } else {
                                 pnlCell.style.color = ''; // Default color
                             }
@@ -399,44 +396,49 @@
                                 display: false,
                             },
                             datalabels: {
-                                display: false, // <--- Set this to false to hide all datalabels
+                                display: false, // Display datalabels
                                 formatter: (value, context) => {
-                                    // This function now returns an array of objects
-                                    // to style the ticker and percentage differently.
                                     const label = context.chart.data.labels[context.dataIndex];
                                     const percentageText = value.toFixed(2) + '%';
-                                    const defaultFontSize = context.chart.options.plugins.datalabels.font.size || 10;
-                                    const defaultFontColor = context.chart.options.plugins.datalabels.color || '#fff';
+                                    // Use the font settings defined below
 
                                     return [
                                         {
                                             text: label,
                                             font: {
-                                                // family: 'P22UndergroundProThin', // Removed custom font
-                                                size: defaultFontSize
+                                                // Inherits family from global datalabels font options
+                                                // size can be set here if different from percentage
                                             },
-                                            color: defaultFontColor
+                                            // Inherits color from global datalabels color option
                                         },
                                         {
                                             text: percentageText,
                                             font: {
-                                                family: 'Arial, Helvetica, sans-serif', // Standard font for numbers
-                                                size: defaultFontSize
+                                                // Inherits family from global datalabels font options
+                                                // size can be set here if different from label
                                             },
-                                            color: defaultFontColor
+                                            // Inherits color from global datalabels color option
                                         }
                                     ];
                                 },
-                                color: '#fff', // Label text color
-                                // The font object here acts as a default if not specified in the formatter's array elements
-                                font: { size: 10 }, // Default size, family is now set per segment
+                                color: 'rgba(235, 235, 245, 0.6)', // Apple's secondary label color for dark mode
+                                font: {
+                                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+                                    size: 10, // Adjust size as needed for visual balance
+                                    // weight: 'normal' // or '500' for slightly bolder
+                                },
                                 anchor: 'end', // Anchor the label connection at the end of the slice
                                 align: 'end', // Align the label text to the end of the connector
                                 offset: 8, // Distance from the slice
-                                textAlign: 'center', // This will center the block of text (ticker \n percentage)
+                                textAlign: 'center', // Centers the multi-line text block
                                 connector: {
                                     display: true,
-                                    color: (context) => context.dataset.backgroundColor[context.dataIndex], // Line color same as slice
+                                    color: (context) => {
+                                        // Get the base hex color for the current slice
+                                        const baseHexColor = getBlueColorForSlice(context.dataIndex, context.chart.data.labels.length);
+                                        // Apply 50% opacity for "half transparent"
+                                        return hexToRgba(baseHexColor, 0.5); 
+                                    },
                                     width: 1
                                 }
                             },
@@ -510,23 +512,21 @@
         }
 
         function getBlueColorForSlice(index, totalItems) {
-            // A palette of Material Design blues, from darker to lighter.
+            // A palette of dark grays and near-blacks for a metallic, dark theme.
             // Larger slices (lower index) will get darker blues.
-            const cyanPalette = [
-                '#006064', // Cyan 900 (Darkest)
-                '#00838F', // Cyan 800
-                '#0097A7', // Cyan 700
-                '#00ACC1', // Cyan 600
-                '#00BCD4', // Cyan 500 (Primary Cyan)
-                '#26C6DA', // Cyan 400
-                '#4DD0E1', // Cyan 300
-                '#80DEEA', // Cyan 200
-                '#B2EBF2', // Cyan 100
-                '#E0F7FA'  // Cyan 50 (Lightest)
+            const metallicDarkPalette = [
+                '#2B2B2B', // Very Dark Gray / Near Black
+                '#333333', // Dark Gray
+                '#4F4F4F', // Medium Dark Gray
+                '#606060', // Gray
+                '#757575', // Medium Light Gray (Metallic Sheen)
+                '#888888', // Light Gray (Metallic Sheen)
+                '#A0A0A0', // Lighter Gray
+                '#BDBDBD'  // Very Light Gray / Silver
             ];
             
             // Cycle through the palette if there are more items than colors
-            return cyanPalette[index % cyanPalette.length];
+            return metallicDarkPalette[index % metallicDarkPalette.length];
         }
 
         function hexToRgba(hex, alpha) {
