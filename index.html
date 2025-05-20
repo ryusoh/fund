@@ -7,12 +7,326 @@
     <style>
         body {
             background-color: #000000; 
+            color: #FFFFFF; /* Set default text color to white for visibility */
             margin: 0; /* Remove default browser margins */
             height: 100vh; /* Ensure the body takes up the full viewport height */
+            font-family: sans-serif; /* Optional: a common sans-serif font */
+            padding: 20px; /* Add some padding so table isn't at the very edge */
+        }
+        table {
+            width: 80%; /* Or a fixed width like 800px */
+            margin: 20px auto; /* Center the table */
+            border-collapse: collapse; /* Remove double borders */
+        }
+        th, td {
+            border: 1px solid #333333; /* Light grey border for cells */
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #1a1a1a; /* Slightly lighter black for header */
+        }
+        /* Column width optimizations */
+        table {
+            table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
+        }
+        th:nth-child(1) { width: 20%; } /* Ticker */
+        th:nth-child(2) { width: 10%; } /* Price */
+        th:nth-child(3) { width: 10%; } /* Cost */
+        th:nth-child(4) { width: 10%; } /* Shares */
+        th:nth-child(5) { width: 10%; } /* PnL - needs more space for "value (percentage%)" */
+        th:nth-child(6) { width: 20%; } /* Value */
+        th:nth-child(7) { width: 20%; } /* Allocation */
+
+        /* Prevent wrapping in data cells for a more compact look */
+        td.price, td.cost, td.shares, td.pnl, td.value, td.allocation {
+            white-space: nowrap;
+        }
+        #fundPieChartContainer {
+            width: 80%; /* Increased width */
+            max-width: 700px; /* Increased max-width */
+            margin: 20px auto; /* Center the chart */
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <!-- This page is intentionally blank to be "pure black". -->
+    <div id="fundPieChartContainer"><canvas id="fundPieChart"></canvas></div>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Ticker</th>
+                <th scope="col">Allocation</th>
+                <th scope="col">Price</th>
+                <th scope="col">Cost</th>
+                <th scope="col">Shares</th>
+                <th scope="col">Value</th>
+                <th scope="col">PnL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Example Row: You can add more rows like this -->
+            <tr data-ticker="VT">
+                <td>VT</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$95.65</td>
+                <td class="shares">2601.642</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="ANET">
+                <td>ANET</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$65.18</td>
+                <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="GOOG">
+                <td>GOOG</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$172.54</td>
+                <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="PDD">
+                <td>PDD</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$107.17</td>
+                <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="BRK-B">
+                <td>BRK-B</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$334.96</td>
+                <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="OXY">
+                <td>OXY</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$49.39</td>
+                <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+            <tr data-ticker="GEO">
+                <td>GEO</td>
+                <td class="allocation">0.00</td>
+                <td class="price">$0.00</td>
+                <td class="cost">$18.76</td>
+                <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            </tr>
+        </tbody>
+    </table>
+    <h2 style="text-align: center;" class="hidden">Total Portfolio Value: <span id="total-portfolio-value">$0.00</span></h2>
+
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include Chart.js Datalabels plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+
+    <script>
+        async function fetchAndUpdatePrices() {
+            try {
+                const response = await fetch('./fund_data.json?t=' + new Date().getTime()); // Add cache buster
+                if (!response.ok) {
+                    console.error('Failed to fetch fund data:', response.status, response.statusText);
+                    return;
+                }
+                const prices = await response.json();
+
+                let totalPortfolioValue = 0;
+                let rowsArray = Array.from(document.querySelectorAll('tbody tr[data-ticker]'));
+                const chartData = { labels: [], datasets: [{ data: [], backgroundColor: [] }] };
+                const tbody = document.querySelector('table tbody');
+
+                // First pass: calculate individual values and total portfolio value
+                rowsArray.forEach(row => {
+                    const ticker = row.dataset.ticker;
+                    const sharesCell = row.querySelector('td.shares'); 
+                    const costCell = row.querySelector('td.cost');
+                    const pnlCell = row.querySelector('td.pnl');
+                    const shares = parseFloat(sharesCell.textContent);
+
+                    // Round the displayed shares value to 0.01
+                    if (sharesCell && !isNaN(shares)) {
+                        sharesCell.textContent = shares.toFixed(2);
+                    }
+
+                    if (prices[ticker] !== undefined && !isNaN(shares)) {
+                        const priceCell = row.querySelector('td.price');
+                        const valueCell = row.querySelector('td.value');
+                        const currentPrice = parseFloat(prices[ticker]);
+                        const cost = parseFloat(costCell.textContent.replace('$', ''));
+
+                        if (priceCell) priceCell.textContent = '$' + currentPrice.toFixed(2);
+
+                        const currentValue = shares * currentPrice;
+                        if (valueCell) valueCell.textContent = '$' + currentValue.toFixed(2);
+                        
+                        // Calculate PnL
+                        if (!isNaN(cost) && pnlCell) {
+                            const pnlValue = (currentPrice - cost) * shares;
+                            const initialCostValue = cost * shares;
+                            const pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
+
+                            let pnlPrefix = pnlValue >= 0 ? '+' : '';
+                            pnlCell.textContent = `${pnlPrefix}${pnlValue.toFixed(2)} (${pnlPrefix}${pnlPercentage.toFixed(2)}%)`;
+
+                            if (pnlValue > 0) {
+                                pnlCell.style.color = '#4CAF50'; // Darker Green
+                            } else if (pnlValue < 0) {
+                                pnlCell.style.color = '#D32F2F'; // Darker Red
+                            } else {
+                                pnlCell.style.color = ''; // Default color
+                            }
+                        }
+                        totalPortfolioValue += currentValue;
+                        row.dataset.currentValue = currentValue; // Store for allocation pass
+                    }
+                });
+
+                // Update total portfolio value display
+                document.getElementById('total-portfolio-value').textContent = '$' + totalPortfolioValue.toFixed(2);
+
+                // Sort rows by currentValue in descending order
+                rowsArray.sort((a, b) => {
+                    const valueA = parseFloat(a.dataset.currentValue || "0");
+                    const valueB = parseFloat(b.dataset.currentValue || "0");
+                    return valueB - valueA; // Sort descending
+                });
+
+                // Re-append rows to the table body in sorted order
+                tbody.innerHTML = ''; // Clear existing rows
+                rowsArray.forEach(row => tbody.appendChild(row));
+
+                // Second pass: calculate and update allocations
+                rowsArray.forEach(row => { // Iterate over the sorted array
+                    const allocationCell = row.querySelector('td.allocation');
+                    if (allocationCell && totalPortfolioValue > 0) {
+                        const rowValue = parseFloat(row.dataset.currentValue || "0");
+                        const allocationPercentage = (rowValue / totalPortfolioValue) * 100;
+                        allocationCell.textContent = allocationPercentage.toFixed(2) + '%';
+
+                        // Prepare data for the chart
+                        const ticker = row.dataset.ticker;
+                        chartData.labels.push(ticker);
+                        chartData.datasets[0].data.push(allocationPercentage);
+                        // Add a color for this slice (you can customize these)
+                        chartData.datasets[0].backgroundColor.push(getBlueColorForSlice(rowsArray.indexOf(row), rowsArray.length));
+                        }
+                });
+
+                // Update or create the pie chart
+                updatePieChart(chartData);
+
+            } catch (error) {
+                console.error('Error fetching or processing fund data:', error);
+            }
+        }
+
+        let fundChartInstance = null;
+        function updatePieChart(data) {
+            const ctx = document.getElementById('fundPieChart').getContext('2d');
+            // Register the datalabels plugin
+            Chart.register(ChartDataLabels);
+            
+            if (fundChartInstance) {
+                fundChartInstance.data.labels = data.labels;
+                fundChartInstance.data.datasets[0].data = data.datasets[0].data;
+                fundChartInstance.data.datasets[0].backgroundColor = data.datasets[0].backgroundColor;
+                fundChartInstance.update();
+            } else {
+                fundChartInstance = new Chart(ctx, {
+                    type: 'doughnut', // Use 'pie' for a solid pie chart
+                    data: data,
+                    options: {
+                        responsive: true,
+                        layout: {
+                            padding: {
+                                top: 35,
+                                right: 35,
+                                bottom: 35,
+                                left: 35
+                            }
+                        },
+                        plugins: {
+                            // Hide the default legend, as datalabels will replace it
+                            legend: {
+                                display: false,
+                            },
+                            datalabels: {
+                                display: true,
+                                formatter: (value, context) => {
+                                    const label = context.chart.data.labels[context.dataIndex];
+                                    return label + '\n' + value.toFixed(2) + '%';
+                                },
+                                color: '#fff', // Label text color
+                                anchor: 'end', // Anchor the label connection at the end of the slice
+                                align: 'end', // Align the label text to the end of the connector
+                                offset: 8, // Distance from the slice
+                                textAlign: 'center',
+                                font: {
+                                    size: 10,
+                                },
+                                connector: {
+                                    display: true,
+                                    color: (context) => context.dataset.backgroundColor[context.dataIndex], // Line color same as slice
+                                    width: 1
+                                }
+                            },
+                            title: {
+                                display: false, // Hide the chart title
+                                text: 'Fund Allocation',
+                                color: '#FFFFFF' // White title
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function getBlueColorForSlice(index, totalItems) {
+            // A palette of Material Design blues, from darker to lighter.
+            // Larger slices (lower index) will get darker blues.
+            const cyanPalette = [
+                '#006064', // Cyan 900 (Darkest)
+                '#00838F', // Cyan 800
+                '#0097A7', // Cyan 700
+                '#00ACC1', // Cyan 600
+                '#00BCD4', // Cyan 500 (Primary Cyan)
+                '#26C6DA', // Cyan 400
+                '#4DD0E1', // Cyan 300
+                '#80DEEA', // Cyan 200
+                '#B2EBF2', // Cyan 100
+                '#E0F7FA'  // Cyan 50 (Lightest)
+            ];
+            
+            // Cycle through the palette if there are more items than colors
+            return cyanPalette[index % cyanPalette.length];
+        }
+
+        // Fetch prices when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndUpdatePrices);
+
+        // Optional: Refresh prices every 5 minutes (300000 milliseconds)
+        // setInterval(fetchAndUpdatePrices, 300000);
+    </script>
 </body>
 </html>
