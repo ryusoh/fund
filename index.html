@@ -69,18 +69,19 @@
             border-spacing: 0; /* Remove spacing between cells */
             /* border-collapse: collapse; */ /* Not strictly needed if using border-spacing: 0 and border-bottom only */
         }
-        th, td {
+        td {
             border: none; /* Remove all default borders */
-            padding: 12px 16px; /* Adjusted padding */
+            padding: 7px 16px; /* Adjusted padding */
             /* border-bottom will be handled by tbody tr */
         }
         th {
+            border: none; /* Remove all default borders */
             color: rgba(235, 235, 245, 0.6); /* Apple's secondary label color in dark mode */
             font-weight: 600; /* Semibold is common */
             font-size: 0.75em; /* Typically smaller for headers */
             text-transform: uppercase; /* Common for table headers in Apple design */
             letter-spacing: 0.08em; /* Slight tracking */
-            padding: 10px 16px; /* Specific padding for headers */
+            padding: 12px 16px; /* Specific padding for headers */
             border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
             text-align: right; /* Default for headers */
         }
@@ -207,8 +208,8 @@
                 /* border-radius will still apply for top corners */
                 padding: 0;
             }
-            th, td {
-                padding: 8px 14px; /* Increased mobile padding for better touch and readability */
+            td {
+                padding: 5px 10px; /* Increased mobile padding for better touch and readability */
                 /* font-size for td will be 0.8em from global td style */
             }
             th { 
