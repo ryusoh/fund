@@ -359,7 +359,49 @@
 
     <script>
         // Register ChartDataLabels plugin once globally
+
+        const customArcBordersPlugin = {
+          id: 'customArcBorders',
+          afterDatasetDraw(chart, args, pluginOptions) {
+            // Only run for doughnut charts and if the dataset is visible
+            if (chart.config.type !== 'doughnut' || !chart.isDatasetVisible(args.index)) {
+              return;
+            }
+
+            const { ctx } = chart;
+            const meta = args.meta; // Contains information about the dataset, including its elements
+
+            // Get options from plugin configuration in chart options, with defaults
+            const arcBorderWidth = pluginOptions.width !== undefined ? pluginOptions.width : 2.5; // Default to 2px
+            const arcBorderColor = pluginOptions.color || 'rgba(225, 225, 225, 0.5)'; // Default color
+
+            meta.data.forEach(arcElement => {
+              // Get the resolved properties of the arc segment
+              const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arcElement.getProps(
+                ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
+                true // Use final values
+              );
+
+              ctx.save();
+              ctx.strokeStyle = arcBorderColor;
+              ctx.lineWidth = arcBorderWidth;
+
+              // Draw outer arc border
+              ctx.beginPath();
+              ctx.arc(x, y, outerRadius, startAngle, endAngle);
+              ctx.stroke();
+
+              // Draw inner arc border
+              ctx.beginPath();
+              ctx.arc(x, y, innerRadius, startAngle, endAngle);
+              ctx.stroke();
+
+              ctx.restore();
+            });
+          }
+        };
         Chart.register(ChartDataLabels);
+        Chart.register(customArcBordersPlugin);
         // Chart.defaults.color = '#FFFFFF'; // Default color for chart text
 
         function formatCurrency(value) {
@@ -383,7 +425,15 @@
 
                 let totalPortfolioValue = 0;
                 let rowsArray = Array.from(document.querySelectorAll('tbody tr[data-ticker]'));
-                const chartData = { labels: [], datasets: [{ data: [], backgroundColor: [] }] };
+                const chartData = { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        backgroundColor: [],
+                        borderColor: 'rgba(84, 84, 88, 0.5)', // Color for the 0.5px radial lines
+                        borderWidth: 0.5  // Width for radial lines; arcs overdrawn by plugin
+                    }] 
+                };
                 const tbody = document.querySelector('table tbody');
 
                 // First pass: calculate individual values and total portfolio value
