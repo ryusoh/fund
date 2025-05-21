@@ -45,6 +45,17 @@
             background-size: cover !important;
         }
 
+        /* New wrapper for combined table and footer */
+        .content-block {
+            width: 85%; /* Adjust width for desktop */
+            max-width: 900px; /* Max width for larger screens */
+            margin: 30px auto 20px auto; /* Centered, combined vertical spacing */
+            background-color: rgba(44, 44, 46, 0.9); /* Unified background */
+            border-radius: 8px; /* Unified rounded corners */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Unified shadow */
+        }
+
+
         /* h2 will inherit font from body */
         h2 {
             /* You can add specific h2 styles here if needed, e.g., margin, font-size */
@@ -52,15 +63,12 @@
 
         /* New wrapper for responsive table */
         .table-responsive-container {
-            width: 85%; /* Adjust width for desktop */
-            max-width: 900px; /* Max width for larger screens */
-            margin: 30px auto; /* Center the container and add vertical spacing */
             overflow-x: auto; /* Enable horizontal scroll if content overflows */
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS for better UX */
-            background-color: rgba(44, 44, 46, 0.9); /* Apple System Gray 5 Dark, slightly more transparent */
-            border-radius: 8px; /* Rounded corners for the container */
             padding: 0; /* Padding will be handled by table/cells if needed, or keep minimal for container */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Softer, more standard shadow */
+            /* Rounded corners for the top part of the content-block */
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
         }
         table {
             width: 100%; /* Table fills the responsive container */
@@ -71,7 +79,6 @@
         th, td {
             border: none; /* Remove all default borders */
             padding: 12px 16px; /* Adjusted padding */
-            text-align: left;
             /* border-bottom will be handled by tbody tr */
         }
         th {
@@ -82,10 +89,17 @@
             letter-spacing: 0.08em; /* Slight tracking */
             padding: 10px 16px; /* Specific padding for headers */
             border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
+            text-align: right; /* Default for headers */
         }
         thead tr th { /* Apply gradient to all header cells */
             background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
             background-repeat: no-repeat; /* Good practice for gradients */
+        }
+        table thead tr:first-child th:first-child {
+            border-top-left-radius: 8px; /* Match container radius */
+        }
+        table thead tr:first-child th:last-child {
+            border-top-right-radius: 8px; /* Match container radius */
         }
 
         /* Column width optimizations */
@@ -107,9 +121,15 @@
         td {
             color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
             font-size: 0.75em; /* Data cells slightly larger for hierarchy */
+            text-align: right; /* Default for data cells */
         }
         tbody tr {
             border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color for rows */
+        }
+        /* Align first column (header and data) to the left */
+        th:first-child,
+        td:first-child {
+            text-align: left;
         }
         tbody tr:last-child {
             border-bottom: none; /* Remove border from the last row's cells */
@@ -118,24 +138,9 @@
             background-color: rgba(60, 60, 63, 0.75); /* Subtle hover, based on System Gray 4 */
             background-image: none; /* Override any gradient on hover for a uniform background */
         }
-        /* Styling for the table footer */
-        tfoot td {
-            border-top: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color */
-            color: rgba(235, 235, 245, 0.6); /* Match header text color */
-            font-weight: 600; /* Match header font-weight */
-            font-size: 0.75em; /* Match header font-size */
-            text-transform: uppercase; /* Match header text-transform */
-            letter-spacing: 0.08em; /* Match header letter-spacing */
-            text-align: right; /* Align total to the right */
-            padding: 10px 16px; /* Match header padding */
-        }
-        tfoot tr {
-            background-image: linear-gradient(to left, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
-            background-repeat: no-repeat;
-        }
-        /* Hover effect for footer row and all header cells */
-        tfoot tr:hover,
-        thead tr th:hover { /* Apply hover to all header cells */
+
+        /* Hover effect for header cells */
+        thead tr th:hover {
             background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color */
             background-image: none; /* Remove gradient on hover */
         }
@@ -148,6 +153,43 @@
             display: none;
         }
         /* .no-scroll class removed as JS will handle body overflow directly */
+
+        /* New styles for the separated footer */
+        .footer-wrapper {
+            /* Mimics tfoot tr background and layout */
+            background-color: transparent; /* Background handled by .content-block */
+            box-sizing: border-box;
+            /* Rounded corners for the bottom part of the content-block */
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* .footer-wrapper:hover removed as it's part of a larger block now */
+
+
+        #table-footer-summary { /* Mimics tfoot td */
+            /* Copied from th and thead tr th for consistency */
+            color: rgba(235, 235, 245, 0.6);
+            font-weight: 600;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 10px 16px; /* Default padding, matches th */
+            background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
+            background-repeat: no-repeat;
+            
+            border-top: 1px solid rgba(84, 84, 88, 0.65); /* Separator from table content */
+            text-align: right; /* Default alignment */
+
+            /* Ensure it respects the rounded corners of .footer-wrapper and .content-block */
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        #table-footer-summary:hover {
+            background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color, matches th:hover */
+            background-image: none; /* Remove gradient on hover */
+        }
+
 
         /* Media Query for mobile devices */
         @media (max-width: 768px) {
@@ -166,13 +208,18 @@
                 width: 100% !important; /* Full viewport width */
                 height: 100% !important; /* Full viewport height */
                 overflow-y: hidden !important; /* Still hide vertical overflow */
+                overflow-x: hidden !important; /* Prevent horizontal scroll on body */
                 overscroll-behavior-y: contain !important; /* Prevent bounce */
                 touch-action: none !important; /* Disable touch actions */
                 /* Existing body styles like background, padding, box-sizing will apply to this fixed container */
             }
+            .content-block {
+                width: 95%; /* Wider for mobile */
+                margin: 0 auto 10px auto; /* Adjusted mobile margin */
+            }
             .table-responsive-container {
-                width: 95%; /* Slightly wider for mobile */
-                margin: 0 auto; /* Top and bottom margin 0, centered horizontally */
+                /* Width and margin are now handled by .content-block */
+                /* border-radius will still apply for top corners */
                 padding: 0;
             }
             th, td {
@@ -189,108 +236,137 @@
                 margin: 0 auto 5px; /* Horizontally center, top margin 0, reduced bottom margin to 5px */
                 touch-action: none; /* Disable touch-based scrolling/panning */
             }
-            /* Adjust tfoot for mobile */
-            tfoot td {
+
+            /* Adjust new footer for mobile */
+            .footer-wrapper {
+                /* Width and margin are now handled by .content-block */
+                /* border-radius will still apply for bottom corners */
+            }
+            #table-footer-summary { /* Mimics tfoot td mobile */
                 padding: 10px 10px; /* Unified mobile padding */
                 font-size: 0.75em; /* Consistent with th mobile */
                 text-align: left;
             }
+
             table {
                 width: 100%; /* Table takes full width of its scrollable container */
                 min-width: 650px; /* Ensures table content isn't too squished before scrolling starts */
                 margin: 0; /* Remove auto margin as container handles layout */
                 touch-action: pan-x; /* Allow horizontal pan for table content */
             }
+
+            /* Sticky first column for mobile */
+            table thead th:first-child,
+            table tbody td:first-child {
+                position: -webkit-sticky; /* For Safari */
+                position: sticky;
+                left: 0;
+                /* Ensure the sticky cells have a background to hide scrolling content underneath */
+            }
+
+            table thead th:first-child {
+                z-index: 2; /* Above tbody cells */
+                /* Existing background-image and border-radius will apply */
+            }
+
+            table tbody td:first-child {
+                background-color: rgba(44, 44, 46, 0.9); /* Match .content-block background */
+                z-index: 1; /* Above other cells in the same row, below sticky header */
+            }
+            table tbody tr:hover td:first-child {
+                background-color: rgba(60, 60, 63, 0.75); /* Match tbody tr:hover background */
+            }
         }
     </style>
 </head>
 <body>
     <div id="fundPieChartContainer"><canvas id="fundPieChart"></canvas></div>
-    <div class="table-responsive-container">
-        <table class="hidden">
-            <thead>
-                <tr>
-                    <th scope="col">Holding</th>
-                    <th scope="col">Allocation</th>
-                    <th scope="col">Price</th>
-                    <th scope="col">Cost</th>
-                    <th scope="col">Shares</th>
-                    <th scope="col">Value</th>
-                    <th scope="col">PnL</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Example Row: You can add more rows like this -->
-                <tr data-ticker="VT">
-                    <td>VT</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$95.65</td>
-                    <td class="shares">2601.642</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="ANET">
-                    <td>ANET</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$65.18</td>
-                    <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="GOOG">
-                    <td>GOOG</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$172.54</td>
-                    <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="PDD">
-                    <td>PDD</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$107.17</td>
-                    <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="BRK-B">
-                    <td>BRK-B</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$334.96</td>
-                    <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="OXY">
-                    <td>OXY</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$49.39</td>
-                    <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-                <tr data-ticker="GEO">
-                    <td>GEO</td>
-                    <td class="allocation">0.00</td>
-                    <td class="price">$0.00</td>
-                    <td class="cost">$18.76</td>
-                    <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
-                    <td class="value">$0.00</td>
-                    <td class="pnl">$0.00</td>
-                </tr>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="7" id="table-footer-summary">Total Holdings <span id="total-portfolio-value-in-table">$0.00</span></td>
-                </tr>
-            </tfoot>
-        </table>
+    <div class="content-block">
+        <div class="table-responsive-container">
+            <table class="hidden">
+                <thead>
+                    <tr>
+                        <th scope="col">Holding</th>
+                        <th scope="col">Allocation</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Cost</th>
+                        <th scope="col">Shares</th>
+                        <th scope="col">Value</th>
+                        <th scope="col">PnL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Example Row: You can add more rows like this -->
+                    <tr data-ticker="VT">
+                        <td>VT</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$95.65</td>
+                        <td class="shares">2601.642</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="ANET">
+                        <td>ANET</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$65.18</td>
+                        <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="GOOG">
+                        <td>GOOG</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$172.54</td>
+                        <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="PDD">
+                        <td>PDD</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$107.17</td>
+                        <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="BRK-B">
+                        <td>BRK-B</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$334.96</td>
+                        <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="OXY">
+                        <td>OXY</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$49.39</td>
+                        <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                    <tr data-ticker="GEO">
+                        <td>GEO</td>
+                        <td class="allocation">0.00</td>
+                        <td class="price">$0.00</td>
+                        <td class="cost">$18.76</td>
+                        <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
+                        <td class="value">$0.00</td>
+                        <td class="pnl">$0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-wrapper hidden">
+            <div id="table-footer-summary">Total Holdings <span id="total-portfolio-value-in-table">$0.00</span></div>
+        </div>
     </div>
 
     <!-- Include Chart.js library -->
@@ -507,6 +583,7 @@
                         onHover: (event, activeElements, chart) => {
                             const tableElement = document.querySelector('table');
                             const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+                            const footerWrapperElement = document.querySelector('.footer-wrapper');
                             // const portfolioSummaryElement = document.getElementById('total-portfolio-value').parentElement; // No longer needed
 
                             const mouseX = event.x;
@@ -551,9 +628,11 @@
                             // Apply visibility based on determined states
                             if (tableShouldBeVisible) {
                                 tableElement.classList.remove('hidden');
+                                if (footerWrapperElement) footerWrapperElement.classList.remove('hidden');
                             } else {
                                 tableElement.classList.add('hidden');
                                 allDataRows.forEach(row => row.classList.add('hidden')); // Ensure all rows are hidden if table is hidden
+                                if (footerWrapperElement) footerWrapperElement.classList.add('hidden');
                             }
 
                             // Visibility of the summary (now tfoot) is handled by tableElement's visibility
