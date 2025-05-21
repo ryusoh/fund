@@ -54,13 +54,6 @@
             border-radius: 8px; /* Unified rounded corners */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Unified shadow */
         }
-
-
-        /* h2 will inherit font from body */
-        h2 {
-            /* You can add specific h2 styles here if needed, e.g., margin, font-size */
-        }
-
         /* New wrapper for responsive table */
         .table-responsive-container {
             overflow-x: auto; /* Enable horizontal scroll if content overflows */
@@ -138,7 +131,6 @@
             background-color: rgba(60, 60, 63, 0.75); /* Subtle hover, based on System Gray 4 */
             background-image: none; /* Override any gradient on hover for a uniform background */
         }
-
         /* Hover effect for header cells */
         thead tr th:hover {
             background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color */
@@ -152,9 +144,6 @@
         .hidden {
             display: none;
         }
-        /* .no-scroll class removed as JS will handle body overflow directly */
-
-        /* New styles for the separated footer */
         .footer-wrapper {
             /* Mimics tfoot tr background and layout */
             background-color: transparent; /* Background handled by .content-block */
@@ -163,10 +152,6 @@
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
         }
-
-        /* .footer-wrapper:hover removed as it's part of a larger block now */
-
-
         #table-footer-summary { /* Mimics tfoot td */
             /* Copied from th and thead tr th for consistency */
             color: rgba(235, 235, 245, 0.6);
@@ -235,12 +220,6 @@
                 max-width: 90%; /* Max width for mobile */
                 margin: 0 auto 5px; /* Horizontally center, top margin 0, reduced bottom margin to 5px */
                 touch-action: none; /* Disable touch-based scrolling/panning */
-            }
-
-            /* Adjust new footer for mobile */
-            .footer-wrapper {
-                /* Width and margin are now handled by .content-block */
-                /* border-radius will still apply for bottom corners */
             }
             #table-footer-summary { /* Mimics tfoot td mobile */
                 padding: 10px 10px; /* Unified mobile padding */
@@ -313,7 +292,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$65.18</td>
-                        <td class="shares">2392.1984</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">2392.1984</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
@@ -322,7 +301,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$172.54</td>
-                        <td class="shares">718.218</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">718.218</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
@@ -331,7 +310,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$107.17</td>
-                        <td class="shares">1000.597</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">1000.597</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
@@ -340,7 +319,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$334.96</td>
-                        <td class="shares">111</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">111</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
@@ -349,7 +328,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$49.39</td>
-                        <td class="shares">1246.09</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">1246.09</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
@@ -358,7 +337,7 @@
                         <td class="allocation">0.00</td>
                         <td class="price">$0.00</td>
                         <td class="cost">$18.76</td>
-                        <td class="shares">540.834</td> <!-- Original value, will be rounded by JS -->
+                        <td class="shares">540.834</td>
                         <td class="value">$0.00</td>
                         <td class="pnl">$0.00</td>
                     </tr>
