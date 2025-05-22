@@ -125,6 +125,28 @@ thead tr th:hover {
     background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color */
     background-image: none; /* Remove gradient on hover */
 }
+
+footer {
+    position: fixed;
+    z-index: 2;
+    bottom: 10px;
+    /* Align footer block with .content-block */
+    width: 85%; /* Matches .content-block width */
+    max-width: 900px; /* Matches .content-block max-width */
+    left: 50%;
+    transform: translateX(-50%);
+    /* End alignment changes */
+    font-size: 12px;
+    text-align: center; /* Centers text within the footer block */
+    color: rgba(255, 255, 255, 0.5);
+    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
+    font-weight: 100;
+    letter-spacing: 1px;
+    padding: 0;
+    border: 0;
+    vertical-align: baseline;
+}
+
 #fundPieChartContainer {
     width: 90%; /* Increased width */
     max-width: 400px; /* Increased max-width */
@@ -187,6 +209,9 @@ thead tr th:hover {
         /* Existing body styles like background, padding, box-sizing will apply to this fixed container */
     }
     .content-block {
+        /* No change to .content-block here, just context */
+        /* .content-block width is 95% on mobile */
+        /* .content-block margin is 0 auto 10px auto on mobile */
         width: 95%; /* Wider for mobile */
         margin: 0 auto 10px auto; /* Adjusted mobile margin */
     }
@@ -206,13 +231,17 @@ thead tr th:hover {
     #fundPieChartContainer { /* mobile styles are fine */
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
-        margin: 0 auto 25px; /* Horizontally center, top margin 0, bottom margin 25px */
+        margin: 0 auto 20px; /* Horizontally center, top margin 0, bottom margin 20px */
         touch-action: none; /* Disable touch-based scrolling/panning */
     }
     #table-footer-summary { /* Mimics tfoot td mobile */
         padding: 7px 10px; /* Unified mobile padding */
         font-size: 0.75em; /* Consistent with th mobile */
         text-align: right;
+    }
+    footer {
+        width: 95%; /* Match .content-block's mobile width */
+        /* left: 50%; transform: translateX(-50%); still applies and works correctly */
     }
 
     table {
