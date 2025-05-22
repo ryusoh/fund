@@ -220,6 +220,9 @@ thead tr th:hover {
     }
     footer {
         width: 95%; /* Match .content-block's mobile width */
+        position: fixed;
+        z-index: 2;
+        bottom: 10px;
         /* left: 50%; transform: translateX(-50%); still applies and works correctly */
     }
 
