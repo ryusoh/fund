@@ -40,8 +40,192 @@ const customArcBordersPlugin = {
     });
     }
 };
+
+// Easing function for smoother animations
+function easeInOutSine(x) {
+    return -(Math.cos(Math.PI * x) - 1) / 2;
+}
+
+// --- New Wave Animation Plugin ---
+function _startWaveAnimation(chart) {
+    const animState = chart.waveAnimation;
+    if (animState.animationFrameId) return; // Already running
+
+    const animate = () => {
+        if (!chart.canvas || !document.body.contains(chart.canvas)) { // Stop if chart is gone
+            _stopWaveAnimation(chart);
+            return;
+        }
+
+        const meta = chart.getDatasetMeta(0);
+        let currentInnerRadiusValue = 0;
+        let currentOuterRadiusValue = 0;
+        if (meta && meta.data && meta.data.length) {
+            currentInnerRadiusValue = meta.data[0].innerRadius;
+            currentOuterRadiusValue = meta.data[0].outerRadius;
+        }
+
+        // Stop if no hole and no waves left to animate
+        // For outward expansion, we care about outerRadius
+        if (currentOuterRadiusValue <= 0 && animState.waves.length === 0) {
+            _stopWaveAnimation(chart);
+            return;
+        }
+        
+        // Update wave states (even if innerRadius becomes 0, let existing waves fade out)
+        // Pass outerRadius for spawning waves from the outside
+        updateWaveState(chart, currentOuterRadiusValue > 0 ? currentOuterRadiusValue : 0);
+        chart.draw(); // Redraw the chart to show updated waves
+        
+        // Only continue animation if there are active waves or potential to spawn new ones
+        // Condition for outward expansion: if outerRadius is present
+        if (animState.waves.length > 0 || (currentOuterRadiusValue > 0 && animState.waves.length < animState.config.maxWaves)) {
+            animState.animationFrameId = requestAnimationFrame(animate);
+        } else {
+            _stopWaveAnimation(chart); // No waves and no way to make new ones
+        }
+    };
+    animState.animationFrameId = requestAnimationFrame(animate);
+}
+
+function _stopWaveAnimation(chart) {
+    const animState = chart.waveAnimation;
+    if (animState && animState.animationFrameId) {
+        cancelAnimationFrame(animState.animationFrameId);
+        animState.animationFrameId = null;
+    }
+}
+
+const waveAnimationPlugin = {
+    id: 'waveCenterAnimation',
+    beforeInit: function(chart) {
+        chart.waveAnimation = {
+            waves: [],
+            lastSpawnTime: 0,
+            animationFrameId: null,
+            config: { // Configuration for the wave effect
+                maxWaves: 10,           // Max number of waves visible at once
+                spawnInterval: 100,    // Milliseconds between new wave spawns
+                speed: 1,            // Pixels per frame the radius expands
+                expansionDistance: 40, // How far (in pixels) waves expand beyond the outer radius
+                spawnOpacity: 0.25,    // Initial opacity when wave spawns at the outer edge
+                // maxReachedOpacity is not used for this direction, waves only fade out
+                targetOpacityFade: 0.005// Opacity threshold to remove the wave
+            }
+        };
+    },
+    afterDestroy: function(chart) {
+        _stopWaveAnimation(chart); // Cleanup animation frame on chart destroy
+    },
+    beforeDatasetsDraw: function(chart, args, options) {
+        if (chart.config.type !== 'doughnut' || !chart.waveAnimation) {
+            return; // Only for doughnut charts with the plugin state
+        }
+
+        const animState = chart.waveAnimation;
+        const meta = chart.getDatasetMeta(0);
+        
+        let outerRadius = 0; // We need outerRadius for this effect
+        let centerX = 0;
+        let centerY = 0;
+
+        if (meta && meta.data && meta.data.length) {
+            const firstArc = meta.data[0]; // Get properties from the first arc segment
+            outerRadius = firstArc.outerRadius;
+            centerX = firstArc.x;
+            centerY = firstArc.y;
+        }
+
+        // Start animation loop if not running and there's a hole for waves
+        // Condition for outward expansion: if outerRadius is present
+        if (!animState.animationFrameId && outerRadius > 0) {
+            _startWaveAnimation(chart);
+        } else if (animState.animationFrameId && outerRadius <= 0 && animState.waves.length === 0) {
+            // If hole disappears and no waves are left, stop animation
+            _stopWaveAnimation(chart);
+        }
+
+        // Draw current waves
+        const { ctx } = chart;
+        ctx.save();
+
+        // Define a clipping region that EXCLUDES the doughnut area
+        if (outerRadius > 0 && centerX && centerY) {
+            ctx.beginPath();
+            // Path for the entire canvas
+            ctx.rect(0, 0, chart.width, chart.height);
+            // Path for the doughnut circle, drawn counter-clockwise to subtract from the rect
+            ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2, true); // true for counter-clockwise
+            ctx.clip('evenodd'); // Clip to the area outside the doughnut circle
+        }
+
+        animState.waves.forEach(wave => {
+            // Only draw the wave if its radius is strictly greater than the doughnut's outerRadius,
+            // by at least 3 pixels, ensuring it only appears clearly outside the doughnut.
+            if (wave.radius > (outerRadius + 3) && wave.opacity > 0 && centerX && centerY) {
+                ctx.beginPath(); // Start a new path for each wave
+                ctx.arc(centerX, centerY, wave.radius, 0, Math.PI * 2, false);
+                ctx.fillStyle = `rgba(150, 150, 150, ${wave.opacity})`; // Lighter gray waves
+                ctx.fill();
+            }
+        });
+
+        // Restore the canvas state to remove the clipping region
+        ctx.restore();
+    }
+};
+
+function updateWaveState(chart, currentOuterRadiusValue) { // Parameter changed to currentOuterRadiusValue
+    const animState = chart.waveAnimation;
+    if (!animState) return; 
+    
+    const config = animState.config;
+    const now = Date.now();
+
+    // Spawn new waves if conditions are met
+    if (currentOuterRadiusValue > 0 && // Ensure there's an outer edge to spawn from
+        now - animState.lastSpawnTime > config.spawnInterval && 
+        animState.waves.length < config.maxWaves) {
+        
+        animState.waves.push({
+            radius: currentOuterRadiusValue,    // Start at the current outer edge of the doughnut
+            opacity: config.spawnOpacity,
+            spawnRadius: currentOuterRadiusValue, // Store initial radius for opacity calculation
+            targetRadius: currentOuterRadiusValue + config.expansionDistance // Expand outwards
+        });
+        animState.lastSpawnTime = now;
+    }
+
+    // Update and filter existing waves
+    animState.waves = animState.waves.filter(wave => {
+        wave.radius += config.speed; // Expand the wave outwards
+
+        // Adjust opacity: fade out as it expands from spawnRadius to targetRadius
+        const { spawnOpacity, expansionDistance } = config;
+        if (expansionDistance > 0) {
+            // Progress: 0 (at spawnRadius) to 1 (at targetRadius)
+            let progress = 0;
+            // Ensure wave.spawnRadius is defined (it should be from the push above)
+            if (typeof wave.spawnRadius === 'number') {
+                 progress = Math.min(1, Math.max(0, (wave.radius - wave.spawnRadius) / expansionDistance));
+            } else { 
+                progress = 1; // Fallback: if spawnRadius is missing, assume fully progressed (will fade out quickly)
+            }
+            const easedProgress = easeInOutSine(progress);
+            wave.opacity = spawnOpacity * (1 - easedProgress); // Fade from spawnOpacity to 0
+        } else {
+            wave.opacity = 0; // If no expansion distance, fade out immediately
+        }
+        
+        // Keep wave if it's still visible and large enough
+        return wave.radius < wave.targetRadius && wave.opacity > config.targetOpacityFade;
+    });
+}
+
+// Register all plugins
 Chart.register(ChartDataLabels);
 Chart.register(customArcBordersPlugin);
+Chart.register(waveAnimationPlugin); // Add the new wave animation plugin
 
 function formatCurrency(value) {
     // Use toLocaleString for currency formatting with commas
