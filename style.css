@@ -126,27 +126,6 @@ thead tr th:hover {
     background-image: none; /* Remove gradient on hover */
 }
 
-footer {
-    position: fixed;
-    z-index: 2;
-    bottom: 10px;
-    /* Align footer block with .content-block */
-    width: 85%; /* Matches .content-block width */
-    max-width: 900px; /* Matches .content-block max-width */
-    left: 50%;
-    transform: translateX(-50%);
-    /* End alignment changes */
-    font-size: 12px;
-    text-align: center; /* Centers text within the footer block */
-    color: rgba(255, 255, 255, 0.5);
-    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
-    font-weight: 100;
-    letter-spacing: 1px;
-    padding: 0;
-    border: 0;
-    vertical-align: baseline;
-}
-
 #fundPieChartContainer {
     width: 90%; /* Increased width */
     max-width: 400px; /* Increased max-width */
@@ -274,4 +253,25 @@ footer {
     table tbody tr:hover td:first-child {
         background-color: rgba(60, 60, 63, 0.98); /* Less transparent version of tbody tr:hover background */
     }
+}
+
+footer {
+    position: fixed;
+    z-index: 2;
+    bottom: 10px;
+    /* Align footer block with .content-block */
+    width: 85%; /* Matches .content-block width */
+    max-width: 900px; /* Matches .content-block max-width */
+    left: 50%;
+    transform: translateX(-50%);
+    /* End alignment changes */
+    font-size: 12px;
+    text-align: center; /* Centers text within the footer block */
+    color: rgba(255, 255, 255, 0.5);
+    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
+    font-weight: 100;
+    letter-spacing: 1px;
+    padding: 0;
+    border: 0;
+    vertical-align: baseline;
 }
