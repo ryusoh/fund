@@ -206,7 +206,7 @@ thead tr th:hover {
     #fundPieChartContainer { /* mobile styles are fine */
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
-        margin: 0 auto 5px; /* Horizontally center, top margin 0, reduced bottom margin to 5px */
+        margin: 0 auto 25px; /* Horizontally center, top margin 0, bottom margin 25px */
         touch-action: none; /* Disable touch-based scrolling/panning */
     }
     #table-footer-summary { /* Mimics tfoot td mobile */
