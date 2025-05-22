@@ -278,3 +278,12 @@ footer {
     border: 0;
     vertical-align: baseline;
 }
+
+a.nav-back {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  color: #fff;
+  z-index: 99;
+  font-size: 1.1em;
+}
