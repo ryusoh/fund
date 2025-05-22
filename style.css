@@ -69,7 +69,7 @@ th {
     font-size: 0.75em; /* Typically smaller for headers */
     text-transform: uppercase; /* Common for table headers in Apple design */
     letter-spacing: 0.08em; /* Slight tracking */
-    padding: 12px 16px; /* Specific padding for headers */
+    padding: 8px 16px; /* Specific padding for headers */
     border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
     text-align: right; /* Default for headers */
 }
@@ -149,7 +149,7 @@ thead tr th:hover {
     font-size: 0.75em;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    padding: 10px 16px; /* Default padding, matches th */
+    padding: 8px 16px; /* Default padding, matches th */
     background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
     background-repeat: no-repeat;
     
