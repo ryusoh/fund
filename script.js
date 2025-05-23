@@ -13,7 +13,7 @@ const customArcBordersPlugin = {
 
     // Get options from plugin configuration in chart options, with defaults
     const arcBorderWidth = pluginOptions.width !== undefined ? pluginOptions.width : 2.5; // Default to 2px
-    const arcBorderColor = pluginOptions.color || 'rgba(225, 225, 225, 0.5)'; // Default color
+    const arcBorderColor = pluginOptions.color || 'rgba(100, 100, 100, 1)'; // Default color
 
     meta.data.forEach(arcElement => {
         // Get the resolved properties of the arc segment
