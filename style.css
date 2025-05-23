@@ -29,7 +29,7 @@ body {
     font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     padding: 20px; /* Add some padding so table isn't at the very edge */
-    background: #000000 url(img/background.jpg) center center no-repeat !important;
+    background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/imagehost/master/images/DSCF1157.jpg) center center no-repeat !important;
     background-size: cover !important;
 }
 
@@ -185,6 +185,8 @@ thead tr th:hover {
         overflow-x: hidden !important; /* Prevent horizontal scroll on body */
         overscroll-behavior-y: contain !important; /* Prevent bounce */
         touch-action: none !important; /* Disable touch actions */
+        background: #000000 url(img/mobile_bg.jpg) center center no-repeat !important; /* Background image */
+        background-size: cover !important; /* Cover the entire viewport */
         /* Existing body styles like background, padding, box-sizing will apply to this fixed container */
     }
     .content-block {

@@ -13,7 +13,7 @@ const customArcBordersPlugin = {
 
     // Get options from plugin configuration in chart options, with defaults
     const arcBorderWidth = pluginOptions.width !== undefined ? pluginOptions.width : 2.5; // Default to 2px
-    const arcBorderColor = pluginOptions.color || 'rgba(100, 100, 100, 1)'; // Default color
+    const arcBorderColor = pluginOptions.color || 'rgba(20, 20, 20, 0.6)'; // Default color
 
     meta.data.forEach(arcElement => {
         // Get the resolved properties of the arc segment
@@ -105,7 +105,7 @@ const waveAnimationPlugin = {
             animationFrameId: null,
             config: { // Configuration for the wave effect
                 maxWaves: 10,           // Max number of waves visible at once
-                spawnInterval: 100,    // Milliseconds between new wave spawns
+                spawnInterval: 80,    // Milliseconds between new wave spawns
                 speed: 1,            // Pixels per frame the radius expands
                 expansionDistance: 40, // How far (in pixels) waves expand beyond the outer radius
                 spawnOpacity: 0.25,    // Initial opacity when wave spawns at the outer edge
@@ -165,7 +165,7 @@ const waveAnimationPlugin = {
             if (wave.radius > (outerRadius + 3) && wave.opacity > 0 && centerX && centerY) {
                 ctx.beginPath(); // Start a new path for each wave
                 ctx.arc(centerX, centerY, wave.radius, 0, Math.PI * 2, false);
-                ctx.fillStyle = `rgba(150, 150, 150, ${wave.opacity})`; // Lighter gray waves
+                ctx.fillStyle = `rgba(0, 0, 0, ${wave.opacity})`; // Lighter gray waves
                 ctx.fill();
             }
         });
@@ -335,7 +335,7 @@ async function fetchAndUpdatePrices() {
                 chartData.datasets[0].data.push(allocationPercentage);
                 // Add a color for this slice (you can customize these)
                 const baseColor = getBlueColorForSlice(rowsArray.indexOf(row), rowsArray.length);
-                chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, 0.75)); // Apply 60% opacity
+                chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, 0.9));
                 }
         });
 
@@ -498,7 +498,7 @@ function updatePieChart(data) {
     }
 }
 
-function getBlueColorForSlice(index, totalItems) {
+function getBlueColorForSlice(index) {
     // A palette of dark grays and near-blacks for a metallic, dark theme.
     // Larger slices (lower index) will get darker blues.
     const metallicDarkPalette = [
