@@ -208,6 +208,7 @@ thead tr th:hover {
     th { 
         font-size: 0.75em; /* Mobile header font size */
         padding: 7px 10px; /* Mobile specific header padding */
+        color: rgba(130, 130, 130, 1);
     }
     #fundPieChartContainer { /* mobile styles are fine */
         width: 90%; /* Allow chart to take full width */
@@ -219,6 +220,7 @@ thead tr th:hover {
         padding: 7px 10px; /* Unified mobile padding */
         font-size: 0.75em; /* Consistent with th mobile */
         text-align: right;
+        color: rgba(130, 130, 130, 1);
     }
     footer {
         width: 95%; /* Match .content-block's mobile width */
