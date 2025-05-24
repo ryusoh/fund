@@ -35,6 +35,7 @@ body {
     -moz-user-select: none;    /* Firefox */
     -ms-user-select: none;     /* Internet Explorer/Edge */
     user-select: none;         /* Standard syntax */
+    touch-action: manipulation; /* Prevent double-tap to zoom globally, allow pan/pinch */
 }
 
 /* New wrapper for combined table and footer */
@@ -208,6 +209,7 @@ thead tr th:hover {
     td {
         padding: 5px 10px; /* Increased mobile padding for better touch and readability */
         /* font-size for td will be 0.8em from global td style */
+        touch-action: manipulation; /* Prevent double-tap zoom on cells */
     }
     th { 
         font-size: 0.75em; /* Mobile header font size */
