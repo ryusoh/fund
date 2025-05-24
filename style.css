@@ -31,6 +31,10 @@ body {
     padding: 20px; /* Add some padding so table isn't at the very edge */
     background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/imagehost/master/images/DSCF1157.jpg) center center no-repeat !important;
     background-size: cover !important;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* Internet Explorer/Edge */
+    user-select: none;         /* Standard syntax */
 }
 
 /* New wrapper for combined table and footer */
