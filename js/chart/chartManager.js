@@ -1,5 +1,6 @@
 import { getBlueColorForSlice, hexToRgba } from '../utils/colors.js';
 import { checkAndToggleVerticalScroll } from '../ui/responsive.js';
+import { CHART_DEFAULTS } from '../config.js';
 
 let fundChartInstance = null;
 
@@ -18,10 +19,7 @@ export function updatePieChart(data) {
             options: {
                 responsive: true,
                 layout: {
-                    padding: {
-                        right: 35,
-                        left: 35
-                    }
+                    padding: CHART_DEFAULTS.LAYOUT_PADDING
                 },
                 plugins: {
                     legend: {
@@ -40,14 +38,14 @@ export function updatePieChart(data) {
                                 { text: percentageText }
                             ];
                         },
-                        color: 'rgba(235, 235, 245, 0.6)', 
+                        color: CHART_DEFAULTS.DATALABELS_COLOR,
                         font: {
-                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
-                            size: 10, 
+                            family: CHART_DEFAULTS.DEFAULT_FONT_FAMILY,
+                            size: CHART_DEFAULTS.DATALABELS_FONT_SIZE,
                         },
                         anchor: 'end', 
                         align: 'end', 
-                        offset: 8, 
+                        offset: CHART_DEFAULTS.DATALABELS_OFFSET,
                         textAlign: 'center', 
                         connector: {
                             display: true,
@@ -55,7 +53,7 @@ export function updatePieChart(data) {
                                 const baseHexColor = getBlueColorForSlice(context.dataIndex, context.chart.data.labels.length);
                                 return hexToRgba(baseHexColor, 0.5); 
                             },
-                            width: 1
+                            width: CHART_DEFAULTS.DATALABELS_CONNECTOR_WIDTH
                         }
                     },
                     title: {

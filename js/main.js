@@ -1,7 +1,8 @@
 // Assuming Chart and ChartDataLabels are globally available from CDN.
 import { customArcBordersPlugin } from './plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from './plugins/waveAnimationPlugin.js';
-import { fetchAndUpdatePrices } from './app/dataService.js';
+import { loadAndDisplayPortfolioData } from './app/dataService.js';
+import { APP_SETTINGS } from './config.js';
 import { checkAndToggleVerticalScroll } from './ui/responsive.js';
 
 // Initialize application
@@ -17,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Chart.register(waveAnimationPlugin);
 
         // Now initialize the application
-        fetchAndUpdatePrices().catch(error => {
+        loadAndDisplayPortfolioData().catch(error => {
             console.error('Error during initial data fetch and update:', error);
         });
     } else {
@@ -31,4 +32,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Handle responsive adjustments
 window.addEventListener('resize', checkAndToggleVerticalScroll);
 
-setInterval(fetchAndUpdatePrices, 300000);
+setInterval(loadAndDisplayPortfolioData, APP_SETTINGS.DATA_REFRESH_INTERVAL);

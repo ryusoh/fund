@@ -1,4 +1,5 @@
 import { easeInOutSine } from '../utils/easing.js';
+import { PLUGIN_CONFIGS } from '../config.js';
 
 // --- Wave Animation Plugin Helpers ---
 function _startWaveAnimation(chart) {
@@ -95,18 +96,12 @@ function updateWaveState(chart, currentOuterRadiusValue) {
 export const waveAnimationPlugin = {
     id: 'waveCenterAnimation',
     beforeInit: function(chart) {
+        // Use the imported configuration
         chart.waveAnimation = {
             waves: [],
             lastSpawnTime: 0,
             animationFrameId: null,
-            config: { 
-                maxWaves: 10,
-                spawnInterval: 80,
-                speed: 1,
-                expansionDistance: 40,
-                spawnOpacity: 0.25,
-                targetOpacityFade: 0.005
-            }
+            config: PLUGIN_CONFIGS.WAVE_ANIMATION
         };
     },
     afterDestroy: function(chart) {
@@ -136,7 +131,7 @@ export const waveAnimationPlugin = {
             if (wave.radius > (outerRadius + 3) && wave.opacity > 0 && centerX && centerY) {
                 ctx.beginPath(); 
                 ctx.arc(centerX, centerY, wave.radius, 0, Math.PI * 2, false);
-                ctx.fillStyle = `rgba(0, 0, 0, ${wave.opacity})`; 
+                ctx.fillStyle = `rgba(${animState.config.BASE_COLOR_RGB_TRIPLET}, ${wave.opacity})`;
                 ctx.fill();
             }
         });
