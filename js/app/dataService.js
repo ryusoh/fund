@@ -35,17 +35,18 @@ export async function fetchAndUpdatePrices() {
         tbody.innerHTML = ''; // Clear existing rows before adding new ones
 
         // Dynamically create table rows from holdingsDetails
-        holdingsDetails.forEach(holding => {
-            const ticker = holding.ticker;
-            const shares = parseFloat(holding.shares);
-            const cost = parseFloat(holding.cost);
+        // holdingsDetails is now an object like: {"AAPL": {"shares": "10", "average_price": "170.50"}, ...}
+        for (const [ticker, details] of Object.entries(holdingsDetails)) {
+            const shares = parseFloat(details.shares);
+            const cost = parseFloat(details.average_price); // Use average_price from the new format
             const currentPrice = parseFloat(prices[ticker]) || 0; // Get current price, default to 0 if not found
+            const name = details.name || ticker;
 
             const row = document.createElement('tr');
             row.dataset.ticker = ticker;
 
             row.innerHTML = `
-                <td>${holding.name || ticker}</td>
+                <td>${name}</td>
                 <td class="allocation">0.00%</td>
                 <td class="price">${formatCurrency(currentPrice)}</td>
                 <td class="cost">${formatCurrency(cost)}</td>
@@ -88,7 +89,7 @@ export async function fetchAndUpdatePrices() {
                 totalPortfolioValue += currentValue;
                 row.dataset.currentValue = currentValue; 
             }
-        });
+        }
 
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValue);
 

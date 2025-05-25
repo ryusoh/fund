@@ -1,9 +1,30 @@
-[
-  { "ticker": "VT", "name": "VT", "cost": 95.65, "shares": 2601.642 },
-  { "ticker": "ANET", "name": "ANET", "cost": 65.18, "shares": 2392.1984 },
-  { "ticker": "GOOG", "name": "GOOG", "cost": 172.54, "shares": 718.218 },
-  { "ticker": "PDD", "name": "PDD", "cost": 107.17, "shares": 1000.597 },
-  { "ticker": "BRK-B", "name": "BRK-B", "cost": 334.96, "shares": 111 },
-  { "ticker": "OXY", "name": "OXY", "cost": 49.32, "shares": 1256.09 },
-  { "ticker": "GEO", "name": "GEO", "cost": 18.76, "shares": 540.834 }
-]
+{
+  "VT": {
+    "shares": "2601.642",
+    "average_price": "95.650000"
+  },
+  "ANET": {
+    "shares": "2392.1984",
+    "average_price": "65.180000"
+  },
+  "GOOG": {
+    "shares": "718.218",
+    "average_price": "172.540000"
+  },
+  "PDD": {
+    "shares": "1000.597",
+    "average_price": "107.170000"
+  },
+  "BRK-B": {
+    "shares": "111",
+    "average_price": "334.960000"
+  },
+  "OXY": {
+    "shares": "1256.09",
+    "average_price": "49.320000"
+  },
+  "GEO": {
+    "shares": "540.834",
+    "average_price": "18.760000"
+  }
+}

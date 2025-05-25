@@ -6,8 +6,15 @@ def get_tickers_from_holdings(holdings_file_path):
     """Reads tickers from the holdings_details.json file."""
     try:
         with open(holdings_file_path, 'r') as f:
-            holdings = json.load(f)
-        return [holding['ticker'] for holding in holdings]
+            holdings_data = json.load(f) # holdings_data will be a dict like {"AAPL": {...}, "MSFT": {...}}
+        # Extract tickers (which are the keys of the dictionary)
+        return list(holdings_data.keys())
+    except FileNotFoundError:
+        print(f"Error: Holdings file not found at {holdings_file_path}. No tickers to fetch.")
+        return []
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {holdings_file_path}. Ensure it's a valid JSON dictionary.")
+        return []
     except Exception as e:
         print(f"Error reading tickers from {holdings_file_path}: {e}")
         return []
@@ -42,9 +49,10 @@ if __name__ == "__main__":
     output_file = script_dir / "fund_data.json"
 
     tickers_to_fetch = get_tickers_from_holdings(holdings_file)
-    if not tickers_to_fetch:
-        print("No tickers found in holdings file. Exiting.")
-    prices_data = get_prices(tickers_to_fetch)
-    with open(output_file, 'w') as f:
-        json.dump(prices_data, f, indent=4)
-    print(f"Data written to {output_file}")
+    if tickers_to_fetch:
+        prices_data = get_prices(tickers_to_fetch)
+        with open(output_file, 'w') as f:
+            json.dump(prices_data, f, indent=4)
+        print(f"Data written to {output_file}")
+    else:
+        print("No tickers to fetch. fund_data.json will not be updated.")
