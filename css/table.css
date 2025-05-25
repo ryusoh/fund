@@ -1,0 +1,119 @@
+/* New wrapper for responsive table */
+.table-responsive-container {
+    overflow-x: auto; /* Enable horizontal scroll if content overflows */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS for better UX */
+    padding: 0; /* Padding will be handled by table/cells if needed, or keep minimal for container */
+    /* Rounded corners for the top part of the content-block */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+table {
+    width: 100%; /* Table fills the responsive container */
+    margin: 0; /* No margin for table itself, container handles it */
+    border-spacing: 0; /* Remove spacing between cells */
+    /* border-collapse: collapse; */ /* Not strictly needed if using border-spacing: 0 and border-bottom only */
+}
+td {
+    border: none; /* Remove all default borders */
+    padding: 7px 16px; /* Adjusted padding */
+    /* border-bottom will be handled by tbody tr */
+}
+th {
+    border: none; /* Remove all default borders */
+    color: rgba(235, 235, 245, 0.6); /* Apple's secondary label color in dark mode */
+    font-weight: 600; /* Semibold is common */
+    font-size: 0.75em; /* Typically smaller for headers */
+    text-transform: uppercase; /* Common for table headers in Apple design */
+    letter-spacing: 0.08em; /* Slight tracking */
+    padding: 8px 16px; /* Specific padding for headers */
+    border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color in dark mode */
+    text-align: right; /* Default for headers */
+}
+thead tr th { /* Apply gradient to all header cells */
+    background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
+    background-repeat: no-repeat; /* Good practice for gradients */
+}
+table thead tr:first-child th:first-child {
+    border-top-left-radius: 8px; /* Match container radius */
+}
+table thead tr:first-child th:last-child {
+    border-top-right-radius: 8px; /* Match container radius */
+}
+
+/* Column width optimizations */
+table {
+    table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
+}
+th:nth-child(1) { width: 10%; } /* Ticker */
+th:nth-child(2) { width: 10%; } /* Allocation */
+th:nth-child(3) { width: 10%; } /* Price */
+th:nth-child(4) { width: 10%; } /* Cost */
+th:nth-child(5) { width: 10%; } /* Shares */
+th:nth-child(6) { width: 10%; } /* Value */
+th:nth-child(7) { width: 15%; } /* PnL */
+
+/* Prevent wrapping in data cells for a more compact look */
+td.price, td.cost, td.shares, td.pnl, td.value, td.allocation, th { /* Apply to th too for consistency */
+    white-space: nowrap;
+}
+td {
+    color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
+    font-size: 0.75em; /* Data cells slightly larger for hierarchy */
+    text-align: right; /* Default for data cells */
+}
+tbody tr {
+    border-bottom: 1px solid rgba(84, 84, 88, 0.65); /* Apple's separator color for rows */
+}
+/* Align first column (header and data) to the left */
+th:first-child,
+td:first-child {
+    text-align: left;
+}
+tbody tr:last-child {
+    border-bottom: none; /* Remove border from the last row's cells */
+}
+tbody tr:hover {
+    background-color: rgba(60, 60, 63, 0.75); /* Subtle hover, based on System Gray 4 */
+    background-image: none; /* Override any gradient on hover for a uniform background */
+}
+/* Hover effect for header cells */
+thead tr th:hover {
+    background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color */
+    background-image: none; /* Remove gradient on hover */
+}
+
+#table-footer-summary { /* Mimics tfoot td */
+    /* Copied from th and thead tr th for consistency */
+    color: rgba(235, 235, 245, 0.6);
+    font-weight: 600;
+    font-size: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 16px; /* Default padding, matches th */
+    background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
+    background-repeat: no-repeat;
+    
+    border-top: 1px solid rgba(84, 84, 88, 0.65); /* Separator from table content */
+    text-align: right; /* Default alignment */
+
+    /* Ensure it respects the rounded corners of .footer-wrapper and .content-block */
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+#table-footer-summary:hover {
+    background-color: rgba(60, 60, 63, 0.75); /* Consistent hover color, matches th:hover */
+    background-image: none; /* Remove gradient on hover */
+}
+
+/* Media Query for mobile devices - Table specific */
+@media (max-width: 768px) {
+    .table-responsive-container { padding: 0; }
+    td { padding: 5px 10px; touch-action: manipulation; }
+    th { font-size: 0.75em; padding: 7px 10px; color: rgba(130, 130, 130, 1); }
+    #table-footer-summary { padding: 7px 10px; font-size: 0.75em; text-align: right; color: rgba(130, 130, 130, 1); }
+    table { width: 100%; min-width: 650px; margin: 0; touch-action: pan-x; }
+    table thead th:first-child, table tbody td:first-child { position: -webkit-sticky; position: sticky; left: 0; }
+    table thead th:first-child { z-index: 2; background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.98), rgba(60, 60, 63, 0.95)); }
+    table tbody td:first-child { background-color: rgba(44, 44, 46, 0.98); z-index: 1; }
+    table tbody tr:hover td:first-child { background-color: rgba(60, 60, 63, 0.98); }
+}
