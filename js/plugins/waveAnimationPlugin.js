@@ -31,7 +31,7 @@ function _startWaveAnimation(chart) {
         chart.draw(); // Redraw the chart to show updated waves
         
         // Only continue animation if there are active waves or potential to spawn new ones
-        if (animState.waves.length > 0 || (currentOuterRadiusValue > 0 && animState.waves.length < animState.config.maxWaves)) {
+        if (animState.waves.length > 0 || (currentOuterRadiusValue > 0 && animState.waves.length < animState.config.MAX_WAVES)) {
             animState.animationFrameId = requestAnimationFrame(animate);
         } else {
             _stopWaveAnimation(chart); // No waves and no way to make new ones
@@ -57,39 +57,39 @@ function updateWaveState(chart, currentOuterRadiusValue) {
 
     // Spawn new waves if conditions are met
     if (currentOuterRadiusValue > 0 && // Ensure there's an outer edge to spawn from
-        now - animState.lastSpawnTime > config.spawnInterval && 
-        animState.waves.length < config.maxWaves) {
+        now - animState.lastSpawnTime > config.SPAWN_INTERVAL && 
+        animState.waves.length < config.MAX_WAVES) {
         
         animState.waves.push({
             radius: currentOuterRadiusValue,    // Start at the current outer edge of the doughnut
             opacity: config.spawnOpacity,
             spawnRadius: currentOuterRadiusValue, // Store initial radius for opacity calculation
-            targetRadius: currentOuterRadiusValue + config.expansionDistance // Expand outwards
+            targetRadius: currentOuterRadiusValue + config.EXPANSION_DISTANCE // Expand outwards
         });
         animState.lastSpawnTime = now;
     }
 
     // Update and filter existing waves
     animState.waves = animState.waves.filter(wave => {
-        wave.radius += config.speed; // Expand the wave outwards
+        wave.radius += config.SPEED; // Expand the wave outwards
 
         // Adjust opacity: fade out as it expands from spawnRadius to targetRadius
-        const { spawnOpacity, expansionDistance } = config;
-        if (expansionDistance > 0) {
+        const { SPAWN_OPACITY, EXPANSION_DISTANCE } = config;
+        if (EXPANSION_DISTANCE > 0) {
             let progress = 0;
             if (typeof wave.spawnRadius === 'number') {
-                 progress = Math.min(1, Math.max(0, (wave.radius - wave.spawnRadius) / expansionDistance));
+                 progress = Math.min(1, Math.max(0, (wave.radius - wave.spawnRadius) / EXPANSION_DISTANCE));
             } else { 
                 progress = 1; // Fallback: if spawnRadius is missing, assume fully progressed
             }
             const easedProgress = easeInOutSine(progress);
-            wave.opacity = spawnOpacity * (1 - easedProgress); // Fade from spawnOpacity to 0
+            wave.opacity = SPAWN_OPACITY * (1 - easedProgress); // Fade from spawnOpacity to 0
         } else {
             wave.opacity = 0; // If no expansion distance, fade out immediately
         }
         
         // Keep wave if it's still visible and large enough
-        return wave.radius < wave.targetRadius && wave.opacity > config.targetOpacityFade;
+        return wave.radius < wave.targetRadius && wave.opacity > config.TARGET_OPACITY_FADE;
     });
 }
 
