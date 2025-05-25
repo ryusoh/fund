@@ -2,9 +2,15 @@ import yfinance as yf
 import json
 from pathlib import Path
 
-# Define the tickers you want to track
-# These should match the data-ticker attributes in your HTML
-TICKERS = ["VT", "ANET", "GOOG", "PDD", "BRK-B", "OXY", "GEO"] # Add more tickers as needed
+def get_tickers_from_holdings(holdings_file_path):
+    """Reads tickers from the holdings_details.json file."""
+    try:
+        with open(holdings_file_path, 'r') as f:
+            holdings = json.load(f)
+        return [holding['ticker'] for holding in holdings]
+    except Exception as e:
+        print(f"Error reading tickers from {holdings_file_path}: {e}")
+        return []
 
 def get_prices(ticker_list):
     """
@@ -30,8 +36,15 @@ def get_prices(ticker_list):
     return data
 
 if __name__ == "__main__":
-    prices_data = get_prices(TICKERS)
-    output_file = Path(__file__).parent / "fund_data.json"
+    # Determine paths relative to the script's location
+    script_dir = Path(__file__).parent
+    holdings_file = script_dir / "holdings_details.json"
+    output_file = script_dir / "fund_data.json"
+
+    tickers_to_fetch = get_tickers_from_holdings(holdings_file)
+    if not tickers_to_fetch:
+        print("No tickers found in holdings file. Exiting.")
+    prices_data = get_prices(tickers_to_fetch)
     with open(output_file, 'w') as f:
         json.dump(prices_data, f, indent=4)
     print(f"Data written to {output_file}")

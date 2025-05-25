@@ -5,16 +5,15 @@ import { checkAndToggleVerticalScroll } from '../ui/responsive.js';
 
 export async function fetchAndUpdatePrices() {
     try {
-        // Fetch holdings details (cost, shares)
-        const holdingsResponse = await fetch('./holdings_details.json?t=' + new Date().getTime());
+        // Fetch holdings details (cost, shares) from data/ directory
+        const holdingsResponse = await fetch('./data/holdings_details.json?t=' + new Date().getTime());
         if (!holdingsResponse.ok) {
             console.error('Failed to fetch holdings_details.json:', holdingsResponse.status, holdingsResponse.statusText);
             return;
         }
         const holdingsDetails = await holdingsResponse.json();
-
-        // Fetch current prices
-        const pricesResponse = await fetch('./fund_data.json?t=' + new Date().getTime()); 
+        // Fetch current prices from data/ directory
+        const pricesResponse = await fetch('./data/fund_data.json?t=' + new Date().getTime()); 
         if (!pricesResponse.ok) {
             console.error('Failed to fetch fund_data.json (prices):', pricesResponse.status, pricesResponse.statusText);
             return;
