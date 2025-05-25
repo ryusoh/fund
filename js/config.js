@@ -39,7 +39,12 @@ export const COLOR_PALETTES = {
 export const PLUGIN_CONFIGS = {
     // Configuration for waveAnimationPlugin
     WAVE_ANIMATION: {
-        MAX_WAVES: 10, SPAWN_INTERVAL: 80, SPEED: 1, EXPANSION_DISTANCE: 40,
-        SPAWN_OPACITY: 0.25, TARGET_OPACITY_FADE: 0.005, BASE_COLOR_RGB_TRIPLET: '0, 0, 0',
+        MAX_WAVES: 10,
+        SPAWN_INTERVAL: 80,
+        SPEED: 1,
+        EXPANSION_DISTANCE: 40,
+        SPAWN_OPACITY: 0.25,
+        TARGET_OPACITY_FADE: 0.005,
+        BASE_COLOR_RGB_TRIPLET: '0, 0, 0',
     }
 };
