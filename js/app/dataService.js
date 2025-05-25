@@ -5,15 +5,24 @@ import { checkAndToggleVerticalScroll } from '../ui/responsive.js';
 
 export async function fetchAndUpdatePrices() {
     try {
-        const response = await fetch('./fund_data.json?t=' + new Date().getTime()); 
-        if (!response.ok) {
-            console.error('Failed to fetch fund data:', response.status, response.statusText);
+        // Fetch holdings details (cost, shares)
+        const holdingsResponse = await fetch('./holdings_details.json?t=' + new Date().getTime());
+        if (!holdingsResponse.ok) {
+            console.error('Failed to fetch holdings_details.json:', holdingsResponse.status, holdingsResponse.statusText);
             return;
         }
-        const prices = await response.json();
+        const holdingsDetails = await holdingsResponse.json();
+
+        // Fetch current prices
+        const pricesResponse = await fetch('./fund_data.json?t=' + new Date().getTime()); 
+        if (!pricesResponse.ok) {
+            console.error('Failed to fetch fund_data.json (prices):', pricesResponse.status, pricesResponse.statusText);
+            return;
+        }
+        const prices = await pricesResponse.json();
 
         let totalPortfolioValue = 0;
-        let rowsArray = Array.from(document.querySelectorAll('tbody tr[data-ticker]'));
+        const rowsArray = []; // We will build this array dynamically
         const chartData = { 
             labels: [], 
             datasets: [{ 
@@ -24,26 +33,38 @@ export async function fetchAndUpdatePrices() {
             }] 
         };
         const tbody = document.querySelector('table tbody');
+        tbody.innerHTML = ''; // Clear existing rows before adding new ones
 
-        rowsArray.forEach(row => {
-            const ticker = row.dataset.ticker;
+        // Dynamically create table rows from holdingsDetails
+        holdingsDetails.forEach(holding => {
+            const ticker = holding.ticker;
+            const shares = parseFloat(holding.shares);
+            const cost = parseFloat(holding.cost);
+            const currentPrice = parseFloat(prices[ticker]) || 0; // Get current price, default to 0 if not found
+
+            const row = document.createElement('tr');
+            row.dataset.ticker = ticker;
+
+            row.innerHTML = `
+                <td>${holding.name || ticker}</td>
+                <td class="allocation">0.00%</td>
+                <td class="price">${formatCurrency(currentPrice)}</td>
+                <td class="cost">${formatCurrency(cost)}</td>
+                <td class="shares">${shares.toFixed(2)}</td>
+                <td class="value">$0.00</td>
+                <td class="pnl">$0.00</td>
+            `;
+            tbody.appendChild(row);
+            rowsArray.push(row); // Add the newly created row to our array for processing
+
+            // Now, populate the dynamic cells (value, PnL) for this new row
             const sharesCell = row.querySelector('td.shares'); 
             const costCell = row.querySelector('td.cost');
             const pnlCell = row.querySelector('td.pnl');
-            const shares = parseFloat(sharesCell.textContent);
+            const priceCell = row.querySelector('td.price');
+            const valueCell = row.querySelector('td.value');
 
-            if (sharesCell && !isNaN(shares)) {
-                sharesCell.textContent = shares.toFixed(2);
-            }
-
-            if (prices[ticker] !== undefined && !isNaN(shares)) {
-                const priceCell = row.querySelector('td.price');
-                const valueCell = row.querySelector('td.value');
-                const currentPrice = parseFloat(prices[ticker]);
-                const cost = parseFloat(costCell.textContent.replace('$', ''));
-
-                if (priceCell) priceCell.textContent = formatCurrency(currentPrice);
-
+            if (!isNaN(shares) && !isNaN(cost) && currentPrice !== undefined) {
                 const currentValue = shares * currentPrice;
                 if (valueCell) valueCell.textContent = formatCurrency(currentValue);
                 
@@ -73,13 +94,10 @@ export async function fetchAndUpdatePrices() {
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValue);
 
         rowsArray.sort((a, b) => {
-            const valueA = parseFloat(a.dataset.currentValue || "0");
-            const valueB = parseFloat(b.dataset.currentValue || "0");
+            const valueA = parseFloat(a.dataset.currentValue || "0"); // currentValue was set above
+            const valueB = parseFloat(b.dataset.currentValue || "0"); // currentValue was set above
             return valueB - valueA; 
         });
-
-        tbody.innerHTML = ''; 
-        rowsArray.forEach(row => tbody.appendChild(row));
 
         rowsArray.forEach((row, index) => { // Use index from sorted array for colors
             const allocationCell = row.querySelector('td.allocation');

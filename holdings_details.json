@@ -1,0 +1,9 @@
+[
+  { "ticker": "VT", "name": "VT", "cost": 95.65, "shares": 2601.642 },
+  { "ticker": "ANET", "name": "ANET", "cost": 65.18, "shares": 2392.1984 },
+  { "ticker": "GOOG", "name": "GOOG", "cost": 172.54, "shares": 718.218 },
+  { "ticker": "PDD", "name": "PDD", "cost": 107.17, "shares": 1000.597 },
+  { "ticker": "BRK-B", "name": "BRK-B", "cost": 334.96, "shares": 111 },
+  { "ticker": "OXY", "name": "OXY", "cost": 49.32, "shares": 1256.09 },
+  { "ticker": "GEO", "name": "GEO", "cost": 18.76, "shares": 540.834 }
+]
