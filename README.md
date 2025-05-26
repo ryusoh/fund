@@ -12,7 +12,6 @@ The project includes Python scripts for data management and a GitHub Actions wor
 *   Donut chart visualization of fund allocation.
 *   Automated updates of fund market data via GitHub Actions.
 *   Responsive design for desktop and mobile viewing.
-*   (Add any other key features)
 
 ## Project Structure
 
