@@ -28,7 +28,7 @@ body {
     font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     padding: 20px; /* Add some padding so table isn't at the very edge */
-    background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/imagehost/master/images/DSCF1157.jpg) center center no-repeat !important;
+    background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/images/DSCF1157.jpg) center center no-repeat !important;
     background-size: cover !important;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none;    /* Firefox */
