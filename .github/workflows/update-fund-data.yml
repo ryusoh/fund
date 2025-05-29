@@ -3,6 +3,7 @@ name: Update Fund Data
 on:
   schedule:
     - cron: '0,30 13-19 * * 1-5'  # Runs at :00 and :30 past the hour, from 13:00 to 19:30 UTC (9:00 AM to 3:30 PM ET) on weekdays
+    - cron: '30 20 * * 1-5'      # Additional run 30 min after market close (20:30 UTC / 4:30 PM ET) on weekdays
   workflow_dispatch:  # Allows manual triggering
 
 permissions:
