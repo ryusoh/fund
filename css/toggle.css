@@ -1,7 +1,7 @@
 #currencyToggleContainer {
     position: fixed;
-    top: 10px;
-    left: 10px;
+    top: 15px;
+    left: 15px;
     display: flex;
     background-color: rgba(50, 50, 50, 0.4); /* Dark grey, half-transparent for dark theme */
     border-radius: 6px;
@@ -22,7 +22,7 @@
     cursor: pointer;
     font-size: 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* System font for iOS feel */
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.3s ease-in-out, border-radius 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     outline: none;
 }
 
@@ -33,18 +33,17 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Slightly adjusted shadow for active button */
 }
 
-/* When toggle is NOT expanded, hide currency buttons that are NOT active */
-#currencyToggleContainer:not(.expanded) .currency-toggle:not(.active) {
-    display: none;
-}
-
 /* For mobile devices - adjust breakpoint as needed */
 @media (max-width: 768px) {
     #currencyToggleContainer {
-        top: 10px;
-        left: 10px;
+        position: fixed;    /* Position relative to the viewport */
+        left: 0px;          /* Stick to the screen's left edge */
         flex-direction: column; /* Stack buttons vertically */
         padding: 3px 3px;
+        z-index: 10; /* Ensure it's above the chart canvas if overlapping */
+        /* Remove left-side radius for flush appearance */
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
     }
 
     .currency-toggle {

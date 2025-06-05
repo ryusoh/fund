@@ -12,6 +12,7 @@
     width: 90%; /* Increased width */
     max-width: 400px; /* Increased max-width */
     margin: 10px auto 10px; /* Horizontally center, top margin 0, bottom margin 20px */
+    position: relative; /* Make this a positioning context for child absolute elements */
 }
 
 .footer-wrapper {
@@ -58,21 +59,17 @@ a.nav-back {
     html {
         /* Ensure html element also restricts overflow on mobile */
         height: 100vh !important; /* Full viewport height */
-        overflow: hidden !important; /* Prevent all scroll on html */
+        overflow: hidden !important; /* Prevent overall scroll on html */
         position: relative; /* Helps iOS honor overflow */
         overscroll-behavior-y: contain !important; /* Prevents scroll chaining/bounce */
-        touch-action: none !important; /* Disable touch-based scrolling/panning */
     }
     body { /* Mobile specific body overrides */
-        position: fixed !important; /* Pin body to viewport */
-        top: 0 !important;
-        left: 0 !important;
+        /* Revert body positioning to allow normal flow within the fixed html viewport */
+        position: static !important; /* Or remove this line to revert to default */
         width: 100% !important; /* Full viewport width */
-        height: 100% !important; /* Full viewport height */
         overflow-y: hidden !important; /* Still hide vertical overflow */
         overflow-x: hidden !important; /* Prevent horizontal scroll on body */
         overscroll-behavior-y: contain !important; /* Prevent bounce */
-        touch-action: none !important; /* Disable touch actions */
         background: #000000 url(../img/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
         background-size: cover !important; /* Cover the entire viewport */
     }
@@ -80,11 +77,11 @@ a.nav-back {
         width: 95%; /* Wider for mobile */
         margin: 0 auto 10px auto; /* Adjusted mobile margin */
     }
-    #fundPieChartContainer { /* mobile styles are fine */
+    #fundPieChartContainer { 
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
         margin: 0 auto 20px; /* Horizontally center, top margin 0, bottom margin 20px */
-        touch-action: none; /* Disable touch-based scrolling/panning */
+        /* position: relative; is inherited from the global style, which is fine */
     }
     footer {
         width: 95%; /* Match .content-block's mobile width */
