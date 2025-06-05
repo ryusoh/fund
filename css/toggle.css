@@ -1,0 +1,53 @@
+#currencyToggleContainer {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    display: flex;
+    background-color: rgba(50, 50, 50, 0.5); /* Dark grey, half-transparent for dark theme */
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* Adjusted shadow for dark background */
+    overflow: hidden; /* Ensures rounded corners clip children */
+    padding: 3px; /* Small padding around buttons */
+    -webkit-backdrop-filter: blur(10px); /* For Safari */
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+}
+
+.currency-toggle {
+    padding: 6px 10px; /* Adjusted padding to make it more square-like */
+    min-width: 10px; /* Ensure a minimum width for square appearance */
+    text-align: center; /* Center the symbol within the square */
+    border: none;
+    background-color: transparent; /* Buttons are transparent by default */
+    color: rgba(200, 200, 200, 0.85); /* Adjusted to match body text for consistency */
+    cursor: pointer;
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* System font for iOS feel */
+    transition: background-color 0.3s ease, color 0.3s ease;
+    outline: none;
+}
+
+.currency-toggle.active {
+    background-color: rgba(0,0,0,0.3);
+    color: rgba(200, 200, 200, 0.85); /* Changed from white to match other text */
+    border-radius: 4px; /* Slightly rounded corners for the active button */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Slightly adjusted shadow for active button */
+}
+
+/* When toggle is NOT expanded, hide currency buttons that are NOT active */
+#currencyToggleContainer:not(.expanded) .currency-toggle:not(.active) {
+    display: none;
+}
+
+/* For mobile devices - adjust breakpoint as needed */
+@media (max-width: 768px) {
+    #currencyToggleContainer {
+        top: 10px;
+        left: 10px;
+        flex-direction: column; /* Stack buttons vertically */
+        padding: 3px 3px;
+    }
+
+    .currency-toggle {
+        width: 100%; /* Example: make buttons full width of container */
+    }
+}

@@ -28,6 +28,12 @@ export const UI_BREAKPOINTS = {
     MOBILE: 768, // px
 };
 
+export const CURRENCY_SYMBOLS = {
+    USD: '$',
+    CNY: '¥',
+    JPY: '¥',
+};
+
 export const COLOR_PALETTES = {
     // Palette for pie chart slices
     PIE_CHART_SLICE_COLORS: [

@@ -37,13 +37,15 @@ async function fetchPortfolioData() {
  * Processes raw holding and price data to calculate values, P&L, and sorts holdings.
  * @param {Object} holdingsDetails - Raw holdings data.
  * @param {Object} prices - Current market prices for tickers.
+ * All monetary values in holdingsDetails (like average_price) and prices are assumed to be in USD.
  * @returns {{sortedHoldings: Array<Object>, totalPortfolioValue: number}}
+ * All monetary values in returned objects (currentValue, pnlValue, totalPortfolioValue) are in USD.
  */
 function processAndEnrichHoldings(holdingsDetails, prices) {
     let totalPortfolioValue = 0;
     const enrichedHoldings = Object.entries(holdingsDetails).map(([ticker, details]) => {
-        const shares = parseFloat(details.shares);
-        const cost = parseFloat(details.average_price); // Use average_price
+        const shares = parseFloat(details.shares) || 0; // Fallback to 0 if NaN
+        const cost = parseFloat(details.average_price) || 0; // Fallback to 0 if NaN
         const currentPrice = parseFloat(prices[ticker]) || 0;
         const name = details.name || ticker;
 
@@ -51,10 +53,10 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
         let pnlValue = 0;
         let pnlPercentage = 0;
 
-        if (!isNaN(shares) && currentPrice !== undefined) {
-            currentValue = shares * currentPrice;
-            if (!isNaN(cost)) {
-                pnlValue = (currentPrice - cost) * shares;
+        if (!isNaN(shares) && !isNaN(currentPrice)) {
+            currentValue = shares * currentPrice; // Total current value in USD
+            if (!isNaN(cost) && cost !== 0) { // Ensure cost is a valid number and not zero for percentage calculation
+                pnlValue = (currentPrice - cost) * shares; // Total P&L in USD
                 const initialCostValue = cost * shares;
                 pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
             }
@@ -64,11 +66,11 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
         return {
             ticker,
             name,
-            shares,
-            cost,
-            currentPrice,
-            currentValue,
-            pnlValue,
+            shares, // unit
+            cost, // USD per share
+            currentPrice, // USD per share
+            currentValue, // USD total
+            pnlValue, // USD total
             pnlPercentage,
         };
     });
@@ -82,32 +84,45 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
 /**
  * Creates a table row element for a given holding.
  * @param {Object} holding - Processed holding data.
- * @param {number} totalPortfolioValue - Total value of the portfolio for allocation calculation.
+ * @param {number} totalPortfolioValueUSD - Total value of the portfolio in USD for allocation calculation.
+ * @param {string} currentCurrency - The target currency code for display.
+ * @param {Object} exchangeRates - Exchange rates object.
+ * @param {Object} currencySymbols - Currency symbols object.
  * @returns {HTMLTableRowElement} The created table row element.
  */
-function createHoldingRow(holding, totalPortfolioValue) {
+function createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols) {
     const row = document.createElement('tr');
     row.dataset.ticker = holding.ticker;
 
-    const allocationPercentage = totalPortfolioValue > 0 ? (holding.currentValue / totalPortfolioValue) * 100 : 0;
+    const allocationPercentage = totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
 
     row.innerHTML = `
         <td>${holding.name}</td>
         <td class="allocation">${allocationPercentage.toFixed(2)}%</td>
-        <td class="price">${formatCurrency(holding.currentPrice)}</td>
-        <td class="cost">${formatCurrency(holding.cost)}</td>
+        <td class="price">${formatCurrency(holding.currentPrice, currentCurrency, exchangeRates, currencySymbols)}</td>
+        <td class="cost">${formatCurrency(holding.cost, currentCurrency, exchangeRates, currencySymbols)}</td>
         <td class="shares">${holding.shares.toFixed(2)}</td>
-        <td class="value">${formatCurrency(holding.currentValue)}</td>
+        <td class="value">${formatCurrency(holding.currentValue, currentCurrency, exchangeRates, currencySymbols)}</td>
         <td class="pnl"></td>
     `;
 
     const pnlCell = row.querySelector('td.pnl');
     if (pnlCell) {
-        const formattedPnlCurrency = formatCurrency(holding.pnlValue);
-        const pnlPrefix = holding.pnlValue >= 0 ? '+' : '';
-        const displayPnlAmount = holding.pnlValue >= 0 ? `+${formattedPnlCurrency}` : formattedPnlCurrency;
+        // formatCurrency now returns symbol + absolute formatted value, e.g., "$10.00"
+        const formattedAbsolutePnlValueWithSymbol = formatCurrency(holding.pnlValue, currentCurrency, exchangeRates, currencySymbols);
 
-        pnlCell.textContent = `${displayPnlAmount} (${pnlPrefix}${holding.pnlPercentage.toFixed(2)}%)`;
+        let displayPnlValue;
+        if (holding.pnlValue >= 0) { // Positive or Zero
+            displayPnlValue = `+${formattedAbsolutePnlValueWithSymbol}`; // e.g. "+$10.00"
+        } else { // Negative
+            displayPnlValue = `-${formattedAbsolutePnlValueWithSymbol}`; // e.g. "-$10.00"
+        }
+
+        const pnlPercentagePrefix = holding.pnlPercentage >= 0 ? '+' : ''; // Prefix for the percentage number
+        const formattedPnlPercentage = holding.pnlPercentage.toFixed(2);
+
+        pnlCell.textContent = `${displayPnlValue} (${pnlPercentagePrefix}${formattedPnlPercentage}%)`;
+
         if (holding.pnlValue > 0) {
             pnlCell.style.color = COLORS.POSITIVE_PNL;
         } else if (holding.pnlValue < 0) {
@@ -121,11 +136,14 @@ function createHoldingRow(holding, totalPortfolioValue) {
 
 /**
  * Updates the holdings table in the DOM and prepares data for the pie chart.
- * @param {Array<Object>} sortedHoldings - Array of sorted, processed holding data.
- * @param {number} totalPortfolioValue - Total value of the portfolio.
+ * @param {Array<Object>} sortedHoldings - Array of sorted, processed holding data (monetary values in USD).
+ * @param {number} totalPortfolioValueUSD - Total value of the portfolio in USD.
+ * @param {string} currentCurrency - The target currency code for display.
+ * @param {Object} exchangeRates - Exchange rates object.
+ * @param {Object} currencySymbols - Currency symbols object.
  * @returns {Object} Data formatted for the pie chart.
  */
-function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValue) {
+function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols) {
     const tbody = document.querySelector('table tbody');
     tbody.innerHTML = ''; // Clear existing rows
 
@@ -140,11 +158,11 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValue) {
     };
 
     sortedHoldings.forEach((holding, index) => {
-        const row = createHoldingRow(holding, totalPortfolioValue);
+        const row = createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
         tbody.appendChild(row);
 
-        const allocationPercentage = totalPortfolioValue > 0 ? (holding.currentValue / totalPortfolioValue) * 100 : 0;
-        chartData.labels.push(holding.ticker);
+        const allocationPercentage = totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
+        chartData.labels.push(holding.ticker); // Ticker is currency-agnostic
         chartData.datasets[0].data.push(allocationPercentage);
         const baseColor = getBlueColorForSlice(index, sortedHoldings.length);
         chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA));
@@ -155,20 +173,30 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValue) {
 
 /**
  * Fetches, processes, and displays portfolio data including holdings table and pie chart.
+ * @param {string} currentCurrency - The target currency code for display.
+ * @param {Object} exchangeRates - Exchange rates object.
+ * @param {Object} currencySymbols - Currency symbols object.
  */
-export async function loadAndDisplayPortfolioData() {
+export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
         const { holdingsDetails, prices } = await fetchPortfolioData();
 
         if (!holdingsDetails || !prices) {
-            console.error('Essential data missing, cannot update portfolio display.');
+            console.error('Essential holding or price data missing, cannot update portfolio display.');
+            return;
+        }
+        if (!exchangeRates || !currencySymbols) {
+            console.error('Exchange rates or currency symbols missing, cannot update portfolio display correctly.');
             return;
         }
 
-        const { sortedHoldings, totalPortfolioValue } = processAndEnrichHoldings(holdingsDetails, prices);
-        const chartData = updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValue);
+        const { sortedHoldings, totalPortfolioValue: totalPortfolioValueUSD } = processAndEnrichHoldings(holdingsDetails, prices);
+        const chartData = updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
 
-        document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValue);
+        // Log the data being sent to the chart
+        console.log('Chart data for updatePieChart:', JSON.stringify(chartData, null, 2));
+
+        document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();
 

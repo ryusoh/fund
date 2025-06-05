@@ -1,0 +1,36 @@
+name: Daily Forex Data Update
+
+on:
+  schedule:
+    # Runs at 05:00 UTC every day. This time is chosen as it's typically
+    # after US markets close and before European markets open, providing
+    # a relatively stable daily rate.
+    - cron: '0 5 * * *'
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+permissions:
+  contents: write # Required to commit changes back to the repository
+
+jobs:
+  fetch-and-commit-forex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Use a recent Python 3 version
+
+      - name: Install dependencies
+        run: pip install yfinance
+
+      - name: Fetch forex data
+        run: python scripts/fetch_forex.py
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated daily forex data update"
+          file_pattern: "data/fx_data.json" # Only commit if this file changes

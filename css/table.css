@@ -17,6 +17,7 @@ td {
     border: none; /* Remove all default borders */
     padding: 7px 16px; /* Adjusted padding */
     /* border-bottom will be handled by tbody tr */
+    color: rgba(220, 220, 220, 0.85); /* Apple's primary label color for dark mode */
 }
 th {
     border: none; /* Remove all default borders */
@@ -57,7 +58,6 @@ td.price, td.cost, td.shares, td.pnl, td.value, td.allocation, th { /* Apply to 
     white-space: nowrap;
 }
 td {
-    color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
     font-size: 0.75em; /* Data cells slightly larger for hierarchy */
     text-align: right; /* Default for data cells */
 }
