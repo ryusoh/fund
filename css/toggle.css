@@ -3,7 +3,7 @@
     top: 15px;
     left: 15px;
     display: flex;
-    background-color: rgba(50, 50, 50, 0.5); /* Dark grey, half-transparent for dark theme */
+    background-color: rgba(50, 50, 50, 0.4); /* Dark grey, half-transparent for dark theme */
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* Adjusted shadow for dark background */
     overflow: hidden; /* Ensures rounded corners clip children */
