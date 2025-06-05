@@ -4,14 +4,28 @@ from datetime import datetime, timezone
 import os
 
 FX_DATA_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'fx_data.json')
-CURRENCIES = ["CNY", "JPY"] # Currencies to get rates against USD
+# Default currencies to fetch if fx_data.json is not found or is empty
+DEFAULT_CURRENCIES = ["CNY", "JPY", "KRW"]
 
 def fetch_forex_data():
     print("Fetching forex data...")
     rates = {"USD": 1.0}
     has_errors = False
+    currencies_to_fetch = DEFAULT_CURRENCIES
 
-    for currency in CURRENCIES:
+    try:
+        if os.path.exists(FX_DATA_FILE):
+            with open(FX_DATA_FILE, 'r') as f:
+                data = json.load(f)
+                if "rates" in data and isinstance(data["rates"], dict):
+                    # Get currencies from the file, excluding USD
+                    file_currencies = [key for key in data["rates"].keys() if key != "USD"]
+                    if file_currencies: # If there are currencies other than USD in the file
+                        currencies_to_fetch = file_currencies
+    except Exception as e:
+        print(f"Could not read or parse {FX_DATA_FILE} to determine currencies: {e}. Using default list.")
+
+    for currency in currencies_to_fetch:
         try:
             ticker_symbol = f"USD{currency}=X"
             data = yf.Ticker(ticker_symbol)

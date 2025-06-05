@@ -48,6 +48,8 @@
     }
 
     .currency-toggle {
-        width: 100%; /* Example: make buttons full width of container */
+        width: 30px; /* Set an explicit width. Adjust as needed. */
+        padding: 6px 0; /* Adjust padding to be vertical only if width is fixed */
+        box-sizing: border-box; /* Ensures padding doesn't add to the explicit width */
     }
 }

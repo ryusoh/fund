@@ -32,6 +32,7 @@ export const CURRENCY_SYMBOLS = {
     USD: '$',
     CNY: '¥',
     JPY: '¥',
+    KRW: '₩',
 };
 
 export const COLOR_PALETTES = {
