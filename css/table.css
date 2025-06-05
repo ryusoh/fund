@@ -45,13 +45,14 @@ table thead tr:first-child th:last-child {
 table {
     table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
 }
-th:nth-child(1) { width: 10%; } /* Ticker */
-th:nth-child(2) { width: 10%; } /* Allocation */
-th:nth-child(3) { width: 10%; } /* Price */
-th:nth-child(4) { width: 10%; } /* Cost */
-th:nth-child(5) { width: 10%; } /* Shares */
-th:nth-child(6) { width: 10%; } /* Value */
-th:nth-child(7) { width: 15%; } /* PnL */
+th:nth-child(1) { width: 5%; } /* Ticker */
+th:nth-child(2) { width: 5%; } /* Allocation */
+th:nth-child(3) { width: 5%; } /* Price */
+th:nth-child(4) { width: 5%; } /* Cost */
+th:nth-child(5) { width: 5%; } /* Shares */
+th:nth-child(6) { width: 5%; } /* Value */
+th:nth-child(7) { width: 5%; } /* PnL */
+th:nth-child(8) { width: 5%; } /* PnL (%) */
 
 /* Prevent wrapping in data cells for a more compact look */
 td.price, td.cost, td.shares, td.pnl, td.value, td.allocation, th { /* Apply to th too for consistency */

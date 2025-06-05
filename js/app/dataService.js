@@ -103,32 +103,36 @@ function createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exch
         <td class="cost">${formatCurrency(holding.cost, currentCurrency, exchangeRates, currencySymbols)}</td>
         <td class="shares">${holding.shares.toFixed(2)}</td>
         <td class="value">${formatCurrency(holding.currentValue, currentCurrency, exchangeRates, currencySymbols)}</td>
-        <td class="pnl"></td>
+        <td class="pnl"></td> <!-- For absolute PnL value -->
+        <td class="pnl-percentage"></td> <!-- For PnL percentage -->
     `;
 
     const pnlCell = row.querySelector('td.pnl');
-    if (pnlCell) {
-        // formatCurrency now returns symbol + absolute formatted value, e.g., "$10.00"
-        const formattedAbsolutePnlValueWithSymbol = formatCurrency(holding.pnlValue, currentCurrency, exchangeRates, currencySymbols);
+    const pnlPercentageCell = row.querySelector('td.pnl-percentage');
 
+    if (pnlCell && pnlPercentageCell) {
+        const formattedAbsolutePnlValueWithSymbol = formatCurrency(holding.pnlValue, currentCurrency, exchangeRates, currencySymbols);
         let displayPnlValue;
         if (holding.pnlValue >= 0) { // Positive or Zero
             displayPnlValue = `+${formattedAbsolutePnlValueWithSymbol}`; // e.g. "+$10.00"
         } else { // Negative
             displayPnlValue = `-${formattedAbsolutePnlValueWithSymbol}`; // e.g. "-$10.00"
         }
+        pnlCell.textContent = displayPnlValue;
 
         const pnlPercentagePrefix = holding.pnlPercentage >= 0 ? '+' : ''; // Prefix for the percentage number
         const formattedPnlPercentage = holding.pnlPercentage.toFixed(2);
-
-        pnlCell.textContent = `${displayPnlValue} (${pnlPercentagePrefix}${formattedPnlPercentage}%)`;
+        pnlPercentageCell.textContent = `${pnlPercentagePrefix}${formattedPnlPercentage}%`;
 
         if (holding.pnlValue > 0) {
             pnlCell.style.color = COLORS.POSITIVE_PNL;
+            pnlPercentageCell.style.color = COLORS.POSITIVE_PNL;
         } else if (holding.pnlValue < 0) {
             pnlCell.style.color = COLORS.NEGATIVE_PNL;
+            pnlPercentageCell.style.color = COLORS.NEGATIVE_PNL;
         } else {
             pnlCell.style.color = ''; // Default browser/CSS color
+            pnlPercentageCell.style.color = ''; // Default browser/CSS color
         }
     }
     return row;
