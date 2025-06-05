@@ -27,7 +27,7 @@
 }
 
 .currency-toggle.active {
-    background-color: rgba(0,0,0,0.3);
+    background-color: rgba(0,0,0,0.4);
     color: rgba(200, 200, 200, 0.85); /* Changed from white to match other text */
     border-radius: 4px; /* Slightly rounded corners for the active button */
     box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Slightly adjusted shadow for active button */
