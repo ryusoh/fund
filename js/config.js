@@ -2,8 +2,8 @@ export const HOLDINGS_DETAILS_URL = './data/holdings_details.json';
 export const FUND_DATA_URL = './data/fund_data.json';
 
 export const COLORS = {
-    POSITIVE_PNL: '#30D158',
-    NEGATIVE_PNL: '#FF453A',
+    POSITIVE_PNL: '#34A853', // Darker, less saturated green
+    NEGATIVE_PNL: '#EA4335', // Darker, less saturated red
 };
 
 export const CHART_DEFAULTS = {
