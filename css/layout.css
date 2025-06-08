@@ -57,9 +57,8 @@ a.nav-back {
 /* Media Query for mobile devices */
 @media (max-width: 768px) {
     html {
-        /* Ensure html element also restricts overflow on mobile */
-        height: 100vh !important; /* Full viewport height */
-        overflow: hidden !important; /* Prevent overall scroll on html */
+        /* Allow html to size to its content (body), overflow handled by body */
+        height: auto;
         position: relative; /* Helps iOS honor overflow */
         overscroll-behavior-y: contain !important; /* Prevents scroll chaining/bounce */
     }
