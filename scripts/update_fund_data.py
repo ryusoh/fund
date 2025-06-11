@@ -56,21 +56,55 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 def main(holdings_path: Path, output_path: Path) -> None:
     """Main function to fetch tickers and their prices, then save to a file."""
     tickers_to_fetch = get_tickers_from_holdings(holdings_path)
-    if tickers_to_fetch:
-        logging.info(f"Found {len(tickers_to_fetch)} tickers: {', '.join(tickers_to_fetch)}")
-        prices_data = get_prices(tickers_to_fetch)
-        
-        try:
-            output_path.parent.mkdir(parents=True, exist_ok=True) # Ensure output directory exists
-            with output_path.open('w', encoding='utf-8') as f:
-                json.dump(prices_data, f, indent=4, ensure_ascii=False)
-            logging.info(f"Data successfully written to {output_path}")
-        except IOError as e:
-            logging.error(f"Could not write data to {output_path}: {e}")
-        except Exception as e:
-            logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
-    else:
+    if not tickers_to_fetch:
         logging.warning("No tickers to fetch. Output file will not be updated/created.")
+        return
+
+    logging.info(f"Found {len(tickers_to_fetch)} tickers: {', '.join(tickers_to_fetch)}")
+
+    # Load existing data if available
+    existing_prices_data: Dict[str, Optional[float]] = {}
+    if output_path.exists():
+        try:
+            with output_path.open('r', encoding='utf-8') as f:
+                existing_prices_data = json.load(f)
+            if not isinstance(existing_prices_data, dict):
+                logging.warning(f"Existing data in {output_path} is not a dictionary. Will overwrite with new fetch.")
+                existing_prices_data = {}
+        except json.JSONDecodeError:
+            logging.warning(f"Could not decode JSON from {output_path}. Will overwrite with new fetch.")
+            existing_prices_data = {}
+        except Exception as e:
+            logging.error(f"Error reading existing data from {output_path}: {e}. Will attempt to overwrite with new fetch.")
+            existing_prices_data = {}
+
+    newly_fetched_prices = get_prices(tickers_to_fetch)
+
+    final_prices_data: Dict[str, Optional[float]] = {}
+    for ticker in tickers_to_fetch:
+        new_price = newly_fetched_prices.get(ticker)
+
+        if new_price is not None:
+            final_prices_data[ticker] = new_price
+        else:
+            # New price is None, try to use existing price if available and valid
+            existing_price = existing_prices_data.get(ticker)
+            if existing_price is not None: # Check if existing_price is not None
+                final_prices_data[ticker] = existing_price
+                logging.info(f"Fetched price for {ticker} is None. Retaining existing price: {existing_price}")
+            else:
+                # No valid existing price, or ticker is new and fetched price is None
+                final_prices_data[ticker] = None # Will be logged as warning by get_prices
+
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True) # Ensure output directory exists
+        with output_path.open('w', encoding='utf-8') as f:
+            json.dump(final_prices_data, f, indent=4, ensure_ascii=False)
+        logging.info(f"Data successfully written to {output_path}")
+    except IOError as e:
+        logging.error(f"Could not write data to {output_path}: {e}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
 
 if __name__ == "__main__":
     # Define base directory assuming script is in project_root/scripts/
