@@ -22,8 +22,7 @@ body.body-calendar {
 }
 
 .cal-heatmap-container {
-    margin-top: 10px;
-    /* The container will now naturally fit the compact calendar block */
+    margin-top: 35px;
     display: flex; /* Helps in centering the calendar block */
     justify-content: center; /* Horizontally center the calendar */
 }
@@ -96,7 +95,8 @@ body.body-calendar {
     fill: rgba(255, 255, 255, 0.9) !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 14px; /* Make month labels larger */
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    stroke: black;
+    stroke-width: 1px;
 }
 
 .ch-subdomain-text { font-size: 10px; pointer-events: none; }
