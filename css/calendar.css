@@ -100,9 +100,10 @@ body.body-calendar {
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
-.ch-subdomain-text {
-    font-size: 0 !important; /* Hide the default day numbers */
-}
+.ch-subdomain-text { font-size: 10px; pointer-events: none; }
+.subdomain-line1 { font-weight: 700; }
+.pnl-positive { fill: #1b5e20; }
+.pnl-negative { fill: #b71c1c; }
 
 .ch-week-label { /* .ch-month-label is for horizontal calendars, .ch-domain-label is used for vertical */
     font-size: 14px !important; /* Make month labels larger */

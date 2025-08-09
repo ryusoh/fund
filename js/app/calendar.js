@@ -1,9 +1,24 @@
 import * as d3 from 'https://esm.sh/d3@7';
 import CalHeatmap from 'https://esm.sh/cal-heatmap@4.2.4';
 
+// Helper function to format large numbers into a compact form (e.g., 1.2m, 500k)
+function formatNumber(num) {
+    if (num === null || num === undefined || isNaN(num)) {
+        return '';
+    }
+    const absNum = Math.abs(num);
+    if (absNum >= 1e6) {
+        return (num / 1e6).toFixed(2) + 'm';
+    }
+    if (absNum >= 1e3) {
+        return (num / 1e3).toFixed(2) + 'k';
+    }
+    return num.toFixed(0);
+}
+
 async function createCalendar() {
     try {
-        const rawData = await d3.csv('../data/historical_portfolio_values.csv');
+        const rawData = await d3.csv(`../data/historical_portfolio_values.csv?t=${new Date().getTime()}`);
 
         if (!rawData || rawData.length === 0) {
             document.getElementById('calendar-container').innerHTML = '<p>No historical data available to display.</p>';
@@ -14,26 +29,30 @@ async function createCalendar() {
         const processedData = rawData.map((d, i) => {
             const currentDate = d.date;
             const currentValue = parseFloat(d.value_usd);
+            let dailyChange = 0;
+            let pnl = 0;
 
-            if (i === 0) {
-                return { date: currentDate, value: 0, total: currentValue }; // No P&L for the first day
+            if (i > 0) {
+                const previousValue = parseFloat(rawData[i - 1].value_usd);
+                dailyChange = currentValue - previousValue;
+                pnl = previousValue === 0 ? 0 : (dailyChange / previousValue);
             }
 
-            const previousValue = parseFloat(rawData[i - 1].value_usd);
-            const pnl = previousValue === 0 ? 0 : ((currentValue - previousValue) / previousValue);
-
-            return { date: currentDate, value: pnl, total: currentValue };
+            return { date: currentDate, value: pnl, total: currentValue, dailyChange: dailyChange };
         }).filter(d => d.date); // Filter out any invalid date entries
+
+        const byDate = new Map(processedData.map(d => [d.date, d]));
 
         // The CSV is sorted, so the first and last rows have the earliest and latest dates.
         const firstDataDate = new Date(`${rawData[0].date}T00:00:00`);
         const lastDataDate = new Date(`${rawData[rawData.length - 1].date}T00:00:00`);
 
-        // Configure the calendar to show the current month by default.
-        const today = new Date();
-        const calendarStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        // Configure the calendar to show the month of the last data point by default.
+        // This ensures the user sees data immediately on load.
+        const calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
 
         const cal = new CalHeatmap();
+
         await cal.paint({
             vertical: false, // Use a compact, "GitHub-style" vertical layout for the month.
             itemSelector: '#cal-heatmap',
@@ -61,7 +80,7 @@ async function createCalendar() {
                 color: {
                     type: 'diverging',
                     // Use a custom Red-Gray-Green color range for P&L
-                    range: ['rgba(244, 67, 54, 0.95)', 'rgba(84, 84, 88, 0.7)', 'rgba(76, 175, 80, 0.95)'], // Use RGBA for 50% opacity
+                    range: ['rgba(244, 67, 54, 0.95)', 'rgba(84, 84, 88, 0.7)', 'rgba(76, 175, 80, 0.95)'],
                     domain: [-0.02, 0.02], // Color intensity peaks at +/- 2% change
                 },
             },
@@ -71,11 +90,23 @@ async function createCalendar() {
                 label: { text: 'MMMM YYYY', textAlign: 'center', position: 'top' },
             },
             subDomain: {
-                type: 'day', // Days are grouped by week, running horizontally
+                type: 'day',
                 radius: 3,
-                width: 40,   // Make boxes bigger
-                height: 40,  // Make boxes bigger
-                gutter: 6,   // Adjust gutter for bigger boxes
+                width: 40,
+                height: 40,
+                gutter: 6,
+                label: (ts, value) => {
+                    // Build UTC YYYY-MM-DD to match data
+                    const dt = new Date(ts);
+                    const dateStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+                    const entry = byDate.get(dateStr);
+                    if (!entry || entry.dailyChange === 0) return '';
+
+                    const sign = entry.dailyChange > 0 ? '+' : '';
+                    const changeText = sign + formatNumber(entry.dailyChange);
+                    return changeText; // single-line label managed by Cal-Heatmap
+                },
+                color: () => 'white',
             },
             tooltip: {
                 text: function (date, value, dayjsDate) {
@@ -105,6 +136,8 @@ async function createCalendar() {
             e.preventDefault();
             cal.next();
         });
+
+        // (renderLabels and its registration removed)
     } catch (error) {
         console.error('Error creating calendar:', error);
         document.getElementById('calendar-container').innerHTML = '<p>Could not load calendar data.</p>';
