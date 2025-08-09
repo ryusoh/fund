@@ -87,3 +87,11 @@ a.nav-back {
         /* position: fixed, z-index, bottom, left, transform already set globally */
     }
 }
+
+#total-portfolio-value-in-table, .total-pnl {
+    cursor: pointer;
+}
+
+#table-footer-summary .total-pnl {
+    display: none;
+}

@@ -3,6 +3,7 @@ import { customArcBordersPlugin } from './plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from './plugins/waveAnimationPlugin.js';
 import { loadAndDisplayPortfolioData } from './app/dataService.js';
 import { initCurrencyToggle } from './ui/currencyToggleManager.js';
+import { initFooterToggle } from './ui/footerToggle.js';
 import { APP_SETTINGS, CURRENCY_SYMBOLS } from './config.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from './ui/responsive.js';
 
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Chart.register(waveAnimationPlugin);
 
         initCurrencyToggle();
+        initFooterToggle();
 
         try {
             // Load data, render chart (which also calls checkAndToggleVerticalScroll)

@@ -38,11 +38,12 @@ async function fetchPortfolioData() {
  * @param {Object} holdingsDetails - Raw holdings data.
  * @param {Object} prices - Current market prices for tickers.
  * All monetary values in holdingsDetails (like average_price) and prices are assumed to be in USD.
- * @returns {{sortedHoldings: Array<Object>, totalPortfolioValue: number}}
+ * @returns {{sortedHoldings: Array<Object>, totalPortfolioValue: number, totalPnl: number}}
  * All monetary values in returned objects (currentValue, pnlValue, totalPortfolioValue) are in USD.
  */
 function processAndEnrichHoldings(holdingsDetails, prices) {
     let totalPortfolioValue = 0;
+    let totalPnl = 0;
     const enrichedHoldings = Object.entries(holdingsDetails).map(([ticker, details]) => {
         const shares = parseFloat(details.shares) || 0; // Fallback to 0 if NaN
         const cost = parseFloat(details.average_price) || 0; // Fallback to 0 if NaN
@@ -62,6 +63,7 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
             }
         }
         totalPortfolioValue += currentValue;
+        totalPnl += pnlValue;
 
         return {
             ticker,
@@ -78,7 +80,7 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     // Sort holdings by current value in descending order
     const sortedHoldings = enrichedHoldings.sort((a, b) => b.currentValue - a.currentValue);
 
-    return { sortedHoldings, totalPortfolioValue };
+    return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
 /**
@@ -194,13 +196,33 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             return;
         }
 
-        const { sortedHoldings, totalPortfolioValue: totalPortfolioValueUSD } = processAndEnrichHoldings(holdingsDetails, prices);
+        const { sortedHoldings, totalPortfolioValue: totalPortfolioValueUSD, totalPnl: totalPnlUSD } = processAndEnrichHoldings(holdingsDetails, prices);
         const chartData = updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
 
         // Log the data being sent to the chart
         console.log('Chart data for updatePieChart:', JSON.stringify(chartData, null, 2));
 
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
+
+        // New PnL display logic
+        const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;
+        const totalPnlPercentage = totalPortfolioCostUSD !== 0 ? (totalPnlUSD / totalPortfolioCostUSD) * 100 : 0;
+
+        const pnlContainer = document.getElementById('table-footer-summary');
+        const pnlElement = pnlContainer.querySelector('.total-pnl');
+
+        const formattedPnl = formatCurrency(Math.abs(totalPnlUSD), currentCurrency, exchangeRates, currencySymbols);
+        const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
+        const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
+
+        pnlElement.textContent = ` (${pnlSign}${formattedPnl}, ${pnlPercentageSign}${totalPnlPercentage.toFixed(2)}%)`;
+
+        if (totalPnlUSD >= 0) {
+            pnlElement.style.color = COLORS.POSITIVE_PNL;
+        } else {
+            pnlElement.style.color = COLORS.NEGATIVE_PNL;
+        }
+
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();
 
