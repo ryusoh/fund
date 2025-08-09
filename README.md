@@ -1,5 +1,7 @@
 # Fund
 
+![](https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0283.jpg)
+
 ## Overview
 
 This project is a web-based application to track and visualize a fund's portfolio allocations and performance. It fetches holding details and market data, displaying it in a table and through interactive charts.
