@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Zhuang Liu">
+    <meta name="description" content="Calendar">
+    <link rel="shortcut icon" href="../img/avatar_152x152.png" type="image/x-icon">
+    <link rel="icon" href="../img/avatar_152x152.png">
+    <link rel="apple-touch-icon" href="../img/avatar_152x152.png">
+    <link rel="bookmark" href="../img/avatar_152x152.png" type="image/x-icon">
+    <!-- Make the web page capable of running as a standalone app -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Set status bar style for iOS -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Calendar</title>
+    <link href="//cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/calendar.css">
+    <!-- Cal-Heatmap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css">
+</head>
+<body class="body-calendar">
+    <div class="page-center-wrapper">
+        <div class="content-block">
+            <div id="calendar-container" class="cal-heatmap-container">
+                <div id="cal-heatmap"></div>
+            </div>
+        </div>
+        <div id="calendar-navigation-controls">
+            <button id="cal-prev" class="cal-nav-btn" title="Previous Month"><i class="fa fa-chevron-circle-left"></i></button>
+            <button id="cal-today" class="cal-nav-btn" title="Go to Today"><i class="fa fa-dot-circle-o"></i></button>
+            <button id="cal-next" class="cal-nav-btn" title="Next Month"><i class="fa fa-chevron-circle-right"></i></button>
+        </div>
+    </div>
+
+    <footer>
+        <a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile">
+            <i class="fa fa-github" style="color:#aaa; opacity: 0.5;" aria-hidden="true"></i>
+        </a>
+    </footer>
+
+    <!-- Main script for the calendar page -->
+    <script type="module" src="../js/app/calendar.js"></script>
+</body>
+</html>

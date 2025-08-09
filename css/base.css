@@ -24,10 +24,10 @@
 body {
     color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
     margin: 0; /* Remove default browser margins */
-    height: 100vh; /* Ensure the body takes up the full viewport height */
+    min-height: 100vh; /* Ensure body takes up at least the full viewport height */
     font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    padding: 20px; /* Add some padding so table isn't at the very edge */
+    padding: 20px; /* Add some padding so content isn't at the very edge */
     background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/images/DSCF1157.jpg) center center no-repeat !important;
     background-size: cover !important;
     -webkit-user-select: none; /* Safari */
