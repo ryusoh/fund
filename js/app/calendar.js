@@ -14,7 +14,7 @@ function formatNumber(num, withSign = false, currency = 'USD', rates = {}) {
     const absNum = Math.abs(convertedNum);
     let formattedNum;
 
-    const symbol = CURRENCY_SYMBOLS[currency] || '$';
+    const symbol = CURRENCY_SYMBOLS[currency] || '$'; // Default to $ if currency not found
 
     if (withSign) {
         let val;
@@ -103,6 +103,7 @@ async function createCalendar() {
 
         let rates = fxData.rates;
         let selectedCurrency = 'USD';
+        let labelsVisible = false;
 
         // Process data to calculate daily P&L
         const processedData = rawData.map((d, i) => {
@@ -206,6 +207,8 @@ async function createCalendar() {
         document.getElementById('cal-today').addEventListener('click', (e) => {
             e.preventDefault();
             cal.jumpTo(new Date());
+            labelsVisible = !labelsVisible;
+            renderLabels();
         });
         document.getElementById('cal-next').addEventListener('click', (e) => {
             e.preventDefault();
@@ -214,6 +217,10 @@ async function createCalendar() {
 
         // After painting, update the text labels in each subdomain
         const renderLabels = () => {
+            if (!labelsVisible) {
+                d3.select('#cal-heatmap').selectAll('text.ch-subdomain-text').html('');
+                return;
+            }
             d3.select('#cal-heatmap')
               .selectAll('text.ch-subdomain-text')
               .each(function() {
@@ -283,8 +290,6 @@ async function createCalendar() {
             renderLabels();
         });
 
-        // Initial render
-        renderLabels();
 
         // Align the currency toggle with the heatmap on mobile
         const alignToggle = () => {
