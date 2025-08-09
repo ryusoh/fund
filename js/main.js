@@ -1,3 +1,8 @@
+// Disable double-click zoom
+document.addEventListener('dblclick', function(event) {
+    event.preventDefault();
+}, { passive: false });
+
 // Assuming Chart and ChartDataLabels are globally available from CDN.
 import { customArcBordersPlugin } from './plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from './plugins/waveAnimationPlugin.js';
