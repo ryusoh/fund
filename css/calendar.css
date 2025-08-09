@@ -64,7 +64,7 @@ body.body-calendar {
 }
 
 .cal-nav-btn:active:not(:disabled) {
-    transform: scale(0.95);
+    transform: scale(0.7);
 }
 
 .cal-nav-btn:disabled {
