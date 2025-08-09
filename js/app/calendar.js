@@ -1,36 +1,108 @@
 import * as d3 from 'https://esm.sh/d3@7';
 import CalHeatmap from 'https://esm.sh/cal-heatmap@4.2.4';
+import { initCurrencyToggle } from '../ui/currencyToggleManager.js';
+import { CURRENCY_SYMBOLS } from '../config.js';
 
 // Helper function to format large numbers into a compact form (e.g., 1.2m, 500k)
-function formatNumber(num, withSign = false) {
+function formatNumber(num, withSign = false, currency = 'USD', rates = {}) {
     if (num === null || num === undefined || isNaN(num)) {
         return '';
     }
-    const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
-    const absNum = Math.abs(num);
+
+    const convertedNum = num * (rates[currency] || 1);
+    const sign = convertedNum > 0 ? '+' : (convertedNum < 0 ? '-' : '');
+    const absNum = Math.abs(convertedNum);
     let formattedNum;
-    if (absNum >= 1e6) {
-        formattedNum = '$' + (absNum / 1e6).toFixed(3) + 'm';
-    } else if (absNum >= 1e3) {
-        formattedNum = '$' + (absNum / 1e3).toFixed(1) + 'k';
-    } else {
-        formattedNum = '$' + absNum.toFixed(0);
-    }
+
+    const symbol = CURRENCY_SYMBOLS[currency] || '$';
 
     if (withSign) {
+        let val;
+        let suffix = '';
+        if (absNum >= 1e9) {
+            val = absNum / 1e9;
+            suffix = 'b';
+        } else if (absNum >= 1e6) {
+            val = absNum / 1e6;
+            suffix = 'm';
+        } else if (absNum >= 1e3) {
+            val = absNum / 1e3;
+            suffix = 'k';
+        } else {
+            val = absNum;
+        }
+
+        let formattedVal;
+        if (val >= 100) {
+            formattedVal = val.toFixed(0);
+        } else if (val >= 10) {
+            formattedVal = val.toFixed(1);
+        } else if (val >= 1) {
+            formattedVal = val.toFixed(2);
+        } else {
+            formattedVal = val.toPrecision(3);
+        }
+
+        formattedNum = symbol + formattedVal + suffix;
         return sign + formattedNum;
+    } else {
+        // The existing logic for total value
+        let val;
+        let suffix = '';
+        if (currency === 'KRW' && absNum >= 1e6 && absNum < 1e9) {
+            val = absNum / 1e6;
+            suffix = 'm';
+            let precision = 3 - Math.floor(Math.log10(val)) - 1;
+            if (precision < 0) {
+                precision = 0;
+            }
+            formattedNum = symbol + val.toFixed(precision) + suffix;
+        } else {
+            if (absNum >= 1e9) {
+                val = absNum / 1e9;
+                suffix = 'b';
+            } else if (absNum >= 1e6) {
+                val = absNum / 1e6;
+                suffix = 'm';
+            } else if (absNum >= 1e3) {
+                val = absNum / 1e3;
+                suffix = 'k';
+            } else {
+                val = absNum;
+            }
+
+            let precision = 0;
+            if (val > 0) {
+                precision = 4 - Math.floor(Math.log10(val)) - 1;
+                if (precision < 0) {
+                    precision = 0;
+                }
+                if (suffix === 'k' && precision > 2) {
+                    precision = 2;
+                }
+            }
+            formattedNum = symbol + val.toFixed(precision) + suffix;
+        }
+        return formattedNum;
     }
-    return formattedNum;
 }
 
 async function createCalendar() {
+    initCurrencyToggle();
+
     try {
-        const rawData = await d3.csv(`../data/historical_portfolio_values.csv?t=${new Date().getTime()}`);
+        const [rawData, fxData] = await Promise.all([
+            d3.csv(`../data/historical_portfolio_values.csv?t=${new Date().getTime()}`),
+            d3.json(`../data/fx_data.json?t=${new Date().getTime()}`)
+        ]);
 
         if (!rawData || rawData.length === 0) {
             document.getElementById('calendar-container').innerHTML = '<p>No historical data available to display.</p>';
             return;
         }
+
+        let rates = fxData.rates;
+        let selectedCurrency = 'USD';
 
         // Process data to calculate daily P&L
         const processedData = rawData.map((d, i) => {
@@ -99,8 +171,8 @@ async function createCalendar() {
             subDomain: {
                 type: 'day',
                 radius: 3,
-                width: 40,
-                height: 40,
+                width: 45,
+                height: 45,
                 gutter: 6,
                 label: () => '',
                 color: () => 'white',
@@ -163,8 +235,8 @@ async function createCalendar() {
 
                   if (!entry || entry.dailyChange === 0) return;
 
-                  const changeText = formatNumber(entry.dailyChange, true);
-                  const totalText = formatNumber(entry.total);
+                  const changeText = formatNumber(entry.dailyChange, true, selectedCurrency, rates);
+                  const totalText = formatNumber(entry.total, false, selectedCurrency, rates);
 
                   el.append('tspan')
                     .attr('class', 'subdomain-line1')
@@ -200,8 +272,44 @@ async function createCalendar() {
             });
         };
 
+        document.addEventListener('currencyChangedGlobal', (event) => {
+            selectedCurrency = event.detail.currency;
+            renderLabels();
+        });
+
         // Initial render
         renderLabels();
+
+        // Align the currency toggle with the heatmap on mobile
+        const alignToggle = () => {
+            const isMobile = window.innerWidth <= 768;
+            const toggleContainer = document.getElementById('currencyToggleContainer');
+            const heatmapContainer = document.getElementById('cal-heatmap');
+
+            if (!toggleContainer || !heatmapContainer) {
+                return;
+            }
+
+            if (isMobile) {
+                toggleContainer.style.position = 'fixed';
+                toggleContainer.style.left = '0px';
+
+                const heatmapRect = heatmapContainer.getBoundingClientRect();
+                const heatmapCenterY = heatmapRect.top + heatmapRect.height / 2;
+                
+                const toggleHeight = toggleContainer.offsetHeight;
+                const toggleTop = heatmapCenterY - (toggleHeight / 2);
+
+                toggleContainer.style.top = `${toggleTop}px`;
+            } else {
+                toggleContainer.style.position = '';
+                toggleContainer.style.top = '';
+                toggleContainer.style.left = '';
+            }
+        };
+
+        alignToggle();
+        window.addEventListener('resize', alignToggle);
     } catch (error) {
         console.error('Error creating calendar:', error);
         document.getElementById('calendar-container').innerHTML = '<p>Could not load calendar data.</p>';

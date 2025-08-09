@@ -23,7 +23,6 @@ body.body-calendar {
 
 .cal-heatmap-container {
     margin-top: 10px;
-    margin-bottom: 20px;
     /* The container will now naturally fit the compact calendar block */
     display: flex; /* Helps in centering the calendar block */
     justify-content: center; /* Horizontally center the calendar */
