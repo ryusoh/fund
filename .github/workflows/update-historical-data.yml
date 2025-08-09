@@ -1,0 +1,37 @@
+name: Daily Historical Data Update
+
+on:
+  schedule:
+    # Runs at 05:30 UTC every day, 30 minutes after the forex data update.
+    - cron: '30 5 * * *'
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+permissions:
+  contents: write # Required to commit changes back to the repository
+
+jobs:
+  generate-and-commit-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history for all branches and tags so the script can analyze it
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate historical data
+        run: python scripts/update_daily_pnl.py
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated daily historical portfolio data update"
+          file_pattern: "data/historical_portfolio_values.csv"
