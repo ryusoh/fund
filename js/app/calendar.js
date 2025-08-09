@@ -8,10 +8,10 @@ function formatNumber(num) {
     }
     const absNum = Math.abs(num);
     if (absNum >= 1e6) {
-        return (num / 1e6).toFixed(2) + 'm';
+        return (num / 1e6).toFixed(3) + 'm';
     }
     if (absNum >= 1e3) {
-        return (num / 1e3).toFixed(2) + 'k';
+        return (num / 1e3).toFixed(1) + 'k';
     }
     return num.toFixed(0);
 }
@@ -95,17 +95,7 @@ async function createCalendar() {
                 width: 40,
                 height: 40,
                 gutter: 6,
-                label: (ts, value) => {
-                    // Build UTC YYYY-MM-DD to match data
-                    const dt = new Date(ts);
-                    const dateStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-                    const entry = byDate.get(dateStr);
-                    if (!entry || entry.dailyChange === 0) return '';
-
-                    const sign = entry.dailyChange > 0 ? '+' : '';
-                    const changeText = sign + formatNumber(entry.dailyChange);
-                    return changeText; // single-line label managed by Cal-Heatmap
-                },
+                label: () => '',
                 color: () => 'white',
             },
             tooltip: {
@@ -137,7 +127,75 @@ async function createCalendar() {
             cal.next();
         });
 
-        // (renderLabels and its registration removed)
+        // After painting, update the text labels in each subdomain
+        const renderLabels = () => {
+            d3.select('#cal-heatmap')
+              .selectAll('text.ch-subdomain-text')
+              .each(function() {
+                  const el = d3.select(this);
+                  el.attr('dominant-baseline', 'middle'); // Center the text block vertically
+                  const parent = this.parentNode;
+                  const datum = parent ? d3.select(parent).datum() : null;
+                  if (!datum || !datum.t) {
+                      el.html('');
+                      return;
+                  }
+                  const dt = new Date(datum.t);
+                  const dateStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+                  const entry = byDate.get(dateStr);
+                  el.html('');
+
+                  const dateText = dt.getUTCDate();
+                  const x = el.attr('x') || 0;
+
+                  el.append('tspan')
+                    .attr('class', 'subdomain-line0')
+                    .attr('dy', '-1.0em') // Adjust for vertical centering
+                    .attr('x', x)
+                    .text(dateText);
+
+                  if (!entry || entry.dailyChange === 0) return;
+
+                  const sign = entry.dailyChange > 0 ? '+' : '';
+                  const changeText = sign + formatNumber(entry.dailyChange);
+                  const totalText = formatNumber(entry.total);
+
+                  el.append('tspan')
+                    .attr('class', 'subdomain-line1')
+                    .attr('dy', '1.2em') // Move down from the first line
+                    .attr('x', x)
+                    .text(changeText);
+                  el.append('tspan')
+                    .attr('class', 'subdomain-line2')
+                    .attr('dy', '1.2em') // Move down from the second line
+                    .attr('x', x)
+                    .text(totalText);
+              });
+        };
+        // Wrap the navigation methods to ensure renderLabels is called
+        const originalPrevious = cal.previous;
+        cal.previous = () => {
+            return originalPrevious.call(cal).then(() => {
+                renderLabels();
+            });
+        };
+
+        const originalNext = cal.next;
+        cal.next = () => {
+            return originalNext.call(cal).then(() => {
+                renderLabels();
+            });
+        };
+
+        const originalJumpTo = cal.jumpTo;
+        cal.jumpTo = (date) => {
+            return originalJumpTo.call(cal, date).then(() => {
+                renderLabels();
+            });
+        };
+
+        // Initial render
+        renderLabels();
     } catch (error) {
         console.error('Error creating calendar:', error);
         document.getElementById('calendar-container').innerHTML = '<p>Could not load calendar data.</p>';

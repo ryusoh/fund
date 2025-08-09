@@ -101,7 +101,7 @@ body.body-calendar {
 }
 
 .ch-subdomain-text { font-size: 10px; pointer-events: none; }
-.subdomain-line1 { font-weight: 700; }
+.subdomain-line1 { font-weight: normal; }
 .pnl-positive { fill: #1b5e20; }
 .pnl-negative { fill: #b71c1c; }
 
