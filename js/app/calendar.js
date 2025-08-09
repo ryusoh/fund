@@ -2,18 +2,25 @@ import * as d3 from 'https://esm.sh/d3@7';
 import CalHeatmap from 'https://esm.sh/cal-heatmap@4.2.4';
 
 // Helper function to format large numbers into a compact form (e.g., 1.2m, 500k)
-function formatNumber(num) {
+function formatNumber(num, withSign = false) {
     if (num === null || num === undefined || isNaN(num)) {
         return '';
     }
+    const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
     const absNum = Math.abs(num);
+    let formattedNum;
     if (absNum >= 1e6) {
-        return (num / 1e6).toFixed(3) + 'm';
+        formattedNum = '$' + (absNum / 1e6).toFixed(3) + 'm';
+    } else if (absNum >= 1e3) {
+        formattedNum = '$' + (absNum / 1e3).toFixed(1) + 'k';
+    } else {
+        formattedNum = '$' + absNum.toFixed(0);
     }
-    if (absNum >= 1e3) {
-        return (num / 1e3).toFixed(1) + 'k';
+
+    if (withSign) {
+        return sign + formattedNum;
     }
-    return num.toFixed(0);
+    return formattedNum;
 }
 
 async function createCalendar() {
@@ -156,8 +163,7 @@ async function createCalendar() {
 
                   if (!entry || entry.dailyChange === 0) return;
 
-                  const sign = entry.dailyChange > 0 ? '+' : '';
-                  const changeText = sign + formatNumber(entry.dailyChange);
+                  const changeText = formatNumber(entry.dailyChange, true);
                   const totalText = formatNumber(entry.total);
 
                   el.append('tspan')
