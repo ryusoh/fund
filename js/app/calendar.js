@@ -126,9 +126,15 @@ async function createCalendar() {
         const firstDataDate = new Date(`${rawData[0].date}T00:00:00`);
         const lastDataDate = new Date(`${rawData[rawData.length - 1].date}T00:00:00`);
 
+        const isDesktop = window.innerWidth > 768;
+        const range = isDesktop ? 3 : 1;
+
         // Configure the calendar to show the month of the last data point by default.
         // This ensures the user sees data immediately on load.
-        const calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        let calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        if (isDesktop) {
+            calendarStartDate.setMonth(calendarStartDate.getMonth() - (range - 1));
+        }
 
         const cal = new CalHeatmap();
 
@@ -154,7 +160,7 @@ async function createCalendar() {
             onMaxDomainReached: (isMax) => {
                 document.getElementById('cal-next').disabled = isMax;
             },
-            range: 1, // Show one month at a time
+            range: range, // Show one month at a time
             scale: {
                 color: {
                     type: 'diverging',
