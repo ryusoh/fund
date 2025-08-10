@@ -91,9 +91,3 @@ a:hover {
 footer .fa-github {
     font-size: 12px;
 }
-
-@media (max-width: 768px) {
-    .nav-back {
-        display: none;
-    }
-}
