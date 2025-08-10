@@ -6,7 +6,8 @@ import {
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
     COLORS,
-    CHART_DEFAULTS
+    CHART_DEFAULTS,
+    TICKER_TO_LOGO_MAP
 } from '../config.js';
 
 /**
@@ -160,6 +161,7 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, 
             backgroundColor: [],
             borderColor: CHART_DEFAULTS.BORDER_COLOR,
             borderWidth: CHART_DEFAULTS.BORDER_WIDTH,
+            images: [] // This will now be an array of objects
         }]
     };
 
@@ -172,6 +174,10 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, 
         chartData.datasets[0].data.push(allocationPercentage);
         const baseColor = getBlueColorForSlice(index, sortedHoldings.length);
         chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA));
+        
+        // --- Add the logo info to the dataset ---
+        const logoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '/img/logo/default.svg', scale: 1.0 };
+        chartData.datasets[0].images.push(logoInfo);
     });
 
     return chartData;
