@@ -109,7 +109,10 @@ def main():
     df_history.loc[today_str] = pd.Series(current_values)
     df_history.sort_index(inplace=True)
 
-    df_history.to_csv(HISTORICAL_CSV)
+    # Save with a specific float format to ensure consistency and prevent minor
+    # floating point differences from creating noise in the git history.
+    df_history.to_csv(HISTORICAL_CSV, float_format='%.8f')
+
     print(f"Successfully updated {HISTORICAL_CSV}")
     print("\nLatest data:")
     print(df_history.tail())
