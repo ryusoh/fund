@@ -176,7 +176,7 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, 
         chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA));
         
         // --- Add the logo info to the dataset ---
-        const logoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '/img/logo/default.svg', scale: 1.0 };
+        const logoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '../img/logo/default.svg', scale: 1.0 };
         chartData.datasets[0].images.push(logoInfo);
     });
 
