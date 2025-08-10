@@ -149,7 +149,3 @@ body.body-calendar {
 .page-center-wrapper.zoomed .content-block {
     max-width: none;
 }
-
-.page-center-wrapper.zoomed #currencyToggleContainer {
-    display: none;
-}
