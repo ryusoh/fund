@@ -120,3 +120,36 @@ body.body-calendar {
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
 }
+
+/* Zoom functionality */
+.page-center-wrapper {
+    transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    width: 100%;
+    background-color: rgba(44, 44, 46, 0); /* Initially transparent */
+    border-radius: 0px; /* Initially no radius */
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0); /* Initially no shadow */
+    position: relative; /* for z-index and positioning context */
+    top: 0;
+    left: 0;
+}
+
+.page-center-wrapper.zoomed {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1.6);
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow: auto;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.page-center-wrapper.zoomed .content-block {
+    max-width: none;
+}
+
+.page-center-wrapper.zoomed #currencyToggleContainer {
+    display: none;
+}

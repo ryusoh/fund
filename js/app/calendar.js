@@ -14,7 +14,7 @@ function formatNumber(num, withSign = false, currency = 'USD', rates = {}) {
     const absNum = Math.abs(convertedNum);
     let formattedNum;
 
-    const symbol = CURRENCY_SYMBOLS[currency] || '$'; // Default to $ if currency not found
+    const symbol = CURRENCY_SYMBOLS[currency] || '';
 
     if (withSign) {
         let val;
@@ -321,6 +321,16 @@ async function createCalendar() {
 
         alignToggle();
         window.addEventListener('resize', alignToggle);
+
+        // Add double-click event listener for zoom functionality
+        const todayButton = document.getElementById('cal-today');
+        const pageCenterWrapper = document.querySelector('.page-center-wrapper');
+
+        if (todayButton && pageCenterWrapper) {
+            todayButton.addEventListener('dblclick', () => {
+                pageCenterWrapper.classList.toggle('zoomed');
+            });
+        }
     } catch (error) {
         console.error('Error creating calendar:', error);
         document.getElementById('calendar-container').innerHTML = '<p>Could not load calendar data.</p>';
