@@ -18,7 +18,7 @@ let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const fxResponse = await fetch('./data/fx_data.json?t=' + new Date().getTime());
+        const fxResponse = await fetch('../data/fx_data.json?t=' + new Date().getTime());
         if (!fxResponse.ok) throw new Error('Failed to load FX data');
         const fxData = await fxResponse.json();
         exchangeRates = fxData.rates || { USD: 1.0 };

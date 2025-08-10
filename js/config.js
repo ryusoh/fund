@@ -1,5 +1,5 @@
-export const HOLDINGS_DETAILS_URL = './data/holdings_details.json';
-export const FUND_DATA_URL = './data/fund_data.json';
+export const HOLDINGS_DETAILS_URL = '../data/holdings_details.json';
+export const FUND_DATA_URL = '../data/fund_data.json';
 
 export const COLORS = {
     POSITIVE_PNL: '#34A853', // Darker, less saturated green

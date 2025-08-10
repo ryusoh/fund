@@ -1,0 +1,95 @@
+body {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Set a different background for the calendar page ONLY on desktop screens */
+@media (min-width: 769px) {
+    body.body-main {
+        background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0332.jpg) center center no-repeat !important;
+        background-size: cover !important;
+    }
+}
+
+.container {
+    position: absolute;
+    z-index: 3;
+    top: 0; /* Initial top position */
+    background: rgba(0,0,0,0.7); /* Desktop default */
+    color: #fff;
+    overflow-y: auto;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
+    opacity: .5;
+    padding: 5px 15px 5px 15px; /* Adjusted padding */
+}
+
+h1 {
+    color: #fff; /* Changed to white for dark background */
+    margin-bottom: 20px;
+}
+ul {
+    list-style: none;
+    padding: 0;
+}
+li {
+    margin-bottom: 15px;
+}
+a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 1em;
+    transition: background-color 0.3s, color 0.3s;
+    opacity: 0.7;
+}
+a:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1); /* Light semi-transparent box */
+    border-radius: 3px; /* Optional: rounded corners for the box */
+}
+
+/* Media Queries for .container position and background */
+@media screen and (max-width: 768px) {
+    body { /* Specific body overrides for mobile */
+        overflow-y: auto;
+        background: #111;
+    }
+    .container {
+        left: 0;
+        width: auto; /* Ensure it expands */
+        bottom: auto;
+        font-size: 15px; /* Smaller font for mobile */
+        background: rgba(0, 0, 0, .9); /* Slightly less opaque for mobile */
+        border-bottom-right-radius: 20px; /* Rounded corners for mobile */
+        padding: 10px 15px; /* Adjusted padding for mobile */
+    }
+    li {
+    margin-bottom: 10px;
+    }
+}
+
+@media screen and (min-width: 450px) {
+    .container {
+        left: 20px;
+        right: auto;
+        bottom: auto;
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    .container {
+        left: 300px;
+        right: auto;
+        bottom: auto;
+        background: rgba(0,0,0, .9); /* More opaque for larger screens */
+    }
+}
+
+footer .fa-github {
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .nav-back {
+        display: none;
+    }
+}
