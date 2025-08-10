@@ -61,7 +61,7 @@ const opacity = 0.7;
 
 export const TICKER_TO_LOGO_MAP = {
     'GEO': { src: '/img/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
-    'ANET': { src: '/img/logo/aristanw.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'ANET': { src: '/img/logo/aristanw.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
     'GOOG': { src: '/img/logo/google.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
     'PDD': { src: '/img/logo/pdd.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
     'OXY': { src: '/img/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
