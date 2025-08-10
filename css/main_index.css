@@ -1,6 +1,13 @@
 body {
     padding: 0 !important;
     margin: 0 !important;
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
 }
 
 /* Set a different background for the calendar page ONLY on desktop screens */
@@ -17,7 +24,6 @@ body {
     top: 0; /* Initial top position */
     background: rgba(0,0,0,0.7); /* Desktop default */
     color: #fff;
-    overflow-y: auto;
     text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
     opacity: .5;
     padding: 5px 15px 5px 15px; /* Adjusted padding */
@@ -50,7 +56,6 @@ a:hover {
 /* Media Queries for .container position and background */
 @media screen and (max-width: 768px) {
     body { /* Specific body overrides for mobile */
-        overflow-y: auto;
         background: #111;
     }
     .container {
@@ -58,7 +63,6 @@ a:hover {
         width: auto; /* Ensure it expands */
         bottom: auto;
         font-size: 15px; /* Smaller font for mobile */
-        background: rgba(0, 0, 0, .9); /* Slightly less opaque for mobile */
         border-bottom-right-radius: 20px; /* Rounded corners for mobile */
         padding: 10px 15px; /* Adjusted padding for mobile */
     }

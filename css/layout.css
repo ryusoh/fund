@@ -56,19 +56,32 @@ a.nav-back {
 
 /* Media Query for mobile devices */
 @media (max-width: 768px) {
-    html {
+    html.no-pull-to-refresh {
         /* Allow html to size to its content (body), overflow handled by body */
         height: auto;
         position: relative; /* Helps iOS honor overflow */
         overscroll-behavior-y: contain !important; /* Prevents scroll chaining/bounce */
     }
-    body { /* Mobile specific body overrides */
+    body.no-pull-to-refresh { /* Mobile specific body overrides */
         /* Revert body positioning to allow normal flow within the fixed html viewport */
         position: static !important; /* Or remove this line to revert to default */
         width: 100% !important; /* Full viewport width */
         overflow-y: hidden !important; /* Still hide vertical overflow */
         overflow-x: hidden !important; /* Prevent horizontal scroll on body */
         overscroll-behavior-y: contain !important; /* Prevent bounce */
+        background: #000000 url(../img/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
+        background-size: cover !important; /* Cover the entire viewport */
+    }
+    html {
+        /* Allow html to size to its content (body), overflow handled by body */
+        height: auto;
+        position: relative; /* Helps iOS honor overflow */
+    }
+    body { /* Mobile specific body overrides */
+        /* Revert body positioning to allow normal flow within the fixed html viewport */
+        position: static !important; /* Or remove this line to revert to default */
+        width: 100% !important; /* Full viewport width */
+        overflow-x: hidden !important; /* Prevent horizontal scroll on body */
         background: #000000 url(../img/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
         background-size: cover !important; /* Cover the entire viewport */
     }
