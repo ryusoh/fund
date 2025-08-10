@@ -29,7 +29,7 @@ export const UI_BREAKPOINTS = {
 };
 
 export const CURRENCY_SYMBOLS = {
-    USD: '$',
+    USD: ',
     CNY: '¥',
     JPY: '¥',
     KRW: '₩',
@@ -60,12 +60,12 @@ const renderAsWhite = true;
 const opacity = 0.7;
 
 export const TICKER_TO_LOGO_MAP = {
-    'GEO': { src: '/img/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
-    'ANET': { src: '/img/logo/aristanw.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'GOOG': { src: '/img/logo/google.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'PDD': { src: '/img/logo/pdd.png', scale: 0.65, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'OXY': { src: '/img/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'BRK-B': { src: '/img/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
-    'VT': { src: '/img/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'GEO': { src: '../img/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
+    'ANET': { src: '../img/logo/aristanw.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'GOOG': { src: '../img/logo/google.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'PDD': { src: '../img/logo/pdd.png', scale: 0.65, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'OXY': { src: '../img/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'BRK-B': { src: '../img/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
+    'VT': { src: '../img/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
     // Add all your tickers and their corresponding logo paths, scales, and rotations
 };
