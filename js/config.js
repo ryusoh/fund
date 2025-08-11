@@ -61,7 +61,6 @@ export const PLUGIN_CONFIGS = {
 
 const renderAsWhite = true;
 const opacity = 0.7;
-
 export const TICKER_TO_LOGO_MAP = {
     'GEO': { src: '/img/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
     'ANET': { src: '/img/logo/anet.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
