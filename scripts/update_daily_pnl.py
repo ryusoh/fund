@@ -15,6 +15,7 @@ for daily runs than recalculating the entire history. It does the following:
 
 import json
 import sys
+import csv
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -103,19 +104,53 @@ def main():
     print("Calculating current portfolio value...")
     current_values = calculate_daily_values(**all_data)
 
-    df_history = pd.read_csv(HISTORICAL_CSV, index_col='date') if HISTORICAL_CSV.exists() else pd.DataFrame()
-
     today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-    df_history.loc[today_str] = pd.Series(current_values)
-    df_history.sort_index(inplace=True)
 
-    # Save with a specific float format to ensure consistency and prevent minor
-    # floating point differences from creating noise in the git history.
-    df_history.to_csv(HISTORICAL_CSV, float_format='%.8f')
+    # --- New Append-Only Logic ---
+    # We will read the header and check the last date to avoid duplicates.
+    header = []
+    last_date = None
+    if HISTORICAL_CSV.exists():
+        with HISTORICAL_CSV.open('r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            try:
+                header = next(reader)
+                # Read all rows to find the last date
+                all_rows = list(reader)
+                if all_rows:
+                    last_date = all_rows[-1][0]
+            except StopIteration: # File is empty
+                pass
+    
+    # If file doesn't exist or is empty, create it with a header from the first calculated value
+    if not header:
+        header = ['date'] + list(current_values.keys())
+        with HISTORICAL_CSV.open('w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
 
-    print(f"Successfully updated {HISTORICAL_CSV}")
+    if last_date == today_str:
+        print(f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry.")
+        # For display, we can still use pandas
+        df_display = pd.read_csv(HISTORICAL_CSV)
+        print("\nLatest data:")
+        print(df_display.tail())
+        sys.exit(0)
+
+    # Append the new data
+    # The order of values is determined by the header we just read/created.
+    new_row = [today_str] + [current_values.get(col, '') for col in header[1:]]
+    
+    with HISTORICAL_CSV.open('a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(new_row)
+
+    print(f"Successfully appended data for {today_str} to {HISTORICAL_CSV}")
+    
+    # For display, we can still use pandas
+    df_display = pd.read_csv(HISTORICAL_CSV)
     print("\nLatest data:")
-    print(df_history.tail())
+    print(df_display.tail())
 
 if __name__ == "__main__":
     main()
