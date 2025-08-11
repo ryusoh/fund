@@ -124,8 +124,8 @@ async function createCalendar() {
         const byDate = new Map(processedData.map(d => [d.date, d]));
 
         // The CSV is sorted, so the first and last rows have the earliest and latest dates.
-        const firstDataDate = new Date(`${rawData[0].date}T00:00:00`);
-        const lastDataDate = new Date(`${rawData[rawData.length - 1].date}T00:00:00`);
+        const firstDataDate = new Date(`${rawData[0].date}T00:00:00Z`);
+        const lastDataDate = new Date(`${rawData[rawData.length - 1].date}T00:00:00Z`);
 
         const isDesktop = window.innerWidth > 768;
         const range = isDesktop ? 3 : 1;

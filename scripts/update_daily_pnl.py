@@ -17,6 +17,7 @@ import json
 import sys
 import csv
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -104,7 +105,7 @@ def main():
     print("Calculating current portfolio value...")
     current_values = calculate_daily_values(**all_data)
 
-    today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    today_str = datetime.now(ZoneInfo("America/New_York")).strftime('%Y-%m-%d')
 
     # --- New Append-Only Logic ---
     # We will read the header and check the last date to avoid duplicates.
