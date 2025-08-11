@@ -69,5 +69,4 @@ export const TICKER_TO_LOGO_MAP = {
     'OXY': { src: '/img/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
     'BRK-B': { src: '/img/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
     'VT': { src: '/img/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    // Add all your tickers and their corresponding logo paths, scales, and rotations
 };
