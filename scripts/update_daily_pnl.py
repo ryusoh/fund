@@ -49,7 +49,7 @@ def calculate_daily_values(holdings: Dict, fund_data: Dict, forex: Dict) -> Dict
     This function is adapted from extract_pnl_history.py.
     """
     total_value_usd = 0.0
-    fx_rates = forex.get('rates', {})
+    fx_rates = forex.get('rates', {}).copy()
     fx_rates['USD'] = 1.0  # Base currency
 
     fund_info = {}
@@ -111,9 +111,13 @@ def main():
     # We will read the header and check the last date to avoid duplicates.
     header = []
     last_date = None
+    file_content = ""
     if HISTORICAL_CSV.exists():
         with HISTORICAL_CSV.open('r', encoding='utf-8') as f:
-            reader = csv.reader(f)
+            file_content = f.read()
+            # Reset file pointer to read with csv.reader
+            f.seek(0)
+            reader = csv.reader(file_content.splitlines())
             try:
                 header = next(reader)
                 # Read all rows to find the last date
@@ -129,6 +133,10 @@ def main():
         with HISTORICAL_CSV.open('w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(header)
+        # After creating the file, read the content
+        with HISTORICAL_CSV.open('r', encoding='utf-8') as f:
+            file_content = f.read()
+
 
     if last_date == today_str:
         print(f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry.")
@@ -142,9 +150,19 @@ def main():
     # The order of values is determined by the header we just read/created.
     new_row = [today_str] + [current_values.get(col, '') for col in header[1:]]
     
-    with HISTORICAL_CSV.open('a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(new_row)
+    if not file_content.endswith('\n'):
+        file_content += '\n'
+    
+    # Use csv.writer with a StringIO object to format the new row correctly
+    from io import StringIO
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(new_row)
+    file_content += output.getvalue()
+
+    with HISTORICAL_CSV.open('w', encoding='utf-8') as f:
+        f.write(file_content)
+
 
     print(f"Successfully appended data for {today_str} to {HISTORICAL_CSV}")
     
@@ -152,6 +170,7 @@ def main():
     df_display = pd.read_csv(HISTORICAL_CSV)
     print("\nLatest data:")
     print(df_display.tail())
+
 
 if __name__ == "__main__":
     main()
