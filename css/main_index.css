@@ -33,6 +33,10 @@ body {
     padding: 5px 15px 5px 15px; /* Adjusted padding */
 }
 
+.mobile-banner {
+    display: none; /* Hide by default */
+}
+
 h1 {
     color: #fff; /* Changed to white for dark background */
     margin-bottom: 20px;
