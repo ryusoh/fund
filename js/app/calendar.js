@@ -123,9 +123,15 @@ async function createCalendar() {
             return { date: currentDate, value: pnl, total: currentValue, dailyChange: dailyChange };
         }).filter(d => d.date); // Filter out any invalid date entries
 
-        // Calculate today's real-time PnL
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        // Calculate today's real-time PnL using New York timezone
+        const todayInNY = new Date().toLocaleDateString('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const [month, day, year] = todayInNY.split('/');
+        const todayStr = `${year}-${month}-${day}`;
 
         if (holdingsData && fundData) {
             let currentTotalValue = 0;
