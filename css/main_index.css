@@ -90,6 +90,18 @@ a:hover {
         height: 100%;
         object-fit: cover;
     }
+
+    .mobile-banner {
+        display: block;
+        position: fixed;
+        left: 52%;
+        bottom: 1%;
+        transform: translateX(-50%);
+        width: 80vw; /* Use viewport width for responsiveness */
+        max-width: 300px; /* Adjust as needed */
+        z-index: 2; /* Above video (-1) and below container (3) */
+        opacity: 0.5;
+    }
 }
 
 @media screen and (min-width: 450px) {
