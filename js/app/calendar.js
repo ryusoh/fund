@@ -91,7 +91,7 @@ async function createCalendar() {
     initCurrencyToggle();
 
     try {
-        const [rawData, fxData, holdingsData, fundData] = await Promise.all([
+        const [rawData, fxData, , holdingsData, fundData] = await Promise.all([
             d3.csv(`../data/historical_portfolio_values.csv?t=${new Date().getTime()}`),
             d3.json(`../data/fx_data.json?t=${new Date().getTime()}`),
             d3.json(`../data/holdings_details.json?t=${new Date().getTime()}`),
@@ -123,15 +123,9 @@ async function createCalendar() {
             return { date: currentDate, value: pnl, total: currentValue, dailyChange: dailyChange };
         }).filter(d => d.date); // Filter out any invalid date entries
 
-        // Calculate today's real-time PnL using New York timezone
-        const todayInNY = new Date().toLocaleDateString('en-US', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        const [month, day, year] = todayInNY.split('/');
-        const todayStr = `${year}-${month}-${day}`;
+        // Calculate today's real-time PnL
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
         if (holdingsData && fundData) {
             let currentTotalValue = 0;
@@ -348,7 +342,7 @@ async function createCalendar() {
 
                 const heatmapRect = heatmapContainer.getBoundingClientRect();
                 const heatmapCenterY = heatmapRect.top + heatmapRect.height / 2;
-                
+
                 const toggleHeight = toggleContainer.offsetHeight;
                 const toggleTop = heatmapCenterY - (toggleHeight / 2);
 
