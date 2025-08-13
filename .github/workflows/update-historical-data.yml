@@ -2,8 +2,8 @@ name: Daily Historical Data Update
 
 on:
   schedule:
-    # Runs at 20:30 UTC on weekdays (Mon-Fri), 30 minutes after NYSE close.
-    - cron: '30 20 * * 1-5'
+    # Runs at 21:00 UTC on weekdays (Mon-Fri), 1 hour after NYSE close.
+    - cron: '0 21 * * 1-5'
   workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:
