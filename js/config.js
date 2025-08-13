@@ -70,3 +70,47 @@ export const TICKER_TO_LOGO_MAP = {
     'BRK-B': { src: '/img/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
     'VT': { src: '/img/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
 };
+
+export const DATA_PATHS = {
+    historical: '../data/historical_portfolio_values.csv',
+    fx: '../data/fx_data.json',
+    holdings: '../data/holdings_details.json',
+    fund: '../data/fund_data.json',
+};
+
+export const CALENDAR_SELECTORS = {
+    container: '#calendar-container',
+    heatmap: '#cal-heatmap',
+    prevButton: '#cal-prev',
+    nextButton: '#cal-next',
+    todayButton: '#cal-today',
+    currencyToggle: '#currencyToggleContainer',
+    pageWrapper: '.page-center-wrapper',
+};
+
+export const CALENDAR_CONFIG = {
+    vertical: false,
+    itemSelector: CALENDAR_SELECTORS.heatmap,
+    range: window.innerWidth > 768 ? 3 : 1,
+    scale: {
+        color: {
+            type: 'diverging',
+            range: ['rgba(244, 67, 54, 0.95)', 'rgba(84, 84, 88, 0.7)', 'rgba(76, 175, 80, 0.95)'],
+            domain: [-0.02, 0.02],
+        },
+    },
+    domain: {
+        type: 'month',
+        padding: [10, 10, 10, 10],
+        label: { text: 'MMMM YYYY', textAlign: 'center', position: 'top' },
+    },
+    subDomain: {
+        type: 'day',
+        radius: 3,
+        width: 45,
+        height: 45,
+        gutter: 6,
+        label: () => '',
+        color: () => 'white',
+    },
+};
