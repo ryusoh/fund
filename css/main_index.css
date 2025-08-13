@@ -16,6 +16,10 @@ body {
         background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0332.jpg) center center no-repeat !important;
         background-size: cover !important;
     }
+
+    .video-background {
+        display: none;
+    }
 }
 
 .container {
@@ -65,9 +69,26 @@ a:hover {
         font-size: 15px; /* Smaller font for mobile */
         border-bottom-right-radius: 20px; /* Rounded corners for mobile */
         padding: 10px 15px; /* Adjusted padding for mobile */
+        opacity: 0.65; /* Increased opacity for mobile */
     }
     li {
     margin-bottom: 10px;
+    }
+
+    .video-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+
+    .video-background video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 }
 
