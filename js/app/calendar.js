@@ -91,9 +91,11 @@ async function createCalendar() {
     initCurrencyToggle();
 
     try {
-        const [rawData, fxData] = await Promise.all([
+        const [rawData, fxData, holdingsData, fundData] = await Promise.all([
             d3.csv(`../data/historical_portfolio_values.csv?t=${new Date().getTime()}`),
-            d3.json(`../data/fx_data.json?t=${new Date().getTime()}`)
+            d3.json(`../data/fx_data.json?t=${new Date().getTime()}`),
+            d3.json(`../data/holdings_details.json?t=${new Date().getTime()}`),
+            d3.json(`../data/fund_data.json?t=${new Date().getTime()}`)
         ]);
 
         if (!rawData || rawData.length === 0) {
@@ -121,11 +123,44 @@ async function createCalendar() {
             return { date: currentDate, value: pnl, total: currentValue, dailyChange: dailyChange };
         }).filter(d => d.date); // Filter out any invalid date entries
 
+        // Calculate today's real-time PnL
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        if (holdingsData && fundData) {
+            let currentTotalValue = 0;
+            for (const ticker in holdingsData) {
+                if (fundData[ticker]) {
+                    currentTotalValue += parseFloat(holdingsData[ticker].shares) * parseFloat(fundData[ticker]);
+                }
+            }
+
+            const lastHistoricalData = rawData[rawData.length - 1];
+            const lastHistoricalValue = parseFloat(lastHistoricalData.value_usd);
+            const dailyChange = currentTotalValue - lastHistoricalValue;
+            const pnl = lastHistoricalValue === 0 ? 0 : (dailyChange / lastHistoricalValue);
+            
+            const todayData = {
+                date: todayStr,
+                value: pnl,
+                total: currentTotalValue,
+                dailyChange: dailyChange
+            };
+
+            // If the last historical date is not today, add today's data
+            if (lastHistoricalData.date !== todayStr) {
+                processedData.push(todayData);
+            } else {
+                // if it is today, let's update it with the latest calculation
+                processedData[processedData.length - 1] = todayData;
+            }
+        }
+
         const byDate = new Map(processedData.map(d => [d.date, d]));
 
         // The CSV is sorted, so the first and last rows have the earliest and latest dates.
         const firstDataDate = new Date(`${rawData[0].date}T00:00:00Z`);
-        const lastDataDate = new Date(`${rawData[rawData.length - 1].date}T00:00:00Z`);
+        const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
 
         const isDesktop = window.innerWidth > 768;
         const range = isDesktop ? 3 : 1;
