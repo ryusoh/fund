@@ -1,9 +1,11 @@
-import yfinance as yf
 import json
 from pathlib import Path
 import logging
 import argparse
 from typing import List, Dict, Any, Optional
+import os
+import yfinance as yf
+from polygon import RESTClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -13,7 +15,6 @@ def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
     try:
         with holdings_file_path.open('r', encoding='utf-8') as f:
             holdings_data: Dict[str, Any] = json.load(f)
-        # Extract tickers (which are the keys of the dictionary)
         return list(holdings_data.keys())
     except FileNotFoundError:
         logging.error(f"Holdings file not found at {holdings_file_path}. No tickers to fetch.")
@@ -27,30 +28,50 @@ def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
 
 def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     """
-    Fetches the current or regular market price for a list of tickers.
-    Returns a dictionary with ticker symbols as keys and their prices (float) or None as values.
+    Fetches the latest prices for a list of tickers.
+    Tries yfinance first, falls back to Polygon.io for overnight data.
     """
     data: Dict[str, Optional[float]] = {}
+
+    # Try yfinance first
     for ticker_symbol in ticker_list:
         try:
             ticker = yf.Ticker(ticker_symbol)
-            # Try to get 'regularMarketPrice', fallback to 'currentPrice' or 'previousClose'
-            info = ticker.info
-            price = info.get('regularMarketPrice')
-            if price is None:
-                price = info.get('currentPrice')
-            if price is None:
-                price = info.get('previousClose')
-
-            if price is not None:
-                data[ticker_symbol] = float(price) # Ensure it's a float
-                logging.info(f"Fetched price for {ticker_symbol}: {price}")
+            hist = ticker.history(period="1d", interval="1m", prepost=True)
+            if not hist.empty:
+                price = hist['Close'].iloc[-1]
+                data[ticker_symbol] = float(price)
+                logging.info(f"Fetched price for {ticker_symbol} from yfinance: {price}")
             else:
-                logging.warning(f"Could not fetch price for {ticker_symbol}. Check ticker or data availability. Storing as None.")
                 data[ticker_symbol] = None
         except Exception as e:
-            logging.error(f"Error fetching data for {ticker_symbol}: {e}")
-            data[ticker_symbol] = None # Store None on error
+            logging.warning(f"yfinance failed for {ticker_symbol}: {e}. Will try Polygon.io.")
+            data[ticker_symbol] = None
+
+    tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
+
+    if tickers_for_polygon:
+        logging.info(f"Trying to fetch overnight prices from Polygon.io for: {', '.join(tickers_for_polygon)}")
+        try:
+            api_key = os.environ["POLYGON_KEY"]
+            with RESTClient(api_key) as client:
+                for ticker_symbol in tickers_for_polygon:
+                    try:
+                        last_trade = client.get_last_trade(ticker_symbol)
+                        if hasattr(last_trade, 'price'):
+                            price = last_trade.price
+                            data[ticker_symbol] = float(price)
+                            logging.info(f"Fetched price for {ticker_symbol} from Polygon.io: {price}")
+                        else:
+                            logging.warning(f"Could not fetch price for {ticker_symbol} from Polygon.io.")
+                    except Exception as e:
+                        logging.error(f"Error fetching {ticker_symbol} from Polygon.io: {e}")
+
+        except KeyError:
+            logging.error("Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io.")
+        except Exception as e:
+            logging.error(f"An error occurred with Polygon.io: {e}")
+            
     return data
 
 def main(holdings_path: Path, output_path: Path) -> None:
@@ -62,7 +83,6 @@ def main(holdings_path: Path, output_path: Path) -> None:
 
     logging.info(f"Found {len(tickers_to_fetch)} tickers: {', '.join(tickers_to_fetch)}")
 
-    # Load existing data if available
     existing_prices_data: Dict[str, Optional[float]] = {}
     if output_path.exists():
         try:
@@ -87,17 +107,15 @@ def main(holdings_path: Path, output_path: Path) -> None:
         if new_price is not None:
             final_prices_data[ticker] = new_price
         else:
-            # New price is None, try to use existing price if available and valid
             existing_price = existing_prices_data.get(ticker)
-            if existing_price is not None: # Check if existing_price is not None
+            if existing_price is not None:
                 final_prices_data[ticker] = existing_price
                 logging.info(f"Fetched price for {ticker} is None. Retaining existing price: {existing_price}")
             else:
-                # No valid existing price, or ticker is new and fetched price is None
-                final_prices_data[ticker] = None # Will be logged as warning by get_prices
+                final_prices_data[ticker] = None
 
     try:
-        output_path.parent.mkdir(parents=True, exist_ok=True) # Ensure output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open('w', encoding='utf-8') as f:
             json.dump(final_prices_data, f, indent=4, ensure_ascii=False)
         logging.info(f"Data successfully written to {output_path}")
@@ -107,10 +125,9 @@ def main(holdings_path: Path, output_path: Path) -> None:
         logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
 
 if __name__ == "__main__":
-    # Define base directory assuming script is in project_root/scripts/
     BASE_DIR = Path(__file__).resolve().parent.parent
     
-    parser = argparse.ArgumentParser(description="Fetch market prices for tickers listed in a holdings file.")
+    parser = argparse.ArgumentParser(description="Fetch market prices using yfinance with a Polygon.io fallback.")
     parser.add_argument("--holdings", type=Path, default=BASE_DIR / "data" / "holdings_details.json",
                         help="Path to the holdings JSON file.")
     parser.add_argument("--output", type=Path, default=BASE_DIR / "data" / "fund_data.json",

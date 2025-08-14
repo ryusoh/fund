@@ -5,12 +5,12 @@ Updates the historical portfolio value CSV with the latest daily data.
 
 This script performs an incremental update, which is much more efficient
 for daily runs than recalculating the entire history. It does the following:
-1. Loads the latest holdings, market data, and forex rates from their
-   respective JSON files.
-2. Calculates the current total portfolio value based on this data.
-3. Reads the existing 'historical_portfolio_values.csv'.
-4. Appends or updates the entry for the current day.
-5. Saves the updated CSV file.
+1. Loads the latest holdings and forex rates from their respective JSON files.
+2. Fetches the official closing price for each holding for the current day.
+3. Calculates the current total portfolio value based on this data.
+4. Reads the existing 'historical_portfolio_values.csv'.
+5. Appends or updates the entry for the current day.
+6. Saves the updated CSV file.
 """
 
 import json
@@ -22,11 +22,11 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 import pandas as pd
+import yfinance as yf
 
 # --- Configuration ---
 REPO_PATH = Path(__file__).resolve().parent.parent
 HOLDINGS_FILE = REPO_PATH / "data" / "holdings_details.json"
-FUND_DATA_FILE = REPO_PATH / "data" / "fund_data.json"
 FOREX_FILE = REPO_PATH / "data" / "fx_data.json"
 HISTORICAL_CSV = REPO_PATH / "data" / "historical_portfolio_values.csv"
 # --- End Configuration ---
@@ -43,44 +43,40 @@ def load_json_data(file_path: Path) -> Optional[Dict]:
         print(f"Error reading or parsing {file_path}: {e}", file=sys.stderr)
         return None
 
-def calculate_daily_values(holdings: Dict, fund_data: Dict, forex: Dict) -> Dict[str, Any]:
+def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     """
-    Calculates the total portfolio value in various currencies.
-    This function is adapted from extract_pnl_history.py.
+    Calculates the total portfolio value in various currencies using official closing prices.
     """
     total_value_usd = 0.0
     fx_rates = forex.get('rates', {}).copy()
     fx_rates['USD'] = 1.0  # Base currency
 
-    fund_info = {}
-    # Handle both old and new fund_data.json formats
-    if isinstance(fund_data.get('data'), list):
-        fund_info = {item['ticker']: item for item in fund_data['data'] if 'ticker' in item}
-    elif isinstance(fund_data, dict):
-        fund_info = {
-            ticker: {"price": price, "currency": "USD"}
-            for ticker, price in fund_data.items()
-        }
-
     for ticker, holding_details in holdings.items():
-        if ticker in fund_info:
-            if fund_info[ticker].get('price') is None:
+        try:
+            shares = float(holding_details['shares'])
+            
+            # Fetch historical data for the last day to get the closing price
+            ticker_obj = yf.Ticker(ticker)
+            hist = ticker_obj.history(period="1d")
+            if hist.empty:
+                print(f"Warning: Could not get historical data for {ticker}. Skipping.", file=sys.stderr)
                 continue
+            
+            market_price = hist['Close'].iloc[-1]
+            currency = "USD" # Assuming USD
 
-            try:
-                shares = float(holding_details['shares'])
-                market_price = float(fund_info[ticker]['price'])
-                currency = fund_info[ticker].get('currency', 'USD').upper()
+            fx_to_usd = fx_rates.get(currency)
+            if fx_to_usd is None:
+                print(f"Warning: Missing FX rate for {currency}. Assuming 1.0.", file=sys.stderr)
+                fx_to_usd = 1.0
 
-                fx_to_usd = fx_rates.get(currency)
-                if fx_to_usd is None:
-                    print(f"Warning: Missing FX rate for {currency}. Assuming 1.0.", file=sys.stderr)
-                    fx_to_usd = 1.0
+            value_in_usd = (shares * market_price) / fx_to_usd
+            total_value_usd += value_in_usd
+        except (ValueError, TypeError) as e:
+            print(f"Warning: Could not process ticker {ticker}. Details: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: An error occurred while fetching data for {ticker}: {e}", file=sys.stderr)
 
-                value_in_usd = (shares * market_price) / fx_to_usd
-                total_value_usd += value_in_usd
-            except (ValueError, TypeError) as e:
-                print(f"Warning: Could not process ticker {ticker}. Details: {e}", file=sys.stderr)
 
     daily_values = {}
     for ccy, rate in fx_rates.items():
@@ -94,7 +90,6 @@ def main():
 
     all_data = {
         "holdings": load_json_data(HOLDINGS_FILE),
-        "fund_data": load_json_data(FUND_DATA_FILE),
         "forex": load_json_data(FOREX_FILE),
     }
 
