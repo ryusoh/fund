@@ -10,6 +10,7 @@
     padding: 3px; /* Small padding around buttons */
     -webkit-backdrop-filter: blur(10px); /* For Safari */
     backdrop-filter: blur(10px); /* Frosted glass effect */
+    z-index: 1000; /* Ensure it's always on top */
 }
 
 .currency-toggle {
