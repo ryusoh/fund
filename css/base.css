@@ -1,23 +1,23 @@
 /* JetBrains Mono – regular and italics */
 @font-face{
     font-family:'JetBrains Mono';
-    src:url('../fonts/webfonts/JetBrainsMono-Thin.woff2') format('woff2'); /* Adjusted path */
+    src:url('../assets/fonts/webfonts/JetBrainsMono-Thin.woff2') format('woff2'); /* Adjusted path */
     font-weight:100;font-style:normal;font-display:swap;
 }
 @font-face{
     font-family:'JetBrains Mono';
-    src:url('../fonts/webfonts/JetBrainsMono-ThinItalic.woff2') format('woff2'); /* Adjusted path */
+    src:url('../assets/fonts/webfonts/JetBrainsMono-ThinItalic.woff2') format('woff2'); /* Adjusted path */
     font-weight:100;font-style:italic;font-display:swap;
 }
 
 @font-face{
     font-family:'JetBrains Mono';
-    src:url('../fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2'); /* Adjusted path */
+    src:url('../assets/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2'); /* Adjusted path */
     font-weight:400;font-style:normal;font-display:swap;
 }
 @font-face{
     font-family:'JetBrains Mono';
-    src:url('../fonts/webfonts/JetBrainsMono-Italic.woff2') format('woff2'); /* Adjusted path */
+    src:url('../assets/fonts/webfonts/JetBrainsMono-Italic.woff2') format('woff2'); /* Adjusted path */
     font-weight:400;font-style:italic;font-display:swap;
 }
 
