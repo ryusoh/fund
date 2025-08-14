@@ -311,8 +311,26 @@ export async function getCalendarData(dataPaths) {
         throw new Error('No historical data available.');
     }
 
-    const lastHistoricalValue = historicalData[historicalData.length - 1].total;
-    const realtimeData = calculateRealtimePnl(allData.holdings, allData.fund, lastHistoricalValue);
+    const today = getNyDate();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    let valueForPnlCalculation;
+    const lastHistoricalData = historicalData[historicalData.length - 1];
+
+    if (lastHistoricalData.date === todayStr) {
+        // If today's data is present, use yesterday's value for PNL calculation.
+        if (historicalData.length > 1) {
+            valueForPnlCalculation = historicalData[historicalData.length - 2].total;
+        } else {
+            // Only today's data exists, so PNL is against 0.
+            valueForPnlCalculation = 0;
+        }
+    } else {
+        // Otherwise, use the last available historical value.
+        valueForPnlCalculation = lastHistoricalData.total;
+    }
+
+    const realtimeData = calculateRealtimePnl(allData.holdings, allData.fund, valueForPnlCalculation);
 
     const processedData = combineData(historicalData, realtimeData);
     const byDate = new Map(processedData.map(d => [d.date, d]));
