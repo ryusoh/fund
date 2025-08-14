@@ -151,7 +151,7 @@ function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, 
         const baseColor = getBlueColorForSlice(index, sortedHoldings.length);
         chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA));
         
-        const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '/img/logo/default.svg', scale: 1.0 };
+        const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '/assets/logo/vt.png', scale: 1.0 };
         const logoInfo = { ...originalLogoInfo, src: BASE_URL + originalLogoInfo.src };
         chartData.datasets[0].images.push(logoInfo);
     });

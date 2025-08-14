@@ -62,13 +62,13 @@ export const PLUGIN_CONFIGS = {
 const renderAsWhite = true;
 const opacity = 0.7;
 export const TICKER_TO_LOGO_MAP = {
-    'GEO': { src: '/img/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
-    'ANET': { src: '/img/logo/anet.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'GOOG': { src: '/img/logo/goog.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'PDD': { src: '/img/logo/pdd.png', scale: 0.65, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'OXY': { src: '/img/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'BRK-B': { src: '/img/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
-    'VT': { src: '/img/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'GEO': { src: '/assets/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
+    'ANET': { src: '/assets/logo/anet.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'GOOG': { src: '/assets/logo/goog.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'PDD': { src: '/assets/logo/pdd.png', scale: 0.65, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'OXY': { src: '/assets/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'BRK-B': { src: '/assets/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
+    'VT': { src: '/assets/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
 };
 
 export const DATA_PATHS = {
