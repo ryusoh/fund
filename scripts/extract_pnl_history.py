@@ -15,7 +15,7 @@ value in various currencies. The final output is a CSV file containing the
 daily portfolio values, ready for analysis or visualization.
 """
 
-import subprocess
+import subprocess  # nosec B404  # Usage confined to git invocations with static, trusted args
 import json
 import sys
 from datetime import datetime, timezone
@@ -37,7 +37,7 @@ OUTPUT_CSV = Path("data/historical_portfolio_values.csv")
 def run_git_command(command: List[str], repo_path: Path) -> Optional[str]:
     """Runs a Git command and returns its stripped stdout output."""
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - command list is constructed from fixed, trusted tokens
             command,
             cwd=repo_path,
             capture_output=True,
