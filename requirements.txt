@@ -11,3 +11,7 @@ mypy
 bandit
 pip-audit
 pytest-cov
+
+protobuf>=6.31.1
+requests>=2.32.4
+urllib3>=2.5.0
