@@ -30,7 +30,7 @@ jobs:
         run: python scripts/fetch_forex.py
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "Automated daily forex data update"
           file_pattern: "data/fx_data.json" # Only commit if this file changes
