@@ -1,0 +1,30 @@
+name: Auto-merge Dependabot PRs
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  enable:
+    if: github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            // Require the "automerge" label to be present
+            const hasAuto = pr.labels?.some(l => l.name === 'automerge');
+            if (!hasAuto) return;
+
+            // Enable repo auto-merge (squash) for this PR via GraphQL
+            await github.graphql(`
+              mutation($pull: ID!, $method: PullRequestMergeMethod!) {
+                enablePullRequestAutoMerge(input: {
+                  pullRequestId: $pull,
+                  mergeMethod: $method
+                }) { clientMutationId }
+              }
+            `, { pull: pr.node_id, method: "SQUASH" });

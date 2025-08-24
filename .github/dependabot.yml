@@ -69,3 +69,46 @@ updates:
       gha-minor-patch:
         applies-to: "version-updates"
         update-types: ["minor", "patch"]
+
+---
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: sunday
+      time: "03:00"
+      timezone: "UTC"
+    labels: ["dependencies", "npm", "automerge"]
+    groups:
+      npm-all:
+        patterns: ["*"]
+        update-types: ["major", "minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: sunday
+      time: "03:00"
+      timezone: "UTC"
+    labels: ["ci", "automerge"]
+    groups:
+      gha-all:
+        patterns: ["*"]
+        update-types: ["major", "minor", "patch"]
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: sunday
+      time: "03:00"
+      timezone: "UTC"
+    labels: ["dependencies", "python", "automerge"]
+    groups:
+      pip-all:
+        patterns: ["*"]
+        update-types: ["major", "minor", "patch"]
+---
