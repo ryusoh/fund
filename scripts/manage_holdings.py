@@ -1,9 +1,9 @@
 import json
 import argparse
 from pathlib import Path
-from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from decimal import Decimal, InvalidOperation
 import logging
-from typing import Dict, Any, Union
+from typing import Dict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -194,8 +194,6 @@ def main() -> None:
     sell_parser.add_argument('ticker', type=str, help='Stock ticker symbol (e.g., AAPL)')
     sell_parser.add_argument('shares', type=str, help='Number of shares sold (can be fractional)')
     sell_parser.add_argument('price', type=str, help='Price per share at which shares were sold')
-    
-    list_parser = subparsers.add_parser('list', help='List current holdings')
 
     args = parser.parse_args()
     holdings = load_holdings(args.file)

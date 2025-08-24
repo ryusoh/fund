@@ -16,7 +16,7 @@ for daily runs than recalculating the entire history. It does the following:
 import json
 import sys
 import csv
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Dict, Any, Optional
