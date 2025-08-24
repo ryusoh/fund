@@ -25,20 +25,20 @@ describe('utility functions', () => {
 
     describe('isTradingDay', () => {
       it('should return false for weekends', () => {
-        // Using specific dates that are definitely Saturday and Sunday
-        const saturday = new Date('2024-12-01'); // Saturday
-        const sunday = new Date('2024-12-02'); // Sunday
+        // Create dates in NY timezone like production code does
+        const saturday = new Date(new Date('2024-12-01T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const sunday = new Date(new Date('2024-12-08T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         expect(isTradingDay(saturday)).toBe(false);
         expect(isTradingDay(sunday)).toBe(false);
       });
 
       it('should return true for weekdays', () => {
-        // Using specific dates that are definitely weekdays
-        const monday = new Date('2024-12-03'); // Monday
-        const tuesday = new Date('2024-12-04'); // Tuesday
-        const wednesday = new Date('2024-12-05'); // Wednesday
-        const thursday = new Date('2024-12-06'); // Thursday
-        const friday = new Date('2024-12-07'); // Friday
+        // Create dates in NY timezone like production code does
+        const monday = new Date(new Date('2024-12-02T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const tuesday = new Date(new Date('2024-12-03T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const wednesday = new Date(new Date('2024-12-04T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const thursday = new Date(new Date('2024-12-05T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const friday = new Date(new Date('2024-12-06T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         
         expect(isTradingDay(monday)).toBe(true);
         expect(isTradingDay(tuesday)).toBe(true);
@@ -69,24 +69,24 @@ describe('utility functions', () => {
       });
 
       it('should return date when passed a trading day explicitly', () => {
-        const monday = new Date('2024-12-03'); // Monday
+        const monday = new Date(new Date('2024-12-02T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const result = getTradingDayDate(monday);
         expect(result).toBe(monday);
       });
 
       it('should return null when passed a weekend day explicitly', () => {
-        const saturday = new Date('2024-12-01'); // Saturday
+        const saturday = new Date(new Date('2024-12-01T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const result = getTradingDayDate(saturday);
         expect(result).toBe(null);
       });
 
       it('should cover both branches with explicit dates', () => {
         // Test the true branch of the ternary operator
-        const weekday = new Date('2024-12-03'); // Monday
+        const weekday = new Date(new Date('2024-12-02T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         expect(getTradingDayDate(weekday)).toBe(weekday);
         
         // Test the false branch of the ternary operator
-        const weekend = new Date('2024-12-01'); // Saturday
+        const weekend = new Date(new Date('2024-12-01T12:00:00').toLocaleString('en-US', { timeZone: 'America/New_York' }));
         expect(getTradingDayDate(weekend)).toBe(null);
       });
 
