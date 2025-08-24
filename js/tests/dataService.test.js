@@ -1,7 +1,7 @@
 import { loadAndDisplayPortfolioData, getCalendarData } from '../app/dataService.js';
 import * as chartManager from '../chart/chartManager.js';
 import * as d3 from 'https://esm.sh/d3@7';
-import { getNyDate } from '../utils/date.js';
+import { getNyDate, isTradingDay } from '../utils/date.js';
 
 // Mock dependencies
 global.fetch = jest.fn();
@@ -26,6 +26,7 @@ jest.mock('../ui/responsive.js', () => ({
 // Mock utils
 jest.mock('../utils/date.js', () => ({
     getNyDate: jest.fn(),
+    isTradingDay: jest.fn(),
 }));
 
 jest.mock('../utils/formatting.js', () => ({
@@ -60,10 +61,14 @@ describe('dataService', () => {
         d3.csv.mockClear();
         d3.json.mockClear();
         getNyDate.mockClear();
+        isTradingDay.mockClear();
         
-        // Default mock for getNyDate
+        // Default mock for getNyDate (Monday)
         const mockDate = new Date('2024-01-15T10:00:00Z');
         getNyDate.mockReturnValue(mockDate);
+        
+        // Default mock for isTradingDay (weekday)
+        isTradingDay.mockReturnValue(true);
     });
 
     describe('loadAndDisplayPortfolioData', () => {
@@ -671,6 +676,46 @@ describe('dataService', () => {
             const lastEntry = result.processedData[result.processedData.length - 1];
             expect(lastEntry.date).toBe(todayStr);
             expect(lastEntry.total).toBe(2550); // 15 * 170 = 2550
+        });
+
+        it('should not calculate real-time data on weekends (lines 214-216)', async () => {
+            // Arrange
+            const today = new Date('2024-01-13'); // Saturday
+            const todayStr = '2024-01-13';
+            getNyDate.mockReturnValue(today);
+            isTradingDay.mockReturnValue(false); // Weekend
+
+            const mockHistoricalCsv = [
+                { date: '2024-01-12', value_usd: '10000' }, // Friday
+            ];
+            const mockFx = { rates: { USD: 1.0 } };
+            const mockHoldings = { 'AAPL': { shares: '10' } };
+            const mockFund = { 'AAPL': '160.00' };
+
+            d3.csv.mockResolvedValue(mockHistoricalCsv);
+            d3.json.mockImplementation((url) => {
+                if (url.includes('fx')) return Promise.resolve(mockFx);
+                if (url.includes('holdings')) return Promise.resolve(mockHoldings);
+                if (url.includes('fund')) return Promise.resolve(mockFund);
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            // Act
+            const result = await getCalendarData({
+                historical: 'historical.csv',
+                fx: 'fx.json',
+                holdings: 'holdings.json',
+                fund: 'fund.json'
+            });
+
+            // Assert
+            // Should only have historical data, no real-time data for weekend
+            expect(result.processedData).toHaveLength(1);
+            expect(result.processedData[0].date).toBe('2024-01-12'); // Only Friday data
+            
+            // No Saturday data should be present
+            const saturdayEntry = result.processedData.find(d => d.date === todayStr);
+            expect(saturdayEntry).toBeUndefined();
         });
     });
 describe('additional coverage: processAndEnrichHoldings / createHoldingRow / processHistoricalData / calculateRealtimePnl', () => {

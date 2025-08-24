@@ -1,5 +1,5 @@
 import * as d3 from 'https://esm.sh/d3@7';
-import { getNyDate } from '../utils/date.js';
+import { getNyDate, isTradingDay } from '../utils/date.js';
 import { formatCurrency, formatNumber } from '../utils/formatting.js';
 import { getBlueColorForSlice, hexToRgba } from '../utils/colors.js';
 import { updatePieChart } from '../chart/chartManager.js';
@@ -208,6 +208,13 @@ function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue) {
         return null;
     }
 
+    const today = getNyDate();
+    
+    // Don't show real-time data on weekends - markets are closed
+    if (!isTradingDay(today)) {
+        return null;
+    }
+
     let currentTotalValue = 0;
     for (const ticker in holdingsData) {
         if (fundData[ticker]) {
@@ -217,7 +224,6 @@ function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue) {
 
     const dailyChange = currentTotalValue - lastHistoricalValue;
     const pnl = lastHistoricalValue === 0 ? 0 : (dailyChange / lastHistoricalValue);
-    const today = getNyDate();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     return {
