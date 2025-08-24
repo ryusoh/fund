@@ -29,7 +29,7 @@ const appState = {
  * @param {object} state The application state.
  * @param {object} currencySymbols The currency symbols object.
  */
-function renderLabels(cal, byDate, state, currencySymbols) {
+export function renderLabels(cal, byDate, state, currencySymbols) {
     if (!state.labelsVisible) {
         d3.select(CALENDAR_SELECTORS.heatmap).selectAll('text.ch-subdomain-text').html('');
         return;
@@ -177,7 +177,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
 /**
  * Initializes the calendar application.
  */
-async function initCalendar() {
+export async function initCalendar() {
     try {
         initCurrencyToggle();
 
@@ -190,10 +190,18 @@ async function initCalendar() {
 
     } catch (error) {
         console.error('Error initializing calendar:', error);
+        console.log(error);
         document.querySelector(CALENDAR_SELECTORS.container).innerHTML = `<p>${error.message}</p>`;
     }
 }
 
 // --- START ---
+// Avoid auto-running during Jest tests to prevent async side-effects
+export function autoInitCalendar() {
+  if (!(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
+    initCalendar();
+  }
+}
 
-initCalendar();
+// Auto-initialize the calendar
+autoInitCalendar();

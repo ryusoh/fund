@@ -1,4 +1,5 @@
 // Easing function for smoother animations
 export function easeInOutSine(x) {
-    return -(Math.cos(Math.PI * x) - 1) / 2;
+    const val = -(Math.cos(Math.PI * x) - 1) / 2;
+    return val === 0 ? 0 : val;
 }

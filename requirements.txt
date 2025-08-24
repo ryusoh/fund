@@ -1,3 +1,13 @@
 yfinance
 pandas
 polygon-api-client
+pytest
+pytest-mock
+
+# Development and CI tools
+ruff
+black
+mypy
+bandit
+pip-audit
+pytest-cov

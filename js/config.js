@@ -1,6 +1,6 @@
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-export const BASE_URL = isLocalhost ? '' : '/fund';
+import { isLocalhost } from './utils/host.js';
 
+export const BASE_URL = isLocalhost(window.location.hostname) ? '' : '/fund';
 export const HOLDINGS_DETAILS_URL = '../data/holdings_details.json';
 export const FUND_DATA_URL = '../data/fund_data.json';
 

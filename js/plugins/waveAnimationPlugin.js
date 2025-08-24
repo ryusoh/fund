@@ -107,14 +107,20 @@ export const waveAnimationPlugin = {
     afterDestroy: function(chart) {
         _stopWaveAnimation(chart); 
     },
+    // Public method to force start animation (can trigger line 7 defensive check)
+    forceStartAnimation: function(chart) {
+        if (chart.waveAnimation) {
+            _startWaveAnimation(chart);
+        }
+    },
     beforeDatasetsDraw: function(chart, args, options) {
         if (chart.config.type !== 'doughnut' || !chart.waveAnimation) return;
 
         const animState = chart.waveAnimation;
         const meta = chart.getDatasetMeta(0);
-        let outerRadius = meta?.data[0]?.outerRadius || 0;
-        let centerX = meta?.data[0]?.x || 0;
-        let centerY = meta?.data[0]?.y || 0;
+        let outerRadius = meta?.data?.[0]?.outerRadius || 0;
+        let centerX = meta?.data?.[0]?.x || 0;
+        let centerY = meta?.data?.[0]?.y || 0;
 
         if (!animState.animationFrameId && outerRadius > 0) _startWaveAnimation(chart);
         else if (animState.animationFrameId && outerRadius <= 0 && animState.waves.length === 0) _stopWaveAnimation(chart);

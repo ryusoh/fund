@@ -157,16 +157,360 @@ export function formatNumber(num, currencySymbols, withSign = false, currency = 
 
             let precision = 0;
             if (val > 0) {
-                precision = 4 - Math.floor(Math.log10(val)) - 1;
-                if (precision < 0) {
+                if (suffix === '' && val % 1 === 0) {
                     precision = 0;
-                }
-                if (suffix === 'k' && precision > 2) {
-                    precision = 2;
+                } else {
+                    precision = 4 - Math.floor(Math.log10(val)) - 1;
+                    if (precision < 0) {
+                        precision = 0;
+                    }
+                    if (suffix === 'k' && precision > 2) {
+                        precision = 2;
+                    }
                 }
             }
             formattedNum = symbol + val.toFixed(precision) + suffix;
         }
         return formattedNum;
     }
+}
+
+/**
+ * Formats a number to a string with a specified number of decimal places.
+ * @param {number} num The number to format.
+ * @param {number} decimalPlaces The number of decimal places.
+ * @returns {string} The formatted number string.
+ */
+export function toFixed(num, decimalPlaces) {
+    if (isNaN(num) || num === null) {
+        return '';
+    }
+    return num.toFixed(decimalPlaces);
+}
+
+/**
+ * Formats a number as a currency string.
+ * @param {number} amount The amount to format.
+ * @param {string} currency The currency code.
+ * @returns {string} The formatted currency string.
+ */
+export function formatAsCurrency(amount, currency) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
+/**
+ * Formats a number by adding commas as thousand separators.
+ * @param {number} num The number to format.
+ * @returns {string} The formatted number string.
+ */
+export function addCommas(num) {
+    if (num === null || num === undefined) {
+        return '';
+    }
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/**
+ * Formats a date object or string into "YYYY-MM-DD" format.
+ * @param {Date|string} date The date to format.
+ * @returns {string} The formatted date string.
+ */
+export function formatDate(date) {
+    if (!date) {
+        return '';
+    }
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Formats a number to a string with a sign (+ or -).
+ * @param {number} num The number to format.
+ * @returns {string} The formatted number string with a sign.
+ */
+export function formatWithSign(num) {
+    if (num > 0) {
+        return '+' + num;
+    }
+    return num.toString();
+}
+
+/**
+ * Formats a number to two decimal places.
+ * @param {number} num The number to format.
+ * @returns {string} The formatted number string.
+ */
+export function formatToTwoDecimals(num) {
+    return num.toFixed(2);
+}
+
+/**
+ * Formats a number to a percentage string.
+ * @param {number} num The number to format.
+ * @returns {string} The formatted percentage string.
+ */
+export function formatAsPercentage(num) {
+    return `${(num * 100).toFixed(2)}%`;
+}
+
+/**
+ * Formats a number to a compact string with a suffix (k, m, b).
+ * @param {number} num The number to format.
+ * @returns {string} The formatted compact number string.
+ */
+export function formatCompact(num) {
+    if (num >= 1e9) {
+        return (num / 1e9).toFixed(1) + 'b';
+    }
+    if (num >= 1e6) {
+        return (num / 1e6).toFixed(1) + 'm';
+    }
+    if (num >= 1e3) {
+        return (num / 1e3).toFixed(1) + 'k';
+    }
+    return num.toString();
+}
+
+/**
+ * Formats a number to a currency string with a specified currency symbol.
+ * @param {number} num The number to format.
+ * @param {string} symbol The currency symbol.
+ * @returns {string} The formatted currency string.
+ */
+export function formatWithCurrencySymbol(num, symbol) {
+    return `${symbol}${num.toFixed(2)}`;
+}
+
+/**
+ * Formats a number to a string with a specified precision.
+ * @param {number} num The number to format.
+ * @param {number} precision The precision.
+ * @returns {string} The formatted number string.
+ */
+export function formatWithPrecision(num, precision) {
+    return num.toPrecision(precision);
+}
+
+/**
+ * Formats a number to an exponential string.
+ * @param {number} num The number to format.
+ * @param {number} fractionDigits The number of fraction digits.
+ * @returns {string} The formatted exponential string.
+ */
+export function formatExponential(num, fractionDigits) {
+    return num.toExponential(fractionDigits);
+}
+
+/**
+ * Formats a number to a locale-specific string.
+ * @param {number} num The number to format.
+ * @param {string} locales The locales.
+ * @param {object} options The options.
+ * @returns {string} The formatted locale-specific string.
+ */
+export function formatToLocaleString(num, locales, options) {
+    return num.toLocaleString(locales, options);
+}
+
+/**
+ * Formats a number to a string with a specified radix.
+ * @param {number} num The number to format.
+ * @param {number} radix The radix.
+ * @returns {string} The formatted number string.
+ */
+export function formatToString(num, radix) {
+    return num.toString(radix);
+}
+
+/**
+ * Formats a number to a string with a specified number of significant digits.
+ * @param {number} num The number to format.
+ * @param {number} significantDigits The number of significant digits.
+ * @returns {string} The formatted number string.
+ */
+export function formatToPrecision(num, significantDigits) {
+    return num.toPrecision(significantDigits);
+}
+
+/**
+ * Formats a number to a string with a specified number of fraction digits.
+ * @param {number} num The number to format.
+ * @param {number} fractionDigits The number of fraction digits.
+ * @returns {string} The formatted number string.
+ */
+export function formatToFixed(num, fractionDigits) {
+    return num.toFixed(fractionDigits);
+}
+
+/**
+ * Formats a number to a string in exponential notation.
+ * @param {number} num The number to format.
+ * @param {number} fractionDigits The number of fraction digits.
+ * @returns {string} The formatted number string.
+ */
+export function formatToExponential(num, fractionDigits) {
+    return num.toExponential(fractionDigits);
+}
+
+/**
+ * Formats a number to a string in the specified locale.
+ * @param {number} num The number to format.
+ * @param {string} locale The locale.
+ * @returns {string} The formatted number string.
+ */
+export function formatToLocale(num, locale) {
+    return num.toLocaleString(locale);
+}
+
+/**
+ * Formats a number to a string with a specified number of leading zeros.
+ * @param {number} num The number to format.
+ * @param {number} length The desired length of the string.
+ * @returns {string} The formatted number string.
+ */
+export function padWithLeadingZeros(num, length) {
+    return num.toString().padStart(length, '0');
+}
+
+/**
+ * Formats a number to a string with a specified number of trailing zeros.
+ * @param {number} num The number to format.
+ * @param {number} length The desired length of the string.
+ * @returns {string} The formatted number string.
+ */
+export function padWithTrailingZeros(num, length) {
+    let str = num.toString();
+    if (str.indexOf('.') === -1) {
+        str += '.';
+    }
+    return str.padEnd(length, '0');
+}
+
+/**
+ * Formats a number to a string with a specified number of spaces.
+ * @param {number} num The number to format.
+ * @param {number} length The desired length of the string.
+ * @returns {string} The formatted number string.
+ */
+export function padWithSpaces(num, length) {
+    return num.toString().padStart(length, ' ');
+}
+
+/**
+ * Formats a number to a string with a specified character.
+ * @param {number} num The number to format.
+ * @param {number} length The desired length of the string.
+ * @param {string} char The character to use for padding.
+ * @returns {string} The formatted number string.
+ */
+export function padWithChar(num, length, char) {
+    return num.toString().padStart(length, char);
+}
+
+/**
+ * Formats a number to a string with a specified prefix.
+ * @param {number} num The number to format.
+ * @param {string} prefix The prefix.
+ * @returns {string} The formatted number string.
+ */
+export function addPrefix(num, prefix) {
+    return prefix + num.toString();
+}
+
+/**
+ * Formats a number to a string with a specified suffix.
+ * @param {number} num The number to format.
+ * @param {string} suffix The suffix.
+ * @returns {string} The formatted number string.
+ */
+export function addSuffix(num, suffix) {
+    return num.toString() + suffix;
+}
+
+/**
+ * Formats a number to a string with a specified separator.
+ * @param {number} num The number to format.
+ * @param {string} separator The separator.
+ * @returns {string} The formatted number string.
+ */
+export function addSeparator(num, separator) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator);
+}
+
+/**
+ * Formats a number to a string with a specified decimal separator.
+ * @param {number} num The number to format.
+ * @param {string} separator The decimal separator.
+ * @returns {string} The formatted number string.
+ */
+export function changeDecimalSeparator(num, separator) {
+    return num.toString().replace('.', separator);
+}
+
+/**
+ * Formats a number to a string with a specified thousand separator.
+ * @param {number} num The number to format.
+ * @param {string} separator The thousand separator.
+ * @returns {string} The formatted number string.
+ */
+export function changeThousandSeparator(num, separator) {
+    return num.toString().replace(/,/g, separator);
+}
+
+/**
+ * Formats a number to a string with a specified currency symbol position.
+ * @param {number} num The number to format.
+ * @param {string} symbol The currency symbol.
+ * @param {string} position The position of the currency symbol ('before' or 'after').
+ * @returns {string} The formatted number string.
+ */
+export function changeCurrencySymbolPosition(num, symbol, position) {
+    if (position === 'after') {
+        return num.toString() + symbol;
+    }
+    return symbol + num.toString();
+}
+
+/**
+ * Formats a number to a string with a specified sign position.
+ * @param {number} num The number to format.
+ * @param {string} position The position of the sign ('before' or 'after').
+ * @returns {string} The formatted number string.
+ */
+export function changeSignPosition(num, position) {
+    const sign = num > 0 ? '+' : '-';
+    const absNum = Math.abs(num);
+    if (position === 'after') {
+        return absNum.toString() + sign;
+    }
+    return sign + absNum.toString();
+}
+
+/**
+ * Formats a number to a string with a specified number of digits.
+ * @param {number} num The number to format.
+ * @param {number} digits The number of digits.
+ * @returns {string} The formatted number string.
+ */
+export function toDigits(num, digits) {
+    return num.toExponential(digits - 1);
+}
+
+/**
+ * Formats a number to a string with a specified number of integer digits.
+ * @param {number} num The number to format.
+ * @param {number} digits The number of integer digits.
+ * @returns {string} The formatted number string.
+ */
+export function toIntegerDigits(num, digits) {
+    const parts = num.toString().split('.');
+    return parts[0].padStart(digits, '0') + (parts[1] ? '.' + parts[1] : '');
 }

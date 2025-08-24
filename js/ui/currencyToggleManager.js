@@ -1,31 +1,33 @@
-let selectedCurrency = 'USD'; // Default, will be updated from active button
-const toggleContainer = document.getElementById('currencyToggleContainer');
-const currencyButtons = toggleContainer ? Array.from(toggleContainer.querySelectorAll('.currency-toggle')) : [];
-
 /**
  * Initializes the currency toggle behavior.
  */
 export function initCurrencyToggle() {
-    if (!toggleContainer || currencyButtons.length === 0) {
-        // console.warn('Currency toggle elements not found.');
+    const toggleContainer = document.getElementById('currencyToggleContainer');
+    if (!toggleContainer) {
+        return;
+    }
+    const currencyButtons = Array.from(toggleContainer.querySelectorAll('.currency-toggle'));
+    if (currencyButtons.length === 0) {
         return;
     }
 
-    // Determine initial selected currency from the 'active' class in HTML
+    let selectedCurrency;
+
     const activeButton = currencyButtons.find(button => button.classList.contains('active'));
     if (activeButton) {
         selectedCurrency = activeButton.dataset.currency;
+    } else {
+        selectedCurrency = 'USD'; // Default
     }
 
     toggleContainer.addEventListener('click', (event) => {
         const clickedButton = event.target.closest('.currency-toggle');
-        if (clickedButton) { // A currency button was clicked
+        if (clickedButton) {
             const newCurrency = clickedButton.dataset.currency;
             if (selectedCurrency !== newCurrency) {
                 currencyButtons.forEach(btn => btn.classList.remove('active'));
                 clickedButton.classList.add('active');
                 selectedCurrency = newCurrency;
-                console.log('Currency changed to:', selectedCurrency); // DEBUG
                 document.dispatchEvent(new CustomEvent('currencyChangedGlobal', { detail: { currency: selectedCurrency } }));
             }
         }

@@ -49,12 +49,14 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
         let pnlValue = 0;
         let pnlPercentage = 0;
 
-        if (!isNaN(shares) && !isNaN(currentPrice)) {
-            currentValue = shares * currentPrice;
-            if (!isNaN(cost) && cost !== 0) {
-                pnlValue = (currentPrice - cost) * shares;
-                const initialCostValue = cost * shares;
-                pnlPercentage = initialCostValue !== 0 ? (pnlValue / initialCostValue) * 100 : 0;
+        currentValue = shares * currentPrice;
+        if (cost !== 0) {
+            pnlValue = (currentPrice - cost) * shares;
+            const initialCostValue = cost * shares;
+            if (initialCostValue !== 0) {
+                pnlPercentage = (pnlValue / initialCostValue) * 100;
+            } else {
+                pnlPercentage = 0;
             }
         }
 
