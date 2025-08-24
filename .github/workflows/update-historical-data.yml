@@ -31,7 +31,7 @@ jobs:
         run: python scripts/update_daily_pnl.py
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "Automated daily historical portfolio data update"
           file_pattern: "data/historical_portfolio_values.csv"
