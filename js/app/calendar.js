@@ -79,64 +79,6 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
         });
 }
 
-/**
- * Creates and paints the calendar instance.
- * @param {Array<object>} processedData The data to display.
- * @returns {Promise<CalHeatmap>} A promise that resolves with the CalHeatmap instance.
- */
-async function createCalendarInstance(processedData) {
-    const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
-    const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
-
-    let calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
-    if (window.innerWidth > 768) {
-        calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
-    }
-
-    const cal = new CalHeatmap();
-
-    const tooltip = {
-        text: function (date, value, dayjsDate) {
-            const entry = processedData.find(d => d.date === dayjsDate.format('YYYY-MM-DD'));
-            const pnlPercent = (value * 100).toFixed(2);
-            const totalValue = entry ? entry.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : 'N/A';
-            const sign = value > 0 ? '+' : '';
-            const pnlClass = value > 0 ? 'pnl-positive' : (value < 0 ? 'pnl-negative' : '');
-
-            return `${dayjsDate.format('MMMM D, YYYY')}<br>` +
-                   `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
-                   `Value: ${totalValue}`;
-        },
-    };
-
-    const paintConfig = {
-        ...CALENDAR_CONFIG,
-        data: {
-            source: processedData,
-            x: 'date',
-            y: 'value',
-            groupY: 'max',
-        },
-        date: {
-            start: calendarStartDate,
-            min: firstDataDate,
-            max: lastDataDate,
-            highlight: [getNyDate()],
-        },
-        tooltip,
-        onMinDomainReached: (isMin) => {
-            document.querySelector(CALENDAR_SELECTORS.prevButton).disabled = isMin;
-        },
-        onMaxDomainReached: (isMax) => {
-            document.querySelector(CALENDAR_SELECTORS.nextButton).disabled = isMax;
-        },
-    };
-
-    await cal.paint(paintConfig);
-    return cal;
-}
-
-
 // --- EVENT HANDLING ---
 
 /**
@@ -147,21 +89,39 @@ async function createCalendarInstance(processedData) {
  * @param {object} currencySymbols The currency symbols object.
  */
 function setupEventListeners(cal, byDate, state, currencySymbols) {
+    cal.on('fill', () => {
+        renderLabels(cal, byDate, state, currencySymbols);
+    });
+
+    window.addEventListener('calendar-zoom-end', () => {
+        renderLabels(cal, byDate, state, currencySymbols);
+    });
+
     // Navigation
     document.querySelector(CALENDAR_SELECTORS.prevButton).addEventListener('click', (e) => {
         e.preventDefault();
-        cal.previous().then(() => renderLabels(cal, byDate, state, currencySymbols));
+        cal.previous();
     });
 
     document.querySelector(CALENDAR_SELECTORS.nextButton).addEventListener('click', (e) => {
         e.preventDefault();
-        cal.next().then(() => renderLabels(cal, byDate, state, currencySymbols));
+        cal.next();
     });
 
+    let clickTimer = null;
     document.querySelector(CALENDAR_SELECTORS.todayButton).addEventListener('click', (e) => {
         e.preventDefault();
-        state.labelsVisible = !state.labelsVisible;
-        cal.jumpTo(getNyDate()).then(() => renderLabels(cal, byDate, state, currencySymbols));
+
+        if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = null;
+        } else {
+            clickTimer = setTimeout(() => {
+                state.labelsVisible = !state.labelsVisible;
+                cal.jumpTo(getNyDate());
+                clickTimer = null;
+            }, 250);
+        }
     });
 
     // Currency toggle
@@ -184,8 +144,56 @@ export async function initCalendar() {
         const { processedData, byDate, rates } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
 
-        const cal = await createCalendarInstance(processedData);
+        const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
+        const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
+
+        let calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        if (window.innerWidth > 768) {
+            calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
+        }
+
+        const cal = new CalHeatmap();
+
         setupEventListeners(cal, byDate, appState, CURRENCY_SYMBOLS);
+
+        const tooltip = {
+            text: function (date, value, dayjsDate) {
+                const entry = processedData.find(d => d.date === dayjsDate.format('YYYY-MM-DD'));
+                const pnlPercent = (value * 100).toFixed(2);
+                const totalValue = entry ? entry.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : 'N/A';
+                const sign = value > 0 ? '+' : '';
+                const pnlClass = value > 0 ? 'pnl-positive' : (value < 0 ? 'pnl-negative' : '');
+
+                return `${dayjsDate.format('MMMM D, YYYY')}<br>` +
+                       `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
+                       `Value: ${totalValue}`;
+            },
+        };
+
+        const paintConfig = {
+            ...CALENDAR_CONFIG,
+            data: {
+                source: processedData,
+                x: 'date',
+                y: 'value',
+                groupY: 'max',
+            },
+            date: {
+                start: calendarStartDate,
+                min: firstDataDate,
+                max: lastDataDate,
+                highlight: [getNyDate()],
+            },
+            tooltip,
+            onMinDomainReached: (isMin) => {
+                document.querySelector(CALENDAR_SELECTORS.prevButton).disabled = isMin;
+            },
+            onMaxDomainReached: (isMax) => {
+                document.querySelector(CALENDAR_SELECTORS.nextButton).disabled = isMax;
+            },
+        };
+
+        await cal.paint(paintConfig);
         initCalendarResponsiveHandlers();
 
     } catch (error) {

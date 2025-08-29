@@ -78,6 +78,9 @@ export function initCalendarResponsiveHandlers() {
     if (todayButton && pageWrapper) {
         todayButton.addEventListener('dblclick', () => {
             pageWrapper.classList.toggle('zoomed');
+            pageWrapper.addEventListener('transitionend', () => {
+                window.dispatchEvent(new CustomEvent('calendar-zoom-end'));
+            }, { once: true });
         });
     }
 }
