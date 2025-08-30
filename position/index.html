@@ -15,7 +15,24 @@
     <meta name="theme-color" content="#000000">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Position</title>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" crossorigin="anonymous" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN">
+    <script type="importmap">
+      {
+        "imports": {
+          "@js/": "../js/",
+          "@pages/": "../js/pages/",
+          "@services/": "../js/services/",
+          "@charts/": "../js/charts/",
+          "@plugins/": "../js/plugins/",
+          "@ui/": "../js/ui/",
+          "@utils/": "../js/utils/",
+          "@vendor/": "../js/vendor/"
+        }
+      }
+    </script>
+    <script>(function(){
+      function loadCss(href){var l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l);} 
+      fetch('../assets/vendor/css/font-awesome-4.7.0.min.css',{cache:'no-store'}).then(function(r){if(r.ok){loadCss('../assets/vendor/css/font-awesome-4.7.0.min.css');}else{loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');}}).catch(function(){loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');});
+    })();</script>
     <link rel="stylesheet" href="../css/base.css">
     <link rel="stylesheet" href="../css/layout.css">
     <link rel="stylesheet" href="../css/table.css">
@@ -66,10 +83,38 @@
         </a>
     </footer>
 
-    <!-- Include Chart.js library (pinned version) -->
-    <script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"></script>
-    <!-- Include Chart.js Datalabels plugin -->
-    <script data-cfasync="false" src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js" crossorigin="anonymous" integrity="sha384-y49Zu59jZHJL/PLKgZPv3k2WI9c0Yp3pWB76V8OBVCb0QBKS8l4Ff3YslzHVX76Y"></script>
-    <script data-cfasync="false" type="module" src="../js/main.js"></script>
+    <!-- Load Chart.js and plugin in order with local-first, CDN-fallback, then load app module -->
+    <script>
+      (function () {
+        function loadScript(src) {
+          return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.crossOrigin = 'anonymous';
+            s.onload = function () { resolve(); };
+            s.onerror = function () { reject(new Error('Failed ' + src)); };
+            document.head.appendChild(s);
+          });
+        }
+        async function loadLocalOrCdn(localUrl, cdnUrl) {
+          // Try loading the local script; if it fails, fall back to CDN immediately
+          try {
+            await loadScript(localUrl);
+            return;
+          } catch (e) {
+            await loadScript(cdnUrl);
+          }
+        }
+        (async function () {
+          // Load Chart.js then Datalabels
+          await loadLocalOrCdn('../js/vendor/chart.umd.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js');
+          await loadLocalOrCdn('../js/vendor/chartjs-plugin-datalabels.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js');
+          var m = document.createElement('script');
+          m.type = 'module';
+          m.src = '../js/pages/position/index.js';
+          document.body.appendChild(m);
+        })();
+      })();
+    </script>
 </body>
 </html>

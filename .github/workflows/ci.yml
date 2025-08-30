@@ -110,6 +110,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+      - name: Fetch vendor assets
+        run: npm run vendor:fetch
 
       - name: Run tests
         run: npm test

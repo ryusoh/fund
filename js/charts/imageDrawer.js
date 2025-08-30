@@ -1,0 +1,133 @@
+import { LOGO_SIZE } from '@js/config.js';
+
+export function drawImage(ctx, arc, img, logoInfo) {
+    // Skip very small slices to avoid clutter (about 10 degrees)
+    const sliceAngle = Math.abs(arc.endAngle - arc.startAngle);
+    if (sliceAngle < Math.PI / 18) return;
+
+    const scale = typeof logoInfo.scale === 'number' ? logoInfo.scale : 1;
+    const renderAsWhite = !!logoInfo.renderAsWhite;
+    const opacity = typeof logoInfo.opacity === 'number' ? logoInfo.opacity : 1;
+
+    // Compute geometry
+    const band = Math.max(arc.outerRadius - arc.innerRadius, 1);
+    const midRadius = arc.innerRadius + band / 2;
+    const arcLen = midRadius * sliceAngle;
+
+    // Consistent visual height baseline (nearly uniform across slices)
+    //  - base height scales with chart radius but is clamped by the band thickness
+    //  - margins ensure a bit of breathing room inside the slice
+    const sliceFactor = Math.min(sliceAngle / (Math.PI / 2), 1);
+    let margin = 0.06 - 0.04 * sliceFactor; // 0.06..0.02
+
+    // Allow a per-logo tighter/looser fit to inner/outer arcs (radial margin)
+    const radialMargin = (typeof logoInfo.radialMargin === 'number') ? Math.max(0, Math.min(0.2, logoInfo.radialMargin)) : null;
+    if (radialMargin !== null) margin = radialMargin;
+
+    // Determine target height based on per-logo override or global defaults
+    const globalMode = (LOGO_SIZE && (LOGO_SIZE.mode === 'px' || LOGO_SIZE.mode === 'ratio')) ? LOGO_SIZE.mode : 'ratio';
+    const globalValue = (LOGO_SIZE && typeof LOGO_SIZE.value === 'number') ? LOGO_SIZE.value : 0.12;
+    const globalMinPx = (LOGO_SIZE && typeof LOGO_SIZE.minPx === 'number') ? LOGO_SIZE.minPx : 14;
+
+    let targetH;
+    if (typeof logoInfo.sizePx === 'number') {
+        targetH = logoInfo.sizePx;
+    } else if (typeof logoInfo.sizeRatio === 'number') {
+        targetH = arc.outerRadius * logoInfo.sizeRatio;
+    } else if (globalMode === 'px') {
+        targetH = globalValue;
+    } else {
+        targetH = arc.outerRadius * globalValue;
+    }
+
+    // Apply minimum and band-based clamp
+    targetH = Math.max(globalMinPx, Math.min(targetH, band * (1 - margin)));
+
+    // Maintain aspect ratio with desired height; width gets adjusted later against arc length
+    const aspect = img && img.width && img.height ? img.width / img.height : 1;
+    let drawH = targetH * scale;
+    let drawW = drawH * aspect;
+
+    // Pre-compute rotation to clamp extents in radial/tangential directions
+    let rotationRad;
+    if (logoInfo.rotation === false) {
+        rotationRad = 0;
+    } else if (typeof logoInfo.rotation === 'number') {
+        rotationRad = (logoInfo.rotation * Math.PI) / 180;
+    } else {
+        let defaultRotation = (arc.startAngle + sliceAngle / 2) + Math.PI / 2;
+        if (defaultRotation > Math.PI / 2) defaultRotation -= Math.PI;
+        if (defaultRotation < -Math.PI / 2) defaultRotation += Math.PI;
+        const maxRot = Math.PI / 2;
+        rotationRad = Math.max(-maxRot, Math.min(maxRot, defaultRotation));
+    }
+
+    const s = Math.abs(Math.sin(rotationRad || 0));
+    const c = Math.abs(Math.cos(rotationRad || 0));
+
+    // Clamp by arc length (tangential direction)
+    const maxWByArc = Math.max(1, arcLen * (1 - margin));
+    let tangentialExtent = drawH * s + drawW * c; // projected width along tangent after rotation
+    if (tangentialExtent > maxWByArc) {
+        const f = maxWByArc / tangentialExtent;
+        drawW *= f; drawH *= f;
+        tangentialExtent = maxWByArc;
+    }
+
+    // Clamp by band thickness (radial direction) — closer fit to inner/outer arcs for vertical-ish logos
+    const maxRadial = band * (1 - margin);
+    let radialExtent = drawH * c + drawW * s; // projected height along radius after rotation
+    if (radialExtent > maxRadial) {
+        const f = maxRadial / radialExtent;
+        drawW *= f; drawH *= f;
+        radialExtent = maxRadial;
+    }
+
+    // Center of the slice at mid radius
+    const angle = arc.startAngle + sliceAngle / 2;
+    const x = arc.x + Math.cos(angle) * midRadius;
+    const y = arc.y + Math.sin(angle) * midRadius;
+
+    // rotationRad already computed above
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    // Clip to the donut slice to keep logo inside
+    ctx.beginPath();
+    ctx.arc(arc.x, arc.y, arc.outerRadius, arc.startAngle, arc.endAngle);
+    ctx.arc(arc.x, arc.y, arc.innerRadius, arc.endAngle, arc.startAngle, true);
+    ctx.closePath();
+    ctx.clip();
+
+    // Move to center of slice and rotate
+    ctx.translate(x, y);
+    /* istanbul ignore next: rotationRad is always a number by construction */
+    if (typeof rotationRad === 'number') {
+        ctx.rotate(rotationRad);
+    }
+
+    if (renderAsWhite) {
+        // Use offscreen canvas to avoid getImageData readbacks on main canvas
+        const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        const off = document.createElement('canvas');
+        off.width = Math.max(1, Math.round(drawW * dpr));
+        off.height = Math.max(1, Math.round(drawH * dpr));
+        const offCtx = off.getContext('2d', { willReadFrequently: true });
+        if (offCtx) {
+            offCtx.save();
+            offCtx.scale(dpr, dpr);
+            offCtx.drawImage(img, 0, 0, drawW, drawH);
+            // Mask to white silhouette
+            offCtx.globalCompositeOperation = 'source-in';
+            offCtx.fillStyle = 'white';
+            offCtx.fillRect(0, 0, drawW, drawH);
+            offCtx.restore();
+        }
+        ctx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
+    } else {
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    }
+
+    ctx.restore();
+}

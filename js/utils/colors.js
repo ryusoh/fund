@@ -1,4 +1,4 @@
-import { COLOR_PALETTES } from '../config.js';
+import { COLOR_PALETTES } from '@js/config.js';
 
 export function getBlueColorForSlice(index) {
     // Larger slices (lower index) will get darker blues.

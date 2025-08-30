@@ -21,6 +21,8 @@ export const CHART_DEFAULTS = {
     DATALABELS_CONNECTOR_WIDTH: 1,
     // Chart layout
     LAYOUT_PADDING: { right: 35, left: 35 },
+    // Doughnut cutout (inner radius). Smaller value => thicker ring => more space for logos
+    CUTOUT: '50%',
 };
 
 export const APP_SETTINGS = {
@@ -59,16 +61,24 @@ export const PLUGIN_CONFIGS = {
     }
 };
 
+// Global logo sizing configuration for chart logos
+// mode: 'ratio' uses outerRadius * value; 'px' uses fixed pixels
+export const LOGO_SIZE = {
+    mode: 'ratio',
+    value: 0.13, // 13% of outerRadius by default
+    minPx: 14,   // minimum rendered height in pixels for legibility
+};
+
 const renderAsWhite = true;
 const opacity = 0.7;
 export const TICKER_TO_LOGO_MAP = {
     'GEO': { src: '/assets/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
-    'ANET': { src: '/assets/logo/anet.png', scale: 0.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'GOOG': { src: '/assets/logo/goog.png', scale: 0.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'PDD': { src: '/assets/logo/pdd.png', scale: 0.65, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'OXY': { src: '/assets/logo/oxy.png', scale: 1.3, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'BRK-B': { src: '/assets/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity },
-    'VT': { src: '/assets/logo/vt.png', scale: 0.8, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'ANET': { src: '/assets/logo/anet.png', scale: 1.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'GOOG': { src: '/assets/logo/goog.png', scale: 1.05, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'PDD': { src: '/assets/logo/pdd.png', scale: 1.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'OXY': { src: '/assets/logo/oxy.png', scale: 1.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    'BRK-B': { src: '/assets/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity, radialMargin: 1.2 },
+    'VT': { src: '/assets/logo/vt.png', scale: 2.1, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
 };
 
 export const DATA_PATHS = {

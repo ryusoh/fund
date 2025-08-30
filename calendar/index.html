@@ -15,13 +15,33 @@
     <meta name="theme-color" content="#000000">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Calendar</title>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" crossorigin="anonymous" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN">
+    <script>(function(){
+      function loadCss(href){var l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l);} 
+      fetch('../assets/vendor/css/font-awesome-4.7.0.min.css',{cache:'no-store'}).then(function(r){if(r.ok){loadCss('../assets/vendor/css/font-awesome-4.7.0.min.css');}else{loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');}}).catch(function(){loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');});
+    })();</script>
     <link rel="stylesheet" href="../css/base.css">
     <link rel="stylesheet" href="../css/layout.css">
     <link rel="stylesheet" href="../css/calendar.css">
     <link rel="stylesheet" href="../css/toggle.css">
-    <!-- Cal-Heatmap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css" crossorigin="anonymous" integrity="sha384-EpOdgazsl7oT0F2zBTliyoQVAhHXXDzyVK2pJBdCsfolvxdeGZzG1gotHY0sIja3">
+    <!-- Cal-Heatmap CSS (local-first, CDN-fallback) -->
+    <script>(function(){
+      function loadCss(href){var l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l);} 
+      fetch('../assets/vendor/css/cal-heatmap-4.2.4.css',{cache:'no-store'}).then(function(r){if(r.ok){loadCss('../assets/vendor/css/cal-heatmap-4.2.4.css');}else{loadCss('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css');}}).catch(function(){loadCss('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css');});
+    })();</script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@js/": "../js/",
+          "@pages/": "../js/pages/",
+          "@services/": "../js/services/",
+          "@charts/": "../js/charts/",
+          "@plugins/": "../js/plugins/",
+          "@ui/": "../js/ui/",
+          "@utils/": "../js/utils/",
+          "@vendor/": "../js/vendor/"
+        }
+      }
+    </script>
 </head>
 <body class="body-calendar no-pull-to-refresh">
     <a class="nav-back" href="https://www.lyeutsaon.com/fund" target="_self">
@@ -53,6 +73,6 @@
     </footer>
 
     <!-- Main script for the calendar page -->
-    <script type="module" src="../js/app/calendar.js"></script>
+    <script type="module" src="../js/pages/calendar/index.js"></script>
 </body>
 </html>

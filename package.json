@@ -4,7 +4,11 @@
   "description": "Frontend for the fund project",
   "main": "js/main.js",
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage",
+    "vendor:fetch": "node scripts/fetch_vendor.js",
+    "vendor:verify": "node scripts/check_vendor.js",
+    "vendor:clean": "node scripts/clean_vendor.js",
+    "vendor:refresh": "npm run vendor:clean && npm run vendor:fetch"
   },
   "devDependencies": {
     "@babel/core": "^7.28.3",
@@ -23,7 +27,8 @@
     },
     "collectCoverageFrom": [
       "js/**/*.js",
-      "!js/tests/**/*.js"
+      "!js/tests/**/*.js",
+      "!js/vendor/**"
     ],
     "coverageThreshold": {
       "global": {
@@ -37,8 +42,16 @@
       "^.+\\.js$": "babel-jest"
     },
     "moduleNameMapper": {
-      "https://esm.sh/d3@7": "<rootDir>/js/tests/__mocks__/d3.js",
-      "https://esm.sh/cal-heatmap@4.2.4": "<rootDir>/js/tests/__mocks__/cal-heatmap.js"
+      "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/js/tests/__mocks__/d3.js",
+      "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/js/tests/__mocks__/cal-heatmap.js",
+      "^@js/(.*)$": "<rootDir>/js/$1",
+      "^@pages/(.*)$": "<rootDir>/js/pages/$1",
+      "^@services/(.*)$": "<rootDir>/js/services/$1",
+      "^@charts/(.*)$": "<rootDir>/js/charts/$1",
+      "^@plugins/(.*)$": "<rootDir>/js/plugins/$1",
+      "^@ui/(.*)$": "<rootDir>/js/ui/$1",
+      "^@utils/(.*)$": "<rootDir>/js/utils/$1",
+      "^@vendor/(.*)$": "<rootDir>/js/tests/__mocks__/vendor/$1"
     }
   },
   "dependencies": {

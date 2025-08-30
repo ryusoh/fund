@@ -9,3 +9,8 @@ assets/logo/.DS_Store
 node_modules/
 # Test coverage reports
 coverage/
+
+# Vendor artifacts (fetched/bundled)
+js/vendor/
+js/fonts/
+assets/vendor/

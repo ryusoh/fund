@@ -1,4 +1,4 @@
-import { UI_BREAKPOINTS, CALENDAR_SELECTORS } from '../config.js';
+import { UI_BREAKPOINTS, CALENDAR_SELECTORS } from '@js/config.js';
 
 export function checkAndToggleVerticalScroll() {
     const isMobile = window.innerWidth <= UI_BREAKPOINTS.MOBILE;
