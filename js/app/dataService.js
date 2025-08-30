@@ -280,8 +280,6 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         const { sortedHoldings, totalPortfolioValue: totalPortfolioValueUSD, totalPnl: totalPnlUSD } = processAndEnrichHoldings(holdingsDetails, prices);
         const chartData = updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
 
-        console.log('Chart data for updatePieChart:', JSON.stringify(chartData, null, 2));
-
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
 
         const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;

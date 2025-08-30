@@ -23,6 +23,7 @@ describe('main.js application entry point', () => {
   const documentEventListeners = {};
   const windowEventListeners = {};
   let setIntervalCallback;
+  let visibilityHandler;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -41,6 +42,9 @@ describe('main.js application entry point', () => {
 
     jest.spyOn(document, 'addEventListener').mockImplementation((event, callback) => {
       documentEventListeners[event] = callback;
+      if (event === 'visibilitychange') {
+        visibilityHandler = callback;
+      }
     });
 
     jest.spyOn(window, 'addEventListener').mockImplementation((event, callback) => {
@@ -62,6 +66,17 @@ describe('main.js application entry point', () => {
     const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
     documentEventListeners.dblclick(event);
     expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('should initialize Chart plugins and UI on load', async () => {
+    await import('../main.js');
+    await documentEventListeners.DOMContentLoaded();
+    // Chart.register should be called for ChartDataLabels and two custom plugins
+    expect(global.Chart.register).toHaveBeenCalled();
+    expect(initCurrencyToggle).toHaveBeenCalled();
+    expect(initFooterToggle).toHaveBeenCalled();
+    expect(loadAndDisplayPortfolioData).toHaveBeenCalledWith('USD', { USD: 1.0, JPY: 110.0 }, expect.any(Object));
+    expect(alignToggleWithChartMobile).toHaveBeenCalled();
   });
 
   it('should handle failed FX data fetch with ok:false', async () => {
@@ -90,6 +105,8 @@ describe('main.js application entry point', () => {
     await import('../main.js');
     await documentEventListeners.DOMContentLoaded();
     expect(console.warn).toHaveBeenCalledWith('ChartDataLabels plugin NOT found. Ensure it is loaded before main.js.');
+    // Plugins still register without ChartDataLabels
+    expect(global.Chart.register).toHaveBeenCalled();
   });
 
   it('should error if Chart.js is not found', async () => {
@@ -141,11 +158,49 @@ describe('main.js application entry point', () => {
     expect(alignToggleWithChartMobile).toHaveBeenCalled();
   });
 
+  it('should skip scheduled update when document is hidden', async () => {
+    await import('../main.js');
+    await documentEventListeners.DOMContentLoaded();
+    // Pretend the document is hidden
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    await setIntervalCallback();
+    // Only the initial call from DOMContentLoaded should have occurred
+    expect(loadAndDisplayPortfolioData).toHaveBeenCalledTimes(1);
+  });
+
+  it('should refresh on visibility change to visible', async () => {
+    await import('../main.js');
+    await documentEventListeners.DOMContentLoaded();
+    // Hidden -> Visible
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    await documentEventListeners.visibilitychange();
+    expect(loadAndDisplayPortfolioData).toHaveBeenCalledTimes(2);
+    expect(alignToggleWithChartMobile).toHaveBeenCalled();
+  });
+
   it('should handle error during scheduled update', async () => {
     await import('../main.js');
     await documentEventListeners.DOMContentLoaded();
     loadAndDisplayPortfolioData.mockImplementationOnce(() => Promise.reject(new Error('Scheduled update error')));
     await setIntervalCallback();
     expect(console.error).toHaveBeenCalledWith('Error during scheduled portfolio data update:', expect.any(Error));
+  });
+
+  it('should handle error on visibility change refresh', async () => {
+    await import('../main.js');
+    await documentEventListeners.DOMContentLoaded();
+    loadAndDisplayPortfolioData.mockImplementationOnce(() => Promise.reject(new Error('Visibility error')));
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    await documentEventListeners.visibilitychange();
+    expect(console.error).toHaveBeenCalledWith('Error updating portfolio on visibility change:', expect.any(Error));
+  });
+
+  it('should not refresh on visibility change when hidden', async () => {
+    await import('../main.js');
+    await documentEventListeners.DOMContentLoaded();
+    const initialCalls = loadAndDisplayPortfolioData.mock.calls.length; // 1
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    await documentEventListeners.visibilitychange();
+    expect(loadAndDisplayPortfolioData).toHaveBeenCalledTimes(initialCalls);
   });
 });

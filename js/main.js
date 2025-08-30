@@ -74,10 +74,24 @@ document.addEventListener('currencyChangedGlobal', async (event) => {
 
 setInterval(async () => {
     try {
+        if (typeof document !== 'undefined' && document.hidden) {
+            return; // Skip updates when page is not visible
+        }
         await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
-        // After scheduled data refresh and chart update, re-align the toggle
         alignToggleWithChartMobile();
     } catch (error) {
         console.error('Error during scheduled portfolio data update:', error);
     }
 }, APP_SETTINGS.DATA_REFRESH_INTERVAL);
+
+// Refresh when tab becomes visible again
+document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+        try {
+            await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
+            alignToggleWithChartMobile();
+        } catch (error) {
+            console.error('Error updating portfolio on visibility change:', error);
+        }
+    }
+});

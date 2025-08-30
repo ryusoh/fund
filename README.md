@@ -59,7 +59,31 @@ fund/
 
 ## Automated Data Updates
 
-The fund data is automatically updated by a GitHub Actions workflow defined in `.github/workflows/update_data.yml`. This workflow runs on a schedule, executes the Python scripts to fetch the latest market data, and commits the updated data files to the repository.
+This project uses multiple GitHub Actions to keep data fresh:
+
+- `update-fund-data.yml` (every 30 min on weekdays): fetches latest prices via `scripts/update_fund_data.py` and updates `data/fund_data.json`.
+- `daily-forex-update.yml` (daily): fetches FX rates via `scripts/fetch_forex.py` and updates `data/fx_data.json`.
+- `update-historical-data.yml` (post‑close on weekdays): appends the latest daily values via `scripts/update_daily_pnl.py` and updates `data/historical_portfolio_values.csv`.
+
+All workflows commit changes back to the repository when files change.
+
+## Testing
+
+Run JavaScript tests (Jest):
+
+```bash
+npm install
+npm test
+```
+
+Run Python tests (pytest):
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+pytest --cov=.
+```
 
 ## Portfolio Management Script (`scripts/manage_holdings.py`)
 
