@@ -14,13 +14,14 @@ describe('initFooterToggle', () => {
     jest.clearAllMocks();
   });
 
-  // Test case 1: Both elements exist and event listeners are set up
-  it('should set up click listeners and toggle display when both elements exist', () => {
+  // Test case 1: Mobile mode toggles between total and PnL
+  it('should toggle on mobile (<=768px)', () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
     initFooterToggle();
 
     // Initial state (default display is usually block or inline-block)
-    expect(totalValueElement.style.display).toBe('');
-    expect(pnlElement.style.display).toBe('');
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('none');
 
     // Simulate click on totalValueElement
     totalValueElement.click();
@@ -31,6 +32,49 @@ describe('initFooterToggle', () => {
     pnlElement.click();
     expect(pnlElement.style.display).toBe('none');
     expect(totalValueElement.style.display).toBe('inline');
+  });
+
+  // Test case 1b: Desktop mode shows both and does not toggle
+  it('should show both on desktop (>768px) and ignore clicks', () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+    initFooterToggle();
+
+    // Both visible
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('inline');
+
+    // Clicks should not change visibility
+    totalValueElement.click();
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('inline');
+
+    pnlElement.click();
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('inline');
+  });
+
+  // Test case 1c: Switching from mobile to desktop detaches handlers and shows both
+  it('should detach mobile handlers on resize to desktop', () => {
+    // Start in mobile
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+    initFooterToggle();
+
+    // Verify mobile starts with only total visible
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('none');
+
+    // Switch to desktop and trigger resize
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+    window.dispatchEvent(new Event('resize'));
+
+    // Both should be visible and clicks should not toggle anymore
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('inline');
+
+    totalValueElement.click();
+    pnlElement.click();
+    expect(totalValueElement.style.display).toBe('inline');
+    expect(pnlElement.style.display).toBe('inline');
   });
 
   // Test case 2: totalValueElement does not exist

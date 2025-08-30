@@ -101,10 +101,17 @@ a.nav-back {
     }
 }
 
-#total-portfolio-value-in-table, .total-pnl {
-    cursor: pointer;
+/* Desktop default: show both, normal cursor */
+#table-footer-summary .total-pnl {
+    display: inline;
 }
 
-#table-footer-summary .total-pnl {
-    display: none;
+/* Mobile-specific footer behaviors */
+@media (max-width: 768px) {
+    #total-portfolio-value-in-table, .total-pnl {
+        cursor: pointer;
+    }
+    #table-footer-summary .total-pnl {
+        display: none; /* Hidden by default on mobile; toggled via JS */
+    }
 }
