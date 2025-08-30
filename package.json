@@ -5,6 +5,7 @@
   "main": "js/main.js",
   "scripts": {
     "test": "jest --coverage",
+    "dev": "python3 -m http.server 8000 --bind 127.0.0.1",
     "vendor:fetch": "node scripts/fetch_vendor.js",
     "vendor:verify": "node scripts/check_vendor.js",
     "vendor:clean": "node scripts/clean_vendor.js",

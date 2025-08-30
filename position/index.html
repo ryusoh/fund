@@ -25,7 +25,7 @@
           "@plugins/": "../js/plugins/",
           "@ui/": "../js/ui/",
           "@utils/": "../js/utils/",
-          "@vendor/": "../js/vendor/"
+          "@vendor/": "../assets/vendor/js/"
         }
       }
     </script>
@@ -107,8 +107,8 @@
         }
         (async function () {
           // Load Chart.js then Datalabels
-          await loadLocalOrCdn('../js/vendor/chart.umd.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js');
-          await loadLocalOrCdn('../js/vendor/chartjs-plugin-datalabels.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js');
+          await loadLocalOrCdn('../assets/vendor/js/chart.umd.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js');
+          await loadLocalOrCdn('../assets/vendor/js/chartjs-plugin-datalabels.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js');
           var m = document.createElement('script');
           m.type = 'module';
           m.src = '../js/pages/position/index.js';

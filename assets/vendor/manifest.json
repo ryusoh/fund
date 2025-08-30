@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2025-08-30T10:53:15.777Z",
+  "files": [
+    {
+      "url": "https://cdn.jsdelivr.net/npm/d3@7/+esm",
+      "file": "js/vendor/d3.v7.mjs",
+      "sha256": "c86957133e5dd5f1ccd99dd65b8f18e76619d8b0cd670c5382039d88a64e3e0e"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm",
+      "file": "js/vendor/cal-heatmap-4.2.4.mjs",
+      "sha256": "d9d4c7b46dfebb1b7521ee6f4598cc4e0378f57e2e7a0ca1d7ce3ac467135ec0"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js",
+      "file": "js/vendor/chart.umd.min.js",
+      "sha256": "b38076762f7363bc9e912b68b8e034826798db5df26bb61f000ec2e7a3137bc7"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js",
+      "file": "js/vendor/chartjs-plugin-datalabels.min.js",
+      "sha256": "20c08f3d9c6d2ef76df6d6a6f1127c0013339fe32add24222276c398c6308c38"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css",
+      "file": "assets/vendor/css/font-awesome-4.7.0.min.css",
+      "sha256": "799aeb25cc0373fdee0e1b1db7ad6c2f6a0e058dfadaa3379689f583213190bd"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css",
+      "file": "assets/vendor/css/cal-heatmap-4.2.4.css",
+      "sha256": "2d70c33309b23ec708d1667cbb4bc1c4763b096154ec1d012eddcdca3850f76e"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.woff2?v=4.7.0",
+      "file": "assets/vendor/fonts/fontawesome-webfont.woff2",
+      "sha256": "2adefcbc041e7d18fcf2d417879dc5a09997aa64d675b7a3c4b6ce33da13f3fe"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.woff?v=4.7.0",
+      "file": "assets/vendor/fonts/fontawesome-webfont.woff",
+      "sha256": "ba0c59deb5450f5cb41b3f93609ee2d0d995415877ddfa223e8a8a7533474f07"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.ttf?v=4.7.0",
+      "file": "assets/vendor/fonts/fontawesome-webfont.ttf",
+      "sha256": "aa58f33f239a0fb02f5c7a6c45c043d7a9ac9a093335806694ecd6d4edc0d6a8"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.eot?v=4.7.0",
+      "file": "assets/vendor/fonts/fontawesome-webfont.eot",
+      "sha256": "7bfcab6db99d5cfbf1705ca0536ddc78585432cc5fa41bbd7ad0f009033b2979"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.svg?v=4.7.0",
+      "file": "assets/vendor/fonts/fontawesome-webfont.svg",
+      "sha256": "ad6157926c1622ba4e1d03d478f1541368524bfc46f51e42fe0d945f7ef323e4"
+    }
+  ]
+}
