@@ -1,11 +1,12 @@
-import unittest
-from unittest.mock import patch, mock_open, MagicMock
 import json
-import pandas as pd
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 import tempfile
+import unittest
+from unittest.mock import MagicMock, mock_open, patch
+
+import pandas as pd
 
 # Assuming your scripts are in a package or your PYTHONPATH is set up correctly
 from scripts.extract_pnl_history import main as process_pnl_history
