@@ -1,5 +1,5 @@
 import { getNyDate, isTradingDay } from '@utils/date.js';
-import { formatCurrency, formatNumber } from '@utils/formatting.js';
+import { formatCurrency } from '@utils/formatting.js';
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { updatePieChart } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
@@ -10,7 +10,6 @@ import {
     CHART_DEFAULTS,
     TICKER_TO_LOGO_MAP,
     BASE_URL,
-    DATA_PATHS
 } from '@js/config.js';
 
 // --- Private Functions ---
@@ -73,11 +72,18 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
-function createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols) {
+function createHoldingRow(
+    holding,
+    totalPortfolioValueUSD,
+    currentCurrency,
+    exchangeRates,
+    currencySymbols
+) {
     const row = document.createElement('tr');
     row.dataset.ticker = holding.ticker;
 
-    const allocationPercentage = totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
+    const allocationPercentage =
+        totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
 
     row.innerHTML = `
         <td>${holding.name}</td>
@@ -94,7 +100,12 @@ function createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exch
     const pnlPercentageCell = row.querySelector('td.pnl-percentage');
 
     if (pnlCell && pnlPercentageCell) {
-        const formattedAbsolutePnlValueWithSymbol = formatCurrency(holding.pnlValue, currentCurrency, exchangeRates, currencySymbols);
+        const formattedAbsolutePnlValueWithSymbol = formatCurrency(
+            holding.pnlValue,
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        );
         let displayPnlValue;
         if (holding.pnlValue >= 0) {
             displayPnlValue = `+${formattedAbsolutePnlValueWithSymbol}`;
@@ -121,32 +132,52 @@ function createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exch
     return row;
 }
 
-function updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols) {
+function updateTableAndPrepareChartData(
+    sortedHoldings,
+    totalPortfolioValueUSD,
+    currentCurrency,
+    exchangeRates,
+    currencySymbols
+) {
     const tbody = document.querySelector('table tbody');
     tbody.innerHTML = '';
 
     const chartData = {
         labels: [],
-        datasets: [{
-            data: [],
-            backgroundColor: [],
-            borderColor: CHART_DEFAULTS.BORDER_COLOR,
-            borderWidth: CHART_DEFAULTS.BORDER_WIDTH,
-            images: []
-        }]
+        datasets: [
+            {
+                data: [],
+                backgroundColor: [],
+                borderColor: CHART_DEFAULTS.BORDER_COLOR,
+                borderWidth: CHART_DEFAULTS.BORDER_WIDTH,
+                images: [],
+            },
+        ],
     };
 
     sortedHoldings.forEach((holding, index) => {
-        const row = createHoldingRow(holding, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
+        const row = createHoldingRow(
+            holding,
+            totalPortfolioValueUSD,
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        );
         tbody.appendChild(row);
 
-        const allocationPercentage = totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
+        const allocationPercentage =
+            totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
         chartData.labels.push(holding.ticker);
         chartData.datasets[0].data.push(allocationPercentage);
         const baseColor = getBlueColorForSlice(index, sortedHoldings.length);
-        chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA));
-        
-        const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || { src: '/assets/logo/vt.png', scale: 1.0 };
+        chartData.datasets[0].backgroundColor.push(
+            hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA)
+        );
+
+        const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || {
+            src: '/assets/logo/vt.png',
+            scale: 1.0,
+        };
         const logoInfo = { ...originalLogoInfo, src: BASE_URL + originalLogoInfo.src };
         chartData.datasets[0].images.push(logoInfo);
     });
@@ -176,19 +207,21 @@ function processHistoricalData(rawData) {
     if (!rawData || rawData.length === 0) {
         return [];
     }
-    return rawData.map((d, i) => {
-        const currentValue = parseFloat(d.value_usd);
-        let dailyChange = 0;
-        let pnl = 0;
+    return rawData
+        .map((d, i) => {
+            const currentValue = parseFloat(d.value_usd);
+            let dailyChange = 0;
+            let pnl = 0;
 
-        if (i > 0) {
-            const previousValue = parseFloat(rawData[i - 1].value_usd);
-            dailyChange = currentValue - previousValue;
-            pnl = previousValue === 0 ? 0 : (dailyChange / previousValue);
-        }
+            if (i > 0) {
+                const previousValue = parseFloat(rawData[i - 1].value_usd);
+                dailyChange = currentValue - previousValue;
+                pnl = previousValue === 0 ? 0 : dailyChange / previousValue;
+            }
 
-        return { date: d.date, value: pnl, total: currentValue, dailyChange };
-    }).filter(d => d.date);
+            return { date: d.date, value: pnl, total: currentValue, dailyChange };
+        })
+        .filter((d) => d.date);
 }
 
 function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue) {
@@ -197,7 +230,7 @@ function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue) {
     }
 
     const today = getNyDate();
-    
+
     if (!isTradingDay(today)) {
         return null;
     }
@@ -205,12 +238,13 @@ function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue) {
     let currentTotalValue = 0;
     for (const ticker in holdingsData) {
         if (fundData[ticker]) {
-            currentTotalValue += parseFloat(holdingsData[ticker].shares) * parseFloat(fundData[ticker]);
+            currentTotalValue +=
+                parseFloat(holdingsData[ticker].shares) * parseFloat(fundData[ticker]);
         }
     }
 
     const dailyChange = currentTotalValue - lastHistoricalValue;
-    const pnl = lastHistoricalValue === 0 ? 0 : (dailyChange / lastHistoricalValue);
+    const pnl = lastHistoricalValue === 0 ? 0 : dailyChange / lastHistoricalValue;
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     return {
@@ -242,26 +276,51 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         const { holdingsDetails, prices } = await fetchPortfolioData();
 
         if (!holdingsDetails || !prices) {
-            console.error('Essential holding or price data missing, cannot update portfolio display.');
+            console.error(
+                'Essential holding or price data missing, cannot update portfolio display.'
+            );
             return;
         }
         if (!exchangeRates || !currencySymbols) {
-            console.error('Exchange rates or currency symbols missing, cannot update portfolio display correctly.');
+            console.error(
+                'Exchange rates or currency symbols missing, cannot update portfolio display correctly.'
+            );
             return;
         }
 
-        const { sortedHoldings, totalPortfolioValue: totalPortfolioValueUSD, totalPnl: totalPnlUSD } = processAndEnrichHoldings(holdingsDetails, prices);
-        const chartData = updateTableAndPrepareChartData(sortedHoldings, totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
+        const {
+            sortedHoldings,
+            totalPortfolioValue: totalPortfolioValueUSD,
+            totalPnl: totalPnlUSD,
+        } = processAndEnrichHoldings(holdingsDetails, prices);
+        const chartData = updateTableAndPrepareChartData(
+            sortedHoldings,
+            totalPortfolioValueUSD,
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        );
 
-        document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(totalPortfolioValueUSD, currentCurrency, exchangeRates, currencySymbols);
+        document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(
+            totalPortfolioValueUSD,
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        );
 
         const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;
-        const totalPnlPercentage = totalPortfolioCostUSD !== 0 ? (totalPnlUSD / totalPortfolioCostUSD) * 100 : 0;
+        const totalPnlPercentage =
+            totalPortfolioCostUSD !== 0 ? (totalPnlUSD / totalPortfolioCostUSD) * 100 : 0;
 
         const pnlContainer = document.getElementById('table-footer-summary');
         const pnlElement = pnlContainer.querySelector('.total-pnl');
 
-        const formattedPnl = formatCurrency(Math.abs(totalPnlUSD), currentCurrency, exchangeRates, currencySymbols);
+        const formattedPnl = formatCurrency(
+            Math.abs(totalPnlUSD),
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        );
         const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
         const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
 
@@ -275,7 +334,6 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
 
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();
-
     } catch (error) {
         console.error('Error fetching or processing fund data:', error);
     }
@@ -306,10 +364,14 @@ export async function getCalendarData(dataPaths) {
         valueForPnlCalculation = lastHistoricalData.total;
     }
 
-    const realtimeData = calculateRealtimePnl(allData.holdings, allData.fund, valueForPnlCalculation);
+    const realtimeData = calculateRealtimePnl(
+        allData.holdings,
+        allData.fund,
+        valueForPnlCalculation
+    );
 
     const processedData = combineData(historicalData, realtimeData);
-    const byDate = new Map(processedData.map(d => [d.date, d]));
+    const byDate = new Map(processedData.map((d) => [d.date, d]));
 
     return { processedData, byDate, rates };
 }

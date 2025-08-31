@@ -1,47 +1,95 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="shortcut icon" href="./assets/avatar_152x152.png" type="image/x-icon">
-    <link rel="icon" href="./assets/avatar_152x152.png">
-    <link rel="apple-touch-icon" href="./assets/avatar_152x152.png">
-    <link rel="bookmark" href="./assets/avatar_152x152.png" type="image/x-icon">
-    <!-- Make the web page capable of running as a standalone app -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <!-- Set status bar style for iOS -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Fund</title>
-    <script>(function(){
-      function loadCss(href){var l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l);} 
-      fetch('./assets/vendor/css/font-awesome-4.7.0.min.css',{cache:'no-store'}).then(function(r){if(r.ok){loadCss('./assets/vendor/css/font-awesome-4.7.0.min.css');}else{loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');}}).catch(function(){loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');});
-    })();</script>
-    <link rel="stylesheet" href="./css/base.css">
-    <link rel="stylesheet" href="./css/layout.css">
-    <link rel="stylesheet" href="./css/main_index.css">
-</head>
-<body class="body-main">
-    <div class="video-background">
-        <video autoplay loop muted playsinline src="./assets/mobile_bg.mp4"></video>
-    </div>
-    <img src="./assets/banner.png" alt="Banner" class="mobile-banner">
-    <a class="nav-back" href="https://www.lyeutsaon.com/" target="_self">
-        <i class="fa fa-chevron-right" style="color:black; opacity: 0.6;" aria-hidden="true"></i>
-    </a>
-    <div class="container">
-        <ul>
-            <li><a href="./position"><i class="fa fa-pie-chart"></i></a></li>
-            <li><a href="./calendar"><i class="fa fa-calendar"></i></a></li>
-            <li><a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer"><i class="fa fa-github"></i></a></li>
-            <li><a href="https://www.linkedin.com/in/zhuangliudev" target="_blank" rel="noopener noreferrer"><i class="fa fa-linkedin-square"></i></a></li>
-        </ul>
-    </div>
-    <footer>
-        <a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile">
-            <i class="fa fa-github" style="color:#aaa; opacity: 0.5;" aria-hidden="true"></i>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="shortcut icon" href="./assets/avatar_152x152.png" type="image/x-icon" />
+        <link rel="icon" href="./assets/avatar_152x152.png" />
+        <link rel="apple-touch-icon" href="./assets/avatar_152x152.png" />
+        <link rel="bookmark" href="./assets/avatar_152x152.png" type="image/x-icon" />
+        <!-- Make the web page capable of running as a standalone app -->
+        <meta name="mobile-web-app-capable" content="yes" />
+        <!-- Set status bar style for iOS -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#000000" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+        <title>Fund</title>
+        <script>
+            (function () {
+                function loadCss(href) {
+                    var l = document.createElement('link');
+                    l.rel = 'stylesheet';
+                    l.href = href;
+                    document.head.appendChild(l);
+                }
+                fetch('./assets/vendor/css/font-awesome-4.7.0.min.css', { cache: 'no-store' })
+                    .then(function (r) {
+                        if (r.ok) {
+                            loadCss('./assets/vendor/css/font-awesome-4.7.0.min.css');
+                        } else {
+                            loadCss(
+                                'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
+                            );
+                        }
+                    })
+                    .catch(function () {
+                        loadCss(
+                            'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
+                        );
+                    });
+            })();
+        </script>
+        <link rel="stylesheet" href="./css/base.css" />
+        <link rel="stylesheet" href="./css/layout.css" />
+        <link rel="stylesheet" href="./css/main_index.css" />
+    </head>
+    <body class="body-main">
+        <div class="video-background">
+            <video autoplay loop muted playsinline src="./assets/mobile_bg.mp4"></video>
+        </div>
+        <img src="./assets/banner.png" alt="Banner" class="mobile-banner" />
+        <a class="nav-back" href="https://www.lyeutsaon.com/" target="_self">
+            <i
+                class="fa fa-chevron-right"
+                style="color: black; opacity: 0.6"
+                aria-hidden="true"
+            ></i>
         </a>
-    </footer>
-    <script src="./js/ui/scroll_control.js"></script>
-</body>
+        <div class="container">
+            <ul>
+                <li>
+                    <a href="./position"><i class="fa fa-pie-chart"></i></a>
+                </li>
+                <li>
+                    <a href="./calendar"><i class="fa fa-calendar"></i></a>
+                </li>
+                <li>
+                    <a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer"
+                        ><i class="fa fa-github"></i
+                    ></a>
+                </li>
+                <li>
+                    <a
+                        href="https://www.linkedin.com/in/zhuangliudev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        ><i class="fa fa-linkedin-square"></i
+                    ></a>
+                </li>
+            </ul>
+        </div>
+        <footer>
+            <a
+                href="https://github.com/ryusoh"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub Profile"
+            >
+                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
+            </a>
+        </footer>
+        <script src="./js/ui/scroll_control.js"></script>
+    </body>
 </html>

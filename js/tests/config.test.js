@@ -1,10 +1,23 @@
-import { BASE_URL, HOLDINGS_DETAILS_URL, FUND_DATA_URL, COLORS, CHART_DEFAULTS, APP_SETTINGS, UI_BREAKPOINTS, CURRENCY_SYMBOLS, COLOR_PALETTES, PLUGIN_CONFIGS, TICKER_TO_LOGO_MAP, DATA_PATHS, CALENDAR_SELECTORS, CALENDAR_CONFIG } from '@js/config.js';
+import {
+    HOLDINGS_DETAILS_URL,
+    FUND_DATA_URL,
+    COLORS,
+    CHART_DEFAULTS,
+    APP_SETTINGS,
+    UI_BREAKPOINTS,
+    CURRENCY_SYMBOLS,
+    COLOR_PALETTES,
+    PLUGIN_CONFIGS,
+    TICKER_TO_LOGO_MAP,
+    DATA_PATHS,
+    CALENDAR_SELECTORS,
+    CALENDAR_CONFIG,
+} from '@js/config.js';
 import { isLocalhost } from '@utils/host';
 
 jest.mock('../utils/host');
 
 describe('Configuration', () => {
-
     // Test BASE_URL
     describe('BASE_URL', () => {
         it('should be an empty string when isLocalhost is true', () => {
@@ -57,7 +70,7 @@ describe('Configuration', () => {
         it('should have a range of 1 on mobile', () => {
             Object.defineProperty(window, 'innerWidth', {
                 writable: true,
-                value: 500
+                value: 500,
             });
             jest.isolateModules(() => {
                 const { CALENDAR_CONFIG } = require('../config.js');
@@ -68,7 +81,7 @@ describe('Configuration', () => {
         it('should have a range of 3 on desktop', () => {
             Object.defineProperty(window, 'innerWidth', {
                 writable: true,
-                value: 1024
+                value: 1024,
             });
             jest.isolateModules(() => {
                 const { CALENDAR_CONFIG } = require('../config.js');

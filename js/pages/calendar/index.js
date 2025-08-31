@@ -1,10 +1,5 @@
 import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
-import {
-    CURRENCY_SYMBOLS,
-    DATA_PATHS,
-    CALENDAR_SELECTORS,
-    CALENDAR_CONFIG,
-} from '@js/config.js';
+import { CURRENCY_SYMBOLS, DATA_PATHS, CALENDAR_SELECTORS, CALENDAR_CONFIG } from '@js/config.js';
 import { getNyDate } from '@utils/date.js';
 import { formatNumber } from '@utils/formatting.js';
 import { getCalendarData } from '@services/dataService.js';
@@ -61,10 +56,24 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                 .attr('x', x)
                 .text(dateText);
 
-            if (!entry || entry.dailyChange === 0) return;
+            if (!entry || entry.dailyChange === 0) {
+                return;
+            }
 
-            const changeText = formatNumber(entry.dailyChange, currencySymbols, true, state.selectedCurrency, state.rates);
-            const totalText = formatNumber(entry.total, currencySymbols, false, state.selectedCurrency, state.rates);
+            const changeText = formatNumber(
+                entry.dailyChange,
+                currencySymbols,
+                true,
+                state.selectedCurrency,
+                state.rates
+            );
+            const totalText = formatNumber(
+                entry.total,
+                currencySymbols,
+                false,
+                state.selectedCurrency,
+                state.rates
+            );
 
             el.append('tspan')
                 .attr('class', 'subdomain-line1')
@@ -131,7 +140,6 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
     });
 }
 
-
 // --- INITIALIZATION ---
 
 /**
@@ -167,8 +175,10 @@ export async function initCalendar() {
         const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
         const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
 
-        let calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
-        if (window.innerWidth > 768) calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
+        const calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        if (window.innerWidth > 768) {
+            calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
+        }
 
         const cal = new CalHeatmap();
 
@@ -176,15 +186,19 @@ export async function initCalendar() {
 
         const tooltip = {
             text: function (date, value, dayjsDate) {
-                const entry = processedData.find(d => d.date === dayjsDate.format('YYYY-MM-DD'));
+                const entry = processedData.find((d) => d.date === dayjsDate.format('YYYY-MM-DD'));
                 const pnlPercent = (value * 100).toFixed(2);
-                const totalValue = entry ? entry.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : 'N/A';
+                const totalValue = entry
+                    ? entry.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                    : 'N/A';
                 const sign = value > 0 ? '+' : '';
-                const pnlClass = value > 0 ? 'pnl-positive' : (value < 0 ? 'pnl-negative' : '');
+                const pnlClass = value > 0 ? 'pnl-positive' : value < 0 ? 'pnl-negative' : '';
 
-                return `${dayjsDate.format('MMMM D, YYYY')}<br>` +
-                       `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
-                       `Value: ${totalValue}`;
+                return (
+                    `${dayjsDate.format('MMMM D, YYYY')}<br>` +
+                    `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
+                    `Value: ${totalValue}`
+                );
             },
         };
 
@@ -213,7 +227,6 @@ export async function initCalendar() {
 
         await cal.paint(paintConfig);
         initCalendarResponsiveHandlers();
-
     } catch (error) {
         console.error('Error initializing calendar:', error);
         console.log(error);
@@ -224,9 +237,9 @@ export async function initCalendar() {
 // --- START ---
 // Avoid auto-running during Jest tests to prevent async side-effects
 export function autoInitCalendar() {
-  if (!(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
-    initCalendar();
-  }
+    if (!(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
+        initCalendar();
+    }
 }
 
 // Auto-initialize the calendar

@@ -1,61 +1,87 @@
 {
-  "name": "fund-frontend",
-  "version": "1.0.0",
-  "description": "Frontend for the fund project",
-  "main": "js/main.js",
-  "scripts": {
-    "test": "jest --coverage",
-    "dev": "python3 -m http.server 8000 --bind 127.0.0.1",
-    "vendor:fetch": "node scripts/fetch_vendor.js",
-    "vendor:verify": "node scripts/check_vendor.js",
-    "vendor:clean": "node scripts/clean_vendor.js",
-    "vendor:refresh": "npm run vendor:clean && npm run vendor:fetch"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.28.3",
-    "@babel/preset-env": "^7.28.3",
-    "@testing-library/jest-dom": "^6.8.0",
-    "babel-jest": "^30.0.5",
-    "jest": "^30.0.5",
-    "jest-environment-jsdom": "^30.0.5"
-  },
-  "jest": {
-    "silent": true,
-    "testEnvironment": "jsdom",
-    "testEnvironmentOptions": {
-      "url": "http://localhost",
-      "console": "off"
+    "name": "fund-frontend",
+    "version": "1.0.0",
+    "description": "Frontend for the fund project",
+    "main": "js/main.js",
+    "scripts": {
+        "test": "jest --coverage",
+        "dev": "python3 -m http.server 8000 --bind 127.0.0.1",
+        "lint:js": "eslint . --ext .js",
+        "lint:css": "stylelint \"**/*.css\"",
+        "lint": "npm run lint:js && npm run lint:css",
+        "lint:fix": "eslint . --ext .js --fix && stylelint \"**/*.css\" --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "prepare": "husky install",
+        "vendor:fetch": "node scripts/fetch_vendor.js",
+        "vendor:verify": "node scripts/check_vendor.js",
+        "vendor:clean": "node scripts/clean_vendor.js",
+        "vendor:refresh": "npm run vendor:clean && npm run vendor:fetch"
     },
-    "collectCoverageFrom": [
-      "js/**/*.js",
-      "!js/tests/**/*.js",
-      "!js/vendor/**"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
-      }
+    "devDependencies": {
+        "@babel/core": "^7.28.3",
+        "@babel/preset-env": "^7.28.3",
+        "@stylistic/stylelint-plugin": "^4.0.0",
+        "@testing-library/jest-dom": "^6.8.0",
+        "babel-jest": "^30.0.5",
+        "eslint": "^9.9.0",
+        "husky": "^9.1.6",
+        "lint-staged": "^15.2.10",
+        "prettier": "^3.3.3",
+        "jest": "^30.0.5",
+        "jest-environment-jsdom": "^30.0.5",
+        "stylelint": "^16.8.1"
     },
-    "transform": {
-      "^.+\\.js$": "babel-jest"
+    "lint-staged": {
+        "*.js": [
+            "prettier --write",
+            "eslint --fix"
+        ],
+        "*.css": [
+            "prettier --write",
+            "stylelint --fix"
+        ],
+        "*.{md,json,html,yml,yaml}": [
+            "prettier --write"
+        ]
     },
-    "moduleNameMapper": {
-      "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/js/tests/__mocks__/d3.js",
-      "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/js/tests/__mocks__/cal-heatmap.js",
-      "^@js/(.*)$": "<rootDir>/js/$1",
-      "^@pages/(.*)$": "<rootDir>/js/pages/$1",
-      "^@services/(.*)$": "<rootDir>/js/services/$1",
-      "^@charts/(.*)$": "<rootDir>/js/charts/$1",
-      "^@plugins/(.*)$": "<rootDir>/js/plugins/$1",
-      "^@ui/(.*)$": "<rootDir>/js/ui/$1",
-      "^@utils/(.*)$": "<rootDir>/js/utils/$1",
-      "^@vendor/(.*)$": "<rootDir>/js/tests/__mocks__/vendor/$1"
+    "jest": {
+        "silent": true,
+        "testEnvironment": "jsdom",
+        "testEnvironmentOptions": {
+            "url": "http://localhost",
+            "console": "off"
+        },
+        "collectCoverageFrom": [
+            "js/**/*.js",
+            "!js/tests/**/*.js",
+            "!js/vendor/**"
+        ],
+        "coverageThreshold": {
+            "global": {
+                "branches": 100,
+                "functions": 100,
+                "lines": 100,
+                "statements": 100
+            }
+        },
+        "transform": {
+            "^.+\\.js$": "babel-jest"
+        },
+        "moduleNameMapper": {
+            "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/js/tests/__mocks__/d3.js",
+            "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/js/tests/__mocks__/cal-heatmap.js",
+            "^@js/(.*)$": "<rootDir>/js/$1",
+            "^@pages/(.*)$": "<rootDir>/js/pages/$1",
+            "^@services/(.*)$": "<rootDir>/js/services/$1",
+            "^@charts/(.*)$": "<rootDir>/js/charts/$1",
+            "^@plugins/(.*)$": "<rootDir>/js/plugins/$1",
+            "^@ui/(.*)$": "<rootDir>/js/ui/$1",
+            "^@utils/(.*)$": "<rootDir>/js/utils/$1",
+            "^@vendor/(.*)$": "<rootDir>/js/tests/__mocks__/vendor/$1"
+        }
+    },
+    "dependencies": {
+        "canvas": "^3.2.0"
     }
-  },
-  "dependencies": {
-    "canvas": "^3.2.0"
-  }
 }

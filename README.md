@@ -12,10 +12,10 @@ The project includes Python scripts for data management and a GitHub Actions wor
 
 ## Features
 
-*   Dynamic display of portfolio holdings.
-*   Donut chart visualization of fund allocation.
-*   Automated updates of fund market data via GitHub Actions.
-*   Responsive design for desktop and mobile viewing.
+- Dynamic display of portfolio holdings.
+- Donut chart visualization of fund allocation.
+- Automated updates of fund market data via GitHub Actions.
+- Responsive design for desktop and mobile viewing.
 
 ## Project Structure
 
@@ -39,17 +39,17 @@ fund/
     ```
 2.  **Python Scripts Setup:**
     If you need to run the Python scripts locally (e.g., `update_fund_data.py`, `manage_holdings.py`):
-    *   Ensure Python 3.x is installed.
-    *   Create a virtual environment (recommended):
+    - Ensure Python 3.x is installed.
+    - Create a virtual environment (recommended):
         ```bash
         python -m venv venv
         source venv/bin/activate  # On Windows: venv\Scripts\activate
         ```
-    *   Install dependencies:
+    - Install dependencies:
         ```bash
-        pip install -r requirements.txt 
+        pip install -r requirements.txt
         ```
-    *   Run scripts as needed, e.g.:
+    - Run scripts as needed, e.g.:
         ```bash
         python scripts/update_fund_data.py
         python scripts/manage_holdings.py --file data/holdings_details.json list
@@ -91,16 +91,16 @@ This Python script helps you manage your stock portfolio by tracking buy and sel
 
 ### Features
 
-*   **Track Holdings**: Maintains a record of your shares and average purchase price for each ticker in `data/holdings_details.json`.
-*   **Buy Transactions**: Add new purchases, updating share count and recalculating the average price. Handles new tickers.
-*   **Sell Transactions**: Record sales, updating share count. Calculates realized profit/loss for the transaction. If all shares of a ticker are sold, it's removed from holdings.
-*   **List Holdings**: Display a summary of your current portfolio, including cost basis per holding and total portfolio cost basis.
-*   **Data Persistence**: Holdings are saved in a JSON file (default: `data/holdings_details.json`).
-*   **Precision**: Uses `Decimal` for financial calculations to ensure accuracy.
+- **Track Holdings**: Maintains a record of your shares and average purchase price for each ticker in `data/holdings_details.json`.
+- **Buy Transactions**: Add new purchases, updating share count and recalculating the average price. Handles new tickers.
+- **Sell Transactions**: Record sales, updating share count. Calculates realized profit/loss for the transaction. If all shares of a ticker are sold, it's removed from holdings.
+- **List Holdings**: Display a summary of your current portfolio, including cost basis per holding and total portfolio cost basis.
+- **Data Persistence**: Holdings are saved in a JSON file (default: `data/holdings_details.json`).
+- **Precision**: Uses `Decimal` for financial calculations to ensure accuracy.
 
 ### Prerequisites
 
-*   Python 3.6+
+- Python 3.6+
 
 ### Setup
 
@@ -122,14 +122,14 @@ The script is run from the command line.
 
 **General Syntax (run from project root):**
 
- ```bash
- python scripts/manage_holdings.py [options] <command> [command_args...]
- ```
+```bash
+python scripts/manage_holdings.py [options] <command> [command_args...]
+```
 
 **Options:**
 
-*   `--file FILEPATH`: Specifies the path to the holdings JSON file.
-    *   Defaults to `holdings_details.json` located in the same directory as the script (e.g., `data/holdings_details.json`).
+- `--file FILEPATH`: Specifies the path to the holdings JSON file.
+    - Defaults to `holdings_details.json` located in the same directory as the script (e.g., `data/holdings_details.json`).
 
 **Commands:**
 
@@ -145,9 +145,9 @@ python scripts/manage_holdings.py buy <TICKER> <SHARES> <PRICE>
 
 **Arguments:**
 
-*   `<TICKER>`: The stock ticker symbol (e.g., `AAPL`, `GOOGL`). Case-insensitive (will be stored as uppercase).
-*   `<SHARES>`: The number of shares purchased (e.g., `10`, `25.5`). Must be positive.
-*   `<PRICE>`: The price per share at which they were purchased (e.g., `150.75`). Must be non-negative.
+- `<TICKER>`: The stock ticker symbol (e.g., `AAPL`, `GOOGL`). Case-insensitive (will be stored as uppercase).
+- `<SHARES>`: The number of shares purchased (e.g., `10`, `25.5`). Must be positive.
+- `<PRICE>`: The price per share at which they were purchased (e.g., `150.75`). Must be non-negative.
 
 **Example:**
 
@@ -172,9 +172,9 @@ python scripts/manage_holdings.py sell <TICKER> <SHARES> <PRICE>
 
 **Arguments:**
 
-*   `<TICKER>`: The stock ticker symbol (e.g., `AAPL`).
-*   `<SHARES>`: The number of shares sold (e.g., `5`, `10.5`). Must be positive and not exceed current holdings.
-*   `<PRICE>`: The price per share at which they were sold (e.g., `180.20`). Must be non-negative.
+- `<TICKER>`: The stock ticker symbol (e.g., `AAPL`).
+- `<SHARES>`: The number of shares sold (e.g., `5`, `10.5`). Must be positive and not exceed current holdings.
+- `<PRICE>`: The price per share at which they were sold (e.g., `180.20`). Must be non-negative.
 
 **Example:**
 
@@ -207,14 +207,15 @@ Example data/holdings_details.json content:
 
 ```json
 {
-  "AAPL": {
-    "shares": "10.0",
-    "average_price": "172.000000"
-  },
-  "MSFT": {
-    "shares": "5.5",
-    "average_price": "300.250000"
-  }
+    "AAPL": {
+        "shares": "10.0",
+        "average_price": "172.000000"
+    },
+    "MSFT": {
+        "shares": "5.5",
+        "average_price": "300.250000"
+    }
 }
 ```
+
 Note: Shares and average prices are stored as strings in the JSON file to maintain precision using the Decimal type in Python. The script handles conversions internally.

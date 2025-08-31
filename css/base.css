@@ -1,24 +1,32 @@
 /* JetBrains Mono – regular and italics */
-@font-face{
-    font-family:'JetBrains Mono';
-    src:url('../assets/fonts/webfonts/JetBrainsMono-Thin.woff2') format('woff2'); /* Adjusted path */
-    font-weight:100;font-style:normal;font-display:swap;
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-Thin.woff2') format('woff2'); /* Adjusted path */
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
 }
-@font-face{
-    font-family:'JetBrains Mono';
-    src:url('../assets/fonts/webfonts/JetBrainsMono-ThinItalic.woff2') format('woff2'); /* Adjusted path */
-    font-weight:100;font-style:italic;font-display:swap;
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-ThinItalic.woff2') format('woff2'); /* Adjusted path */
+    font-weight: 100;
+    font-style: italic;
+    font-display: swap;
 }
 
-@font-face{
-    font-family:'JetBrains Mono';
-    src:url('../assets/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2'); /* Adjusted path */
-    font-weight:400;font-style:normal;font-display:swap;
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2'); /* Adjusted path */
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
 }
-@font-face{
-    font-family:'JetBrains Mono';
-    src:url('../assets/fonts/webfonts/JetBrainsMono-Italic.woff2') format('woff2'); /* Adjusted path */
-    font-weight:400;font-style:italic;font-display:swap;
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-Italic.woff2') format('woff2'); /* Adjusted path */
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
 }
 
 body {
@@ -26,15 +34,28 @@ body {
     margin: 0; /* Remove default browser margins */
     min-height: 100vh; /* Ensure body takes up at least the full viewport height */
     min-height: 100dvh; /* Use dynamic viewport height for mobile Safari */
-    font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-family:
+        'JetBrains Mono',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif,
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Segoe UI Symbol';
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     padding: 20px; /* Add some padding so content isn't at the very edge */
-    background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/images/DSCF1157.jpg) center center no-repeat !important;
+    background: #000
+        url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/images/DSCF1157.jpg)
+        center center no-repeat !important;
     background-size: cover !important;
     -webkit-user-select: none; /* Safari */
-    -moz-user-select: none;    /* Firefox */
-    -ms-user-select: none;     /* Internet Explorer/Edge */
-    user-select: none;         /* Standard syntax */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Standard syntax */
     touch-action: manipulation; /* Prevent double-tap to zoom globally, allow pan/pinch */
 }
 

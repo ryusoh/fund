@@ -6,14 +6,16 @@ body {
         display: none;
     }
     /* Hide scrollbar for IE, Edge and Firefox */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
 }
 
 /* Set a different background for the calendar page ONLY on desktop screens */
 @media (min-width: 769px) {
     body.body-main {
-        background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0332.jpg) center center no-repeat !important;
+        background: #000
+            url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0332.jpg)
+            center center no-repeat !important;
         background-size: cover !important;
     }
 
@@ -30,10 +32,10 @@ body {
     position: absolute;
     z-index: 3;
     top: 0; /* Initial top position */
-    background: rgba(0,0,0,0.7); /* Desktop default */
+    background: rgba(0, 0, 0, 0.7); /* Desktop default */
     color: #fff;
     text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
-    opacity: .5;
+    opacity: 0.5;
     padding: 5px 15px 5px 15px; /* Adjusted padding */
 }
 
@@ -52,7 +54,9 @@ a {
     text-decoration: none;
     color: #fff;
     font-size: 1em;
-    transition: background-color 0.3s, color 0.3s;
+    transition:
+        background-color 0.3s,
+        color 0.3s;
     opacity: 0.7;
 }
 a:hover {
@@ -63,7 +67,8 @@ a:hover {
 
 /* Media Queries for .container position and background */
 @media screen and (max-width: 768px) {
-    body { /* Specific body overrides for mobile */
+    body {
+        /* Specific body overrides for mobile */
         background: #111;
     }
     .container {
@@ -76,7 +81,7 @@ a:hover {
         opacity: 0.65; /* Increased opacity for mobile */
     }
     li {
-    margin-bottom: 10px;
+        margin-bottom: 10px;
     }
 
     .video-background {
@@ -121,7 +126,7 @@ a:hover {
         left: 300px;
         right: auto;
         bottom: auto;
-        background: rgba(0,0,0, .9); /* More opaque for larger screens */
+        background: rgba(0, 0, 0, 0.9); /* More opaque for larger screens */
     }
 }
 

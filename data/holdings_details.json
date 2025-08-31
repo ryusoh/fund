@@ -1,30 +1,30 @@
 {
-  "VT": {
-    "shares": "2601.642",
-    "average_price": "95.650000"
-  },
-  "ANET": {
-    "shares": "2413.5504",
-    "average_price": "65.393456"
-  },
-  "GOOG": {
-    "shares": "777.338",
-    "average_price": "173.430000"
-  },
-  "PDD": {
-    "shares": "1116.597",
-    "average_price": "106.840592"
-  },
-  "BRK-B": {
-    "shares": "111",
-    "average_price": "334.960000"
-  },
-  "OXY": {
-    "shares": "1377.242",
-    "average_price": "48.818770"
-  },
-  "GEO": {
-    "shares": "595.834",
-    "average_price": "18.956939"
-  }
+    "VT": {
+        "shares": "2601.642",
+        "average_price": "95.650000"
+    },
+    "ANET": {
+        "shares": "2413.5504",
+        "average_price": "65.393456"
+    },
+    "GOOG": {
+        "shares": "777.338",
+        "average_price": "173.430000"
+    },
+    "PDD": {
+        "shares": "1116.597",
+        "average_price": "106.840592"
+    },
+    "BRK-B": {
+        "shares": "111",
+        "average_price": "334.960000"
+    },
+    "OXY": {
+        "shares": "1377.242",
+        "average_price": "48.818770"
+    },
+    "GEO": {
+        "shares": "595.834",
+        "average_price": "18.956939"
+    }
 }

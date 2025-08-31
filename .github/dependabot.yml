@@ -1,27 +1,27 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: "/"
-    schedule: { interval: weekly }
-    labels: ["dependencies", "npm", "automerge"]
-    groups:
-      npm-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule: { interval: weekly }
-    labels: ["ci", "automerge"]
-    groups:
-      gha-patches:
-        patterns: ["*"]
-        update-types: ["patch"]
+    - package-ecosystem: npm
+      directory: '/'
+      schedule: { interval: weekly }
+      labels: ['dependencies', 'npm', 'automerge']
+      groups:
+          npm-minor-patch:
+              patterns: ['*']
+              update-types: ['minor', 'patch']
+    - package-ecosystem: github-actions
+      directory: '/'
+      schedule: { interval: weekly }
+      labels: ['ci', 'automerge']
+      groups:
+          gha-patches:
+              patterns: ['*']
+              update-types: ['patch']
 
-  - package-ecosystem: pip
-    directory: "/"
-    schedule: { interval: weekly }
-    labels: ["dependencies", "automerge"]
-    groups:
-      pip-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+    - package-ecosystem: pip
+      directory: '/'
+      schedule: { interval: weekly }
+      labels: ['dependencies', 'automerge']
+      groups:
+          pip-minor-patch:
+              patterns: ['*']
+              update-types: ['minor', 'patch']

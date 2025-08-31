@@ -15,7 +15,8 @@ export const CHART_DEFAULTS = {
     BACKGROUND_ALPHA: 0.9, // Used for pie slice background
     // For chart datalabels and general text
     DATALABELS_COLOR: 'rgba(235, 235, 245, 0.6)',
-    DEFAULT_FONT_FAMILY: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+    DEFAULT_FONT_FAMILY:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
     DATALABELS_FONT_SIZE: 10,
     DATALABELS_OFFSET: 8,
     DATALABELS_CONNECTOR_WIDTH: 1,
@@ -43,9 +44,15 @@ export const CURRENCY_SYMBOLS = {
 export const COLOR_PALETTES = {
     // Palette for pie chart slices
     PIE_CHART_SLICE_COLORS: [
-        '#2B2B2B', '#333333', '#4F4F4F', '#606060',
-        '#757575', '#888888', '#A0A0A0', '#BDBDBD'
-    ]
+        '#2B2B2B',
+        '#333333',
+        '#4F4F4F',
+        '#606060',
+        '#757575',
+        '#888888',
+        '#A0A0A0',
+        '#BDBDBD',
+    ],
 };
 
 export const PLUGIN_CONFIGS = {
@@ -58,7 +65,7 @@ export const PLUGIN_CONFIGS = {
         SPAWN_OPACITY: 0.25,
         TARGET_OPACITY_FADE: 0.005,
         BASE_COLOR_RGB_TRIPLET: '0, 0, 0',
-    }
+    },
 };
 
 // Global logo sizing configuration for chart logos
@@ -66,19 +73,62 @@ export const PLUGIN_CONFIGS = {
 export const LOGO_SIZE = {
     mode: 'ratio',
     value: 0.13, // 13% of outerRadius by default
-    minPx: 14,   // minimum rendered height in pixels for legibility
+    minPx: 14, // minimum rendered height in pixels for legibility
 };
 
 const renderAsWhite = true;
 const opacity = 0.7;
 export const TICKER_TO_LOGO_MAP = {
-    'GEO': { src: '/assets/logo/geo.png', scale: 1, rotation: 0, renderAsWhite: renderAsWhite, opacity: opacity },
-    'ANET': { src: '/assets/logo/anet.png', scale: 1.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'GOOG': { src: '/assets/logo/goog.png', scale: 1.05, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'PDD': { src: '/assets/logo/pdd.png', scale: 1.7, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'OXY': { src: '/assets/logo/oxy.png', scale: 1.9, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
-    'BRK-B': { src: '/assets/logo/brk.png', scale: 2, rotation: 76, renderAsWhite: renderAsWhite, opacity: opacity, radialMargin: 1.2 },
-    'VT': { src: '/assets/logo/vt.png', scale: 2.1, rotation: false, renderAsWhite: renderAsWhite, opacity: opacity },
+    GEO: {
+        src: '/assets/logo/geo.png',
+        scale: 1,
+        rotation: 0,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
+    ANET: {
+        src: '/assets/logo/anet.png',
+        scale: 1.7,
+        rotation: false,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
+    GOOG: {
+        src: '/assets/logo/goog.png',
+        scale: 1.05,
+        rotation: false,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
+    PDD: {
+        src: '/assets/logo/pdd.png',
+        scale: 1.7,
+        rotation: false,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
+    OXY: {
+        src: '/assets/logo/oxy.png',
+        scale: 1.9,
+        rotation: false,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
+    'BRK-B': {
+        src: '/assets/logo/brk.png',
+        scale: 2,
+        rotation: 76,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+        radialMargin: 1.2,
+    },
+    VT: {
+        src: '/assets/logo/vt.png',
+        scale: 2.1,
+        rotation: false,
+        renderAsWhite: renderAsWhite,
+        opacity: opacity,
+    },
 };
 
 export const DATA_PATHS = {

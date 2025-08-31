@@ -5,7 +5,7 @@ export function checkAndToggleVerticalScroll() {
     const htmlElement = document.documentElement;
     const bodyElement = document.body;
 
-    if (!isMobile) { 
+    if (!isMobile) {
         // Ensure scrolling is enabled on desktop
         htmlElement.style.overflowY = ''; // Reset to default
         bodyElement.style.overflowY = ''; // Reset to default
@@ -28,9 +28,9 @@ export function alignToggleWithChartMobile() {
 
         const chartRect = chartContainer.getBoundingClientRect();
         const chartCenterY = chartRect.top + chartRect.height / 2;
-        
+
         const toggleHeight = toggleContainer.offsetHeight;
-        const toggleTop = chartCenterY - (toggleHeight / 2);
+        const toggleTop = chartCenterY - toggleHeight / 2;
 
         toggleContainer.style.top = `${toggleTop}px`;
     } else {
@@ -40,7 +40,6 @@ export function alignToggleWithChartMobile() {
         toggleContainer.style.left = ''; // Allow desktop CSS to control left
     }
 }
-
 
 export function setupResizeListener() {
     window.addEventListener('resize', () => {
@@ -55,7 +54,9 @@ export function initCalendarResponsiveHandlers() {
         const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
         const heatmapContainer = document.querySelector(CALENDAR_SELECTORS.heatmap);
 
-        if (!toggleContainer || !heatmapContainer) return;
+        if (!toggleContainer || !heatmapContainer) {
+            return;
+        }
 
         if (isMobile) {
             toggleContainer.style.position = 'fixed';
@@ -63,7 +64,7 @@ export function initCalendarResponsiveHandlers() {
             const heatmapRect = heatmapContainer.getBoundingClientRect();
             const heatmapCenterY = heatmapRect.top + heatmapRect.height / 2;
             const toggleHeight = toggleContainer.offsetHeight;
-            toggleContainer.style.top = `${heatmapCenterY - (toggleHeight / 2)}px`;
+            toggleContainer.style.top = `${heatmapCenterY - toggleHeight / 2}px`;
         } else {
             toggleContainer.style.position = '';
             toggleContainer.style.top = '';
@@ -78,9 +79,13 @@ export function initCalendarResponsiveHandlers() {
     if (todayButton && pageWrapper) {
         todayButton.addEventListener('dblclick', () => {
             pageWrapper.classList.toggle('zoomed');
-            pageWrapper.addEventListener('transitionend', () => {
-                window.dispatchEvent(new CustomEvent('calendar-zoom-end'));
-            }, { once: true });
+            pageWrapper.addEventListener(
+                'transitionend',
+                () => {
+                    window.dispatchEvent(new CustomEvent('calendar-zoom-end'));
+                },
+                { once: true }
+            );
         });
     }
 }

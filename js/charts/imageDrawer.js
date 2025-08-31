@@ -3,7 +3,9 @@ import { LOGO_SIZE } from '@js/config.js';
 export function drawImage(ctx, arc, img, logoInfo) {
     // Skip very small slices to avoid clutter (about 10 degrees)
     const sliceAngle = Math.abs(arc.endAngle - arc.startAngle);
-    if (sliceAngle < Math.PI / 18) return;
+    if (sliceAngle < Math.PI / 18) {
+        return;
+    }
 
     const scale = typeof logoInfo.scale === 'number' ? logoInfo.scale : 1;
     const renderAsWhite = !!logoInfo.renderAsWhite;
@@ -21,13 +23,21 @@ export function drawImage(ctx, arc, img, logoInfo) {
     let margin = 0.06 - 0.04 * sliceFactor; // 0.06..0.02
 
     // Allow a per-logo tighter/looser fit to inner/outer arcs (radial margin)
-    const radialMargin = (typeof logoInfo.radialMargin === 'number') ? Math.max(0, Math.min(0.2, logoInfo.radialMargin)) : null;
-    if (radialMargin !== null) margin = radialMargin;
+    const radialMargin =
+        typeof logoInfo.radialMargin === 'number'
+            ? Math.max(0, Math.min(0.2, logoInfo.radialMargin))
+            : null;
+    if (radialMargin !== null) {
+        margin = radialMargin;
+    }
 
     // Determine target height based on per-logo override or global defaults
-    const globalMode = (LOGO_SIZE && (LOGO_SIZE.mode === 'px' || LOGO_SIZE.mode === 'ratio')) ? LOGO_SIZE.mode : 'ratio';
-    const globalValue = (LOGO_SIZE && typeof LOGO_SIZE.value === 'number') ? LOGO_SIZE.value : 0.12;
-    const globalMinPx = (LOGO_SIZE && typeof LOGO_SIZE.minPx === 'number') ? LOGO_SIZE.minPx : 14;
+    const globalMode =
+        LOGO_SIZE && (LOGO_SIZE.mode === 'px' || LOGO_SIZE.mode === 'ratio')
+            ? LOGO_SIZE.mode
+            : 'ratio';
+    const globalValue = LOGO_SIZE && typeof LOGO_SIZE.value === 'number' ? LOGO_SIZE.value : 0.12;
+    const globalMinPx = LOGO_SIZE && typeof LOGO_SIZE.minPx === 'number' ? LOGO_SIZE.minPx : 14;
 
     let targetH;
     if (typeof logoInfo.sizePx === 'number') {
@@ -55,9 +65,13 @@ export function drawImage(ctx, arc, img, logoInfo) {
     } else if (typeof logoInfo.rotation === 'number') {
         rotationRad = (logoInfo.rotation * Math.PI) / 180;
     } else {
-        let defaultRotation = (arc.startAngle + sliceAngle / 2) + Math.PI / 2;
-        if (defaultRotation > Math.PI / 2) defaultRotation -= Math.PI;
-        if (defaultRotation < -Math.PI / 2) defaultRotation += Math.PI;
+        let defaultRotation = arc.startAngle + sliceAngle / 2 + Math.PI / 2;
+        if (defaultRotation > Math.PI / 2) {
+            defaultRotation -= Math.PI;
+        }
+        if (defaultRotation < -Math.PI / 2) {
+            defaultRotation += Math.PI;
+        }
         const maxRot = Math.PI / 2;
         rotationRad = Math.max(-maxRot, Math.min(maxRot, defaultRotation));
     }
@@ -70,7 +84,8 @@ export function drawImage(ctx, arc, img, logoInfo) {
     let tangentialExtent = drawH * s + drawW * c; // projected width along tangent after rotation
     if (tangentialExtent > maxWByArc) {
         const f = maxWByArc / tangentialExtent;
-        drawW *= f; drawH *= f;
+        drawW *= f;
+        drawH *= f;
         tangentialExtent = maxWByArc;
     }
 
@@ -79,7 +94,8 @@ export function drawImage(ctx, arc, img, logoInfo) {
     let radialExtent = drawH * c + drawW * s; // projected height along radius after rotation
     if (radialExtent > maxRadial) {
         const f = maxRadial / radialExtent;
-        drawW *= f; drawH *= f;
+        drawW *= f;
+        drawH *= f;
         radialExtent = maxRadial;
     }
 
@@ -109,7 +125,8 @@ export function drawImage(ctx, arc, img, logoInfo) {
 
     if (renderAsWhite) {
         // Use offscreen canvas to avoid getImageData readbacks on main canvas
-        const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        const dpr =
+            typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
         const off = document.createElement('canvas');
         off.width = Math.max(1, Math.round(drawW * dpr));
         off.height = Math.max(1, Math.round(drawH * dpr));

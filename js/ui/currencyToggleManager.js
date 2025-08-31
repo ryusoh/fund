@@ -13,7 +13,7 @@ export function initCurrencyToggle() {
 
     let selectedCurrency;
 
-    const activeButton = currencyButtons.find(button => button.classList.contains('active'));
+    const activeButton = currencyButtons.find((button) => button.classList.contains('active'));
     if (activeButton) {
         selectedCurrency = activeButton.dataset.currency;
     } else {
@@ -25,10 +25,14 @@ export function initCurrencyToggle() {
         if (clickedButton) {
             const newCurrency = clickedButton.dataset.currency;
             if (selectedCurrency !== newCurrency) {
-                currencyButtons.forEach(btn => btn.classList.remove('active'));
+                currencyButtons.forEach((btn) => btn.classList.remove('active'));
                 clickedButton.classList.add('active');
                 selectedCurrency = newCurrency;
-                document.dispatchEvent(new CustomEvent('currencyChangedGlobal', { detail: { currency: selectedCurrency } }));
+                document.dispatchEvent(
+                    new CustomEvent('currencyChangedGlobal', {
+                        detail: { currency: selectedCurrency },
+                    })
+                );
             }
         }
     });

@@ -1,4 +1,3 @@
-
 import * as responsive from '@ui/responsive.js';
 import { UI_BREAKPOINTS, CALENDAR_SELECTORS } from '@js/config.js';
 
@@ -80,19 +79,19 @@ describe('Responsive Utilities', () => {
 
         it('should set position and top for mobile', () => {
             window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
-            
+
             // Mock getBoundingClientRect for chartContainer
             chartContainer.getBoundingClientRect = jest.fn().mockReturnValue({
                 top: 100,
-                height: 200
+                height: 200,
             });
-            
+
             // Mock offsetHeight for toggleContainer
             Object.defineProperty(toggleContainer, 'offsetHeight', {
                 value: 40,
-                configurable: true
+                configurable: true,
             });
-            
+
             responsive.alignToggleWithChartMobile();
             expect(toggleContainer.style.position).toBe('fixed');
             expect(toggleContainer.style.left).toBe('0px');
@@ -121,24 +120,24 @@ describe('Responsive Utilities', () => {
         it('should call checkAndToggleVerticalScroll and alignToggleWithChartMobile on resize', () => {
             // Clear any existing window event listeners
             window.addEventListener.mockClear();
-            
+
             responsive.setupResizeListener();
-            
+
             // Verify the listener was added
             expect(window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
-            
+
             // Find and trigger the resize callback
             const resizeCallback = window.addEventListener.mock.calls[0][1];
-            
+
             // Spy on the functions after setting up the listener
             const checkSpy = jest.spyOn(responsive, 'checkAndToggleVerticalScroll');
             const alignSpy = jest.spyOn(responsive, 'alignToggleWithChartMobile');
-            
+
             resizeCallback();
-            
+
             expect(checkSpy).not.toHaveBeenCalled();
             expect(alignSpy).not.toHaveBeenCalled();
-            
+
             checkSpy.mockRestore();
             alignSpy.mockRestore();
         });
@@ -155,19 +154,19 @@ describe('Responsive Utilities', () => {
 
         it('should set position and top for mobile', () => {
             window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
-            
+
             // Mock getBoundingClientRect for heatmapContainer
             heatmapContainer.getBoundingClientRect = jest.fn().mockReturnValue({
                 top: 150,
-                height: 300
+                height: 300,
             });
-            
+
             // Mock offsetHeight for toggleContainer
             Object.defineProperty(toggleContainer, 'offsetHeight', {
                 value: 40,
-                configurable: true
+                configurable: true,
             });
-            
+
             responsive.initCalendarResponsiveHandlers();
             expect(toggleContainer.style.position).toBe('fixed');
             expect(toggleContainer.style.left).toBe('0px');
@@ -194,29 +193,29 @@ describe('Responsive Utilities', () => {
             todayButton.dispatchEvent(dblclickEvent);
             expect(pageWrapper.classList.contains('zoomed')).toBe(false);
         });
-        
+
         it('should dispatch calendar-zoom-end event on transition end', () => {
             responsive.initCalendarResponsiveHandlers();
-            
+
             // Mock window.dispatchEvent to track calls
             const originalDispatch = window.dispatchEvent;
             window.dispatchEvent = jest.fn();
-            
+
             // Trigger dblclick to add zoom class and set up transitionend listener
             const dblclickEvent = new Event('dblclick');
             todayButton.dispatchEvent(dblclickEvent);
-            
+
             // Trigger transitionend event
             const transitionEvent = new Event('transitionend');
             pageWrapper.dispatchEvent(transitionEvent);
-            
+
             // Check that calendar-zoom-end was dispatched
             expect(window.dispatchEvent).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'calendar-zoom-end'
+                    type: 'calendar-zoom-end',
                 })
             );
-            
+
             // Restore original
             window.dispatchEvent = originalDispatch;
         });

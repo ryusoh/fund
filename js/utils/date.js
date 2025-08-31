@@ -14,15 +14,15 @@ export function getNyDate() {
  */
 export function isTradingDay(date) {
     const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-    
+
     // Check if it's a weekend
     if (dayOfWeek === 0 || dayOfWeek === 6) {
         return false; // Sunday or Saturday
     }
-    
+
     // TODO: Add major holiday checks here if needed
     // For now, we'll just check weekends
-    
+
     return true; // Monday through Friday
 }
 

@@ -1,120 +1,166 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="author" content="Zhuang Liu">
-    <meta name="description" content="Position">
-    <link rel="shortcut icon" href="../assets/avatar_152x152.png" type="image/x-icon">
-    <link rel="icon" href="../assets/avatar_152x152.png">
-    <link rel="apple-touch-icon" href="../assets/avatar_152x152.png">
-    <link rel="bookmark" href="../assets/avatar_152x152.png" type="image/x-icon">
-    <!-- Make the web page capable of running as a standalone app -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <!-- Set status bar style for iOS -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Position</title>
-    <script type="importmap">
-      {
-        "imports": {
-          "@js/": "../js/",
-          "@pages/": "../js/pages/",
-          "@services/": "../js/services/",
-          "@charts/": "../js/charts/",
-          "@plugins/": "../js/plugins/",
-          "@ui/": "../js/ui/",
-          "@utils/": "../js/utils/",
-          "@vendor/": "../assets/vendor/js/"
-        }
-      }
-    </script>
-    <script>(function(){
-      function loadCss(href){var l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l);} 
-      fetch('../assets/vendor/css/font-awesome-4.7.0.min.css',{cache:'no-store'}).then(function(r){if(r.ok){loadCss('../assets/vendor/css/font-awesome-4.7.0.min.css');}else{loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');}}).catch(function(){loadCss('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');});
-    })();</script>
-    <link rel="stylesheet" href="../css/base.css">
-    <link rel="stylesheet" href="../css/layout.css">
-    <link rel="stylesheet" href="../css/table.css">
-    <link rel="stylesheet" href="../css/toggle.css">
-</head>
-<body class="no-pull-to-refresh">
-    <a class="nav-back" href="https://www.lyeutsaon.com/fund" target="_self">
-        <i class="fa fa-chevron-right" style="color:black; opacity: 0.6;" aria-hidden="true"></i>
-    </a>
-    <div id="fundPieChartContainer">
-        <canvas id="fundPieChart"></canvas>
-        <div id="currencyToggleContainer">
-            <button class="currency-toggle active" data-currency="USD">$</button>
-            <button class="currency-toggle" data-currency="CNY">¥</button>
-            <button class="currency-toggle" data-currency="JPY">¥</button>
-            <button class="currency-toggle" data-currency="KRW">₩</button>
-        </div>
-    </div>
-    <div class="content-block">
-        <div class="table-responsive-container">
-            <table class="hidden">
-                <thead>
-                    <tr>
-                        <th scope="col">Holding</th>
-                        <th scope="col">Exposure</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Cost</th>
-                        <th scope="col">Shares</th>
-                        <th scope="col">Value</th>
-                        <th scope="col">PnL</th>
-                        <th scope="col">±%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Table rows will be dynamically inserted here by JavaScript -->
-                </tbody>
-            </table>
-        </div>
-
-        <div class="footer-wrapper hidden">
-            <div id="table-footer-summary">TOTAL <span id="total-portfolio-value-in-table">$0.00</span><span class="total-pnl"></span></div>
-        </div>
-    </div>
-
-    <footer>
-        <a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile">
-            <i class="fa fa-github" style="color:#aaa; opacity: 0.5;" aria-hidden="true"></i>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="author" content="Zhuang Liu" />
+        <meta name="description" content="Position" />
+        <link rel="shortcut icon" href="../assets/avatar_152x152.png" type="image/x-icon" />
+        <link rel="icon" href="../assets/avatar_152x152.png" />
+        <link rel="apple-touch-icon" href="../assets/avatar_152x152.png" />
+        <link rel="bookmark" href="../assets/avatar_152x152.png" type="image/x-icon" />
+        <!-- Make the web page capable of running as a standalone app -->
+        <meta name="mobile-web-app-capable" content="yes" />
+        <!-- Set status bar style for iOS -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#000000" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+        <title>Position</title>
+        <script type="importmap">
+            {
+                "imports": {
+                    "@js/": "../js/",
+                    "@pages/": "../js/pages/",
+                    "@services/": "../js/services/",
+                    "@charts/": "../js/charts/",
+                    "@plugins/": "../js/plugins/",
+                    "@ui/": "../js/ui/",
+                    "@utils/": "../js/utils/",
+                    "@vendor/": "../assets/vendor/js/"
+                }
+            }
+        </script>
+        <script>
+            (function () {
+                function loadCss(href) {
+                    var l = document.createElement('link');
+                    l.rel = 'stylesheet';
+                    l.href = href;
+                    document.head.appendChild(l);
+                }
+                fetch('../assets/vendor/css/font-awesome-4.7.0.min.css', { cache: 'no-store' })
+                    .then(function (r) {
+                        if (r.ok) {
+                            loadCss('../assets/vendor/css/font-awesome-4.7.0.min.css');
+                        } else {
+                            loadCss(
+                                'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
+                            );
+                        }
+                    })
+                    .catch(function () {
+                        loadCss(
+                            'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
+                        );
+                    });
+            })();
+        </script>
+        <link rel="stylesheet" href="../css/base.css" />
+        <link rel="stylesheet" href="../css/layout.css" />
+        <link rel="stylesheet" href="../css/table.css" />
+        <link rel="stylesheet" href="../css/toggle.css" />
+    </head>
+    <body class="no-pull-to-refresh">
+        <a class="nav-back" href="https://www.lyeutsaon.com/fund" target="_self">
+            <i
+                class="fa fa-chevron-right"
+                style="color: black; opacity: 0.6"
+                aria-hidden="true"
+            ></i>
         </a>
-    </footer>
+        <div id="fundPieChartContainer">
+            <canvas id="fundPieChart"></canvas>
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD">$</button>
+                <button class="currency-toggle" data-currency="CNY">¥</button>
+                <button class="currency-toggle" data-currency="JPY">¥</button>
+                <button class="currency-toggle" data-currency="KRW">₩</button>
+            </div>
+        </div>
+        <div class="content-block">
+            <div class="table-responsive-container">
+                <table class="hidden">
+                    <thead>
+                        <tr>
+                            <th scope="col">Holding</th>
+                            <th scope="col">Exposure</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">Cost</th>
+                            <th scope="col">Shares</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">PnL</th>
+                            <th scope="col">±%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be dynamically inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
 
-    <!-- Load Chart.js and plugin in order with local-first, CDN-fallback, then load app module -->
-    <script>
-      (function () {
-        function loadScript(src) {
-          return new Promise(function (resolve, reject) {
-            var s = document.createElement('script');
-            s.src = src;
-            s.crossOrigin = 'anonymous';
-            s.onload = function () { resolve(); };
-            s.onerror = function () { reject(new Error('Failed ' + src)); };
-            document.head.appendChild(s);
-          });
-        }
-        async function loadLocalOrCdn(localUrl, cdnUrl) {
-          // Try loading the local script; if it fails, fall back to CDN immediately
-          try {
-            await loadScript(localUrl);
-            return;
-          } catch (e) {
-            await loadScript(cdnUrl);
-          }
-        }
-        (async function () {
-          // Load Chart.js then Datalabels
-          await loadLocalOrCdn('../assets/vendor/js/chart.umd.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js');
-          await loadLocalOrCdn('../assets/vendor/js/chartjs-plugin-datalabels.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js');
-          var m = document.createElement('script');
-          m.type = 'module';
-          m.src = '../js/pages/position/index.js';
-          document.body.appendChild(m);
-        })();
-      })();
-    </script>
-</body>
+            <div class="footer-wrapper hidden">
+                <div id="table-footer-summary">
+                    TOTAL <span id="total-portfolio-value-in-table">$0.00</span
+                    ><span class="total-pnl"></span>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <a
+                href="https://github.com/ryusoh"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub Profile"
+            >
+                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
+            </a>
+        </footer>
+
+        <!-- Load Chart.js and plugin in order with local-first, CDN-fallback, then load app module -->
+        <script>
+            (function () {
+                function loadScript(src) {
+                    return new Promise(function (resolve, reject) {
+                        var s = document.createElement('script');
+                        s.src = src;
+                        s.crossOrigin = 'anonymous';
+                        s.onload = function () {
+                            resolve();
+                        };
+                        s.onerror = function () {
+                            reject(new Error('Failed ' + src));
+                        };
+                        document.head.appendChild(s);
+                    });
+                }
+                async function loadLocalOrCdn(localUrl, cdnUrl) {
+                    // Try loading the local script; if it fails, fall back to CDN immediately
+                    try {
+                        await loadScript(localUrl);
+                        return;
+                    } catch (e) {
+                        await loadScript(cdnUrl);
+                    }
+                }
+                (async function () {
+                    // Load Chart.js then Datalabels
+                    await loadLocalOrCdn(
+                        '../assets/vendor/js/chart.umd.min.js',
+                        'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js'
+                    );
+                    await loadLocalOrCdn(
+                        '../assets/vendor/js/chartjs-plugin-datalabels.min.js',
+                        'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js'
+                    );
+                    var m = document.createElement('script');
+                    m.type = 'module';
+                    m.src = '../js/pages/position/index.js';
+                    document.body.appendChild(m);
+                })();
+            })();
+        </script>
+    </body>
 </html>

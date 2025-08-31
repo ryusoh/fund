@@ -3,14 +3,16 @@ body.body-calendar {
     display: flex;
     flex-direction: column;
 
-    align-items: center;     /* Horizontally center */
+    align-items: center; /* Horizontally center */
     padding: 0; /* Remove body padding to let the wrapper handle it */
 }
 
 /* Set a different background for the calendar page ONLY on desktop screens */
 @media (min-width: 769px) {
     body.body-calendar {
-        background: #000000 url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF5903-2.JPG) center center no-repeat !important;
+        background: #000
+            url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF5903-2.JPG)
+            center center no-repeat !important;
         background-size: cover !important;
     }
 }
@@ -48,7 +50,9 @@ body.body-calendar {
     padding: 8px; /* Add some padding to make them easier to click */
     cursor: pointer;
     font-size: 24px; /* Larger icons for better visibility */
-    transition: color 0.2s ease, transform 0.1s ease;
+    transition:
+        color 0.2s ease,
+        transform 0.1s ease;
     /* Center the icon inside the button */
     display: inline-flex;
     align-items: center;
@@ -79,15 +83,16 @@ body.body-calendar {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
     border-radius: 6px !important;
     padding: 8px 12px !important;
-    font-family: 'JetBrains Mono', monospace !important; /* This is now controlled by the tooltip.text function */
+    font-family:
+        'JetBrains Mono', monospace !important; /* This is now controlled by the tooltip.text function */
 }
 
 .ch-tooltip .pnl-positive {
-    color: #4CAF50; /* Standard Green for positive P&L */
+    color: #4caf50; /* Standard Green for positive P&L */
 }
 
 .ch-tooltip .pnl-negative {
-    color: #F44336; /* Standard Red for negative P&L */
+    color: #f44336; /* Standard Red for negative P&L */
 }
 
 .ch-domain-label {
@@ -99,12 +104,22 @@ body.body-calendar {
     stroke-width: 1px;
 }
 
-.ch-subdomain-text { font-size: 10px; pointer-events: none; }
-.subdomain-line1 { font-weight: normal; }
-.pnl-positive { fill: #1b5e20; }
-.pnl-negative { fill: #b71c1c; }
+.ch-subdomain-text {
+    font-size: 10px;
+    pointer-events: none;
+}
+.subdomain-line1 {
+    font-weight: normal;
+}
+.pnl-positive {
+    fill: #1b5e20;
+}
+.pnl-negative {
+    fill: #b71c1c;
+}
 
-.ch-week-label { /* .ch-month-label is for horizontal calendars, .ch-domain-label is used for vertical */
+.ch-week-label {
+    /* .ch-month-label is for horizontal calendars, .ch-domain-label is used for vertical */
     font-size: 14px !important; /* Make month labels larger */
     fill: rgba(255, 255, 255, 0.4) !important;
 }
@@ -113,7 +128,6 @@ body.body-calendar {
     stroke: rgba(255, 255, 255, 0.8) !important;
     stroke-width: 1px !important;
 }
-
 
 .ch-subdomain[data-v] {
     /* Add a subtle frosted glass effect */

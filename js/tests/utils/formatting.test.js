@@ -1,4 +1,3 @@
-
 // File: /Users/lz/dev/fund/js/tests/formatting.test.js
 import * as formatting from '@utils/formatting.js';
 import { CURRENCY_SYMBOLS } from '@js/config.js';
@@ -7,111 +6,153 @@ import fxData from '../data/mock_fx_data.json';
 const rates = fxData.rates;
 
 describe('formatNumber', () => {
-  it('should format positive numbers correctly', () => {
-    expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$123');
-    expect(formatting.formatNumber(1234, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.23k');
-    expect(formatting.formatNumber(1234567, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.235m');
-    expect(formatting.formatNumber(1234567890, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.235b');
-  });
+    it('should format positive numbers correctly', () => {
+        expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$123');
+        expect(formatting.formatNumber(1234, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.23k');
+        expect(formatting.formatNumber(1234567, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$1.235m'
+        );
+        expect(formatting.formatNumber(1234567890, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$1.235b'
+        );
+    });
 
-  it('should format negative numbers correctly', () => {
-    expect(formatting.formatNumber(-123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$123');
-    expect(formatting.formatNumber(-1234, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.23k');
-    expect(formatting.formatNumber(-1234567, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.235m');
-  });
+    it('should format negative numbers correctly', () => {
+        expect(formatting.formatNumber(-123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$123');
+        expect(formatting.formatNumber(-1234, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$1.23k'
+        );
+        expect(formatting.formatNumber(-1234567, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$1.235m'
+        );
+    });
 
-  it('should handle the isChange flag correctly for positive changes', () => {
-    expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$123');
-    expect(formatting.formatNumber(1234, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$1.23k');
-    expect(formatting.formatNumber(12345, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$12.3k');
-    expect(formatting.formatNumber(123456, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$123k');
-    expect(formatting.formatNumber(1234567, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$1.23m');
-    expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$0.123');
-    expect(formatting.formatNumber(0.000123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$0.000123');
-    expect(formatting.formatNumber(0.0123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$0.0123');
-    expect(formatting.formatNumber(0.00123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$0.00123');
-  });
+    it('should handle the isChange flag correctly for positive changes', () => {
+        expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$123');
+        expect(formatting.formatNumber(1234, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$1.23k');
+        expect(formatting.formatNumber(12345, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$12.3k'
+        );
+        expect(formatting.formatNumber(123456, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$123k'
+        );
+        expect(formatting.formatNumber(1234567, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$1.23m'
+        );
+        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$0.123'
+        );
+        expect(formatting.formatNumber(0.000123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$0.000123'
+        );
+        expect(formatting.formatNumber(0.0123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$0.0123'
+        );
+        expect(formatting.formatNumber(0.00123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$0.00123'
+        );
+    });
 
-  it('should handle currency conversion correctly for JPY', () => {
-    expect(formatting.formatNumber(10000, CURRENCY_SYMBOLS, false, 'JPY', rates)).toBe('¥1.469m');
-  });
+    it('should handle currency conversion correctly for JPY', () => {
+        expect(formatting.formatNumber(10000, CURRENCY_SYMBOLS, false, 'JPY', rates)).toBe(
+            '¥1.469m'
+        );
+    });
 
-  it('should format zero correctly', () => {
-    expect(formatting.formatNumber(0, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$0');
-  });
+    it('should format zero correctly', () => {
+        expect(formatting.formatNumber(0, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$0');
+    });
 
-  it('should format small numbers correctly', () => {
-    expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$0.1230');
-    expect(formatting.formatNumber(-0.5, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('-$0.500');
-  });
+    it('should format small numbers correctly', () => {
+        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$0.1230'
+        );
+        expect(formatting.formatNumber(-0.5, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('-$0.500');
+    });
 
-  it('should handle unknown currency gracefully', () => {
-    expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, false, 'CAD', rates)).toBe('123');
-  });
+    it('should handle unknown currency gracefully', () => {
+        expect(formatting.formatNumber(123, CURRENCY_SYMBOLS, false, 'CAD', rates)).toBe('123');
+    });
 
-  it('should return an empty string for null or undefined input', () => {
-    expect(formatting.formatNumber(null, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
-    expect(formatting.formatNumber(undefined, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
-  });
-  
-  it('should handle KRW correctly', () => {
-    expect(formatting.formatNumber(1000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩1.384b');
-    expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩1.38m');
-    expect(formatting.formatNumber(100000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩138m');
-    expect(formatting.formatNumber(1000000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩1384b');
-  });
+    it('should return an empty string for null or undefined input', () => {
+        expect(formatting.formatNumber(null, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
+        expect(formatting.formatNumber(undefined, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
+    });
 
-  it('should handle precision for k suffix', () => {
-    expect(formatting.formatNumber(1234.56, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$1.23k');
-  });
+    it('should handle KRW correctly', () => {
+        expect(formatting.formatNumber(1000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe(
+            '₩1.384b'
+        );
+        expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩1.38m');
+        expect(formatting.formatNumber(100000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe(
+            '₩138m'
+        );
+        expect(formatting.formatNumber(1000000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe(
+            '₩1384b'
+        );
+    });
 
-  it('should handle precision < 0 for KRW', () => {
-    expect(formatting.formatNumber(100000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩138.4b');
-  });
+    it('should handle precision for k suffix', () => {
+        expect(formatting.formatNumber(1234.56, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$1.23k'
+        );
+    });
 
-  it('should handle precision < 0 for non-KRW', () => {
-    expect(formatting.formatNumber(100000000, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$100.0m');
-  });
+    it('should handle precision < 0 for KRW', () => {
+        expect(formatting.formatNumber(100000000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe(
+            '₩138.4b'
+        );
+    });
 
-  it('should handle withSign for billions path', () => {
-    // Triggers the absNum >= 1e9 branch (lines 108-109)
-    expect(formatting.formatNumber(1e9, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$1.00b');
-  });
+    it('should handle precision < 0 for non-KRW', () => {
+        expect(formatting.formatNumber(100000000, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$100.0m'
+        );
+    });
 
-  it('should clamp precision to 0 for very large numbers with b suffix', () => {
-    // Triggers negative computed precision and clamps to 0 (line 165)
-    expect(formatting.formatNumber(1e13, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$10000b');
-  });
+    it('should handle withSign for billions path', () => {
+        // Triggers the absNum >= 1e9 branch (lines 108-109)
+        expect(formatting.formatNumber(1e9, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$1.00b');
+    });
 
-  it('should clamp precision to 0 in KRW branch when computed negative', () => {
-    // Force precision < 0 in the KRW special-case block (line 141)
-    const originalLog10 = Math.log10;
-    jest.spyOn(Math, 'log10').mockReturnValue(5); // floor(5) => precision becomes negative
-    try {
-      // 500,000 USD * 1384 KRW/USD = 692,000,000 (< 1e9) => KRW branch (val ≈ 692)
-      expect(formatting.formatNumber(500000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩692m');
-    } finally {
-      Math.log10 = originalLog10;
-    }
-  });
+    it('should clamp precision to 0 for very large numbers with b suffix', () => {
+        // Triggers negative computed precision and clamps to 0 (line 165)
+        expect(formatting.formatNumber(1e13, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$10000b'
+        );
+    });
+
+    it('should clamp precision to 0 in KRW branch when computed negative', () => {
+        // Force precision < 0 in the KRW special-case block (line 141)
+        const originalLog10 = Math.log10;
+        jest.spyOn(Math, 'log10').mockReturnValue(5); // floor(5) => precision becomes negative
+        try {
+            // 500,000 USD * 1384 KRW/USD = 692,000,000 (< 1e9) => KRW branch (val ≈ 692)
+            expect(formatting.formatNumber(500000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe(
+                '₩692m'
+            );
+        } finally {
+            Math.log10 = originalLog10;
+        }
+    });
 });
 
 describe('formatPercentage', () => {
-  it('should format positive percentages correctly', () => {
-    expect(formatting.formatPercentage(0.123)).toBe('+12.30%');
-  });
+    it('should format positive percentages correctly', () => {
+        expect(formatting.formatPercentage(0.123)).toBe('+12.30%');
+    });
 
-  it('should format negative percentages correctly', () => {
-    expect(formatting.formatPercentage(-0.456)).toBe('-45.60%');
-  });
+    it('should format negative percentages correctly', () => {
+        expect(formatting.formatPercentage(-0.456)).toBe('-45.60%');
+    });
 
-  it('should format zero percentage correctly', () => {
-    expect(formatting.formatPercentage(0)).toBe('0.00%');
-  });
+    it('should format zero percentage correctly', () => {
+        expect(formatting.formatPercentage(0)).toBe('0.00%');
+    });
 
-  it('should handle non-numeric input gracefully', () => {
-    expect(formatting.formatPercentage('abc')).toBe('0.00%');
-  });
+    it('should handle non-numeric input gracefully', () => {
+        expect(formatting.formatPercentage('abc')).toBe('0.00%');
+    });
 });
 
 describe('formatCurrency', () => {
@@ -349,88 +390,92 @@ describe('toIntegerDigits', () => {
 
 // Additional coverage for formatCurrency conversion paths and symbol fallback
 describe('formatCurrency – extra cases', () => {
-  it('converts with an existing rate (JPY) using the target symbol', () => {
-    // 10 USD * 110 JPY/USD = 1,100 JPY
-    expect(formatting.formatCurrency(10, 'JPY', rates, CURRENCY_SYMBOLS)).toBe('¥1,469.03');
-  });
+    it('converts with an existing rate (JPY) using the target symbol', () => {
+        // 10 USD * 110 JPY/USD = 1,100 JPY
+        expect(formatting.formatCurrency(10, 'JPY', rates, CURRENCY_SYMBOLS)).toBe('¥1,469.03');
+    });
 
-  it('uses the currency code when symbol is missing', () => {
-    const localRates = { ABC: 2 };
-    const localSymbols = { ...CURRENCY_SYMBOLS }; // no ABC entry
-    // 100 USD * 2 = 200 ABC
-    expect(formatting.formatCurrency(100, 'ABC', localRates, localSymbols)).toBe('ABC200.00');
-  });
+    it('uses the currency code when symbol is missing', () => {
+        const localRates = { ABC: 2 };
+        const localSymbols = { ...CURRENCY_SYMBOLS }; // no ABC entry
+        // 100 USD * 2 = 200 ABC
+        expect(formatting.formatCurrency(100, 'ABC', localRates, localSymbols)).toBe('ABC200.00');
+    });
 
-  it('formats absolute value for negative numbers after conversion', () => {
-    // -10 USD * 110 JPY/USD => still formats as positive per spec (absolute value)
-    expect(formatting.formatCurrency(-10, 'JPY', rates, CURRENCY_SYMBOLS)).toBe('¥1,469.03');
-  });
+    it('formats absolute value for negative numbers after conversion', () => {
+        // -10 USD * 110 JPY/USD => still formats as positive per spec (absolute value)
+        expect(formatting.formatCurrency(-10, 'JPY', rates, CURRENCY_SYMBOLS)).toBe('¥1,469.03');
+    });
 });
 // Extra coverage for early branches and pad helpers
 
 describe('formatCurrency – warnings and fallbacks', () => {
-  let warnSpy;
-  beforeEach(() => {
-    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-  afterEach(() => {
-    warnSpy.mockRestore();
-  });
+    let warnSpy;
+    beforeEach(() => {
+        warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+    afterEach(() => {
+        warnSpy.mockRestore();
+    });
 
-  it('warns & falls back to $ when rate missing and no USD symbol provided', () => {
-    const localSymbols = {}; // no USD symbol
-    const result = formatting.formatCurrency(1, 'EUR', rates, localSymbols);
-    expect(warnSpy).toHaveBeenCalled();
-    expect(result).toBe('$1.00');
-  });
+    it('warns & falls back to $ when rate missing and no USD symbol provided', () => {
+        const localSymbols = {}; // no USD symbol
+        const result = formatting.formatCurrency(1, 'EUR', rates, localSymbols);
+        expect(warnSpy).toHaveBeenCalled();
+        expect(result).toBe('$1.00');
+    });
 
-  it('handles NaN (non-string) input by returning $0.00 with fallback symbol', () => {
-    const localSymbols = {}; // ensure fallback to '$'
-    expect(formatting.formatCurrency(NaN, 'ZZZ', rates, localSymbols)).toBe('$0.00');
-  });
+    it('handles NaN (non-string) input by returning $0.00 with fallback symbol', () => {
+        const localSymbols = {}; // ensure fallback to '$'
+        expect(formatting.formatCurrency(NaN, 'ZZZ', rates, localSymbols)).toBe('$0.00');
+    });
 });
 
 describe('formatNumber – NaN handling', () => {
-  it('returns empty string for NaN', () => {
-    expect(formatting.formatNumber(NaN, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
-  });
+    it('returns empty string for NaN', () => {
+        expect(formatting.formatNumber(NaN, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
+    });
 });
 
 describe('padWithTrailingZeros – decimal present path', () => {
-  it('pads correctly when a decimal already exists', () => {
-    expect(formatting.padWithTrailingZeros(12.3, 6)).toBe('12.300');
-  });
+    it('pads correctly when a decimal already exists', () => {
+        expect(formatting.padWithTrailingZeros(12.3, 6)).toBe('12.300');
+    });
 });
 
 describe('toIntegerDigits – edge cases', () => {
-  it('pads when there is no fractional part', () => {
-    expect(formatting.toIntegerDigits(7, 3)).toBe('007');
-  });
-  it('keeps fractional part when present', () => {
-    expect(formatting.toIntegerDigits(7.5, 3)).toBe('007.5');
-  });
+    it('pads when there is no fractional part', () => {
+        expect(formatting.toIntegerDigits(7, 3)).toBe('007');
+    });
+    it('keeps fractional part when present', () => {
+        expect(formatting.toIntegerDigits(7.5, 3)).toBe('007.5');
+    });
 });
 
 describe('formatNumber – explicit early guard', () => {
-  it('returns empty string for undefined, null, and NaN (withSign=false)', () => {
-    [undefined, null, NaN].forEach(invalid => {
-      expect(formatting.formatNumber(invalid, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
+    it('returns empty string for undefined, null, and NaN (withSign=false)', () => {
+        [undefined, null, NaN].forEach((invalid) => {
+            expect(formatting.formatNumber(invalid, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+                ''
+            );
+        });
     });
-  });
 
-  it('returns empty string for non-numeric values that coerce to NaN via isNaN', () => {
-    // Using a string that triggers the global isNaN coercion path explicitly
-    expect(formatting.formatNumber('not-a-number', CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
-  });
-
-  it('also returns empty string when withSign=true', () => {
-    [undefined, null, NaN, 'not-a-number'].forEach(invalid => {
-      expect(formatting.formatNumber(invalid, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('');
+    it('returns empty string for non-numeric values that coerce to NaN via isNaN', () => {
+        // Using a string that triggers the global isNaN coercion path explicitly
+        expect(formatting.formatNumber('not-a-number', CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            ''
+        );
     });
-  });
 
-  it('uses default parameters when not provided', () => {
-    // Test default parameters: withSign=false, currency='USD', rates={}
-    expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS)).toBe('$1.00k');
-  });
+    it('also returns empty string when withSign=true', () => {
+        [undefined, null, NaN, 'not-a-number'].forEach((invalid) => {
+            expect(formatting.formatNumber(invalid, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('');
+        });
+    });
+
+    it('uses default parameters when not provided', () => {
+        // Test default parameters: withSign=false, currency='USD', rates={}
+        expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS)).toBe('$1.00k');
+    });
 });

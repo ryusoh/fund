@@ -32,7 +32,8 @@ th {
     text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2); /* Subtle text shadow */
     text-align: right; /* Default for headers */
 }
-thead tr th { /* Apply gradient to all header cells */
+thead tr th {
+    /* Apply gradient to all header cells */
     background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
     background-repeat: no-repeat; /* Good practice for gradients */
 }
@@ -47,17 +48,40 @@ table thead tr:first-child th:last-child {
 table {
     table-layout: auto; /* This is default, but good to be explicit. Browser adjusts to content. */
 }
-th:nth-child(1) { width: 5%; } /* Ticker */
-th:nth-child(2) { width: 5%; } /* Allocation */
-th:nth-child(3) { width: 5%; } /* Price */
-th:nth-child(4) { width: 5%; } /* Cost */
-th:nth-child(5) { width: 5%; } /* Shares */
-th:nth-child(6) { width: 5%; } /* Value */
-th:nth-child(7) { width: 5%; } /* PnL */
-th:nth-child(8) { width: 5%; } /* PnL (%) */
+th:nth-child(1) {
+    width: 5%;
+} /* Ticker */
+th:nth-child(2) {
+    width: 5%;
+} /* Allocation */
+th:nth-child(3) {
+    width: 5%;
+} /* Price */
+th:nth-child(4) {
+    width: 5%;
+} /* Cost */
+th:nth-child(5) {
+    width: 5%;
+} /* Shares */
+th:nth-child(6) {
+    width: 5%;
+} /* Value */
+th:nth-child(7) {
+    width: 5%;
+} /* PnL */
+th:nth-child(8) {
+    width: 5%;
+} /* PnL (%) */
 
 /* Prevent wrapping in data cells for a more compact look */
-td.price, td.cost, td.shares, td.pnl, td.value, td.allocation, th { /* Apply to th too for consistency */
+td.price,
+td.cost,
+td.shares,
+td.pnl,
+td.value,
+td.allocation,
+th {
+    /* Apply to th too for consistency */
     white-space: nowrap;
 }
 td {
@@ -85,7 +109,8 @@ thead tr th:hover {
     background-image: none; /* Remove gradient on hover */
 }
 
-#table-footer-summary { /* Mimics tfoot td */
+#table-footer-summary {
+    /* Mimics tfoot td */
     /* Copied from th and thead tr th for consistency */
     color: rgba(235, 235, 245, 0.6);
     font-weight: 600;
@@ -95,7 +120,7 @@ thead tr th:hover {
     padding: 8px 16px; /* Default padding, matches th */
     background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.7), rgba(60, 60, 63, 0.35));
     background-repeat: no-repeat;
-    
+
     border-top: 1px solid rgba(84, 84, 88, 0.65); /* Separator from table content */
     text-align: right; /* Default alignment */
 
@@ -110,13 +135,49 @@ thead tr th:hover {
 
 /* Media Query for mobile devices - Table specific */
 @media (max-width: 768px) {
-    .table-responsive-container { padding: 0; }
-    td { padding: 5px 10px; touch-action: manipulation; }
-    th { font-size: 0.75em; padding: 7px 10px; color: rgba(130, 130, 130, 1); }
-    #table-footer-summary { padding: 7px 10px; font-size: 0.75em; text-align: right; color: rgba(130, 130, 130, 1); }
-    table { width: 100%; min-width: 650px; margin: 0; touch-action: pan-x; }
-    table thead th:first-child, table tbody td:first-child { position: -webkit-sticky; position: sticky; left: 0; }
-    table thead th:first-child { z-index: 2; background-image: linear-gradient(to bottom, rgba(60, 60, 63, 0.98), rgba(60, 60, 63, 0.95)); }
-    table tbody td:first-child { background-color: rgba(44, 44, 46, 0.98); z-index: 1; }
-    table tbody tr:hover td:first-child { background-color: rgba(60, 60, 63, 0.98); }
+    .table-responsive-container {
+        padding: 0;
+    }
+    td {
+        padding: 5px 10px;
+        touch-action: manipulation;
+    }
+    th {
+        font-size: 0.75em;
+        padding: 7px 10px;
+        color: rgba(130, 130, 130, 1);
+    }
+    #table-footer-summary {
+        padding: 7px 10px;
+        font-size: 0.75em;
+        text-align: right;
+        color: rgba(130, 130, 130, 1);
+    }
+    table {
+        width: 100%;
+        min-width: 650px;
+        margin: 0;
+        touch-action: pan-x;
+    }
+    table thead th:first-child,
+    table tbody td:first-child {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+    }
+    table thead th:first-child {
+        z-index: 2;
+        background-image: linear-gradient(
+            to bottom,
+            rgba(60, 60, 63, 0.98),
+            rgba(60, 60, 63, 0.95)
+        );
+    }
+    table tbody td:first-child {
+        background-color: rgba(44, 44, 46, 0.98);
+        z-index: 1;
+    }
+    table tbody tr:hover td:first-child {
+        background-color: rgba(60, 60, 63, 0.98);
+    }
 }

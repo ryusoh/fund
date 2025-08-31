@@ -1,7 +1,11 @@
 // Disable double-click zoom
-document.addEventListener('dblclick', function(event) {
-    event.preventDefault();
-}, { passive: false });
+document.addEventListener(
+    'dblclick',
+    function (event) {
+        event.preventDefault();
+    },
+    { passive: false }
+);
 
 // Assuming Chart and ChartDataLabels are globally available from CDN.
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
@@ -19,7 +23,9 @@ let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
 async function startApp() {
     try {
         const fxResponse = await fetch('../data/fx_data.json?t=' + new Date().getTime());
-        if (!fxResponse.ok) throw new Error('Failed to load FX data');
+        if (!fxResponse.ok) {
+            throw new Error('Failed to load FX data');
+        }
         const fxData = await fxResponse.json();
         exchangeRates = fxData.rates || { USD: 1.0 };
     } catch (error) {
@@ -40,20 +46,24 @@ async function startApp() {
         initFooterToggle();
 
         // Wait for multiple animation frames to ensure proper layout
-        await new Promise(resolve => requestAnimationFrame(() => 
-            requestAnimationFrame(resolve)
-        ));
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
         try {
             // Load data, render chart (which also calls checkAndToggleVerticalScroll)
-            await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
+            await loadAndDisplayPortfolioData(
+                currentSelectedCurrency,
+                exchangeRates,
+                CURRENCY_SYMBOLS
+            );
             // Now that chart is rendered and initial scroll check is done:
             alignToggleWithChartMobile(); // Align toggle based on the rendered chart
         } catch (error) {
             console.error('Error during initial portfolio data load and display:', error);
         }
     } else {
-        console.error('Chart.js core NOT found. Ensure it is loaded before main.js. App initialization skipped.');
+        console.error(
+            'Chart.js core NOT found. Ensure it is loaded before main.js. App initialization skipped.'
+        );
     }
 }
 
@@ -73,7 +83,9 @@ window.addEventListener('resize', () => {
 // Listen for global currency changes from the toggle
 document.addEventListener('currencyChangedGlobal', async (event) => {
     currentSelectedCurrency = event.detail.currency;
-    console.log(`Global currency selected: ${currentSelectedCurrency}. Portfolio display will update.`);
+    console.log(
+        `Global currency selected: ${currentSelectedCurrency}. Portfolio display will update.`
+    );
     try {
         await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
         // After chart update, re-align the toggle
@@ -99,7 +111,11 @@ setInterval(async () => {
 document.addEventListener('visibilitychange', async () => {
     if (!document.hidden) {
         try {
-            await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
+            await loadAndDisplayPortfolioData(
+                currentSelectedCurrency,
+                exchangeRates,
+                CURRENCY_SYMBOLS
+            );
             alignToggleWithChartMobile();
         } catch (error) {
             console.error('Error updating portfolio on visibility change:', error);

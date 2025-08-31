@@ -37,7 +37,7 @@ footer {
     font-size: 12px;
     text-align: center; /* Centers text within the footer block */
     color: rgba(255, 255, 255, 0.5);
-    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
     font-weight: 100;
     letter-spacing: 1px;
     padding: 0;
@@ -46,12 +46,12 @@ footer {
 }
 
 a.nav-back {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  color: #fff;
-  z-index: 101;
-  font-size: 1.1em;
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    color: #fff;
+    z-index: 101;
+    font-size: 1.1em;
 }
 
 /* Media Query for mobile devices */
@@ -62,14 +62,15 @@ a.nav-back {
         position: relative; /* Helps iOS honor overflow */
         overscroll-behavior-y: contain !important; /* Prevents scroll chaining/bounce */
     }
-    body.no-pull-to-refresh { /* Mobile specific body overrides */
+    body.no-pull-to-refresh {
+        /* Mobile specific body overrides */
         /* Revert body positioning to allow normal flow within the fixed html viewport */
         position: static !important; /* Or remove this line to revert to default */
         width: 100% !important; /* Full viewport width */
         overflow-y: hidden !important; /* Still hide vertical overflow */
         overflow-x: hidden !important; /* Prevent horizontal scroll on body */
         overscroll-behavior-y: contain !important; /* Prevent bounce */
-        background: #000000 url(../assets/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
+        background: #000 url(../assets/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
         background-size: cover !important; /* Cover the entire viewport */
     }
     html {
@@ -77,19 +78,20 @@ a.nav-back {
         height: auto;
         position: relative; /* Helps iOS honor overflow */
     }
-    body { /* Mobile specific body overrides */
+    body {
+        /* Mobile specific body overrides */
         /* Revert body positioning to allow normal flow within the fixed html viewport */
         position: static !important; /* Or remove this line to revert to default */
         width: 100% !important; /* Full viewport width */
         overflow-x: hidden !important; /* Prevent horizontal scroll on body */
-        background: #000000 url(../assets/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
+        background: #000 url(../assets/mobile_bg.jpg) center center no-repeat !important; /* Background image, adjusted path */
         background-size: cover !important; /* Cover the entire viewport */
     }
     .content-block {
         width: 95%; /* Wider for mobile */
         margin: 0 auto 10px auto; /* Adjusted mobile margin */
     }
-    #fundPieChartContainer { 
+    #fundPieChartContainer {
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
         margin: 0 auto 20px; /* Horizontally center, top margin 0, bottom margin 20px */
@@ -108,7 +110,8 @@ a.nav-back {
 
 /* Mobile-specific footer behaviors */
 @media (max-width: 768px) {
-    #total-portfolio-value-in-table, .total-pnl {
+    #total-portfolio-value-in-table,
+    .total-pnl {
         cursor: pointer;
     }
     #table-footer-summary .total-pnl {

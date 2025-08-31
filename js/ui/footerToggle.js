@@ -4,7 +4,9 @@ export function initFooterToggle() {
     const totalValueElement = document.getElementById('total-portfolio-value-in-table');
     const pnlElement = document.querySelector('.total-pnl');
 
-    if (!totalValueElement || !pnlElement) return;
+    if (!totalValueElement || !pnlElement) {
+        return;
+    }
 
     const state = {
         isMobileMode: undefined,
@@ -55,7 +57,9 @@ export function initFooterToggle() {
 
     function updateMode() {
         const isMobile = window.innerWidth <= UI_BREAKPOINTS.MOBILE;
-        if (state.isMobileMode === isMobile) return; // no change
+        if (state.isMobileMode === isMobile) {
+            return;
+        } // no change
         state.isMobileMode = isMobile;
 
         if (isMobile) {

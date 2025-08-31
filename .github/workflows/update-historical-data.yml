@@ -1,38 +1,38 @@
 name: Daily Historical Data Update
 
 on:
-  schedule:
-    # Runs at 21:15 UTC on weekdays (Mon-Fri), 1 hour 15 minutes after NYSE close.
-    # Delayed to avoid conflicts with fund data updates that run every 30 minutes.
-    - cron: '15 21 * * 1-5'
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+    schedule:
+        # Runs at 21:15 UTC on weekdays (Mon-Fri), 1 hour 15 minutes after NYSE close.
+        # Delayed to avoid conflicts with fund data updates that run every 30 minutes.
+        - cron: '15 21 * * 1-5'
+    workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:
-  contents: write # Required to commit changes back to the repository
+    contents: write # Required to commit changes back to the repository
 
 jobs:
-  generate-and-commit-history:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          # Fetch all history for all branches and tags so the script can analyze it
-          fetch-depth: 0
+    generate-and-commit-history:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+              with:
+                  # Fetch all history for all branches and tags so the script can analyze it
+                  fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+            - name: Install dependencies
+              run: pip install -r requirements.txt
 
-      - name: Generate historical data
-        run: python scripts/update_daily_pnl.py
+            - name: Generate historical data
+              run: python scripts/update_daily_pnl.py
 
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v6
-        with:
-          commit_message: "Automated daily historical portfolio data update"
-          file_pattern: "data/historical_portfolio_values.csv"
+            - name: Commit and push changes
+              uses: stefanzweifel/git-auto-commit-action@v6
+              with:
+                  commit_message: 'Automated daily historical portfolio data update'
+                  file_pattern: 'data/historical_portfolio_values.csv'

@@ -1,67 +1,66 @@
 import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
-import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 
 // Mock all imported modules
 jest.mock('../../../ui/currencyToggleManager.js', () => ({
-  initCurrencyToggle: jest.fn(),
+    initCurrencyToggle: jest.fn(),
 }));
 jest.mock('../../../ui/footerToggle.js', () => ({
-  initFooterToggle: jest.fn(),
+    initFooterToggle: jest.fn(),
 }));
 jest.mock('../../../ui/responsive.js', () => ({
-  checkAndToggleVerticalScroll: jest.fn(),
-  alignToggleWithChartMobile: jest.fn(),
+    checkAndToggleVerticalScroll: jest.fn(),
+    alignToggleWithChartMobile: jest.fn(),
 }));
 jest.mock('../../../services/dataService.js', () => ({
-  loadAndDisplayPortfolioData: jest.fn(() => Promise.resolve()),
+    loadAndDisplayPortfolioData: jest.fn(() => Promise.resolve()),
 }));
 
 describe('position page immediate start', () => {
-  beforeAll(() => {
-    // Set up global mocks before importing the module
-    global.Chart = { register: jest.fn() };
-    global.ChartDataLabels = {};
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ rates: { USD: 1.0, JPY: 110.0 } }),
-      })
-    );
-    console.error = jest.fn();
-    console.warn = jest.fn();
-    console.log = jest.fn();
+    beforeAll(() => {
+        // Set up global mocks before importing the module
+        global.Chart = { register: jest.fn() };
+        global.ChartDataLabels = {};
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ rates: { USD: 1.0, JPY: 110.0 } }),
+            })
+        );
+        console.error = jest.fn();
+        console.warn = jest.fn();
+        console.log = jest.fn();
 
-    // Set document.readyState to 'complete' BEFORE importing the module
-    Object.defineProperty(document, 'readyState', {
-      writable: true,
-      value: 'complete'
+        // Set document.readyState to 'complete' BEFORE importing the module
+        Object.defineProperty(document, 'readyState', {
+            writable: true,
+            value: 'complete',
+        });
+
+        // Mock requestAnimationFrame
+        global.requestAnimationFrame = jest.fn((cb) => {
+            // Execute the callback immediately for testing
+            setTimeout(() => cb(), 0);
+            return 1;
+        });
     });
 
-    // Mock requestAnimationFrame
-    global.requestAnimationFrame = jest.fn(cb => {
-      // Execute the callback immediately for testing
-      setTimeout(() => cb(), 0);
-      return 1;
+    afterAll(() => {
+        jest.restoreAllMocks();
     });
-  });
 
-  afterAll(() => {
-    jest.restoreAllMocks();
-  });
+    it('should call startApp immediately when DOM is already complete', async () => {
+        // Import the module - this should trigger the immediate startApp() call
+        await import('../../../pages/position/index.js');
 
-  it('should call startApp immediately when DOM is already complete', async () => {
-    // Import the module - this should trigger the immediate startApp() call
-    await import('../../../pages/position/index.js');
-    
-    // Give time for async operations
-    await new Promise(resolve => setTimeout(resolve, 50));
+        // Give time for async operations
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // Verify that startApp was called immediately
-    expect(global.Chart.register).toHaveBeenCalled();
-    expect(initCurrencyToggle).toHaveBeenCalled();
-    expect(initFooterToggle).toHaveBeenCalled();
-    expect(loadAndDisplayPortfolioData).toHaveBeenCalled();
-  });
+        // Verify that startApp was called immediately
+        expect(global.Chart.register).toHaveBeenCalled();
+        expect(initCurrencyToggle).toHaveBeenCalled();
+        expect(initFooterToggle).toHaveBeenCalled();
+        expect(loadAndDisplayPortfolioData).toHaveBeenCalled();
+    });
 });

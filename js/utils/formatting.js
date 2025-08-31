@@ -9,7 +9,9 @@
 export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, currencySymbols) {
     const numValueInUSD = parseFloat(valueInUSD);
     if (isNaN(numValueInUSD)) {
-        return typeof valueInUSD === 'string' ? valueInUSD : `${currencySymbols[targetCurrency] || '$'}0.00`;
+        return typeof valueInUSD === 'string'
+            ? valueInUSD
+            : `${currencySymbols[targetCurrency] || '$'}0.00`;
     }
 
     const rate = exchangeRates[targetCurrency];
@@ -23,11 +25,13 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
     const symbol = currencySymbols[targetCurrency] || targetCurrency; // Fallback to code if symbol missing
 
     // Format the number with locale-specific thousand separators and 2 decimal places.
-    const formattedNumber = absoluteConvertedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formattedNumber = absoluteConvertedValue.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 
     return `${symbol}${formattedNumber}`;
 }
-
 
 /**
  * Formats a number into a compact, human-readable string with metric prefixes (k, M, B).
@@ -95,7 +99,7 @@ export function formatNumber(num, currencySymbols, withSign = false, currency = 
     }
 
     const convertedNum = num * (rates[currency] || 1);
-    const sign = convertedNum > 0 ? '+' : (convertedNum < 0 ? '-' : '');
+    const sign = convertedNum > 0 ? '+' : convertedNum < 0 ? '-' : '';
     const absNum = Math.abs(convertedNum);
     let formattedNum;
 
@@ -130,49 +134,48 @@ export function formatNumber(num, currencySymbols, withSign = false, currency = 
 
         formattedNum = symbol + formattedVal + suffix;
         return sign + formattedNum;
+    }
+    let val;
+    let suffix = '';
+    if (currency === 'KRW' && absNum >= 1e6 && absNum < 1e9) {
+        val = absNum / 1e6;
+        suffix = 'm';
+        let precision = 3 - Math.floor(Math.log10(val)) - 1;
+        if (precision < 0) {
+            precision = 0;
+        }
+        formattedNum = symbol + val.toFixed(precision) + suffix;
     } else {
-        let val;
-        let suffix = '';
-        if (currency === 'KRW' && absNum >= 1e6 && absNum < 1e9) {
+        if (absNum >= 1e9) {
+            val = absNum / 1e9;
+            suffix = 'b';
+        } else if (absNum >= 1e6) {
             val = absNum / 1e6;
             suffix = 'm';
-            let precision = 3 - Math.floor(Math.log10(val)) - 1;
-            if (precision < 0) {
-                precision = 0;
-            }
-            formattedNum = symbol + val.toFixed(precision) + suffix;
+        } else if (absNum >= 1e3) {
+            val = absNum / 1e3;
+            suffix = 'k';
         } else {
-            if (absNum >= 1e9) {
-                val = absNum / 1e9;
-                suffix = 'b';
-            } else if (absNum >= 1e6) {
-                val = absNum / 1e6;
-                suffix = 'm';
-            } else if (absNum >= 1e3) {
-                val = absNum / 1e3;
-                suffix = 'k';
-            } else {
-                val = absNum;
-            }
+            val = absNum;
+        }
 
-            let precision = 0;
-            if (val > 0) {
-                if (suffix === '' && val % 1 === 0) {
+        let precision = 0;
+        if (val > 0) {
+            if (suffix === '' && val % 1 === 0) {
+                precision = 0;
+            } else {
+                precision = 4 - Math.floor(Math.log10(val)) - 1;
+                if (precision < 0) {
                     precision = 0;
-                } else {
-                    precision = 4 - Math.floor(Math.log10(val)) - 1;
-                    if (precision < 0) {
-                        precision = 0;
-                    }
-                    if (suffix === 'k' && precision > 2) {
-                        precision = 2;
-                    }
+                }
+                if (suffix === 'k' && precision > 2) {
+                    precision = 2;
                 }
             }
-            formattedNum = symbol + val.toFixed(precision) + suffix;
         }
-        return formattedNum;
+        formattedNum = symbol + val.toFixed(precision) + suffix;
     }
+    return formattedNum;
 }
 
 /**
@@ -212,7 +215,7 @@ export function addCommas(num) {
     if (num === null || num === undefined) {
         return '';
     }
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 /**

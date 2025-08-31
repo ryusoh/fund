@@ -2,7 +2,7 @@ import { drawImage } from '@charts/imageDrawer.js';
 
 export const imagePlugin = {
     id: 'imagePlugin',
-    afterDatasetsDraw(chart, args, options) {
+    afterDatasetsDraw(chart) {
         const ctx = chart.ctx;
         const dataset = chart.data.datasets[0];
         const images = dataset.images;
@@ -49,5 +49,5 @@ export const imagePlugin = {
                 }
             }
         });
-    }
+    },
 };
