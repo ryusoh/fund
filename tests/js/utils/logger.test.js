@@ -8,13 +8,13 @@ describe('logger', () => {
         consoleSpy = {
             log: jest.spyOn(console, 'log').mockImplementation(),
             warn: jest.spyOn(console, 'warn').mockImplementation(),
-            error: jest.spyOn(console, 'error').mockImplementation()
+            error: jest.spyOn(console, 'error').mockImplementation(),
         };
         jest.resetModules();
     });
 
     afterEach(() => {
-        Object.values(consoleSpy).forEach(spy => spy.mockRestore());
+        Object.values(consoleSpy).forEach((spy) => spy.mockRestore());
         process.env.NODE_ENV = originalEnv;
         global.window = originalWindow;
     });
@@ -47,8 +47,8 @@ describe('logger', () => {
             // Mock non-localhost window to simulate production
             global.window = {
                 location: {
-                    hostname: 'example.com'
-                }
+                    hostname: 'example.com',
+                },
             };
             ({ logger } = await import('@utils/logger.js'));
         });
@@ -86,8 +86,8 @@ describe('logger', () => {
         test('detects localhost as development', async () => {
             global.window = {
                 location: {
-                    hostname: 'localhost'
-                }
+                    hostname: 'localhost',
+                },
             };
             jest.resetModules();
             ({ logger } = await import('@utils/logger.js'));
@@ -99,8 +99,8 @@ describe('logger', () => {
         test('detects 127.0.0.1 as development', async () => {
             global.window = {
                 location: {
-                    hostname: '127.0.0.1'
-                }
+                    hostname: '127.0.0.1',
+                },
             };
             jest.resetModules();
             ({ logger } = await import('@utils/logger.js'));
@@ -112,8 +112,8 @@ describe('logger', () => {
         test('detects dev subdomain as development', async () => {
             global.window = {
                 location: {
-                    hostname: 'dev.example.com'
-                }
+                    hostname: 'dev.example.com',
+                },
             };
             jest.resetModules();
             ({ logger } = await import('@utils/logger.js'));
@@ -127,8 +127,8 @@ describe('logger', () => {
             delete global.process;
             global.window = {
                 location: {
-                    hostname: 'test.example.com'
-                }
+                    hostname: 'test.example.com',
+                },
             };
             jest.resetModules();
             const { logger, isDevelopment } = await import('@utils/logger.js');
@@ -144,8 +144,8 @@ describe('logger', () => {
             delete global.process;
             global.window = {
                 location: {
-                    hostname: 'staging.example.com'
-                }
+                    hostname: 'staging.example.com',
+                },
             };
             jest.resetModules();
             const { logger, isDevelopment } = await import('@utils/logger.js');
@@ -160,8 +160,8 @@ describe('logger', () => {
             // In pure browser environment, production domains don't match dev patterns
             global.window = {
                 location: {
-                    hostname: 'example.com'
-                }
+                    hostname: 'example.com',
+                },
             };
             jest.resetModules();
 
@@ -229,6 +229,5 @@ describe('logger', () => {
             logger.error('no location test');
             expect(consoleSpy.error).toHaveBeenCalledWith('no location test');
         });
-
     });
 });

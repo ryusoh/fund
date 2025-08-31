@@ -30,31 +30,31 @@ different use cases:
 
 ### Direct Executables
 
-| Command | Description | Examples |
-| :--- | :--- | :--- |
-| `./bin/fund` | Main CLI with all subcommands | `./bin/fund holdings list` |
-| `./bin/portfolio` | Direct portfolio listing | `./bin/portfolio` |
-| `./bin/holdings` | Holdings manager | `./bin/holdings buy AAPL …` |
-| `./bin/update-all` | Batch data update utility | `./bin/update-all` |
+| Command            | Description                   | Examples                    |
+| :----------------- | :---------------------------- | :-------------------------- |
+| `./bin/fund`       | Main CLI with all subcommands | `./bin/fund holdings list`  |
+| `./bin/portfolio`  | Direct portfolio listing      | `./bin/portfolio`           |
+| `./bin/holdings`   | Holdings manager              | `./bin/holdings buy AAPL …` |
+| `./bin/update-all` | Batch data update utility     | `./bin/update-all`          |
 
 ### Shell Integration
 
 Configure shell aliases by running `./scripts/setup-aliases.sh` and adding the
 output to your shell configuration:
 
-| Alias | Description | Examples |
-| :--- | :--- | :--- |
-| `portfolio` or `p` | Portfolio display | `portfolio` |
-| `buy` | Transaction recording (buy) | `buy AAPL 10 150.50` |
-| `sell` | Transaction recording (sell) | `sell AAPL 5 155.00` |
-| `fundby()` | Global buy function | `fundby AAPL 10 150.50` |
+| Alias              | Description                  | Examples                |
+| :----------------- | :--------------------------- | :---------------------- |
+| `portfolio` or `p` | Portfolio display            | `portfolio`             |
+| `buy`              | Transaction recording (buy)  | `buy AAPL 10 150.50`    |
+| `sell`             | Transaction recording (sell) | `sell AAPL 5 155.00`    |
+| `fundby()`         | Global buy function          | `fundby AAPL 10 150.50` |
 
 ### Alternative Interfaces
 
-| Command | Description | Examples |
-| :--- | :--- | :--- |
-| `python3 -m scripts.cli` | Module execution | `python3 -m …` |
-| `npm run fund:*` | NPM script integration | `npm run fund:holdings list` |
+| Command                  | Description            | Examples                     |
+| :----------------------- | :--------------------- | :--------------------------- |
+| `python3 -m scripts.cli` | Module execution       | `python3 -m …`               |
+| `npm run fund:*`         | NPM script integration | `npm run fund:holdings list` |
 
 ### Optional Install
 
@@ -74,16 +74,16 @@ Subcommands are auto-discovered from `scripts/commands`.
   accepting `args`.
 - Example skeleton:
 
-  ```python
-  # scripts/commands/example.py
-  import argparse
-  def _run(args: argparse.Namespace) -> None:
-      print("ran example", args)
-  def add_parser(subparsers: argparse._SubParsersAction) -> None:
-      p = subparsers.add_parser("example", help="Example command")
-      p.add_argument("name")
-      p.set_defaults(func=_run)
-  ```
+    ```python
+    # scripts/commands/example.py
+    import argparse
+    def _run(args: argparse.Namespace) -> None:
+        print("ran example", args)
+    def add_parser(subparsers: argparse._SubParsersAction) -> None:
+        p = subparsers.add_parser("example", help="Example command")
+        p.add_argument("name")
+        p.set_defaults(func=_run)
+    ```
 
 ## Project Structure
 
@@ -124,20 +124,19 @@ fund/
     ```
 
 2. **Python Environment Setup:**
-
     - Ensure Python 3.x is installed.
     - Create a virtual environment (recommended):
 
-      ```bash
-      python -m venv venv
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
-      ```
+        ```bash
+        python -m venv venv
+        source venv/bin/activate  # On Windows: venv\Scripts\activate
+        ```
 
     - Install dependencies:
 
-      ```bash
-      pip install -r requirements.txt
-      ```
+        ```bash
+        pip install -r requirements.txt
+        ```
 
 3. **CLI Usage:**
 
@@ -264,7 +263,7 @@ relative to the project root.
 ### Setup
 
 1. Ensure the script `manage_holdings.py` is located in the
-    `scripts/portfolio/` directory of your project.
+   `scripts/portfolio/` directory of your project.
 
     ```text
     project_root/
@@ -279,7 +278,7 @@ relative to the project root.
     ```
 
 2. You can run the script using
-    `python scripts/portfolio/manage_holdings.py ...` from your project root.
+   `python scripts/portfolio/manage_holdings.py ...` from your project root.
 
 ### Usage
 
@@ -294,8 +293,8 @@ python scripts/portfolio/manage_holdings.py [options] <command> [command_args...
 **Options:**
 
 - `--file FILEPATH`: Specifies the path to the holdings JSON file.
-  - Defaults to `holdings_details.json` located in the same directory as the
-    script (e.g., `data/holdings_details.json`).
+    - Defaults to `holdings_details.json` located in the same directory as the
+      script (e.g., `data/holdings_details.json`).
 
 **Commands:**
 

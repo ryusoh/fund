@@ -1,311 +1,311 @@
 name: Auto-merge Dependabot PRs
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, labeled]
-  workflow_dispatch:
-  schedule:
-    - cron: '*/30 * * * *'
+    pull_request_target:
+        types: [opened, synchronize, reopened, labeled]
+    workflow_dispatch:
+    schedule:
+        - cron: '*/30 * * * *'
 
 jobs:
-  ensure-and-merge:
-    permissions:
-      contents: write
-      pull-requests: write
-    runs-on: ubuntu-latest
-    env:
-      AUTO_APPROVE_TOKEN: ${{ secrets.AUTO_APPROVE_TOKEN }}
-    steps:
-      - name: Auto-label + auto-merge single PR (pull_request_target)
-        if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
+    ensure-and-merge:
+        permissions:
+            contents: write
+            pull-requests: write
+        runs-on: ubuntu-latest
+        env:
+            AUTO_APPROVE_TOKEN: ${{ secrets.AUTO_APPROVE_TOKEN }}
+        steps:
+            - name: Auto-label + auto-merge single PR (pull_request_target)
+              if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const pr = context.payload.pull_request;
 
-            // Skip if PR modifies workflow files (requires elevated permissions)
-            try {
-              const { data: files } = await github.rest.pulls.listFiles({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                per_page: 100
-              });
-              const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
-              if (touchesWorkflows) {
-                // Normalize PR title to our Japanese format for workflow-touching PRs
-                function formatHeadline(title) {
-                  const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                  const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                  let m = title.match(re1);
-                  if (m) {
-                    const [, scope, pkg, fromV, toV] = m;
-                    return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
-                  }
-                  m = title.match(re2);
-                  if (m) {
-                    const [, pkg, fromV, toV] = m;
-                    return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
-                  }
-                  return title;
-                }
-                const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
-                if (newTitle !== pr.title) {
-                  try {
-                    await github.rest.pulls.update({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      pull_number: pr.number,
-                      title: newTitle,
-                    });
-                    core.info(`Normalized PR title to: ${newTitle}`);
-                  } catch (e2) {
-                    core.warning(`Failed to normalize PR title: ${e2.message}`);
-                  }
-                }
-                core.info('Skipping auto-merge: PR touches .github/workflows/**');
-                return;
-              }
-            } catch (e) {
-              core.warning(`Failed to inspect PR files: ${e.message}`);
-            }
-            // Add "automerge" label if missing (label must exist in repo)
-            const hasAuto = pr.labels?.some(l => l.name === 'automerge');
-            if (!hasAuto) {
-              try {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  labels: ['automerge']
-                });
-              } catch (e) {
-                core.warning(`Failed adding automerge label: ${e.message}`);
-              }
-            }
+                      // Skip if PR modifies workflow files (requires elevated permissions)
+                      try {
+                        const { data: files } = await github.rest.pulls.listFiles({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          pull_number: pr.number,
+                          per_page: 100
+                        });
+                        const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
+                        if (touchesWorkflows) {
+                          // Normalize PR title to our Japanese format for workflow-touching PRs
+                          function formatHeadline(title) {
+                            const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                            const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                            let m = title.match(re1);
+                            if (m) {
+                              const [, scope, pkg, fromV, toV] = m;
+                              return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                            }
+                            m = title.match(re2);
+                            if (m) {
+                              const [, pkg, fromV, toV] = m;
+                              return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                            }
+                            return title;
+                          }
+                          const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
+                          if (newTitle !== pr.title) {
+                            try {
+                              await github.rest.pulls.update({
+                                owner: context.repo.owner,
+                                repo: context.repo.repo,
+                                pull_number: pr.number,
+                                title: newTitle,
+                              });
+                              core.info(`Normalized PR title to: ${newTitle}`);
+                            } catch (e2) {
+                              core.warning(`Failed to normalize PR title: ${e2.message}`);
+                            }
+                          }
+                          core.info('Skipping auto-merge: PR touches .github/workflows/**');
+                          return;
+                        }
+                      } catch (e) {
+                        core.warning(`Failed to inspect PR files: ${e.message}`);
+                      }
+                      // Add "automerge" label if missing (label must exist in repo)
+                      const hasAuto = pr.labels?.some(l => l.name === 'automerge');
+                      if (!hasAuto) {
+                        try {
+                          await github.rest.issues.addLabels({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: pr.number,
+                            labels: ['automerge']
+                          });
+                        } catch (e) {
+                          core.warning(`Failed adding automerge label: ${e.message}`);
+                        }
+                      }
 
-            // Auto-approve fallback using default token (may be blocked by org settings)
-            try {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                event: 'APPROVE',
-                body: 'Auto-approve: Dependabot update'
-              });
-            } catch (e) {
-              core.info(`Auto-approve (default token) skipped: ${e.message}`);
-            }
+                      // Auto-approve fallback using default token (may be blocked by org settings)
+                      try {
+                        await github.rest.pulls.createReview({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          pull_number: pr.number,
+                          event: 'APPROVE',
+                          body: 'Auto-approve: Dependabot update'
+                        });
+                      } catch (e) {
+                        core.info(`Auto-approve (default token) skipped: ${e.message}`);
+                      }
 
-            // Build formatted commit headline/body in Japanese (fallback to PR title/body)
-            function formatHeadline(title) {
-              const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-              const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-              let m = title.match(re1);
-              if (m) {
-                const [, scope, pkg, fromV, toV] = m;
-                return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
-              }
-              m = title.match(re2);
-              if (m) {
-                const [, pkg, fromV, toV] = m;
-                return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
-              }
-              return title; // fallback
-            }
-            const commitHeadline = formatHeadline(pr.title);
-            const commitBody = pr.body ? pr.body : 'Auto-merge: Dependabot update';
+                      // Build formatted commit headline/body in Japanese (fallback to PR title/body)
+                      function formatHeadline(title) {
+                        const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                        const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                        let m = title.match(re1);
+                        if (m) {
+                          const [, scope, pkg, fromV, toV] = m;
+                          return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                        }
+                        m = title.match(re2);
+                        if (m) {
+                          const [, pkg, fromV, toV] = m;
+                          return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                        }
+                        return title; // fallback
+                      }
+                      const commitHeadline = formatHeadline(pr.title);
+                      const commitBody = pr.body ? pr.body : 'Auto-merge: Dependabot update';
 
-            // Enable auto-merge (squash) with custom commit message
-            try {
-              await github.graphql(`
-                mutation($input: EnablePullRequestAutoMergeInput!) {
-                  enablePullRequestAutoMerge(input: $input) { clientMutationId }
-                }
-              `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
-            } catch (e) {
-              const msg = String(e.message || e);
-              if (/clean status/i.test(msg)) {
-                core.info('PR is clean; attempting direct squash merge');
-                try {
-                  await github.rest.pulls.merge({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    pull_number: pr.number,
-                    merge_method: 'squash',
-                    commit_title: commitHeadline,
-                    commit_message: commitBody,
-                  });
-                } catch (mergeErr) {
-                  core.warning(`Direct merge failed: ${mergeErr.message}`);
-                }
-              } else {
-                core.info(`Enable auto-merge skipped: ${msg}`);
-              }
-            }
+                      // Enable auto-merge (squash) with custom commit message
+                      try {
+                        await github.graphql(`
+                          mutation($input: EnablePullRequestAutoMergeInput!) {
+                            enablePullRequestAutoMerge(input: $input) { clientMutationId }
+                          }
+                        `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
+                      } catch (e) {
+                        const msg = String(e.message || e);
+                        if (/clean status/i.test(msg)) {
+                          core.info('PR is clean; attempting direct squash merge');
+                          try {
+                            await github.rest.pulls.merge({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              pull_number: pr.number,
+                              merge_method: 'squash',
+                              commit_title: commitHeadline,
+                              commit_message: commitBody,
+                            });
+                          } catch (mergeErr) {
+                            core.warning(`Direct merge failed: ${mergeErr.message}`);
+                          }
+                        } else {
+                          core.info(`Enable auto-merge skipped: ${msg}`);
+                        }
+                      }
 
-      - name: Auto-approve with PAT (single)
-        if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]' && env.AUTO_APPROVE_TOKEN != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
-          script: |
-            const pr = context.payload.pull_request;
-            try {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                event: 'APPROVE',
-                body: 'Auto-approve (PAT): Dependabot update'
-              });
-            } catch (e) {
-              core.warning(`Auto-approve (PAT) failed: ${e.message}`);
-            }
+            - name: Auto-approve with PAT (single)
+              if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]' && env.AUTO_APPROVE_TOKEN != ''
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
+                  script: |
+                      const pr = context.payload.pull_request;
+                      try {
+                        await github.rest.pulls.createReview({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          pull_number: pr.number,
+                          event: 'APPROVE',
+                          body: 'Auto-approve (PAT): Dependabot update'
+                        });
+                      } catch (e) {
+                        core.warning(`Auto-approve (PAT) failed: ${e.message}`);
+                      }
 
-      - name: Sweep open Dependabot PRs (dispatch/schedule)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pulls } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
-            for (const pr of pulls) {
-              if (pr.user?.login !== 'dependabot[bot]') continue;
-              // Skip if PR modifies workflow files
-              try {
-                const { data: files } = await github.rest.pulls.listFiles({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pr.number,
-                  per_page: 100
-                });
-                const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
-                if (touchesWorkflows) {
-                  // Normalize PR title
-                  function formatHeadline(title) {
-                    const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                    const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                    let m = title.match(re1);
-                    if (m) {
-                      const [, scope, pkg, fromV, toV] = m;
-                      return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
-                    }
-                    m = title.match(re2);
-                    if (m) {
-                      const [, pkg, fromV, toV] = m;
-                      return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
-                    }
-                    return title;
-                  }
-                  const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
-                  if (newTitle !== pr.title) {
-                    try {
-                      await github.rest.pulls.update({
+            - name: Sweep open Dependabot PRs (dispatch/schedule)
+              if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const { data: pulls } = await github.rest.pulls.list({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
-                        pull_number: pr.number,
-                        title: newTitle,
+                        state: 'open',
+                        per_page: 100
                       });
-                      core.info(`#${pr.number}: Normalized PR title to: ${newTitle}`);
-                    } catch (e2) {
-                      core.warning(`#${pr.number}: Failed to normalize PR title: ${e2.message}`);
-                    }
-                  }
-                  core.info(`Skipping #${pr.number}: touches .github/workflows/**`);
-                  continue;
-                }
-              } catch (e) {
-                core.warning(`Failed to inspect files for #${pr.number}: ${e.message}`);
-              }
-              // Add automerge label if missing
-              const labels = pr.labels?.map(l => l.name) || [];
-              if (!labels.includes('automerge')) {
-                try {
-                  await github.rest.issues.addLabels({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: pr.number,
-                    labels: ['automerge']
-                  });
-                } catch (e) {
-                  core.warning(`Failed adding automerge label to #${pr.number}: ${e.message}`);
-                }
-              }
-              // Build formatted commit headline/body (fallback to PR values)
-              function formatHeadline(title) {
-                const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
-                let m = title.match(re1);
-                if (m) {
-                  const [, scope, pkg, fromV, toV] = m;
-                  return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
-                }
-                m = title.match(re2);
-                if (m) {
-                  const [, pkg, fromV, toV] = m;
-                  return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
-                }
-                return title;
-              }
-              const commitHeadline = formatHeadline(pr.title || 'build(deps): update dependencies');
-              const commitBody = pr.body || 'Auto-merge: Dependabot update';
+                      for (const pr of pulls) {
+                        if (pr.user?.login !== 'dependabot[bot]') continue;
+                        // Skip if PR modifies workflow files
+                        try {
+                          const { data: files } = await github.rest.pulls.listFiles({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            pull_number: pr.number,
+                            per_page: 100
+                          });
+                          const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
+                          if (touchesWorkflows) {
+                            // Normalize PR title
+                            function formatHeadline(title) {
+                              const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                              const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                              let m = title.match(re1);
+                              if (m) {
+                                const [, scope, pkg, fromV, toV] = m;
+                                return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                              }
+                              m = title.match(re2);
+                              if (m) {
+                                const [, pkg, fromV, toV] = m;
+                                return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                              }
+                              return title;
+                            }
+                            const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
+                            if (newTitle !== pr.title) {
+                              try {
+                                await github.rest.pulls.update({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  pull_number: pr.number,
+                                  title: newTitle,
+                                });
+                                core.info(`#${pr.number}: Normalized PR title to: ${newTitle}`);
+                              } catch (e2) {
+                                core.warning(`#${pr.number}: Failed to normalize PR title: ${e2.message}`);
+                              }
+                            }
+                            core.info(`Skipping #${pr.number}: touches .github/workflows/**`);
+                            continue;
+                          }
+                        } catch (e) {
+                          core.warning(`Failed to inspect files for #${pr.number}: ${e.message}`);
+                        }
+                        // Add automerge label if missing
+                        const labels = pr.labels?.map(l => l.name) || [];
+                        if (!labels.includes('automerge')) {
+                          try {
+                            await github.rest.issues.addLabels({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: pr.number,
+                              labels: ['automerge']
+                            });
+                          } catch (e) {
+                            core.warning(`Failed adding automerge label to #${pr.number}: ${e.message}`);
+                          }
+                        }
+                        // Build formatted commit headline/body (fallback to PR values)
+                        function formatHeadline(title) {
+                          const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                          const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                          let m = title.match(re1);
+                          if (m) {
+                            const [, scope, pkg, fromV, toV] = m;
+                            return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                          }
+                          m = title.match(re2);
+                          if (m) {
+                            const [, pkg, fromV, toV] = m;
+                            return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                          }
+                          return title;
+                        }
+                        const commitHeadline = formatHeadline(pr.title || 'build(deps): update dependencies');
+                        const commitBody = pr.body || 'Auto-merge: Dependabot update';
 
-              // Enable auto-merge (squash) with custom commit message
-              try {
-                await github.graphql(`
-                  mutation($input: EnablePullRequestAutoMergeInput!) {
-                    enablePullRequestAutoMerge(input: $input) { clientMutationId }
-                  }
-                `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
-              } catch (e) {
-                const msg = String(e.message || e);
-                if (/clean status/i.test(msg)) {
-                  core.info(`#${pr.number} is clean; attempting direct squash merge`);
-                  try {
-                    await github.rest.pulls.merge({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      pull_number: pr.number,
-                      merge_method: 'squash',
-                      commit_title: commitHeadline,
-                      commit_message: commitBody,
-                    });
-                  } catch (mergeErr) {
-                    core.warning(`Direct merge failed for #${pr.number}: ${mergeErr.message}`);
-                  }
-                } else {
-                  core.info(`Auto-merge enable skipped for #${pr.number}: ${msg}`);
-                }
-              }
-            }
+                        // Enable auto-merge (squash) with custom commit message
+                        try {
+                          await github.graphql(`
+                            mutation($input: EnablePullRequestAutoMergeInput!) {
+                              enablePullRequestAutoMerge(input: $input) { clientMutationId }
+                            }
+                          `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
+                        } catch (e) {
+                          const msg = String(e.message || e);
+                          if (/clean status/i.test(msg)) {
+                            core.info(`#${pr.number} is clean; attempting direct squash merge`);
+                            try {
+                              await github.rest.pulls.merge({
+                                owner: context.repo.owner,
+                                repo: context.repo.repo,
+                                pull_number: pr.number,
+                                merge_method: 'squash',
+                                commit_title: commitHeadline,
+                                commit_message: commitBody,
+                              });
+                            } catch (mergeErr) {
+                              core.warning(`Direct merge failed for #${pr.number}: ${mergeErr.message}`);
+                            }
+                          } else {
+                            core.info(`Auto-merge enable skipped for #${pr.number}: ${msg}`);
+                          }
+                        }
+                      }
 
-      - name: Sweep approvals with PAT (dispatch/schedule)
-        if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && env.AUTO_APPROVE_TOKEN != ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
-          script: |
-            const { data: pulls } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
-            for (const pr of pulls) {
-              if (pr.user?.login !== 'dependabot[bot]') continue;
-              try {
-                await github.rest.pulls.createReview({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pr.number,
-                  event: 'APPROVE',
-                  body: 'Auto-approve (PAT): Dependabot update'
-                });
-              } catch (e) {
-                core.warning(`Auto-approve (PAT) failed for #${pr.number}: ${e.message}`);
-              }
-            }
+            - name: Sweep approvals with PAT (dispatch/schedule)
+              if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && env.AUTO_APPROVE_TOKEN != ''
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
+                  script: |
+                      const { data: pulls } = await github.rest.pulls.list({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        state: 'open',
+                        per_page: 100
+                      });
+                      for (const pr of pulls) {
+                        if (pr.user?.login !== 'dependabot[bot]') continue;
+                        try {
+                          await github.rest.pulls.createReview({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            pull_number: pr.number,
+                            event: 'APPROVE',
+                            body: 'Auto-approve (PAT): Dependabot update'
+                          });
+                        } catch (e) {
+                          core.warning(`Auto-approve (PAT) failed for #${pr.number}: ${e.message}`);
+                        }
+                      }

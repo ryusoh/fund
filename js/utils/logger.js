@@ -8,14 +8,16 @@ export const isDevelopment = () => {
     /* istanbul ignore else */
     if (typeof window !== 'undefined' && window.location) {
         const hostname = window.location.hostname;
-        return /* istanbul ignore next */ hostname === 'localhost' ||
-               /* istanbul ignore next */
-               hostname === '127.0.0.1' ||
-               hostname.includes('dev') ||
-               /* istanbul ignore next */
-               hostname.startsWith('test') ||
-               /* istanbul ignore next */
-               hostname.includes('staging');
+        return (
+            /* istanbul ignore next */ hostname === 'localhost' ||
+            /* istanbul ignore next */
+            hostname === '127.0.0.1' ||
+            hostname.includes('dev') ||
+            /* istanbul ignore next */
+            hostname.startsWith('test') ||
+            /* istanbul ignore next */
+            hostname.includes('staging')
+        );
     }
     // If neither process nor window is available, default to development for safety
     /* istanbul ignore next */
@@ -40,5 +42,5 @@ export const logger = {
             // eslint-disable-next-line no-console
             console.error(...args);
         }
-    }
+    },
 };

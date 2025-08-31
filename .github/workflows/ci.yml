@@ -1,17 +1,17 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 jobs:
-  web-ci:
-    uses: ryusoh/ci/.github/workflows/web-ci.yml@v1
-    secrets: inherit
-    with:
-      node-version: '20'
-      python-version: '3.12'
-      run-precommit: true
-      deploy: false
+    web-ci:
+        uses: ryusoh/ci/.github/workflows/web-ci.yml@v1
+        secrets: inherit
+        with:
+            node-version: '20'
+            python-version: '3.12'
+            run-precommit: true
+            deploy: false

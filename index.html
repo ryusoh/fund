@@ -58,10 +58,23 @@
     </head>
     <body class="body-main">
         <div class="video-background">
-            <video autoplay loop muted playsinline preload="metadata" poster="./assets/mobile_bg.jpg" src="./assets/mobile_bg.mp4"></video>
+            <video
+                autoplay
+                loop
+                muted
+                playsinline
+                preload="metadata"
+                poster="./assets/mobile_bg.jpg"
+                src="./assets/mobile_bg.mp4"
+            ></video>
         </div>
         <img src="./assets/banner.png" alt="Banner" class="mobile-banner" loading="lazy" />
-        <a class="nav-back" href="https://www.lyeutsaon.com/" target="_self" aria-label="Back to Home">
+        <a
+            class="nav-back"
+            href="https://www.lyeutsaon.com/"
+            target="_self"
+            aria-label="Back to Home"
+        >
             <i
                 class="fa fa-chevron-right"
                 style="color: black; opacity: 0.6"
@@ -105,7 +118,8 @@
             // Respect reduced motion: pause background video
             (function () {
                 try {
-                    var m = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+                    var m =
+                        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
                     if (m && m.matches) {
                         var v = document.querySelector('.video-background video');
                         if (v) {
@@ -121,9 +135,9 @@
             // Register Service Worker for PWA
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function () {
-                    navigator.serviceWorker
-                        .register('./sw.js', { scope: './' })
-                        .catch(function () { /* no-op */ });
+                    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {
+                        /* no-op */
+                    });
                 });
             }
         </script>

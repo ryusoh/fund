@@ -13,24 +13,32 @@ const CORE_ASSETS = [
     './assets/avatar_152x152.png',
     './assets/mobile_bg.jpg',
     './assets/vendor/css/font-awesome-4.7.0.min.css',
-    './assets/vendor/fonts/fontawesome-webfont.woff2'
+    './assets/vendor/fonts/fontawesome-webfont.woff2',
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+        caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.addAll(CORE_ASSETS))
+            .then(() => self.skipWaiting())
     );
 });
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(
-                keys.map((k) => {
-                    if (k !== CACHE_NAME) {return caches.delete(k);}
-                })
+        caches
+            .keys()
+            .then((keys) =>
+                Promise.all(
+                    keys.map((k) => {
+                        if (k !== CACHE_NAME) {
+                            return caches.delete(k);
+                        }
+                    })
+                )
             )
-        ).then(() => self.clients.claim())
+            .then(() => self.clients.claim())
     );
 });
 
@@ -40,30 +48,37 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(req.url);
 
     // Only handle same-origin requests
-    if (url.origin !== self.location.origin) {return;}
+    if (url.origin !== self.location.origin) {
+        return;
+    }
 
-    const isStatic = (
+    const isStatic =
         req.destination === 'style' ||
         req.destination === 'script' ||
         req.destination === 'image' ||
-        req.destination === 'font'
-    );
+        req.destination === 'font';
 
     if (isStatic) {
         event.respondWith(
-            caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-                const resClone = res.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-                return res;
-            }))
+            caches.match(req).then(
+                (cached) =>
+                    cached ||
+                    fetch(req).then((res) => {
+                        const resClone = res.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+                        return res;
+                    })
+            )
         );
     } else {
         event.respondWith(
-            fetch(req).then((res) => {
-                const resClone = res.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-                return res;
-            }).catch(() => caches.match(req))
+            fetch(req)
+                .then((res) => {
+                    const resClone = res.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+                    return res;
+                })
+                .catch(() => caches.match(req))
         );
     }
 });

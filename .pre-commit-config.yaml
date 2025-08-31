@@ -1,36 +1,36 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-yaml
-      - id: check-ast
-      - id: mixed-line-ending
-      - id: detect-private-key
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v6.0.0
+      hooks:
+          - id: end-of-file-fixer
+          - id: trailing-whitespace
+          - id: check-yaml
+          - id: check-ast
+          - id: mixed-line-ending
+          - id: detect-private-key
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.7
-    hooks:
-      - id: ruff
-        args: ["--fix"]
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.5.7
+      hooks:
+          - id: ruff
+            args: ['--fix']
 
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        language_version: python3
+    - repo: https://github.com/psf/black
+      rev: 24.8.0
+      hooks:
+          - id: black
+            language_version: python3
 
-  - repo: local
-    hooks:
-      - id: ensure-bin-executable
-        name: ensure bin/* are executable
-        entry: bash -lc "chmod +x bin/fund bin/portfolio bin/holdings bin/update-all; git update-index --chmod=+x bin/fund bin/portfolio bin/holdings bin/update-all || true"
-        language: system
-        pass_filenames: false
-        always_run: true
+    - repo: local
+      hooks:
+          - id: ensure-bin-executable
+            name: ensure bin/* are executable
+            entry: bash -lc "chmod +x bin/fund bin/portfolio bin/holdings bin/update-all; git update-index --chmod=+x bin/fund bin/portfolio bin/holdings bin/update-all || true"
+            language: system
+            pass_filenames: false
+            always_run: true
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
-    hooks:
-      - id: markdownlint
+    - repo: https://github.com/igorshubovych/markdownlint-cli
+      rev: v0.45.0
+      hooks:
+          - id: markdownlint
