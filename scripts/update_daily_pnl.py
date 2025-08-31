@@ -13,13 +13,13 @@ for daily runs than recalculating the entire history. It does the following:
 6. Saves the updated CSV file.
 """
 
+import csv
 import json
 import sys
-import csv
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional, cast
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
@@ -32,14 +32,21 @@ HISTORICAL_CSV = REPO_PATH / "data" / "historical_portfolio_values.csv"
 # --- End Configuration ---
 
 
-def load_json_data(file_path: Path) -> Optional[Dict]:
+def load_json_data(file_path: Path) -> Optional[Dict[str, Any]]:
     """Loads and returns data from a JSON file."""
     if not file_path.exists():
         print(f"Error: Data file not found at {file_path}", file=sys.stderr)
         return None
     try:
         with file_path.open("r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if isinstance(data, dict):
+                return cast(Dict[str, Any], data)
+            print(
+                f"Error: Expected a JSON object in {file_path}, got {type(data).__name__}",
+                file=sys.stderr,
+            )
+            return None
     except (json.JSONDecodeError, IOError) as e:
         print(f"Error reading or parsing {file_path}: {e}", file=sys.stderr)
         return None
@@ -108,9 +115,7 @@ def main():
     }
 
     if not all(all_data.values()):
-        print(
-            "One or more essential data files are missing. Aborting.", file=sys.stderr
-        )
+        print("One or more essential data files are missing. Aborting.", file=sys.stderr)
         sys.exit(1)
 
     print("Calculating current portfolio value...")
@@ -149,9 +154,7 @@ def main():
             file_content = f.read()
 
     if last_date == today_str:
-        print(
-            f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry."
-        )
+        print(f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry.")
         # For display, we can still use pandas
         df_display = pd.read_csv(HISTORICAL_CSV)
         print("\nLatest data:")

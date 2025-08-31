@@ -4,6 +4,7 @@ import { getNyDate } from '@utils/date.js';
 import { formatNumber } from '@utils/formatting.js';
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendarResponsiveHandlers } from '@ui/responsive.js';
+import { logger } from '@utils/logger.js';
 
 // --- STATE ---
 let d3; // will be loaded lazily from local vendor or CDN
@@ -228,8 +229,8 @@ export async function initCalendar() {
         await cal.paint(paintConfig);
         initCalendarResponsiveHandlers();
     } catch (error) {
-        console.error('Error initializing calendar:', error);
-        console.log(error);
+        logger.error('Error initializing calendar:', error);
+        logger.log(error);
         document.querySelector(CALENDAR_SELECTORS.container).innerHTML = `<p>${error.message}</p>`;
     }
 }

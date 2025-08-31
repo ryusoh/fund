@@ -15,6 +15,7 @@ import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import { APP_SETTINGS, CURRENCY_SYMBOLS } from '@js/config.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
+import { logger } from '@utils/logger.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
@@ -29,7 +30,7 @@ async function startApp() {
         const fxData = await fxResponse.json();
         exchangeRates = fxData.rates || { USD: 1.0 };
     } catch (error) {
-        console.error('Error loading exchange rates:', error);
+        logger.error('Error loading exchange rates:', error);
         // Keep default exchangeRates if loading fails
     }
 
@@ -37,7 +38,7 @@ async function startApp() {
         if (typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
         } else {
-            console.warn('ChartDataLabels plugin NOT found. Ensure it is loaded before main.js.');
+            logger.warn('ChartDataLabels plugin NOT found. Ensure it is loaded before main.js.');
         }
         Chart.register(customArcBordersPlugin);
         Chart.register(waveAnimationPlugin);
@@ -58,10 +59,10 @@ async function startApp() {
             // Now that chart is rendered and initial scroll check is done:
             alignToggleWithChartMobile(); // Align toggle based on the rendered chart
         } catch (error) {
-            console.error('Error during initial portfolio data load and display:', error);
+            logger.error('Error during initial portfolio data load and display:', error);
         }
     } else {
-        console.error(
+        logger.error(
             'Chart.js core NOT found. Ensure it is loaded before main.js. App initialization skipped.'
         );
     }
@@ -83,7 +84,7 @@ window.addEventListener('resize', () => {
 // Listen for global currency changes from the toggle
 document.addEventListener('currencyChangedGlobal', async (event) => {
     currentSelectedCurrency = event.detail.currency;
-    console.log(
+    logger.log(
         `Global currency selected: ${currentSelectedCurrency}. Portfolio display will update.`
     );
     try {
@@ -91,7 +92,7 @@ document.addEventListener('currencyChangedGlobal', async (event) => {
         // After chart update, re-align the toggle
         alignToggleWithChartMobile();
     } catch (error) {
-        console.error('Error updating portfolio on currency change:', error);
+        logger.error('Error updating portfolio on currency change:', error);
     }
 });
 
@@ -103,7 +104,7 @@ setInterval(async () => {
         await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
         alignToggleWithChartMobile();
     } catch (error) {
-        console.error('Error during scheduled portfolio data update:', error);
+        logger.error('Error during scheduled portfolio data update:', error);
     }
 }, APP_SETTINGS.DATA_REFRESH_INTERVAL);
 
@@ -118,7 +119,7 @@ document.addEventListener('visibilitychange', async () => {
             );
             alignToggleWithChartMobile();
         } catch (error) {
-            console.error('Error updating portfolio on visibility change:', error);
+            logger.error('Error updating portfolio on visibility change:', error);
         }
     }
 });

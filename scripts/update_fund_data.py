@@ -1,16 +1,15 @@
-import json
-from pathlib import Path
-import logging
 import argparse
-from typing import List, Dict, Any, Optional
+import json
+import logging
 import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import yfinance as yf
 from polygon import RESTClient
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
@@ -20,9 +19,7 @@ def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
             holdings_data: Dict[str, Any] = json.load(f)
         return list(holdings_data.keys())
     except FileNotFoundError:
-        logging.error(
-            f"Holdings file not found at {holdings_file_path}. No tickers to fetch."
-        )
+        logging.error(f"Holdings file not found at {holdings_file_path}. No tickers to fetch.")
         return []
     except json.JSONDecodeError:
         logging.error(
@@ -49,15 +46,11 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             if not hist.empty:
                 price = hist["Close"].iloc[-1]
                 data[ticker_symbol] = float(price)
-                logging.info(
-                    f"Fetched price for {ticker_symbol} from yfinance: {price}"
-                )
+                logging.info(f"Fetched price for {ticker_symbol} from yfinance: {price}")
             else:
                 data[ticker_symbol] = None
         except Exception as e:
-            logging.warning(
-                f"yfinance failed for {ticker_symbol}: {e}. Will try Polygon.io."
-            )
+            logging.warning(f"yfinance failed for {ticker_symbol}: {e}. Will try Polygon.io.")
             data[ticker_symbol] = None
 
     tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
@@ -83,9 +76,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                                 f"Could not fetch price for {ticker_symbol} from Polygon.io."
                             )
                     except Exception as e:
-                        logging.error(
-                            f"Error fetching {ticker_symbol} from Polygon.io: {e}"
-                        )
+                        logging.error(f"Error fetching {ticker_symbol} from Polygon.io: {e}")
 
         except KeyError:
             logging.error(
@@ -104,9 +95,7 @@ def main(holdings_path: Path, output_path: Path) -> None:
         logging.warning("No tickers to fetch. Output file will not be updated/created.")
         return
 
-    logging.info(
-        f"Found {len(tickers_to_fetch)} tickers: {', '.join(tickers_to_fetch)}"
-    )
+    logging.info(f"Found {len(tickers_to_fetch)} tickers: {', '.join(tickers_to_fetch)}")
 
     existing_prices_data: Dict[str, Optional[float]] = {}
     if output_path.exists():
@@ -155,9 +144,7 @@ def main(holdings_path: Path, output_path: Path) -> None:
     except IOError as e:
         logging.error(f"Could not write data to {output_path}: {e}")
     except Exception as e:
-        logging.error(
-            f"An unexpected error occurred while writing to {output_path}: {e}"
-        )
+        logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
 
 
 if __name__ == "__main__":

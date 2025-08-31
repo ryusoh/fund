@@ -11,6 +11,7 @@ import {
     TICKER_TO_LOGO_MAP,
     BASE_URL,
 } from '@js/config.js';
+import { logger } from '@utils/logger.js';
 
 // --- Private Functions ---
 
@@ -276,13 +277,13 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         const { holdingsDetails, prices } = await fetchPortfolioData();
 
         if (!holdingsDetails || !prices) {
-            console.error(
+            logger.error(
                 'Essential holding or price data missing, cannot update portfolio display.'
             );
             return;
         }
         if (!exchangeRates || !currencySymbols) {
-            console.error(
+            logger.error(
                 'Exchange rates or currency symbols missing, cannot update portfolio display correctly.'
             );
             return;
@@ -335,7 +336,7 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();
     } catch (error) {
-        console.error('Error fetching or processing fund data:', error);
+        logger.error('Error fetching or processing fund data:', error);
     }
 }
 

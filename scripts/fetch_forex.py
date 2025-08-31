@@ -1,7 +1,8 @@
-import yfinance as yf
 import json
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
+
+import yfinance as yf
 
 FX_DATA_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "fx_data.json")
 # Default currencies to fetch if fx_data.json is not found or is empty
@@ -20,12 +21,8 @@ def fetch_forex_data():
                 data = json.load(f)
                 if "rates" in data and isinstance(data["rates"], dict):
                     # Get currencies from the file, excluding USD
-                    file_currencies = [
-                        key for key in data["rates"].keys() if key != "USD"
-                    ]
-                    if (
-                        file_currencies
-                    ):  # If there are currencies other than USD in the file
+                    file_currencies = [key for key in data["rates"].keys() if key != "USD"]
+                    if file_currencies:  # If there are currencies other than USD in the file
                         currencies_to_fetch = file_currencies
     except Exception as e:
         print(
@@ -48,9 +45,7 @@ def fetch_forex_data():
             print(f"Error fetching USD/{currency}: {e}")
             has_errors = True
 
-    if (
-        not has_errors or len(rates) > 1
-    ):  # Proceed if at least USD is there, or some rates fetched
+    if not has_errors or len(rates) > 1:  # Proceed if at least USD is there, or some rates fetched
         output = {
             "base": "USD",
             "rates": rates,

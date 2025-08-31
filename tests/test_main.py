@@ -1,9 +1,9 @@
 import json
+import tempfile
+import unittest
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-import tempfile
-import unittest
 from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
@@ -27,14 +27,10 @@ class TestFundScripts(unittest.TestCase):
         mock_get_history.return_value = [(1672531200, "hash1"), (1672617600, "hash2")]
         mock_get_content.side_effect = [
             {"AAPL": {"shares": 100}},  # holdings at hash1
-            {
-                "data": [{"ticker": "AAPL", "price": 150, "currency": "USD"}]
-            },  # fund_data at hash1
+            {"data": [{"ticker": "AAPL", "price": 150, "currency": "USD"}]},  # fund_data at hash1
             {"rates": {"USD": 1.0}},  # forex at hash1
             {"AAPL": {"shares": 120}},  # holdings at hash2
-            {
-                "data": [{"ticker": "AAPL", "price": 155, "currency": "USD"}]
-            },  # fund_data at hash2
+            {"data": [{"ticker": "AAPL", "price": 155, "currency": "USD"}]},  # fund_data at hash2
             {"rates": {"USD": 1.0}},  # forex at hash2
         ]
 
@@ -94,9 +90,7 @@ class TestFundScripts(unittest.TestCase):
             main()
 
         # Assert that save_holdings was called with the correct data
-        expected_holdings = {
-            "AAPL": {"shares": Decimal("100"), "average_price": Decimal("150.0")}
-        }
+        expected_holdings = {"AAPL": {"shares": Decimal("100"), "average_price": Decimal("150.0")}}
         mock_save_holdings.assert_called_once()
         # The first argument to save_holdings is the filepath, the second is the data.
         called_args, _ = mock_save_holdings.call_args

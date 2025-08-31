@@ -1,3 +1,5 @@
+import { logger } from './logger.js';
+
 /**
  * Formats a numeric value as a currency string in the target currency.
  * @param {number} valueInUSD - The value in USD.
@@ -16,7 +18,7 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
 
     const rate = exchangeRates[targetCurrency];
     if (typeof rate !== 'number') {
-        console.warn(`Exchange rate for ${targetCurrency} not found. Displaying in USD.`);
+        logger.warn(`Exchange rate for ${targetCurrency} not found. Displaying in USD.`);
         return `${currencySymbols['USD'] || '$'}${numValueInUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
