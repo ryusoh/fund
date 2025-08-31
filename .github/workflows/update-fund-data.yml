@@ -26,7 +26,7 @@ jobs:
             - name: Run update script
               env:
                   POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
-              run: python scripts/update_fund_data.py
+              run: python scripts/data/update_fund_data.py
 
             - name: Commit and push changes
               run: |

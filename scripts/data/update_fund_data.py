@@ -148,7 +148,7 @@ def main(holdings_path: Path, output_path: Path) -> None:
 
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parent.parent
+    BASE_DIR = Path(__file__).resolve().parents[2]
 
     parser = argparse.ArgumentParser(
         description="Fetch market prices using yfinance with a Polygon.io fallback."

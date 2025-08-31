@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const root = path.join(__dirname, '..');
+const root = path.join(__dirname, '..', '..');
 const req = [
     'js/vendor/d3.v7.mjs',
     'js/vendor/cal-heatmap-4.2.4.mjs',
@@ -25,14 +25,12 @@ for (const rel of req) {
     }
 }
 
-// Verify presence
 if (missing.length) {
     console.error('Missing vendor files:', missing.join(', '));
     console.error('Run: npm run vendor:fetch');
     process.exit(1);
 }
 
-// Optional checksum verification if manifest exists
 const manifestPath = path.join(root, 'assets', 'vendor', 'manifest.json');
 if (fs.existsSync(manifestPath)) {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));

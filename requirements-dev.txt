@@ -8,7 +8,8 @@ black
 mypy
 bandit
 pip-audit
+pre-commit
+argcomplete
 
 # Include runtime deps for test environment
 -r requirements.txt
-

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import yfinance as yf
 
-FX_DATA_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "fx_data.json")
+FX_DATA_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "fx_data.json")
 # Default currencies to fetch if fx_data.json is not found or is empty
 DEFAULT_CURRENCIES = ["CNY", "JPY", "KRW"]
 

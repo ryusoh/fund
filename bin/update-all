@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Update all fund data"""
+import os
+import sys
+from pathlib import Path
+
+script_dir = Path(__file__).parent.parent.absolute()
+os.chdir(script_dir)
+sys.path.insert(0, str(script_dir))
+
+# Override argv to run 'update-all'
+sys.argv = [sys.argv[0]] + ["update-all"]
+
+from scripts.cli import main
+
+if __name__ == "__main__":
+    main()

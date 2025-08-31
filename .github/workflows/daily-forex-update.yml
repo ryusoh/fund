@@ -27,7 +27,7 @@ jobs:
               run: pip install -r requirements.txt
 
             - name: Fetch forex data
-              run: python scripts/fetch_forex.py
+              run: python scripts/data/fetch_forex.py
 
             - name: Commit and push changes
               uses: stefanzweifel/git-auto-commit-action@v6

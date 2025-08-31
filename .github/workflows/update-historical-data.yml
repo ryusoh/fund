@@ -29,7 +29,7 @@ jobs:
               run: pip install -r requirements.txt
 
             - name: Generate historical data
-              run: python scripts/update_daily_pnl.py
+              run: python scripts/pnl/update_daily_pnl.py
 
             - name: Commit and push changes
               uses: stefanzweifel/git-auto-commit-action@v6

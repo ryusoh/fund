@@ -13,19 +13,19 @@ import pandas as pd
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.extract_pnl_history import main as process_pnl_history  # noqa: E402
-from scripts.fetch_forex import fetch_forex_data  # noqa: E402
-from scripts.manage_holdings import main  # noqa: E402
-from scripts.update_daily_pnl import main as update_daily_pnl  # noqa: E402
-from scripts.update_fund_data import main as update_fund_data  # noqa: E402
+from scripts.data.fetch_forex import fetch_forex_data  # noqa: E402
+from scripts.data.update_fund_data import main as update_fund_data  # noqa: E402
+from scripts.pnl.extract_pnl_history import main as process_pnl_history  # noqa: E402
+from scripts.pnl.update_daily_pnl import main as update_daily_pnl  # noqa: E402
+from scripts.portfolio.manage_holdings import main  # noqa: E402
 
 
 class TestFundScripts(unittest.TestCase):
 
     # Test for extract_pnl_history.py
-    @patch("scripts.extract_pnl_history.pd.DataFrame.to_csv")
-    @patch("scripts.extract_pnl_history.get_file_content_at_commit")
-    @patch("scripts.extract_pnl_history.get_commit_history_for_file")
+    @patch("scripts.pnl.extract_pnl_history.pd.DataFrame.to_csv")
+    @patch("scripts.pnl.extract_pnl_history.get_file_content_at_commit")
+    @patch("scripts.pnl.extract_pnl_history.get_commit_history_for_file")
     def test_process_pnl_history(self, mock_get_history, mock_get_content, mock_to_csv):
         # Arrange
         mock_get_history.return_value = [(1672531200, "hash1"), (1672617600, "hash2")]
@@ -48,7 +48,7 @@ class TestFundScripts(unittest.TestCase):
         self.assertEqual(path_arg.name, "historical_portfolio_values.csv")
 
     # Test for fetch_forex.py
-    @patch("scripts.fetch_forex.yf.Ticker")
+    @patch("scripts.data.fetch_forex.yf.Ticker")
     @patch("builtins.open", new_callable=mock_open)
     def test_fetch_forex_data(self, mock_file, mock_yf_ticker):
         # Mocking the yfinance Ticker
@@ -83,8 +83,8 @@ class TestFundScripts(unittest.TestCase):
         self.assertEqual(written_data["rates"]["KRW"], 1300.0)
 
     # Test for manage_holdings.py
-    @patch("scripts.manage_holdings.save_holdings")
-    @patch("scripts.manage_holdings.load_holdings")
+    @patch("scripts.portfolio.manage_holdings.save_holdings")
+    @patch("scripts.portfolio.manage_holdings.load_holdings")
     def test_manage_holdings_add(self, mock_load_holdings, mock_save_holdings):
         # Mock the loaded holdings to be empty
         mock_load_holdings.return_value = {}
@@ -101,9 +101,9 @@ class TestFundScripts(unittest.TestCase):
         self.assertEqual(called_args[1], expected_holdings)
 
     # Test for update_daily_pnl.py
-    @patch("scripts.update_daily_pnl.datetime")
-    @patch("scripts.update_daily_pnl.calculate_daily_values")
-    @patch("scripts.update_daily_pnl.load_json_data")
+    @patch("scripts.pnl.update_daily_pnl.datetime")
+    @patch("scripts.pnl.update_daily_pnl.calculate_daily_values")
+    @patch("scripts.pnl.update_daily_pnl.load_json_data")
     @patch(
         "pathlib.Path.open",
         new_callable=mock_open,
@@ -126,8 +126,8 @@ class TestFundScripts(unittest.TestCase):
         self.assertIn("16000.0", all_writes)
 
     # Test for update_fund_data.py
-    @patch("scripts.update_fund_data.get_prices")
-    @patch("scripts.update_fund_data.get_tickers_from_holdings")
+    @patch("scripts.data.update_fund_data.get_prices")
+    @patch("scripts.data.update_fund_data.get_tickers_from_holdings")
     def test_update_fund_data(self, mock_get_tickers, mock_get_prices):
         # Arrange
         with tempfile.TemporaryDirectory() as tmpdir:

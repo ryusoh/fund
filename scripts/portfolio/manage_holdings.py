@@ -5,11 +5,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Define base directory assuming script is in project_root/scripts/
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_HOLDINGS_FILE_NAME = "holdings_details.json"
 DEFAULT_HOLDINGS_FILE_PATH = BASE_DIR / "data" / DEFAULT_HOLDINGS_FILE_NAME
 
@@ -17,7 +15,6 @@ HoldingsType = Dict[str, Dict[str, Decimal]]
 
 
 def load_holdings(filepath: Path) -> HoldingsType:
-    """Loads holdings data from a JSON file."""
     if not filepath.exists():
         logging.info(f"Holdings file {filepath} not found. Starting with empty holdings.")
         return {}
@@ -28,24 +25,21 @@ def load_holdings(filepath: Path) -> HoldingsType:
         holdings_dict: HoldingsType = {}
 
         if isinstance(loaded_data, list):
-            # Convert from list format to dictionary format
             print(
                 f"Note: Converting holdings data from list format in {filepath} to dictionary format."
             )
             for item in loaded_data:
                 ticker = item.get("ticker")
                 shares = item.get("shares")
-                cost = item.get("cost")  # This is the average price in the old format
+                cost = item.get("cost")
                 if ticker and shares is not None and cost is not None:
                     holdings_dict[ticker.upper()] = {
                         "shares": Decimal(str(shares)),
                         "average_price": Decimal(str(cost)),
                     }
-            # Save the converted data immediately so next time it's in the correct format
             save_holdings(filepath, holdings_dict)
             return holdings_dict
         elif isinstance(loaded_data, dict):
-            # Convert numeric strings back to Decimal for precision
             for _ticker, details in loaded_data.items():
                 if "shares" in details:
                     details["shares"] = Decimal(str(details["shares"]))
@@ -68,17 +62,14 @@ def load_holdings(filepath: Path) -> HoldingsType:
 
 
 def save_holdings(filepath: Path, data: HoldingsType) -> None:
-    """Saves holdings data to a JSON file."""
     try:
         serializable_data: Dict[str, Dict[str, str]] = {}
         for ticker, details in data.items():
             serializable_data[ticker] = {
                 "shares": str(details["shares"]),
-                "average_price": str(
-                    details["average_price"].quantize(Decimal("0.000001"))
-                ),  # Store with high precision
+                "average_price": str(details["average_price"].quantize(Decimal("0.000001"))),
             }
-        filepath.parent.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         with filepath.open("w", encoding="utf-8") as f:
             json.dump(serializable_data, f, indent=2)
         logging.info(f"Holdings updated successfully in {filepath}")
@@ -89,7 +80,6 @@ def save_holdings(filepath: Path, data: HoldingsType) -> None:
 def buy_shares(
     holdings: HoldingsType, ticker: str, shares_bought_str: str, purchase_price_str: str
 ) -> None:
-    """Adds a buy transaction to the holdings."""
     ticker = ticker.upper()
     try:
         shares_bought = Decimal(shares_bought_str)
@@ -98,25 +88,21 @@ def buy_shares(
         logging.error("Shares and price must be valid numbers.")
         return
 
-    if (
-        shares_bought <= 0 or purchase_price < 0
-    ):  # Price can be 0 for certain corporate actions, but generally positive
+    if shares_bought <= 0 or purchase_price < 0:
         logging.error("Number of shares must be positive, and price must be non-negative.")
         return
 
     if ticker in holdings:
         current_shares = holdings[ticker]["shares"]
         current_avg_price = holdings[ticker]["average_price"]
-
         total_cost_old = current_shares * current_avg_price
         cost_new_shares = shares_bought * purchase_price
-
         new_total_shares = current_shares + shares_bought
-        if new_total_shares == 0:  # Should not happen with a buy, but good for robustness
-            new_average_price = Decimal("0")
-        else:
-            new_average_price = (total_cost_old + cost_new_shares) / new_total_shares
-
+        new_average_price = (
+            (total_cost_old + cost_new_shares) / new_total_shares
+            if new_total_shares != 0
+            else Decimal("0")
+        )
         holdings[ticker]["shares"] = new_total_shares
         holdings[ticker]["average_price"] = new_average_price
         logging.info(f"Bought {shares_bought} shares of {ticker} at ${purchase_price:.2f}.")
@@ -133,7 +119,6 @@ def buy_shares(
 def sell_shares(
     holdings: HoldingsType, ticker: str, shares_sold_str: str, sell_price_str: str
 ) -> None:
-    """Adds a sell transaction to the holdings."""
     ticker = ticker.upper()
     try:
         shares_sold = Decimal(shares_sold_str)
@@ -163,7 +148,6 @@ def sell_shares(
 
     profit_loss_per_share = sell_price - current_avg_price
     total_profit_loss = profit_loss_per_share * shares_sold
-
     remaining_shares = current_shares - shares_sold
 
     logging.info(f"Sold {shares_sold} shares of {ticker} at ${sell_price:.2f}.")
@@ -174,14 +158,12 @@ def sell_shares(
         logging.info(f"All shares of {ticker} sold. Ticker removed from holdings.")
     else:
         holdings[ticker]["shares"] = remaining_shares
-        # Average price of remaining shares does not change due to a sale
         logging.info(
             f"Remaining holding for {ticker}: {remaining_shares} shares at average price ${current_avg_price:.2f}."
         )
 
 
 def list_holdings(holdings: HoldingsType) -> None:
-    """Lists current holdings in a formatted table."""
     if not holdings:
         logging.info("No holdings to display.")
         return
@@ -207,7 +189,6 @@ def list_holdings(holdings: HoldingsType) -> None:
 
 
 def main() -> None:
-    """Main function to parse arguments and call appropriate holding management functions."""
     parser = argparse.ArgumentParser(description="Manage your stock holdings.")
     parser.add_argument(
         "--file",
@@ -216,23 +197,19 @@ def main() -> None:
         help=f"Path to the holdings JSON file (default: {DEFAULT_HOLDINGS_FILE_PATH})",
     )
 
-    subparsers = parser.add_subparsers(
-        dest="command",
-        required=True,
-        help="Action to perform: buy, sell, or list holdings.",
-    )
+    subparsers = parser.add_subparsers(dest="command", required=True, help="buy|sell|list")
 
     buy_parser = subparsers.add_parser("buy", help="Record a buy transaction")
-    buy_parser.add_argument("ticker", type=str, help="Stock ticker symbol (e.g., AAPL)")
-    buy_parser.add_argument(
-        "shares", type=str, help="Number of shares purchased (can be fractional)"
-    )
+    buy_parser.add_argument("ticker", type=str, help="Ticker (e.g., AAPL)")
+    buy_parser.add_argument("shares", type=str, help="Shares (can be fractional)")
     buy_parser.add_argument("price", type=str, help="Price per share")
 
     sell_parser = subparsers.add_parser("sell", help="Record a sell transaction")
-    sell_parser.add_argument("ticker", type=str, help="Stock ticker symbol (e.g., AAPL)")
-    sell_parser.add_argument("shares", type=str, help="Number of shares sold (can be fractional)")
-    sell_parser.add_argument("price", type=str, help="Price per share at which shares were sold")
+    sell_parser.add_argument("ticker", type=str, help="Ticker (e.g., AAPL)")
+    sell_parser.add_argument("shares", type=str, help="Shares (can be fractional)")
+    sell_parser.add_argument("price", type=str, help="Price per share")
+
+    subparsers.add_parser("list", help="List current holdings")
 
     args = parser.parse_args()
     holdings = load_holdings(args.file)

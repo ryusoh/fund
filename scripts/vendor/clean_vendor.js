@@ -14,9 +14,9 @@ function rmIfExists(p) {
 }
 
 const oldPaths = [
-    path.join(__dirname, '..', 'js', 'fonts'),
-    path.join(__dirname, '..', 'js', 'vendor', 'font-awesome-4.7.0.min.css'),
-    path.join(__dirname, '..', 'js', 'vendor', 'cal-heatmap-4.2.4.css'),
+    path.join(__dirname, '..', '..', 'js', 'fonts'),
+    path.join(__dirname, '..', '..', 'js', 'vendor', 'font-awesome-4.7.0.min.css'),
+    path.join(__dirname, '..', '..', 'js', 'vendor', 'cal-heatmap-4.2.4.css'),
 ];
 
 for (const p of oldPaths) {

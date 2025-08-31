@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Quick portfolio listing (same as: holdings list)"""
+import os
+import sys
+from pathlib import Path
+
+script_dir = Path(__file__).parent.parent.absolute()
+os.chdir(script_dir)
+sys.path.insert(0, str(script_dir))
+
+# Override argv to run 'holdings list'
+sys.argv = [sys.argv[0]] + ["holdings", "list"]
+
+from scripts.cli import main
+
+if __name__ == "__main__":
+    main()

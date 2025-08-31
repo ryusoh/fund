@@ -20,3 +20,22 @@ select = [
 ignore = [
   "E501",  # handled by black (line length)
 ]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fund-cli"
+version = "0.1.0"
+description = "Fund portfolio management CLI"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Fund" }]
+
+[project.scripts]
+fund = "scripts.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*"]

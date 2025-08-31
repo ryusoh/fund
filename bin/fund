@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""
+Fund CLI entry
+Usage: ./bin/fund [command] [args...]
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# Ensure we run from the project directory
+script_dir = Path(__file__).parent.parent.absolute()
+os.chdir(script_dir)
+sys.path.insert(0, str(script_dir))
+
+# Import and run the CLI from the scripts package
+from scripts.cli import main
+
+if __name__ == "__main__":
+    main()

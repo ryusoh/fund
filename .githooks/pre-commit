@@ -13,4 +13,3 @@ node scripts/check_vendor.js || {
 }
 
 exit 0
-

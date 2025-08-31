@@ -15,10 +15,17 @@
     "verify:all": "npm run lint && npm test && ruff check scripts tests/python && black --check . && mypy && bandit -r scripts -lll && pytest",
     "verify:fix": "ruff check --fix scripts tests/python && black . && npm run verify:all",
     "prepare": "husky install",
-        "vendor:fetch": "node scripts/fetch_vendor.js",
-        "vendor:verify": "node scripts/check_vendor.js",
-        "vendor:clean": "node scripts/clean_vendor.js",
-        "vendor:refresh": "npm run vendor:clean && npm run vendor:fetch"
+        "vendor:fetch": "node scripts/vendor/fetch_vendor.js",
+        "vendor:verify": "node scripts/vendor/check_vendor.js",
+        "vendor:clean": "node scripts/vendor/clean_vendor.js",
+        "vendor:refresh": "npm run vendor:clean && npm run vendor:fetch",
+        "fund": "python3 -m scripts.cli",
+        "fund:holdings": "python3 -m scripts.cli holdings",
+        "fund:forex": "python3 -m scripts.cli forex",
+        "fund:data": "python3 -m scripts.cli fund-data",
+        "fund:pnl": "python3 -m scripts.cli daily-pnl",
+        "fund:history": "python3 -m scripts.cli extract-history",
+        "fund:update-all": "python3 -m scripts.cli update-all"
     },
     "devDependencies": {
         "@babel/core": "^7.28.3",

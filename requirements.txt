@@ -3,3 +3,4 @@ pandas~=2.2
 polygon-api-client
 requests>=2.32.4
 urllib3>=2.5.0
+argcomplete>=3.1

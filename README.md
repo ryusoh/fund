@@ -16,6 +16,63 @@ The project includes Python scripts for data management and a GitHub Actions wor
 - Donut chart visualization of fund allocation.
 - Automated updates of fund market data via GitHub Actions.
 - Responsive design for desktop and mobile viewing.
+- **Comprehensive CLI**: Easy-to-use command-line interface for all fund operations.
+
+## Command Line Interface (CLI)
+
+The fund management system provides multiple CLI interfaces optimized for different use cases:
+
+### Direct Executables
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `./bin/fund` | Main CLI with all subcommands | `./bin/fund holdings list` |
+| `./bin/portfolio` | Direct portfolio listing | `./bin/portfolio` |
+| `./bin/holdings` | Holdings management interface | `./bin/holdings buy AAPL 10 150.50` |
+| `./bin/update-all` | Batch data update utility | `./bin/update-all` |
+
+### Shell Integration
+
+Configure shell aliases by running `./scripts/setup-aliases.sh` and adding the output to your shell configuration:
+
+| Alias | Description | Examples |
+|-------|-------------|----------|
+| `portfolio` or `p` | Portfolio display | `portfolio` |
+| `buy` | Transaction recording (buy) | `buy AAPL 10 150.50` |
+| `sell` | Transaction recording (sell) | `sell AAPL 5 155.00` |
+| `fundby()` | Global buy function | `fundby AAPL 10 150.50` |
+
+### Alternative Interfaces
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `python3 -m scripts.cli` | Python module execution | `python3 -m scripts.cli holdings list` |
+| `npm run fund:*` | NPM script integration | `npm run fund:holdings list` |
+
+### Optional Install
+
+Install the CLI as a console script for global use:
+
+```bash
+pip install -e .
+fund --help
+```
+
+### Extending the CLI
+
+Subcommands are auto-discovered from `scripts/commands`.
+- Create a new module in `scripts/commands/` with an `add_parser(subparsers)` function that registers the subcommand and sets `func` to a callable accepting `args`.
+- Example skeleton:
+  ```python
+  # scripts/commands/example.py
+  import argparse
+  def _run(args: argparse.Namespace) -> None:
+      print("ran example", args)
+  def add_parser(subparsers: argparse._SubParsersAction) -> None:
+      p = subparsers.add_parser("example", help="Example command")
+      p.add_argument("name")
+      p.set_defaults(func=_run)
+  ```
 
 ## Project Structure
 
@@ -25,9 +82,27 @@ fund/
 ├── data/               # JSON data files (holdings, fund data)
 ├── css/                # CSS stylesheets
 ├── js/                 # JavaScript files (data services, chart configurations)
-├── scripts/            # Python scripts for data updates and management
+├── scripts/            # Python package: CLI + tasks
+│   ├── cli.py          # Main CLI entry
+│   ├── commands/       # CLI subcommands (auto-discovered)
+│   ├── data/           # Data fetch/update tasks
+│   ├── pnl/            # P&L and history tasks
+│   ├── portfolio/      # Portfolio management tasks
+│   ├── vendor/         # Node scripts for vendor assets
+│   └── setup-aliases.sh* # Alias helper script
+├── tests/              # Test files (JavaScript and Python)
+├── scripts/cli.py      # Main CLI implementation
+├── bin/                # Local launchers
+│   ├── fund*           # ./bin/fund [command]
+│   ├── portfolio*      # ./bin/portfolio
+│   ├── holdings*       # ./bin/holdings [action]
+│   └── update-all*     # ./bin/update-all
+├── scripts/setup-aliases.sh* # Shell alias helper
 ├── index.html          # Main HTML page
+├── package.json        # NPM configuration with CLI scripts
 └── README.md
+
+* = executable files
 ```
 
 ## Setup and Usage
@@ -37,8 +112,7 @@ fund/
     git clone https://github.com/ryusoh/fund.git
     cd fund
     ```
-2.  **Python Scripts Setup:**
-    If you need to run the Python scripts locally (e.g., `update_fund_data.py`, `manage_holdings.py`):
+2.  **Python Environment Setup:**
     - Ensure Python 3.x is installed.
     - Create a virtual environment (recommended):
         ```bash
@@ -49,21 +123,54 @@ fund/
         ```bash
         pip install -r requirements.txt
         ```
-    - Run scripts as needed, e.g.:
-        ```bash
-        python scripts/update_fund_data.py
-        python scripts/manage_holdings.py --file data/holdings_details.json list
-        ```
-3.  **Viewing the Page:**
-    Open `index.html` in your web browser.
+3.  **CLI Usage:**
+    The project includes a comprehensive CLI for fund management operations.
+
+    **Common commands:**
+    ```bash
+    ./bin/fund --help              # Main CLI help
+    ./bin/portfolio                # Show your portfolio
+    ./bin/holdings buy AAPL 10 150.50   # Buy shares
+    ./bin/holdings sell AAPL 5 155.00   # Sell shares
+    ./bin/update-all               # Update all data
+    ```
+
+    **Optional: shell alias setup:**
+    ```bash
+    ./scripts/setup-aliases.sh # Prints alias setup instructions
+    # After setup, you can use:
+    portfolio                  # Show holdings
+    buy AAPL 10 150.50        # Quick buy
+    sell AAPL 5 155.00        # Quick sell
+    p                         # Short portfolio alias
+    fund forex                # Update forex rates
+    ```
+
+    **Full CLI options:**
+    ```bash
+    # Direct CLI usage
+    python3 -m scripts.cli --help
+    ./bin/fund --help
+
+    # NPM scripts (also available)
+    npm run fund:holdings list
+    npm run fund:forex
+    npm run fund:update-all
+    ```
+
+4.  **Viewing the Page:**
+    Open `index.html` in your web browser or run:
+    ```bash
+    npm run dev  # Serves on http://localhost:8000
+    ```
 
 ## Automated Data Updates
 
 This project uses multiple GitHub Actions to keep data fresh:
 
-- `update-fund-data.yml` (every 30 min on weekdays): fetches latest prices via `scripts/update_fund_data.py` and updates `data/fund_data.json`.
-- `daily-forex-update.yml` (daily): fetches FX rates via `scripts/fetch_forex.py` and updates `data/fx_data.json`.
-- `update-historical-data.yml` (post‑close on weekdays): appends the latest daily values via `scripts/update_daily_pnl.py` and updates `data/historical_portfolio_values.csv`.
+- `update-fund-data.yml` (every 30 min on weekdays): fetches latest prices via `scripts/data/update_fund_data.py` and updates `data/fund_data.json`.
+- `daily-forex-update.yml` (daily): fetches FX rates via `scripts/data/fetch_forex.py` and updates `data/fx_data.json`.
+- `update-historical-data.yml` (post‑close on weekdays): appends the latest daily values via `scripts/pnl/update_daily_pnl.py` and updates `data/historical_portfolio_values.csv`.
 
 All workflows commit changes back to the repository when files change.
 
@@ -85,7 +192,24 @@ pip install -r requirements.txt
 pytest --cov=.
 ```
 
-## Portfolio Management Script (`scripts/manage_holdings.py`)
+### Developer Tasks (Makefile)
+
+Common automation is available via `make`:
+
+```
+make install-dev   # Install Python + Node dev dependencies
+make hooks         # Install pre-commit hooks
+make lint          # Ruff + ESLint + Stylelint
+make fmt           # Black + Prettier
+make type          # mypy
+make sec           # bandit
+make test          # pytest + jest
+make verify        # lint + type + sec + tests
+make vendor-fetch  # fetch vendor assets
+make serve         # start dev server
+```
+
+## Portfolio Management Script (`scripts/portfolio/manage_holdings.py`)
 
 This Python script helps you manage your stock portfolio by tracking buy and sell transactions and automatically updating your holdings. It stores data in a JSON file, by default named `holdings_details.json` located in the `data/` directory relative to the project root.
 
@@ -104,17 +228,19 @@ This Python script helps you manage your stock portfolio by tracking buy and sel
 
 ### Setup
 
-1.  Ensure the script `manage_holdings.py` is located in the `scripts/` directory of your project.
+1.  Ensure the script `manage_holdings.py` is located in the `scripts/portfolio/` directory of your project.
     ```
     project_root/
     ├── scripts/
-    │   ├── manage_holdings.py
-    │   └── update_fund_data.py
+    │   ├── portfolio/
+    │   │   └── manage_holdings.py
+    │   └── data/
+    │       └── update_fund_data.py
     ├── data/
     │   └── holdings_details.json  (will be created/updated here by default)
     └── README.md
     ```
-2.  You can run the script using `python scripts/manage_holdings.py ...` from your project root.
+2.  You can run the script using `python scripts/portfolio/manage_holdings.py ...` from your project root.
 
 ### Usage
 
@@ -123,7 +249,7 @@ The script is run from the command line.
 **General Syntax (run from project root):**
 
 ```bash
-python scripts/manage_holdings.py [options] <command> [command_args...]
+python scripts/portfolio/manage_holdings.py [options] <command> [command_args...]
 ```
 
 **Options:**
@@ -140,7 +266,7 @@ Adds shares of a stock to your portfolio. If the ticker is new, it will be added
 **Syntax:**
 
 ```bash
-python scripts/manage_holdings.py buy <TICKER> <SHARES> <PRICE>
+python scripts/portfolio/manage_holdings.py buy <TICKER> <SHARES> <PRICE>
 ```
 
 **Arguments:**
@@ -153,11 +279,11 @@ python scripts/manage_holdings.py buy <TICKER> <SHARES> <PRICE>
 
 ```bash
 # Assumes holdings_details.json will be in data/
-python scripts/manage_holdings.py buy AAPL 10 170.50
-python scripts/manage_holdings.py buy msft 5.5 300.25
+python scripts/portfolio/manage_holdings.py buy AAPL 10 170.50
+python scripts/portfolio/manage_holdings.py buy msft 5.5 300.25
 
 # To use a custom file path:
-python scripts/manage_holdings.py --file custom_portfolio/my_stocks.json buy GOOG 100 135.00
+python scripts/portfolio/manage_holdings.py --file custom_portfolio/my_stocks.json buy GOOG 100 135.00
 ```
 
 #### 2. `sell` - Record a Sale
@@ -167,7 +293,7 @@ Removes shares of a stock from your portfolio. It calculates the realized profit
 **Syntax:**
 
 ```bash
-python scripts/manage_holdings.py sell <TICKER> <SHARES> <PRICE>
+python scripts/portfolio/manage_holdings.py sell <TICKER> <SHARES> <PRICE>
 ```
 
 **Arguments:**
@@ -179,7 +305,7 @@ python scripts/manage_holdings.py sell <TICKER> <SHARES> <PRICE>
 **Example:**
 
 ```bash
-python scripts/manage_holdings.py sell AAPL 5 180.00
+python scripts/portfolio/manage_holdings.py sell AAPL 5 180.00
 ```
 
 #### 3. `list` - Display Current Holdings
@@ -189,14 +315,14 @@ Shows a summary of all tickers in your portfolio, including the number of shares
 **Syntax:**
 
 ```bash
-python scripts/manage_holdings.py list
+python scripts/portfolio/manage_holdings.py list
 ```
 
 **Example:**
 
 ```bash
-python scripts/manage_holdings.py list
-python scripts/manage_holdings.py --file custom_portfolio/my_stocks.json list
+python scripts/portfolio/manage_holdings.py list
+python scripts/portfolio/manage_holdings.py --file custom_portfolio/my_stocks.json list
 ```
 
 ### Data File (e.g., `data/holdings_details.json`)

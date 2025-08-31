@@ -7,9 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const vendorJsDir = path.join(__dirname, '..', 'js', 'vendor');
-const vendorCssDir = path.join(__dirname, '..', 'assets', 'vendor', 'css');
-const vendorFontsDir = path.join(__dirname, '..', 'assets', 'vendor', 'fonts');
+const vendorJsDir = path.join(__dirname, '..', '..', 'js', 'vendor');
+const vendorCssDir = path.join(__dirname, '..', '..', 'assets', 'vendor', 'css');
+const vendorFontsDir = path.join(__dirname, '..', '..', 'assets', 'vendor', 'fonts');
 
 const assets = [
     // ESM modules
@@ -39,7 +39,7 @@ const assets = [
         url: 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css',
         out: path.join(vendorCssDir, 'cal-heatmap-4.2.4.css'),
     },
-    // Font Awesome 4.7.0 fonts (placed under js/fonts, relative to CSS in js/vendor)
+    // Font Awesome 4.7.0 fonts
     {
         url: 'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/fonts/fontawesome-webfont.woff2?v=4.7.0',
         out: path.join(vendorFontsDir, 'fontawesome-webfont.woff2'),
@@ -89,13 +89,13 @@ function fetchToFile(url, outPath) {
             const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
             manifest.push({
                 url: asset.url,
-                file: path.relative(path.join(__dirname, '..'), asset.out),
+                file: path.relative(path.join(__dirname, '..', '..'), asset.out),
                 sha256,
             });
 
             console.log(`Fetched: ${asset.url} -> ${asset.out}`);
         }
-        const manifestDir = path.join(__dirname, '..', 'assets', 'vendor');
+        const manifestDir = path.join(__dirname, '..', '..', 'assets', 'vendor');
         fs.mkdirSync(manifestDir, { recursive: true });
         fs.writeFileSync(
             path.join(manifestDir, 'manifest.json'),
