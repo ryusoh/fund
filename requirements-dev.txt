@@ -1,0 +1,14 @@
+pytest
+pytest-mock
+pytest-cov
+
+# Linters and security
+ruff
+black
+mypy
+bandit
+pip-audit
+
+# Include runtime deps for test environment
+-r requirements.txt
+

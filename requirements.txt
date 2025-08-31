@@ -1,17 +1,5 @@
-yfinance
-pandas
+yfinance~=0.2
+pandas~=2.2
 polygon-api-client
-pytest
-pytest-mock
-
-# Development and CI tools
-ruff
-black
-mypy
-bandit
-pip-audit
-pytest-cov
-
-protobuf>=6.31.1
 requests>=2.32.4
 urllib3>=2.5.0

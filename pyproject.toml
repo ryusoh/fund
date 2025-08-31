@@ -1,1 +1,22 @@
-# Intentionally empty: mypy configuration lives in mypy.ini
+# Python tooling config (ruff/black); mypy lives in mypy.ini
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+skip-string-normalization = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["venv", ".venv", ".mypy_cache", ".ruff_cache"]
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "I",  # isort
+  "B",  # flake8-bugbear
+]
+ignore = [
+  "E501",  # handled by black (line length)
+]
