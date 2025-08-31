@@ -40,7 +40,7 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(req.url);
 
     // Only handle same-origin requests
-    if (url.origin !== self.location.origin) return;
+    if (url.origin !== self.location.origin) {return;}
 
     const isStatic = (
         req.destination === 'style' ||
