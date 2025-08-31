@@ -1,0 +1,13 @@
+node_modules/
+coverage/
+assets/
+dist/
+venv/
+.husky/_/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.idea/
+.vscode/
+.git/
+
