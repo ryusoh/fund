@@ -21,6 +21,23 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
+
+            // Skip if PR modifies workflow files (requires elevated permissions)
+            try {
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100
+              });
+              const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
+              if (touchesWorkflows) {
+                core.info('Skipping auto-merge: PR touches .github/workflows/**');
+                return;
+              }
+            } catch (e) {
+              core.warning(`Failed to inspect PR files: ${e.message}`);
+            }
             // Add "automerge" label if missing (label must exist in repo)
             const hasAuto = pr.labels?.some(l => l.name === 'automerge');
             if (!hasAuto) {
@@ -69,11 +86,32 @@ jobs:
             const commitBody = pr.body ? pr.body : 'Auto-merge: Dependabot update';
 
             // Enable auto-merge (squash) with custom commit message
-            await github.graphql(`
-              mutation($input: EnablePullRequestAutoMergeInput!) {
-                enablePullRequestAutoMerge(input: $input) { clientMutationId }
+            try {
+              await github.graphql(`
+                mutation($input: EnablePullRequestAutoMergeInput!) {
+                  enablePullRequestAutoMerge(input: $input) { clientMutationId }
+                }
+              `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
+            } catch (e) {
+              const msg = String(e.message || e);
+              if (/clean status/i.test(msg)) {
+                core.info('PR is clean; attempting direct squash merge');
+                try {
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number,
+                    merge_method: 'squash',
+                    commit_title: commitHeadline,
+                    commit_message: commitBody,
+                  });
+                } catch (mergeErr) {
+                  core.warning(`Direct merge failed: ${mergeErr.message}`);
+                }
+              } else {
+                core.info(`Enable auto-merge skipped: ${msg}`);
               }
-            `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
+            }
 
       - name: Auto-approve with PAT (single)
         if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]' && env.AUTO_APPROVE_TOKEN != ''
@@ -107,6 +145,22 @@ jobs:
             });
             for (const pr of pulls) {
               if (pr.user?.login !== 'dependabot[bot]') continue;
+              // Skip if PR modifies workflow files
+              try {
+                const { data: files } = await github.rest.pulls.listFiles({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  per_page: 100
+                });
+                const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
+                if (touchesWorkflows) {
+                  core.info(`Skipping #${pr.number}: touches .github/workflows/**`);
+                  continue;
+                }
+              } catch (e) {
+                core.warning(`Failed to inspect files for #${pr.number}: ${e.message}`);
+              }
               // Add automerge label if missing
               const labels = pr.labels?.map(l => l.name) || [];
               if (!labels.includes('automerge')) {
@@ -148,7 +202,24 @@ jobs:
                   }
                 `, { input: { pullRequestId: pr.node_id, mergeMethod: "SQUASH", commitHeadline, commitBody } });
               } catch (e) {
-                core.info(`Auto-merge enable skipped for #${pr.number}: ${e.message}`);
+                const msg = String(e.message || e);
+                if (/clean status/i.test(msg)) {
+                  core.info(`#${pr.number} is clean; attempting direct squash merge`);
+                  try {
+                    await github.rest.pulls.merge({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: pr.number,
+                      merge_method: 'squash',
+                      commit_title: commitHeadline,
+                      commit_message: commitBody,
+                    });
+                  } catch (mergeErr) {
+                    core.warning(`Direct merge failed for #${pr.number}: ${mergeErr.message}`);
+                  }
+                } else {
+                  core.info(`Auto-merge enable skipped for #${pr.number}: ${msg}`);
+                }
               }
             }
 
