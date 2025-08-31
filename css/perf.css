@@ -1,0 +1,9 @@
+/* css/perf.css */
+body.is-preload #bg {
+    opacity: 0;
+}
+
+#bg {
+    transition: opacity 1s ease-in-out;
+    opacity: 1;
+}
