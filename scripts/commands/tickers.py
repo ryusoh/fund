@@ -27,7 +27,9 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser(
         "tickers", help="Print detected tickers from holdings JSON (for completion debug)"
     )
-    parser.add_argument("--file", help="Path to holdings JSON (default: data/holdings_details.json)")
+    parser.add_argument(
+        "--file", help="Path to holdings JSON (default: data/holdings_details.json)"
+    )
     parser.set_defaults(func=_run)
 
     try:
@@ -38,4 +40,3 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
                 act.completer = FilesCompleter()
     except Exception:
         pass
-

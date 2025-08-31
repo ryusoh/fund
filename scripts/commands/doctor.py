@@ -78,7 +78,6 @@ def _run(args) -> None:
 
     # argcomplete status
     try:
-        import argcomplete  # type: ignore
         ver = "unknown"
         try:
             import importlib.metadata as m  # type: ignore
@@ -122,9 +121,15 @@ def _run(args) -> None:
     if _has_completion_line(rc):
         _ok("Found register-python-argcomplete fund in rc")
     else:
-        _warn("Completion not registered; ensure rc contains: eval \"$(register-python-argcomplete fund)\"")
+        _warn(
+            "Completion not registered; ensure rc contains: eval \"$(register-python-argcomplete fund)\""
+        )
 
     # final guidance
-    _info("Reload your shell after changes: source \"$(echo $SHELL | sed 's:.*/::; s/zsh/.zshrc/; s/bash/.bashrc/')\"")
+    _info(
+        "Reload your shell after changes: source \"$(echo $SHELL | sed 's:.*/::; s/zsh/.zshrc/; s/bash/.bashrc/')\""
+    )
     _info("To enable completion for the current shell only:")
-    _info("  eval \"$(register-python-argcomplete fund 2>/dev/null || python -m argcomplete.register-python-argcomplete fund)\"")
+    _info(
+        "  eval \"$(register-python-argcomplete fund 2>/dev/null || python -m argcomplete.register-python-argcomplete fund)\""
+    )

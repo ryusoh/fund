@@ -1,4 +1,11 @@
-PY := python3
+VENV_PYTHON := venv/bin/python
+
+# If a venv exists, use it; otherwise, fall back to system python3
+ifeq ($(wildcard $(VENV_PYTHON)),)
+	PY := python3
+else
+	PY := $(VENV_PYTHON)
+endif
 PIP := $(PY) -m pip
 
 .PHONY: help install-dev hooks precommit perms check-perms lint fmt type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund

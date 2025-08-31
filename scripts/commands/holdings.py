@@ -49,7 +49,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
     # Optional: argcomplete dynamic ticker completion from holdings file
     try:
-        from argcomplete.completers import FilesCompleter, ChoicesCompleter  # type: ignore
+        from argcomplete.completers import ChoicesCompleter, FilesCompleter  # type: ignore
     except Exception:  # pragma: no cover - optional dependency
         FilesCompleter = None  # type: ignore
 
@@ -68,7 +68,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         return []
 
     try:  # Attach completers if argcomplete is available
-        parser.add_argument  # no-op to silence linters
+
         if FilesCompleter is not None:
             # Provide path completion for --file
             for act in parser._actions:
