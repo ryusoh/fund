@@ -3,11 +3,20 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="author" content="Zhuang Liu" />
-        <meta name="description" content="Position" />
+        <meta name="description" content="Portfolio" />
+        <meta name="color-scheme" content="dark" />
+        <meta property="og:title" content="Position" />
+        <meta property="og:description" content="Position" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ryusoh.github.io/fund/position/" />
+        <meta property="og:image" content="https://ryusoh.github.io/fund/assets/banner.png" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
         <link rel="shortcut icon" href="../assets/avatar_152x152.png" type="image/x-icon" />
         <link rel="icon" href="../assets/avatar_152x152.png" />
         <link rel="apple-touch-icon" href="../assets/avatar_152x152.png" />
         <link rel="bookmark" href="../assets/avatar_152x152.png" type="image/x-icon" />
+        <link rel="manifest" href="../assets/manifest.webmanifest" />
         <!-- Make the web page capable of running as a standalone app -->
         <meta name="mobile-web-app-capable" content="yes" />
         <!-- Set status bar style for iOS -->
@@ -64,7 +73,7 @@
         <link rel="stylesheet" href="../css/perf.css" />
     </head>
     <body class="no-pull-to-refresh">
-        <a class="nav-back" href="https://www.lyeutsaon.com/fund" target="_self">
+        <a class="nav-back" href="https://www.lyeutsaon.com/fund" target="_self" aria-label="Back to Fund">
             <i
                 class="fa fa-chevron-right"
                 style="color: black; opacity: 0.6"
@@ -162,6 +171,16 @@
                     document.body.appendChild(m);
                 })();
             })();
+        </script>
+        <script>
+            // Ensure SW is registered when landing directly on this subpage
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker
+                        .register('/fund/sw.js', { scope: '/fund/' })
+                        .catch(function () {});
+                });
+            }
         </script>
     </body>
 </html>

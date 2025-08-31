@@ -81,6 +81,22 @@ module.exports = [
         },
     },
     {
+        files: ['sw.js'],
+        languageOptions: {
+            globals: {
+                self: 'readonly',
+                caches: 'readonly',
+                clients: 'readonly',
+                Cache: 'readonly',
+                CacheStorage: 'readonly',
+                Request: 'readonly',
+                Response: 'readonly',
+                URL: 'readonly',
+                location: 'readonly',
+            },
+        },
+    },
+    {
         files: ['tests/js/**/*.js'],
         languageOptions: {
             globals: {

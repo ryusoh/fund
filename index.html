@@ -2,6 +2,16 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta name="description" content="Fund" />
+        <meta name="color-scheme" content="dark" />
+        <link rel="manifest" href="./assets/manifest.webmanifest" />
+        <meta property="og:title" content="Fund" />
+        <meta property="og:description" content="Fund" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ryusoh.github.io/fund/" />
+        <meta property="og:image" content="https://ryusoh.github.io/fund/assets/banner.png" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
         <link rel="shortcut icon" href="./assets/avatar_152x152.png" type="image/x-icon" />
         <link rel="icon" href="./assets/avatar_152x152.png" />
         <link rel="apple-touch-icon" href="./assets/avatar_152x152.png" />
@@ -48,10 +58,10 @@
     </head>
     <body class="body-main">
         <div class="video-background">
-            <video autoplay loop muted playsinline src="./assets/mobile_bg.mp4"></video>
+            <video autoplay loop muted playsinline preload="metadata" poster="./assets/mobile_bg.jpg" src="./assets/mobile_bg.mp4"></video>
         </div>
-        <img src="./assets/banner.png" alt="Banner" class="mobile-banner" />
-        <a class="nav-back" href="https://www.lyeutsaon.com/" target="_self">
+        <img src="./assets/banner.png" alt="Banner" class="mobile-banner" loading="lazy" />
+        <a class="nav-back" href="https://www.lyeutsaon.com/" target="_self" aria-label="Back to Home">
             <i
                 class="fa fa-chevron-right"
                 style="color: black; opacity: 0.6"
@@ -91,6 +101,31 @@
                 <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
             </a>
         </footer>
+        <script>
+            // Respect reduced motion: pause background video
+            (function () {
+                try {
+                    var m = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+                    if (m && m.matches) {
+                        var v = document.querySelector('.video-background video');
+                        if (v) {
+                            v.removeAttribute('autoplay');
+                            v.pause();
+                        }
+                    }
+                } catch (e) {}
+            })();
+        </script>
         <script src="./js/ui/scroll_control.js"></script>
+        <script>
+            // Register Service Worker for PWA
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker
+                        .register('./sw.js', { scope: './' })
+                        .catch(function () { /* no-op */ });
+                });
+            }
+        </script>
     </body>
 </html>
