@@ -81,7 +81,7 @@ module.exports = [
         },
     },
     {
-        files: ['js/tests/**/*.js'],
+        files: ['tests/js/**/*.js'],
         languageOptions: {
             globals: {
                 require: 'readonly',
@@ -105,7 +105,7 @@ module.exports = [
         },
     },
     {
-        files: ['scripts/**/*.js', 'babel.config.js', 'js/tests/__mocks__/**/*.js'],
+        files: ['scripts/**/*.js', 'babel.config.js', 'tests/js/__mocks__/**/*.js'],
         languageOptions: {
             sourceType: 'commonjs',
             globals: {

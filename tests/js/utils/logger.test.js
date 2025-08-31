@@ -22,7 +22,7 @@ describe('logger', () => {
     describe('in development environment', () => {
         beforeEach(async () => {
             process.env.NODE_ENV = 'development';
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
         });
 
         test('logger.log calls console.log', () => {
@@ -50,7 +50,7 @@ describe('logger', () => {
                     hostname: 'example.com'
                 }
             };
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
         });
 
         test('logger.log does not call console.log', () => {
@@ -90,7 +90,7 @@ describe('logger', () => {
                 }
             };
             jest.resetModules();
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
 
             logger.log('test');
             expect(consoleSpy.log).toHaveBeenCalledWith('test');
@@ -103,7 +103,7 @@ describe('logger', () => {
                 }
             };
             jest.resetModules();
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
 
             logger.warn('test');
             expect(consoleSpy.warn).toHaveBeenCalledWith('test');
@@ -116,7 +116,7 @@ describe('logger', () => {
                 }
             };
             jest.resetModules();
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
 
             logger.error('test');
             expect(consoleSpy.error).toHaveBeenCalledWith('test');
@@ -131,7 +131,7 @@ describe('logger', () => {
                 }
             };
             jest.resetModules();
-            const { logger, isDevelopment } = await import('../../utils/logger.js');
+            const { logger, isDevelopment } = await import('@utils/logger.js');
 
             // Verify hostname logic is working
             expect(isDevelopment()).toBe(true);
@@ -148,7 +148,7 @@ describe('logger', () => {
                 }
             };
             jest.resetModules();
-            const { logger, isDevelopment } = await import('../../utils/logger.js');
+            const { logger, isDevelopment } = await import('@utils/logger.js');
 
             // Verify hostname logic is working
             expect(isDevelopment()).toBe(true);
@@ -165,7 +165,7 @@ describe('logger', () => {
             };
             jest.resetModules();
 
-            const { logger } = await import('../../utils/logger.js');
+            const { logger } = await import('@utils/logger.js');
 
             // Production domains should not log (this test may be environment dependent)
             logger.log('test');
@@ -176,7 +176,7 @@ describe('logger', () => {
         test('defaults to development when no environment detected', async () => {
             delete global.window;
             jest.resetModules();
-            ({ logger } = await import('../../utils/logger.js'));
+            ({ logger } = await import('@utils/logger.js'));
 
             logger.log('test');
             expect(consoleSpy.log).toHaveBeenCalledWith('test');
@@ -188,7 +188,7 @@ describe('logger', () => {
             delete global.process;
             jest.resetModules();
 
-            const { logger, isDevelopment } = await import('../../utils/logger.js');
+            const { logger, isDevelopment } = await import('@utils/logger.js');
 
             // Should return true (development) as fallback
             expect(isDevelopment()).toBe(true);
@@ -204,7 +204,7 @@ describe('logger', () => {
             delete global.window;
             jest.resetModules();
 
-            const { logger, isDevelopment } = await import('../../utils/logger.js');
+            const { logger, isDevelopment } = await import('@utils/logger.js');
 
             // Should return true (development) as fallback
             expect(isDevelopment()).toBe(true);
@@ -220,7 +220,7 @@ describe('logger', () => {
             global.window = {};
             jest.resetModules();
 
-            const { logger, isDevelopment } = await import('../../utils/logger.js');
+            const { logger, isDevelopment } = await import('@utils/logger.js');
 
             // Should return true (development) as fallback
             expect(isDevelopment()).toBe(true);

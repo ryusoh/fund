@@ -15,20 +15,20 @@ import {
 } from '@js/config.js';
 import { isLocalhost } from '@utils/host';
 
-jest.mock('../utils/host');
+jest.mock('@utils/host');
 
 describe('Configuration', () => {
     // Test BASE_URL
     describe('BASE_URL', () => {
         it('should be an empty string when isLocalhost is true', () => {
             isLocalhost.mockReturnValue(true);
-            const { BASE_URL } = require('../config.js');
+            const { BASE_URL } = require('@js/config.js');
             expect(BASE_URL).toBe('/fund');
         });
 
         it('should be "/fund" when isLocalhost is false', () => {
             isLocalhost.mockReturnValue(false);
-            const { BASE_URL } = require('../config.js');
+            const { BASE_URL } = require('@js/config.js');
             expect(BASE_URL).toBe('/fund');
         });
     });
@@ -73,7 +73,7 @@ describe('Configuration', () => {
                 value: 500,
             });
             jest.isolateModules(() => {
-                const { CALENDAR_CONFIG } = require('../config.js');
+                const { CALENDAR_CONFIG } = require('@js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(1);
             });
         });
@@ -84,7 +84,7 @@ describe('Configuration', () => {
                 value: 1024,
             });
             jest.isolateModules(() => {
-                const { CALENDAR_CONFIG } = require('../config.js');
+                const { CALENDAR_CONFIG } = require('@js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(3);
             });
         });

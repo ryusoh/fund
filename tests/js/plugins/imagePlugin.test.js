@@ -1,7 +1,7 @@
 import { imagePlugin } from '@plugins/imagePlugin.js';
 
 // Mock drawImage used by the plugin
-jest.mock('../../charts/imageDrawer.js', () => ({
+jest.mock('@charts/imageDrawer.js', () => ({
     drawImage: jest.fn(),
 }));
 
@@ -51,7 +51,7 @@ describe('imagePlugin', () => {
         mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
         // drawImage is called by the plugin (mocked in module mock)
-        const { drawImage } = await import('../../charts/imageDrawer.js');
+        const { drawImage } = await import('@charts/imageDrawer.js');
         expect(drawImage).toHaveBeenCalled();
     });
 
@@ -59,14 +59,14 @@ describe('imagePlugin', () => {
         mockChart.hoveredSliceIndex = 0;
         mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
-        const { drawImage } = await import('../../charts/imageDrawer.js');
+        const { drawImage } = await import('@charts/imageDrawer.js');
         expect(drawImage).toHaveBeenCalled();
     });
 
     it('should not draw when neither showLogos nor hoveredSliceIndex is set', async () => {
         mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
-        const { drawImage } = await import('../../charts/imageDrawer.js');
+        const { drawImage } = await import('@charts/imageDrawer.js');
         drawImage.mockClear();
         // Call again after clearing to ensure no draw happens in this pass
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
@@ -77,14 +77,14 @@ describe('imagePlugin', () => {
         mockChart.getDatasetMeta.mockReturnValue({ data: [] });
         mockChart.showLogos = true;
         mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
-        const { drawImage } = await import('../../charts/imageDrawer.js');
+        const { drawImage } = await import('@charts/imageDrawer.js');
         drawImage.mockClear();
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
         expect(drawImage).not.toHaveBeenCalled();
     });
 
     it('should cache image and trigger redraw on image load, then draw on next pass', async () => {
-        const { drawImage } = await import('../../charts/imageDrawer.js');
+        const { drawImage } = await import('@charts/imageDrawer.js');
         mockChart.showLogos = true;
         // No cache initially
         expect(mockChart.imagePlugin_loadedImages).toBeUndefined();

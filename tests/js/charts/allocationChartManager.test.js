@@ -1,13 +1,13 @@
-jest.mock('../../charts/imageDrawer.js', () => ({
+jest.mock('@charts/imageDrawer.js', () => ({
     drawImage: jest.fn(),
 }));
 
 // Mock dependencies
-jest.mock('../../utils/colors.js', () => ({
+jest.mock('@utils/colors.js', () => ({
     getBlueColorForSlice: jest.fn(),
     hexToRgba: jest.fn(),
 }));
-jest.mock('../../ui/responsive.js', () => ({
+jest.mock('@ui/responsive.js', () => ({
     checkAndToggleVerticalScroll: jest.fn(),
 }));
 
@@ -58,7 +58,7 @@ describe('chartManager', () => {
     beforeEach(() => {
         jest.resetModules(); // Reset modules before each test
         setupMocks();
-        chartManager = require('../../charts/allocationChartManager.js');
+        chartManager = require('@charts/allocationChartManager.js');
 
         document.body.innerHTML = `
         <canvas id="fundPieChart"></canvas>

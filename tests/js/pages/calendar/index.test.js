@@ -1,15 +1,15 @@
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendar, renderLabels, autoInitCalendar } from '@pages/calendar/index.js';
 
-jest.mock('../../../services/dataService.js', () => ({
+jest.mock('@services/dataService.js', () => ({
     getCalendarData: jest.fn(),
 }));
 
-jest.mock('../../../ui/currencyToggleManager.js', () => ({
+jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
 }));
 
-jest.mock('../../../ui/responsive.js', () => ({
+jest.mock('@ui/responsive.js', () => ({
     initCalendarResponsiveHandlers: jest.fn(),
 }));
 

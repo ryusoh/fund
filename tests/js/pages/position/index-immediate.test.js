@@ -3,17 +3,17 @@ import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 
 // Mock all imported modules
-jest.mock('../../../ui/currencyToggleManager.js', () => ({
+jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
 }));
-jest.mock('../../../ui/footerToggle.js', () => ({
+jest.mock('@ui/footerToggle.js', () => ({
     initFooterToggle: jest.fn(),
 }));
-jest.mock('../../../ui/responsive.js', () => ({
+jest.mock('@ui/responsive.js', () => ({
     checkAndToggleVerticalScroll: jest.fn(),
     alignToggleWithChartMobile: jest.fn(),
 }));
-jest.mock('../../../services/dataService.js', () => ({
+jest.mock('@services/dataService.js', () => ({
     loadAndDisplayPortfolioData: jest.fn(() => Promise.resolve()),
 }));
 
@@ -52,7 +52,7 @@ describe('position page immediate start', () => {
 
     it('should call startApp immediately when DOM is already complete', async () => {
         // Import the module - this should trigger the immediate startApp() call
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
 
         // Give time for async operations
         await new Promise((resolve) => setTimeout(resolve, 50));

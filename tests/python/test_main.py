@@ -1,4 +1,5 @@
 import json
+import sys
 import tempfile
 import unittest
 from datetime import datetime
@@ -8,12 +9,15 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pandas as pd
 
-# Assuming your scripts are in a package or your PYTHONPATH is set up correctly
-from scripts.extract_pnl_history import main as process_pnl_history
-from scripts.fetch_forex import fetch_forex_data
-from scripts.manage_holdings import main
-from scripts.update_daily_pnl import main as update_daily_pnl
-from scripts.update_fund_data import main as update_fund_data
+# Add project root to path so we can import scripts
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from scripts.extract_pnl_history import main as process_pnl_history  # noqa: E402
+from scripts.fetch_forex import fetch_forex_data  # noqa: E402
+from scripts.manage_holdings import main  # noqa: E402
+from scripts.update_daily_pnl import main as update_daily_pnl  # noqa: E402
+from scripts.update_fund_data import main as update_fund_data  # noqa: E402
 
 
 class TestFundScripts(unittest.TestCase):

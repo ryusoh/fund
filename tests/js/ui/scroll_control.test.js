@@ -22,7 +22,7 @@ describe('scroll_control.js', () => {
 
         // Re-import the module to re-run its IIFE and attach event listeners
         jest.resetModules();
-        require('../../ui/scroll_control.js');
+        require('@ui/scroll_control.js');
     });
 
     afterEach(() => {

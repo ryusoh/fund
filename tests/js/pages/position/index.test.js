@@ -4,17 +4,17 @@ import { initFooterToggle } from '@ui/footerToggle.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 
 // Mock all imported modules
-jest.mock('../../../ui/currencyToggleManager.js', () => ({
+jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
 }));
-jest.mock('../../../ui/footerToggle.js', () => ({
+jest.mock('@ui/footerToggle.js', () => ({
     initFooterToggle: jest.fn(),
 }));
-jest.mock('../../../ui/responsive.js', () => ({
+jest.mock('@ui/responsive.js', () => ({
     checkAndToggleVerticalScroll: jest.fn(),
     alignToggleWithChartMobile: jest.fn(),
 }));
-jest.mock('../../../services/dataService.js', () => ({
+jest.mock('@services/dataService.js', () => ({
     loadAndDisplayPortfolioData: jest.fn(() => Promise.resolve()),
 }));
 
@@ -62,7 +62,7 @@ describe('position page entry point', () => {
     });
 
     it('should prevent default on dblclick', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         const event = new Event('dblclick', { bubbles: true, cancelable: true });
         const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
         documentEventListeners.dblclick(event);
@@ -70,7 +70,7 @@ describe('position page entry point', () => {
     });
 
     it('should initialize Chart plugins and UI on load', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -87,7 +87,7 @@ describe('position page entry point', () => {
 
     it('should handle failed FX data fetch with ok:false', async () => {
         global.fetch.mockImplementationOnce(() => Promise.resolve({ ok: false }));
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -101,7 +101,7 @@ describe('position page entry point', () => {
         global.fetch.mockImplementationOnce(() =>
             Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
         );
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -114,7 +114,7 @@ describe('position page entry point', () => {
 
     it('should handle failed FX data fetch', async () => {
         global.fetch.mockImplementationOnce(() => Promise.reject(new Error('Network error')));
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -126,7 +126,7 @@ describe('position page entry point', () => {
 
     it('should warn if ChartDataLabels is not found', async () => {
         global.ChartDataLabels = undefined;
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -138,7 +138,7 @@ describe('position page entry point', () => {
 
     it('should error if Chart.js is not found', async () => {
         global.Chart = undefined;
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -151,7 +151,7 @@ describe('position page entry point', () => {
         loadAndDisplayPortfolioData.mockImplementationOnce(() =>
             Promise.reject(new Error('Initial load error'))
         );
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -162,7 +162,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle currency change', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -180,7 +180,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle error on currency change', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -196,7 +196,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle resize', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -206,7 +206,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle scheduled update', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -216,7 +216,7 @@ describe('position page entry point', () => {
     });
 
     it('should skip scheduled update when document is hidden', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -226,7 +226,7 @@ describe('position page entry point', () => {
     });
 
     it('should refresh on visibility change to visible', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -237,7 +237,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle error during scheduled update', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -252,7 +252,7 @@ describe('position page entry point', () => {
     });
 
     it('should handle error on visibility change refresh', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
@@ -268,7 +268,7 @@ describe('position page entry point', () => {
     });
 
     it('should not refresh on visibility change when hidden', async () => {
-        await import('../../../pages/position/index.js');
+        await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }

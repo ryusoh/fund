@@ -12,8 +12,8 @@
     "lint:fix": "eslint . --ext .js --fix && stylelint \"**/*.css\" --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify:all": "npm run lint && npm test && ruff check scripts tests && black --check . && mypy && bandit -r scripts -lll && pytest",
-    "verify:fix": "ruff check --fix scripts tests && black . && npm run verify:all",
+    "verify:all": "npm run lint && npm test && ruff check scripts tests/python && black --check . && mypy && bandit -r scripts -lll && pytest",
+    "verify:fix": "ruff check --fix scripts tests/python && black . && npm run verify:all",
     "prepare": "husky install",
         "vendor:fetch": "node scripts/fetch_vendor.js",
         "vendor:verify": "node scripts/check_vendor.js",
@@ -54,9 +54,11 @@
             "url": "http://localhost",
             "console": "off"
         },
+        "testMatch": [
+            "<rootDir>/tests/js/**/*.test.js"
+        ],
         "collectCoverageFrom": [
             "js/**/*.js",
-            "!js/tests/**/*.js",
             "!js/vendor/**"
         ],
         "coverageThreshold": {
@@ -71,8 +73,8 @@
             "^.+\\.js$": "babel-jest"
         },
         "moduleNameMapper": {
-            "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/js/tests/__mocks__/d3.js",
-            "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/js/tests/__mocks__/cal-heatmap.js",
+            "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/tests/js/__mocks__/d3.js",
+            "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/tests/js/__mocks__/cal-heatmap.js",
             "^@js/(.*)$": "<rootDir>/js/$1",
             "^@pages/(.*)$": "<rootDir>/js/pages/$1",
             "^@services/(.*)$": "<rootDir>/js/services/$1",
@@ -80,7 +82,7 @@
             "^@plugins/(.*)$": "<rootDir>/js/plugins/$1",
             "^@ui/(.*)$": "<rootDir>/js/ui/$1",
             "^@utils/(.*)$": "<rootDir>/js/utils/$1",
-            "^@vendor/(.*)$": "<rootDir>/js/tests/__mocks__/vendor/$1"
+            "^@vendor/(.*)$": "<rootDir>/tests/js/__mocks__/vendor/$1"
         }
     },
     "dependencies": {
