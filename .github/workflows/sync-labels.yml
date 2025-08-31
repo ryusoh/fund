@@ -20,6 +20,7 @@ jobs:
                         { name: 'dependencies', color: '0366d6', description: 'Dependency update PRs' },
                         { name: 'npm',          color: '0e8a16', description: 'JavaScript dependency updates' },
                         { name: 'ci',           color: '5319e7', description: 'Continuous Integration' },
+                        { name: 'automerge',    color: '0e8a16', description: 'Automatically enable auto-merge when present' },
                       ];
                       for (const l of labels) {
                         try {
