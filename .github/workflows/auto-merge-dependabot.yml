@@ -32,6 +32,36 @@ jobs:
               });
               const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
               if (touchesWorkflows) {
+                // Normalize PR title to our Japanese format for workflow-touching PRs
+                function formatHeadline(title) {
+                  const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                  const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                  let m = title.match(re1);
+                  if (m) {
+                    const [, scope, pkg, fromV, toV] = m;
+                    return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                  }
+                  m = title.match(re2);
+                  if (m) {
+                    const [, pkg, fromV, toV] = m;
+                    return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                  }
+                  return title;
+                }
+                const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
+                if (newTitle !== pr.title) {
+                  try {
+                    await github.rest.pulls.update({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: pr.number,
+                      title: newTitle,
+                    });
+                    core.info(`Normalized PR title to: ${newTitle}`);
+                  } catch (e2) {
+                    core.warning(`Failed to normalize PR title: ${e2.message}`);
+                  }
+                }
                 core.info('Skipping auto-merge: PR touches .github/workflows/**');
                 return;
               }
@@ -155,6 +185,36 @@ jobs:
                 });
                 const touchesWorkflows = files.some(f => f.filename.startsWith('.github/workflows/'));
                 if (touchesWorkflows) {
+                  // Normalize PR title
+                  function formatHeadline(title) {
+                    const re1 = /^build\(([^)]+)\):\s*bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                    const re2 = /^bump\s+(.+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/i;
+                    let m = title.match(re1);
+                    if (m) {
+                      const [, scope, pkg, fromV, toV] = m;
+                      return `build(${scope}): ${pkg} を ${fromV} → ${toV} に更新`;
+                    }
+                    m = title.match(re2);
+                    if (m) {
+                      const [, pkg, fromV, toV] = m;
+                      return `build(deps): ${pkg} を ${fromV} → ${toV} に更新`;
+                    }
+                    return title;
+                  }
+                  const newTitle = formatHeadline(pr.title || 'build(deps): update dependencies');
+                  if (newTitle !== pr.title) {
+                    try {
+                      await github.rest.pulls.update({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: pr.number,
+                        title: newTitle,
+                      });
+                      core.info(`#${pr.number}: Normalized PR title to: ${newTitle}`);
+                    } catch (e2) {
+                      core.warning(`#${pr.number}: Failed to normalize PR title: ${e2.message}`);
+                    }
+                  }
                   core.info(`Skipping #${pr.number}: touches .github/workflows/**`);
                   continue;
                 }
