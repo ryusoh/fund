@@ -52,7 +52,7 @@ fmt:
 	prettier --write .
 
 type:
-	mypy
+	$(PY) -m mypy
 
 sec:
 	bandit -r scripts -lll
@@ -93,3 +93,6 @@ completion:
 	@echo 'To enable completion in current shell:'
 	@echo '  eval "$$((command -v register-python-argcomplete >/dev/null 2>&1 && register-python-argcomplete fund) || python -m argcomplete.register-python-argcomplete fund)"'
 	@echo 'Then `source ~/.zshrc` to reload your rc if needed.'
+
+update-hooks:
+	$(PY) -m pre_commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
