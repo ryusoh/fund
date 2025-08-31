@@ -1,4 +1,14 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
+#!/bin/sh
 
-npx lint-staged
+# If Node is not available (e.g., VS Code git env), skip to avoid blocking commits
+if ! command -v node >/dev/null 2>&1; then
+  echo "husky(pre-commit): node not found; skipping lint-staged" >&2
+  exit 0
+fi
+
+# Prefer local bin; fallback to npx without installing
+if [ -x "./node_modules/.bin/lint-staged" ]; then
+  ./node_modules/.bin/lint-staged
+else
+  npx --no-install lint-staged
+fi
