@@ -60,6 +60,11 @@ jobs:
             - name: Bandit (security)
               run: bandit -r scripts -lll
 
+            - name: Markdown lint
+              run: |
+                npm install -g markdownlint-cli
+                markdownlint **/*.md --ignore node_modules
+
             - name: Pytest
               run: pytest
 

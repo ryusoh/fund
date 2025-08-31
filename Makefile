@@ -46,6 +46,7 @@ perms:
 lint: js-lint
 	ruff check scripts tests
 	stylelint "**/*.css"
+	markdownlint "**/*.md" --ignore node_modules
 
 fmt:
 	black .

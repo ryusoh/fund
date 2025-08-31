@@ -1,14 +1,17 @@
 # Fund
 
-![](https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0283.jpg)
+![Fund Banner](https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/refs/heads/master/images/DSCF0283.jpg)
 
-<div align="right"><em>Nashville, TN &middot; 2025 © <a href="https://instagram.com/lyeutsaon" target="_blank" rel="noopener noreferrer">@lyeutsaon</a></em></div>
+_Nashville, TN · 2025 © [@lyeutsaon](https://instagram.com/lyeutsaon)_
 
 ## Overview
 
-This project is a web-based application to track and visualize a fund's portfolio allocations and performance. It fetches holding details and market data, displaying it in a table and through interactive charts.
+This project is a web-based application to track and visualize a fund's
+portfolio allocations and performance. It fetches holding details and market
+data, displaying it in a table and through interactive charts.
 
-The project includes Python scripts for data management and a GitHub Actions workflow for automated data updates.
+The project includes Python scripts for data management and a GitHub Actions
+workflow for automated data updates.
 
 ## Features
 
@@ -16,27 +19,30 @@ The project includes Python scripts for data management and a GitHub Actions wor
 - Donut chart visualization of fund allocation.
 - Automated updates of fund market data via GitHub Actions.
 - Responsive design for desktop and mobile viewing.
-- **Comprehensive CLI**: Easy-to-use command-line interface for all fund operations.
+- **Comprehensive CLI**: Easy-to-use command-line interface for all fund
+  operations.
 
 ## Command Line Interface (CLI)
 
-The fund management system provides multiple CLI interfaces optimized for different use cases:
+The fund management system provides multiple CLI interfaces optimized for
+different use cases:
 
 ### Direct Executables
 
 | Command | Description | Examples |
-|---------|-------------|----------|
+| :--- | :--- | :--- |
 | `./bin/fund` | Main CLI with all subcommands | `./bin/fund holdings list` |
 | `./bin/portfolio` | Direct portfolio listing | `./bin/portfolio` |
-| `./bin/holdings` | Holdings management interface | `./bin/holdings buy AAPL 10 150.50` |
+| `./bin/holdings` | Holdings manager | `./bin/holdings buy AAPL …` |
 | `./bin/update-all` | Batch data update utility | `./bin/update-all` |
 
 ### Shell Integration
 
-Configure shell aliases by running `./scripts/setup-aliases.sh` and adding the output to your shell configuration:
+Configure shell aliases by running `./scripts/setup-aliases.sh` and adding the
+output to your shell configuration:
 
 | Alias | Description | Examples |
-|-------|-------------|----------|
+| :--- | :--- | :--- |
 | `portfolio` or `p` | Portfolio display | `portfolio` |
 | `buy` | Transaction recording (buy) | `buy AAPL 10 150.50` |
 | `sell` | Transaction recording (sell) | `sell AAPL 5 155.00` |
@@ -45,8 +51,8 @@ Configure shell aliases by running `./scripts/setup-aliases.sh` and adding the o
 ### Alternative Interfaces
 
 | Command | Description | Examples |
-|---------|-------------|----------|
-| `python3 -m scripts.cli` | Python module execution | `python3 -m scripts.cli holdings list` |
+| :--- | :--- | :--- |
+| `python3 -m scripts.cli` | Module execution | `python3 -m …` |
 | `npm run fund:*` | NPM script integration | `npm run fund:holdings list` |
 
 ### Optional Install
@@ -61,8 +67,12 @@ fund --help
 ### Extending the CLI
 
 Subcommands are auto-discovered from `scripts/commands`.
-- Create a new module in `scripts/commands/` with an `add_parser(subparsers)` function that registers the subcommand and sets `func` to a callable accepting `args`.
+
+- Create a new module in `scripts/commands/` with an `add_parser(subparsers)`
+  function that registers the subcommand and sets `func` to a callable
+  accepting `args`.
 - Example skeleton:
+
   ```python
   # scripts/commands/example.py
   import argparse
@@ -76,7 +86,7 @@ Subcommands are auto-discovered from `scripts/commands`.
 
 ## Project Structure
 
-```
+```text
 fund/
 ├── .github/workflows/  # GitHub Actions workflows
 ├── data/               # JSON data files (holdings, fund data)
@@ -91,13 +101,11 @@ fund/
 │   ├── vendor/         # Node scripts for vendor assets
 │   └── setup-aliases.sh* # Alias helper script
 ├── tests/              # Test files (JavaScript and Python)
-├── scripts/cli.py      # Main CLI implementation
 ├── bin/                # Local launchers
 │   ├── fund*           # ./bin/fund [command]
 │   ├── portfolio*      # ./bin/portfolio
 │   ├── holdings*       # ./bin/holdings [action]
 │   └── update-all*     # ./bin/update-all
-├── scripts/setup-aliases.sh* # Shell alias helper
 ├── index.html          # Main HTML page
 ├── package.json        # NPM configuration with CLI scripts
 └── README.md
@@ -107,26 +115,35 @@ fund/
 
 ## Setup and Usage
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+
     ```bash
     git clone https://github.com/ryusoh/fund.git
     cd fund
     ```
-2.  **Python Environment Setup:**
+
+2. **Python Environment Setup:**
+
     - Ensure Python 3.x is installed.
     - Create a virtual environment (recommended):
-        ```bash
-        python -m venv venv
-        source venv/bin/activate  # On Windows: venv\Scripts\activate
-        ```
+
+      ```bash
+      python -m venv venv
+      source venv/bin/activate  # On Windows: venv\Scripts\activate
+      ```
+
     - Install dependencies:
-        ```bash
-        pip install -r requirements.txt
-        ```
-3.  **CLI Usage:**
+
+      ```bash
+      pip install -r requirements.txt
+      ```
+
+3. **CLI Usage:**
+
     The project includes a comprehensive CLI for fund management operations.
 
     **Common commands:**
+
     ```bash
     ./bin/fund --help              # Main CLI help
     ./bin/portfolio                # Show your portfolio
@@ -136,6 +153,7 @@ fund/
     ```
 
     **Optional: shell alias setup:**
+
     ```bash
     ./scripts/setup-aliases.sh # Prints alias setup instructions
     # After setup, you can use:
@@ -147,6 +165,7 @@ fund/
     ```
 
     **Full CLI options:**
+
     ```bash
     # Direct CLI usage
     python3 -m scripts.cli --help
@@ -158,8 +177,10 @@ fund/
     npm run fund:update-all
     ```
 
-4.  **Viewing the Page:**
+4. **Viewing the Page:**
+
     Open `index.html` in your web browser or run:
+
     ```bash
     npm run dev  # Serves on http://localhost:8000
     ```
@@ -168,9 +189,13 @@ fund/
 
 This project uses multiple GitHub Actions to keep data fresh:
 
-- `update-fund-data.yml` (every 30 min on weekdays): fetches latest prices via `scripts/data/update_fund_data.py` and updates `data/fund_data.json`.
-- `daily-forex-update.yml` (daily): fetches FX rates via `scripts/data/fetch_forex.py` and updates `data/fx_data.json`.
-- `update-historical-data.yml` (post‑close on weekdays): appends the latest daily values via `scripts/pnl/update_daily_pnl.py` and updates `data/historical_portfolio_values.csv`.
+- `update-fund-data.yml` (every 30 min on weekdays): fetches latest prices via
+  `scripts/data/update_fund_data.py` and updates `data/fund_data.json`.
+- `daily-forex-update.yml` (daily): fetches FX rates via
+  `scripts/data/fetch_forex.py` and updates `data/fx_data.json`.
+- `update-historical-data.yml` (post‑close on weekdays): appends the latest
+  daily values via `scripts/pnl/update_daily_pnl.py` and updates
+  `data/historical_portfolio_values.csv`.
 
 All workflows commit changes back to the repository when files change.
 
@@ -196,8 +221,8 @@ pytest --cov=.
 
 Common automation is available via `make`:
 
-```
-make install-dev   # Install Python + Node dev dependencies
+```makefile
+make install-dev   # Install Python + Node dev deps
 make hooks         # Install pre-commit hooks
 make lint          # Ruff + ESLint + Stylelint
 make fmt           # Black + Prettier
@@ -211,15 +236,24 @@ make serve         # start dev server
 
 ## Portfolio Management Script (`scripts/portfolio/manage_holdings.py`)
 
-This Python script helps you manage your stock portfolio by tracking buy and sell transactions and automatically updating your holdings. It stores data in a JSON file, by default named `holdings_details.json` located in the `data/` directory relative to the project root.
+This Python script helps you manage your stock portfolio by tracking buy and sell
+transactions and automatically updating your holdings. It stores data in a JSON
+file, by default named `holdings_details.json` located in the `data/` directory
+relative to the project root.
 
-### Features
+### Holding Management Features
 
-- **Track Holdings**: Maintains a record of your shares and average purchase price for each ticker in `data/holdings_details.json`.
-- **Buy Transactions**: Add new purchases, updating share count and recalculating the average price. Handles new tickers.
-- **Sell Transactions**: Record sales, updating share count. Calculates realized profit/loss for the transaction. If all shares of a ticker are sold, it's removed from holdings.
-- **List Holdings**: Display a summary of your current portfolio, including cost basis per holding and total portfolio cost basis.
-- **Data Persistence**: Holdings are saved in a JSON file (default: `data/holdings_details.json`).
+- **Track Holdings**: Maintains a record of your shares and average purchase
+  price for each ticker in `data/holdings_details.json`.
+- **Buy Transactions**: Add new purchases, updating share count and
+  recalculating the average price. Handles new tickers.
+- **Sell Transactions**: Record sales, updating share count. Calculates
+  realized profit/loss for the transaction. If all shares of a ticker are
+  sold, it's removed from holdings.
+- **List Holdings**: Display a summary of your current portfolio, including cost
+  basis per holding and total portfolio cost basis.
+- **Data Persistence**: Holdings are saved in a JSON file (default:
+  `data/holdings_details.json`).
 - **Precision**: Uses `Decimal` for financial calculations to ensure accuracy.
 
 ### Prerequisites
@@ -228,8 +262,10 @@ This Python script helps you manage your stock portfolio by tracking buy and sel
 
 ### Setup
 
-1.  Ensure the script `manage_holdings.py` is located in the `scripts/portfolio/` directory of your project.
-    ```
+1. Ensure the script `manage_holdings.py` is located in the
+    `scripts/portfolio/` directory of your project.
+
+    ```text
     project_root/
     ├── scripts/
     │   ├── portfolio/
@@ -240,7 +276,9 @@ This Python script helps you manage your stock portfolio by tracking buy and sel
     │   └── holdings_details.json  (will be created/updated here by default)
     └── README.md
     ```
-2.  You can run the script using `python scripts/portfolio/manage_holdings.py ...` from your project root.
+
+2. You can run the script using
+    `python scripts/portfolio/manage_holdings.py ...` from your project root.
 
 ### Usage
 
@@ -255,13 +293,15 @@ python scripts/portfolio/manage_holdings.py [options] <command> [command_args...
 **Options:**
 
 - `--file FILEPATH`: Specifies the path to the holdings JSON file.
-    - Defaults to `holdings_details.json` located in the same directory as the script (e.g., `data/holdings_details.json`).
+  - Defaults to `holdings_details.json` located in the same directory as the
+    script (e.g., `data/holdings_details.json`).
 
 **Commands:**
 
 #### 1. `buy` - Record a Purchase
 
-Adds shares of a stock to your portfolio. If the ticker is new, it will be added. If it exists, shares are added, and the average cost is recalculated.
+Adds shares of a stock to your portfolio. If the ticker is new, it will be
+added. If it exists, shares are added, and the average cost is recalculated.
 
 **Syntax:**
 
@@ -271,9 +311,12 @@ python scripts/portfolio/manage_holdings.py buy <TICKER> <SHARES> <PRICE>
 
 **Arguments:**
 
-- `<TICKER>`: The stock ticker symbol (e.g., `AAPL`, `GOOGL`). Case-insensitive (will be stored as uppercase).
-- `<SHARES>`: The number of shares purchased (e.g., `10`, `25.5`). Must be positive.
-- `<PRICE>`: The price per share at which they were purchased (e.g., `150.75`). Must be non-negative.
+- `<TICKER>`: The stock ticker symbol (e.g., `AAPL`, `GOOGL`).
+  Case-insensitive (will be stored as uppercase).
+- `<SHARES>`: The number of shares purchased (e.g., `10`, `25.5`). Must be
+  positive.
+- `<PRICE>`: The price per share at which they were purchased (e.g.,
+  `150.75`). Must be non-negative.
 
 **Example:**
 
@@ -283,12 +326,15 @@ python scripts/portfolio/manage_holdings.py buy AAPL 10 170.50
 python scripts/portfolio/manage_holdings.py buy msft 5.5 300.25
 
 # To use a custom file path:
-python scripts/portfolio/manage_holdings.py --file custom_portfolio/my_stocks.json buy GOOG 100 135.00
+python scripts/portfolio/manage_holdings.py --file \
+  custom_portfolio/my_stocks.json buy GOOG 100 135.00
 ```
 
 #### 2. `sell` - Record a Sale
 
-Removes shares of a stock from your portfolio. It calculates the realized profit or loss for this specific transaction based on the average cost of your holding. If all shares of a ticker are sold, the ticker is removed.
+Removes shares of a stock from your portfolio. It calculates the realized profit
+or loss for this specific transaction based on the average cost of your holding.
+If all shares of a ticker are sold, the ticker is removed.
 
 **Syntax:**
 
@@ -299,8 +345,10 @@ python scripts/portfolio/manage_holdings.py sell <TICKER> <SHARES> <PRICE>
 **Arguments:**
 
 - `<TICKER>`: The stock ticker symbol (e.g., `AAPL`).
-- `<SHARES>`: The number of shares sold (e.g., `5`, `10.5`). Must be positive and not exceed current holdings.
-- `<PRICE>`: The price per share at which they were sold (e.g., `180.20`). Must be non-negative.
+- `<SHARES>`: The number of shares sold (e.g., `5`, `10.5`). Must be positive
+  and not exceed current holdings.
+- `<PRICE>`: The price per share at which they were sold (e.g., `180.20`). Must
+  be non-negative.
 
 **Example:**
 
@@ -310,7 +358,9 @@ python scripts/portfolio/manage_holdings.py sell AAPL 5 180.00
 
 #### 3. `list` - Display Current Holdings
 
-Shows a summary of all tickers in your portfolio, including the number of shares, the average purchase price, cost basis per holding, and total portfolio value at cost.
+Shows a summary of all tickers in your portfolio, including the number of
+shares, the average purchase price, cost basis per holding, and total portfolio
+value at cost.
 
 **Syntax:**
 
@@ -322,12 +372,14 @@ python scripts/portfolio/manage_holdings.py list
 
 ```bash
 python scripts/portfolio/manage_holdings.py list
-python scripts/portfolio/manage_holdings.py --file custom_portfolio/my_stocks.json list
+python scripts/portfolio/manage_holdings.py --file \
+  custom_portfolio/my_stocks.json list
 ```
 
 ### Data File (e.g., `data/holdings_details.json`)
 
-The script reads from and writes to a JSON file. By default, this is holdings_details.json in the data/ directory.
+The script reads from and writes to a JSON file. By default, this is
+holdings_details.json in the data/ directory.
 
 Example data/holdings_details.json content:
 
@@ -344,4 +396,6 @@ Example data/holdings_details.json content:
 }
 ```
 
-Note: Shares and average prices are stored as strings in the JSON file to maintain precision using the Decimal type in Python. The script handles conversions internally.
+Note: Shares and average prices are stored as strings in the JSON file to
+maintain precision using the Decimal type in Python. The script handles
+conversions internally.
