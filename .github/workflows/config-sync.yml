@@ -1,0 +1,17 @@
+name: Config Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday 06:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    uses: ryusoh/ci/.github/workflows/config-sync-pr.yml@v1
+    secrets: inherit
+    with:
+      source-ref: main
