@@ -24,4 +24,3 @@ module.exports = {
         'color-hex-length': 'short',
     },
 };
-
