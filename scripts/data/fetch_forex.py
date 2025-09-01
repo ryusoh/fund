@@ -51,9 +51,9 @@ def fetch_forex_data():
             "rates": rates,
             "last_updated": datetime.now(timezone.utc).isoformat(),
         }
-    with open(FX_DATA_FILE, "w") as f:
-        json.dump(output, f, indent=2)
-        f.write("\n")
+        with open(FX_DATA_FILE, "w") as f:
+            json.dump(output, f, indent=2)
+            f.write("\n")
         print(f"Forex data updated in {FX_DATA_FILE}")
     else:
         print("Failed to fetch significant new forex data. File not updated.")
