@@ -52,7 +52,7 @@ def fetch_forex_data():
             "last_updated": datetime.now(timezone.utc).isoformat(),
         }
         with open(FX_DATA_FILE, "w") as f:
-            json.dump(output, f, indent=2)
+            json.dump(output, f, indent=4)
             f.write("\n")
         print(f"Forex data updated in {FX_DATA_FILE}")
     else:

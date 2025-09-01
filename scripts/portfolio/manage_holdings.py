@@ -71,7 +71,7 @@ def save_holdings(filepath: Path, data: HoldingsType) -> None:
             }
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with filepath.open("w", encoding="utf-8") as f:
-            json.dump(serializable_data, f, indent=2)
+            json.dump(serializable_data, f, indent=4)
             f.write("\n")
         logging.info(f"Holdings updated successfully in {filepath}")
     except IOError as e:
