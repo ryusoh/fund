@@ -43,31 +43,10 @@
             content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
         />
         <title>Fund</title>
-        <script>
-            (function () {
-                function loadCss(href) {
-                    var l = document.createElement('link');
-                    l.rel = 'stylesheet';
-                    l.href = href;
-                    document.head.appendChild(l);
-                }
-                fetch('./assets/vendor/css/font-awesome-4.7.0.min.css', { cache: 'no-store' })
-                    .then(function (r) {
-                        if (r.ok) {
-                            loadCss('./assets/vendor/css/font-awesome-4.7.0.min.css');
-                        } else {
-                            loadCss(
-                                'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
-                            );
-                        }
-                    })
-                    .catch(function () {
-                        loadCss(
-                            'https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css'
-                        );
-                    });
-            })();
-        </script>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+        />
         <link rel="stylesheet" href="./css/base.css" />
         <link rel="stylesheet" href="./css/layout.css" />
         <link rel="stylesheet" href="./css/main_index.css" />
