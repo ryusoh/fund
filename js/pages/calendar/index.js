@@ -176,8 +176,12 @@ export async function initCalendar() {
         const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
         const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
 
-        const calendarStartDate = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        // Start calendar so that the current month is visible by default
+        const todayNy = getNyDate();
+        const currentMonthStart = new Date(todayNy.getFullYear(), todayNy.getMonth(), 1);
+        const calendarStartDate = new Date(currentMonthStart);
         if (window.innerWidth > 768) {
+            // For multi-month view, show the months leading up to and including the current month
             calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
         }
 
@@ -214,8 +218,16 @@ export async function initCalendar() {
             date: {
                 start: calendarStartDate,
                 min: firstDataDate,
-                max: lastDataDate,
-                highlight: [getNyDate()],
+                // Allow viewing through the current month even if data isn't present yet
+                max: (function () {
+                    const endOfCurrentMonth = new Date(
+                        todayNy.getFullYear(),
+                        todayNy.getMonth() + 1,
+                        0
+                    );
+                    return new Date(Math.max(endOfCurrentMonth.getTime(), lastDataDate.getTime()));
+                })(),
+                highlight: [todayNy],
             },
             tooltip,
             onMinDomainReached: (isMin) => {
