@@ -1,6 +1,6 @@
 # Fund
 
-![Fund Banner](https://ryusoh.github.io/host/archive/personal/DSCF0283.jpg)
+![Fund Banner](https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/archive/personal/DSCF0283.jpg)
 
 <!-- markdownlint-disable-next-line MD033 -->
 <p align="right"><em>Nashville, TN · 2025 © <a href="https://instagram.com/lyeutsaon">@lyeutsaon</a></em></p>
