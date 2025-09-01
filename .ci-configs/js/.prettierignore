@@ -10,4 +10,8 @@ venv/
 .idea/
 .vscode/
 .git/
+# Ignore generated data files regardless of relative path
 data/*.json
+data/**/*.json
+**/data/*.json
+**/data/**/*.json
