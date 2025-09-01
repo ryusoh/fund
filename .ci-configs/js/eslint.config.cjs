@@ -18,6 +18,7 @@ module.exports = [
             ecmaVersion: 'latest',
             sourceType: 'module',
             globals: {
+                // Browser globals
                 window: 'readonly',
                 document: 'readonly',
                 navigator: 'readonly',
@@ -36,15 +37,20 @@ module.exports = [
                 MouseEvent: 'readonly',
                 TouchEvent: 'readonly',
                 process: 'readonly',
+
+                // App-provided globals from CDN
                 Chart: 'readonly',
                 ChartDataLabels: 'readonly',
             },
         },
         rules: {
+            // Possible Problems
             'no-undef': 'error',
             'no-unused-vars': ['warn', { args: 'after-used', ignoreRestSiblings: true }],
             'no-unreachable': 'error',
             'no-constant-binary-expression': 'error',
+
+            // Suggestions
             eqeqeq: ['warn', 'always', { null: 'ignore' }],
             'no-var': 'warn',
             'prefer-const': ['warn', { destructuring: 'all' }],
@@ -54,6 +60,8 @@ module.exports = [
             'no-lonely-if': 'warn',
             'no-else-return': 'warn',
             curly: ['error', 'all'],
+
+            // Style
             'no-trailing-spaces': 'warn',
             'eol-last': ['warn', 'always'],
             semi: ['warn', 'always'],
@@ -67,6 +75,8 @@ module.exports = [
             'no-multi-spaces': ['warn'],
             'brace-style': ['warn', '1tbs', { allowSingleLine: true }],
             'no-multiple-empty-lines': ['warn', { max: 1, maxEOF: 1 }],
+
+            // Project specific
             'no-console': 'warn',
         },
     },
@@ -127,3 +137,4 @@ module.exports = [
         },
     },
 ];
+
