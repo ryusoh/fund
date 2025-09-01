@@ -12,8 +12,6 @@ const CORE_ASSETS = [
     'https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png',
     'https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png',
     './assets/mobile_bg.jpg',
-    './assets/vendor/css/font-awesome-4.7.0.min.css',
-    './assets/vendor/fonts/fontawesome-webfont.woff2',
 ];
 
 self.addEventListener('install', (event) => {
