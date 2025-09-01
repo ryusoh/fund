@@ -9,7 +9,7 @@
   "description": "Positions, calendar heatmaps, and portfolio visuals by ryusoh.",
   "icons": [
     {
-      "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@main/brand/avatars/avatar_152x152.png",
+      "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any maskable"
