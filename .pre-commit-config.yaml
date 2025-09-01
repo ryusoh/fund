@@ -22,7 +22,7 @@ repos:
       rev: v0.41.0
       hooks:
           - id: markdownlint
-            args: ['--config', '.markdownlint.jsonc']
+            args: ['--config', '.markdownlint.json']
 
     # JavaScript tooling (commit): format + lint
     - repo: local
@@ -47,7 +47,7 @@ repos:
       hooks:
           - id: stylelint
             name: stylelint (staged CSS)
-            entry: bash -lc 'npx stylelint --formatter=unix --'
+            entry: bash -lc 'npx stylelint --formatter=unix --config-basedir "$(pwd)" --'
             language: system
             types_or: [css]
             pass_filenames: true
@@ -57,7 +57,7 @@ repos:
       hooks:
           - id: jest-related
             name: jest (related tests)
-            entry: bash -lc 'npx jest --findRelatedTests --passWithNoTests --'
+            entry: bash -lc 'if [ "$#" -eq 0 ]; then exit 0; else npx jest --findRelatedTests --passWithNoTests -- "$@"; fi'
             language: system
             types_or: [javascript]
             pass_filenames: true
