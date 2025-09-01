@@ -80,42 +80,42 @@ const renderAsWhite = true;
 const opacity = 0.7;
 export const TICKER_TO_LOGO_MAP = {
     GEO: {
-        src: '/assets/logo/geo.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/geo.png',
         scale: 1,
         rotation: 0,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     ANET: {
-        src: '/assets/logo/anet.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/anet.png',
         scale: 1.7,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     GOOG: {
-        src: '/assets/logo/goog.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/goog.png',
         scale: 1.05,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     PDD: {
-        src: '/assets/logo/pdd.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/pdd.png',
         scale: 1.7,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     OXY: {
-        src: '/assets/logo/oxy.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/oxy.png',
         scale: 1.9,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     'BRK-B': {
-        src: '/assets/logo/brk.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/brk.png',
         scale: 2,
         rotation: 76,
         renderAsWhite: renderAsWhite,
@@ -123,7 +123,7 @@ export const TICKER_TO_LOGO_MAP = {
         radialMargin: 1.2,
     },
     VT: {
-        src: '/assets/logo/vt.png',
+        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/vt.png',
         scale: 2.1,
         rotation: false,
         renderAsWhite: renderAsWhite,

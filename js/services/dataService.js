@@ -179,7 +179,11 @@ function updateTableAndPrepareChartData(
             src: '/assets/logo/vt.png',
             scale: 1.0,
         };
-        const logoInfo = { ...originalLogoInfo, src: BASE_URL + originalLogoInfo.src };
+        const resolvedSrc =
+            typeof originalLogoInfo.src === 'string' && originalLogoInfo.src.startsWith('http')
+                ? originalLogoInfo.src
+                : BASE_URL + originalLogoInfo.src;
+        const logoInfo = { ...originalLogoInfo, src: resolvedSrc };
         chartData.datasets[0].images.push(logoInfo);
     });
 
