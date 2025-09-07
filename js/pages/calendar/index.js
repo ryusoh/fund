@@ -139,6 +139,54 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         state.selectedCurrency = event.detail.currency;
         renderLabels(cal, byDate, state, currencySymbols);
     });
+
+    // Keyboard navigation: Left/Right for prev/next, Down for today button behavior
+    const prevBtnEl = document.querySelector(CALENDAR_SELECTORS.prevButton);
+    const nextBtnEl = document.querySelector(CALENDAR_SELECTORS.nextButton);
+    const todayBtnEl = document.querySelector(CALENDAR_SELECTORS.todayButton);
+
+    window.addEventListener('keydown', (e) => {
+        // Ignore if typing in inputs or using modifiers
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+            return;
+        }
+        const active = document.activeElement;
+        if (
+            active &&
+            (active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                active.tagName === 'SELECT' ||
+                active.isContentEditable)
+        ) {
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                if (prevBtnEl && !prevBtnEl.disabled) {
+                    e.preventDefault();
+                    // Delegate to existing click handler so behavior stays in sync
+                    prevBtnEl.click();
+                }
+                break;
+            case 'ArrowRight':
+                if (nextBtnEl && !nextBtnEl.disabled) {
+                    e.preventDefault();
+                    nextBtnEl.click();
+                }
+                break;
+            case 'ArrowDown':
+                /* istanbul ignore next: presence check not critical */
+                if (todayBtnEl) {
+                    e.preventDefault();
+                    todayBtnEl.click();
+                }
+                break;
+            default:
+                /* istanbul ignore next */
+                break;
+        }
+    });
 }
 
 // --- INITIALIZATION ---

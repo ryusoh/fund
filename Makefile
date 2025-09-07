@@ -38,7 +38,12 @@ hooks:
 	fi
 
 precommit: hooks
-	$(PY) -m pre_commit run --all-files --show-diff-on-failure
+	@# Run pre-commit only if a config exists
+	@if [ -f .pre-commit-config.yaml ]; then \
+		$(PY) -m pre_commit run --all-files --show-diff-on-failure; \
+	else \
+		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
+	fi
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all

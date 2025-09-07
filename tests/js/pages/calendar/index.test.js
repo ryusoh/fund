@@ -113,9 +113,9 @@ describe('calendar page', () => {
         }));
 
         // Provide concrete elements for prev/next so we can test disabled toggling
-        prevBtnRef = { disabled: false, addEventListener: jest.fn() };
-        nextBtnRef = { disabled: false, addEventListener: jest.fn() };
-        todayBtnRef = { addEventListener: jest.fn() };
+        prevBtnRef = { disabled: false, addEventListener: jest.fn(), click: jest.fn() };
+        nextBtnRef = { disabled: false, addEventListener: jest.fn(), click: jest.fn() };
+        todayBtnRef = { addEventListener: jest.fn(), click: jest.fn() };
         containerRef = { innerHTML: '' };
         document.querySelector = jest.fn().mockImplementation((sel) => {
             if (sel === '#cal-prev') {
@@ -219,6 +219,81 @@ describe('calendar page', () => {
         jest.useRealTimers();
     });
 
+    it('should ignore unrelated keydown events (default switch branch)', async () => {
+        const mockData = {
+            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
+            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+
+        // Dispatch a key that is not handled to hit the default case
+        const evt = new window.KeyboardEvent('keydown', { key: 'x' });
+        window.dispatchEvent(evt);
+        // No assertions required; success is no throw and coverage of default branch
+    });
+
+    it('should navigate with ArrowLeft/ArrowRight and respect disabled state', async () => {
+        const mockData = {
+            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
+            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+
+        // Enabled path
+        prevBtnRef.disabled = false;
+        nextBtnRef.disabled = false;
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+        expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
+        expect(nextBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // Disabled path: clicks should not increase
+        prevBtnRef.disabled = true;
+        nextBtnRef.disabled = true;
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+        expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
+        expect(nextBtnRef.click).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle ArrowDown with and without today button', async () => {
+        const mockData = {
+            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
+            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+
+        // With today button present: should click
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        expect(todayBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // Rewire querySelector to return null for today, then init again to capture null element
+        document.querySelector = jest.fn().mockImplementation((sel) => {
+            if (sel === '#cal-prev') {
+                return prevBtnRef;
+            }
+            if (sel === '#cal-next') {
+                return nextBtnRef;
+            }
+            if (sel === '#cal-today') {
+                return null;
+            }
+            if (sel === '#calendar-container') {
+                return { innerHTML: '' };
+            }
+            return { addEventListener: jest.fn(), innerHTML: '', disabled: false };
+        });
+        await initCalendar();
+        // Should not throw when element missing; nothing to assert besides coverage
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    });
+
     it('should render labels and handle visibility toggle paths', () => {
         // With labelsVisible=false: should clear labels
         const byDate = new Map([
@@ -286,5 +361,63 @@ describe('calendar page', () => {
         // Directly call to ensure line 210 executed
         await autoInitCalendar();
         process.env.NODE_ENV = originalEnv;
+    });
+
+    it('should handle keyboard navigation and ignore modifiers/inputs', async () => {
+        const mockData = {
+            processedData: [
+                { date: '2025-01-01', value: 0.1, total: 1234 },
+                { date: '2025-01-02', value: -0.2, total: 1200 },
+            ],
+            byDate: new Map([
+                ['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1234 }],
+                ['2025-01-02', { date: '2025-01-02', value: -0.2, total: 1200 }],
+            ]),
+            rates: { USD: 1 },
+        };
+        // Ensure click handlers exist so keydown can trigger them
+        prevBtnRef.click = jest.fn();
+        nextBtnRef.click = jest.fn();
+        todayBtnRef.click = jest.fn();
+
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+
+        // ArrowLeft triggers prev when enabled
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+        expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // ArrowRight triggers next when enabled
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+        expect(nextBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // Disable next; ArrowRight should not trigger click
+        nextBtnRef.disabled = true;
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+        expect(nextBtnRef.click).toHaveBeenCalledTimes(1);
+        nextBtnRef.disabled = false; // restore
+
+        // ArrowDown triggers today
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        expect(todayBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // With modifier keys: should be ignored
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true }));
+        expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
+
+        // When focused on input/select/textarea/contentEditable: should be ignored
+        const originalActiveDesc = Object.getOwnPropertyDescriptor(document, 'activeElement');
+        Object.defineProperty(document, 'activeElement', {
+            configurable: true,
+            get: () => ({ tagName: 'INPUT', isContentEditable: false }),
+        });
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+        expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
+        // Restore activeElement so default branch isn't short-circuited
+        if (originalActiveDesc) {
+            Object.defineProperty(document, 'activeElement', originalActiveDesc);
+        }
+        // Any other key hits default branch
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
     });
 });
