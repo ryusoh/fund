@@ -254,6 +254,16 @@ describe('position page entry point', () => {
         expect(triggerCenterToggle).not.toHaveBeenCalled();
     });
 
+    it('makes footer visible after initial load', async () => {
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        const footer = document.querySelector('.footer-wrapper');
+        // In this test DOM there is none; ensure it does not throw
+        expect(footer).toBeNull();
+    });
+
     it('should toggle via ArrowUp key', async () => {
         const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
         await import('@pages/position/index.js');

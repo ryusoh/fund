@@ -45,7 +45,7 @@
         left: 0px; /* Stick to the screen's left edge */
         flex-direction: column; /* Stack buttons vertically */
         padding: 3px 3px;
-        z-index: 10; /* Ensure it's above the chart canvas if overlapping */
+        z-index: 1000; /* Keep on top on mobile too */
         /* Remove left-side radius for flush appearance */
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;

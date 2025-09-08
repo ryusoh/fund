@@ -66,6 +66,7 @@ async function startApp() {
             );
             // Now that chart is rendered and initial scroll check is done:
             alignToggleWithChartMobile(); // Align toggle based on the rendered chart
+            // Keep initial UI minimal on first load (no footer/table)
         } catch (error) {
             logger.error('Error during initial portfolio data load and display:', error);
         }
