@@ -8,6 +8,39 @@ import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 let fundChartInstance = null;
 let isTablePersisting = false; // State variable for table persistence
 
+// Toggle the same behavior as clicking the donut center: persist/unpersist table & logos
+function toggleCenterPersistence(chart) {
+    const tableElement = document.querySelector('table');
+    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+    const footerWrapperElement = document.querySelector('.footer-wrapper');
+
+    isTablePersisting = !isTablePersisting;
+    chart.showLogos = isTablePersisting;
+    chart.update();
+
+    if (isTablePersisting) {
+        tableElement.classList.remove('hidden');
+        allDataRows.forEach((row) => row.classList.remove('hidden'));
+        if (footerWrapperElement) {
+            footerWrapperElement.classList.remove('hidden');
+        }
+    } else {
+        tableElement.classList.add('hidden');
+        allDataRows.forEach((row) => row.classList.add('hidden'));
+        if (footerWrapperElement) {
+            footerWrapperElement.classList.add('hidden');
+        }
+    }
+    checkAndToggleVerticalScroll();
+}
+
+// Expose a safe trigger for keyboard or other UI to emulate center click
+export function triggerCenterToggle() {
+    if (fundChartInstance) {
+        toggleCenterPersistence(fundChartInstance);
+    }
+}
+
 export function updatePieChart(data) {
     const ctx = document.getElementById('fundPieChart').getContext('2d');
 
@@ -71,10 +104,6 @@ export function updatePieChart(data) {
                     },
                 },
                 onClick: (event, activeElements, chart) => {
-                    const tableElement = document.querySelector('table');
-                    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
-                    const footerWrapperElement = document.querySelector('.footer-wrapper');
-
                     let isClickOverCenter = false;
                     const mouseX = event.x;
                     const mouseY = event.y;
@@ -98,28 +127,8 @@ export function updatePieChart(data) {
                             }
                         }
                     }
-
                     if (isClickOverCenter) {
-                        isTablePersisting = !isTablePersisting; // Toggle persistence state
-                        chart.showLogos = isTablePersisting;
-                        chart.update();
-
-                        if (isTablePersisting) {
-                            // Show full table and make it persist
-                            tableElement.classList.remove('hidden');
-                            allDataRows.forEach((row) => row.classList.remove('hidden'));
-                            if (footerWrapperElement) {
-                                footerWrapperElement.classList.remove('hidden');
-                            }
-                        } else {
-                            // Hide the table, reverting to hover-controlled visibility
-                            tableElement.classList.add('hidden');
-                            allDataRows.forEach((row) => row.classList.add('hidden')); // Ensure all rows are hidden
-                            if (footerWrapperElement) {
-                                footerWrapperElement.classList.add('hidden');
-                            }
-                        }
-                        checkAndToggleVerticalScroll();
+                        toggleCenterPersistence(chart);
                     }
                 },
                 onHover: (event, activeElements, chart) => {

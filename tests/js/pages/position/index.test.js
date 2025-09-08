@@ -17,6 +17,9 @@ jest.mock('@ui/responsive.js', () => ({
 jest.mock('@services/dataService.js', () => ({
     loadAndDisplayPortfolioData: jest.fn(() => Promise.resolve()),
 }));
+jest.mock('@charts/allocationChartManager.js', () => ({
+    triggerCenterToggle: jest.fn(),
+}));
 
 describe('position page entry point', () => {
     const documentEventListeners = {};
@@ -203,6 +206,75 @@ describe('position page entry point', () => {
         windowEventListeners.resize();
         expect(checkAndToggleVerticalScroll).toHaveBeenCalled();
         expect(alignToggleWithChartMobile).toHaveBeenCalled();
+    });
+
+    it('should toggle via ArrowDown key', async () => {
+        const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        const evt = new window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+        const preventDefaultSpy = jest.spyOn(evt, 'preventDefault');
+        // Invoke captured listener
+        windowEventListeners.keydown(evt);
+        expect(preventDefaultSpy).toHaveBeenCalled();
+        expect(triggerCenterToggle).toHaveBeenCalled();
+    });
+
+    it('should ignore ArrowDown when typing in inputs', async () => {
+        const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        // Add an input and set it as active element
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+        input.focus();
+        const evt = new window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+        // Invoke captured listener
+        windowEventListeners.keydown(evt);
+        expect(triggerCenterToggle).not.toHaveBeenCalled();
+    });
+
+    it('should ignore when modifier keys are pressed', async () => {
+        const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        const evt = new window.KeyboardEvent('keydown', {
+            key: 'ArrowDown',
+            shiftKey: true,
+            bubbles: true,
+        });
+        windowEventListeners.keydown(evt);
+        expect(triggerCenterToggle).not.toHaveBeenCalled();
+    });
+
+    it('should toggle via ArrowUp key', async () => {
+        const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        const evt = new window.KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true });
+        const preventDefaultSpy = jest.spyOn(evt, 'preventDefault');
+        windowEventListeners.keydown(evt);
+        expect(preventDefaultSpy).toHaveBeenCalled();
+        expect(triggerCenterToggle).toHaveBeenCalled();
+    });
+
+    it('should ignore non-ArrowUp/Down keys', async () => {
+        const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        const evt = new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true });
+        windowEventListeners.keydown(evt);
+        expect(triggerCenterToggle).not.toHaveBeenCalled();
     });
 
     it('should handle scheduled update', async () => {

@@ -97,6 +97,26 @@ describe('chartManager', () => {
     });
 
     describe('Chart Interactivity', () => {
+        it('triggerCenterToggle: should no-op when chart not initialized', () => {
+            // Call before updatePieChart; should not throw
+            expect(() => {
+                chartManager.triggerCenterToggle();
+            }).not.toThrow();
+        });
+        it('triggerCenterToggle: should toggle via exported function', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+
+            // Ensure it starts hidden
+            table.classList.add('hidden');
+
+            chartManager.triggerCenterToggle();
+            expect(table.classList.contains('hidden')).toBe(false);
+
+            chartManager.triggerCenterToggle();
+            expect(table.classList.contains('hidden')).toBe(true);
+        });
+
         it('onClick: should toggle table persistence when clicking chart center', () => {
             chartManager.updatePieChart(data);
             const table = document.querySelector('table');

@@ -14,6 +14,7 @@ import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import { APP_SETTINGS, CURRENCY_SYMBOLS } from '@js/config.js';
+import { triggerCenterToggle } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 
@@ -86,6 +87,27 @@ if (document.readyState === 'loading') {
 window.addEventListener('resize', () => {
     checkAndToggleVerticalScroll(); // Handles general scroll state on resize
     alignToggleWithChartMobile(); // Re-align on resize
+});
+
+// Keyboard: ArrowDown/ArrowUp toggle same behavior as clicking the pie center
+window.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+        return;
+    }
+    const active = document.activeElement;
+    if (
+        active &&
+        (active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT' ||
+            active.isContentEditable)
+    ) {
+        return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        triggerCenterToggle();
+    }
 });
 
 // Listen for global currency changes from the toggle
