@@ -11,7 +11,7 @@ document.addEventListener(
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
-import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
+import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import { APP_SETTINGS, CURRENCY_SYMBOLS } from '@js/config.js';
 import { triggerCenterToggle } from '@charts/allocationChartManager.js';
@@ -89,9 +89,17 @@ window.addEventListener('resize', () => {
     alignToggleWithChartMobile(); // Re-align on resize
 });
 
-// Keyboard: ArrowDown/ArrowUp toggle same behavior as clicking the pie center
+// Keyboard shortcuts
+// - ArrowDown/ArrowUp: toggle same behavior as clicking the pie center
+// - ArrowLeft/ArrowRight: cycle currencies (also support Cmd+ArrowLeft/Right)
 window.addEventListener('keydown', (e) => {
-    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+    // Allow Cmd/Ctrl + ArrowLeft/Right for currency cycling even with modifiers
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        cycleCurrency(e.key === 'ArrowRight' ? 1 : -1);
+        return;
+    }
+    if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
         return;
     }
     const active = document.activeElement;
@@ -107,6 +115,11 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         triggerCenterToggle();
+        return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        cycleCurrency(e.key === 'ArrowRight' ? 1 : -1);
     }
 });
 

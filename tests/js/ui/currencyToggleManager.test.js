@@ -1,4 +1,4 @@
-import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
+import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 
 describe('initCurrencyToggle', () => {
     let toggleContainer;
@@ -204,5 +204,82 @@ describe('initCurrencyToggle – branch 25 coverage (same currency first, then c
         // Click on element that is not a .currency-toggle -> clickedButton will be null -> line 25 condition is FALSE
         otherButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
+});
+
+describe('cycleCurrency', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+      <div id="currencyToggleContainer">
+        <button class="currency-toggle active" data-currency="USD">USD</button>
+        <button class="currency-toggle" data-currency="JPY">JPY</button>
+        <button class="currency-toggle" data-currency="KRW">KRW</button>
+      </div>
+    `;
+        jest.spyOn(document, 'dispatchEvent');
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('moves right and dispatches event', () => {
+        cycleCurrency(1);
+        const buttons = Array.from(
+            document.querySelectorAll('#currencyToggleContainer .currency-toggle')
+        );
+        expect(buttons[1].classList.contains('active')).toBe(true);
+        expect(document.dispatchEvent).toHaveBeenCalledWith(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'JPY' } })
+        );
+    });
+
+    it('moves left with wrap-around and dispatches event', () => {
+        cycleCurrency(-1);
+        const buttons = Array.from(
+            document.querySelectorAll('#currencyToggleContainer .currency-toggle')
+        );
+        // From USD index 0, left wraps to last (KRW)
+        expect(buttons[2].classList.contains('active')).toBe(true);
+        expect(document.dispatchEvent).toHaveBeenCalledWith(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'KRW' } })
+        );
+    });
+
+    it('returns early when container or buttons missing', () => {
+        document.body.innerHTML = '';
+        expect(() => cycleCurrency(1)).not.toThrow();
+        document.body.innerHTML = '<div id="currencyToggleContainer"></div>';
+        expect(() => cycleCurrency(1)).not.toThrow();
+    });
+
+    it('uses default index when no active button', () => {
+        const container = document.getElementById('currencyToggleContainer');
+        container.querySelector('.active')?.classList.remove('active');
+        jest.spyOn(document, 'dispatchEvent');
+        cycleCurrency(1);
+        expect(document.dispatchEvent).toHaveBeenCalledWith(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'JPY' } })
+        );
+    });
+
+    it('returns early when nextIndex equals currentIndex (step 0)', () => {
+        jest.spyOn(document, 'dispatchEvent');
+        const callsBefore = document.dispatchEvent.mock.calls.length;
+        cycleCurrency(0);
+        expect(document.dispatchEvent).toHaveBeenCalledTimes(callsBefore);
+    });
+
+    it('falls back to USD when next button lacks data-currency', () => {
+        const container = document.getElementById('currencyToggleContainer');
+        const buttons = Array.from(container.querySelectorAll('.currency-toggle'));
+        // Remove data-currency from the next button (JPY) to trigger fallback
+        buttons[1].removeAttribute('data-currency');
+        // Move right so nextBtn has no dataset
+        jest.spyOn(document, 'dispatchEvent');
+        cycleCurrency(1);
+        expect(document.dispatchEvent).toHaveBeenCalledWith(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'USD' } })
+        );
     });
 });

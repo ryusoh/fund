@@ -1,4 +1,4 @@
-import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
+import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 import { CURRENCY_SYMBOLS, DATA_PATHS, CALENDAR_SELECTORS, CALENDAR_CONFIG } from '@js/config.js';
 import { getNyDate } from '@utils/date.js';
 import { formatNumber } from '@utils/formatting.js';
@@ -147,8 +147,14 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
     const todayBtnEl = document.querySelector(CALENDAR_SELECTORS.todayButton);
 
     window.addEventListener('keydown', (e) => {
-        // Ignore if typing in inputs or using modifiers
-        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+        // Currency cycling with Cmd/Ctrl + ArrowLeft/Right (avoid conflict with calendar nav)
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            e.preventDefault();
+            cycleCurrency(e.key === 'ArrowRight' ? 1 : -1);
+            return;
+        }
+        // Ignore if typing in inputs or using other modifiers
+        if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
             return;
         }
         const active = document.activeElement;

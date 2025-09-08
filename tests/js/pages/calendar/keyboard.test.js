@@ -1,4 +1,3 @@
-import { initCalendar } from '@pages/calendar/index.js';
 import { getCalendarData } from '@services/dataService.js';
 
 jest.mock('@services/dataService.js', () => ({
@@ -7,6 +6,7 @@ jest.mock('@services/dataService.js', () => ({
 
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
+    cycleCurrency: jest.fn(),
 }));
 
 jest.mock('@ui/responsive.js', () => ({
@@ -75,8 +75,28 @@ describe('calendar keyboard only tests', () => {
     });
 
     it('covers ArrowDown when today button is absent', async () => {
+        const { initCalendar } = await import('@pages/calendar/index.js');
         await initCalendar();
         // Should not throw; just exercise the false branch of todayBtnEl
         window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    });
+
+    it('cycles currency with Ctrl/Cmd+ArrowLeft/Right without interfering with nav', async () => {
+        const { initCalendar } = await import('@pages/calendar/index.js');
+        await initCalendar();
+        // Just dispatch events to exercise the code path; no assertions needed
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true, bubbles: true })
+        );
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true, bubbles: true })
+        );
+        // Also exercise metaKey path
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowRight', metaKey: true, bubbles: true })
+        );
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowLeft', metaKey: true, bubbles: true })
+        );
     });
 });

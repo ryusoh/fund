@@ -7,6 +7,7 @@ jest.mock('@services/dataService.js', () => ({
 
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
+    cycleCurrency: jest.fn(),
 }));
 
 jest.mock('@ui/responsive.js', () => ({
@@ -461,7 +462,13 @@ describe('calendar page', () => {
         window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
         expect(todayBtnRef.click).toHaveBeenCalledTimes(1);
 
-        // With modifier keys: should be ignored
+        // With modifier keys and non-arrow: should be ignored (hits ignore branch)
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'x', ctrlKey: true }));
+        // With Ctrl+ArrowRight: exercise currency cycle branch (no assertion needed)
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true })
+        );
+        // With Ctrl+ArrowLeft as well
         window.dispatchEvent(
             new window.KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true })
         );

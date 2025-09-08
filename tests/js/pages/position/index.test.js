@@ -6,6 +6,7 @@ import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/re
 // Mock all imported modules
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
+    cycleCurrency: jest.fn(),
 }));
 jest.mock('@ui/footerToggle.js', () => ({
     initFooterToggle: jest.fn(),
@@ -266,15 +267,51 @@ describe('position page entry point', () => {
         expect(triggerCenterToggle).toHaveBeenCalled();
     });
 
-    it('should ignore non-ArrowUp/Down keys', async () => {
+    it('should cycle currency with ArrowLeft/Right and Cmd+ArrowLeft/Right', async () => {
+        const { cycleCurrency } = require('@ui/currencyToggleManager.js');
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+        // ArrowRight
+        let evt = new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true });
+        windowEventListeners.keydown(evt);
+        expect(cycleCurrency).toHaveBeenCalledWith(1);
+        // ArrowLeft
+        evt = new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true });
+        windowEventListeners.keydown(evt);
+        expect(cycleCurrency).toHaveBeenCalledWith(-1);
+        // Cmd + ArrowRight
+        evt = new window.KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            metaKey: true,
+            bubbles: true,
+        });
+        windowEventListeners.keydown(evt);
+        expect(cycleCurrency).toHaveBeenCalledWith(1);
+        // Cmd + ArrowLeft
+        evt = new window.KeyboardEvent('keydown', {
+            key: 'ArrowLeft',
+            metaKey: true,
+            bubbles: true,
+        });
+        windowEventListeners.keydown(evt);
+        expect(cycleCurrency).toHaveBeenCalledWith(-1);
+    });
+
+    it('should ignore unrelated keys (falls through left/right condition false branch)', async () => {
+        const { cycleCurrency } = require('@ui/currencyToggleManager.js');
         const { triggerCenterToggle } = require('@charts/allocationChartManager.js');
         await import('@pages/position/index.js');
         if (documentEventListeners.DOMContentLoaded) {
             await documentEventListeners.DOMContentLoaded();
         }
-        const evt = new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true });
+        const prevCycleCalls = cycleCurrency.mock.calls.length;
+        const prevToggleCalls = triggerCenterToggle.mock.calls.length;
+        const evt = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
         windowEventListeners.keydown(evt);
-        expect(triggerCenterToggle).not.toHaveBeenCalled();
+        expect(cycleCurrency).toHaveBeenCalledTimes(prevCycleCalls);
+        expect(triggerCenterToggle).toHaveBeenCalledTimes(prevToggleCalls);
     });
 
     it('should handle scheduled update', async () => {
