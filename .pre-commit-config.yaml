@@ -68,6 +68,15 @@ repos:
             types_or: [javascript]
             pass_filenames: true
 
+    # Enforce 100% coverage on commit (fast enough for this repo)
+    - repo: local
+      hooks:
+          - id: jest-coverage
+            name: jest (coverage 100%)
+            entry: bash -lc 'npx jest --coverage --ci --runInBand'
+            language: system
+            pass_filenames: false
+
     # Full test suites (push): JS + Python
     - repo: local
       hooks:

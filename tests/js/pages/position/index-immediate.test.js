@@ -63,4 +63,32 @@ describe('position page immediate start', () => {
         expect(initFooterToggle).toHaveBeenCalled();
         expect(loadAndDisplayPortfolioData).toHaveBeenCalled();
     });
+
+    it('should execute the rAF delay branch in non-test env', async () => {
+        const originalEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+        // Make rAF synchronous to complete the nested rAF chain immediately
+        const originalRaf = global.requestAnimationFrame;
+        global.requestAnimationFrame = (cb) => {
+            cb();
+            return 1;
+        };
+
+        await jest.isolateModulesAsync(async () => {
+            await import('@pages/position/index.js');
+        });
+
+        // Allow microtasks to flush
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // After import in production env, the code path with nested rAF has executed
+        expect(global.Chart.register).toHaveBeenCalled();
+        expect(initCurrencyToggle).toHaveBeenCalled();
+        expect(initFooterToggle).toHaveBeenCalled();
+        expect(loadAndDisplayPortfolioData).toHaveBeenCalled();
+
+        // Restore globals
+        process.env.NODE_ENV = originalEnv;
+        global.requestAnimationFrame = originalRaf;
+    });
 });

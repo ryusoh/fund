@@ -25,6 +25,9 @@ jest.mock('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm', () =>
     jest.fn().mockImplementation(() => mockCalHeatmapInstance)
 );
 
+// Capture class attribute values set during label rendering
+const capturedClassValues = [];
+
 jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
     const createChainableObject = () => ({
         select: jest.fn().mockReturnThis(),
@@ -57,14 +60,29 @@ jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
         scenarios.forEach((scenario) => {
             const mockEl = createChainableObject();
             let attrCallCount = 0;
-            mockEl.attr.mockImplementation((attr) => {
-                if (attr === 'x') {
+            mockEl.attr.mockImplementation((name, value) => {
+                // read path for x
+                if (name === 'x' && typeof value === 'undefined') {
                     attrCallCount++;
                     return attrCallCount === 1 ? null : '50';
                 }
+                // capture class set operations on any element
+                if (name === 'class' && typeof value !== 'undefined') {
+                    capturedClassValues.push(value);
+                }
                 return mockEl;
             });
-            mockEl.append.mockImplementation(() => createChainableObject());
+            mockEl.append.mockImplementation(() => {
+                const child = createChainableObject();
+                // capture class set on appended child tspans
+                child.attr.mockImplementation((name, value) => {
+                    if (name === 'class' && typeof value !== 'undefined') {
+                        capturedClassValues.push(value);
+                    }
+                    return child;
+                });
+                return child;
+            });
             d3.select.mockImplementation((element) => {
                 if (element === scenario.element) {
                     return mockEl;
@@ -115,7 +133,11 @@ describe('calendar page', () => {
         // Provide concrete elements for prev/next so we can test disabled toggling
         prevBtnRef = { disabled: false, addEventListener: jest.fn(), click: jest.fn() };
         nextBtnRef = { disabled: false, addEventListener: jest.fn(), click: jest.fn() };
-        todayBtnRef = { addEventListener: jest.fn(), click: jest.fn() };
+        todayBtnRef = {
+            addEventListener: jest.fn(),
+            click: jest.fn(),
+            dispatchEvent: jest.fn(),
+        };
         containerRef = { innerHTML: '' };
         document.querySelector = jest.fn().mockImplementation((sel) => {
             if (sel === '#cal-prev') {
@@ -294,7 +316,43 @@ describe('calendar page', () => {
         window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown' }));
     });
 
-    it('should render labels and handle visibility toggle paths', () => {
+    it('should map ArrowUp to dblclick on today (enlarge) and cancel pending single action', async () => {
+        jest.useFakeTimers();
+        const mockData = {
+            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
+            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+
+        // Grab the actual today click handler to schedule the timer
+        const todayClick = todayBtnRef.addEventListener.mock.calls.find((c) => c[0] === 'click')[1];
+        const e = { preventDefault: jest.fn() };
+        todayClick(e); // schedules the delayed jumpTo
+
+        // Press ArrowUp quickly to emulate a double-click: should cancel pending timer
+        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowUp' }));
+
+        // Advance timers beyond the delay; jumpTo should not fire due to cancellation
+        jest.advanceTimersByTime(300);
+        expect(mockCalHeatmapInstance.jumpTo).not.toHaveBeenCalled();
+        // And it should dispatch a dblclick to today button so responsive handler can zoom
+        expect(todayBtnRef.dispatchEvent).toHaveBeenCalled();
+        jest.useRealTimers();
+    });
+
+    it('should render labels and handle visibility toggle paths', async () => {
+        // Ensure d3 is initialized in module under test
+        const mockData = {
+            processedData: [{ date: '2025-01-01', value: 0.1, total: 1000 }],
+            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1000 }]]),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+        // Reset capture array in case prior tests populated it
+        capturedClassValues.length = 0;
         // With labelsVisible=false: should clear labels
         const byDate = new Map([
             ['2025-01-01', { dailyChange: 10, total: 1000 }],
@@ -306,6 +364,8 @@ describe('calendar page', () => {
         // Now enable and render again to exercise branch paths
         state.labelsVisible = true;
         renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        // Verify that the first line tspan with class 'subdomain-line0' was appended
+        expect(capturedClassValues).toEqual(expect.arrayContaining(['subdomain-line0']));
     });
 
     it('should handle data fetch error and show error message', async () => {
@@ -402,7 +462,9 @@ describe('calendar page', () => {
         expect(todayBtnRef.click).toHaveBeenCalledTimes(1);
 
         // With modifier keys: should be ignored
-        window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true }));
+        window.dispatchEvent(
+            new window.KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true })
+        );
         expect(prevBtnRef.click).toHaveBeenCalledTimes(1);
 
         // When focused on input/select/textarea/contentEditable: should be ignored

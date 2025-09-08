@@ -140,7 +140,8 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         renderLabels(cal, byDate, state, currencySymbols);
     });
 
-    // Keyboard navigation: Left/Right for prev/next, Down for today button behavior
+    // Keyboard navigation: Left/Right for prev/next, Down for today button behavior,
+    // Up to emulate a fast second press (double-click) of the center button: cancel pending action
     const prevBtnEl = document.querySelector(CALENDAR_SELECTORS.prevButton);
     const nextBtnEl = document.querySelector(CALENDAR_SELECTORS.nextButton);
     const todayBtnEl = document.querySelector(CALENDAR_SELECTORS.todayButton);
@@ -182,6 +183,30 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
                     todayBtnEl.click();
                 }
                 break;
+            case 'ArrowUp': {
+                // Emulate a double-click on the Today button:
+                // 1) cancel any pending single-click action
+                // 2) trigger the same dblclick behavior wired in responsive handlers (zoom)
+                e.preventDefault();
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                }
+                /* istanbul ignore next: presence check */
+                if (todayBtnEl && typeof todayBtnEl.dispatchEvent === 'function') {
+                    try {
+                        todayBtnEl.dispatchEvent(
+                            new MouseEvent('dblclick', { bubbles: true, cancelable: true })
+                        );
+                    } catch {
+                        // Fallback for environments without MouseEvent constructor
+                        const evt = document.createEvent('MouseEvents');
+                        evt.initEvent('dblclick', true, true);
+                        todayBtnEl.dispatchEvent(evt);
+                    }
+                }
+                break;
+            }
             default:
                 /* istanbul ignore next */
                 break;
