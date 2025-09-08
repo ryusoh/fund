@@ -14,4 +14,5 @@ jobs:
             node-version: '20'
             python-version: '3.12'
             run-precommit: true
+            checkout-submodules: false
             deploy: false
