@@ -8,7 +8,7 @@ on:
 
 jobs:
     web-ci:
-        uses: ryusoh/ci/.github/workflows/web-ci.yml@v1
+        uses: ryusoh/ci/.github/workflows/web-ci.yml@v1.1
         secrets: inherit
         with:
             node-version: '20'
