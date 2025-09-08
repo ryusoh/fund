@@ -11,7 +11,7 @@ permissions:
 
 jobs:
     sync:
-        uses: ryusoh/ci/.github/workflows/config-sync-pr.yml@v1.2
+        uses: ryusoh/ci/.github/workflows/config-sync-pr.yml@v1.3
         secrets: inherit
         with:
             source-ref: main
