@@ -62,8 +62,22 @@ self.addEventListener('fetch', (event) => {
                 (cached) =>
                     cached ||
                     fetch(req).then((res) => {
-                        const resClone = res.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+                        // Only cache complete, successful responses (avoid 206 Partial Content)
+                        if (
+                            req.method === 'GET' &&
+                            res &&
+                            res.ok &&
+                            res.status === 200 &&
+                            res.type === 'basic' &&
+                            !req.headers.has('range') &&
+                            !res.headers.get('Content-Range')
+                        ) {
+                            const resClone = res.clone();
+                            caches
+                                .open(CACHE_NAME)
+                                .then((cache) => cache.put(req, resClone))
+                                .catch(() => {});
+                        }
                         return res;
                     })
             )
@@ -72,8 +86,22 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(req)
                 .then((res) => {
-                    const resClone = res.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+                    // Network-first: cache only full 200 OK basic responses (skip range/partial)
+                    if (
+                        req.method === 'GET' &&
+                        res &&
+                        res.ok &&
+                        res.status === 200 &&
+                        res.type === 'basic' &&
+                        !req.headers.has('range') &&
+                        !res.headers.get('Content-Range')
+                    ) {
+                        const resClone = res.clone();
+                        caches
+                            .open(CACHE_NAME)
+                            .then((cache) => cache.put(req, resClone))
+                            .catch(() => {});
+                    }
                     return res;
                 })
                 .catch(() => caches.match(req))
