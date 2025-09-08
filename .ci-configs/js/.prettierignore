@@ -1,6 +1,7 @@
 node_modules/
 coverage/
 assets/
+js/vendor/
 dist/
 venv/
 .husky/_/
@@ -13,3 +14,4 @@ venv/
 .markdownlint.json
 .markdownlint.jsonc
 .pre-commit-config.yaml
+**/*.min.js

@@ -5,6 +5,7 @@ module.exports = [
             'coverage/**',
             'assets/**',
             'js/sketch.js',
+            'js/vendor/**',
             '.ci-configs/**',
             'venv/**',
             'dist/**',

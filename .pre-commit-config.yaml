@@ -35,7 +35,7 @@ repos:
     hooks:
       - id: prettier
         name: prettier (staged files)
-        entry: bash -lc 'npx prettier --write --'
+        entry: bash -lc 'npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
         language: system
         files: '\\.(js|css|json|yml|yaml|md|html)$'
         pass_filenames: true
