@@ -8,18 +8,22 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit perms check-perms lint fmt type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund
+.PHONY: help install-dev hooks precommit perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check
 
 help:
 	@echo "Targets:"
 	@echo "  install-dev   Install Python and Node dev deps"
 	@echo "  hooks         Install pre-commit git hooks"
 	@echo "  lint          Run ruff and JS/CSS linters"
-	@echo "  fmt           Run black and prettier"
+	@echo "  lint-fix      Apply ESLint/Stylelint auto-fixes"
+	@echo "  fmt           Run black and prettier (write)"
+	@echo "  fmt-check     Run Prettier in check mode"
 	@echo "  type          Run mypy type checking"
 	@echo "  sec           Run bandit security checks"
 	@echo "  test          Run Python and JS tests"
 	@echo "  verify        Lint, type, sec, and tests"
+	@echo "  check         Run fmt-check + lint (quick CI parity)"
+	@echo "  fix           Run fmt + lint-fix"
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  fund          Show CLI help"
@@ -57,6 +61,16 @@ fmt:
 	black .
 	prettier --write .
 
+fmt-check:
+	@# Prefer shared config if present
+	@if [ -f .ci-configs/js/.prettierrc.json ]; then \
+		npx prettier -c . \
+		  --config .ci-configs/js/.prettierrc.json \
+		  --ignore-path .ci-configs/js/.prettierignore; \
+	else \
+		prettier --check .; \
+	fi
+
 type:
 	$(PY) -m mypy
 
@@ -66,6 +80,11 @@ sec:
 js-lint:
 	eslint . --ext .js
 
+lint-fix:
+	eslint . --ext .js --fix || true
+	@# Ensure stylistic plugin availability if needed
+	npx -y -p @stylistic/stylelint-plugin stylelint "**/*.css" --config-basedir "$(PWD)" --fix || true
+
 js-test:
 	npm test
 
@@ -73,6 +92,10 @@ test: js-test
 	pytest
 
 verify: lint type sec test
+
+check: fmt-check lint
+
+fix: fmt lint-fix
 
 check-perms:
 	@test -x bin/fund
