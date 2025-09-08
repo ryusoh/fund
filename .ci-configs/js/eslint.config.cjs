@@ -4,6 +4,7 @@ module.exports = [
             'node_modules/**',
             'coverage/**',
             'assets/**',
+            'js/sketch.js',
             'venv/**',
             'dist/**',
             '**/*.min.js',

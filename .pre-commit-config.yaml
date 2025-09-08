@@ -44,7 +44,7 @@ repos:
     hooks:
       - id: eslint
         name: eslint (staged JS)
-        entry: bash -lc 'npx eslint --max-warnings=0 --'
+        entry: bash -lc 'npx eslint --config .ci-configs/js/eslint.config.cjs --max-warnings=0 --'
         language: system
         types_or: [javascript]
         pass_filenames: true
@@ -53,7 +53,7 @@ repos:
     hooks:
       - id: stylelint
         name: stylelint (staged CSS)
-        entry: bash -lc 'npx stylelint --formatter=unix --'
+        entry: bash -lc 'npx -y -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" --'
         language: system
         types_or: [css]
         pass_filenames: true

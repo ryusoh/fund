@@ -10,3 +10,6 @@ venv/
 .idea/
 .vscode/
 .git/
+.markdownlint.json
+.markdownlint.jsonc
+.pre-commit-config.yaml
