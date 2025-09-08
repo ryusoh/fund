@@ -21,7 +21,7 @@ const config = { rules };
 
 try {
     // Make plugin optional so repos without package.json still work
-    // eslint-disable-next-line import/no-extraneous-dependencies, global-require
+    /* eslint-disable-next-line */
     const stylistic = require('@stylistic/stylelint-plugin');
     config.plugins = [stylistic];
     Object.assign(config.rules, {
