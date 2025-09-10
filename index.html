@@ -43,10 +43,9 @@
             content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
         />
         <title>Fund</title>
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
-        />
+        <!-- Load Font Awesome with fallbacks -->
+        <script defer src="./js/loader/cdnFallback.js"></script>
+        <script defer src="./js/loader/vendorLoader.js"></script>
         <link rel="stylesheet" href="./css/base.css" />
         <link rel="stylesheet" href="./css/layout.css" />
         <link rel="stylesheet" href="./css/main_index.css" />
@@ -65,10 +64,15 @@
             ></video>
         </div>
         <img
-            src="https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png"
-            alt="Banner"
             class="mobile-banner"
+            alt="Banner"
             loading="lazy"
+            data-fallbacks='[
+                "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png",
+                "https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/banners/banner.png",
+                "https://gcore.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png",
+                "https://fastly.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png"
+            ]'
         />
         <a
             class="nav-back"
@@ -115,19 +119,9 @@
                 <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
             </a>
         </footer>
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/gh/ryusoh/host@master/shared/css/ambient/v1/ambient.css"
-        />
-        <script src="https://cdn.jsdelivr.net/gh/ryusoh/host@ambient-v1.6/shared/js/vendor/sketch.js"></script>
-        <script
-            defer
-            src="https://cdn.jsdelivr.net/gh/ryusoh/host@ambient-v1.7/shared/js/ambient/v1/config/default.js"
-        ></script>
-        <script
-            defer
-            src="https://cdn.jsdelivr.net/gh/ryusoh/host@ambient-v1.7/shared/js/ambient/v1/ambient.js"
-        ></script>
+        <!-- Image fallback and Ambient via CDN fallback loader -->
+        <script defer src="./js/loader/imageFallback.js"></script>
+        <script defer src="./js/ambient/loader.js"></script>
         <script>
             // Respect reduced motion: pause background video
             (function () {
