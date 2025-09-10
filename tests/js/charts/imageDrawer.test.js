@@ -306,6 +306,76 @@ describe('drawImage', () => {
         Object.assign(config.LOGO_SIZE, original);
     });
 
+    it('should set target height to minPx when smaller than computed (covers line 54)', async () => {
+        const config = await import('@js/config.js');
+        const original = { ...config.LOGO_SIZE };
+        // Ensure value is small so targetH < minPx, and minPx is comfortably below band clamp
+        config.LOGO_SIZE.mode = 'ratio';
+        config.LOGO_SIZE.value = 0.01; // outerRadius * 0.01 = 1 (much smaller than min)
+        config.LOGO_SIZE.minPx = 30; // below band*(1 - margin) ~ 49
+
+        // Simplify: avoid additional clamps by using square image and no rotation
+        logoInfo.rotation = false;
+        img.width = 100;
+        img.height = 100;
+
+        ctx.drawImage.mockClear();
+        drawImage(ctx, arc, img, logoInfo);
+        expect(ctx.drawImage).toHaveBeenCalled();
+        const call = ctx.drawImage.mock.calls[0];
+        const drawnH = call[4]; // width, height are args 3 and 4 (0-based index 3,4)
+        expect(drawnH).toBeCloseTo(30, 5);
+
+        // restore
+        Object.assign(config.LOGO_SIZE, original);
+        delete logoInfo.rotation;
+    });
+
+    it('should clamp target height to band*(1 - margin) when larger than band (also line 54)', async () => {
+        const config = await import('@js/config.js');
+        const original = { ...config.LOGO_SIZE };
+        // Make value very large so targetH > band*(1 - margin)
+        config.LOGO_SIZE.mode = 'ratio';
+        config.LOGO_SIZE.value = 1.0; // outerRadius * 1 = 100 > ~49
+        config.LOGO_SIZE.minPx = 1; // ensure min does not interfere
+
+        // Avoid other clamps
+        logoInfo.rotation = false;
+        img.width = 100;
+        img.height = 100;
+
+        ctx.drawImage.mockClear();
+        drawImage(ctx, arc, img, logoInfo);
+        const call = ctx.drawImage.mock.calls[0];
+        const drawnH = call[4];
+        // Expected band clamp: (outer - inner) * (1 - margin) = 50 * 0.98 = 49
+        expect(drawnH).toBeCloseTo(49, 3);
+
+        Object.assign(config.LOGO_SIZE, original);
+        delete logoInfo.rotation;
+    });
+
+    it('should keep computed target height when within min and band (hits line 54 without clamping)', async () => {
+        const config = await import('@js/config.js');
+        const original = { ...config.LOGO_SIZE };
+        config.LOGO_SIZE.mode = 'ratio';
+        config.LOGO_SIZE.value = 0.2; // outerRadius * 0.2 = 20, between minPx=14 and band*(1 - margin)=49
+        config.LOGO_SIZE.minPx = 14;
+
+        logoInfo.rotation = false;
+        img.width = 100;
+        img.height = 100;
+
+        ctx.drawImage.mockClear();
+        drawImage(ctx, arc, img, logoInfo);
+        const call = ctx.drawImage.mock.calls[0];
+        const drawnH = call[4];
+        expect(drawnH).toBeCloseTo(20, 3);
+
+        Object.assign(config.LOGO_SIZE, original);
+        delete logoInfo.rotation;
+    });
+
     it('should fall back to default LOGO_SIZE when config is missing', () => {
         jest.isolateModules(() => {
             jest.doMock('@js/config.js', () => ({}), { virtual: true });
