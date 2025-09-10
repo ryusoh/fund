@@ -88,7 +88,7 @@ export const TICKER_TO_LOGO_MAP = {
     },
     ANET: {
         src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/anet.png',
-        scale: 1.7,
+        scale: 0.55,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
