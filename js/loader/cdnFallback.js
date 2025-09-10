@@ -1,7 +1,9 @@
 /* istanbul ignore file */
 /* Simple CDN fallback loader (no modules). Exposes window.CDNLoader */
 (function () {
-    if (window.CDNLoader) {return;}
+    if (window.CDNLoader) {
+        return;
+    }
     function preconnect(origins) {
         try {
             for (let i = 0; i < origins.length; i++) {
@@ -16,12 +18,18 @@
     function loadScriptSequential(urls, attrs) {
         return new Promise(function (resolve, reject) {
             (function next(i) {
-                if (i >= urls.length) {return reject(new Error('all failed: ' + urls.join(', ')));}
+                if (i >= urls.length) {
+                    return reject(new Error('all failed: ' + urls.join(', ')));
+                }
                 const s = document.createElement('script');
                 s.src = urls[i];
                 s.crossOrigin = 'anonymous';
-                if (attrs && attrs.defer) {s.defer = true;}
-                if (attrs && attrs.async) {s.async = true;}
+                if (attrs && attrs.defer) {
+                    s.defer = true;
+                }
+                if (attrs && attrs.async) {
+                    s.async = true;
+                }
                 s.onload = function () {
                     resolve();
                 };
@@ -67,5 +75,9 @@
             })(0);
         });
     }
-    window.CDNLoader = { preconnect: preconnect, loadScriptSequential: loadScriptSequential, loadCssWithFallback: loadCssWithFallback };
+    window.CDNLoader = {
+        preconnect: preconnect,
+        loadScriptSequential: loadScriptSequential,
+        loadCssWithFallback: loadCssWithFallback,
+    };
 })();
