@@ -117,14 +117,14 @@ export const TICKER_TO_LOGO_MAP = {
     'BRK-B': {
         src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/brk.png',
         scale: 2,
-        rotation: 76,
+        rotation: 'radial-in',
         renderAsWhite: renderAsWhite,
         opacity: opacity,
         radialMargin: 1.2,
     },
     VT: {
         src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/vt.png',
-        scale: 2.1,
+        scale: 2,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,

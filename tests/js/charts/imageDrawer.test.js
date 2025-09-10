@@ -218,6 +218,40 @@ describe('drawImage', () => {
         delete logoInfo.sizeRatio;
     });
 
+    it('should rotate with radial-in so vertical axis points to center (lines 71-72)', () => {
+        // Arc covering 90 degrees from 0 to PI/2; center angle = PI/4
+        arc.startAngle = 0;
+        arc.endAngle = Math.PI / 2;
+        logoInfo.rotation = 'radial-in';
+        drawImage(ctx, arc, img, logoInfo);
+        const angle = ctx.rotate.mock.calls[0][0];
+        // Expected normalized angle: -3*PI/4
+        expect(angle).toBeCloseTo(-0.75 * Math.PI, 5);
+    });
+
+    it('should rotate with radial-out so vertical axis points away (lines 75-76)', () => {
+        arc.startAngle = 0;
+        arc.endAngle = Math.PI / 2; // center = PI/4
+        logoInfo.rotation = 'radial-out';
+        drawImage(ctx, arc, img, logoInfo);
+        const angle = ctx.rotate.mock.calls[0][0];
+        // Expected normalized angle: PI/4
+        expect(angle).toBeCloseTo(0.25 * Math.PI, 5);
+    });
+
+    it('should apply rotationOffsetDeg and normalize to [-PI, PI] (lines 92-94)', () => {
+        // Base radial-out ~ 3*PI/4, then add 180deg to force wrap-around
+        arc.startAngle = Math.PI / 2;
+        arc.endAngle = Math.PI; // center = 3*PI/4
+        logoInfo.rotation = 'radial-out';
+        logoInfo.rotationOffsetDeg = 180;
+        drawImage(ctx, arc, img, logoInfo);
+        const angle = ctx.rotate.mock.calls[0][0];
+        // 3*PI/4 + PI = 7*PI/4 -> normalized to -PI/4
+        expect(angle).toBeCloseTo(-0.25 * Math.PI, 5);
+        delete logoInfo.rotationOffsetDeg;
+    });
+
     it('should render normal image when renderAsWhite is false', () => {
         logoInfo.renderAsWhite = false;
         drawImage(ctx, arc, img, logoInfo);

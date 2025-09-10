@@ -61,10 +61,21 @@ export function drawImage(ctx, arc, img, logoInfo) {
     // Pre-compute rotation to clamp extents in radial/tangential directions
     let rotationRad;
     if (logoInfo.rotation === false) {
+        // Explicitly disable rotation
         rotationRad = 0;
     } else if (typeof logoInfo.rotation === 'number') {
+        // User-specified degrees
         rotationRad = (logoInfo.rotation * Math.PI) / 180;
+    } else if (logoInfo.rotation === 'radial-in') {
+        // Point the logo's vertical axis toward the chart center
+        const radial = arc.startAngle + sliceAngle / 2 + Math.PI;
+        rotationRad = ((radial + Math.PI) % (2 * Math.PI)) - Math.PI; // normalize to [-PI, PI]
+    } else if (logoInfo.rotation === 'radial-out' || logoInfo.rotation === 'radial') {
+        // Point the logo's vertical axis away from the chart center
+        const radial = arc.startAngle + sliceAngle / 2;
+        rotationRad = ((radial + Math.PI) % (2 * Math.PI)) - Math.PI; // normalize to [-PI, PI]
     } else {
+        // Default: roughly align along the tangent while keeping the logo upright
         let defaultRotation = arc.startAngle + sliceAngle / 2 + Math.PI / 2;
         if (defaultRotation > Math.PI / 2) {
             defaultRotation -= Math.PI;
@@ -74,6 +85,13 @@ export function drawImage(ctx, arc, img, logoInfo) {
         }
         const maxRot = Math.PI / 2;
         rotationRad = Math.max(-maxRot, Math.min(maxRot, defaultRotation));
+    }
+
+    // Optional fine-tuning: allow a per-logo offset in degrees
+    if (typeof rotationRad === 'number' && typeof logoInfo.rotationOffsetDeg === 'number') {
+        rotationRad += (logoInfo.rotationOffsetDeg * Math.PI) / 180;
+        // Normalize to [-PI, PI] for stability
+        rotationRad = ((rotationRad + Math.PI) % (2 * Math.PI)) - Math.PI;
     }
 
     const s = Math.abs(Math.sin(rotationRad || 0));
