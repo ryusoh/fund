@@ -236,7 +236,9 @@ class TestFundScripts(unittest.TestCase):
             )
 
             self.assertEqual(len(result.added_rows), 4)
-            self.assertEqual([row["date"] for row in result.added_rows], [d.isoformat() for d in trading_days])
+            self.assertEqual(
+                [row["date"] for row in result.added_rows], [d.isoformat() for d in trading_days]
+            )
 
             with csv_path.open("r", encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))

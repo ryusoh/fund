@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check
 
 help:
 	@echo "Targets:"
@@ -48,6 +48,8 @@ precommit: hooks
 	else \
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
+
+precommit-fix: fmt lint-fix
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all

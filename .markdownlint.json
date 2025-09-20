@@ -1,8 +1,8 @@
 {
-  "MD033": {
-    "allowed_elements": ["a", "img", "br", "details", "summary", "sup", "sub", "div", "em"]
-  },
-  "MD041": false,
-  "MD013": false,
-  "MD007": { "indent": 4 }
+    "MD033": {
+        "allowed_elements": ["a", "img", "br", "details", "summary", "sup", "sub", "div", "em"]
+    },
+    "MD041": false,
+    "MD013": false,
+    "MD007": { "indent": 4 }
 }

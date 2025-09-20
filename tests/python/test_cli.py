@@ -65,9 +65,7 @@ class TestCLI(unittest.TestCase):
         parser = cli.create_parser()
         args = parser.parse_args(["backfill-portfolio", "2025-06-02"])
 
-        with unittest.mock.patch(
-            "scripts.data.backfill_portfolio_history.main"
-        ) as mock_main:
+        with unittest.mock.patch("scripts.data.backfill_portfolio_history.main") as mock_main:
             args.func(args)
             mock_main.assert_called_once()
             call_kwargs = mock_main.call_args.kwargs

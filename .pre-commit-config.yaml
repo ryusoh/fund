@@ -1,95 +1,95 @@
 exclude: |
-  ^fund/|
-  ^assets/vendor/|
-  ^node_modules/|
-  ^venv/|
-  ^.mypy_cache/|
-  ^.ruff_cache/|
-  ^coverage/|
-  ^dist/|
-  ^build/
+    ^fund/|
+    ^assets/vendor/|
+    ^node_modules/|
+    ^venv/|
+    ^.mypy_cache/|
+    ^.ruff_cache/|
+    ^coverage/|
+    ^dist/|
+    ^build/
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-      - id: end-of-file-fixer
-        # Do not touch generated data CSVs
-        exclude: ^data/.*\.csv$
-      - id: trailing-whitespace
-        # Do not touch generated data CSVs
-        exclude: ^data/.*\.csv$
-      - id: mixed-line-ending
-        # Do not touch generated data CSVs
-        exclude: ^data/.*\.csv$
-      - id: detect-private-key
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          - id: end-of-file-fixer
+            # Do not touch generated data CSVs
+            exclude: ^data/.*\.csv$
+          - id: trailing-whitespace
+            # Do not touch generated data CSVs
+            exclude: ^data/.*\.csv$
+          - id: mixed-line-ending
+            # Do not touch generated data CSVs
+            exclude: ^data/.*\.csv$
+          - id: detect-private-key
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
-    hooks:
-      - id: markdownlint
-        args: ["--config", ".markdownlint.json"]
+    - repo: https://github.com/igorshubovych/markdownlint-cli
+      rev: v0.41.0
+      hooks:
+          - id: markdownlint
+            args: ['--config', '.markdownlint.json']
 
-  # JavaScript tooling (commit): format + lint
-  - repo: local
-    hooks:
-      - id: prettier
-        name: prettier (staged files)
-        entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
-        language: system
-        files: '\\.(js|css|json|yml|yaml|md|html)$'
-        pass_filenames: true
+    # JavaScript tooling (commit): format + lint
+    - repo: local
+      hooks:
+          - id: prettier
+            name: prettier (staged files)
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
+            language: system
+            files: '\\.(js|css|json|yml|yaml|md|html)$'
+            pass_filenames: true
 
-  - repo: local
-    hooks:
-      - id: eslint
-        name: eslint (staged JS)
-        entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx eslint --config .ci-configs/js/eslint.config.cjs --max-warnings=0 --'
-        language: system
-        types_or: [javascript]
-        pass_filenames: true
+    - repo: local
+      hooks:
+          - id: eslint
+            name: eslint (staged JS)
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx eslint --config .ci-configs/js/eslint.config.cjs --max-warnings=0 --'
+            language: system
+            types_or: [javascript]
+            pass_filenames: true
 
-  - repo: local
-    hooks:
-      - id: stylelint
-        name: stylelint (staged CSS)
-        entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Stylelint"; exit 0; fi; npx -y -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" --'
-        language: system
-        types_or: [css]
-        pass_filenames: true
+    - repo: local
+      hooks:
+          - id: stylelint
+            name: stylelint (staged CSS)
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Stylelint"; exit 0; fi; npx -y -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" --'
+            language: system
+            types_or: [css]
+            pass_filenames: true
 
-  # JS tests (commit): related tests only
-  - repo: local
-    hooks:
-      - id: jest-related
-        name: jest (related tests)
-        entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; if [ $# -gt 0 ]; then npx jest --findRelatedTests --passWithNoTests "$@"; else npx jest --passWithNoTests; fi'
-        language: system
-        types_or: [javascript]
-        pass_filenames: true
+    # JS tests (commit): related tests only
+    - repo: local
+      hooks:
+          - id: jest-related
+            name: jest (related tests)
+            entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; if [ $# -gt 0 ]; then npx jest --findRelatedTests --passWithNoTests "$@"; else npx jest --passWithNoTests; fi'
+            language: system
+            types_or: [javascript]
+            pass_filenames: true
 
-  # Full test suites (push): JS + Python
-  - repo: local
-    hooks:
-      - id: jest-full
-        name: jest (full, pre-push)
-        entry: bash -lc 'npx jest --ci --runInBand'
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
+    # Full test suites (push): JS + Python
+    - repo: local
+      hooks:
+          - id: jest-full
+            name: jest (full, pre-push)
+            entry: bash -lc 'npx jest --ci --runInBand'
+            language: system
+            pass_filenames: false
+            stages: [pre-push]
 
-  - repo: local
-    hooks:
-      - id: pytest-full
-        name: pytest (full, pre-push)
-        entry: bash -lc 'pytest -q'
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
+    - repo: local
+      hooks:
+          - id: pytest-full
+            name: pytest (full, pre-push)
+            entry: bash -lc 'pytest -q'
+            language: system
+            pass_filenames: false
+            stages: [pre-push]
 
-  # Optional: mypy type check on commit (adjust paths as needed)
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        files: '^scripts/|^tests/python/'
+    # Optional: mypy type check on commit (adjust paths as needed)
+    - repo: https://github.com/pre-commit/mirrors-mypy
+      rev: v1.10.0
+      hooks:
+          - id: mypy
+            files: '^scripts/|^tests/python/'

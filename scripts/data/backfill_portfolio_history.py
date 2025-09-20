@@ -46,7 +46,13 @@ class NYSEHolidayCalendar(AbstractHolidayCalendar):
         USPresidentsDay,
         GoodFriday,
         USMemorialDay,
-        Holiday("Juneteenth National Independence Day", month=6, day=19, observance=nearest_workday, start_date="2021-06-19"),
+        Holiday(
+            "Juneteenth National Independence Day",
+            month=6,
+            day=19,
+            observance=nearest_workday,
+            start_date="2021-06-19",
+        ),
         Holiday("Independence Day", month=7, day=4, observance=nearest_workday),
         USLaborDay,
         USThanksgivingDay,
@@ -139,7 +145,9 @@ def _previous_trading_day(day: date) -> date:
     return previous_dt.date()
 
 
-def _default_price_fetcher(tickers: Sequence[str], dates: TradingDates) -> Dict[str, Dict[date, Decimal]]:
+def _default_price_fetcher(
+    tickers: Sequence[str], dates: TradingDates
+) -> Dict[str, Dict[date, Decimal]]:
     prices: Dict[str, Dict[date, Decimal]] = {ticker: {} for ticker in tickers}
     if not tickers or not dates:
         return prices
@@ -170,7 +178,9 @@ def _default_price_fetcher(tickers: Sequence[str], dates: TradingDates) -> Dict[
     return prices
 
 
-def _default_fx_fetcher(currencies: Sequence[str], dates: TradingDates) -> Dict[date, Dict[str, Decimal]]:
+def _default_fx_fetcher(
+    currencies: Sequence[str], dates: TradingDates
+) -> Dict[date, Dict[str, Decimal]]:
     rates: Dict[date, Dict[str, Decimal]] = {}
     if not currencies or not dates:
         return {day: {"USD": Decimal("1.0")} for day in dates}
@@ -247,9 +257,7 @@ def backfill_portfolio_history(
 ) -> BackfillResult:
     history = _read_history(csv_path)
     existing_dates = {
-        datetime.strptime(row["date"], "%Y-%m-%d").date()
-        for row in history.rows
-        if row.get("date")
+        datetime.strptime(row["date"], "%Y-%m-%d").date() for row in history.rows if row.get("date")
     }
     holdings = _read_holdings(holdings_path)
 
@@ -368,7 +376,9 @@ def main(
     parsed_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
     result = backfill_portfolio_history(parsed_date, csv_path_obj, holdings_path_obj)
 
-    print(f"Added {len(result.added_rows)} row(s) spanning {len(result.trading_dates)} trading day(s).")
+    print(
+        f"Added {len(result.added_rows)} row(s) spanning {len(result.trading_dates)} trading day(s)."
+    )
     return result
 
 
