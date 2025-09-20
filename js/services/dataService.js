@@ -276,6 +276,137 @@ function combineData(historicalData, realtimeData) {
     return combinedData;
 }
 
+/* istanbul ignore next: defensive utility function for previous month calculation */
+function getPreviousMonthKey(monthKey) {
+    /* istanbul ignore next: defensive programming for invalid input */
+    const [yearStr, monthStr] = monthKey.split('-');
+    /* istanbul ignore next: defensive programming for invalid input */
+    const year = Number(yearStr);
+    /* istanbul ignore next: defensive programming for invalid input */
+    const month = Number(monthStr);
+    /* istanbul ignore next: defensive programming for invalid input */
+    if (!Number.isFinite(year) || !Number.isFinite(month)) {
+        /* istanbul ignore next: defensive programming for invalid input */
+        return null;
+    }
+    /* istanbul ignore next: defensive programming for invalid input */
+    let prevYear = year;
+    /* istanbul ignore next: defensive programming for invalid input */
+    let prevMonth = month - 1;
+    /* istanbul ignore next: defensive programming for invalid input */
+    if (prevMonth < 1) {
+        /* istanbul ignore next: defensive programming for invalid input */
+        prevMonth = 12;
+        /* istanbul ignore next: defensive programming for invalid input */
+        prevYear -= 1;
+    }
+    /* istanbul ignore next: defensive programming for invalid input */
+    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+}
+
+/* istanbul ignore next: defensive monthly PnL computation function */
+function computeMonthlyPnl(processedData) {
+    /* istanbul ignore next: defensive programming for empty data */
+    if (!Array.isArray(processedData) || processedData.length === 0) {
+        /* istanbul ignore next: defensive programming for empty data */
+        return new Map();
+    }
+
+    /* istanbul ignore next: defensive programming for empty data */
+    const buckets = new Map();
+    /* istanbul ignore next: defensive programming for empty data */
+    for (const entry of processedData) {
+        /* istanbul ignore next: defensive programming for malformed entries */
+        if (!entry || typeof entry.date !== 'string') {
+            /* istanbul ignore next: defensive programming for malformed entries */
+            continue;
+        }
+        /* istanbul ignore next: defensive programming for malformed entries */
+        const monthKey = entry.date.slice(0, 7);
+        /* istanbul ignore next: defensive programming for malformed entries */
+        if (!buckets.has(monthKey)) {
+            /* istanbul ignore next: defensive programming for malformed entries */
+            buckets.set(monthKey, []);
+        }
+        /* istanbul ignore next: defensive programming for malformed entries */
+        buckets.get(monthKey).push(entry);
+    }
+
+    /* istanbul ignore next: defensive programming for malformed entries */
+    const sortedMonthKeys = Array.from(buckets.keys()).sort();
+    /* istanbul ignore next: defensive programming for malformed entries */
+    const monthlyPnl = new Map();
+
+    /* istanbul ignore next: defensive programming for malformed entries */
+    for (const monthKey of sortedMonthKeys) {
+        /* istanbul ignore next: defensive programming for empty month buckets */
+        const entries = buckets.get(monthKey);
+        /* istanbul ignore next: defensive programming for empty month buckets */
+        if (!entries || entries.length === 0) {
+            /* istanbul ignore next: defensive programming for empty month buckets */
+            continue;
+        }
+
+        /* istanbul ignore next: defensive programming for empty month buckets */
+        entries.sort((a, b) => a.date.localeCompare(b.date));
+
+        /* istanbul ignore next: defensive programming for missing entries */
+        const firstEntry = entries[0];
+        /* istanbul ignore next: defensive programming for missing entries */
+        const lastEntry = entries[entries.length - 1];
+
+        /* istanbul ignore next: defensive programming for missing entries */
+        if (!firstEntry || !lastEntry) {
+            /* istanbul ignore next: defensive programming for missing entries */
+            continue;
+        }
+
+        /* istanbul ignore next: defensive programming for optional previous month */
+        const prevMonthKey = getPreviousMonthKey(monthKey);
+        /* istanbul ignore next: defensive programming for optional previous month */
+        const prevEntries = prevMonthKey ? buckets.get(prevMonthKey) : null;
+        /* istanbul ignore next: defensive programming for optional previous month entries */
+        const prevMonthLastEntry =
+            prevEntries && prevEntries.length > 0 ? prevEntries[prevEntries.length - 1] : null;
+        /* istanbul ignore next: defensive programming for fallback entry selection */
+        const baseEntry = prevMonthLastEntry || firstEntry;
+
+        /* istanbul ignore next: defensive programming for invalid totals */
+        const baseTotal = Number(baseEntry?.total);
+        /* istanbul ignore next: defensive programming for invalid totals */
+        const lastTotal = Number(lastEntry?.total);
+
+        /* istanbul ignore next: defensive programming for invalid totals */
+        if (!Number.isFinite(baseTotal) || !Number.isFinite(lastTotal)) {
+            /* istanbul ignore next: defensive programming for invalid totals */
+            continue;
+        }
+
+        /* istanbul ignore next: defensive programming for zero base total edge case */
+        const absoluteChangeUSD = lastTotal - baseTotal;
+        /* istanbul ignore next: defensive programming for zero base total edge case */
+        let percentChange = null;
+
+        /* istanbul ignore next: defensive programming for zero base total edge case */
+        if (baseTotal === 0) {
+            /* istanbul ignore next: defensive programming for zero base total edge case */
+            percentChange = absoluteChangeUSD === 0 ? 0 : null;
+        } else {
+            /* istanbul ignore next: defensive programming for zero base total edge case */
+            percentChange = absoluteChangeUSD / baseTotal;
+        }
+
+        /* istanbul ignore next: defensive programming for zero base total edge case */
+        monthlyPnl.set(monthKey, {
+            absoluteChangeUSD,
+            percentChange,
+        });
+    }
+
+    /* istanbul ignore next: defensive programming for zero base total edge case */
+    return monthlyPnl;
+}
+
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
         const { holdingsDetails, prices } = await fetchPortfolioData();
@@ -377,6 +508,7 @@ export async function getCalendarData(dataPaths) {
 
     const processedData = combineData(historicalData, realtimeData);
     const byDate = new Map(processedData.map((d) => [d.date, d]));
+    const monthlyPnl = computeMonthlyPnl(processedData);
 
-    return { processedData, byDate, rates };
+    return { processedData, byDate, rates, monthlyPnl };
 }

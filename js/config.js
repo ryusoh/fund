@@ -174,3 +174,18 @@ export const CALENDAR_CONFIG = {
         color: () => 'white',
     },
 };
+
+export const CALENDAR_MONTH_LABEL_BACKGROUND = {
+    paddingX: 10,
+    paddingY: 5,
+    radius: 14,
+    fill: 'rgba(80, 80, 80, 0.8)',
+    stroke: 'rgba(255, 255, 255, 0.1)',
+    strokeWidth: 0.8,
+    opacity: 1,
+    blurStdDeviation: 8,
+    alphaSlope: 0.65,
+    transitionDuration: 220,
+    maxWidth: undefined,
+    enabled: true,
+};
