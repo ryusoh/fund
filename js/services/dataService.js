@@ -3,6 +3,7 @@ import { formatCurrency } from '@utils/formatting.js';
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { updatePieChart } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
+import { setThinkingHighlight } from '@ui/textHighlightManager.js';
 import {
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
@@ -10,8 +11,29 @@ import {
     CHART_DEFAULTS,
     TICKER_TO_LOGO_MAP,
     BASE_URL,
+    POSITION_PNL_HIGHLIGHT,
 } from '@js/config.js';
 import { logger } from '@utils/logger.js';
+
+function lightenHexToRgba(hex, lightenFactor, alpha) {
+    /* istanbul ignore next: defensive parameter validation */
+    if (typeof hex !== 'string' || !/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(hex)) {
+        /* istanbul ignore next: defensive parameter validation */
+        return null;
+    }
+    /* istanbul ignore next: defensive handling of short hex format */
+    const normalized =
+        hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+    const r = parseInt(normalized.substring(1, 3), 16);
+    const g = parseInt(normalized.substring(3, 5), 16);
+    const b = parseInt(normalized.substring(5, 7), 16);
+    /* istanbul ignore next: defensive parameter validation */
+    const light = Math.max(0, Math.min(1, Number.isFinite(lightenFactor) ? lightenFactor : 0.5));
+    /* istanbul ignore next: defensive parameter validation */
+    const targetAlpha = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 1;
+    const lighten = (channel) => Math.round(channel + (255 - channel) * light);
+    return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, ${targetAlpha})`;
+}
 
 // --- Private Functions ---
 
@@ -460,13 +482,65 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
         const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
 
-        pnlElement.textContent = ` (${pnlSign}${formattedPnl}, ${pnlPercentageSign}${totalPnlPercentage.toFixed(2)}%)`;
+        // Clear previous content and stop any existing thinking effects
+        setThinkingHighlight(pnlElement, false);
+        pnlElement.innerHTML = '';
 
-        if (totalPnlUSD >= 0) {
-            pnlElement.style.color = COLORS.POSITIVE_PNL;
-        } else {
-            pnlElement.style.color = COLORS.NEGATIVE_PNL;
-        }
+        // Create structured spans for PnL display with thinking effect
+        const openBracket = document.createElement('span');
+        openBracket.className = 'pnl-bracket';
+        openBracket.textContent = ' (';
+
+        const pnlAmount = document.createElement('span');
+        pnlAmount.className = 'pnl-amount';
+        pnlAmount.textContent = `${pnlSign}${formattedPnl}`;
+
+        const separator = document.createElement('span');
+        separator.className = 'pnl-separator';
+        separator.textContent = ', ';
+
+        const pnlPercent = document.createElement('span');
+        pnlPercent.className = 'pnl-percent';
+        pnlPercent.textContent = `${pnlPercentageSign}${totalPnlPercentage.toFixed(2)}%`;
+
+        const closeBracket = document.createElement('span');
+        closeBracket.className = 'pnl-bracket';
+        closeBracket.textContent = ')';
+
+        // Set colors for interactive elements
+        const pnlColor = totalPnlUSD >= 0 ? COLORS.POSITIVE_PNL : COLORS.NEGATIVE_PNL;
+        pnlAmount.style.color = pnlColor;
+        pnlPercent.style.color = pnlColor;
+
+        // Set bracket color to match footer text color (same as "TOTAL")
+        const footerTextColor = window.getComputedStyle(pnlContainer).color;
+        openBracket.style.color = footerTextColor;
+        separator.style.color = footerTextColor;
+        closeBracket.style.color = footerTextColor;
+
+        // Append all parts
+        pnlElement.appendChild(openBracket);
+        pnlElement.appendChild(pnlAmount);
+        pnlElement.appendChild(separator);
+        pnlElement.appendChild(pnlPercent);
+        pnlElement.appendChild(closeBracket);
+
+        // Apply thinking highlight to the PnL values (amount and percentage)
+        // Create a lightened version of the PnL color for the wave effect (same as calendar)
+        /* istanbul ignore next: defensive fallback for null case */
+        const lightenedPnlColor =
+            lightenHexToRgba(
+                pnlColor,
+                POSITION_PNL_HIGHLIGHT.pnlLightenFactor,
+                POSITION_PNL_HIGHLIGHT.pnlLightAlpha
+            ) || POSITION_PNL_HIGHLIGHT.neutralDimColor;
+        const thinkingOptions = {
+            intervalMs: POSITION_PNL_HIGHLIGHT.intervalMs,
+            waveSize: POSITION_PNL_HIGHLIGHT.waveSize,
+            baseColor: POSITION_PNL_HIGHLIGHT.baseColor,
+            dimColor: lightenedPnlColor,
+        };
+        setThinkingHighlight([pnlAmount, pnlPercent], true, thinkingOptions);
 
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();

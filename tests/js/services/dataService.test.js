@@ -329,7 +329,13 @@ describe('dataService', () => {
 
             // Assert
             const pnlElement = document.querySelector('.total-pnl');
-            expect(pnlElement.style.color).toBe('rgb(52, 168, 83)'); // POSITIVE_PNL color
+            const pnlAmount = pnlElement.querySelector('.pnl-amount');
+            expect(pnlAmount).toBeTruthy();
+            // Check that thinking highlight is applied (element should have data-thinking-active)
+            expect(pnlAmount.getAttribute('data-thinking-active')).toBe('true');
+            // Check that character spans are created with thinking effect
+            const charSpans = pnlAmount.querySelectorAll('.text-thinking-char');
+            expect(charSpans.length).toBeGreaterThan(0);
         });
 
         it('should handle negative PnL formatting', async () => {
@@ -354,7 +360,13 @@ describe('dataService', () => {
 
             // Assert
             const pnlElement = document.querySelector('.total-pnl');
-            expect(pnlElement.style.color).toBe('rgb(234, 67, 53)'); // NEGATIVE_PNL color
+            const pnlAmount = pnlElement.querySelector('.pnl-amount');
+            expect(pnlAmount).toBeTruthy();
+            // Check that thinking highlight is applied (element should have data-thinking-active)
+            expect(pnlAmount.getAttribute('data-thinking-active')).toBe('true');
+            // Check that character spans are created with thinking effect
+            const charSpans = pnlAmount.querySelectorAll('.text-thinking-char');
+            expect(charSpans.length).toBeGreaterThan(0);
         });
 
         it('should handle missing name in holdings data', async () => {

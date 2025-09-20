@@ -130,13 +130,27 @@ function createCharacterNodes(node, baseText, baseColor) {
     const created = [];
     node.textContent = '';
     const fragment = node.ownerDocument.createDocumentFragment();
+
+    // Check if this is an SVG element
+    const isSvg = node.namespaceURI === SVG_NS || node.closest('svg') !== null;
+
     characters.forEach((char, index) => {
-        const child = node.ownerDocument.createElementNS(node.namespaceURI || SVG_NS, 'tspan');
+        let child;
+        if (isSvg) {
+            // Create SVG tspan element
+            child = node.ownerDocument.createElementNS(SVG_NS, 'tspan');
+            child.setAttribute('fill', baseColor);
+            child.setAttribute('data-thinking-base-fill', baseColor);
+        } else {
+            // Create HTML span element
+            child = node.ownerDocument.createElement('span');
+            child.style.color = baseColor;
+            child.setAttribute('data-thinking-base-color', baseColor);
+        }
+
         child.textContent = char;
         child.setAttribute('class', 'text-thinking-char');
         child.setAttribute('data-thinking-index', String(index));
-        child.setAttribute('fill', baseColor);
-        child.setAttribute('data-thinking-base-fill', baseColor);
         fragment.appendChild(child);
         created.push(child);
     });
@@ -180,6 +194,7 @@ function startThinking(node, options) {
         baseText,
         baseFillAttr: node.getAttribute('fill'),
         baseStyleFill: node.style ? node.style.fill : undefined,
+        baseStyleColor: node.style ? node.style.color : undefined,
         options: mergedOptions,
         charNodes,
         frameId: null,
@@ -197,9 +212,16 @@ function startThinking(node, options) {
         const total = nodes.length;
         for (let i = 0; i < total; i += 1) {
             const distance = (i - entry.currentIndex + total) % total;
-            const baseFill = nodes[i].getAttribute('data-thinking-base-fill') || opts.baseColor;
-            const fillColor = distance < size ? dimColor : baseFill;
-            nodes[i].setAttribute('fill', fillColor);
+            const isSvg = nodes[i].getAttribute('data-thinking-base-fill') !== null;
+            const baseColor = isSvg
+                ? nodes[i].getAttribute('data-thinking-base-fill') || opts.baseColor
+                : nodes[i].getAttribute('data-thinking-base-color') || opts.baseColor;
+            const targetColor = distance < size ? dimColor : baseColor;
+            if (isSvg) {
+                nodes[i].setAttribute('fill', targetColor);
+            } else {
+                nodes[i].style.color = targetColor;
+            }
         }
         entry.currentIndex = (entry.currentIndex + 1) % total;
     };
@@ -257,7 +279,9 @@ function startThinkingGroup(nodes, options) {
         }
         const baseFillAttr = node.getAttribute('fill');
         const baseStyleFill = node.style ? node.style.fill : undefined;
-        const baseColor = baseFillAttr || baseStyleFill || mergedOptions.baseColor;
+        const baseStyleColor = node.style ? node.style.color : undefined;
+        const baseColor =
+            baseFillAttr || baseStyleFill || baseStyleColor || mergedOptions.baseColor;
         const created = createCharacterNodes(node, baseText, baseColor);
         if (!created.length) {
             return;
@@ -268,6 +292,7 @@ function startThinkingGroup(nodes, options) {
             baseText,
             baseFillAttr,
             baseStyleFill,
+            baseStyleColor,
         });
         charNodes.push(...created);
     });
@@ -298,9 +323,16 @@ function startThinkingGroup(nodes, options) {
         const total = chars.length;
         for (let i = 0; i < total; i += 1) {
             const distance = (i - entry.currentIndex + total) % total;
-            const baseFill = chars[i].getAttribute('data-thinking-base-fill') || opts.baseColor;
-            const fillColor = distance < size ? dimColor : baseFill;
-            chars[i].setAttribute('fill', fillColor);
+            const isSvg = chars[i].getAttribute('data-thinking-base-fill') !== null;
+            const baseColor = isSvg
+                ? chars[i].getAttribute('data-thinking-base-fill') || opts.baseColor
+                : chars[i].getAttribute('data-thinking-base-color') || opts.baseColor;
+            const targetColor = distance < size ? dimColor : baseColor;
+            if (isSvg) {
+                chars[i].setAttribute('fill', targetColor);
+            } else {
+                chars[i].style.color = targetColor;
+            }
         }
         entry.currentIndex = (entry.currentIndex + 1) % total;
     };
@@ -350,6 +382,7 @@ function stopThinking(node) {
             baseText: entry.baseText,
             baseFillAttr: entry.baseFillAttr,
             baseStyleFill: entry.baseStyleFill,
+            baseStyleColor: entry.baseStyleColor,
         },
     ];
 
@@ -368,6 +401,12 @@ function stopThinking(node) {
                 state.node.style.fill = state.baseStyleFill;
             } else {
                 state.node.style.fill = '';
+            }
+            if (state.baseStyleColor !== undefined) {
+                state.node.style.color = state.baseStyleColor;
+            } else if (!state.baseFillAttr) {
+                // Only clear color if there's no SVG fill attribute
+                state.node.style.color = '';
             }
         }
         state.node.removeAttribute('data-thinking-active');
