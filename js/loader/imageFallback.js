@@ -16,6 +16,7 @@
             if (!Array.isArray(list) || list.length === 0) {
                 return;
             }
+            el.classList.remove('is-fallback-ready');
             let i = 0;
             function tryNext() {
                 if (i >= list.length) {
@@ -23,12 +24,17 @@
                 }
                 el.src = list[i++];
             }
+            el.addEventListener('load', function onLoad() {
+                el.classList.add('is-fallback-ready');
+            });
             el.addEventListener('error', function () {
                 tryNext();
             });
             // If current src fails, onerror will advance; ensure first URL is current
             if (!el.src || el.src !== list[0]) {
                 el.src = list[0];
+            } else if (el.complete && el.naturalWidth > 0) {
+                el.classList.add('is-fallback-ready');
             }
         }
         const imgs = document.querySelectorAll('img[data-fallbacks]');

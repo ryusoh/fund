@@ -109,6 +109,11 @@ a:hover {
         width: 80vw; /* Use viewport width for responsiveness */
         max-width: 300px; /* Adjust as needed */
         z-index: 2; /* Above video (-1) and below container (3) */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .mobile-banner.is-fallback-ready {
         opacity: 0.5;
     }
 }
