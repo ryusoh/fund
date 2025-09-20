@@ -7281,9 +7281,9 @@
                 t.translate(Math.cos(a) * s, Math.sin(a) * s);
                 const r = s * (1 - Math.sin(Math.min(C, i || 0)));
                 // Create iOS liquid glass effect with configurable opacity and borders
-                const glassConfig = (typeof window !== 'undefined' && window.pieChartGlassEffect) || { 
-                    enabled: true, 
-                    opacity: 0.6, 
+                const glassConfig = (typeof window !== 'undefined' && window.pieChartGlassEffect) || {
+                    enabled: true,
+                    opacity: 0.6,
                     borders: {
                         sliceWidth: 1,
                         sliceColor: 'rgba(0, 0, 0, 0.1)',
@@ -7306,20 +7306,20 @@
                 const originalBg = e.backgroundColor;
                 const originalStroke = e.borderColor;
                 const originalAlpha = t.globalAlpha;
-                
+
                 if (glassConfig.enabled) {
                     // Parse the background color to extract alpha
                     let bgColor = originalBg;
                     if (typeof bgColor === 'string' && bgColor.includes('rgba')) {
                         // Make the background more translucent for glass effect
-                        bgColor = bgColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^)]+)\)/, 
+                        bgColor = bgColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^)]+)\)/,
                             (_, r, g, b, a) => `rgba(${r},${g},${b},${Math.min(parseFloat(a), glassConfig.opacity)})`);
                     } else if (typeof bgColor === 'string') {
                         // Convert solid colors to translucent
                         t.globalAlpha = glassConfig.opacity;
                     }
                     t.fillStyle = bgColor;
-                    
+
                     // Apply iOS-style borders
                     t.strokeStyle = glassConfig.borders.sliceColor || originalStroke;
                     // Update the options for border width (will be used by Kn function)
@@ -7330,7 +7330,7 @@
                     t.fillStyle = originalBg;
                     t.strokeStyle = originalStroke;
                 }
-                
+
                 // Draw the pie slice fills with glass effect
                 (function(t, e, i, s, n) {
                     const {
@@ -7346,23 +7346,23 @@
                     }
                     qn(t, e, i, s, l, n), t.fill()
                 })(t, this, r, n, o);
-                
+
                 // Add liquid glass gradient overlay for depth (iOS effect)
                 if (glassConfig.enabled && glassConfig.liquidGlass && glassConfig.liquidGlass.gradientOverlay) {
                     const centerX = this.x;
                     const centerY = this.y;
                     const outerRadius = this.outerRadius;
-                    
+
                     // Create radial gradient for liquid glass effect
                     const gradient = t.createRadialGradient(centerX, centerY - outerRadius * 0.3, 0, centerX, centerY, outerRadius);
                     gradient.addColorStop(0, glassConfig.liquidGlass.gradientStart);
                     gradient.addColorStop(1, glassConfig.liquidGlass.gradientEnd);
-                    
+
                     // Apply the gradient overlay
                     const originalFillStyle = t.fillStyle;
                     t.fillStyle = gradient;
                     t.globalCompositeOperation = 'overlay';
-                    
+
                     // Redraw the slice with gradient overlay
                     (function(t, e, i, s, n) {
                         const {
@@ -7378,12 +7378,12 @@
                         }
                         qn(t, e, i, s, l, n), t.fill()
                     })(t, this, r, n, o);
-                    
+
                     // Reset composite operation and fill style
                     t.globalCompositeOperation = 'source-over';
                     t.fillStyle = originalFillStyle;
                 }
-                
+
                 // Restore original alpha and draw borders
                 t.globalAlpha = originalAlpha;
                 Kn(t, this, r, n, o), t.restore()
