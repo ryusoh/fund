@@ -7298,8 +7298,15 @@
                         saturationBoost: 1.4,
                         distortion: {
                             enabled: true,
-                            strength: 0.02,
-                            type: 'radial'
+                            strength: 2,
+                            type: 'barrel',
+                            smoothEdges: true,
+                            quality: 'medium',
+                            overlayColors: {
+                                inner: 'rgba(0, 255, 200, 0.4)',
+                                middle: 'rgba(0, 180, 255, 0.3)',
+                                outer: 'rgba(64, 224, 208, 0.2)'
+                            }
                         }
                     }
                 };
@@ -7382,6 +7389,146 @@
                     // Reset composite operation and fill style
                     t.globalCompositeOperation = 'source-over';
                     t.fillStyle = originalFillStyle;
+                }
+
+                // Apply glass distortion effect using CSS filter-style approach
+                if (glassConfig.enabled && glassConfig.liquidGlass && glassConfig.liquidGlass.distortion && glassConfig.liquidGlass.distortion.enabled) {
+                    const distortionConfig = glassConfig.liquidGlass.distortion;
+                    const strength = distortionConfig.strength || 0.8;
+
+                    t.save();
+
+                    // Apply the slice clipping path
+                    t.beginPath();
+                    t.arc(this.x, this.y, this.outerRadius, this.startAngle, this.endAngle);
+                    t.arc(this.x, this.y, this.innerRadius, this.endAngle, this.startAngle, true);
+                    t.closePath();
+                    t.clip();
+
+                    // Try using canvas filter for blur effect (glass-like)
+                    const blurAmount = Math.min(strength * 2, 4); // Max 4px blur
+                    if (typeof t.filter !== 'undefined') {
+                        t.filter = `blur(${blurAmount}px) brightness(1.1) contrast(1.05)`;
+                    }
+
+                    // Create a wavy distortion effect using transform
+                    const sliceAngle = (this.startAngle + this.endAngle) / 2;
+                    const waveStrength = strength * 3; // Make it more noticeable
+
+                    // Apply wave-like distortion by skewing
+                    const skewX = Math.sin(sliceAngle * 2) * waveStrength * 0.1;
+                    const skewY = Math.cos(sliceAngle * 2) * waveStrength * 0.1;
+                    t.transform(1, skewY, skewX, 1, 0, 0);
+
+                    // Add a magnification effect
+                    const midRadius = (this.innerRadius + this.outerRadius) / 2;
+                    const sliceCenterX = this.x + Math.cos(sliceAngle) * midRadius;
+                    const sliceCenterY = this.y + Math.sin(sliceAngle) * midRadius;
+
+                    t.translate(sliceCenterX, sliceCenterY);
+                    const magnification = 1 + (strength * 0.2); // 1.16x magnification at 0.8 strength
+                    t.scale(magnification, magnification);
+                    t.translate(-sliceCenterX, -sliceCenterY);
+
+                    // Draw animated soap bubble reflection overlay - moving iridescent colors
+                    const overlayColors = distortionConfig.overlayColors || {
+                        inner: 'rgba(0, 255, 200, 0.4)',
+                        middle: 'rgba(0, 180, 255, 0.3)',
+                        outer: 'rgba(64, 224, 208, 0.2)'
+                    };
+
+                    // Create time-based animation for soap bubble effect
+                    const time = Date.now() * 0.003; // Slow, smooth animation
+                    const angle = (this.startAngle + this.endAngle) / 2;
+                    const sliceIndex = Math.floor(angle / (Math.PI * 2) * 8); // Approximate slice index
+                    const animationOffset = time + sliceIndex * 0.8; // Each slice has different phase
+
+                    // Create moving gradient center for soap bubble reflection effect
+                    const waveX = Math.sin(animationOffset) * (this.outerRadius * 0.3);
+                    const waveY = Math.cos(animationOffset * 1.3) * (this.outerRadius * 0.2);
+                    const gradientCenterX = this.x + waveX;
+                    const gradientCenterY = this.y + waveY;
+
+                    const distortionOverlay = t.createRadialGradient(
+                        gradientCenterX, gradientCenterY, this.innerRadius * 0.3,
+                        this.x, this.y, this.outerRadius * 1.2
+                    );
+
+                    // Create iridescent color animation - like soap bubble reflections
+                    const parseRgba = (rgbaString) => {
+                        const match = rgbaString.match(/rgba?\(([^)]+)\)/);
+                        if (match) {
+                            const [r, g, b, a] = match[1].split(',').map(v => parseFloat(v.trim()));
+                            return { r, g, b, a: a || 1 };
+                        }
+                        return { r: 0, g: 255, b: 200, a: 0.4 };
+                    };
+
+                    // Animate colors with sine waves for soap bubble iridescence
+                    const colorShift1 = Math.sin(animationOffset) * 0.5 + 0.5;
+                    const colorShift2 = Math.sin(animationOffset * 1.7 + 2) * 0.5 + 0.5;
+                    const colorShift3 = Math.sin(animationOffset * 2.3 + 4) * 0.5 + 0.5;
+
+                    const baseInner = parseRgba(overlayColors.inner);
+                    const baseMiddle = parseRgba(overlayColors.middle);
+                    const baseOuter = parseRgba(overlayColors.outer);
+
+                    // Create shifting rainbow-like colors for soap bubble effect
+                    const innerR = Math.floor(baseInner.r + (255 - baseInner.r) * colorShift1 * 0.3);
+                    const innerG = Math.floor(baseInner.g + (255 - baseInner.g) * colorShift2 * 0.2);
+                    const innerB = Math.floor(baseInner.b + (255 - baseInner.b) * colorShift3 * 0.4);
+
+                    const middleR = Math.floor(baseMiddle.r + (255 - baseMiddle.r) * colorShift2 * 0.3);
+                    const middleG = Math.floor(baseMiddle.g + (255 - baseMiddle.g) * colorShift3 * 0.3);
+                    const middleB = Math.floor(baseMiddle.b + (255 - baseMiddle.b) * colorShift1 * 0.2);
+
+                    const outerR = Math.floor(baseOuter.r + (255 - baseOuter.r) * colorShift3 * 0.2);
+                    const outerG = Math.floor(baseOuter.g + (255 - baseOuter.g) * colorShift1 * 0.4);
+                    const outerB = Math.floor(baseOuter.b + (255 - baseOuter.b) * colorShift2 * 0.3);
+
+                    // Add multiple color stops for smooth soap bubble reflection
+                    distortionOverlay.addColorStop(0, `rgba(${innerR}, ${innerG}, ${innerB}, ${baseInner.a * strength * 0.2})`);
+                    distortionOverlay.addColorStop(0.3, `rgba(${middleR}, ${middleG}, ${middleB}, ${baseMiddle.a * strength * 0.15})`);
+                    distortionOverlay.addColorStop(0.6, `rgba(${outerR}, ${outerG}, ${outerB}, ${baseOuter.a * strength * 0.1})`);
+                    distortionOverlay.addColorStop(0.85, `rgba(${outerR * 0.8}, ${outerG * 1.2}, ${outerB * 1.1}, ${baseOuter.a * strength * 0.05})`);
+                    distortionOverlay.addColorStop(1, 'rgba(255, 255, 255, 0.02)'); // Subtle white edge
+
+                    t.globalCompositeOperation = 'overlay';
+                    t.fillStyle = distortionOverlay;
+
+                    t.beginPath();
+                    t.arc(this.x, this.y, this.outerRadius, this.startAngle, this.endAngle);
+                    t.arc(this.x, this.y, this.innerRadius, this.endAngle, this.startAngle, true);
+                    t.closePath();
+                    t.fill();
+
+                    // Reset everything
+                    t.globalCompositeOperation = 'source-over';
+                    if (typeof t.filter !== 'undefined') {
+                        t.filter = 'none';
+                    }
+                    t.restore();
+
+                    // Start global animation loop for soap bubble effects
+                    if (typeof window !== 'undefined' && !window._soapBubbleAnimationActive) {
+                        window._soapBubbleAnimationActive = true;
+
+                        const animateLoop = () => {
+                            // Find all chart instances and update them
+                            if (typeof Chart !== 'undefined' && Chart.instances) {
+                                Chart.instances.forEach(chart => {
+                                    if (chart && chart.canvas) {
+                                        chart.update('none');
+                                    }
+                                });
+                            }
+                            // Continue animation
+                            requestAnimationFrame(animateLoop);
+                        };
+
+                        // Start the animation loop
+                        requestAnimationFrame(animateLoop);
+                    }
                 }
 
                 // Restore original alpha and draw borders

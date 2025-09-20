@@ -246,15 +246,27 @@ export const PIE_CHART_GLASS_EFFECT = {
         gradientEnd: 'rgba(255, 255, 255, 0.02)', // Bottom subtle
         // Saturation boost for more vibrant liquid look
         saturationBoost: 1.4, // 40% more saturated colors
-        // Optical distortion for glass refraction effect (disabled due to visual artifacts)
+        // Optical distortion for glass refraction effect
         distortion: {
-            enabled: false,
-            strength: 0.02, // Subtle lens distortion (2% displacement)
-            type: 'radial', // 'radial' or 'spherical'
+            enabled: true,
+            strength: 2, // Barrel distortion coefficient (positive = barrel, negative = pincushion)
+            type: 'barrel', // 'barrel' for outward bulge effect
+            smoothEdges: true, // Smooth distortion falloff at edges
+            quality: 'medium', // 'low', 'medium', 'high' - affects performance vs quality
+            // Configurable overlay colors for distortion effect - ELECTRIC OCEAN MATRIX
+            overlayColors: {
+                inner: 'rgba(0, 255, 200, 0.5)', // Electric aqua core - pure digital energy
+                middle: 'rgba(0, 180, 255, 0.4)', // Deep sky blue - quantum field
+                outer: 'rgba(64, 224, 208, 0.3)', // Turquoise edge - holographic glow
+            },
+            // Alternative color schemes:
+            // Warm glass: { inner: 'rgba(255, 200, 100, 0.3)', middle: 'rgba(255, 220, 150, 0.2)', outer: 'rgba(255, 240, 200, 0.1)' }
+            // Purple glass: { inner: 'rgba(200, 100, 255, 0.3)', middle: 'rgba(220, 150, 255, 0.2)', outer: 'rgba(240, 200, 255, 0.1)' }
+            // Green glass: { inner: 'rgba(100, 255, 200, 0.3)', middle: 'rgba(150, 255, 220, 0.2)', outer: 'rgba(200, 255, 240, 0.1)' }
             // Alternative strength values:
-            // 0.01 = very subtle
-            // 0.02 = medium (current)
-            // 0.04 = more pronounced
+            // 0.05 = very subtle
+            // 0.15 = medium
+            // 2.0 = pronounced (current)
         },
     },
 };
