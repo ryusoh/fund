@@ -299,12 +299,12 @@ export const PIE_CHART_GLASS_EFFECT = {
             elevationDeg: 62,
         },
         sideOpacity: {
-            top: 0.3,
-            bottom: 0.1,
+            top: 0.55,
+            bottom: 0.18,
         },
         rimHighlight: {
-            width: 1.8,
-            opacity: 0.48,
+            width: 1.4,
+            opacity: 0.38,
         },
         topHighlight: {
             intensity: 0.45,
@@ -320,11 +320,33 @@ export const PIE_CHART_GLASS_EFFECT = {
             scaleY: 0.46,
             offsetYPx: 16,
             blur: 34,
-            opacity: 0.38,
+            opacity: 0.28,
         },
         parallax: {
             maxOffsetPx: 8,
             damping: 0.18,
+        },
+        electric: {
+            intensity: 0.5,
+            width: 0.15,
+            colors: {
+                primary: 'rgba(0, 255, 200, 0.2)',
+                secondary: 'rgba(0, 180, 255, 0.15)',
+                tertiary: 'rgba(64, 224, 208, 0.1)',
+                quaternary: 'rgba(120, 220, 255, 0.05)',
+            },
+            arcCount: 3,
+            arcThickness: 2.5,
+            particleColors: null,
+            streakSpeedMultiplier: 2.5,
+            particleSpeedMultiplier: 0.5,
+        },
+        ambientGlow: {
+            innerOpacity: 0.15,
+            outerOpacity: 0.05,
+            pulseSpeed: 0.6,
+            innerColor: 'rgba(150, 255, 250, 1)',
+            outerColor: 'rgba(0, 25, 40, 1)',
         },
     },
 };

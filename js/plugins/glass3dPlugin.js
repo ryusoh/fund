@@ -36,6 +36,18 @@ const DEFAULT_OPTIONS = {
         maxOffsetPx: 8,
         damping: 0.18,
     },
+    electric: {
+        intensity: 0.45,
+        width: 0.22,
+        colors: null,
+        arcCount: 3,
+        arcThickness: 2.4,
+    },
+    ambientGlow: {
+        innerOpacity: 0.2,
+        outerOpacity: 0.05,
+        pulseSpeed: 0.6,
+    },
 };
 
 function deepMerge(target, source) {
@@ -49,6 +61,42 @@ function deepMerge(target, source) {
         }
     });
     return output;
+}
+
+function applyAlpha(color, alpha) {
+    const normalizedAlpha = Math.max(0, Math.min(1, alpha));
+    if (typeof color !== 'string' || color.length === 0) {
+        return `rgba(255, 255, 255, ${normalizedAlpha})`;
+    }
+    const trimmed = color.trim();
+    const rgbaMatch = trimmed.match(/^rgba?\(([^)]+)\)$/i);
+    if (rgbaMatch) {
+        const parts = rgbaMatch[1]
+            .split(',')
+            .map((segment) => segment.trim())
+            .filter(Boolean);
+        const [r = '255', g = '255', b = '255'] = parts;
+        return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+    }
+    if (trimmed.startsWith('#')) {
+        let hex = trimmed.slice(1);
+        if (hex.length === 3) {
+            hex = hex
+                .split('')
+                .map((c) => c + c)
+                .join('');
+        }
+        if (hex.length === 6) {
+            const r = parseInt(hex.slice(0, 2), 16);
+            const g = parseInt(hex.slice(2, 4), 16);
+            const b = parseInt(hex.slice(4, 6), 16);
+            if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
+                return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+            }
+        }
+    }
+    // Fallback: rely on CSS color with injected alpha via rgba
+    return `rgba(255, 255, 255, ${normalizedAlpha})`;
 }
 
 function resolveResponsive(value) {
@@ -65,14 +113,26 @@ function resolveResponsive(value) {
     return value.desktop !== undefined ? value.desktop : value.mobile;
 }
 
+function resolveOptions(pluginOptions) {
+    const globalConfig =
+        (typeof window !== 'undefined' &&
+            window.pieChartGlassEffect &&
+            window.pieChartGlassEffect.threeD) ||
+        {};
+    return deepMerge(deepMerge(DEFAULT_OPTIONS, globalConfig), pluginOptions || {});
+}
+
 function ensureState(chart, options) {
     if (!chart.$glass3d) {
         chart.$glass3d = {
             pointerTarget: { x: 0, y: 0 },
             pointerSmoothed: { x: 0, y: 0 },
             phase: 0,
+            ambientPhase: 0,
             lastTime: null,
             animationFrame: null,
+            energyParticles: [],
+            maxOffset: options.parallax?.maxOffsetPx ?? 8,
         };
         if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
             const tick = () => {
@@ -85,24 +145,15 @@ function ensureState(chart, options) {
             };
             chart.$glass3d.animationFrame = window.requestAnimationFrame(tick);
         }
-        if (!chart.glassPointerTarget) {
-            chart.glassPointerTarget = { x: 0, y: 0 };
-        }
     }
     if (!chart.glassPointerTarget) {
         chart.glassPointerTarget = { x: 0, y: 0 };
     }
     chart.$glass3d.maxOffset = options.parallax?.maxOffsetPx ?? 8;
+    if (!chart.$glass3d.energyParticles || chart.$glass3d.energyParticles.length === 0) {
+        initializeEnergyParticles(chart.$glass3d, options);
+    }
     return chart.$glass3d;
-}
-
-function resolveOptions(pluginOptions) {
-    const globalConfig =
-        (typeof window !== 'undefined' &&
-            window.pieChartGlassEffect &&
-            window.pieChartGlassEffect.threeD) ||
-        {};
-    return deepMerge(deepMerge(DEFAULT_OPTIONS, globalConfig), pluginOptions || {});
 }
 
 function updatePointerState(state, chart, options) {
@@ -119,12 +170,15 @@ function updatePhase(state, options) {
     const now = perf && typeof perf.now === 'function' ? perf.now() : Date.now();
     if (state.lastTime === null) {
         state.lastTime = now;
-        return;
+        return 0;
     }
     const delta = (now - state.lastTime) / 1000;
     state.lastTime = now;
     const speed = options.reflection?.speed ?? 0;
     state.phase = (state.phase + delta * speed) % 1;
+    state.ambientPhase =
+        (state.ambientPhase + delta * (options.ambientGlow?.pulseSpeed ?? 0.5)) % 1;
+    return delta;
 }
 
 function drawShadow(ctx, centerX, centerY, outerRadius, depth, options, pointer, squash) {
@@ -201,7 +255,7 @@ function drawSideWall(ctx, arc, depth, options, lightVec, pointer) {
         endAngle
     );
     ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, endAngle, startAngle, true);
-    ctx.fill();
+    ctx.fill('evenodd');
 
     if (innerRadius > 0) {
         const innerGradient = ctx.createLinearGradient(
@@ -225,7 +279,7 @@ function drawSideWall(ctx, arc, depth, options, lightVec, pointer) {
         );
         ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, startAngle, endAngle);
         ctx.fillStyle = innerGradient;
-        ctx.fill();
+        ctx.fill('evenodd');
     }
 
     ctx.restore();
@@ -235,8 +289,8 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     const rimCfg = options.rimHighlight || {};
     const width = rimCfg.width ?? 1.2;
     const opacity = rimCfg.opacity ?? 0.3;
-    ctx.save();
     const squash = options.squash ?? 1;
+    ctx.save();
     ctx.lineWidth = width;
     ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
     ctx.beginPath();
@@ -249,23 +303,21 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
         0,
         Math.PI * 2
     );
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.strokeStyle = `rgba(0, 0, 0, ${opacity * 0.75})`;
     ctx.ellipse(
         centerX + pointer.x * 0.2,
         centerY + pointer.y * 0.2,
         innerRadius + width / 2,
         (innerRadius + width / 2) * squash,
         0,
+        Math.PI * 2,
         0,
-        Math.PI * 2
+        true
     );
     ctx.stroke();
     ctx.restore();
 }
 
-function drawTopHighlight(ctx, centerX, centerY, outerRadius, options, pointer) {
+function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
     const highlightCfg = options.topHighlight || {};
     const intensity = highlightCfg.intensity ?? 0.4;
     const radiusFraction = highlightCfg.radiusFraction ?? 0.8;
@@ -277,6 +329,7 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, options, pointer) 
     ctx.globalCompositeOperation = 'lighter';
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
     const radius = outerRadius * radiusFraction;
     const gradient = ctx.createRadialGradient(
         highlightX,
@@ -289,7 +342,7 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, options, pointer) 
     gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = gradient;
-    ctx.fill();
+    ctx.fill('evenodd');
     ctx.restore();
 }
 
@@ -329,6 +382,191 @@ function drawSideWalls(ctx, meta, depth, options, lightVec, pointer) {
     });
 }
 
+function getOverlayColors(options) {
+    const electricColors = options.electric?.colors;
+    if (electricColors && typeof electricColors === 'object') {
+        const palette = [];
+        if (electricColors.primary) {
+            palette.push(electricColors.primary);
+        }
+        if (electricColors.secondary) {
+            palette.push(electricColors.secondary);
+        }
+        if (electricColors.tertiary) {
+            palette.push(electricColors.tertiary);
+        }
+        if (electricColors.quaternary) {
+            palette.push(electricColors.quaternary);
+        }
+        if (Array.isArray(electricColors.list)) {
+            palette.push(...electricColors.list);
+        }
+        if (palette.length > 0) {
+            return palette;
+        }
+    }
+    const overlay =
+        options.overlayColors ||
+        options.distortion?.overlayColors ||
+        (typeof window !== 'undefined' &&
+            window.pieChartGlassEffect?.liquidGlass?.distortion?.overlayColors);
+    if (overlay) {
+        return [overlay.inner, overlay.middle, overlay.outer].filter(Boolean);
+    }
+    return ['rgba(0, 255, 200, 0.6)', 'rgba(0, 180, 255, 0.45)', 'rgba(64, 224, 208, 0.4)'];
+}
+
+function initializeEnergyParticles(state, options) {
+    const count = Math.max(12, (options.electric?.arcCount || 3) * 8);
+    state.energyParticles = Array.from({ length: count }, () => ({
+        angle: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 1.2,
+        radiusFactor: 0.75 + Math.random() * 0.2,
+        size: 1.2 + Math.random() * 1.6,
+        flickerOffset: Math.random() * Math.PI * 2,
+    }));
+}
+
+function updateEnergyParticles(state, delta, options) {
+    if (!state.energyParticles) {
+        return;
+    }
+    const baseSpeed =
+        (options.reflection?.speed ?? 0.05) * (options.electric?.particleSpeedMultiplier ?? 1);
+    state.energyParticles.forEach((particle, idx) => {
+        const variance = 0.8 + (idx % 5) * 0.12;
+        particle.angle =
+            (particle.angle + delta * baseSpeed * 6 * particle.speed * variance) % (Math.PI * 2);
+        particle.radiusFactor =
+            0.75 + Math.sin(state.phase * Math.PI * 2 + particle.flickerOffset) * 0.05;
+    });
+}
+
+function drawElectricTrail(
+    ctx,
+    centerX,
+    centerY,
+    outerRadius,
+    innerRadius,
+    options,
+    state,
+    pointer,
+    squash
+) {
+    const electric = options.electric || {};
+    const colors = getOverlayColors(options);
+    const arcCount = electric.arcCount ?? 3;
+    const widthFactor = electric.width ?? 0.22;
+    const arcThickness = electric.arcThickness ?? 2.4;
+    const bandThickness = outerRadius - innerRadius;
+    const radius = innerRadius + bandThickness * 0.65;
+    const offsetX = pointer.x * 0.2;
+    const offsetY = pointer.y * 0.2;
+    const speedMultiplier = electric.streakSpeedMultiplier ?? 1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+
+    for (let i = 0; i < arcCount; i += 1) {
+        const color = colors[i % colors.length];
+        const localPhase = (state.phase * speedMultiplier + (i / arcCount) * 0.65) % 1;
+        const startAngle = localPhase * Math.PI * 2;
+        const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
+        ctx.strokeStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = arcThickness * 3;
+        ctx.lineWidth = arcThickness;
+        ctx.beginPath();
+        ctx.ellipse(
+            centerX + offsetX,
+            centerY + offsetY,
+            radius,
+            radius * squash,
+            0,
+            startAngle,
+            endAngle
+        );
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawEnergyParticles(
+    ctx,
+    centerX,
+    centerY,
+    outerRadius,
+    innerRadius,
+    options,
+    state,
+    pointer,
+    squash
+) {
+    if (!state.energyParticles) {
+        return;
+    }
+    const colors =
+        options.electric?.particleColors && Array.isArray(options.electric.particleColors)
+            ? options.electric.particleColors
+            : getOverlayColors(options);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const bandThickness = outerRadius - innerRadius;
+    const baseRadius = innerRadius + bandThickness * 0.65;
+    state.energyParticles.forEach((particle, idx) => {
+        const angle = particle.angle;
+        const radius = baseRadius * particle.radiusFactor;
+        const x = centerX + Math.cos(angle) * radius + pointer.x * 0.15;
+        const y = centerY + Math.sin(angle) * radius * squash + pointer.y * 0.15;
+        const flicker = 0.5 + 0.5 * Math.sin(state.phase * Math.PI * 4 + particle.flickerOffset);
+        const color = colors[idx % colors.length] || 'rgba(0,255,255,0.6)';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8 + flicker * 8;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(
+            x,
+            y,
+            particle.size + flicker * 1.5,
+            (particle.size + flicker) * 0.6,
+            angle,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+    });
+    ctx.restore();
+}
+
+function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, options, state, squash) {
+    const glow = options.ambientGlow || {};
+    const innerOpacity = glow.innerOpacity ?? 0.2;
+    const outerOpacity = glow.outerOpacity ?? 0.05;
+    const pulse = 0.5 + 0.5 * Math.sin(state.ambientPhase * Math.PI * 2);
+    const radius = outerRadius * (1.05 + pulse * 0.05);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const gradient = ctx.createRadialGradient(
+        centerX,
+        centerY,
+        innerRadius,
+        centerX,
+        centerY,
+        radius * 1.3
+    );
+    const innerColor = applyAlpha(glow.innerColor, innerOpacity * (0.6 + pulse * 0.4));
+    const outerColor = applyAlpha(glow.outerColor, outerOpacity);
+    gradient.addColorStop(0, innerColor);
+    gradient.addColorStop(1, outerColor);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
+    ctx.fill('evenodd');
+    ctx.restore();
+}
+
 export const glass3dPlugin = {
     id: 'glass3d',
     beforeDatasetsDraw(chart, args, pluginOptions) {
@@ -352,7 +590,8 @@ export const glass3dPlugin = {
         const depth = depthValue !== undefined ? depthValue : Math.max(outerRadius * 0.12, 12);
         const state = ensureState(chart, options);
         updatePointerState(state, chart, options);
-        updatePhase(state, options);
+        const delta = updatePhase(state, options);
+        updateEnergyParticles(state, delta, options);
         const pointer = {
             x: state.pointerSmoothed.x * state.maxOffset,
             y: state.pointerSmoothed.y * state.maxOffset,
@@ -395,7 +634,39 @@ export const glass3dPlugin = {
             y: state.pointerSmoothed.y * state.maxOffset,
         };
 
-        drawTopHighlight(ctx, centerX, centerY, outerRadius, options, pointer);
+        drawAmbientGlow(
+            ctx,
+            centerX,
+            centerY,
+            outerRadius,
+            innerRadius,
+            options,
+            state,
+            options.squash ?? 1
+        );
+        drawElectricTrail(
+            ctx,
+            centerX,
+            centerY,
+            outerRadius,
+            innerRadius,
+            options,
+            state,
+            pointer,
+            options.squash ?? 1
+        );
+        drawEnergyParticles(
+            ctx,
+            centerX,
+            centerY,
+            outerRadius,
+            innerRadius,
+            options,
+            state,
+            pointer,
+            options.squash ?? 1
+        );
+        drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer);
         drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options, state);
     },
 };
