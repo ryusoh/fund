@@ -145,15 +145,11 @@
 
         <!-- Main script for the calendar page -->
         <script type="module" src="../js/pages/calendar/index.js"></script>
-        <script>
-            // Ensure SW is registered when landing directly on this subpage
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function () {
-                    navigator.serviceWorker
-                        .register('/fund/sw.js', { scope: '/fund/' })
-                        .catch(function () {});
-                });
-            }
-        </script>
+        <script
+            defer
+            src="../js/ui/service_worker_register.js"
+            data-sw-path="/fund/sw.js"
+            data-sw-scope="/fund/"
+        ></script>
     </body>
 </html>

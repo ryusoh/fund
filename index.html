@@ -109,32 +109,13 @@
         <!-- Image fallback and Ambient via CDN fallback loader -->
         <script defer src="./js/loader/imageFallback.js"></script>
         <script defer src="./js/ambient/loader.js"></script>
-        <script>
-            // Respect reduced motion: pause background video
-            (function () {
-                try {
-                    var m =
-                        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
-                    if (m && m.matches) {
-                        var v = document.querySelector('.video-background video');
-                        if (v) {
-                            v.removeAttribute('autoplay');
-                            v.pause();
-                        }
-                    }
-                } catch (e) {}
-            })();
-        </script>
+        <script defer src="./js/ui/reduced_motion.js"></script>
         <script src="./js/ui/scroll_control.js"></script>
-        <script>
-            // Register Service Worker for PWA
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {
-                        /* no-op */
-                    });
-                });
-            }
-        </script>
+        <script
+            defer
+            src="./js/ui/service_worker_register.js"
+            data-sw-path="./sw.js"
+            data-sw-scope="./"
+        ></script>
     </body>
 </html>
