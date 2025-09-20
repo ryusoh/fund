@@ -229,7 +229,7 @@ export const PIE_CHART_GLASS_EFFECT = {
     opacity: 0.75, // Default fallback; overridden via responsiveOpacity at runtime
     responsiveOpacity: {
         desktop: 0.4,
-        mobile: 0.75,
+        mobile: 0.4,
     },
     // All border settings in one place
     borders: {
@@ -285,6 +285,46 @@ export const PIE_CHART_GLASS_EFFECT = {
             // 0.05 = very subtle
             // 0.15 = medium
             // 2.0 = pronounced (current)
+        },
+    },
+    threeD: {
+        enabled: true,
+        depth: {
+            desktop: 5,
+            mobile: 5,
+        },
+        squash: 1,
+        light: {
+            azimuthDeg: -45,
+            elevationDeg: 62,
+        },
+        sideOpacity: {
+            top: 0.3,
+            bottom: 0.1,
+        },
+        rimHighlight: {
+            width: 1.8,
+            opacity: 0.48,
+        },
+        topHighlight: {
+            intensity: 0.45,
+            radiusFraction: 0.82,
+        },
+        reflection: {
+            speed: 0.1,
+            width: 0.22,
+            intensity: 0.52,
+        },
+        shadow: {
+            scaleX: 1.12,
+            scaleY: 0.46,
+            offsetYPx: 16,
+            blur: 34,
+            opacity: 0.38,
+        },
+        parallax: {
+            maxOffsetPx: 8,
+            damping: 0.18,
         },
     },
 };

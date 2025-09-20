@@ -4,6 +4,7 @@ import { CHART_DEFAULTS, UI_BREAKPOINTS, PIE_CHART_GLASS_EFFECT } from '@js/conf
 import { imagePlugin } from '@plugins/imagePlugin.js';
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
+import { glass3dPlugin } from '@plugins/glass3dPlugin.js';
 
 let fundChartInstance = null;
 let isTablePersisting = false; // State variable for table persistence
@@ -106,11 +107,17 @@ export function updatePieChart(data) {
                         width: PIE_CHART_GLASS_EFFECT.borders.arcWidth,
                         color: PIE_CHART_GLASS_EFFECT.borders.arcColor,
                     },
+                    glass3d: {
+                        enabled: !!(window.pieChartGlassEffect?.threeD?.enabled ?? true),
+                    },
                 },
                 onClick: (event, activeElements, chart) => {
                     let isClickOverCenter = false;
                     const mouseX = event.x;
                     const mouseY = event.y;
+                    if (!chart.glassPointerTarget) {
+                        chart.glassPointerTarget = { x: 0, y: 0 };
+                    }
 
                     if (chart.getDatasetMeta(0)?.data[0]) {
                         const firstArc = chart.getDatasetMeta(0).data[0];
@@ -129,6 +136,11 @@ export function updatePieChart(data) {
                             if (distance < innerRadius) {
                                 isClickOverCenter = true;
                             }
+                            const radius = Math.max(firstArc.outerRadius, 1);
+                            chart.glassPointerTarget = {
+                                x: (mouseX - centerX) / radius,
+                                y: (mouseY - centerY) / radius,
+                            };
                         }
                     }
                     if (isClickOverCenter) {
@@ -142,6 +154,9 @@ export function updatePieChart(data) {
 
                     const mouseX = event.x;
                     const mouseY = event.y;
+                    if (!chart.glassPointerTarget) {
+                        chart.glassPointerTarget = { x: 0, y: 0 };
+                    }
 
                     // If table is persisting due to a click (on desktop), hover logic should not alter table visibility
                     if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
@@ -168,7 +183,14 @@ export function updatePieChart(data) {
                             if (distance < innerRadius) {
                                 isOverCenter = true;
                             }
+                            const radius = Math.max(firstArc.outerRadius, 1);
+                            chart.glassPointerTarget = {
+                                x: (mouseX - centerX) / radius,
+                                y: (mouseY - centerY) / radius,
+                            };
                         }
+                    } else {
+                        chart.glassPointerTarget = { x: 0, y: 0 };
                     }
 
                     let tableShouldBeVisible = false;
@@ -213,11 +235,19 @@ export function updatePieChart(data) {
                         if (footerWrapperElement) {
                             footerWrapperElement.classList.add('hidden');
                         }
+                        chart.glassPointerTarget = { x: 0, y: 0 };
                     }
                     checkAndToggleVerticalScroll();
                 },
             },
-            plugins: [imagePlugin, customArcBordersPlugin, waveAnimationPlugin],
+            plugins: [imagePlugin, customArcBordersPlugin, waveAnimationPlugin, glass3dPlugin],
         });
+        fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+        if (fundChartInstance.canvas && !fundChartInstance._glassMouseLeaveBound) {
+            fundChartInstance.canvas.addEventListener('mouseleave', () => {
+                fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+            });
+            fundChartInstance._glassMouseLeaveBound = true;
+        }
     }
 }
