@@ -98,12 +98,12 @@ a.nav-back {
     }
     .content-block {
         width: 95%; /* Wider for mobile */
-        margin: 0 auto 10px auto; /* Adjusted mobile margin */
+        margin: 8px auto 10px auto; /* Reduced top margin keeps content near chart */
     }
     #fundPieChartContainer {
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
-        margin: 0 auto 20px; /* Horizontally center, top margin 0, bottom margin 20px */
+        margin: 0 auto 5px; /* Tighter gap above the table on mobile */
         /* position: relative; is inherited from the global style, which is fine */
     }
     footer {
