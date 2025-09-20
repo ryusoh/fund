@@ -10,6 +10,11 @@
     z-index: 100; /* Ensure table/footer sit above chart canvas */
 }
 
+body:not(.body-calendar) .content-block {
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
 #fundPieChartContainer {
     width: 90%; /* Increased width */
     max-width: 400px; /* Increased max-width */
