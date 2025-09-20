@@ -252,8 +252,25 @@ export async function initCalendar() {
         const { processedData, byDate, rates } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
 
-        const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
-        const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
+        const parseDataDate = (dateString) => {
+            const parts = dateString.split('-');
+            if (parts.length !== 3) {
+                return null;
+            }
+            const [yearStr, monthStr, dayStr] = parts;
+            const year = Number(yearStr);
+            const month = Number(monthStr);
+            const day = Number(dayStr);
+            if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+                return null;
+            }
+            return new Date(year, month - 1, day);
+        };
+
+        const firstDataDate = parseDataDate(processedData[0].date) || new Date();
+        const rawLastDate =
+            parseDataDate(processedData[processedData.length - 1].date) || firstDataDate;
+        const lastDataDate = Number.isFinite(rawLastDate.getTime()) ? rawLastDate : firstDataDate;
 
         const monthHasLabels = new Map();
         for (const entry of processedData) {
@@ -287,25 +304,29 @@ export async function initCalendar() {
             );
         }
 
-        // Start calendar so that the current month is visible by default
+        // Determine the range of months to display so the right-most month is always the latest available.
         const todayNy = getNyDate();
         const currentMonthStart = new Date(todayNy.getFullYear(), todayNy.getMonth(), 1);
-        const calendarStartDate = new Date(currentMonthStart);
-        if (window.innerWidth > 768) {
-            // For multi-month view, show the months leading up to and including the current month
-            calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
+        const lastDataMonthStart = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        const lastVisibleMonth = new Date(
+            Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
+        );
+
+        const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
+        const indexToMonthDate = (index) => new Date(Math.floor(index / 12), index % 12, 1);
+
+        const configuredRange = Math.max(1, CALENDAR_CONFIG.range || 1);
+        const firstLabelIndex = monthToIndex(firstMonthWithLabels);
+        const lastVisibleIndex = monthToIndex(lastVisibleMonth);
+        const maxAvailableSpan = Math.max(1, lastVisibleIndex - firstLabelIndex + 1);
+        const effectiveRange = Math.min(configuredRange, maxAvailableSpan);
+
+        let startIndex = lastVisibleIndex - (effectiveRange - 1);
+        if (startIndex < firstLabelIndex) {
+            startIndex = firstLabelIndex;
         }
 
-        if (calendarStartDate < firstMonthWithLabels) {
-            calendarStartDate.setTime(firstMonthWithLabels.getTime());
-        } else {
-            const monthsBetween =
-                (calendarStartDate.getFullYear() - firstMonthWithLabels.getFullYear()) * 12 +
-                (calendarStartDate.getMonth() - firstMonthWithLabels.getMonth());
-            if (monthsBetween > 0 && monthsBetween < CALENDAR_CONFIG.range) {
-                calendarStartDate.setTime(firstMonthWithLabels.getTime());
-            }
-        }
+        const calendarStartDate = indexToMonthDate(startIndex);
 
         const cal = new CalHeatmap();
 
@@ -331,6 +352,7 @@ export async function initCalendar() {
 
         const paintConfig = {
             ...CALENDAR_CONFIG,
+            range: effectiveRange,
             data: {
                 source: processedData,
                 x: 'date',

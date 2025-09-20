@@ -233,6 +233,7 @@ describe('calendar page', () => {
         expect(paintArg.date.min.getMonth()).toBe(5); // June (0-based)
         expect(paintArg.date.start.getFullYear()).toBe(2025);
         expect(paintArg.date.start.getMonth()).toBe(5);
+        expect(paintArg.range).toBe(2);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
         nyDateSpy.mockRestore();
@@ -260,7 +261,8 @@ describe('calendar page', () => {
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
         expect(paintArg.date.min.getMonth()).toBe(3); // April
-        expect(paintArg.date.start.getMonth()).toBe(3);
+        expect(paintArg.date.start.getMonth()).toBe(4); // May becomes the starting month
+        expect(paintArg.range).toBe(3);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
         nyDateSpy.mockRestore();
@@ -286,10 +288,11 @@ describe('calendar page', () => {
         await initCalendar();
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
-        const expectedMonth = new Date(`${mockData.processedData[0].date}T00:00:00Z`).getMonth();
+        const expectedMonth = parseInt(mockData.processedData[0].date.slice(5, 7), 10) - 1;
         expect(paintArg.date.min.getFullYear()).toBe(2025);
         expect(paintArg.date.min.getMonth()).toBe(expectedMonth);
         expect(paintArg.date.start.getMonth()).toBe(expectedMonth);
+        expect(paintArg.range).toBe(3);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
         nyDateSpy.mockRestore();
