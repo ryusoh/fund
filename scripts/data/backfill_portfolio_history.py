@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, Sequence
+from typing import Callable, Dict, List, Mapping, Sequence, cast
 
 import pandas as pd
 import yfinance as yf
@@ -133,8 +133,10 @@ def _compute_trading_dates(start: date, end: date) -> List[date]:
 
 
 def _previous_trading_day(day: date) -> date:
-    previous = pd.Timestamp(day) - NY_BUSINESS_DAY
-    return previous.date()
+    timestamp = pd.Timestamp(day) - pd.Timedelta(days=1)
+    previous_ts = cast(pd.Timestamp, NY_BUSINESS_DAY.rollback(timestamp))
+    previous_dt: datetime = previous_ts.to_pydatetime()
+    return previous_dt.date()
 
 
 def _default_price_fetcher(tickers: Sequence[str], dates: TradingDates) -> Dict[str, Dict[date, Decimal]]:
@@ -285,7 +287,7 @@ def backfill_portfolio_history(
 
     added_rows: List[Dict[str, str]] = []
     for day in trading_dates:
-        total_usd = sum(holdings[t] * prices[t][day] for t in tickers)
+        total_usd = sum((holdings[t] * prices[t][day] for t in tickers), Decimal("0"))
         row: Dict[str, str] = {"date": day.isoformat(), "value_usd": _format_decimal(total_usd)}
 
         if fx_currencies:
@@ -341,19 +343,30 @@ def main(
     csv_path: Path | None = None,
     holdings_path: Path | None = None,
 ) -> BackfillResult:
+    csv_path_obj: Path
+    holdings_path_obj: Path
+
     if start_date is None:
         args = parse_args()
         start_date_str = args.start_date
-        csv_path = args.csv
-        holdings_path = args.holdings
+        csv_path_obj = Path(args.csv)
+        holdings_path_obj = Path(args.holdings)
     else:
         start_date_str = start_date
         base_dir = Path(__file__).resolve().parents[2]
-        csv_path = csv_path or base_dir / "data" / "historical_portfolio_values.csv"
-        holdings_path = holdings_path or base_dir / "data" / "holdings_details.json"
+        csv_path_obj = (
+            Path(csv_path)
+            if csv_path is not None
+            else base_dir / "data" / "historical_portfolio_values.csv"
+        )
+        holdings_path_obj = (
+            Path(holdings_path)
+            if holdings_path is not None
+            else base_dir / "data" / "holdings_details.json"
+        )
 
     parsed_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    result = backfill_portfolio_history(parsed_date, Path(csv_path), Path(holdings_path))
+    result = backfill_portfolio_history(parsed_date, csv_path_obj, holdings_path_obj)
 
     print(f"Added {len(result.added_rows)} row(s) spanning {len(result.trading_dates)} trading day(s).")
     return result
