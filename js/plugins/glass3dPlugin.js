@@ -37,17 +37,32 @@ const DEFAULT_OPTIONS = {
         damping: 0.18,
     },
     electric: {
-        intensity: 0.45,
-        width: 0.22,
-        colors: null,
+        intensity: 0.42,
+        width: 0.18,
+        colors: {
+            primary: 'rgba(140, 205, 255, 0.55)',
+            secondary: 'rgba(96, 150, 255, 0.45)',
+            tertiary: 'rgba(180, 140, 255, 0.35)',
+            quaternary: 'rgba(110, 180, 255, 0.28)',
+        },
         arcCount: 3,
         arcThickness: 2.4,
+        particleColors: [
+            'rgba(220, 235, 255, 0.65)',
+            'rgba(150, 185, 255, 0.5)',
+            'rgba(105, 135, 220, 0.45)',
+        ],
+        streakSpeedMultiplier: 1.15,
+        particleSpeedMultiplier: 1.25,
     },
     ambientGlow: {
-        innerOpacity: 0.2,
-        outerOpacity: 0.05,
-        pulseSpeed: 0.6,
+        innerOpacity: 0.17,
+        outerOpacity: 0.045,
+        pulseSpeed: 0.55,
+        innerColor: '#E8F3FF',
+        outerColor: '#0A1228',
     },
+    seamOffsetRad: 0.05,
 };
 
 function deepMerge(target, source) {
@@ -285,36 +300,9 @@ function drawSideWall(ctx, arc, depth, options, lightVec, pointer) {
     ctx.restore();
 }
 
+// eslint-disable-next-line no-unused-vars
 function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
-    const rimCfg = options.rimHighlight || {};
-    const width = rimCfg.width ?? 1.2;
-    const opacity = rimCfg.opacity ?? 0.3;
-    const squash = options.squash ?? 1;
-    ctx.save();
-    ctx.lineWidth = width;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.beginPath();
-    ctx.ellipse(
-        centerX + pointer.x * 0.3,
-        centerY + pointer.y * 0.3,
-        outerRadius - width / 2,
-        (outerRadius - width / 2) * squash,
-        0,
-        0,
-        Math.PI * 2
-    );
-    ctx.ellipse(
-        centerX + pointer.x * 0.2,
-        centerY + pointer.y * 0.2,
-        innerRadius + width / 2,
-        (innerRadius + width / 2) * squash,
-        0,
-        Math.PI * 2,
-        0,
-        true
-    );
-    ctx.stroke();
-    ctx.restore();
+    // DISABLED: This function was creating the grey line at 3 o'clock
 }
 
 function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
@@ -328,8 +316,18 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
-    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
+    const seam = options.seamOffsetRad ?? 0;
+    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, seam, seam + Math.PI * 2);
+    ctx.ellipse(
+        centerX,
+        centerY,
+        innerRadius,
+        innerRadius * squash,
+        0,
+        seam,
+        seam + Math.PI * 2,
+        true
+    );
     const radius = outerRadius * radiusFraction;
     const gradient = ctx.createRadialGradient(
         highlightX,
@@ -346,34 +344,9 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     ctx.restore();
 }
 
+// eslint-disable-next-line no-unused-vars
 function drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options, state) {
-    const reflectionCfg = options.reflection || {};
-    const intensity = reflectionCfg.intensity ?? 0.28;
-    const width = reflectionCfg.width ?? 0.2;
-    const phase = state.phase || 0;
-    const startAngle = phase * Math.PI * 2;
-    const endAngle = startAngle + width * Math.PI * 2;
-    const squash = options.squash ?? 1;
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const gradient = ctx.createLinearGradient(0, centerY - outerRadius, 0, centerY + outerRadius);
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = Math.max(2, (outerRadius - innerRadius) * 0.55);
-    ctx.beginPath();
-    ctx.ellipse(
-        centerX,
-        centerY,
-        (outerRadius + innerRadius) / 2,
-        ((outerRadius + innerRadius) / 2) * squash,
-        0,
-        startAngle,
-        endAngle
-    );
-    ctx.stroke();
-    ctx.restore();
+    // DISABLED: This function may be creating unwanted lines
 }
 
 function drawSideWalls(ctx, meta, depth, options, lightVec, pointer) {
@@ -471,7 +444,8 @@ function drawElectricTrail(
     for (let i = 0; i < arcCount; i += 1) {
         const color = colors[i % colors.length];
         const localPhase = (state.phase * speedMultiplier + (i / arcCount) * 0.65) % 1;
-        const startAngle = localPhase * Math.PI * 2;
+        const seam = options.seamOffsetRad ?? 0;
+        const startAngle = seam + localPhase * Math.PI * 2;
         const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
         ctx.strokeStyle = color;
         ctx.shadowColor = color;
@@ -560,9 +534,19 @@ function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, option
     gradient.addColorStop(0, innerColor);
     gradient.addColorStop(1, outerColor);
     ctx.fillStyle = gradient;
+    const seam = options.seamOffsetRad ?? 0;
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, 0, Math.PI * 2);
-    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
+    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, seam, seam + Math.PI * 2);
+    ctx.ellipse(
+        centerX,
+        centerY,
+        innerRadius,
+        innerRadius * squash,
+        0,
+        seam,
+        seam + Math.PI * 2,
+        true
+    );
     ctx.fill('evenodd');
     ctx.restore();
 }

@@ -171,8 +171,10 @@ function updateTableAndPrepareChartData(
             {
                 data: [],
                 backgroundColor: [],
-                borderColor: CHART_DEFAULTS.BORDER_COLOR,
-                borderWidth: CHART_DEFAULTS.BORDER_WIDTH,
+                borderColor: 'transparent',
+                borderWidth: 0,
+                hoverBorderWidth: 0,
+                borderAlign: 'inner',
                 images: [],
             },
         ],

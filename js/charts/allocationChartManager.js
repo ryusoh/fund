@@ -1,6 +1,6 @@
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
-import { CHART_DEFAULTS, UI_BREAKPOINTS, PIE_CHART_GLASS_EFFECT } from '@js/config.js';
+import { CHART_DEFAULTS, UI_BREAKPOINTS } from '@js/config.js';
 import { imagePlugin } from '@plugins/imagePlugin.js';
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
@@ -44,12 +44,17 @@ export function triggerCenterToggle() {
 
 export function updatePieChart(data) {
     const ctx = document.getElementById('fundPieChart').getContext('2d');
+    const seamOffset = window.pieChartGlassEffect?.threeD?.seamOffsetRad ?? 0;
+    const baseRotation = -Math.PI / 2 + seamOffset;
 
     if (fundChartInstance) {
         fundChartInstance.data.labels = data.labels;
         fundChartInstance.data.datasets[0].data = data.datasets[0].data;
         fundChartInstance.data.datasets[0].backgroundColor = data.datasets[0].backgroundColor;
         fundChartInstance.data.datasets[0].images = data.datasets[0].images; // Make sure to update images
+        if (fundChartInstance.options) {
+            fundChartInstance.options.rotation = baseRotation;
+        }
         fundChartInstance.update();
     } else {
         fundChartInstance = new Chart(ctx, {
@@ -57,10 +62,12 @@ export function updatePieChart(data) {
             type: 'doughnut',
             data: data,
             options: {
+                rotation: baseRotation,
                 responsive: true,
                 layout: {
                     padding: CHART_DEFAULTS.LAYOUT_PADDING,
                 },
+                cutout: CHART_DEFAULTS.CUTOUT,
                 plugins: {
                     legend: {
                         display: false,
@@ -104,8 +111,8 @@ export function updatePieChart(data) {
                         font: {},
                     },
                     customArcBorders: {
-                        width: PIE_CHART_GLASS_EFFECT.borders.arcWidth,
-                        color: PIE_CHART_GLASS_EFFECT.borders.arcColor,
+                        width: 0,
+                        color: 'transparent',
                     },
                     glass3d: {
                         enabled: !!(window.pieChartGlassEffect?.threeD?.enabled ?? true),

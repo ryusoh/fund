@@ -348,5 +348,6 @@ export const PIE_CHART_GLASS_EFFECT = {
             innerColor: 'rgba(0, 188, 212, 1)',
             outerColor: 'rgba(23, 37, 84, 1)',
         },
+        seamOffsetRad: 0,
     },
 };
