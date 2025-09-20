@@ -24,9 +24,22 @@ body.body-calendar {
 }
 
 .cal-heatmap-container {
-    margin-top: 35px;
     display: flex; /* Helps in centering the calendar block */
     justify-content: center; /* Horizontally center the calendar */
+}
+
+/* Mobile layout (up to 768px) */
+@media (max-width: 768px) {
+    .cal-heatmap-container {
+        margin-top: 70px;
+    }
+}
+
+/* Desktop layout (769px and up) */
+@media (min-width: 769px) {
+    .cal-heatmap-container {
+        margin-top: 50px;
+    }
 }
 
 /* Ensure the calendar SVG scales down on smaller screens to fit its container */
@@ -102,6 +115,26 @@ body.body-calendar {
     font-size: 14px; /* Make month labels larger */
     stroke: black;
     stroke-width: 1px;
+}
+
+/* Add spacing between month labels and calendar boxes */
+.ch-domain text.ch-domain-text {
+    transform: translateY(-8px);
+}
+
+/* Move the background rect along with the text */
+.ch-domain rect.domain-label-bg {
+    transform: translateY(-8px);
+}
+
+/* Compensate by moving the calendar boxes down to maintain chevron distance */
+.ch-domain .ch-subdomain {
+    transform: translateY(8px);
+}
+
+/* Keep the text inside calendar boxes in their original position */
+.ch-subdomain .ch-subdomain-text {
+    transform: translateY(-8px);
 }
 
 .ch-subdomain-text {
