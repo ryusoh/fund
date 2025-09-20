@@ -1,5 +1,6 @@
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendar, renderLabels, autoInitCalendar } from '@pages/calendar/index.js';
+import * as dateUtils from '@utils/date.js';
 
 jest.mock('@services/dataService.js', () => ({
     getCalendarData: jest.fn(),
@@ -162,7 +163,7 @@ describe('calendar page', () => {
         const originalWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
         const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
+            processedData: [{ date: '2025-01-01', value: 1, total: 1000, dailyChange: 5 }],
             byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
             rates: { USD: 1 },
         };
@@ -206,6 +207,92 @@ describe('calendar page', () => {
         expect(tooltipText).toContain('P/L: +1.23%');
         // Restore width
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+    });
+
+    it('skips months without label data when determining calendar domain', async () => {
+        const originalWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date('2025-07-15T00:00:00Z'));
+
+        const mockData = {
+            processedData: [
+                { date: '2025-05-30', value: 0, total: 900, dailyChange: 0 },
+                { date: '2025-06-02', value: 0.01, total: 920, dailyChange: 20 },
+            ],
+            byDate: new Map(),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        expect(paintArg.date.min.getFullYear()).toBe(2025);
+        expect(paintArg.date.min.getMonth()).toBe(5); // June (0-based)
+        expect(paintArg.date.start.getFullYear()).toBe(2025);
+        expect(paintArg.date.start.getMonth()).toBe(5);
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        nyDateSpy.mockRestore();
+    });
+
+    it('shifts start month forward when within range but after first labeled month', async () => {
+        const originalWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date('2025-07-10T00:00:00Z'));
+
+        const mockData = {
+            processedData: [
+                { date: '2025-03-31', value: 0, total: 850, dailyChange: 0 },
+                { date: '2025-04-15', value: 0.02, total: 870, dailyChange: 17.4 },
+                { date: '2025-05-30', value: 0, total: 900, dailyChange: 0 },
+            ],
+            byDate: new Map(),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        expect(paintArg.date.min.getMonth()).toBe(3); // April
+        expect(paintArg.date.start.getMonth()).toBe(3);
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        nyDateSpy.mockRestore();
+    });
+
+    it('falls back to earliest data month when labeled month has invalid metadata', async () => {
+        const originalWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date('2025-06-20T00:00:00Z'));
+
+        const mockData = {
+            processedData: [
+                { date: '2025-04-01', value: 0, total: 800, dailyChange: 0 },
+                { date: '2025-AA-10', value: 0.03, total: 825, dailyChange: 25 },
+            ],
+            byDate: new Map(),
+            rates: { USD: 1 },
+        };
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        const expectedMonth = new Date(`${mockData.processedData[0].date}T00:00:00Z`).getMonth();
+        expect(paintArg.date.min.getFullYear()).toBe(2025);
+        expect(paintArg.date.min.getMonth()).toBe(expectedMonth);
+        expect(paintArg.date.start.getMonth()).toBe(expectedMonth);
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        nyDateSpy.mockRestore();
     });
 
     it('should handle nav clicks and today toggle with timer', async () => {

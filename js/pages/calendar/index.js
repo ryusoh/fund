@@ -255,6 +255,38 @@ export async function initCalendar() {
         const firstDataDate = new Date(`${processedData[0].date}T00:00:00Z`);
         const lastDataDate = new Date(`${processedData[processedData.length - 1].date}T00:00:00Z`);
 
+        const monthHasLabels = new Map();
+        for (const entry of processedData) {
+            const key = entry.date.slice(0, 7);
+            if (!monthHasLabels.has(key)) {
+                monthHasLabels.set(key, false);
+            }
+            if (typeof entry.dailyChange === 'number' && entry.dailyChange !== 0) {
+                monthHasLabels.set(key, true);
+            }
+        }
+
+        let firstMonthWithLabels = null;
+        for (const [key, hasLabel] of monthHasLabels.entries()) {
+            if (hasLabel) {
+                const [yearStr, monthStr] = key.split('-');
+                const year = Number(yearStr);
+                const monthIndex = Number(monthStr) - 1;
+                if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
+                    firstMonthWithLabels = new Date(year, monthIndex, 1);
+                }
+                break;
+            }
+        }
+
+        if (!firstMonthWithLabels) {
+            firstMonthWithLabels = new Date(
+                firstDataDate.getFullYear(),
+                firstDataDate.getMonth(),
+                1
+            );
+        }
+
         // Start calendar so that the current month is visible by default
         const todayNy = getNyDate();
         const currentMonthStart = new Date(todayNy.getFullYear(), todayNy.getMonth(), 1);
@@ -262,6 +294,17 @@ export async function initCalendar() {
         if (window.innerWidth > 768) {
             // For multi-month view, show the months leading up to and including the current month
             calendarStartDate.setMonth(calendarStartDate.getMonth() - (CALENDAR_CONFIG.range - 1));
+        }
+
+        if (calendarStartDate < firstMonthWithLabels) {
+            calendarStartDate.setTime(firstMonthWithLabels.getTime());
+        } else {
+            const monthsBetween =
+                (calendarStartDate.getFullYear() - firstMonthWithLabels.getFullYear()) * 12 +
+                (calendarStartDate.getMonth() - firstMonthWithLabels.getMonth());
+            if (monthsBetween > 0 && monthsBetween < CALENDAR_CONFIG.range) {
+                calendarStartDate.setTime(firstMonthWithLabels.getTime());
+            }
         }
 
         const cal = new CalHeatmap();
@@ -296,7 +339,7 @@ export async function initCalendar() {
             },
             date: {
                 start: calendarStartDate,
-                min: firstDataDate,
+                min: firstMonthWithLabels,
                 // Allow viewing through the current month even if data isn't present yet
                 max: (function () {
                     const endOfCurrentMonth = new Date(

@@ -1,8 +1,9 @@
+import csv
 import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
@@ -13,6 +14,10 @@ import pandas as pd
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from scripts.data.backfill_portfolio_history import (  # noqa: E402
+    BackfillResult,
+    backfill_portfolio_history,
+)
 from scripts.data.fetch_forex import fetch_forex_data  # noqa: E402
 from scripts.data.update_fund_data import main as update_fund_data  # noqa: E402
 from scripts.pnl.extract_pnl_history import main as process_pnl_history  # noqa: E402
@@ -149,6 +154,166 @@ class TestFundScripts(unittest.TestCase):
 
             self.assertEqual(written_data["AAPL"], 150.0)
             self.assertEqual(written_data["GOOG"], 2800.0)
+
+    def test_backfill_portfolio_history(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "historical_portfolio_values.csv"
+            holdings_path = Path(tmpdir) / "holdings_details.json"
+
+            csv_path.write_text(
+                "date,value_usd,value_cny,value_jpy,value_krw\n"
+                "2025-06-05,100.0,700.0,15000.0,130000.0\n",
+                encoding="utf-8",
+            )
+            holdings_path.write_text(
+                json.dumps(
+                    {
+                        "AAPL": {"shares": "10"},
+                        "MSFT": {"shares": "5"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            trading_days = [
+                date(2025, 5, 30),
+                date(2025, 6, 2),
+                date(2025, 6, 3),
+                date(2025, 6, 4),
+            ]
+
+            def fake_price_fetcher(tickers, dates):
+                self.assertEqual(list(tickers), ["AAPL", "MSFT"])
+                self.assertEqual(list(dates), trading_days)
+                return {
+                    "AAPL": {
+                        trading_days[0]: Decimal("188"),
+                        trading_days[1]: Decimal("190"),
+                        trading_days[2]: Decimal("191"),
+                        trading_days[3]: Decimal("192"),
+                    },
+                    "MSFT": {
+                        trading_days[0]: Decimal("295"),
+                        trading_days[1]: Decimal("300"),
+                        trading_days[2]: Decimal("310"),
+                        trading_days[3]: Decimal("305"),
+                    },
+                }
+
+            def fake_fx_fetcher(currencies, dates):
+                self.assertEqual(currencies, ["CNY", "JPY", "KRW"])
+                self.assertEqual(list(dates), trading_days)
+                base_rates = {
+                    trading_days[0]: {
+                        "CNY": Decimal("6.99"),
+                        "JPY": Decimal("139"),
+                        "KRW": Decimal("1348"),
+                    },
+                    trading_days[1]: {
+                        "CNY": Decimal("7.00"),
+                        "JPY": Decimal("140"),
+                        "KRW": Decimal("1350"),
+                    },
+                    trading_days[2]: {
+                        "CNY": Decimal("7.01"),
+                        "JPY": Decimal("141"),
+                        "KRW": Decimal("1351"),
+                    },
+                    trading_days[3]: {
+                        "CNY": Decimal("7.02"),
+                        "JPY": Decimal("142"),
+                        "KRW": Decimal("1352"),
+                    },
+                }
+                return {day: dict(base_rates[day]) for day in dates}
+
+            result: BackfillResult = backfill_portfolio_history(
+                date(2025, 6, 2),
+                csv_path,
+                holdings_path,
+                price_fetcher=fake_price_fetcher,
+                fx_fetcher=fake_fx_fetcher,
+            )
+
+            self.assertEqual(len(result.added_rows), 4)
+            self.assertEqual([row["date"] for row in result.added_rows], [d.isoformat() for d in trading_days])
+
+            with csv_path.open("r", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+            self.assertEqual(
+                [row["date"] for row in rows][:4],
+                ["2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04"],
+            )
+            self.assertEqual(rows[0]["value_usd"], "3355.0000000000")
+            self.assertEqual(rows[0]["value_cny"], "23451.4500000000")
+            self.assertEqual(rows[1]["value_usd"], "3400.0000000000")
+            self.assertEqual(rows[1]["value_cny"], "23800.0000000000")
+            self.assertEqual(rows[2]["value_usd"], "3460.0000000000")
+            self.assertEqual(rows[2]["value_cny"], "24254.6000000000")
+
+    def test_backfill_includes_start_date_when_matching_earliest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "historical_portfolio_values.csv"
+            holdings_path = Path(tmpdir) / "holdings_details.json"
+
+            csv_path.write_text(
+                "date,value_usd,value_cny,value_jpy,value_krw\n"
+                "2025-06-05,100.0,700.0,15000.0,130000.0\n",
+                encoding="utf-8",
+            )
+            holdings_path.write_text(
+                json.dumps({"AAPL": {"shares": "10"}}),
+                encoding="utf-8",
+            )
+
+            called = {}
+
+            def fake_price_fetcher(tickers, dates):
+                called["tickers"] = list(tickers)
+                called["dates"] = list(dates)
+                return {
+                    "AAPL": {
+                        dates[0]: Decimal("180"),
+                        dates[1]: Decimal("190"),
+                    }
+                }
+
+            def fake_fx_fetcher(currencies, dates):
+                called["currencies"] = list(currencies)
+                return {
+                    dates[0]: {
+                        "CNY": Decimal("6.95"),
+                        "JPY": Decimal("138"),
+                        "KRW": Decimal("1340"),
+                        "USD": Decimal("1.0"),
+                    },
+                    dates[1]: {
+                        "CNY": Decimal("7.00"),
+                        "JPY": Decimal("140"),
+                        "KRW": Decimal("1350"),
+                        "USD": Decimal("1.0"),
+                    },
+                }
+
+            result = backfill_portfolio_history(
+                date(2025, 6, 5),
+                csv_path,
+                holdings_path,
+                price_fetcher=fake_price_fetcher,
+                fx_fetcher=fake_fx_fetcher,
+            )
+
+            self.assertEqual(len(result.trading_dates), 2)
+            self.assertEqual(result.trading_dates[0], date(2025, 6, 4))
+            self.assertEqual(result.trading_dates[1], date(2025, 6, 5))
+            self.assertEqual(called["tickers"], ["AAPL"])
+            self.assertEqual(called["dates"], [date(2025, 6, 4), date(2025, 6, 5)])
+            self.assertEqual(called["currencies"], ["CNY", "JPY", "KRW"])
+
+            with csv_path.open("r", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+            self.assertEqual(rows[0]["date"], "2025-06-04")
+            self.assertEqual(rows[0]["value_usd"], "1800.0000000000")
 
 
 if __name__ == "__main__":

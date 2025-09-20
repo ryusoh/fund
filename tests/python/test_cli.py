@@ -20,6 +20,7 @@ class TestCLI(unittest.TestCase):
         self.assertIn("fund-data", text)
         self.assertIn("daily-pnl", text)
         self.assertIn("update-all", text)
+        self.assertIn("backfill-portfolio", text)
 
     def test_forex_calls_fetch(self):
         parser = cli.create_parser()
@@ -59,6 +60,18 @@ class TestCLI(unittest.TestCase):
         with unittest.mock.patch.dict(sys.modules, {"scripts.pnl.extract_pnl_history": dummy}):
             args.func(args)
             self.assertTrue(dummy.main.called)
+
+    def test_backfill_portfolio_calls_main(self):
+        parser = cli.create_parser()
+        args = parser.parse_args(["backfill-portfolio", "2025-06-02"])
+
+        with unittest.mock.patch(
+            "scripts.data.backfill_portfolio_history.main"
+        ) as mock_main:
+            args.func(args)
+            mock_main.assert_called_once()
+            call_kwargs = mock_main.call_args.kwargs
+            self.assertEqual(call_kwargs["start_date"], "2025-06-02")
 
     def test_holdings_list_invokes_manage_holdings(self):
         parser = cli.create_parser()
