@@ -2,6 +2,7 @@ import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
+import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
 
 // Mock all imported modules
 jest.mock('@ui/currencyToggleManager.js', () => ({
@@ -41,6 +42,7 @@ describe('position page entry point', () => {
         console.error = jest.fn();
         console.warn = jest.fn();
         console.log = jest.fn();
+        window.innerWidth = 1024;
 
         // Mock document.readyState as 'loading' so DOMContentLoaded event is registered
         Object.defineProperty(document, 'readyState', {
@@ -87,6 +89,9 @@ describe('position page entry point', () => {
             expect.any(Object)
         );
         expect(alignToggleWithChartMobile).toHaveBeenCalled();
+        expect(window.pieChartGlassEffect.opacity).toBe(
+            PIE_CHART_GLASS_EFFECT.responsiveOpacity.desktop
+        );
     });
 
     it('should handle failed FX data fetch with ok:false', async () => {
@@ -181,6 +186,118 @@ describe('position page entry point', () => {
             expect.any(Object)
         );
         expect(alignToggleWithChartMobile).toHaveBeenCalled();
+    });
+
+    it('should update glass opacity on resize between desktop and mobile', async () => {
+        await import('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(window.pieChartGlassEffect.opacity).toBe(
+            PIE_CHART_GLASS_EFFECT.responsiveOpacity.desktop
+        );
+
+        window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+        windowEventListeners.resize();
+
+        expect(window.pieChartGlassEffect.opacity).toBe(
+            PIE_CHART_GLASS_EFFECT.responsiveOpacity.mobile
+        );
+    });
+
+    it('should initialize with mobile glass opacity when viewport is small', async () => {
+        await jest.isolateModulesAsync(async () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 10;
+            await import('@pages/position/index.js');
+            if (documentEventListeners.DOMContentLoaded) {
+                await documentEventListeners.DOMContentLoaded();
+            }
+
+            expect(window.pieChartGlassEffect.opacity).toBe(
+                PIE_CHART_GLASS_EFFECT.responsiveOpacity.mobile
+            );
+        });
+        window.innerWidth = 1024;
+    });
+
+    it('glass helpers should clone via structuredClone when available', async () => {
+        await import('@pages/position/index.js');
+        const helpers = window.__testGlassHelpers;
+        expect(helpers).toBeDefined();
+        const originalStructuredClone = global.structuredClone;
+        global.structuredClone = (value) => ({ ...value, cloned: true });
+        const cloned = helpers.cloneGlassEffectConfig({ foo: 'bar' });
+        expect(cloned).toEqual({ foo: 'bar', cloned: true });
+        global.structuredClone = originalStructuredClone;
+    });
+
+    it('glass helpers should warn and fallback when structuredClone absent and JSON fails', async () => {
+        await import('@pages/position/index.js');
+        const helpers = window.__testGlassHelpers;
+        const originalStructuredClone = global.structuredClone;
+        const originalWindowStructuredClone = window.structuredClone;
+        const originalStringify = JSON.stringify;
+        global.structuredClone = undefined;
+        window.structuredClone = undefined;
+        JSON.stringify = () => {
+            throw new Error('stringify failure');
+        };
+        expect(JSON.stringify).not.toBe(originalStringify);
+        expect(typeof structuredClone).toBe('undefined');
+        expect(window.structuredClone).toBeUndefined();
+        const input = { foo: 'bar' };
+        const result = helpers.cloneGlassEffectConfig(input);
+        expect(result).toBe(input);
+        global.structuredClone = originalStructuredClone;
+        window.structuredClone = originalWindowStructuredClone;
+        JSON.stringify = originalStringify;
+    });
+
+    it('glass helpers should compute opacity across branches', async () => {
+        await import('@pages/position/index.js');
+        const helpers = window.__testGlassHelpers;
+
+        const noResponsive = { opacity: 0.42 };
+        expect(helpers.computeGlassOpacity(noResponsive)).toBe(0.42);
+        expect(helpers.computeGlassOpacity(null)).toBeUndefined();
+
+        const responsive = {
+            opacity: 0.8,
+            responsiveOpacity: { desktop: 0.7, mobile: 0.5 },
+        };
+        window.innerWidth = UI_BREAKPOINTS.MOBILE + 1;
+        expect(helpers.computeGlassOpacity(responsive)).toBe(0.7);
+        window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+        expect(helpers.computeGlassOpacity(responsive)).toBe(0.5);
+
+        const targetConfig = {
+            opacity: 0,
+            responsiveOpacity: { desktop: 0.65, mobile: 0.55 },
+        };
+        window.innerWidth = UI_BREAKPOINTS.MOBILE + 1;
+        helpers.applyResponsiveGlassOpacity(targetConfig);
+        expect(targetConfig.opacity).toBe(0.65);
+
+        const responsiveFallback = {
+            opacity: 0.9,
+            responsiveOpacity: { desktop: undefined, mobile: undefined },
+        };
+        expect(helpers.computeGlassOpacity(responsiveFallback)).toBe(0.9);
+        helpers.applyResponsiveGlassOpacity(responsiveFallback);
+        expect(responsiveFallback.opacity).toBe(0.9);
+
+        const originalWindow = global.window;
+        global.window = null;
+        expect(helpers.computeGlassOpacity({ opacity: 0.33 })).toBe(0.33);
+        global.window = originalWindow;
+        window.innerWidth = 1024;
+    });
+
+    it('glass helpers should guard against missing target config', async () => {
+        await import('@pages/position/index.js');
+        const helpers = window.__testGlassHelpers;
+        expect(() => helpers.applyResponsiveGlassOpacity(null)).not.toThrow();
     });
 
     it('should handle error on currency change', async () => {

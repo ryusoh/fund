@@ -226,7 +226,11 @@ export const POSITION_PNL_HIGHLIGHT = {
 
 export const PIE_CHART_GLASS_EFFECT = {
     enabled: true,
-    opacity: 0.75, // More transparent for liquid glass effect
+    opacity: 0.75, // Default fallback; overridden via responsiveOpacity at runtime
+    responsiveOpacity: {
+        desktop: 0.4,
+        mobile: 0.75,
+    },
     // All border settings in one place
     borders: {
         // Slice separation borders (between pie slices)

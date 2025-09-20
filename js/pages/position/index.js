@@ -13,7 +13,12 @@ import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
-import { APP_SETTINGS, CURRENCY_SYMBOLS, PIE_CHART_GLASS_EFFECT } from '@js/config.js';
+import {
+    APP_SETTINGS,
+    CURRENCY_SYMBOLS,
+    PIE_CHART_GLASS_EFFECT,
+    UI_BREAKPOINTS,
+} from '@js/config.js';
 import { triggerCenterToggle } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
@@ -22,7 +27,59 @@ let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
 
 // Make glass effect config globally available for Chart.js
-window.pieChartGlassEffect = PIE_CHART_GLASS_EFFECT;
+function cloneGlassEffectConfig(config) {
+    const globalClone = typeof globalThis !== 'undefined' ? globalThis.structuredClone : undefined;
+    if (typeof globalClone === 'function') {
+        return globalClone(config);
+    }
+    try {
+        return JSON.parse(JSON.stringify(config));
+    } catch (error) {
+        logger.warn('Unable to deep clone glass effect config. Using reference.', error);
+        return config;
+    }
+}
+
+function computeGlassOpacity(glassConfig) {
+    if (typeof window === 'undefined' || window === null || !glassConfig) {
+        return glassConfig?.opacity;
+    }
+    const { responsiveOpacity } = glassConfig;
+    if (!responsiveOpacity) {
+        return glassConfig.opacity;
+    }
+    const isDesktop = window.innerWidth > UI_BREAKPOINTS.MOBILE;
+    const desiredOpacity = isDesktop ? responsiveOpacity.desktop : responsiveOpacity.mobile;
+    if (typeof desiredOpacity === 'number') {
+        return desiredOpacity;
+    }
+    return glassConfig.opacity;
+}
+
+function applyResponsiveGlassOpacity(targetConfig = window.pieChartGlassEffect) {
+    if (!targetConfig) {
+        return;
+    }
+    const resolvedOpacity = computeGlassOpacity(targetConfig);
+    targetConfig.opacity =
+        typeof resolvedOpacity === 'number' ? resolvedOpacity : targetConfig.opacity;
+}
+
+if (
+    typeof window !== 'undefined' &&
+    typeof process !== 'undefined' &&
+    process.env &&
+    process.env.NODE_ENV === 'test'
+) {
+    window.__testGlassHelpers = {
+        cloneGlassEffectConfig,
+        computeGlassOpacity,
+        applyResponsiveGlassOpacity,
+    };
+}
+
+window.pieChartGlassEffect = cloneGlassEffectConfig(PIE_CHART_GLASS_EFFECT);
+applyResponsiveGlassOpacity();
 
 // Initialize application with visibility checks
 async function startApp() {
@@ -89,6 +146,7 @@ if (document.readyState === 'loading') {
 
 // Handle responsive adjustments
 window.addEventListener('resize', () => {
+    applyResponsiveGlassOpacity();
     checkAndToggleVerticalScroll(); // Handles general scroll state on resize
     alignToggleWithChartMobile(); // Re-align on resize
 });
