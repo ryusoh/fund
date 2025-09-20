@@ -10,6 +10,7 @@ describe('drawImage', () => {
 
     beforeEach(() => {
         // Mock the offscreen context
+        let storedGlobalAlpha = 1.0;
         offscreenCtx = {
             save: jest.fn(),
             restore: jest.fn(),
@@ -22,7 +23,12 @@ describe('drawImage', () => {
             drawImage: jest.fn(),
             fillRect: jest.fn(),
             scale: jest.fn(),
-            globalAlpha: 1.0,
+            get globalAlpha() {
+                return storedGlobalAlpha;
+            },
+            set globalAlpha(value) {
+                storedGlobalAlpha = value;
+            },
             globalCompositeOperation: 'source-over',
             fillStyle: '#000000',
         };
@@ -96,7 +102,8 @@ describe('drawImage', () => {
     it('should set custom opacity when specified', () => {
         logoInfo.opacity = 0.5;
         drawImage(ctx, arc, img, logoInfo);
-        expect(ctx.globalAlpha).toBe(0.5);
+        const offscreenCtx = ctx.drawImage.mock.calls[0][0].getContext('2d');
+        expect(offscreenCtx.globalAlpha).toBe(0.5);
     });
 
     it('should set default scale when not specified', () => {
@@ -256,7 +263,31 @@ describe('drawImage', () => {
         logoInfo.renderAsWhite = false;
         drawImage(ctx, arc, img, logoInfo);
 
-        expect(document.createElement).not.toHaveBeenCalled();
+        expect(document.createElement).toHaveBeenCalledWith('canvas');
+        expect(ctx.drawImage).toHaveBeenCalledTimes(1);
+        const [firstArg, x, y, width, height] = ctx.drawImage.mock.calls[0];
+        expect(firstArg).toHaveProperty('getContext');
+        expect(x).toEqual(expect.any(Number));
+        expect(y).toEqual(expect.any(Number));
+        expect(width).toEqual(expect.any(Number));
+        expect(height).toEqual(expect.any(Number));
+    });
+
+    it('should fall back to direct drawing when offscreen context is unavailable', () => {
+        const originalCreateElement = document.createElement;
+        document.createElement = jest.fn(() => ({
+            width: 0,
+            height: 0,
+            getContext: jest.fn(() => null),
+        }));
+
+        try {
+            logoInfo.renderAsWhite = false;
+            drawImage(ctx, arc, img, logoInfo);
+        } finally {
+            document.createElement = originalCreateElement;
+        }
+
         expect(ctx.drawImage).toHaveBeenCalledWith(
             img,
             expect.any(Number),
@@ -264,6 +295,7 @@ describe('drawImage', () => {
             expect.any(Number),
             expect.any(Number)
         );
+        expect(ctx.globalAlpha).toBe(1);
     });
 
     it('should use global pixel height when LOGO_SIZE.mode is px', async () => {

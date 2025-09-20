@@ -125,7 +125,6 @@ export function drawImage(ctx, arc, img, logoInfo) {
     // rotationRad already computed above
 
     ctx.save();
-    ctx.globalAlpha = opacity;
 
     // Clip to the donut slice to keep logo inside
     ctx.beginPath();
@@ -149,27 +148,47 @@ export function drawImage(ctx, arc, img, logoInfo) {
         ctx.shadowOffsetY = LOGO_SHADOW.offsetY;
     }
 
-    if (renderAsWhite) {
-        // Use offscreen canvas to avoid getImageData readbacks on main canvas
-        const dpr =
-            typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
-        const off = document.createElement('canvas');
-        off.width = Math.max(1, Math.round(drawW * dpr));
-        off.height = Math.max(1, Math.round(drawH * dpr));
-        const offCtx = off.getContext('2d', { willReadFrequently: true });
-        if (offCtx) {
+    const dpr =
+        typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+    // Safari drops ctx.globalAlpha when shadows are active on <canvas>; bake opacity into the bitmap.
+    const off = document.createElement('canvas');
+    off.width = Math.max(1, Math.round(drawW * dpr));
+    off.height = Math.max(1, Math.round(drawH * dpr));
+    const offCtx = off.getContext('2d', { willReadFrequently: true });
+
+    if (offCtx) {
+        offCtx.save();
+        offCtx.scale(dpr, dpr);
+
+        offCtx.save();
+        offCtx.globalAlpha = opacity;
+        offCtx.drawImage(img, 0, 0, drawW, drawH);
+        offCtx.restore();
+
+        if (renderAsWhite) {
             offCtx.save();
-            offCtx.scale(dpr, dpr);
-            offCtx.drawImage(img, 0, 0, drawW, drawH);
-            // Mask to white silhouette
             offCtx.globalCompositeOperation = 'source-in';
             offCtx.fillStyle = 'white';
             offCtx.fillRect(0, 0, drawW, drawH);
             offCtx.restore();
         }
+
+        offCtx.restore();
+
         ctx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
     } else {
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        // Fallback if offscreen canvas creation fails; allows logos to render albeit without Safari fix
+        ctx.globalAlpha = opacity;
+        if (renderAsWhite) {
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.globalCompositeOperation = 'source-over';
+        } else {
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        }
+        ctx.globalAlpha = 1;
     }
 
     // Reset shadow properties to avoid affecting other elements
