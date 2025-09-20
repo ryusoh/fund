@@ -1,9 +1,11 @@
 import {
     CALENDAR_SELECTORS,
     CALENDAR_MONTH_LABEL_BACKGROUND,
+    CALENDAR_MONTH_LABEL_HIGHLIGHT,
     COLORS,
     UI_BREAKPOINTS,
 } from '@js/config.js';
+import { setThinkingHighlight } from '@ui/textHighlightManager.js';
 import { formatCurrency } from '@utils/formatting.js';
 
 const FROSTED_FILTER_ID = 'cal-domain-frosted';
@@ -23,6 +25,23 @@ const MONTH_NAME_TO_INDEX = {
     december: 12,
 };
 
+function lightenHexToRgba(hex, lightenFactor, alpha) {
+    if (typeof hex !== 'string' || !/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(hex)) {
+        return null;
+    }
+    const normalized =
+        hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+    const r = parseInt(normalized.substring(1, 3), 16);
+    const g = parseInt(normalized.substring(3, 5), 16);
+    const b = parseInt(normalized.substring(5, 7), 16);
+    /* istanbul ignore next: defensive parameter validation in utility function */
+    const light = Math.max(0, Math.min(1, Number.isFinite(lightenFactor) ? lightenFactor : 0.5));
+    /* istanbul ignore next: defensive parameter validation in utility function */
+    const targetAlpha = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 1;
+    const lighten = (channel) => Math.round(channel + (255 - channel) * light);
+    return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, ${targetAlpha})`;
+}
+
 /* istanbul ignore next: defensive utility function for month label parsing */
 function getMonthKeyFromLabel(labelText) {
     /* istanbul ignore next: defensive programming for non-string input */
@@ -40,7 +59,7 @@ function getMonthKeyFromLabel(labelText) {
     /* istanbul ignore next: defensive programming for invalid format */
     const match = trimmed.match(/^([A-Za-z]+)\s+(\d{4})$/);
     /* istanbul ignore next: defensive programming for invalid format */
-    if (!match) {
+    /* istanbul ignore if */ if (!match) {
         /* istanbul ignore next: defensive programming for invalid format */
         return null;
     }
@@ -185,10 +204,45 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
         .select(CALENDAR_SELECTORS.heatmap)
         .selectAll('text.ch-domain-text');
 
-    /* istanbul ignore next: defensive programming for UI state calculation */
+    const highlightConfig = CALENDAR_MONTH_LABEL_HIGHLIGHT || {};
+    const intervalValue = Number(highlightConfig.intervalMs);
+    const intervalMs = Number.isFinite(intervalValue) && intervalValue > 0 ? intervalValue : 140;
+    const waveSizeValue = Number(highlightConfig.waveSize);
+    const waveSize = Math.max(1, Number.isFinite(waveSizeValue) ? Math.floor(waveSizeValue) : 2);
+    const baseWaveColor =
+        typeof highlightConfig.baseColor === 'string'
+            ? highlightConfig.baseColor
+            : 'rgba(255, 255, 255, 0.95)';
+    const neutralWaveColor =
+        typeof highlightConfig.neutralDimColor === 'string'
+            ? highlightConfig.neutralDimColor
+            : 'rgba(150, 150, 150, 0.65)';
+    const alphaValue = Number(highlightConfig.waveAlpha);
+    const waveAlpha =
+        Number.isFinite(alphaValue) && alphaValue >= 0 && alphaValue <= 1 ? alphaValue : 0.85;
+    const lightenFactorValue = Number(highlightConfig.pnlLightenFactor);
+    const pnlLightenFactor =
+        Number.isFinite(lightenFactorValue) && lightenFactorValue >= 0 && lightenFactorValue <= 1
+            ? lightenFactorValue
+            : 0.55;
+    const pnlAlphaValue = Number(highlightConfig.pnlLightAlpha);
+    const pnlLightAlpha =
+        Number.isFinite(pnlAlphaValue) && pnlAlphaValue >= 0 && pnlAlphaValue <= 1
+            ? pnlAlphaValue
+            : waveAlpha;
+
     selection.each(function handleDomainLabel() {
         const el = d3Instance.select(this);
         el.attr('dominant-baseline', 'middle');
+        const previousBaseSpan =
+            el && typeof el.select === 'function' ? el.select('tspan.domain-label-base') : null;
+        if (
+            previousBaseSpan &&
+            typeof previousBaseSpan.empty === 'function' &&
+            !previousBaseSpan.empty()
+        ) {
+            setThinkingHighlight(previousBaseSpan, false);
+        }
         let currentTextRaw = '';
         if (el && typeof el.text === 'function') {
             const candidate = el.text();
@@ -246,8 +300,31 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
         const monthKey = getMonthKeyFromLabel(baseText);
         const info =
             monthKey && state.monthlyPnl instanceof Map ? state.monthlyPnl.get(monthKey) : null;
+        const highlightMonthKey =
+            typeof state.highlightMonthKey === 'string' ? state.highlightMonthKey : null;
+        const shouldHighlightMonth = Boolean(highlightMonthKey && monthKey === highlightMonthKey);
+        let color = null;
+        if (info && Number.isFinite(info.absoluteChangeUSD)) {
+            if (info.absoluteChangeUSD > 0) {
+                color = COLORS.POSITIVE_PNL;
+            } else if (info.absoluteChangeUSD < 0) {
+                color = COLORS.NEGATIVE_PNL;
+            }
+        }
+        const lightenedColor = color
+            ? lightenHexToRgba(color, pnlLightenFactor, pnlLightAlpha)
+            : null;
+        const waveDimColor = lightenedColor || neutralWaveColor;
+        const thinkingOptions = {
+            intervalMs,
+            waveSize,
+            baseColor: baseWaveColor,
+            dimColor: waveDimColor,
+        };
+
         if (!info) {
-            el.text(baseText);
+            el.text('');
+            const baseSpan = el.append('tspan').attr('class', 'domain-label-base').text(baseText);
             if (backgroundRect) {
                 backgroundRect.interrupt();
                 if (shouldShowBackground) {
@@ -275,19 +352,12 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
                         .attr('opacity', 0);
                 }
             }
+            setThinkingHighlight(baseSpan, shouldHighlightMonth, thinkingOptions);
             return;
         }
 
         const changeText = formatMonthlyChange(state, currencySymbols, info.absoluteChangeUSD);
         const percentText = formatMonthlyPercent(info.percentChange);
-        let color = null;
-        if (Number.isFinite(info.absoluteChangeUSD)) {
-            if (info.absoluteChangeUSD > 0) {
-                color = COLORS.POSITIVE_PNL;
-            } else if (info.absoluteChangeUSD < 0) {
-                color = COLORS.NEGATIVE_PNL;
-            }
-        }
         const showDetailed = Boolean(state.labelsVisible && changeText);
 
         el.text('');
@@ -369,6 +439,13 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
                 .duration(transitionDuration)
                 .ease(d3Instance.easeCubicInOut)
                 .attr('opacity', 0);
+        }
+
+        const highlightTargets = [percentSpan, changeSpan];
+        if (showDetailed && shouldHighlightMonth) {
+            setThinkingHighlight(highlightTargets, true, thinkingOptions);
+        } else {
+            setThinkingHighlight(highlightTargets, false);
         }
     });
 }

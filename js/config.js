@@ -189,3 +189,13 @@ export const CALENDAR_MONTH_LABEL_BACKGROUND = {
     maxWidth: undefined,
     enabled: true,
 };
+
+export const CALENDAR_MONTH_LABEL_HIGHLIGHT = {
+    intervalMs: 40,
+    waveSize: 4,
+    baseColor: 'rgba(255, 255, 255, 0.95)',
+    neutralDimColor: 'rgba(150, 150, 150, 0.65)',
+    waveAlpha: 0.85,
+    pnlLightenFactor: 0.55,
+    pnlLightAlpha: 0.85,
+};

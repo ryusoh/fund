@@ -1,7 +1,21 @@
-import { CURRENCY_SYMBOLS, COLORS } from '@js/config.js';
+import { CURRENCY_SYMBOLS, COLORS, CALENDAR_MONTH_LABEL_HIGHLIGHT } from '@js/config.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
+import { setThinkingHighlight } from '@ui/textHighlightManager.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function lightenHexToRgba(hex, factor, alpha) {
+    const normalized =
+        hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+    const r = parseInt(normalized.substring(1, 3), 16);
+    const g = parseInt(normalized.substring(3, 5), 16);
+    const b = parseInt(normalized.substring(5, 7), 16);
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const light = clamp(Number.isFinite(factor) ? factor : 0.5, 0, 1);
+    const targetAlpha = clamp(Number.isFinite(alpha) ? alpha : 1, 0, 1);
+    const lighten = (channel) => Math.round(channel + (255 - channel) * light);
+    return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, ${targetAlpha})`;
+}
 
 class Selection {
     constructor(nodes) {
@@ -155,8 +169,13 @@ function createDomainLabel(textContent) {
 
 describe('calendarMonthLabelManager', () => {
     const originalInnerWidth = window.innerWidth;
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
 
     beforeEach(() => {
+        jest.useFakeTimers();
+        window.requestAnimationFrame = (callback) => setTimeout(() => callback(Date.now()), 16);
+        window.cancelAnimationFrame = (handle) => clearTimeout(handle);
         document.body.innerHTML = `
             <div class="page-center-wrapper">
                 <div id="cal-heatmap"></div>
@@ -168,11 +187,26 @@ describe('calendarMonthLabelManager', () => {
     });
 
     afterEach(() => {
+        document
+            .querySelectorAll('[data-thinking-active="true"]')
+            .forEach((node) => setThinkingHighlight(node, false));
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
         document.body.innerHTML = '';
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
             value: originalInnerWidth,
         });
+        if (originalRequestAnimationFrame) {
+            window.requestAnimationFrame = originalRequestAnimationFrame;
+        } else {
+            delete window.requestAnimationFrame;
+        }
+        if (originalCancelAnimationFrame) {
+            window.cancelAnimationFrame = originalCancelAnimationFrame;
+        } else {
+            delete window.cancelAnimationFrame;
+        }
     });
 
     it('renders detailed month labels with frosted background for positive change', () => {
@@ -256,6 +290,197 @@ describe('calendarMonthLabelManager', () => {
         expect(percentSpan.getAttribute('fill')).toBe(COLORS.NEGATIVE_PNL);
         expect(changeSpan.getAttribute('fill')).toBe(COLORS.NEGATIVE_PNL);
         expect(background.getAttribute('opacity')).toBe('0');
+    });
+
+    it('applies rolling grey highlight to the most recent month label', () => {
+        const monthlyPnl = new Map([
+            [
+                '2025-06',
+                {
+                    absoluteChangeUSD: 320,
+                    percentChange: 0.012,
+                },
+            ],
+        ]);
+        const state = {
+            selectedCurrency: 'USD',
+            labelsVisible: true,
+            rates: { USD: 1 },
+            monthlyPnl,
+            highlightMonthKey: '2025-06',
+        };
+
+        updateMonthLabels(d3Stub, state, CURRENCY_SYMBOLS);
+
+        const text = document.querySelector('.ch-domain-text');
+        const background = text.parentNode.querySelector('rect.domain-label-bg');
+        const percentSpan = document.querySelector('.domain-label-percent');
+        const changeSpan = document.querySelector('.domain-label-pnl');
+        expect(percentSpan).not.toBeNull();
+        expect(changeSpan).not.toBeNull();
+        const percentChars = percentSpan
+            ? Array.from(percentSpan.querySelectorAll('.text-thinking-char'))
+            : [];
+        const changeChars = changeSpan
+            ? Array.from(changeSpan.querySelectorAll('.text-thinking-char'))
+            : [];
+        const combinedChars = [...percentChars, ...changeChars];
+
+        expect(background).not.toBeNull();
+        const activeNodes = Array.from(document.querySelectorAll('[data-thinking-active="true"]'));
+        expect(activeNodes.length).toBe(2);
+        expect(
+            activeNodes.every(
+                (node) =>
+                    node.classList.contains('domain-label-percent') ||
+                    node.classList.contains('domain-label-pnl')
+            )
+        ).toBe(true);
+        expect(combinedChars.length).toBeGreaterThan(0);
+
+        const expectedDimColor = lightenHexToRgba(
+            COLORS.POSITIVE_PNL,
+            CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor ?? 0.55,
+            CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha ??
+                CALENDAR_MONTH_LABEL_HIGHLIGHT.waveAlpha ??
+                0.85
+        );
+        const fills = combinedChars.map((span) => span.getAttribute('fill'));
+        expect(fills).toContain(expectedDimColor);
+        const baseColorPreserved = combinedChars.some(
+            (span) => span.getAttribute('data-thinking-base-fill') === COLORS.POSITIVE_PNL
+        );
+        expect(baseColorPreserved).toBe(true);
+        expect(percentSpan.getAttribute('fill')).toBe(COLORS.POSITIVE_PNL);
+        expect(changeSpan.getAttribute('fill')).toBe(COLORS.POSITIVE_PNL);
+        expect(fills.every((fill) => Boolean(fill))).toBe(true);
+    });
+
+    it('falls back to neutral highlight when configuration values are invalid', () => {
+        const originalColor = COLORS.POSITIVE_PNL;
+        const originalFactor = CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor;
+        const originalAlpha = CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha;
+        COLORS.POSITIVE_PNL = 'not-a-hex';
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor = 'invalid';
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha = 'invalid';
+
+        const monthlyPnl = new Map([
+            [
+                '2025-06',
+                {
+                    absoluteChangeUSD: 320,
+                    percentChange: 0.012,
+                },
+            ],
+        ]);
+        const state = {
+            selectedCurrency: 'USD',
+            labelsVisible: true,
+            rates: { USD: 1 },
+            monthlyPnl,
+            highlightMonthKey: '2025-06',
+        };
+
+        updateMonthLabels(d3Stub, state, CURRENCY_SYMBOLS);
+
+        const text = document.querySelector('.ch-domain-text');
+        const percentSpan = text.querySelector('.domain-label-percent');
+        const changeSpan = text.querySelector('.domain-label-pnl');
+        const combinedChars = [
+            ...percentSpan.querySelectorAll('.text-thinking-char'),
+            ...changeSpan.querySelectorAll('.text-thinking-char'),
+        ];
+        const neutralColor = CALENDAR_MONTH_LABEL_HIGHLIGHT.neutralDimColor;
+        const fills = combinedChars.map((span) => span.getAttribute('fill'));
+        expect(fills).toContain(neutralColor);
+
+        setThinkingHighlight([percentSpan, changeSpan], false);
+        COLORS.POSITIVE_PNL = originalColor;
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor = originalFactor;
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha = originalAlpha;
+    });
+
+    it('lightens three-digit hex colors correctly for highlight tinting', () => {
+        const originalColor = COLORS.POSITIVE_PNL;
+        COLORS.POSITIVE_PNL = '#0f0';
+
+        const monthlyPnl = new Map([
+            [
+                '2025-06',
+                {
+                    absoluteChangeUSD: 220,
+                    percentChange: 0.01,
+                },
+            ],
+        ]);
+        const state = {
+            selectedCurrency: 'USD',
+            labelsVisible: true,
+            rates: { USD: 1 },
+            monthlyPnl,
+            highlightMonthKey: '2025-06',
+        };
+
+        updateMonthLabels(d3Stub, state, CURRENCY_SYMBOLS);
+
+        const percentSpan = document.querySelector('.domain-label-percent');
+        const changeSpan = document.querySelector('.domain-label-pnl');
+        const combinedChars = [
+            ...percentSpan.querySelectorAll('.text-thinking-char'),
+            ...changeSpan.querySelectorAll('.text-thinking-char'),
+        ];
+
+        const expectedDimColor = lightenHexToRgba('#00ff00', 0.55, 0.85);
+        const fills = combinedChars.map((span) => span.getAttribute('fill'));
+        expect(fills).toContain(expectedDimColor);
+
+        setThinkingHighlight([percentSpan, changeSpan], false);
+        COLORS.POSITIVE_PNL = originalColor;
+    });
+
+    it('uses default lighten factor when configuration value is invalid', () => {
+        const originalColor = COLORS.POSITIVE_PNL;
+        const originalFactor = CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor;
+        const originalAlpha = CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha;
+
+        COLORS.POSITIVE_PNL = '#123456';
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor = NaN;
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha = 0.9;
+
+        const monthlyPnl = new Map([
+            [
+                '2025-06',
+                {
+                    absoluteChangeUSD: 150,
+                    percentChange: 0.015,
+                },
+            ],
+        ]);
+        const state = {
+            selectedCurrency: 'USD',
+            labelsVisible: true,
+            rates: { USD: 1 },
+            monthlyPnl,
+            highlightMonthKey: '2025-06',
+        };
+
+        updateMonthLabels(d3Stub, state, CURRENCY_SYMBOLS);
+
+        const percentSpan = document.querySelector('.domain-label-percent');
+        const changeSpan = document.querySelector('.domain-label-pnl');
+        const combinedChars = [
+            ...percentSpan.querySelectorAll('.text-thinking-char'),
+            ...changeSpan.querySelectorAll('.text-thinking-char'),
+        ];
+
+        const expectedDimColor = 'rgba(148, 164, 179, 0.9)';
+        const fills = combinedChars.map((span) => span.getAttribute('fill'));
+        expect(fills).toContain(expectedDimColor);
+
+        setThinkingHighlight([percentSpan, changeSpan], false);
+        COLORS.POSITIVE_PNL = originalColor;
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightenFactor = originalFactor;
+        CALENDAR_MONTH_LABEL_HIGHLIGHT.pnlLightAlpha = originalAlpha;
     });
 
     // Tests for edge cases to achieve 100% coverage

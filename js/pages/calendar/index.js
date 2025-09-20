@@ -16,6 +16,7 @@ const appState = {
     labelsVisible: false,
     rates: {},
     monthlyPnl: new Map(),
+    highlightMonthKey: null,
 };
 
 // --- CALENDAR RENDERING ---
@@ -374,6 +375,7 @@ export async function initCalendar() {
         const lastVisibleMonth = new Date(
             Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
         );
+        appState.highlightMonthKey = `${lastVisibleMonth.getFullYear()}-${String(lastVisibleMonth.getMonth() + 1).padStart(2, '0')}`;
 
         /* istanbul ignore next: mathematical utility function for date calculations */
         const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
