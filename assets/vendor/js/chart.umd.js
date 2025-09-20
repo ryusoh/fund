@@ -7303,9 +7303,22 @@
                             smoothEdges: true,
                             quality: 'medium',
                             overlayColors: {
-                                inner: 'rgba(0, 255, 200, 0.4)',
-                                middle: 'rgba(0, 180, 255, 0.3)',
-                                outer: 'rgba(64, 224, 208, 0.2)'
+                                inner: 'rgba(0, 255, 200, 0.5)',
+                                middle: 'rgba(0, 180, 255, 0.4)',
+                                outer: 'rgba(64, 224, 208, 0.3)'
+                            },
+                            animation: {
+                                speed: 0.003,
+                                movement: {
+                                    hotspotRange: 0.8,
+                                    colorBlockRange: 0.4,
+                                    xFrequency: 1.0,
+                                    yFrequency: 1.3
+                                },
+                                colors: {
+                                    shiftIntensity: 0.3,
+                                    phaseOffset: 0.8
+                                }
                             }
                         }
                     }
@@ -7437,21 +7450,34 @@
                         outer: 'rgba(64, 224, 208, 0.2)'
                     };
 
+                    // Get configurable animation settings
+                    const animConfig = distortionConfig.animation || {
+                        speed: 0.003,
+                        movement: { hotspotRange: 0.8, colorBlockRange: 0.4, xFrequency: 1.0, yFrequency: 1.3 },
+                        colors: { shiftIntensity: 0.3, phaseOffset: 0.8 }
+                    };
+
                     // Create time-based animation for soap bubble effect
-                    const time = Date.now() * 0.003; // Slow, smooth animation
+                    const time = Date.now() * animConfig.speed;
                     const angle = (this.startAngle + this.endAngle) / 2;
                     const sliceIndex = Math.floor(angle / (Math.PI * 2) * 8); // Approximate slice index
-                    const animationOffset = time + sliceIndex * 0.8; // Each slice has different phase
+                    const animationOffset = time + sliceIndex * animConfig.colors.phaseOffset;
 
-                    // Create moving gradient center for soap bubble reflection effect
-                    const waveX = Math.sin(animationOffset) * (this.outerRadius * 0.3);
-                    const waveY = Math.cos(animationOffset * 1.3) * (this.outerRadius * 0.2);
-                    const gradientCenterX = this.x + waveX;
-                    const gradientCenterY = this.y + waveY;
+                    // Create moving color block center (entire gradient moves)
+                    const blockMoveX = Math.sin(animationOffset * 0.7) * (this.outerRadius * animConfig.movement.colorBlockRange);
+                    const blockMoveY = Math.cos(animationOffset * 0.9) * (this.outerRadius * animConfig.movement.colorBlockRange);
+                    const blockCenterX = this.x + blockMoveX;
+                    const blockCenterY = this.y + blockMoveY;
+
+                    // Create moving hotspot within the color block (relative to block center)
+                    const hotspotX = Math.sin(animationOffset * animConfig.movement.xFrequency) * (this.outerRadius * animConfig.movement.hotspotRange);
+                    const hotspotY = Math.cos(animationOffset * animConfig.movement.yFrequency) * (this.outerRadius * animConfig.movement.hotspotRange);
+                    const gradientCenterX = blockCenterX + hotspotX;
+                    const gradientCenterY = blockCenterY + hotspotY;
 
                     const distortionOverlay = t.createRadialGradient(
-                        gradientCenterX, gradientCenterY, this.innerRadius * 0.3,
-                        this.x, this.y, this.outerRadius * 1.2
+                        gradientCenterX, gradientCenterY, this.innerRadius * 0.1, // Smaller inner radius for focused hotspot
+                        gradientCenterX, gradientCenterY, this.outerRadius * 1.5   // Larger outer radius following the moving center
                     );
 
                     // Create iridescent color animation - like soap bubble reflections
@@ -7473,18 +7499,19 @@
                     const baseMiddle = parseRgba(overlayColors.middle);
                     const baseOuter = parseRgba(overlayColors.outer);
 
-                    // Create shifting rainbow-like colors for soap bubble effect
-                    const innerR = Math.floor(baseInner.r + (255 - baseInner.r) * colorShift1 * 0.3);
-                    const innerG = Math.floor(baseInner.g + (255 - baseInner.g) * colorShift2 * 0.2);
-                    const innerB = Math.floor(baseInner.b + (255 - baseInner.b) * colorShift3 * 0.4);
+                    // Create shifting rainbow-like colors for soap bubble effect using configurable intensity
+                    const intensity = animConfig.colors.shiftIntensity;
+                    const innerR = Math.floor(baseInner.r + (255 - baseInner.r) * colorShift1 * intensity);
+                    const innerG = Math.floor(baseInner.g + (255 - baseInner.g) * colorShift2 * intensity * 0.7);
+                    const innerB = Math.floor(baseInner.b + (255 - baseInner.b) * colorShift3 * intensity * 1.3);
 
-                    const middleR = Math.floor(baseMiddle.r + (255 - baseMiddle.r) * colorShift2 * 0.3);
-                    const middleG = Math.floor(baseMiddle.g + (255 - baseMiddle.g) * colorShift3 * 0.3);
-                    const middleB = Math.floor(baseMiddle.b + (255 - baseMiddle.b) * colorShift1 * 0.2);
+                    const middleR = Math.floor(baseMiddle.r + (255 - baseMiddle.r) * colorShift2 * intensity);
+                    const middleG = Math.floor(baseMiddle.g + (255 - baseMiddle.g) * colorShift3 * intensity);
+                    const middleB = Math.floor(baseMiddle.b + (255 - baseMiddle.b) * colorShift1 * intensity * 0.7);
 
-                    const outerR = Math.floor(baseOuter.r + (255 - baseOuter.r) * colorShift3 * 0.2);
-                    const outerG = Math.floor(baseOuter.g + (255 - baseOuter.g) * colorShift1 * 0.4);
-                    const outerB = Math.floor(baseOuter.b + (255 - baseOuter.b) * colorShift2 * 0.3);
+                    const outerR = Math.floor(baseOuter.r + (255 - baseOuter.r) * colorShift3 * intensity * 0.7);
+                    const outerG = Math.floor(baseOuter.g + (255 - baseOuter.g) * colorShift1 * intensity * 1.3);
+                    const outerB = Math.floor(baseOuter.b + (255 - baseOuter.b) * colorShift2 * intensity);
 
                     // Add multiple color stops for smooth soap bubble reflection
                     distortionOverlay.addColorStop(0, `rgba(${innerR}, ${innerG}, ${innerB}, ${baseInner.a * strength * 0.2})`);

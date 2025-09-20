@@ -259,6 +259,20 @@ export const PIE_CHART_GLASS_EFFECT = {
                 middle: 'rgba(0, 180, 255, 0.4)', // Deep sky blue - quantum field
                 outer: 'rgba(64, 224, 208, 0.3)', // Turquoise edge - holographic glow
             },
+            // Animation and movement settings
+            animation: {
+                speed: 0.002, // Overall animation speed (0.001 = very slow, 0.01 = fast)
+                movement: {
+                    hotspotRange: 1.2, // How far the light hotspot moves (0.5 = moderate, 1.2 = extreme)
+                    colorBlockRange: 0.8, // How far the entire color block moves (0.2 = subtle, 0.8 = dramatic)
+                    xFrequency: 1.3, // X-axis movement frequency multiplier
+                    yFrequency: 1.3, // Y-axis movement frequency multiplier
+                },
+                colors: {
+                    shiftIntensity: 1, // How much colors shift (0.1 = subtle, 0.5 = rainbow)
+                    phaseOffset: 5, // Phase difference between slices (0.5 = moderate, 1.5 = chaotic)
+                },
+            },
             // Alternative color schemes:
             // Warm glass: { inner: 'rgba(255, 200, 100, 0.3)', middle: 'rgba(255, 220, 150, 0.2)', outer: 'rgba(255, 240, 200, 0.1)' }
             // Purple glass: { inner: 'rgba(200, 100, 255, 0.3)', middle: 'rgba(220, 150, 255, 0.2)', outer: 'rgba(240, 200, 255, 0.1)' }
