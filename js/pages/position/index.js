@@ -13,13 +13,16 @@ import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
-import { APP_SETTINGS, CURRENCY_SYMBOLS } from '@js/config.js';
+import { APP_SETTINGS, CURRENCY_SYMBOLS, PIE_CHART_GLASS_EFFECT } from '@js/config.js';
 import { triggerCenterToggle } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
+
+// Make glass effect config globally available for Chart.js
+window.pieChartGlassEffect = PIE_CHART_GLASS_EFFECT;
 
 // Initialize application with visibility checks
 async function startApp() {

@@ -1,4 +1,4 @@
-import { LOGO_SIZE } from '@js/config.js';
+import { LOGO_SIZE, LOGO_SHADOW } from '@js/config.js';
 
 export function drawImage(ctx, arc, img, logoInfo) {
     // Skip very small slices to avoid clutter (about 10 degrees)
@@ -141,6 +141,14 @@ export function drawImage(ctx, arc, img, logoInfo) {
         ctx.rotate(rotationRad);
     }
 
+    // Apply macOS-style drop shadow before drawing the logo
+    if (LOGO_SHADOW && LOGO_SHADOW.enabled) {
+        ctx.shadowColor = LOGO_SHADOW.color;
+        ctx.shadowBlur = LOGO_SHADOW.blur;
+        ctx.shadowOffsetX = LOGO_SHADOW.offsetX;
+        ctx.shadowOffsetY = LOGO_SHADOW.offsetY;
+    }
+
     if (renderAsWhite) {
         // Use offscreen canvas to avoid getImageData readbacks on main canvas
         const dpr =
@@ -162,6 +170,14 @@ export function drawImage(ctx, arc, img, logoInfo) {
         ctx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
     } else {
         ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    }
+
+    // Reset shadow properties to avoid affecting other elements
+    if (LOGO_SHADOW && LOGO_SHADOW.enabled) {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
     }
 
     ctx.restore();

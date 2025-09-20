@@ -158,13 +158,13 @@
                     }
                 }
                 (async function () {
-                    // Load Chart.js then Datalabels
+                    // Load Chart.js then Datalabels (prettified versions for easier customization)
                     await loadLocalOrCdn(
-                        '../assets/vendor/js/chart.umd.min.js',
+                        '../assets/vendor/js/chart.umd.js',
                         'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js'
                     );
                     await loadLocalOrCdn(
-                        '../assets/vendor/js/chartjs-plugin-datalabels.min.js',
+                        '../assets/vendor/js/chartjs-plugin-datalabels.js',
                         'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js'
                     );
                     var m = document.createElement('script');

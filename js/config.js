@@ -76,8 +76,22 @@ export const LOGO_SIZE = {
     minPx: 14, // minimum rendered height in pixels for legibility
 };
 
+// macOS-style drop shadow configuration for chart logos
+export const LOGO_SHADOW = {
+    enabled: true,
+    // Shadow properties (like macOS toolbar icons)
+    blur: 5, // Shadow blur radius
+    offsetX: 8, // Horizontal offset
+    offsetY: 8, // Vertical offset (subtle downward shadow)
+    color: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
+    // Alternative shadow colors:
+    // 'rgba(0, 0, 0, 0.2)' = very subtle
+    // 'rgba(0, 0, 0, 0.4)' = medium (current)
+    // 'rgba(0, 0, 0, 0.6)' = more prominent
+};
+
 const renderAsWhite = true;
-const opacity = 0.7;
+const opacity = 0.5;
 export const TICKER_TO_LOGO_MAP = {
     GEO: {
         src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/geo.png',
@@ -208,4 +222,39 @@ export const POSITION_PNL_HIGHLIGHT = {
     waveAlpha: 0.85,
     pnlLightenFactor: 0.55,
     pnlLightAlpha: 0.85,
+};
+
+export const PIE_CHART_GLASS_EFFECT = {
+    enabled: true,
+    opacity: 0.75, // More transparent for liquid glass effect
+    // All border settings in one place
+    borders: {
+        // Slice separation borders (between pie slices)
+        sliceWidth: 1, // Thinner, more delicate borders
+        sliceColor: 'rgba(0, 0, 0, 0.1)', // Subtle white borders like iOS
+        // Outer/inner arc borders (for customArcBordersPlugin)
+        arcWidth: 1.5, // Thinner arc borders
+        arcColor: 'rgba(0, 0, 0, 0.15)', // Very subtle white outline
+        // Border style
+        style: 'solid', // Clean, crisp lines
+    },
+    // Enhanced liquid glass properties
+    liquidGlass: {
+        // Add subtle gradient overlay for depth
+        gradientOverlay: true,
+        gradientStart: 'rgba(255, 255, 255, 0.3)', // Top highlight
+        gradientEnd: 'rgba(255, 255, 255, 0.02)', // Bottom subtle
+        // Saturation boost for more vibrant liquid look
+        saturationBoost: 1.4, // 40% more saturated colors
+        // Optical distortion for glass refraction effect (disabled due to visual artifacts)
+        distortion: {
+            enabled: false,
+            strength: 0.02, // Subtle lens distortion (2% displacement)
+            type: 'radial', // 'radial' or 'spherical'
+            // Alternative strength values:
+            // 0.01 = very subtle
+            // 0.02 = medium (current)
+            // 0.04 = more pronounced
+        },
+    },
 };
