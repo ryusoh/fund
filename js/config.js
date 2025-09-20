@@ -257,11 +257,11 @@ export const PIE_CHART_GLASS_EFFECT = {
             type: 'barrel', // 'barrel' for outward bulge effect
             smoothEdges: true, // Smooth distortion falloff at edges
             quality: 'medium', // 'low', 'medium', 'high' - affects performance vs quality
-            // Configurable overlay colors for distortion effect - ELECTRIC OCEAN MATRIX
+            // Configurable overlay colors for distortion effect - QUANTUM COMPUTATION FIELD
             overlayColors: {
-                inner: 'rgba(0, 255, 200, 0.5)', // Electric aqua core - pure digital energy
-                middle: 'rgba(0, 180, 255, 0.4)', // Deep sky blue - quantum field
-                outer: 'rgba(64, 224, 208, 0.3)', // Turquoise edge - holographic glow
+                inner: 'rgba(0, 229, 255, 0.45)', // Quantum coherence core - computational precision
+                middle: 'rgba(38, 198, 218, 0.32)', // Superposition field - qubit entanglement
+                outer: 'rgba(77, 182, 172, 0.22)', // Quantum interference edge - algorithmic resonance
             },
             // Animation and movement settings
             animation: {
@@ -330,10 +330,10 @@ export const PIE_CHART_GLASS_EFFECT = {
             intensity: 0.5,
             width: 0.15,
             colors: {
-                primary: 'rgba(0, 255, 200, 0.2)',
-                secondary: 'rgba(0, 180, 255, 0.15)',
-                tertiary: 'rgba(64, 224, 208, 0.1)',
-                quaternary: 'rgba(120, 220, 255, 0.05)',
+                primary: 'rgba(0, 229, 255, 0.32)',
+                secondary: 'rgba(64, 196, 255, 0.24)',
+                tertiary: 'rgba(100, 181, 246, 0.18)',
+                quaternary: 'rgba(144, 164, 174, 0.12)',
             },
             arcCount: 3,
             arcThickness: 2.5,
@@ -345,8 +345,8 @@ export const PIE_CHART_GLASS_EFFECT = {
             innerOpacity: 0.15,
             outerOpacity: 0.05,
             pulseSpeed: 0.6,
-            innerColor: 'rgba(150, 255, 250, 1)',
-            outerColor: 'rgba(0, 25, 40, 1)',
+            innerColor: 'rgba(0, 188, 212, 1)',
+            outerColor: 'rgba(23, 37, 84, 1)',
         },
     },
 };
