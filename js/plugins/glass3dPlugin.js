@@ -502,7 +502,7 @@ function drawElectricTrail(
 
     for (let i = 0; i < arcCount; i += 1) {
         const color = colors[i % colors.length];
-        const localPhase = (state.phase * speedMultiplier + (i / arcCount) * 0.65) % 1;
+        const localPhase = state.phase * speedMultiplier + (i / arcCount) * 0.65;
         const startAngle = localPhase * Math.PI * 2;
         const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
         ctx.strokeStyle = color;
