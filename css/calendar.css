@@ -58,7 +58,7 @@ body.body-calendar {
 .cal-nav-btn {
     background: transparent;
     border: none;
-    color: rgba(120, 120, 125, 0.9);
+    color: rgba(85, 85, 85, 0.9);
     padding: 12px;
     cursor: pointer;
     font-size: 24px;
@@ -70,7 +70,7 @@ body.body-calendar {
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
-    filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3))
+    filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
         drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2));
     position: relative;
 }
@@ -84,8 +84,8 @@ body.body-calendar {
 
 .cal-nav-btn:active:not(:disabled) {
     transform: translateY(0px) scale(0.96);
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-        drop-shadow(0 0 0 2px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))
+        drop-shadow(0 0 0 2px rgba(255, 255, 255, 0.1));
 }
 
 .cal-nav-btn:disabled {
