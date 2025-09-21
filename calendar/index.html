@@ -50,6 +50,7 @@
         />
         <link rel="stylesheet" href="../css/base.css" />
         <link rel="stylesheet" href="../css/layout.css" />
+        <link rel="stylesheet" href="../css/main_index.css" />
         <link rel="stylesheet" href="../css/calendar.css" />
         <link rel="stylesheet" href="../css/toggle.css" />
         <link rel="stylesheet" href="../css/perf.css" />
@@ -95,6 +96,13 @@
         </script>
     </head>
     <body class="body-calendar no-pull-to-refresh">
+        <div class="container">
+            <ul>
+                <li>
+                    <a href="../position"><i class="fa fa-pie-chart"></i></a>
+                </li>
+            </ul>
+        </div>
         <a
             class="nav-back"
             href="https://www.lyeutsaon.com/fund"
@@ -145,6 +153,7 @@
 
         <!-- Main script for the calendar page -->
         <script type="module" src="../js/pages/calendar/index.js"></script>
+        <script defer src="../js/ui/nav_current_page.js"></script>
         <script
             defer
             src="../js/ui/service_worker_register.js"
