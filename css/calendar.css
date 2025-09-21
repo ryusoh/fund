@@ -53,29 +53,27 @@ body.body-calendar {
         touch-action: pan-y; /* Allow vertical scroll but capture horizontal swipes */
     }
 
-    /* Prevent navigation button shimmer/hover effects during touch interactions */
-    .cal-nav-btn {
-        /* Disable hover effects on touch devices */
-        pointer-events: auto;
-    }
-
-    /* Remove hover states during touch for mobile */
-    .cal-nav-btn:hover {
+    /* Completely disable hover effects on mobile to prevent shimmer */
+    .cal-nav-btn:hover,
+    .cal-nav-btn:focus,
+    .cal-nav-btn:focus:hover {
         /* Reset to base state on mobile to prevent shimmer during swipes */
-        color: rgba(85, 85, 85, 0.9);
+        color: rgba(85, 85, 85, 0.9) !important;
         filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
             drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
-            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2));
-        transform: none;
+            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2)) !important;
+        transform: none !important;
     }
 
-    /* Specifically prevent hover effects during active touch interactions */
-    .cal-heatmap-container.touch-active .cal-nav-btn:hover {
-        color: rgba(85, 85, 85, 0.9);
+    /* Extra prevention during touch interactions */
+    .cal-heatmap-container.touch-active .cal-nav-btn,
+    .cal-heatmap-container.touch-active .cal-nav-btn:hover,
+    .cal-heatmap-container.touch-active .cal-nav-btn:focus {
+        color: rgba(85, 85, 85, 0.9) !important;
         filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
             drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
-            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2));
-        transform: none;
+            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2)) !important;
+        transform: none !important;
     }
 }
 

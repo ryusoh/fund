@@ -213,6 +213,9 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         // Reset touch navigation state to prevent conflicts
         touchNavigationState.isNavigating = true;
         /* istanbul ignore next: event handler execution in test environment */
+        // Remove focus to prevent shimmer during subsequent swipes on mobile
+        e.target.blur();
+        /* istanbul ignore next: event handler execution in test environment */
         cal.previous();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -229,6 +232,9 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         // Reset touch navigation state to prevent conflicts
         touchNavigationState.isNavigating = true;
         /* istanbul ignore next: event handler execution in test environment */
+        // Remove focus to prevent shimmer during subsequent swipes on mobile
+        e.target.blur();
+        /* istanbul ignore next: event handler execution in test environment */
         cal.next();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -242,6 +248,9 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
     document.querySelector(CALENDAR_SELECTORS.todayButton).addEventListener('click', (e) => {
         /* istanbul ignore next: event handler execution in test environment */
         e.preventDefault();
+        /* istanbul ignore next: event handler execution in test environment */
+        // Remove focus to prevent shimmer during subsequent swipes on mobile
+        e.target.blur();
 
         /* istanbul ignore next: event handler execution in test environment */
         if (clickTimer) {
