@@ -41,7 +41,7 @@ hooks:
 		$(PY) -m pre_commit install; \
 	fi
 
-precommit: hooks
+precommit: hooks fmt-check
 	@# Run pre-commit only if a config exists
 	@if [ -f .pre-commit-config.yaml ]; then \
 		$(PY) -m pre_commit run --all-files --show-diff-on-failure; \
@@ -61,7 +61,14 @@ lint: js-lint
 
 fmt:
 	black .
-	prettier --write .
+	@# Prefer shared config if present
+	@if [ -f .ci-configs/js/.prettierrc.json ]; then \
+		npx prettier --write . \
+		  --config .ci-configs/js/.prettierrc.json \
+		  --ignore-path .ci-configs/js/.prettierignore; \
+	else \
+		prettier --write .; \
+	fi
 
 fmt-check:
 	@# Prefer shared config if present

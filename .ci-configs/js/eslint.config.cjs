@@ -69,7 +69,7 @@ module.exports = [
             'eol-last': ['warn', 'always'],
             semi: ['warn', 'always'],
             quotes: ['warn', 'single', { avoidEscape: true }],
-            indent: ['error', 4, { SwitchCase: 1 }],
+            // indent: ['error', 4, { SwitchCase: 1 }], // Disabled to avoid conflicts with Prettier
             'keyword-spacing': ['warn', { before: true, after: true }],
             'space-before-blocks': ['warn', 'always'],
             'comma-spacing': ['warn', { before: false, after: true }],

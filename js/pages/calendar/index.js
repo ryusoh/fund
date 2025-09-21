@@ -58,8 +58,8 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
             /* istanbul ignore next: filter method availability in test environment */
             const fadeOutSelection = allTextElements.filter
                 ? allTextElements.filter(function () {
-                    return this.textContent && this.textContent.trim() !== '';
-                })
+                      return this.textContent && this.textContent.trim() !== '';
+                  })
                 : allTextElements;
             /* istanbul ignore next: style method availability in test environment */
             if (fadeOutSelection.style) {
