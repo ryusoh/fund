@@ -100,6 +100,7 @@ body.body-calendar {
 .cal-nav-btn {
     background: transparent;
     border: none;
+    outline: none; /* Remove ugly focus outline */
     color: rgba(85, 85, 85, 0.9);
     padding: 12px;
     cursor: pointer;
@@ -133,6 +134,14 @@ body.body-calendar {
 .cal-nav-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Completely remove focus outline for all states */
+.cal-nav-btn:focus,
+.cal-nav-btn:focus-visible,
+.cal-nav-btn:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* Override Cal-Heatmap default styles for a dark theme */
