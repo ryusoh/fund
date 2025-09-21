@@ -41,14 +41,18 @@
 /* For mobile devices - adjust breakpoint as needed */
 @media (max-width: 768px) {
     #currencyToggleContainer {
-        position: fixed; /* Position relative to the viewport */
-        left: 0px; /* Stick to the screen's left edge */
+        position: absolute !important; /* Position relative to chart container for vertical centering */
+        top: 50% !important; /* Center vertically relative to pie chart */
+        transform: translateY(-50%) !important; /* Perfect vertical centering */
+        right: calc(-1 * (50vw - 50%)) !important; /* Stick to viewport right edge */
+        left: auto !important; /* Override any left positioning */
+        width: auto !important; /* Don't inherit parent width */
         flex-direction: column; /* Stack buttons vertically */
-        padding: 3px 3px;
+        padding: 3px;
         z-index: 1000; /* Keep on top on mobile too */
-        /* Remove left-side radius for flush appearance */
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
+        /* Remove right-side radius for flush appearance */
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
     }
 
     .currency-toggle {
