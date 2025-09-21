@@ -58,7 +58,7 @@ body.body-calendar {
 .cal-nav-btn {
     background-color: transparent;
     border: none;
-    color: rgba(44, 44, 46, 0.7);
+    color: rgba(120, 120, 125, 0.8);
     padding: 8px;
     cursor: pointer;
     font-size: 24px;
@@ -74,7 +74,7 @@ body.body-calendar {
 }
 
 .cal-nav-btn:hover:not(:disabled) {
-    color: rgba(84, 84, 88, 0.7);
+    color: rgba(140, 140, 145, 0.9);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
 }
 
