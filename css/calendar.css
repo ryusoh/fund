@@ -37,10 +37,45 @@ body.body-calendar {
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* Smooth resize transitions */
 }
 
+/* Touch-friendly calendar interactions */
+.cal-heatmap-container {
+    /* Enable smooth touch scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    /* Improve touch responsiveness */
+    touch-action: pan-x pan-y;
+}
+
 /* Mobile layout (up to 768px) */
 @media (max-width: 768px) {
     .cal-heatmap-container {
         margin-top: 70px;
+        /* Allow horizontal swipe gestures for navigation */
+        touch-action: pan-y; /* Allow vertical scroll but capture horizontal swipes */
+    }
+
+    /* Prevent navigation button shimmer/hover effects during touch interactions */
+    .cal-nav-btn {
+        /* Disable hover effects on touch devices */
+        pointer-events: auto;
+    }
+
+    /* Remove hover states during touch for mobile */
+    .cal-nav-btn:hover {
+        /* Reset to base state on mobile to prevent shimmer during swipes */
+        color: rgba(85, 85, 85, 0.9);
+        filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
+            drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
+            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2));
+        transform: none;
+    }
+
+    /* Specifically prevent hover effects during active touch interactions */
+    .cal-heatmap-container.touch-active .cal-nav-btn:hover {
+        color: rgba(85, 85, 85, 0.9);
+        filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
+            drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
+            drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2));
+        transform: none;
     }
 }
 

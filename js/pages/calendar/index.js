@@ -19,6 +19,7 @@ let CalHeatmap; // will be loaded lazily from local vendor or CDN
 let calendarInstance = null; // Store calendar instance for resize handling
 let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
+const touchNavigationState = { isNavigating: false }; // Shared touch navigation state
 
 const appState = {
     selectedCurrency: 'USD',
@@ -186,6 +187,13 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
 function setupEventListeners(cal, byDate, state, currencySymbols) {
     cal.on('fill', () => {
         renderLabels(cal, byDate, state, currencySymbols);
+        // Reset touch navigation state when calendar updates
+        if (touchNavigationState.isNavigating) {
+            setTimeout(() => {
+                touchNavigationState.isNavigating = false;
+                logger.log('Touch navigation reset after calendar fill');
+            }, 100);
+        }
     });
 
     window.addEventListener('calendar-zoom-end', () => {
@@ -198,7 +206,15 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         /* istanbul ignore next: event handler execution in test environment */
         e.preventDefault();
         /* istanbul ignore next: event handler execution in test environment */
+        // Reset touch navigation state to prevent conflicts
+        touchNavigationState.isNavigating = true;
+        /* istanbul ignore next: event handler execution in test environment */
         cal.previous();
+        /* istanbul ignore next: event handler execution in test environment */
+        // Release navigation lock after a short delay
+        setTimeout(() => {
+            touchNavigationState.isNavigating = false;
+        }, 150);
     });
 
     /* istanbul ignore next: event listener registration in test environment */
@@ -206,7 +222,15 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         /* istanbul ignore next: event handler execution in test environment */
         e.preventDefault();
         /* istanbul ignore next: event handler execution in test environment */
+        // Reset touch navigation state to prevent conflicts
+        touchNavigationState.isNavigating = true;
+        /* istanbul ignore next: event handler execution in test environment */
         cal.next();
+        /* istanbul ignore next: event handler execution in test environment */
+        // Release navigation lock after a short delay
+        setTimeout(() => {
+            touchNavigationState.isNavigating = false;
+        }, 150);
     });
 
     let clickTimer = null;
@@ -225,10 +249,18 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
             /* istanbul ignore next: event handler execution in test environment */
             clickTimer = setTimeout(() => {
                 /* istanbul ignore next: event handler execution in test environment */
+                // Reset touch navigation state to prevent conflicts
+                touchNavigationState.isNavigating = true;
+                /* istanbul ignore next: event handler execution in test environment */
                 state.isAnimating = true;
                 state.labelsVisible = !state.labelsVisible;
                 /* istanbul ignore next: event handler execution in test environment */
                 cal.jumpTo(getNyDate());
+                /* istanbul ignore next: event handler execution in test environment */
+                // Release navigation lock after a short delay
+                setTimeout(() => {
+                    touchNavigationState.isNavigating = false;
+                }, 150);
                 /* istanbul ignore next: event handler execution in test environment */
                 clickTimer = null;
             }, 250);
@@ -373,6 +405,199 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
             handleViewportChange();
         }, 50);
     });
+
+    // Touch swipe navigation for mobile devices
+    setupTouchNavigation(cal);
+}
+
+// --- TOUCH NAVIGATION ---
+
+/**
+ * Sets up touch swipe navigation for the calendar on mobile devices
+ * @param {CalHeatmap} cal The CalHeatmap instance
+ */
+function setupTouchNavigation(cal) {
+    const calendarContainer = document.querySelector(CALENDAR_SELECTORS.container);
+    if (!calendarContainer) {
+        return;
+    }
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let isSwiping = false;
+    let swipeStartTime = 0;
+
+    // Minimum distance for a swipe to be registered (in pixels)
+    const MIN_SWIPE_DISTANCE = 50;
+    // Maximum vertical distance allowed for horizontal swipe
+    const MAX_VERTICAL_DISTANCE = 100;
+    // Debounce time to prevent rapid successive swipes (ms)
+    const SWIPE_DEBOUNCE_TIME = 300;
+
+    // Reset touch state
+    const resetTouchState = () => {
+        touchStartX = 0;
+        touchStartY = 0;
+        touchEndX = 0;
+        touchEndY = 0;
+        isSwiping = false;
+        swipeStartTime = 0;
+        // Remove touch-active class to restore button hover effects
+        calendarContainer.classList.remove('touch-active');
+    };
+
+    /* istanbul ignore next: touch event handling in test environment */
+    calendarContainer.addEventListener(
+        'touchstart',
+        (e) => {
+            /* istanbul ignore next: touch event handling in test environment */
+            // Don't start new swipe if currently navigating
+            if (touchNavigationState.isNavigating) {
+                return;
+            }
+
+            /* istanbul ignore next: touch event handling in test environment */
+            resetTouchState();
+            /* istanbul ignore next: touch event handling in test environment */
+            touchStartX = e.touches[0].clientX;
+            /* istanbul ignore next: touch event handling in test environment */
+            touchStartY = e.touches[0].clientY;
+            /* istanbul ignore next: touch event handling in test environment */
+            isSwiping = true;
+            /* istanbul ignore next: touch event handling in test environment */
+            swipeStartTime = Date.now();
+            /* istanbul ignore next: touch event handling in test environment */
+            // Add touch-active class to prevent button hover effects
+            calendarContainer.classList.add('touch-active');
+            /* istanbul ignore next: touch event handling in test environment */
+            logger.log('Touch swipe started');
+        },
+        { passive: true }
+    );
+
+    /* istanbul ignore next: touch event handling in test environment */
+    calendarContainer.addEventListener(
+        'touchmove',
+        (e) => {
+            /* istanbul ignore next: touch event handling in test environment */
+            if (!isSwiping) {
+                return;
+            }
+
+            /* istanbul ignore next: touch event handling in test environment */
+            touchEndX = e.touches[0].clientX;
+            /* istanbul ignore next: touch event handling in test environment */
+            touchEndY = e.touches[0].clientY;
+
+            // Calculate distances
+            /* istanbul ignore next: touch event handling in test environment */
+            const horizontalDistance = Math.abs(touchEndX - touchStartX);
+            /* istanbul ignore next: touch event handling in test environment */
+            const verticalDistance = Math.abs(touchEndY - touchStartY);
+
+            // If this looks like a horizontal swipe, prevent default scroll behavior
+            /* istanbul ignore next: touch event handling in test environment */
+            if (horizontalDistance > verticalDistance && horizontalDistance > 20) {
+                /* istanbul ignore next: touch event handling in test environment */
+                e.preventDefault();
+            }
+        },
+        { passive: false }
+    );
+
+    /* istanbul ignore next: touch event handling in test environment */
+    calendarContainer.addEventListener(
+        'touchend',
+        () => {
+            /* istanbul ignore next: touch event handling in test environment */
+            if (!isSwiping || touchNavigationState.isNavigating) {
+                resetTouchState();
+                return;
+            }
+
+            /* istanbul ignore next: touch event handling in test environment */
+            const swipeEndTime = Date.now();
+            /* istanbul ignore next: touch event handling in test environment */
+            const swipeDuration = swipeEndTime - swipeStartTime;
+
+            /* istanbul ignore next: touch event handling in test environment */
+            // Ignore very fast or very slow swipes
+            if (swipeDuration < 50 || swipeDuration > 1000) {
+                resetTouchState();
+                return;
+            }
+
+            /* istanbul ignore next: touch event handling in test environment */
+            const horizontalDistance = touchEndX - touchStartX;
+            /* istanbul ignore next: touch event handling in test environment */
+            const verticalDistance = Math.abs(touchEndY - touchStartY);
+
+            // Check if this qualifies as a horizontal swipe
+            /* istanbul ignore next: touch event handling in test environment */
+            if (
+                Math.abs(horizontalDistance) >= MIN_SWIPE_DISTANCE &&
+                verticalDistance <= MAX_VERTICAL_DISTANCE
+            ) {
+                /* istanbul ignore next: touch event handling in test environment */
+                const prevButton = document.querySelector(CALENDAR_SELECTORS.prevButton);
+                /* istanbul ignore next: touch event handling in test environment */
+                const nextButton = document.querySelector(CALENDAR_SELECTORS.nextButton);
+
+                /* istanbul ignore next: touch event handling in test environment */
+                touchNavigationState.isNavigating = true; // Prevent multiple rapid navigations
+
+                /* istanbul ignore next: touch event handling in test environment */
+                if (horizontalDistance > 0) {
+                    // Swipe right - go to previous month
+                    /* istanbul ignore next: touch event handling in test environment */
+                    if (prevButton && !prevButton.disabled) {
+                        /* istanbul ignore next: touch event handling in test environment */
+                        logger.log('Touch swipe right detected - navigating to previous month');
+                        /* istanbul ignore next: touch event handling in test environment */
+                        cal.previous();
+                    } else {
+                        /* istanbul ignore next: touch event handling in test environment */
+                        logger.log('Swipe right ignored - previous button disabled');
+                    }
+                } else if (nextButton && !nextButton.disabled) {
+                    // Swipe left - go to next month
+                    /* istanbul ignore next: touch event handling in test environment */
+                    logger.log('Touch swipe left detected - navigating to next month');
+                    /* istanbul ignore next: touch event handling in test environment */
+                    cal.next();
+                } else {
+                    /* istanbul ignore next: touch event handling in test environment */
+                    logger.log('Swipe left ignored - next button disabled');
+                }
+
+                /* istanbul ignore next: touch event handling in test environment */
+                // Reset navigation lock after debounce time
+                setTimeout(() => {
+                    touchNavigationState.isNavigating = false;
+                    logger.log('Touch navigation unlocked');
+                }, SWIPE_DEBOUNCE_TIME);
+            }
+
+            /* istanbul ignore next: touch event handling in test environment */
+            resetTouchState();
+        },
+        { passive: true }
+    );
+
+    /* istanbul ignore next: touch event handling in test environment */
+    // Handle touch cancel events (when user lifts finger outside container, etc.)
+    calendarContainer.addEventListener(
+        'touchcancel',
+        () => {
+            /* istanbul ignore next: touch event handling in test environment */
+            logger.log('Touch cancelled - resetting state');
+            /* istanbul ignore next: touch event handling in test environment */
+            resetTouchState();
+        },
+        { passive: true }
+    );
 }
 
 // --- VIEWPORT HANDLING ---
