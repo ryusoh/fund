@@ -85,8 +85,8 @@ h1 {
         left: 0;
         width: auto; /* Ensure it expands */
         bottom: auto;
-        font-size: 16px; /* Smaller font for mobile */
-        border-bottom-right-radius: 20px; /* Rounded corners for mobile */
+        font-size: 17px; /* Smaller font for mobile */
+        border-bottom-right-radius: 15px; /* Rounded corners for mobile */
         padding: 0px 15px 0px 15px; /* Adjusted padding for mobile */
         opacity: 0.65; /* Increased opacity for mobile */
         backdrop-filter: blur(5px);
