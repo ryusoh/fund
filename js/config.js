@@ -162,10 +162,37 @@ export const CALENDAR_SELECTORS = {
     pageWrapper: '.page-center-wrapper',
 };
 
+// Dynamic calendar range calculation based on viewport and zoom state
+export const getCalendarRange = () => {
+    const isZoomed = document.querySelector('.page-center-wrapper.zoomed') !== null;
+    const viewportWidth = window.innerWidth;
+
+    // Calculate available space for calendar
+    // Account for padding, margins, and UI elements
+    const availableWidth = isZoomed ? viewportWidth * 0.85 : viewportWidth * 0.9;
+
+    // Estimate space needed for each month (approximate)
+    // Each month needs ~280px width minimum for good readability
+    const monthWidth = 280;
+    const maxMonths = Math.floor(availableWidth / monthWidth);
+
+    // Responsive breakpoints with zoom awareness
+    if (viewportWidth <= 480 || (isZoomed && viewportWidth <= 768)) {
+        return 1; // Mobile or zoomed on small screens
+    }
+    if (viewportWidth <= 768 || (isZoomed && viewportWidth <= 1024)) {
+        return Math.min(2, maxMonths); // Tablet or zoomed on medium screens
+    }
+    if (viewportWidth <= 1200 || (isZoomed && viewportWidth <= 1600)) {
+        return Math.min(3, maxMonths); // Desktop or zoomed on large screens
+    }
+    return Math.min(3, maxMonths); // Large desktop - max 3 months
+};
+
 export const CALENDAR_CONFIG = {
     vertical: false,
     itemSelector: CALENDAR_SELECTORS.heatmap,
-    range: window.innerWidth > 768 ? 3 : 1,
+    range: getCalendarRange(),
     scale: {
         color: {
             type: 'diverging',

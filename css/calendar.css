@@ -26,6 +26,15 @@ body.body-calendar {
 .cal-heatmap-container {
     display: flex; /* Helps in centering the calendar block */
     justify-content: center; /* Horizontally center the calendar */
+    width: 100%;
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+}
+
+/* Calendar heatmap responsive sizing */
+#cal-heatmap {
+    width: auto;
+    max-width: 100%;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* Smooth resize transitions */
 }
 
 /* Mobile layout (up to 768px) */

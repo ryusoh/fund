@@ -1,5 +1,11 @@
 import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
-import { CURRENCY_SYMBOLS, DATA_PATHS, CALENDAR_SELECTORS, CALENDAR_CONFIG } from '@js/config.js';
+import {
+    CURRENCY_SYMBOLS,
+    DATA_PATHS,
+    CALENDAR_SELECTORS,
+    CALENDAR_CONFIG,
+    getCalendarRange,
+} from '@js/config.js';
 import { getNyDate } from '@utils/date.js';
 import { formatNumber } from '@utils/formatting.js';
 import { getCalendarData } from '@services/dataService.js';
@@ -10,6 +16,9 @@ import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 // --- STATE ---
 let d3; // will be loaded lazily from local vendor or CDN
 let CalHeatmap; // will be loaded lazily from local vendor or CDN
+let calendarInstance = null; // Store calendar instance for resize handling
+let calendarByDate = new Map(); // Store calendar data for resize handling
+let basePaintConfig = null; // Store base paint configuration for resizing
 
 const appState = {
     selectedCurrency: 'USD',
@@ -41,12 +50,16 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
         if (state.isAnimating) {
             // Smooth fade-out animation when toggling off
             /* istanbul ignore next: style method availability in test environment */
-            const fadeOutSelection = d3
+            const allTextElements = d3
                 .select(CALENDAR_SELECTORS.heatmap)
-                .selectAll('text.ch-subdomain-text')
-                .filter(function () {
+                .selectAll('text.ch-subdomain-text');
+
+            /* istanbul ignore next: filter method availability in test environment */
+            const fadeOutSelection = allTextElements.filter
+                ? allTextElements.filter(function () {
                     return this.textContent && this.textContent.trim() !== '';
-                });
+                })
+                : allTextElements;
             /* istanbul ignore next: style method availability in test environment */
             if (fadeOutSelection.style) {
                 fadeOutSelection
@@ -335,6 +348,83 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
                 break;
         }
     });
+
+    // Responsive calendar handling - update range on viewport changes
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            logger.log('Window resize detected, checking viewport changes');
+            handleViewportChange();
+        }, 150); // Debounce resize events
+    });
+
+    // Handle zoom state changes
+    window.addEventListener('calendar-zoom-start', () => {
+        // Small delay to ensure zoom class is applied
+        setTimeout(() => {
+            handleViewportChange();
+        }, 50);
+    });
+
+    window.addEventListener('calendar-zoom-end', () => {
+        // Small delay to ensure zoom class is removed
+        setTimeout(() => {
+            handleViewportChange();
+        }, 50);
+    });
+}
+
+// --- VIEWPORT HANDLING ---
+
+/**
+ * Handles viewport changes by updating calendar range if needed
+ */
+function handleViewportChange() {
+    if (!calendarInstance || !basePaintConfig) {
+        return;
+    }
+
+    const currentRange = getCalendarRange();
+
+    try {
+        // Check if the range actually needs to change
+        const currentCalendarRange = basePaintConfig.range;
+        if (currentCalendarRange !== currentRange) {
+            logger.log(
+                `Updating calendar range from ${currentCalendarRange} to ${currentRange} months`
+            );
+
+            // Update the stored config
+            basePaintConfig.range = currentRange;
+
+            // Simply re-paint with the updated configuration
+            // CalHeatmap should handle the range change gracefully
+            calendarInstance
+                .paint(basePaintConfig)
+                .then(() => {
+                    logger.log('Calendar successfully repainted with new range');
+                    // Force a re-render of labels after the calendar is repainted
+                    renderLabels(calendarInstance, calendarByDate, appState, CURRENCY_SYMBOLS);
+                })
+                .catch((error) => {
+                    logger.error('Error repainting calendar:', error);
+                    // If repaint fails, try a full refresh
+                    logger.log('Attempting full calendar refresh...');
+                    try {
+                        const calendarElement = document.querySelector(CALENDAR_SELECTORS.heatmap);
+                        if (calendarElement) {
+                            calendarElement.innerHTML = '';
+                        }
+                        calendarInstance.paint(basePaintConfig);
+                    } catch (refreshError) {
+                        logger.error('Full calendar refresh also failed:', refreshError);
+                    }
+                });
+        }
+    } catch (error) {
+        logger.error('Could not update calendar range dynamically:', error);
+    }
 }
 
 // --- INITIALIZATION ---
@@ -369,6 +459,7 @@ export async function initCalendar() {
         const { processedData, byDate, rates, monthlyPnl } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
         appState.monthlyPnl = monthlyPnl instanceof Map ? monthlyPnl : new Map();
+        calendarByDate = byDate; // Store globally for resize handling
 
         const parseDataDate = (dateString) => {
             const parts = dateString.split('-');
@@ -442,7 +533,7 @@ export async function initCalendar() {
         const indexToMonthDate = (index) => new Date(Math.floor(index / 12), index % 12, 1);
 
         /* istanbul ignore next: calendar range configuration calculation */
-        const configuredRange = Math.max(1, CALENDAR_CONFIG.range || 1);
+        const configuredRange = Math.max(1, getCalendarRange() || 1);
         /* istanbul ignore next: calendar range configuration calculation */
         const firstLabelIndex = monthToIndex(firstMonthWithLabels);
         /* istanbul ignore next: calendar range configuration calculation */
@@ -464,6 +555,7 @@ export async function initCalendar() {
         const calendarStartDate = indexToMonthDate(startIndex);
 
         const cal = new CalHeatmap();
+        calendarInstance = cal; // Store for resize handling
 
         setupEventListeners(cal, byDate, appState, CURRENCY_SYMBOLS);
 
@@ -531,6 +623,9 @@ export async function initCalendar() {
                 document.querySelector(CALENDAR_SELECTORS.nextButton).disabled = isMax;
             },
         };
+
+        // Store the base configuration for resize handling
+        basePaintConfig = { ...paintConfig };
 
         await cal.paint(paintConfig);
         initCalendarResponsiveHandlers();
