@@ -126,6 +126,16 @@ async function startApp() {
             );
             // Now that chart is rendered and initial scroll check is done:
             alignToggleWithChartMobile(); // Align toggle based on the rendered chart
+
+            // Trigger toggle animation after chart loads (mobile only)
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    const toggleContainer = document.querySelector('#currencyToggleContainer');
+                    if (toggleContainer) {
+                        toggleContainer.classList.add('chart-loaded');
+                    }
+                }, 200); // Small delay to ensure chart is fully rendered
+            }
             // Keep initial UI minimal on first load (no footer/table)
         } catch (error) {
             logger.error('Error during initial portfolio data load and display:', error);
