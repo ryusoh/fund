@@ -196,3 +196,35 @@ body.body-calendar {
 .page-center-wrapper.zoomed .content-block {
     max-width: none;
 }
+
+/* Mobile: Enhanced visibility with dark background overlay */
+@media (max-width: 768px) {
+    /* Add full-screen dark overlay behind everything */
+    body.body-calendar::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: -1; /* Behind content but above page background */
+        pointer-events: none; /* Don't interfere with interactions */
+    }
+
+    .page-center-wrapper {
+        background-color: transparent !important; /* No additional background needed */
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 20px !important; /* Internal padding for content */
+        /* Keep original positioning */
+        position: relative !important;
+        width: 100% !important;
+    }
+
+    .page-center-wrapper .content-block {
+        background-color: transparent !important; /* Remove any existing background */
+        box-shadow: none !important; /* Remove any existing shadow */
+    }
+}

@@ -201,7 +201,7 @@ export const CALENDAR_MONTH_LABEL_BACKGROUND = {
     alphaSlope: 0.65,
     transitionDuration: 220,
     maxWidth: undefined,
-    enabled: true,
+    enabled: false,
 };
 
 export const CALENDAR_MONTH_LABEL_HIGHLIGHT = {

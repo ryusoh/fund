@@ -236,8 +236,7 @@ describe('calendarMonthLabelManager', () => {
         expect(percentSpan.textContent).toBe('+5.00%');
         expect(changeSpan.textContent).toBe('+$500.00');
         expect(percentSpan.getAttribute('fill')).toBe(COLORS.POSITIVE_PNL);
-        expect(background).not.toBeNull();
-        expect(background.getAttribute('opacity')).toBe('1');
+        expect(background).toBeNull();
     });
 
     it('hides detailed spans when labels are invisible and preserves background size cache', () => {
@@ -260,7 +259,7 @@ describe('calendarMonthLabelManager', () => {
 
         expect(percentSpan.getAttribute('opacity')).toBe('0');
         expect(changeSpan.getAttribute('opacity')).toBe('0');
-        expect(background.getAttribute('width')).toBeDefined();
+        expect(background).toBeNull();
     });
 
     it('applies negative coloring and hides background when zoomed on desktop', () => {
@@ -289,7 +288,7 @@ describe('calendarMonthLabelManager', () => {
 
         expect(percentSpan.getAttribute('fill')).toBe(COLORS.NEGATIVE_PNL);
         expect(changeSpan.getAttribute('fill')).toBe(COLORS.NEGATIVE_PNL);
-        expect(background.getAttribute('opacity')).toBe('0');
+        expect(background).toBeNull();
     });
 
     it('applies rolling grey highlight to the most recent month label', () => {
@@ -326,7 +325,7 @@ describe('calendarMonthLabelManager', () => {
             : [];
         const combinedChars = [...percentChars, ...changeChars];
 
-        expect(background).not.toBeNull();
+        expect(background).toBeNull();
         const activeNodes = Array.from(document.querySelectorAll('[data-thinking-active="true"]'));
         expect(activeNodes.length).toBe(2);
         expect(
