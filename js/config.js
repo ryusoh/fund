@@ -169,7 +169,11 @@ export const CALENDAR_CONFIG = {
     scale: {
         color: {
             type: 'diverging',
-            range: ['rgba(244, 67, 54, 0.95)', 'rgba(84, 84, 88, 0.7)', 'rgba(76, 175, 80, 0.95)'],
+            range: [
+                'rgba(244, 67, 54, 0.95)',
+                'rgba(120, 120, 125, 0.5)',
+                'rgba(76, 175, 80, 0.95)',
+            ],
             domain: [-0.02, 0.02],
         },
     },

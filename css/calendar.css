@@ -56,26 +56,26 @@ body.body-calendar {
 }
 
 .cal-nav-btn {
-    /* Minimalist icon-only buttons */
     background-color: transparent;
     border: none;
-    color: rgba(44, 44, 46, 0.7); /* Set to match the container's background color as requested */
-    padding: 8px; /* Add some padding to make them easier to click */
+    color: rgba(44, 44, 46, 0.7);
+    padding: 8px;
     cursor: pointer;
-    font-size: 24px; /* Larger icons for better visibility */
+    font-size: 24px;
     transition:
         color 0.2s ease,
-        transform 0.1s ease;
-    /* Center the icon inside the button */
+        transform 0.1s ease,
+        filter 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* Disable the default tap highlight color on mobile browsers */
     -webkit-tap-highlight-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
 }
 
 .cal-nav-btn:hover:not(:disabled) {
-    color: rgba(84, 84, 88, 0.7); /* A slightly lighter shade for the hover effect */
+    color: rgba(84, 84, 88, 0.7);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
 }
 
 .cal-nav-btn:active:not(:disabled) {
@@ -165,6 +165,12 @@ body.body-calendar {
     /* Add a subtle frosted glass effect */
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Enhanced shadows for all calendar cells */
+.ch-subdomain-bg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) !important;
 }
 
 /* Zoom functionality */
