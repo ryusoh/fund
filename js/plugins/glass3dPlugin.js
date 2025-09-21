@@ -139,15 +139,22 @@ function resolveOptions(pluginOptions) {
 
 function ensureState(chart, options) {
     if (!chart.$glass3d) {
+        // Check if there's a previous state to preserve continuity
+        const existingPhase = chart._glass3dPhaseBackup || 0;
+        const existingAmbientPhase = chart._glass3dAmbientPhaseBackup || 0;
+        const existingContinuousPhase = chart._glass3dContinuousPhaseBackup || 0;
+
         chart.$glass3d = {
             pointerTarget: { x: 0, y: 0 },
             pointerSmoothed: { x: 0, y: 0 },
-            phase: 0,
-            ambientPhase: 0,
+            phase: existingPhase,
+            ambientPhase: existingAmbientPhase,
             lastTime: null,
             animationFrame: null,
             energyParticles: [],
             maxOffset: options.parallax?.maxOffsetPx ?? 8,
+            // Continuous unwrapped phase for electric trails
+            continuousPhase: existingContinuousPhase,
         };
         if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
             const tick = () => {
@@ -180,7 +187,7 @@ function updatePointerState(state, chart, options) {
     state.pointerSmoothed.y += (state.pointerTarget.y - state.pointerSmoothed.y) * damping;
 }
 
-function updatePhase(state, options) {
+function updatePhase(state, options, chart) {
     const perf = typeof globalThis !== 'undefined' ? globalThis.performance : undefined;
     const now = perf && typeof perf.now === 'function' ? perf.now() : Date.now();
     if (state.lastTime === null) {
@@ -190,9 +197,23 @@ function updatePhase(state, options) {
     const delta = (now - state.lastTime) / 1000;
     state.lastTime = now;
     const speed = options.reflection?.speed ?? 0;
+
+    // Keep wrapped phase for other effects that need it
     state.phase = (state.phase + delta * speed) % 1;
+
+    // Keep continuous unwrapped phase for electric trails (NEVER wraps)
+    state.continuousPhase = (state.continuousPhase || 0) + delta * speed;
+
     state.ambientPhase =
         (state.ambientPhase + delta * (options.ambientGlow?.pulseSpeed ?? 0.5)) % 1;
+
+    // Backup phase values to preserve across chart updates
+    if (chart) {
+        chart._glass3dPhaseBackup = state.phase;
+        chart._glass3dAmbientPhaseBackup = state.ambientPhase;
+        chart._glass3dContinuousPhaseBackup = state.continuousPhase;
+    }
+
     return delta;
 }
 
@@ -502,7 +523,7 @@ function drawElectricTrail(
 
     for (let i = 0; i < arcCount; i += 1) {
         const color = colors[i % colors.length];
-        const localPhase = state.phase * speedMultiplier + (i / arcCount) * 0.65;
+        const localPhase = state.continuousPhase * speedMultiplier + (i / arcCount) * 0.65;
         const startAngle = localPhase * Math.PI * 2;
         const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
         ctx.strokeStyle = color;
@@ -624,7 +645,7 @@ export const glass3dPlugin = {
         const depth = depthValue !== undefined ? depthValue : Math.max(outerRadius * 0.12, 12);
         const state = ensureState(chart, options);
         updatePointerState(state, chart, options);
-        const delta = updatePhase(state, options);
+        const delta = updatePhase(state, options, chart);
         updateEnergyParticles(state, delta, options);
         const pointer = {
             x: state.pointerSmoothed.x * state.maxOffset,
