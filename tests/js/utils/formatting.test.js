@@ -479,3 +479,100 @@ describe('formatNumber – explicit early guard', () => {
         expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS)).toBe('$1.00k');
     });
 });
+
+describe('getHistoricalCurrencyValue', () => {
+    it('should extract historical currency values correctly', () => {
+        const entry = {
+            totalUSD: 1000,
+            totalCNY: 7200,
+            totalJPY: 150000,
+            totalKRW: 1350000,
+            dailyChangeUSD: 50,
+            dailyChangeCNY: 360,
+            dailyChangeJPY: 7500,
+            dailyChangeKRW: 67500,
+        };
+
+        expect(formatting.getHistoricalCurrencyValue(entry, 'USD', 'total')).toBe(1000);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'CNY', 'total')).toBe(7200);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'JPY', 'total')).toBe(150000);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'KRW', 'total')).toBe(1350000);
+
+        expect(formatting.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')).toBe(50);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')).toBe(360);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'JPY', 'dailyChange')).toBe(7500);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'KRW', 'dailyChange')).toBe(67500);
+    });
+
+    it('should fallback to base value when historical data missing', () => {
+        const entry = {
+            total: 1000,
+            dailyChange: 50,
+        };
+
+        expect(formatting.getHistoricalCurrencyValue(entry, 'USD', 'total')).toBe(1000);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'CNY', 'total')).toBe(1000);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')).toBe(50);
+        expect(formatting.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')).toBe(50);
+    });
+
+    it('should handle null or undefined entry', () => {
+        expect(formatting.getHistoricalCurrencyValue(null, 'USD', 'total')).toBe(0);
+        expect(formatting.getHistoricalCurrencyValue(undefined, 'USD', 'total')).toBe(0);
+    });
+});
+
+describe('formatNumber with historical data', () => {
+    it('should use historical currency values when entry provided', () => {
+        const entry = {
+            totalUSD: 1000,
+            totalCNY: 7200,
+            totalJPY: 150000,
+            totalKRW: 1350000,
+            dailyChangeUSD: 50,
+            dailyChangeCNY: 360,
+            dailyChangeJPY: 7500,
+            dailyChangeKRW: 67500,
+        };
+
+        // Test total values (using historical data from entry, not rate conversion)
+        expect(
+            formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'USD', rates, entry, 'total')
+        ).toBe('$1.00k');
+        expect(
+            formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'CNY', rates, entry, 'total')
+        ).toBe('¥7.20k');
+        expect(
+            formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'JPY', rates, entry, 'total')
+        ).toBe('¥150.0k');
+        expect(
+            formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'KRW', rates, entry, 'total')
+        ).toBe('₩1.35m');
+
+        // Test daily change values with sign (using historical data from entry)
+        expect(
+            formatting.formatNumber(50, CURRENCY_SYMBOLS, true, 'USD', rates, entry, 'dailyChange')
+        ).toBe('+$50.0');
+        expect(
+            formatting.formatNumber(50, CURRENCY_SYMBOLS, true, 'CNY', rates, entry, 'dailyChange')
+        ).toBe('+¥360');
+        expect(
+            formatting.formatNumber(50, CURRENCY_SYMBOLS, true, 'JPY', rates, entry, 'dailyChange')
+        ).toBe('+¥7.50k');
+        expect(
+            formatting.formatNumber(50, CURRENCY_SYMBOLS, true, 'KRW', rates, entry, 'dailyChange')
+        ).toBe('+₩67.5k');
+    });
+
+    it('should fallback to rate conversion when no historical data', () => {
+        // Without entry, should use rate conversion (using actual mock rates)
+        // CNY: 1000 * 7.1646 = 7164.6 → 7.16k
+        // JPY: 1000 * 146.903 = 146903 → 146.9k
+        // KRW: 1000 * 1383.79 = 1383790 → 1.38m
+        expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'CNY', rates)).toBe('¥7.16k');
+        expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'JPY', rates)).toBe(
+            '¥146.9k'
+        );
+        expect(formatting.formatNumber(1000, CURRENCY_SYMBOLS, false, 'KRW', rates)).toBe('₩1.38m');
+    });
+});

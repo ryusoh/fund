@@ -123,14 +123,18 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                 currencySymbols,
                 true,
                 state.selectedCurrency,
-                state.rates
+                state.rates,
+                entry, // Pass the historical data entry
+                'dailyChange' // Specify we want daily change values
             );
             const totalText = formatNumber(
                 entry.total,
                 currencySymbols,
                 false,
                 state.selectedCurrency,
-                state.rates
+                state.rates,
+                entry, // Pass the historical data entry
+                'total' // Specify we want total values
             );
 
             el.append('tspan')

@@ -87,20 +87,68 @@ export function formatPercentage(value) {
 }
 
 /**
+ * Gets the historical currency value from a data entry based on the selected currency.
+ * @param {object} entry The data entry containing currency values.
+ * @param {string} currency The target currency ('USD', 'CNY', 'JPY', 'KRW').
+ * @param {string} valueType Either 'total' or 'dailyChange'.
+ * @returns {number} The value in the specified currency.
+ */
+export function getHistoricalCurrencyValue(entry, currency, valueType = 'total') {
+    if (!entry) {
+        return 0;
+    }
+
+    const currencyKey = `${valueType}${currency}`;
+
+    // Check if historical currency data exists
+    if (
+        entry[currencyKey] !== undefined &&
+        entry[currencyKey] !== null &&
+        !isNaN(entry[currencyKey])
+    ) {
+        return entry[currencyKey];
+    }
+
+    // Fallback to default field with rate conversion (backwards compatibility)
+    const baseValue = entry[valueType] || 0;
+    return baseValue; // Return as-is since this is already in base currency
+}
+
+/**
  * Formats a number into a compact representation (e.g., 1.2m, 500k).
+ * For historical data, uses actual historical currency values when available.
  * @param {number} num The number to format.
  * @param {object} currencySymbols The currency symbols object.
  * @param {boolean} withSign Whether to include a sign (+/-).
  * @param {string} currency The currency to use for formatting.
- * @param {object} rates The exchange rates.
+ * @param {object} rates The exchange rates (used only for non-historical data).
+ * @param {object} entry Optional: historical data entry to extract currency values from.
+ * @param {string} valueType Either 'total' or 'dailyChange' (used with entry).
  * @returns {string} The formatted number string.
  */
-export function formatNumber(num, currencySymbols, withSign = false, currency = 'USD', rates = {}) {
+export function formatNumber(
+    num,
+    currencySymbols,
+    withSign = false,
+    currency = 'USD',
+    rates = {},
+    entry = null,
+    valueType = 'total'
+) {
     if (num === null || num === undefined || isNaN(num)) {
         return '';
     }
 
-    const convertedNum = num * (rates[currency] || 1);
+    let convertedNum;
+
+    // If we have historical data entry, use actual historical currency values
+    if (entry && (valueType === 'total' || valueType === 'dailyChange')) {
+        convertedNum = getHistoricalCurrencyValue(entry, currency, valueType);
+    } else {
+        // Fallback to rate conversion for real-time or non-historical data
+        convertedNum = num * (rates[currency] || 1);
+    }
+
     const sign = convertedNum > 0 ? '+' : convertedNum < 0 ? '-' : '';
     const absNum = Math.abs(convertedNum);
     let formattedNum;
