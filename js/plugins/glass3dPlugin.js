@@ -597,25 +597,36 @@ function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, option
     const innerOpacity = glow.innerOpacity ?? 0.2;
     const outerOpacity = glow.outerOpacity ?? 0.05;
     const pulse = 0.5 + 0.5 * Math.sin(state.ambientPhase * Math.PI * 2);
-    const radius = outerRadius * (1.05 + pulse * 0.05);
+
     ctx.save();
+
+    // Clip to exact donut boundaries to prevent glow bleeding
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
+    ctx.clip('evenodd');
+
     ctx.globalCompositeOperation = 'screen';
+
+    // Use outerRadius as max extent instead of exceeding it
+    const gradientRadius = outerRadius * (0.9 + pulse * 0.1);
     const gradient = ctx.createRadialGradient(
         centerX,
         centerY,
         innerRadius,
         centerX,
         centerY,
-        radius * 1.3
+        gradientRadius
     );
     const innerColor = applyAlpha(glow.innerColor, innerOpacity * (0.6 + pulse * 0.4));
     const outerColor = applyAlpha(glow.outerColor, outerOpacity);
     gradient.addColorStop(0, innerColor);
     gradient.addColorStop(1, outerColor);
     ctx.fillStyle = gradient;
+
     ctx.beginPath();
-    // Draw outer circle
-    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, 0, Math.PI * 2);
+    // Draw exactly to outer radius, no overflow
+    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
     // Cut out inner circle to create donut shape
     ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
     ctx.fill('evenodd');

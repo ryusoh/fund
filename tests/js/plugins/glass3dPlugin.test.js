@@ -15,6 +15,7 @@ function createMockCtx() {
         stroke: jest.fn(),
         translate: jest.fn(),
         scale: jest.fn(),
+        clip: jest.fn(),
         createRadialGradient: jest.fn(gradient),
         createLinearGradient: jest.fn(gradient),
         filter: '',
