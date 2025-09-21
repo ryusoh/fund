@@ -464,22 +464,36 @@ function computeMonthlyPnl(processedData) {
 
         /* istanbul ignore next: defensive programming for zero base total edge case */
         const absoluteChangeUSD = lastTotal - baseTotal;
-        /* istanbul ignore next: defensive programming for zero base total edge case */
-        let percentChange = null;
 
-        /* istanbul ignore next: defensive programming for zero base total edge case */
-        if (baseTotal === 0) {
-            /* istanbul ignore next: defensive programming for zero base total edge case */
-            percentChange = absoluteChangeUSD === 0 ? 0 : null;
-        } else {
-            /* istanbul ignore next: defensive programming for zero base total edge case */
-            percentChange = absoluteChangeUSD / baseTotal;
-        }
+        // Calculate monthly changes for all currencies using actual historical data
+        const absoluteChangeCNY = (lastEntry.totalCNY || 0) - (baseEntry.totalCNY || 0);
+        const absoluteChangeJPY = (lastEntry.totalJPY || 0) - (baseEntry.totalJPY || 0);
+        const absoluteChangeKRW = (lastEntry.totalKRW || 0) - (baseEntry.totalKRW || 0);
+
+        // Calculate percentage changes for all currencies
+        const calculatePercentChange = (change, base) => {
+            if (base === 0) {
+                return change === 0 ? 0 : null;
+            }
+            return change / base;
+        };
+
+        const percentChangeUSD = calculatePercentChange(absoluteChangeUSD, baseTotal);
+        const percentChangeCNY = calculatePercentChange(absoluteChangeCNY, baseEntry.totalCNY || 0);
+        const percentChangeJPY = calculatePercentChange(absoluteChangeJPY, baseEntry.totalJPY || 0);
+        const percentChangeKRW = calculatePercentChange(absoluteChangeKRW, baseEntry.totalKRW || 0);
 
         /* istanbul ignore next: defensive programming for zero base total edge case */
         monthlyPnl.set(monthKey, {
             absoluteChangeUSD,
-            percentChange,
+            absoluteChangeCNY,
+            absoluteChangeJPY,
+            absoluteChangeKRW,
+            percentChange: percentChangeUSD, // Keep USD as default for backwards compatibility
+            percentChangeUSD,
+            percentChangeCNY,
+            percentChangeJPY,
+            percentChangeKRW,
         });
     }
 

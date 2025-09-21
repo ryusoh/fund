@@ -6,7 +6,6 @@ import {
     UI_BREAKPOINTS,
 } from '@js/config.js';
 import { setThinkingHighlight } from '@ui/textHighlightManager.js';
-import { formatCurrency } from '@utils/formatting.js';
 
 const FROSTED_FILTER_ID = 'cal-domain-frosted';
 
@@ -78,26 +77,71 @@ function getMonthKeyFromLabel(labelText) {
     return `${year}-${String(monthIndex).padStart(2, '0')}`;
 }
 
+/* istanbul ignore next: utility function to get currency-specific absolute change */
+function getAbsoluteChangeForCurrency(monthlyPnlInfo, currency) {
+    /* istanbul ignore next: defensive programming for invalid monthly PnL info */
+    if (!monthlyPnlInfo || typeof monthlyPnlInfo !== 'object') {
+        /* istanbul ignore next: defensive programming for invalid monthly PnL info */
+        return null;
+    }
+
+    switch (currency) {
+        case 'CNY':
+            return monthlyPnlInfo.absoluteChangeCNY;
+        case 'JPY':
+            return monthlyPnlInfo.absoluteChangeJPY;
+        case 'KRW':
+            return monthlyPnlInfo.absoluteChangeKRW;
+        case 'USD':
+        default:
+            return monthlyPnlInfo.absoluteChangeUSD;
+    }
+}
+
+/* istanbul ignore next: utility function to get currency-specific percent change */
+function getPercentChangeForCurrency(monthlyPnlInfo, currency) {
+    /* istanbul ignore next: defensive programming for invalid monthly PnL info */
+    if (!monthlyPnlInfo || typeof monthlyPnlInfo !== 'object') {
+        /* istanbul ignore next: defensive programming for invalid monthly PnL info */
+        return null;
+    }
+
+    switch (currency) {
+        case 'CNY':
+            return monthlyPnlInfo.percentChangeCNY;
+        case 'JPY':
+            return monthlyPnlInfo.percentChangeJPY;
+        case 'KRW':
+            return monthlyPnlInfo.percentChangeKRW;
+        case 'USD':
+        default:
+            return monthlyPnlInfo.percentChangeUSD || monthlyPnlInfo.percentChange;
+    }
+}
+
 /* istanbul ignore next: defensive utility function for monthly change formatting */
-function formatMonthlyChange(state, currencySymbols, absoluteChangeUSD) {
+function formatMonthlyChange(state, currencySymbols, monthlyPnlInfo) {
     /* istanbul ignore next: defensive programming for invalid amounts */
-    if (!Number.isFinite(absoluteChangeUSD)) {
+    const currency = state.selectedCurrency || 'USD';
+    const absoluteChange = getAbsoluteChangeForCurrency(monthlyPnlInfo, currency);
+
+    /* istanbul ignore next: defensive programming for invalid amounts */
+    if (!Number.isFinite(absoluteChange)) {
         /* istanbul ignore next: defensive programming for invalid amounts */
         return null;
     }
+
     /* istanbul ignore next: defensive programming for invalid amounts */
-    const currency = state.selectedCurrency || 'USD';
+    const symbol = currencySymbols[currency] || currency;
+    const formattedNumber = Math.abs(absoluteChange).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
     /* istanbul ignore next: defensive programming for invalid amounts */
-    const formattedAbs = formatCurrency(
-        Math.abs(absoluteChangeUSD),
-        currency,
-        state.rates,
-        currencySymbols
-    );
+    const sign = absoluteChange > 0 ? '+' : absoluteChange < 0 ? '-' : '';
     /* istanbul ignore next: defensive programming for invalid amounts */
-    const sign = absoluteChangeUSD > 0 ? '+' : absoluteChangeUSD < 0 ? '-' : '';
-    /* istanbul ignore next: defensive programming for invalid amounts */
-    return `${sign}${formattedAbs}`;
+    return `${sign}${symbol}${formattedNumber}`;
 }
 
 /* istanbul ignore next: defensive utility function for monthly percent formatting */
@@ -304,11 +348,15 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
             typeof state.highlightMonthKey === 'string' ? state.highlightMonthKey : null;
         const shouldHighlightMonth = Boolean(highlightMonthKey && monthKey === highlightMonthKey);
         let color = null;
-        if (info && Number.isFinite(info.absoluteChangeUSD)) {
-            if (info.absoluteChangeUSD > 0) {
-                color = COLORS.POSITIVE_PNL;
-            } else if (info.absoluteChangeUSD < 0) {
-                color = COLORS.NEGATIVE_PNL;
+        if (info) {
+            const currency = state.selectedCurrency || 'USD';
+            const absoluteChange = getAbsoluteChangeForCurrency(info, currency);
+            if (Number.isFinite(absoluteChange)) {
+                if (absoluteChange > 0) {
+                    color = COLORS.POSITIVE_PNL;
+                } else if (absoluteChange < 0) {
+                    color = COLORS.NEGATIVE_PNL;
+                }
             }
         }
         const lightenedColor = color
@@ -356,8 +404,10 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
             return;
         }
 
-        const changeText = formatMonthlyChange(state, currencySymbols, info.absoluteChangeUSD);
-        const percentText = formatMonthlyPercent(info.percentChange);
+        const changeText = formatMonthlyChange(state, currencySymbols, info);
+        const currency = state.selectedCurrency || 'USD';
+        const percentChange = getPercentChangeForCurrency(info, currency);
+        const percentText = formatMonthlyPercent(percentChange);
         const showDetailed = Boolean(state.labelsVisible && changeText);
 
         el.text('');
