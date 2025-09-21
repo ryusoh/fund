@@ -174,7 +174,7 @@ export const CALENDAR_CONFIG = {
                 'rgba(120, 120, 125, 0.5)',
                 'rgba(76, 175, 80, 0.95)',
             ],
-            domain: [-0.02, 0.02],
+            domain: [-0.01, 0.01],
         },
     },
     domain: {
