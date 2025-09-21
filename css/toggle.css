@@ -1,7 +1,7 @@
 #currencyToggleContainer {
     position: fixed;
     top: 15px;
-    left: 15px;
+    right: 15px;
     display: flex;
     background-color: rgba(50, 50, 50, 0.4); /* Dark grey, half-transparent for dark theme */
     border-radius: 6px;
@@ -42,13 +42,13 @@
 @media (max-width: 768px) {
     #currencyToggleContainer {
         position: fixed; /* Position relative to the viewport */
-        left: 0px; /* Stick to the screen's left edge */
+        right: 0px; /* Stick to the screen's right edge */
         flex-direction: column; /* Stack buttons vertically */
         padding: 3px 3px;
         z-index: 1000; /* Keep on top on mobile too */
-        /* Remove left-side radius for flush appearance */
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
+        /* Remove right-side radius for flush appearance */
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
     }
 
     .currency-toggle {
