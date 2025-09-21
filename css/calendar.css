@@ -139,6 +139,9 @@ body.body-calendar {
     font-size: 10px;
     pointer-events: none;
     filter: drop-shadow(0 0.5px 0.5px rgba(0, 0, 0, 0.6));
+    transition:
+        opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+        transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .subdomain-line1 {
     font-weight: normal;

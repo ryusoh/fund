@@ -17,6 +17,7 @@ const appState = {
     rates: {},
     monthlyPnl: new Map(),
     highlightMonthKey: null,
+    isAnimating: false,
 };
 
 // --- CALENDAR RENDERING ---
@@ -37,7 +38,25 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
         updateMonthLabels(d3, monthState, currencySymbols);
     }
     if (!state.labelsVisible) {
-        d3.select(CALENDAR_SELECTORS.heatmap).selectAll('text.ch-subdomain-text').html('');
+        if (state.isAnimating) {
+            // Smooth fade-out animation when toggling off
+            d3.select(CALENDAR_SELECTORS.heatmap)
+                .selectAll('text.ch-subdomain-text')
+                .filter(function () {
+                    return this.textContent && this.textContent.trim() !== '';
+                })
+                .transition()
+                .duration(400)
+                .ease(d3.easeCubicInOut)
+                .style('opacity', 0)
+                .on('end', function () {
+                    d3.select(this).html('');
+                    state.isAnimating = false;
+                });
+        } else {
+            // Immediate clear without animation (navigation)
+            d3.select(CALENDAR_SELECTORS.heatmap).selectAll('text.ch-subdomain-text').html('');
+        }
         return;
     }
 
@@ -101,6 +120,26 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                 .attr('x', x)
                 .text(totalText);
         });
+
+    // Handle animation vs immediate display
+    if (state.isAnimating) {
+        // Smooth fade-in animation when toggling on
+        d3.select(CALENDAR_SELECTORS.heatmap)
+            .selectAll('text.ch-subdomain-text')
+            .style('opacity', 0)
+            .transition()
+            .duration(400)
+            .ease(d3.easeCubicInOut)
+            .style('opacity', 1)
+            .on('end', function () {
+                state.isAnimating = false;
+            });
+    } else {
+        // Immediate display without animation (navigation)
+        d3.select(CALENDAR_SELECTORS.heatmap)
+            .selectAll('text.ch-subdomain-text')
+            .style('opacity', 1);
+    }
 }
 
 // --- EVENT HANDLING ---
@@ -154,6 +193,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
             /* istanbul ignore next: event handler execution in test environment */
             clickTimer = setTimeout(() => {
                 /* istanbul ignore next: event handler execution in test environment */
+                state.isAnimating = true;
                 state.labelsVisible = !state.labelsVisible;
                 /* istanbul ignore next: event handler execution in test environment */
                 cal.jumpTo(getNyDate());
