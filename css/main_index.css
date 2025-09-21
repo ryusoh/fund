@@ -37,6 +37,9 @@ body {
     text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
     opacity: 0.5;
     padding: 5px 15px 5px 15px; /* Adjusted padding */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    font-size: larger;
 }
 
 h1 {
@@ -75,13 +78,13 @@ a:hover {
         left: 0;
         width: auto; /* Ensure it expands */
         bottom: auto;
-        font-size: 15px; /* Smaller font for mobile */
+        font-size: 18px; /* Smaller font for mobile */
         border-bottom-right-radius: 20px; /* Rounded corners for mobile */
-        padding: 10px 15px; /* Adjusted padding for mobile */
+        padding: 10px 15px 15px 15px; /* Adjusted padding for mobile */
         opacity: 0.65; /* Increased opacity for mobile */
     }
     li {
-        margin-bottom: 10px;
+        margin-bottom: 20px;
     }
 
     .video-background {
