@@ -300,9 +300,51 @@ function drawSideWall(ctx, arc, depth, options, lightVec, pointer) {
     ctx.restore();
 }
 
-// eslint-disable-next-line no-unused-vars
 function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
-    // DISABLED: This function was creating the grey line at 3 o'clock
+    const rimCfg = options.rimHighlight || {};
+    const width = rimCfg.width ?? 1.2;
+    const opacity = rimCfg.opacity ?? 0.3;
+    const squash = options.squash ?? 1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    // Create subtle glow effect instead of stroke lines
+    const gradient = ctx.createRadialGradient(
+        centerX + pointer.x * 0.3,
+        centerY + pointer.y * 0.3,
+        outerRadius - width * 2,
+        centerX + pointer.x * 0.3,
+        centerY + pointer.y * 0.3,
+        outerRadius + width
+    );
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    gradient.addColorStop(0.7, `rgba(255, 255, 255, ${opacity * 0.5})`);
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(
+        centerX + pointer.x * 0.3,
+        centerY + pointer.y * 0.3,
+        outerRadius,
+        outerRadius * squash,
+        0,
+        0,
+        Math.PI * 2
+    );
+    ctx.ellipse(
+        centerX + pointer.x * 0.2,
+        centerY + pointer.y * 0.2,
+        innerRadius,
+        innerRadius * squash,
+        0,
+        Math.PI * 2,
+        0,
+        true
+    );
+    ctx.fill('evenodd');
+    ctx.restore();
 }
 
 function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
@@ -316,18 +358,10 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.beginPath();
-    const seam = options.seamOffsetRad ?? 0;
-    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, seam, seam + Math.PI * 2);
-    ctx.ellipse(
-        centerX,
-        centerY,
-        innerRadius,
-        innerRadius * squash,
-        0,
-        seam,
-        seam + Math.PI * 2,
-        true
-    );
+    // Draw outer circle
+    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
+    // Cut out inner circle to create donut shape
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
     const radius = outerRadius * radiusFraction;
     const gradient = ctx.createRadialGradient(
         highlightX,
@@ -344,9 +378,34 @@ function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     ctx.restore();
 }
 
-// eslint-disable-next-line no-unused-vars
 function drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options, state) {
-    // DISABLED: This function may be creating unwanted lines
+    const reflectionCfg = options.reflection || {};
+    const intensity = reflectionCfg.intensity ?? 0.28;
+    const width = reflectionCfg.width ?? 0.2;
+    const phase = state.phase || 0;
+    const startAngle = phase * Math.PI * 2;
+    const endAngle = startAngle + width * Math.PI * 2;
+    const squash = options.squash ?? 1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const gradient = ctx.createLinearGradient(0, centerY - outerRadius, 0, centerY + outerRadius);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = Math.max(2, (outerRadius - innerRadius) * 0.55);
+    ctx.beginPath();
+    ctx.ellipse(
+        centerX,
+        centerY,
+        (outerRadius + innerRadius) / 2,
+        ((outerRadius + innerRadius) / 2) * squash,
+        0,
+        startAngle,
+        endAngle
+    );
+    ctx.stroke();
+    ctx.restore();
 }
 
 function drawSideWalls(ctx, meta, depth, options, lightVec, pointer) {
@@ -444,8 +503,7 @@ function drawElectricTrail(
     for (let i = 0; i < arcCount; i += 1) {
         const color = colors[i % colors.length];
         const localPhase = (state.phase * speedMultiplier + (i / arcCount) * 0.65) % 1;
-        const seam = options.seamOffsetRad ?? 0;
-        const startAngle = seam + localPhase * Math.PI * 2;
+        const startAngle = localPhase * Math.PI * 2;
         const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
         ctx.strokeStyle = color;
         ctx.shadowColor = color;
@@ -534,19 +592,11 @@ function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, option
     gradient.addColorStop(0, innerColor);
     gradient.addColorStop(1, outerColor);
     ctx.fillStyle = gradient;
-    const seam = options.seamOffsetRad ?? 0;
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, seam, seam + Math.PI * 2);
-    ctx.ellipse(
-        centerX,
-        centerY,
-        innerRadius,
-        innerRadius * squash,
-        0,
-        seam,
-        seam + Math.PI * 2,
-        true
-    );
+    // Draw outer circle
+    ctx.ellipse(centerX, centerY, radius * 1.2, radius * 1.2 * squash, 0, 0, Math.PI * 2);
+    // Cut out inner circle to create donut shape
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
     ctx.fill('evenodd');
     ctx.restore();
 }
