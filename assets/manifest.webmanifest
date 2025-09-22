@@ -1,18 +1,37 @@
 {
-  "name": "Fund",
+  "name": "Fund Portfolio",
   "short_name": "Fund",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "description": "Positions, calendar heatmaps, and portfolio visuals by ryusoh.",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
