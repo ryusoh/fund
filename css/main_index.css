@@ -43,9 +43,11 @@ body.body-main {
 }
 
 /* iOS web app safe area support for container */
-@supports (top: env(safe-area-inset-top)) {
-    .container {
-        top: env(safe-area-inset-top);
+@media (max-width: 768px) {
+    @supports (top: env(safe-area-inset-top)) {
+        .container {
+            top: env(safe-area-inset-top);
+        }
     }
 }
 

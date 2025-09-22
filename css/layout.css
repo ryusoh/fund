@@ -11,9 +11,11 @@
 }
 
 /* iOS web app safe area support for content block */
-@supports (margin-top: env(safe-area-inset-top)) {
-    .content-block {
-        margin-top: calc(60px + env(safe-area-inset-top));
+@media (max-width: 768px) {
+    @supports (margin-top: env(safe-area-inset-top)) {
+        .content-block {
+            margin-top: calc(60px + env(safe-area-inset-top));
+        }
     }
 }
 
@@ -30,9 +32,11 @@ body:not(.body-calendar) .content-block {
 }
 
 /* iOS web app safe area support for pie chart container */
-@supports (margin-top: env(safe-area-inset-top)) {
-    #fundPieChartContainer {
-        margin-top: calc(60px + env(safe-area-inset-top));
+@media (max-width: 768px) {
+    @supports (margin-top: env(safe-area-inset-top)) {
+        #fundPieChartContainer {
+            margin-top: calc(60px + env(safe-area-inset-top));
+        }
     }
 }
 
@@ -78,9 +82,11 @@ a.nav-back {
 }
 
 /* iOS web app safe area support for nav-back */
-@supports (top: env(safe-area-inset-top)) {
-    a.nav-back {
-        top: calc(15px + env(safe-area-inset-top));
+@media (max-width: 768px) {
+    @supports (top: env(safe-area-inset-top)) {
+        a.nav-back {
+            top: calc(15px + env(safe-area-inset-top));
+        }
     }
 }
 

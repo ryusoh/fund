@@ -14,9 +14,11 @@
 }
 
 /* iOS web app safe area support for currency toggle */
-@supports (top: env(safe-area-inset-top)) {
-    #currencyToggleContainer {
-        top: calc(15px + env(safe-area-inset-top));
+@media (max-width: 768px) {
+    @supports (top: env(safe-area-inset-top)) {
+        #currencyToggleContainer {
+            top: calc(15px + env(safe-area-inset-top));
+        }
     }
 }
 
