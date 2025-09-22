@@ -75,6 +75,7 @@
                 preload="metadata"
                 poster="./assets/mobile_bg.jpg"
                 src="./assets/mobile_bg.mp4"
+                webkit-playsinline
             ></video>
         </div>
         <img
@@ -116,6 +117,11 @@
         <script defer src="./js/ui/reduced_motion.js"></script>
         <script src="./js/ui/scroll_control.js"></script>
         <script defer src="./js/ui/nav_current_page.js"></script>
+        <!-- Video fallback for iOS web app mode -->
+        <script type="module">
+            import { initVideoFallback } from './js/ui/videoFallback.js';
+            document.addEventListener('DOMContentLoaded', initVideoFallback);
+        </script>
         <script
             defer
             src="./js/ui/service_worker_register.js"
