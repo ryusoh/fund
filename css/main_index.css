@@ -42,6 +42,13 @@ body.body-main {
     font-size: larger;
 }
 
+/* iOS web app safe area support for container */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .container {
+        padding-top: calc(5px + env(safe-area-inset-top));
+    }
+}
+
 h1 {
     color: #fff; /* Changed to white for dark background */
     margin-bottom: 20px;

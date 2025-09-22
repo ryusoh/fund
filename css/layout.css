@@ -63,6 +63,13 @@ a.nav-back {
     font-size: 1.1em;
 }
 
+/* iOS web app safe area support for nav-back */
+@supports (top: env(safe-area-inset-top)) {
+    a.nav-back {
+        top: calc(15px + env(safe-area-inset-top));
+    }
+}
+
 /* Media Query for mobile devices */
 @media (max-width: 768px) {
     html.no-pull-to-refresh {
