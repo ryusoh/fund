@@ -53,6 +53,13 @@ body.body-calendar {
         touch-action: pan-y; /* Allow vertical scroll but capture horizontal swipes */
     }
 
+    /* iOS web app safe area support for calendar container on mobile */
+    @supports (margin-top: env(safe-area-inset-top)) {
+        .cal-heatmap-container {
+            margin-top: calc(70px + env(safe-area-inset-top));
+        }
+    }
+
     /* Completely disable hover effects on mobile to prevent shimmer */
     .cal-nav-btn:hover,
     .cal-nav-btn:focus,
@@ -81,6 +88,13 @@ body.body-calendar {
 @media (min-width: 769px) {
     .cal-heatmap-container {
         margin-top: 50px;
+    }
+
+    /* iOS web app safe area support for calendar container on desktop */
+    @supports (margin-top: env(safe-area-inset-top)) {
+        .cal-heatmap-container {
+            margin-top: calc(50px + env(safe-area-inset-top));
+        }
     }
 }
 
