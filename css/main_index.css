@@ -43,9 +43,9 @@ body.body-main {
 }
 
 /* iOS web app safe area support for container */
-@supports (padding-top: env(safe-area-inset-top)) {
+@supports (top: env(safe-area-inset-top)) {
     .container {
-        padding-top: calc(5px + env(safe-area-inset-top));
+        top: env(safe-area-inset-top);
     }
 }
 
