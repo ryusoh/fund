@@ -9,3 +9,4 @@ assets/logo/.DS_Store
 node_modules/
 # Test coverage reports
 coverage/
+.DS_Store
