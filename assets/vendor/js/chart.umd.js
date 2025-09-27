@@ -7543,9 +7543,9 @@
                         const animateLoop = () => {
                             // Find all chart instances and update them
                             if (typeof Chart !== 'undefined' && Chart.instances) {
-                                Chart.instances.forEach(chart => {
+                                Object.values(Chart.instances).forEach(chart => {
                                     if (chart && chart.canvas) {
-                                        chart.update('none');
+                                        chart.draw();
                                     }
                                 });
                             }
