@@ -10,7 +10,7 @@ def sort_transactions_file(file_path: Path):
             reader = csv.reader(f)
             header = next(reader)
             try:
-                date_column_index = header..index('Trade Date')
+                date_column_index = header.index('Trade Date')
             except ValueError:
                 print(f"Error: '''Trade Date''' column not found in {file_path}")
                 return
