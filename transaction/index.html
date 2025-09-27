@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="author" content="Zhuang Liu" />
+        <meta name="color-scheme" content="dark" />
+        <meta property="og:title" content="Transaction" />
+        <meta property="og:description" content="Transaction" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ryusoh.github.io/fund/transaction/" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=auto"
+        />
+        <title>Transaction</title>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+        <link rel="preconnect" href="https://ghproxy.net" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+        />
+        <link
+            rel="shortcut icon"
+            href="https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png"
+            type="image/x-icon"
+        />
+        <link
+            rel="icon"
+            href="https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png"
+        />
+        <link
+            rel="apple-touch-icon"
+            href="https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png"
+        />
+        <link
+            rel="bookmark"
+            href="https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png"
+            type="image/x-icon"
+        />
+        <link rel="manifest" href="../assets/manifest.webmanifest" />
+        <!-- Make the web page capable of running as a standalone app -->
+        <meta name="mobile-web-app-capable" content="yes" />
+        <!-- Set status bar style for iOS -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="stylesheet" href="../css/table.css" />
+        <link rel="stylesheet" href="../css/container.css" />
+        <link rel="stylesheet" href="../css/transaction.css" />
+    </head>
+    <body>
+        <div class="nav-container">
+            <ul>
+                <li>
+                    <a href="../">
+                        <i class="fa fa-chevron-right"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="../position/">
+                        <i class="fa fa-pie-chart"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="../calendar/">
+                        <i class="fa fa-calendar"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="./">
+                        <i class="fa fa-terminal"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="transaction-container">
+            <div class="terminal" id="terminal">
+                <div class="terminal-output" id="terminalOutput">
+                    <div>Type 'help' to see available commands.</div>
+                </div>
+                <div class="terminal-prompt">
+                    <span class="prompt-user">lz@fund:~$</span>
+                    <input
+                        type="text"
+                        id="terminalInput"
+                        class="terminal-input"
+                        autocomplete="off"
+                        autofocus
+                    />
+                </div>
+            </div>
+
+            <section
+                id="runningAmountSection"
+                class="chart-card is-hidden"
+                aria-labelledby="runningAmountTitle"
+            >
+                <div class="chart-container" role="img" aria-describedby="runningAmountTitle">
+                    <canvas id="runningAmountCanvas"></canvas>
+                    <div class="chart-empty" id="runningAmountEmpty">
+                        No transactions to display
+                    </div>
+                </div>
+                <div class="chart-legend" aria-hidden="true">
+                    <div class="legend-item">
+                        <span class="legend-swatch line"></span>
+                        <span>Contribution</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-swatch buy"></span>
+                        <span>Buy</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-swatch sell"></span>
+                        <span>Sell</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="table-responsive-container is-hidden" aria-live="polite">
+                <table id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th id="header-tradeDate" class="sortable">
+                                Date<span class="sort-indicator"></span>
+                            </th>
+                            <th id="header-orderType" class="filterable">
+                                Type
+                                <span class="filter-indicator" aria-hidden="true">
+                                    <i class="fa fa-filter"></i>
+                                </span>
+                            </th>
+                            <th id="header-security" class="sortable filterable">
+                                Security
+                                <span class="sort-indicator"></span>
+                                <span class="filter-indicator" aria-hidden="true">
+                                    <i class="fa fa-filter"></i>
+                                </span>
+                            </th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th id="header-netAmount" class="sortable">
+                                Amount<span class="sort-indicator"></span>
+                            </th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+
+            <div id="error" class="error" style="display: none"></div>
+        </div>
+
+        <footer>
+            <a
+                href="https://github.com/ryusoh"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub Profile"
+            >
+                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
+            </a>
+        </footer>
+
+        <script type="module" src="../js/pages/transaction/index.js"></script>
+        <script defer src="../js/ui/nav_current_page.js"></script>
+    </body>
+</html>
