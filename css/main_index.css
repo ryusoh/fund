@@ -82,3 +82,14 @@ h1 {
 footer .fa-github {
     font-size: 12px;
 }
+
+/* iOS Safe Area Insets for bottom-positioned elements on the main page */
+@supports (bottom: env(safe-area-inset-bottom)) {
+    body.body-main footer {
+        bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+
+    body.body-main .mobile-banner {
+        bottom: calc(1% + env(safe-area-inset-bottom));
+    }
+}
