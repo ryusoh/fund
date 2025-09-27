@@ -28,60 +28,9 @@ body.body-main {
     }
 }
 
-.container {
-    position: absolute;
-    z-index: 3;
-    top: 0; /* Initial top position */
-    background: rgba(0, 0, 0, 0.7); /* Desktop default */
-    color: #fff;
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
-    opacity: 0.5;
-    padding: 5px 15px 5px 15px; /* Adjusted padding */
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    font-size: larger;
-}
-
-/* iOS web app safe area support for container */
-@media (max-width: 768px) {
-    @supports (top: env(safe-area-inset-top)) {
-        .container {
-            top: env(safe-area-inset-top);
-        }
-    }
-}
-
 h1 {
     color: #fff; /* Changed to white for dark background */
     margin-bottom: 20px;
-}
-.container ul {
-    list-style: none;
-    padding: 0;
-}
-.container li {
-    margin-bottom: 15px;
-}
-.container a {
-    text-decoration: none;
-    color: #fff;
-    font-size: 1em;
-    transition:
-        background-color 0.3s,
-        color 0.3s;
-    opacity: 0.7;
-}
-.container a:hover {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.1); /* Light semi-transparent box */
-    border-radius: 3px; /* Optional: rounded corners for the box */
-}
-
-/* Hide container on desktop for non-main pages */
-@media screen and (min-width: 769px) {
-    body:not(.body-main) .container {
-        display: none;
-    }
 }
 
 /* Media Queries for .container position and background */
@@ -89,20 +38,6 @@ h1 {
     body.body-main {
         /* Specific body overrides for mobile */
         background: #111;
-    }
-    .container {
-        left: 0;
-        width: auto; /* Ensure it expands */
-        bottom: auto;
-        font-size: 17px; /* Smaller font for mobile */
-        border-bottom-right-radius: 15px; /* Rounded corners for mobile */
-        padding: 0px 15px 0px 15px; /* Adjusted padding for mobile */
-        opacity: 0.65; /* Increased opacity for mobile */
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-    }
-    .container li {
-        margin-bottom: 10px;
     }
 
     .video-background {
@@ -136,23 +71,6 @@ h1 {
 
     .mobile-banner.is-fallback-ready {
         opacity: 0.5;
-    }
-}
-
-@media screen and (min-width: 450px) {
-    .container {
-        left: 20px;
-        right: auto;
-        bottom: auto;
-    }
-}
-
-@media screen and (min-width: 1024px) {
-    .container {
-        left: 300px;
-        right: auto;
-        bottom: auto;
-        background: rgba(0, 0, 0, 0.9); /* More opaque for larger screens */
     }
 }
 

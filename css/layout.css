@@ -31,6 +31,12 @@ body:not(.body-calendar) .content-block {
     position: relative; /* Make this a positioning context for child absolute elements */
 }
 
+@media (min-width: 769px) {
+    #fundPieChartContainer {
+        margin-top: 40px;
+    }
+}
+
 /* iOS web app safe area support for pie chart container */
 @media (max-width: 768px) {
     @supports (margin-top: env(safe-area-inset-top)) {
