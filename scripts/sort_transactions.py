@@ -48,12 +48,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Sort a transactions CSV file by date, oldest first.')
     default_path = Path(__file__).resolve().parent.parent / 'data' / 'transactions.csv'
     parser.add_argument(
-        'file_path', 
-        type=Path, 
-        nargs='?', 
-        default=default_path, 
+        'file_path',
+        type=Path,
+        nargs='?',
+        default=default_path,
         help=f'Path to the transactions CSV file. Defaults to {default_path}'
     )
     args = parser.parse_args()
-    
+
     sort_transactions_file(args.file_path)
