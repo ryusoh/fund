@@ -136,7 +136,7 @@ a.nav-back {
     #fundPieChartContainer {
         width: 90%; /* Allow chart to take full width */
         max-width: 90%; /* Max width for mobile */
-        margin: 0 auto 5px; /* Tighter gap above the table on mobile */
+        margin: -25px auto -15px; /* Tighter gap above the table on mobile */
         /* position: relative; is inherited from the global style, which is fine */
     }
     footer {

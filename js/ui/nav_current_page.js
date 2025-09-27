@@ -7,10 +7,15 @@
 
     function disableCurrentPageLinks() {
         const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.container a');
+        const navLinks = document.querySelectorAll('.container a, .nav-container a');
 
         navLinks.forEach((link) => {
-            const linkPath = new window.URL(link.href, window.location.origin).pathname;
+            const resolvedUrl = new window.URL(link.href, window.location.origin);
+            if (resolvedUrl.origin !== window.location.origin) {
+                return;
+            }
+
+            const linkPath = resolvedUrl.pathname;
 
             // Normalize paths for comparison
             const normalizedCurrent = currentPath.replace(/\/$/, '') || '/';
@@ -32,9 +37,10 @@
                 link.style.cursor = 'default';
                 link.removeAttribute('href');
 
-                // Add visual indicator for current page
-                link.parentElement.style.borderLeft = '3px solid rgba(255, 255, 255, 0.6)';
-                link.parentElement.style.paddingLeft = '10px';
+                link.setAttribute('aria-current', 'page');
+                if (link.parentElement) {
+                    link.parentElement.classList.add('is-current-page');
+                }
             }
         });
     }

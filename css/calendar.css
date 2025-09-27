@@ -56,7 +56,7 @@ body.body-calendar {
     /* iOS web app safe area support for calendar container on mobile */
     @supports (margin-top: env(safe-area-inset-top)) {
         .cal-heatmap-container {
-            margin-top: calc(70px + env(safe-area-inset-top));
+            margin-top: calc(25px + env(safe-area-inset-top));
         }
     }
 

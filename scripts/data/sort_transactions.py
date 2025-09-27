@@ -3,6 +3,7 @@ from datetime import datetime
 import argparse
 from pathlib import Path
 
+
 def sort_transactions_file(file_path: Path):
     """Sorts the transactions CSV file by '''Trade Date'''."""
     try:
@@ -29,7 +30,9 @@ def sort_transactions_file(file_path: Path):
 
     # Sort data by date, oldest first
     try:
-        sorted_data = sorted(data, key=lambda row: datetime.strptime(row[date_column_index], '%m/%d/%Y'))
+        sorted_data = sorted(
+            data, key=lambda row: datetime.strptime(row[date_column_index], '%m/%d/%Y')
+        )
     except (ValueError, IndexError) as e:
         print(f"Error parsing date in file. Please check the format. Details: {e}")
         return
@@ -44,15 +47,18 @@ def sort_transactions_file(file_path: Path):
     except Exception as e:
         print(f"Error writing to file: {e}")
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Sort a transactions CSV file by date, oldest first.')
+    parser = argparse.ArgumentParser(
+        description='Sort a transactions CSV file by date, oldest first.'
+    )
     default_path = Path(__file__).resolve().parent.parent / 'data' / 'transactions.csv'
     parser.add_argument(
         'file_path',
         type=Path,
         nargs='?',
         default=default_path,
-        help=f'Path to the transactions CSV file. Defaults to {default_path}'
+        help=f'Path to the transactions CSV file. Defaults to {default_path}',
     )
     args = parser.parse_args()
 
