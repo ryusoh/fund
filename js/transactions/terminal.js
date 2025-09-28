@@ -56,6 +56,8 @@ const COMMAND_ALIASES = [
     'p',
 ];
 
+const MIN_FADE_OPACITY = 0.1;
+
 const autocompleteState = {
     prefix: '',
     matches: [],
@@ -78,6 +80,7 @@ export function initTerminal({
     const terminalInput = document.getElementById('terminalInput');
     const terminal = document.getElementById('terminal');
     const outputContainer = document.getElementById('terminalOutput');
+    let fadeUpdateScheduled = false;
 
     function appendMessage(message) {
         if (!outputContainer) {
@@ -87,6 +90,60 @@ export function initTerminal({
         pre.textContent = message;
         outputContainer.appendChild(pre);
         outputContainer.scrollTop = outputContainer.scrollHeight;
+        requestFadeUpdate();
+    }
+
+    function updateOutputFade() {
+        if (!outputContainer) {
+            return;
+        }
+
+        const viewHeight = outputContainer.clientHeight;
+        if (viewHeight <= 0) {
+            return;
+        }
+
+        const threshold = viewHeight * 0.25;
+        const viewTop = outputContainer.scrollTop;
+
+        Array.from(outputContainer.children).forEach((child) => {
+            if (!child || child.nodeType !== 1) {
+                return;
+            }
+
+            if (!child.style.transition) {
+                child.style.transition = 'opacity 0.18s ease-out';
+            }
+
+            const relativeTop = child.offsetTop - viewTop;
+            const relativeBottom = relativeTop + child.offsetHeight;
+
+            if (relativeBottom <= 0) {
+                child.style.opacity = '0';
+                return;
+            }
+
+            if (relativeTop >= threshold) {
+                child.style.opacity = '';
+                return;
+            }
+
+            const center = Math.max(0, Math.min(relativeTop + child.offsetHeight / 2, threshold));
+            const ratio = center / threshold;
+            const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * ratio;
+            child.style.opacity = opacity.toFixed(2);
+        });
+    }
+
+    function requestFadeUpdate() {
+        if (fadeUpdateScheduled) {
+            return;
+        }
+        fadeUpdateScheduled = true;
+        requestAnimationFrame(() => {
+            fadeUpdateScheduled = false;
+            updateOutputFade();
+        });
     }
 
     function autocompleteCommand(input) {
@@ -147,6 +204,7 @@ export function initTerminal({
         }
         const prompt = `<div><span class="prompt-user">lz@fund:~$</span> ${command}</div>`;
         outputContainer.innerHTML += prompt;
+        requestFadeUpdate();
 
         const [cmd] = command.toLowerCase().split(' ');
         let result = '';
@@ -182,6 +240,7 @@ export function initTerminal({
                 filterAndSort('');
                 result =
                     'Reset filters and displaying full transaction history. Use `plot` to view the chart.';
+                requestFadeUpdate();
                 break;
             case 'clear':
                 outputContainer.innerHTML = '';
@@ -194,6 +253,7 @@ export function initTerminal({
                 document
                     .querySelectorAll('.table-responsive-container, #runningAmountSection')
                     .forEach((el) => el.classList.add('is-hidden'));
+                requestFadeUpdate();
                 break;
             case 'stats':
                 result = getStatsText();
@@ -223,6 +283,7 @@ export function initTerminal({
             outputContainer.appendChild(pre);
         }
         outputContainer.scrollTop = outputContainer.scrollHeight;
+        requestFadeUpdate();
     }
 
     function handleTerminalInput(e) {
@@ -237,6 +298,7 @@ export function initTerminal({
                     input.value = '';
                 }
                 resetAutocompleteState();
+                requestFadeUpdate();
                 break;
             case 'ArrowUp':
                 e.preventDefault();
@@ -245,6 +307,7 @@ export function initTerminal({
                     input.value = transactionState.commandHistory[transactionState.historyIndex];
                 }
                 resetAutocompleteState();
+                requestFadeUpdate();
                 break;
             case 'ArrowDown':
                 e.preventDefault();
@@ -256,6 +319,7 @@ export function initTerminal({
                     input.value = '';
                 }
                 resetAutocompleteState();
+                requestFadeUpdate();
                 break;
             case 'Tab':
                 e.preventDefault();
@@ -296,7 +360,13 @@ export function initTerminal({
             lastEmptyFilterTerm = null;
         }
         outputContainer.scrollTop = outputContainer.scrollHeight;
+        requestFadeUpdate();
     });
+
+    if (outputContainer) {
+        outputContainer.addEventListener('scroll', requestFadeUpdate, { passive: true });
+        requestFadeUpdate();
+    }
 
     return {
         processCommand,
