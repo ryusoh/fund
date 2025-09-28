@@ -106,8 +106,8 @@ function getCagrText() {
         '\n--------------------- PERFORMANCE CAGR --------------------\n' +
         `  Period:        ${startLabel} → ${endLabel}\n` +
         `  Years:         ${years.toFixed(2)}\n\n` +
-        '  Series                         Total Return      CAGR\n' +
-        '  ----------------------------   ------------   --------\n';
+        '  Series                         Total Return        CAGR\n' +
+        '  ----------------------------   ------------   ---------\n';
 
     const lines = metrics
         .map((item) => {

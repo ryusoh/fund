@@ -77,7 +77,7 @@ def build_figure(twrr: pd.Series) -> go.Figure:
                 x=indexed.index,
                 y=indexed.values,
                 mode='lines',
-                name='LZ',
+                name='^LZ',
                 line=dict(color='#1f77b4', width=2),
             )
         ]
