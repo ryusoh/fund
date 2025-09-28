@@ -14,7 +14,7 @@ CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
 def append_changelog_entry(step_name: str, artifacts: List[str], note: str = '') -> None:
     """
     Append an entry to the changelog if it doesn't already exist.
-    
+
     Args:
         step_name: The step name (e.g., 'step-07_plot')
         artifacts: List of artifact paths to include in the changelog
@@ -25,19 +25,19 @@ def append_changelog_entry(step_name: str, artifacts: List[str], note: str = '')
         bullet_list = '\n'.join(f'- {note} ({artifact})' for artifact in artifacts)
     else:
         bullet_list = '\n'.join(f'- Generated artifact ({artifact})' for artifact in artifacts)
-    
+
     entry = f"\n\n### {step_name}\n{bullet_list}\n"
-    
+
     if CHANGELOG_PATH.exists():
         # Check if this step entry already exists
         with CHANGELOG_PATH.open('r', encoding='utf-8') as f:
             existing_content = f.read()
-        
+
         # If the step heading already exists, don't append
         if f"### {step_name}" in existing_content:
             print(f"Changelog entry for {step_name} already exists, skipping append.")
             return
-        
+
         # Append the new entry
         with CHANGELOG_PATH.open('a', encoding='utf-8') as f:
             f.write(entry)
