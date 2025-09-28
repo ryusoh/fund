@@ -150,44 +150,6 @@ export function createChartManager({ buildRunningAmountSeries }) {
                 ? window.getComputedStyle(document.documentElement)
                 : null;
 
-        if (showBalance && portfolioSeries.length > 0) {
-            ctx.beginPath();
-            portfolioSeries.forEach((item, index) => {
-                const x = xScale(item.date.getTime());
-                const y = yScale(item.value);
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            const portfolioColor = rootStyles
-                ? rootStyles.getPropertyValue('--portfolio-line').trim()
-                : '#7f7f7f';
-            ctx.strokeStyle = portfolioColor || '#e9c46a';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-        }
-
-        if (showContribution && parsedSeries.length > 0) {
-            ctx.beginPath();
-            parsedSeries.forEach((item, index) => {
-                const x = xScale(item.date.getTime());
-                const y = yScale(item.amount);
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            const contributionColor = rootStyles
-                ? rootStyles.getPropertyValue('--contribution-line').trim()
-                : '';
-            ctx.strokeStyle = contributionColor || '#111111';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-
         const drawMarker = (context, x, y, radius, isBuy) => {
             const clampedY = Math.max(
                 padding.top + radius,
@@ -249,6 +211,44 @@ export function createChartManager({ buildRunningAmountSeries }) {
                 group.drawn = true;
             }
         });
+
+        if (showBalance && portfolioSeries.length > 0) {
+            ctx.beginPath();
+            portfolioSeries.forEach((item, index) => {
+                const x = xScale(item.date.getTime());
+                const y = yScale(item.value);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            const portfolioColor = rootStyles
+                ? rootStyles.getPropertyValue('--portfolio-line').trim()
+                : '#666666';
+            ctx.strokeStyle = portfolioColor || '#666666';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+
+        if (showContribution && parsedSeries.length > 0) {
+            ctx.beginPath();
+            parsedSeries.forEach((item, index) => {
+                const x = xScale(item.date.getTime());
+                const y = yScale(item.amount);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            const contributionColor = rootStyles
+                ? rootStyles.getPropertyValue('--contribution-line').trim()
+                : '#b3b3b3';
+            ctx.strokeStyle = contributionColor || '#b3b3b3';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
     }
 
     function redraw() {
