@@ -14,14 +14,14 @@ repos:
       rev: v5.0.0
       hooks:
           - id: end-of-file-fixer
-            # Do not touch generated data CSVs
-            exclude: ^data/.*\.csv$
+            # Do not touch generated data files
+            exclude: ^data/.*\.(csv|html)$
           - id: trailing-whitespace
-            # Do not touch generated data CSVs
-            exclude: ^data/.*\.csv$
+            # Do not touch generated data files
+            exclude: ^data/.*\.(csv|html)$
           - id: mixed-line-ending
-            # Do not touch generated data CSVs
-            exclude: ^data/.*\.csv$
+            # Do not touch generated data files
+            exclude: ^data/.*\.(csv|html)$
           - id: detect-private-key
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
@@ -38,6 +38,7 @@ repos:
             entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
             language: system
             files: '\\.(js|css|json|yml|yaml|md|html)$'
+            exclude: ^data/.*\.html$
             pass_filenames: true
 
     - repo: local

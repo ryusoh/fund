@@ -91,8 +91,6 @@ def write_outputs(fig: go.Figure) -> None:
         div_id='twrr-chart'
     )
 
-    # Post-process HTML to remove trailing whitespace
-    clean_html_output(OUTPUT_HTML)
 
     try:
         fig.write_image(OUTPUT_PNG)
@@ -100,26 +98,6 @@ def write_outputs(fig: go.Figure) -> None:
         print(f'WARNING: Failed to write PNG figure ({OUTPUT_PNG}): {exc}')
 
 
-def clean_html_output(html_path: Path) -> None:
-    """Clean HTML output to remove trailing whitespace and ensure consistent formatting."""
-    try:
-        # Read the HTML content
-        with html_path.open('r', encoding='utf-8') as f:
-            content = f.read()
-
-        # Remove trailing whitespace from each line
-        lines = content.splitlines()
-        cleaned_lines = [line.rstrip() for line in lines]
-
-        # Join lines back together with proper line endings
-        cleaned_content = '\n'.join(cleaned_lines)
-
-        # Write back the cleaned content
-        with html_path.open('w', encoding='utf-8') as f:
-            f.write(cleaned_content)
-
-    except Exception as exc:
-        print(f'WARNING: Failed to clean HTML output ({html_path}): {exc}')
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
