@@ -2,6 +2,7 @@ const sortState = { column: 'tradeDate', order: 'asc' };
 
 export const transactionState = {
     allTransactions: [],
+    filteredTransactions: [],
     splitHistory: [],
     runningAmountSeries: [],
     sortState,
@@ -16,6 +17,10 @@ export function resetSortState() {
 
 export function setAllTransactions(transactions) {
     transactionState.allTransactions = Array.isArray(transactions) ? transactions : [];
+}
+
+export function setFilteredTransactions(transactions) {
+    transactionState.filteredTransactions = Array.isArray(transactions) ? transactions : [];
 }
 
 export function setSplitHistory(splits) {

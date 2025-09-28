@@ -4,6 +4,7 @@ import {
     setAllTransactions,
     setSplitHistory,
     resetSortState,
+    setFilteredTransactions,
 } from '@js/transactions/state.js';
 import { buildRunningAmountSeries } from '@js/transactions/calculations.js';
 import { loadSplitHistory, loadTransactionData } from '@js/transactions/dataLoader.js';
@@ -24,6 +25,7 @@ async function loadTransactions() {
 
         const transactions = await loadTransactionData();
         setAllTransactions(transactions);
+        setFilteredTransactions(transactions);
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {
@@ -32,9 +34,6 @@ async function loadTransactions() {
 
         if (tableController && typeof tableController.filterAndSort === 'function') {
             tableController.filterAndSort('');
-        }
-        if (chartManager && typeof chartManager.update === 'function') {
-            chartManager.update(transactionState.allTransactions, transactionState.splitHistory);
         }
         adjustMobilePanels();
     } catch (error) {
@@ -49,7 +48,13 @@ async function loadTransactions() {
 
 function initialize() {
     chartManager = createChartManager({ buildRunningAmountSeries });
-    tableController = initTable();
+    tableController = initTable({
+        onFilterChange: (filtered) => {
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update(filtered, transactionState.splitHistory);
+            }
+        },
+    });
     uiController = createUiController({ chartManager });
 
     initTerminal({

@@ -1,4 +1,4 @@
-import { transactionState } from './state.js';
+import { transactionState, setFilteredTransactions } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency } from './utils.js';
 import { adjustMobilePanels } from './layout.js';
@@ -144,6 +144,10 @@ function filterAndSort(searchTerm = '') {
     });
 
     displayTransactions(filtered);
+    setFilteredTransactions(filtered);
+    if (typeof filterChangeListener === 'function') {
+        filterChangeListener(filtered);
+    }
     updateSortIndicators();
 }
 
@@ -229,7 +233,10 @@ function setupTableControls() {
     }
 }
 
-export function initTable() {
+let filterChangeListener = null;
+
+export function initTable({ onFilterChange } = {}) {
+    filterChangeListener = typeof onFilterChange === 'function' ? onFilterChange : null;
     setupTableControls();
     return {
         filterAndSort,

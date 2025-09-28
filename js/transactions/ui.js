@@ -47,7 +47,7 @@ export function createUiController({ chartManager }) {
             adjustMobilePanels();
             if (!plotSection.classList.contains('is-hidden')) {
                 chartManager.update(
-                    transactionState.allTransactions,
+                    transactionState.filteredTransactions,
                     transactionState.splitHistory
                 );
             }
