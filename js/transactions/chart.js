@@ -23,7 +23,15 @@ export function createChartManager({ buildRunningAmountSeries }) {
 
         const series = transactionState.runningAmountSeries;
         if (!series || series.length === 0) {
-            emptyState.style.display = 'flex';
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = canvas.offsetWidth * dpr;
+                canvas.height = canvas.offsetHeight * dpr;
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            emptyState.style.display = 'none';
             return;
         }
         emptyState.style.display = 'none';

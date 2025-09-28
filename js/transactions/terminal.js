@@ -41,6 +41,8 @@ function getHoldingsText() {
     return table;
 }
 
+let lastEmptyFilterTerm = null;
+
 export function initTerminal({
     filterAndSort,
     toggleTable,
@@ -51,6 +53,16 @@ export function initTerminal({
     const terminalInput = document.getElementById('terminalInput');
     const terminal = document.getElementById('terminal');
     const outputContainer = document.getElementById('terminalOutput');
+
+    function appendMessage(message) {
+        if (!outputContainer) {
+            return;
+        }
+        const pre = document.createElement('pre');
+        pre.textContent = message;
+        outputContainer.appendChild(pre);
+        outputContainer.scrollTop = outputContainer.scrollHeight;
+    }
 
     function processCommand(command) {
         if (!outputContainer) {
@@ -66,11 +78,33 @@ export function initTerminal({
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nAny other input is treated as a filter for the transaction table.';
                 break;
             case 'filter':
                 result =
                     'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nAny text not part of a command is used for a general text search.';
+                break;
+            case 'reset':
+                closeAllFilterDropdowns();
+                resetSortState();
+                if (terminalInput) {
+                    terminalInput.value = '';
+                }
+                const tableContainer = document.querySelector('.table-responsive-container');
+                const plotSection = document.getElementById('runningAmountSection');
+                if (tableContainer) {
+                    tableContainer.classList.remove('is-hidden');
+                    const transactionTable = document.getElementById('transactionTable');
+                    if (transactionTable) {
+                        transactionTable.style.display = 'table';
+                    }
+                }
+                if (plotSection) {
+                    plotSection.classList.add('is-hidden');
+                }
+                filterAndSort('');
+                result =
+                    'Reset filters and displaying full transaction history. Use `plot` to view the chart.';
                 break;
             case 'clear':
                 outputContainer.innerHTML = '';
@@ -160,6 +194,24 @@ export function initTerminal({
             }
         });
     }
+
+    document.addEventListener('transactionFilterResult', (event) => {
+        if (!outputContainer) {
+            return;
+        }
+        const detail = event.detail || {};
+        const { count } = detail;
+        const searchTerm = typeof detail.searchTerm === 'string' ? detail.searchTerm.trim() : '';
+        if (count === 0 && searchTerm) {
+            if (lastEmptyFilterTerm !== searchTerm) {
+                appendMessage("No transactions match the current filter. Type 'clear' to reset.");
+                lastEmptyFilterTerm = searchTerm;
+            }
+        } else if (count > 0) {
+            lastEmptyFilterTerm = null;
+        }
+        outputContainer.scrollTop = outputContainer.scrollHeight;
+    });
 
     return {
         processCommand,

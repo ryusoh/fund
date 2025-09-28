@@ -148,6 +148,13 @@ function filterAndSort(searchTerm = '') {
     if (typeof filterChangeListener === 'function') {
         filterChangeListener(filtered);
     }
+    const filterResultEvent = new CustomEvent('transactionFilterResult', {
+        detail: {
+            count: filtered.length,
+            searchTerm,
+        },
+    });
+    document.dispatchEvent(filterResultEvent);
     updateSortIndicators();
 }
 
