@@ -41,6 +41,131 @@ function getHoldingsText() {
     return table;
 }
 
+function formatPercent(value) {
+    if (!Number.isFinite(value)) {
+        return 'N/A';
+    }
+    const percentage = value * 100;
+    const sign = percentage >= 0 ? '' : '-';
+    return `${sign}${Math.abs(percentage).toFixed(2)}%`;
+}
+
+function getCagrText() {
+    const seriesMap =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+
+    const entries = Object.entries(seriesMap);
+    if (entries.length === 0) {
+        return 'CAGR unavailable: performance series not loaded yet.';
+    }
+
+    const baseEntry = entries.find(([name]) => name.toLowerCase().includes('twrr')) || entries[0];
+    const baseSeries = baseEntry[1];
+    if (!Array.isArray(baseSeries) || baseSeries.length < 2) {
+        return 'CAGR unavailable: insufficient portfolio observations.';
+    }
+
+    const sortedBase = [...baseSeries].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const baseFirst = sortedBase.find((point) => Number.isFinite(point.value) && point.value > 0);
+    const baseLast = [...sortedBase]
+        .reverse()
+        .find((point) => Number.isFinite(point.value) && point.value > 0);
+
+    if (!baseFirst || !baseLast) {
+        return 'CAGR unavailable: portfolio series contains invalid values.';
+    }
+
+    const startDate = new Date(baseFirst.date);
+    const endDate = new Date(baseLast.date);
+    const durationMs = endDate.getTime() - startDate.getTime();
+    const years = durationMs / (365.25 * 24 * 60 * 60 * 1000);
+
+    if (!Number.isFinite(years) || years <= 0) {
+        return 'CAGR unavailable: invalid measurement period.';
+    }
+
+    const startLabel = startDate.toISOString().slice(0, 10);
+    const endLabel = endDate.toISOString().slice(0, 10);
+
+    const metrics = entries
+        .map(([name, points]) => ({
+            name,
+            ...computeSeriesMetrics(points, startDate, endDate, years),
+        }))
+        .filter((item) => item.cagr !== null);
+
+    if (metrics.length === 0) {
+        return 'CAGR unavailable: no comparable series with valid data.';
+    }
+
+    const header =
+        '\n--------------------- PERFORMANCE CAGR --------------------\n' +
+        `  Period:        ${startLabel} → ${endLabel}\n` +
+        `  Years:         ${years.toFixed(2)}\n\n` +
+        '  Series                         Total Return      CAGR\n' +
+        '  ----------------------------   ------------   --------\n';
+
+    const lines = metrics
+        .map((item) => {
+            const name = `  ${item.name}`.padEnd(30);
+            const total = formatPercent(item.totalReturn).padStart(12);
+            const cagrValue = formatPercent(item.cagr).padStart(9);
+            return `${name}   ${total}   ${cagrValue}`;
+        })
+        .join('\n');
+
+    const skipped = entries.length - metrics.length;
+    const footer = skipped
+        ? `\n\n  Note: ${skipped} series omitted due to missing data in this window.`
+        : '';
+
+    return header + lines + footer + '\n';
+}
+
+function computeSeriesMetrics(points, startDate, endDate, years) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return { totalReturn: null, cagr: null };
+    }
+
+    const filtered = points
+        .map((point) => ({
+            date: new Date(point.date),
+            value: Number(point.value),
+        }))
+        .filter(
+            (point) =>
+                Number.isFinite(point.value) &&
+                !Number.isNaN(point.date.getTime()) &&
+                point.date >= startDate &&
+                point.date <= endDate
+        )
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (filtered.length < 2) {
+        return { totalReturn: null, cagr: null };
+    }
+
+    const first = filtered.find((point) => point.value > 0);
+    const last = [...filtered].reverse().find((point) => point.value > 0);
+
+    if (!first || !last) {
+        return { totalReturn: null, cagr: null };
+    }
+
+    const growthRatio = last.value / first.value;
+    if (!Number.isFinite(growthRatio) || growthRatio <= 0) {
+        return { totalReturn: null, cagr: null };
+    }
+
+    const totalReturn = growthRatio - 1;
+    const cagr = Math.pow(growthRatio, 1 / years) - 1;
+    return { totalReturn, cagr };
+}
+
 let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
@@ -50,6 +175,7 @@ const COMMAND_ALIASES = [
     'clear',
     'stats',
     'holdings',
+    'cagr',
     'table',
     't',
     'plot',
@@ -213,7 +339,7 @@ export function initTerminal({
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
                 break;
             case 'filter':
                 result =
@@ -260,6 +386,9 @@ export function initTerminal({
                 break;
             case 'holdings':
                 result = getHoldingsText();
+                break;
+            case 'cagr':
+                result = getCagrText();
                 break;
             case 't':
             case 'table':

@@ -6,6 +6,7 @@ export const transactionState = {
     splitHistory: [],
     runningAmountSeries: [],
     portfolioSeries: [],
+    performanceSeries: {},
     chartVisibility: {
         contribution: true,
         balance: true,
@@ -40,6 +41,11 @@ export function setRunningAmountSeries(series) {
 
 export function setPortfolioSeries(series) {
     transactionState.portfolioSeries = Array.isArray(series) ? series : [];
+}
+
+export function setPerformanceSeries(seriesMap) {
+    transactionState.performanceSeries =
+        seriesMap && typeof seriesMap === 'object' ? { ...seriesMap } : {};
 }
 
 export function setChartVisibility(key, visible) {

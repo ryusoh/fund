@@ -11,6 +11,7 @@ from typing import List
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+import yfinance as yf
 
 import sys
 
@@ -31,6 +32,17 @@ CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
 
 STEP_NAME = 'step-07_plot'
 TOOL_NAME = 'codex'
+
+BENCHMARKS = {
+    '^GSPC': '^GSPC',
+    '^IXIC': '^IXIC',
+    '^DJI': '^DJI',
+}
+BENCHMARK_STYLES = {
+    '^GSPC': {'color': '#ef553b', 'dash': 'dash'},
+    '^IXIC': {'color': '#00cc96', 'dash': 'dot'},
+    '^DJI': {'color': '#ab63fa', 'dash': 'dashdot'},
+}
 
 
 def ensure_directories() -> None:
@@ -65,7 +77,7 @@ def build_figure(twrr: pd.Series) -> go.Figure:
                 x=indexed.index,
                 y=indexed.values,
                 mode='lines',
-                name='TWRR Index',
+                name='LZ',
                 line=dict(color='#1f77b4', width=2),
             )
         ]
@@ -79,7 +91,67 @@ def build_figure(twrr: pd.Series) -> go.Figure:
         hovermode='x unified',
     )
 
+    benchmark_traces = build_benchmark_traces(indexed.index)
+    for trace in benchmark_traces:
+        fig.add_trace(trace)
+
     return fig
+
+
+def build_benchmark_traces(date_index: pd.DatetimeIndex) -> list[go.Scatter]:
+    traces: list[go.Scatter] = []
+    if date_index.empty:
+        return traces
+
+    start = date_index.min().normalize()
+    end = date_index.max().normalize() + pd.Timedelta(days=1)
+
+    for name, symbol in BENCHMARKS.items():
+        try:
+            data = yf.Ticker(symbol).history(
+                start=start.strftime('%Y-%m-%d'),
+                end=end.strftime('%Y-%m-%d'),
+                interval='1d',
+                actions=False,
+            )
+        except Exception as exc:  # pragma: no cover - network call
+            print(f'WARNING: Failed to download benchmark {symbol}: {exc}')
+            continue
+
+        if data.empty:
+            print(f'WARNING: Benchmark {symbol} returned no data; skipping.')
+            continue
+
+        close = data.get('Adj Close', data.get('Close'))
+        if close is None or close.empty:
+            print(f'WARNING: Benchmark {symbol} missing close prices; skipping.')
+            continue
+
+        series = close.copy()
+        series.index = pd.to_datetime(series.index).tz_localize(None)
+        aligned = series.reindex(date_index).ffill().bfill()
+        if aligned.isna().all():
+            print(f'WARNING: Benchmark {symbol} could not align with portfolio dates; skipping.')
+            continue
+
+        baseline = aligned.iloc[0]
+        if pd.isna(baseline) or baseline <= 0:
+            print(f'WARNING: Benchmark {symbol} has invalid baseline; skipping.')
+            continue
+
+        normalized = (aligned / baseline) * 100
+        style = BENCHMARK_STYLES.get(name, {})
+        traces.append(
+            go.Scatter(
+                x=normalized.index,
+                y=normalized.values,
+                mode='lines',
+                name=name,
+                line=dict(color=style.get('color'), dash=style.get('dash'), width=2),
+            )
+        )
+
+    return traces
 
 
 def write_outputs(fig: go.Figure) -> None:

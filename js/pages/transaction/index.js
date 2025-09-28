@@ -11,6 +11,7 @@ import {
     loadSplitHistory,
     loadTransactionData,
     loadPortfolioSeries,
+    loadPerformanceSeries,
 } from '@js/transactions/dataLoader.js';
 import { initTable } from '@js/transactions/table.js';
 import { createChartManager } from '@js/transactions/chart.js';
@@ -31,6 +32,7 @@ async function loadTransactions() {
         setAllTransactions(transactions);
         setFilteredTransactions(transactions);
         await loadPortfolioSeries();
+        await loadPerformanceSeries();
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {
