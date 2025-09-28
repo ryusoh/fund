@@ -42,6 +42,31 @@ function getHoldingsText() {
 }
 
 let lastEmptyFilterTerm = null;
+const COMMAND_ALIASES = [
+    'help',
+    'h',
+    'filter',
+    'reset',
+    'clear',
+    'stats',
+    'holdings',
+    'table',
+    't',
+    'plot',
+    'p',
+];
+
+const autocompleteState = {
+    prefix: '',
+    matches: [],
+    index: -1,
+};
+
+function resetAutocompleteState() {
+    autocompleteState.prefix = '';
+    autocompleteState.matches = [];
+    autocompleteState.index = -1;
+}
 
 export function initTerminal({
     filterAndSort,
@@ -64,6 +89,58 @@ export function initTerminal({
         outputContainer.scrollTop = outputContainer.scrollHeight;
     }
 
+    function autocompleteCommand(input) {
+        if (!input) {
+            return;
+        }
+        const rawValue = input.value;
+        const trimmedValue = rawValue.trim();
+        let searchPrefix = trimmedValue;
+
+        if (autocompleteState.matches.length > 0) {
+            const currentMatch = autocompleteState.matches[autocompleteState.index];
+            if (trimmedValue === currentMatch) {
+                searchPrefix = autocompleteState.prefix;
+            }
+        }
+
+        if (searchPrefix.includes(' ') || searchPrefix.includes(':')) {
+            resetAutocompleteState();
+            return;
+        }
+
+        const lowerPrefix = searchPrefix.toLowerCase();
+        const matches = (
+            lowerPrefix
+                ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(lowerPrefix))
+                : COMMAND_ALIASES
+        ).filter((cmd, index, arr) => arr.indexOf(cmd) === index);
+
+        if (matches.length === 0) {
+            resetAutocompleteState();
+            return;
+        }
+
+        if (
+            autocompleteState.prefix === lowerPrefix &&
+            autocompleteState.matches.length > 0 &&
+            trimmedValue === autocompleteState.matches[autocompleteState.index]
+        ) {
+            autocompleteState.index =
+                (autocompleteState.index + 1) % autocompleteState.matches.length;
+        } else {
+            autocompleteState.prefix = lowerPrefix;
+            autocompleteState.matches = matches;
+            autocompleteState.index = 0;
+        }
+
+        const completed = autocompleteState.matches[autocompleteState.index];
+        const shouldAppendSpace = matches.length === 1;
+        input.value = completed + (shouldAppendSpace ? ' ' : '');
+        const newLength = input.value.length;
+        input.setSelectionRange(newLength, newLength);
+    }
+
     function processCommand(command) {
         if (!outputContainer) {
             return;
@@ -78,7 +155,7 @@ export function initTerminal({
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
                 break;
             case 'filter':
                 result =
@@ -159,6 +236,7 @@ export function initTerminal({
                     processCommand(command);
                     input.value = '';
                 }
+                resetAutocompleteState();
                 break;
             case 'ArrowUp':
                 e.preventDefault();
@@ -166,6 +244,7 @@ export function initTerminal({
                     setHistoryIndex(transactionState.historyIndex + 1);
                     input.value = transactionState.commandHistory[transactionState.historyIndex];
                 }
+                resetAutocompleteState();
                 break;
             case 'ArrowDown':
                 e.preventDefault();
@@ -176,8 +255,14 @@ export function initTerminal({
                     resetHistoryIndex();
                     input.value = '';
                 }
+                resetAutocompleteState();
+                break;
+            case 'Tab':
+                e.preventDefault();
+                autocompleteCommand(input);
                 break;
             default:
+                resetAutocompleteState();
                 break;
         }
     }
