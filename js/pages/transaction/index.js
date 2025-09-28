@@ -342,9 +342,10 @@ function processCommand(command) {
     let result = '';
 
     switch (cmd.toLowerCase()) {
+        case 'h':
         case 'help':
             result =
-                'Available commands:\n  stats    - Display summary statistics.\n  holdings - Display current holdings.\n  table    - Toggle the transaction table visibility.\n  plot     - Toggle the running cost basis chart.\n  filter   - Show available filter commands.\n  clear    - Clear the terminal screen.\n  help     - Show this help message.\n\nAny other input is treated as a filter for the transaction table.';
+                'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nAny other input is treated as a filter for the transaction table.';
             break;
         case 'filter':
             result =
@@ -370,10 +371,12 @@ function processCommand(command) {
         case 'holdings':
             result = getHoldingsText();
             break;
+        case 't':
         case 'table':
             toggleTable();
             result = 'Toggled transaction table visibility.';
             break;
+        case 'p':
         case 'plot':
             togglePlot();
             result = 'Toggled plot visibility.';
