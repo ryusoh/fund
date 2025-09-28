@@ -11,6 +11,10 @@ from typing import Dict, Iterable, List, Optional, Sequence
 import numpy as np
 import pandas as pd
 
+import sys
+sys.path.append(str(Path(__file__).parent))
+from utils import append_changelog_entry
+
 try:
     import yfinance as yf
 except ImportError as exc:  # pragma: no cover - dependency check
@@ -295,19 +299,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
 
 
-def append_changelog_entry(artifacts: List[str], note: str = '') -> None:
-    bullet_list = '\n'.join(
-        f'- Fetched/merged historical prices ({artifact})' for artifact in artifacts
-    )
-    entry = f"\n\n### {STEP_NAME}\n{bullet_list}"
-    if note:
-        entry += f"\n- {note}"
-    entry += '\n'
-    if CHANGELOG_PATH.exists():
-        with CHANGELOG_PATH.open('a', encoding='utf-8') as f:
-            f.write(entry)
-    else:
-        CHANGELOG_PATH.write_text(entry, encoding='utf-8')
 
 
 def summarize(price_df: pd.DataFrame, overrides_applied: List[str]) -> None:
@@ -371,7 +362,7 @@ def main() -> None:
     elif unresolved:
         changelog_note = f"Unresolved tickers: {', '.join(unresolved)}"
 
-    append_changelog_entry(artifacts, changelog_note)
+    append_changelog_entry(STEP_NAME, artifacts, f"Fetched/merged historical prices. {changelog_note}")
     summarize(combined, override_tickers)
 
 
