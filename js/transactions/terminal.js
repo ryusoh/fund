@@ -408,8 +408,8 @@ function getRatioText() {
     const orderedData = portfolioEntry ? [portfolioEntry, ...others] : others;
 
     const header =
-        '\n---------------------- RISK RATIOS ----------------------\n' +
-        '  Series                         Sharpe Ratio    Sortino Ratio\n' +
+        '\n  ------------------------- RISK RATIOS ---------------------\n' +
+        '  Series                         Sharpe Ratio   Sortino Ratio\n' +
         '  ----------------------------   ------------   -------------\n';
 
     const lines = orderedData
