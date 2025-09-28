@@ -97,7 +97,7 @@
     }
 
     .chart-card {
-        padding: 18px 20px 22px;
+        padding: 12px 16px 16px;
     }
 
     .table-responsive-container {
@@ -131,6 +131,12 @@
         width: 100%;
         box-sizing: border-box;
         height: 100%;
+    }
+
+    .chart-legend {
+        margin-top: 12px;
+        gap: 16px;
+        font-size: 11px;
     }
 }
 

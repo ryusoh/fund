@@ -53,7 +53,11 @@ export function createChartManager({ buildRunningAmountSeries }) {
         ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const padding = { top: 20, right: 30, bottom: 48, left: 70 };
+        // Use smaller padding on mobile for larger chart area
+        const isMobile = window.innerWidth <= 768;
+        const padding = isMobile
+            ? { top: 15, right: 20, bottom: 35, left: 50 }
+            : { top: 20, right: 30, bottom: 48, left: 70 };
         const plotWidth = canvas.offsetWidth - padding.left - padding.right;
         const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
 
@@ -114,10 +118,10 @@ export function createChartManager({ buildRunningAmountSeries }) {
             ctx.lineWidth = 1;
             ctx.stroke();
             ctx.fillStyle = '#8b949e';
-            ctx.font = '12px var(--font-family-mono)';
+            ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
-            ctx.fillText(formatCurrencyCompact(value), padding.left - 10, y);
+            ctx.fillText(formatCurrencyCompact(value), padding.left - (isMobile ? 8 : 10), y);
         }
 
         ctx.beginPath();
@@ -127,21 +131,22 @@ export function createChartManager({ buildRunningAmountSeries }) {
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        const tickCount = Math.min(6, Math.floor(plotWidth / 120));
+        const tickCount = Math.min(6, Math.floor(plotWidth / (isMobile ? 100 : 120)));
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
+        ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
         for (let i = 0; i <= tickCount; i += 1) {
             const time = minTime + (i / tickCount) * (maxTime - minTime);
             const x = xScale(time);
             ctx.beginPath();
             ctx.moveTo(x, padding.top + plotHeight);
-            ctx.lineTo(x, padding.top + plotHeight + 6);
+            ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
             ctx.stroke();
             const labelDate = new Date(time);
             ctx.fillText(
                 labelDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
                 x,
-                padding.top + plotHeight + 10
+                padding.top + plotHeight + (isMobile ? 8 : 10)
             );
         }
 
