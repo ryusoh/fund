@@ -1,0 +1,62 @@
+.terminal {
+    background: rgba(17, 17, 17, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    background-clip: padding-box;
+}
+
+.terminal-output {
+    height: 200px;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.terminal-output div {
+    line-height: 1.5;
+}
+
+.terminal-output pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: var(--font-family-mono);
+}
+
+.terminal-prompt {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.prompt-user {
+    color: var(--green-color);
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+.terminal-input {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-family: var(--font-family-mono);
+    font-size: 14px;
+    flex-grow: 1;
+    outline: none;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    overflow: hidden;
+}

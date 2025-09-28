@@ -1,0 +1,148 @@
+@media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}
+
+@media screen and (min-width: 769px) {
+    .transaction-container > * + * {
+        margin-top: 24px;
+    }
+
+    .chart-card,
+    .table-responsive-container {
+        overflow-y: auto;
+    }
+
+    .chart-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-container {
+        flex: 1 1 auto;
+    }
+
+    .table-responsive-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .table-responsive-container table {
+        flex: 1 1 auto;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    body {
+        padding: 0;
+        background: #000 url(../../assets/mobile_bg.jpg) center center no-repeat !important;
+        background-size: cover !important;
+        box-sizing: border-box;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .transaction-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0 12px;
+        margin-top: 5px;
+        height: calc(100dvh - 118px);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+    }
+
+    .terminal {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        box-sizing: border-box;
+        flex-shrink: 0;
+    }
+
+    .terminal-output {
+        height: 150px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .terminal-prompt {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .terminal-input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .chart-card,
+    .table-responsive-container {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    .chart-card {
+        padding: 18px 20px 22px;
+    }
+
+    .table-responsive-container {
+        -webkit-overflow-scrolling: touch !important;
+        padding: 0 0 10px 0 !important;
+        width: 100% !important;
+    }
+
+    table {
+        touch-action: auto !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    thead {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+    }
+
+    .table-responsive-container thead th {
+        top: 0 !important;
+    }
+
+    #transactionTable thead th:first-child {
+        z-index: 12 !important;
+    }
+
+    #runningAmountCanvas {
+        width: 100%;
+        box-sizing: border-box;
+        height: 100%;
+    }
+}
+
+@media screen and (min-width: 769px) {
+    .table-responsive-container,
+    .chart-card {
+        height: min(clamp(320px, 50vh, 480px), calc(100vh - 260px));
+    }
+}
+
+@media (max-width: 768px) {
+    footer {
+        width: 95%;
+    }
+}

@@ -1,0 +1,97 @@
+.chart-card {
+    display: flex;
+    flex-direction: column;
+    padding: 22px 24px 26px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(17, 17, 17, 0.5);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    background-clip: padding-box;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#runningAmountCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(0 12px 18px rgba(11, 15, 30, 0.75));
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-title {
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.table-meta {
+    font-size: 12px;
+    color: #8b949e;
+    display: flex;
+    gap: 20px;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #8b949e;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+}
+
+.legend-swatch.buy {
+    background: rgba(48, 209, 88, 0.45);
+    border-color: rgba(48, 209, 88, 0.8);
+}
+
+.legend-swatch.sell {
+    background: rgba(255, 69, 58, 0.45);
+    border-color: rgba(255, 69, 58, 0.8);
+}
+
+.legend-swatch.line {
+    background: var(--muted-text);
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+    border: none;
+    align-self: center;
+}

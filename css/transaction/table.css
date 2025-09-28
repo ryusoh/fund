@@ -1,0 +1,151 @@
+/* Overrides for table.css */
+.table-responsive-container {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: auto;
+    overflow-y: overlay;
+    height: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(17, 17, 17, 0.48);
+    width: 100%;
+    padding: 0;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    background-clip: padding-box;
+    box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
+}
+
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: medium;
+}
+
+thead {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-responsive-container thead th {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 11;
+}
+
+.table-responsive-container thead th.filter-active {
+    z-index: 102;
+}
+
+th {
+    font-size: 12px;
+}
+
+#transactionTable th:first-child,
+#transactionTable td.date {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.buy {
+    color: var(--green-color);
+    font-weight: 700;
+}
+
+.sell {
+    color: var(--red-color);
+    font-weight: 700;
+}
+
+.amount {
+    text-align: right;
+    font-weight: 500;
+}
+
+strong {
+    font-weight: 700;
+}
+
+#transactionTable th:nth-child(-n + 3),
+#transactionTable td:nth-child(-n + 3) {
+    text-align: left;
+}
+
+tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 16px;
+}
+
+tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 16px;
+}
+
+th.sortable,
+th.filterable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.sort-indicator,
+.filter-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted-text);
+    margin-left: 6px;
+}
+
+.sort-indicator::after {
+    content: '↕';
+    opacity: 0.5;
+}
+
+th.sortable[data-sort='asc'] .sort-indicator::after {
+    content: '▲';
+    opacity: 1;
+}
+
+th.sortable[data-sort='desc'] .sort-indicator::after {
+    content: '▼';
+    opacity: 1;
+}
+
+.filter-indicator {
+    justify-content: center;
+    font-weight: 600;
+}
+
+.filter-indicator i {
+    font-size: 0.85em;
+    color: inherit;
+}
+
+.filter-dropdown {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 100%;
+    background: rgba(17, 17, 17, 0.9);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    box-shadow: 0 18px 28px rgba(0, 0, 0, 0.45);
+    z-index: 999;
+    padding: 8px;
+    min-width: 150px;
+    max-height: min(260px, 45vh);
+    overflow-y: auto;
+    display: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.filter-dropdown div {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.filter-dropdown div:hover {
+    background-color: var(--hover-bg);
+}
