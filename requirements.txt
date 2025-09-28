@@ -1,5 +1,6 @@
 yfinance~=0.2
 pandas~=2.3
+pyarrow>=12
 polygon-api-client
 requests>=2.32.4
 urllib3>=2.5.0
