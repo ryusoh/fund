@@ -277,7 +277,7 @@ function getAnnualReturnText() {
     return `${header}${rows}\n`;
 }
 
-function calculateSharpeRatio(returns, riskFreeRate = 0.02) {
+function calculateSharpeRatio(returns, riskFreeRate = 0.053) {
     if (!Array.isArray(returns) || returns.length < 2) {
         return null;
     }
@@ -300,7 +300,7 @@ function calculateSharpeRatio(returns, riskFreeRate = 0.02) {
     return (meanReturn - riskFreeRate / 252) / stdDev; // Daily risk-free rate
 }
 
-function calculateSortinoRatio(returns, riskFreeRate = 0.02) {
+function calculateSortinoRatio(returns, riskFreeRate = 0.053) {
     if (!Array.isArray(returns) || returns.length < 2) {
         return null;
     }
@@ -424,7 +424,8 @@ function getRatioText() {
         .join('\n');
 
     const footer =
-        '\n\n  Note: Ratios are annualized. Higher values indicate better risk-adjusted returns.\n' +
+        '\n\n  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).\n' +
+        '        Higher values indicate better risk-adjusted returns.\n' +
         '        Sharpe uses total volatility; Sortino uses only downside volatility.';
 
     return header + lines + footer + '\n';
