@@ -10,6 +10,7 @@ from typing import List
 
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 
 import sys
 
@@ -19,8 +20,10 @@ from utils import append_changelog_entry
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
 TWRR_PATH = DATA_DIR / 'twrr_series.parquet'
-OUTPUT_HTML = DATA_DIR / 'output/figures/twrr.html'
-OUTPUT_PNG = DATA_DIR / 'output/figures/twrr.png'
+OUTPUT_DIR = DATA_DIR / 'output/figures'
+OUTPUT_JSON = OUTPUT_DIR / 'twrr.json'
+OUTPUT_PNG = OUTPUT_DIR / 'twrr.png'
+FRONTEND_HTML = PROJECT_ROOT / 'performance' / 'index.html'
 
 AI_DIR = PROJECT_ROOT / 'ai'
 STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
@@ -31,7 +34,7 @@ TOOL_NAME = 'codex'
 
 
 def ensure_directories() -> None:
-    for path in [OUTPUT_HTML.parent, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
+    for path in [OUTPUT_DIR, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -80,17 +83,15 @@ def build_figure(twrr: pd.Series) -> go.Figure:
 
 
 def write_outputs(fig: go.Figure) -> None:
-    # Write HTML with clean formatting options
-    fig.write_html(
-        OUTPUT_HTML,
-        config={
-            'displayModeBar': True,
-            'displaylogo': False,
-            'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
-        },
-        include_plotlyjs=True,
-        div_id='twrr-chart',
-    )
+    payload = json.loads(pio.to_json(fig, pretty=True))
+    payload['config'] = {
+        'displayModeBar': True,
+        'displaylogo': False,
+        'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
+    }
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_JSON.write_text(json.dumps(payload, indent=2) + '\n')
 
     try:
         fig.write_image(OUTPUT_PNG)
@@ -110,9 +111,16 @@ def update_status(artifacts: List[str], notes: str) -> None:
 
 
 def summarize(twrr: pd.Series) -> None:
-    print('TWRR plot written to:')
-    print(f'  HTML: {OUTPUT_HTML}')
+    print('TWRR assets updated:')
+    print(f'  JSON: {OUTPUT_JSON}')
     print(f'  PNG:  {OUTPUT_PNG}')
+    if FRONTEND_HTML.exists():
+        print(f'Static viewer available at {FRONTEND_HTML}')
+    else:
+        print(
+            'NOTE: Static viewer HTML not found. Create fund/performance/index.html '
+            'to consume the JSON data.'
+        )
     print('\nTWRR summary:')
     print(twrr.describe())
 
@@ -124,11 +132,11 @@ def main() -> None:
     write_outputs(fig)
 
     artifacts = [
-        f"./{OUTPUT_HTML.relative_to(PROJECT_ROOT)}",
+        f"./{OUTPUT_JSON.relative_to(PROJECT_ROOT)}",
         f"./{OUTPUT_PNG.relative_to(PROJECT_ROOT)}",
     ]
-    update_status(artifacts, 'Generated TWRR performance chart.')
-    append_changelog_entry(STEP_NAME, artifacts, "Generated TWRR chart")
+    update_status(artifacts, 'Generated TWRR performance chart data.')
+    append_changelog_entry(STEP_NAME, artifacts, 'Updated TWRR chart data')
     summarize(twrr)
 
 

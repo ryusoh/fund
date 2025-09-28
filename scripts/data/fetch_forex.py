@@ -100,7 +100,9 @@ def fetch_forex_data():
             print(f"Error fetching USD/{currency}: {e}")
             has_errors = True
 
-    if not has_errors or len(json_rates) > 1:  # Proceed if at least USD is there, or some rates fetched
+    if (
+        not has_errors or len(json_rates) > 1
+    ):  # Proceed if at least USD is there, or some rates fetched
         output = {
             "base": "USD",
             "rates": json_rates,
