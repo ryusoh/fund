@@ -11,6 +11,10 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+import sys
+sys.path.append(str(Path(__file__).parent))
+from utils import append_changelog_entry
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
 CHECKPOINT_DIR = DATA_DIR / 'checkpoints'
@@ -115,16 +119,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
 
 
-def append_changelog_entry(artifacts: List[str]) -> None:
-    bullet_list = '\n'.join(
-        f'- Computed daily holdings/market value ({artifact})' for artifact in artifacts
-    )
-    entry = f"\n\n### {STEP_NAME}\n{bullet_list}\n"
-    if CHANGELOG_PATH.exists():
-        with CHANGELOG_PATH.open('a', encoding='utf-8') as f:
-            f.write(entry)
-    else:
-        CHANGELOG_PATH.write_text(entry, encoding='utf-8')
 
 
 def summarize(holdings: pd.DataFrame, portfolio_mv: pd.Series) -> None:
@@ -166,7 +160,7 @@ def main() -> None:
         f"./{MARKET_VALUE_PATH.relative_to(PROJECT_ROOT)}",
     ]
     update_status(artifacts, 'Computed daily holdings and market value series.')
-    append_changelog_entry(artifacts)
+    append_changelog_entry(STEP_NAME, artifacts)
     summarize(holdings, portfolio_mv)
 
 

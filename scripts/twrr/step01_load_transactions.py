@@ -10,6 +10,10 @@ from typing import Dict, List
 
 import pandas as pd
 
+import sys
+sys.path.append(str(Path(__file__).parent))
+from utils import append_changelog_entry
+
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
@@ -124,16 +128,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
 
 
-def append_changelog_entry(artifacts: List[str]) -> None:
-    bullet_list = '\n'.join(
-        f'- Prepared cleaned transactions checkpoint ({artifact})' for artifact in artifacts
-    )
-    entry = f"\n\n### {STEP_NAME}\n{bullet_list}\n"
-    if CHANGELOG_PATH.exists():
-        with CHANGELOG_PATH.open('a', encoding='utf-8') as f:
-            f.write(entry)
-    else:
-        CHANGELOG_PATH.write_text(entry, encoding='utf-8')
 
 
 def print_summary(df: pd.DataFrame) -> None:
@@ -161,7 +155,7 @@ def main() -> None:
 
     artifacts = [f"./{CHECKPOINT_PATH.relative_to(PROJECT_ROOT)}"]
     update_status(artifacts, 'Loaded and cleaned transactions CSV.')
-    append_changelog_entry(artifacts)
+    append_changelog_entry(STEP_NAME, artifacts)
     print_summary(df_clean)
 
 
