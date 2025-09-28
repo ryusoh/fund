@@ -277,6 +277,159 @@ function getAnnualReturnText() {
     return `${header}${rows}\n`;
 }
 
+function calculateSharpeRatio(returns, riskFreeRate = 0.02) {
+    if (!Array.isArray(returns) || returns.length < 2) {
+        return null;
+    }
+
+    const validReturns = returns.filter((r) => Number.isFinite(r));
+    if (validReturns.length < 2) {
+        return null;
+    }
+
+    const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
+    const variance =
+        validReturns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) /
+        (validReturns.length - 1);
+    const stdDev = Math.sqrt(variance);
+
+    if (stdDev === 0) {
+        return null;
+    }
+
+    return (meanReturn - riskFreeRate / 252) / stdDev; // Daily risk-free rate
+}
+
+function calculateSortinoRatio(returns, riskFreeRate = 0.02) {
+    if (!Array.isArray(returns) || returns.length < 2) {
+        return null;
+    }
+
+    const validReturns = returns.filter((r) => Number.isFinite(r));
+    if (validReturns.length < 2) {
+        return null;
+    }
+
+    const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
+    const negativeReturns = validReturns.filter((r) => r < 0);
+
+    if (negativeReturns.length === 0) {
+        return null; // No downside risk
+    }
+
+    const downsideVariance =
+        negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / validReturns.length;
+    const downsideDeviation = Math.sqrt(downsideVariance);
+
+    if (downsideDeviation === 0) {
+        return null;
+    }
+
+    return (meanReturn - riskFreeRate / 252) / downsideDeviation; // Daily risk-free rate
+}
+
+function computeDailyReturns(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return [];
+    }
+
+    const sorted = points
+        .map((point) => ({
+            date: new Date(point.date),
+            value: Number(point.value),
+        }))
+        .filter(
+            (point) =>
+                Number.isFinite(point.value) &&
+                !Number.isNaN(point.date.getTime()) &&
+                point.value > 0
+        )
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (sorted.length < 2) {
+        return [];
+    }
+
+    const returns = [];
+    for (let i = 1; i < sorted.length; i++) {
+        const prevValue = sorted[i - 1].value;
+        const currValue = sorted[i].value;
+        if (prevValue > 0) {
+            const dailyReturn = (currValue - prevValue) / prevValue;
+            if (Number.isFinite(dailyReturn)) {
+                returns.push(dailyReturn);
+            }
+        }
+    }
+
+    return returns;
+}
+
+function getRatioText() {
+    const seriesMap =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+
+    const entries = Object.entries(seriesMap);
+    if (entries.length === 0) {
+        return 'Risk ratios unavailable: performance series not loaded yet.';
+    }
+
+    const ratioData = entries
+        .map(([name, points]) => {
+            const dailyReturns = computeDailyReturns(points);
+            const sharpe = calculateSharpeRatio(dailyReturns);
+            const sortino = calculateSortinoRatio(dailyReturns);
+
+            return {
+                name,
+                dailyReturns: dailyReturns.length,
+                sharpe: sharpe !== null ? sharpe * Math.sqrt(252) : null, // Annualized
+                sortino: sortino !== null ? sortino * Math.sqrt(252) : null, // Annualized
+            };
+        })
+        .filter((item) => item.dailyReturns > 0);
+
+    if (ratioData.length === 0) {
+        return 'Risk ratios unavailable: no series contain sufficient data.';
+    }
+
+    // Sort by portfolio first, then alphabetically
+    const portfolioEntry = ratioData.find(
+        (item) =>
+            item.name.toLowerCase().includes('portfolio') ||
+            item.name.toLowerCase().includes('twrr') ||
+            item.name.toLowerCase().includes('lz')
+    );
+    const others = ratioData
+        .filter((item) => item !== portfolioEntry)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    const orderedData = portfolioEntry ? [portfolioEntry, ...others] : others;
+
+    const header =
+        '\n---------------------- RISK RATIOS ----------------------\n' +
+        '  Series                         Sharpe Ratio    Sortino Ratio\n' +
+        '  ----------------------------   ------------   -------------\n';
+
+    const lines = orderedData
+        .map((item) => {
+            const name = `  ${item.name}`.padEnd(30);
+            const sharpe =
+                item.sharpe !== null ? item.sharpe.toFixed(3).padStart(12) : 'N/A'.padStart(12);
+            const sortino =
+                item.sortino !== null ? item.sortino.toFixed(3).padStart(13) : 'N/A'.padStart(13);
+            return `${name}   ${sharpe}   ${sortino}`;
+        })
+        .join('\n');
+
+    const footer =
+        '\n\n  Note: Ratios are annualized. Higher values indicate better risk-adjusted returns.\n' +
+        '        Sharpe uses total volatility; Sortino uses only downside volatility.';
+
+    return header + lines + footer + '\n';
+}
+
 let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
@@ -288,6 +441,7 @@ const COMMAND_ALIASES = [
     'holdings',
     'cagr',
     'return',
+    'ratio',
     'table',
     't',
     'plot',
@@ -451,7 +605,7 @@ export function initTerminal({
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  return             - Show annual returns for portfolio and benchmarks.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  return             - Show annual returns for portfolio and benchmarks.\n  ratio              - Show Sharpe and Sortino ratios for portfolio and benchmarks.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
                 break;
             case 'filter':
                 result =
@@ -504,6 +658,9 @@ export function initTerminal({
                 break;
             case 'return':
                 result = getAnnualReturnText();
+                break;
+            case 'ratio':
+                result = getRatioText();
                 break;
             case 't':
             case 'table':
