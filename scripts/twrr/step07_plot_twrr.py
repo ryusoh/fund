@@ -83,11 +83,12 @@ def build_figure(twrr: pd.Series) -> go.Figure:
 
 
 def write_outputs(fig: go.Figure) -> None:
-    payload = json.loads(pio.to_json(fig, pretty=True))
-    payload['config'] = {
-        'displayModeBar': True,
-        'displaylogo': False,
-        'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
+    payload = {
+        'data': json.loads(pio.to_json(fig, pretty=False)).get('data', []),
+        'meta': {
+            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'source': STEP_NAME,
+        },
     }
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
