@@ -1,0 +1,45 @@
+name: TWRR Refresh
+
+on:
+    schedule:
+        - cron: '0 9 * * *'
+    workflow_dispatch:
+
+jobs:
+    refresh:
+        runs-on: ubuntu-latest
+        env:
+            PYTHON_VERSION: '3.11'
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  fetch-depth: 0
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements-dev.txt
+                  pip install yfinance pandas plotly kaleido pandas-datareader
+
+            - name: Run TWRR pipeline
+              run: |
+                  make twrr-refresh
+
+            - name: Commit outputs if changed
+              run: |
+                  git config user.name 'github-actions'
+                  git config user.email 'github-actions@github.com'
+                  git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_prices.parquet data/historical_prices_overrides.parquet data/output data/twrr_series.parquet ai/status/AI_STATUS.json ai/handoff/CHANGELOG-AI.md
+                  if git diff --cached --quiet; then
+                    echo 'No changes to commit.'
+                  else
+                    git commit -m "Automated TWRR refresh"
+                    git push
+                  fi
