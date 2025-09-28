@@ -61,7 +61,7 @@ function getCagrText() {
         return 'CAGR unavailable: performance series not loaded yet.';
     }
 
-    const baseEntry = entries.find(([name]) => name.toLowerCase().includes('twrr')) || entries[0];
+    const baseEntry = selectBaseSeries(entries);
     const baseSeries = baseEntry[1];
     if (!Array.isArray(baseSeries) || baseSeries.length < 2) {
         return 'CAGR unavailable: insufficient portfolio observations.';
@@ -166,6 +166,117 @@ function computeSeriesMetrics(points, startDate, endDate, years) {
     return { totalReturn, cagr };
 }
 
+function computeAnnualReturns(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return {};
+    }
+
+    const grouped = new Map();
+
+    points.forEach((point) => {
+        const value = Number(point.value);
+        const date = new Date(point.date);
+        if (!Number.isFinite(value) || Number.isNaN(date.getTime()) || value <= 0) {
+            return;
+        }
+        const year = date.getUTCFullYear();
+        if (!grouped.has(year)) {
+            grouped.set(year, []);
+        }
+        grouped.get(year).push({ date, value });
+    });
+
+    const result = {};
+    grouped.forEach((entries, year) => {
+        const sorted = entries.sort((a, b) => a.date.getTime() - b.date.getTime());
+        if (sorted.length < 2) {
+            return;
+        }
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        if (first.value <= 0 || last.value <= 0) {
+            return;
+        }
+        const growthRatio = last.value / first.value;
+        if (!Number.isFinite(growthRatio) || growthRatio <= 0) {
+            return;
+        }
+        result[year] = growthRatio - 1;
+    });
+
+    return result;
+}
+
+function selectBaseSeries(entries) {
+    const preferences = ['lz', 'portfolio', 'twrr'];
+    for (const preference of preferences) {
+        const match = entries.find(([name]) => name.toLowerCase().includes(preference));
+        if (match) {
+            return match;
+        }
+    }
+    return entries[0];
+}
+
+function getAnnualReturnText() {
+    const seriesMap =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+
+    const entries = Object.entries(seriesMap);
+    if (entries.length === 0) {
+        return 'Return breakdown unavailable: performance series not loaded yet.';
+    }
+
+    const annualData = entries
+        .map(([name, points]) => ({ name, returns: computeAnnualReturns(points) }))
+        .filter((entry) => Object.keys(entry.returns).length > 0);
+
+    if (annualData.length === 0) {
+        return 'Return breakdown unavailable: no series contain annual data.';
+    }
+
+    const baseName = selectBaseSeries(entries)[0];
+    const baseEntry = annualData.find((entry) => entry.name === baseName);
+    const others = annualData
+        .filter((entry) => entry.name !== baseName)
+        .sort((a, b) => (a.name > b.name ? 1 : -1));
+    const orderedSeries = baseEntry ? [baseEntry, ...others] : others;
+
+    const yearSet = new Set();
+    annualData.forEach((entry) => {
+        Object.keys(entry.returns).forEach((year) => yearSet.add(Number(year)));
+    });
+
+    if (yearSet.size === 0) {
+        return 'Return breakdown unavailable: unable to derive annual windows.';
+    }
+
+    const years = Array.from(yearSet).sort((a, b) => a - b);
+
+    const header =
+        '\n----------------------- ANNUAL RETURNS --------------------\n' +
+        '  Year'.padEnd(8) +
+        orderedSeries.map((entry) => entry.name.padStart(12)).join('') +
+        '\n';
+
+    const rows = years
+        .map((year) => {
+            const yearLabel = `  ${year}`.padEnd(8);
+            const columns = orderedSeries
+                .map((entry) => {
+                    const value = entry.returns[year];
+                    return formatPercent(Number.isFinite(value) ? value : NaN).padStart(12);
+                })
+                .join('');
+            return yearLabel + columns;
+        })
+        .join('\n');
+
+    return `${header}${rows}\n`;
+}
+
 let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
@@ -176,6 +287,7 @@ const COMMAND_ALIASES = [
     'stats',
     'holdings',
     'cagr',
+    'return',
     'table',
     't',
     'plot',
@@ -339,7 +451,7 @@ export function initTerminal({
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  return             - Show annual returns for portfolio and benchmarks.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
                 break;
             case 'filter':
                 result =
@@ -389,6 +501,9 @@ export function initTerminal({
                 break;
             case 'cagr':
                 result = getCagrText();
+                break;
+            case 'return':
+                result = getAnnualReturnText();
                 break;
             case 't':
             case 'table':
