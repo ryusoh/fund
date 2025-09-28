@@ -25,5 +25,5 @@
 
 ### step-07_plot
 
-- Generated TWRR chart (data/output/figures/twrr.html)
-- Generated TWRR chart (data/output/figures/twrr.png)
+- Generated TWRR chart (./data/output/figures/twrr.html)
+- Generated TWRR chart (./data/output/figures/twrr.png)
