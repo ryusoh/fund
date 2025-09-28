@@ -8,7 +8,16 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh
+
+PYTHON_BIN := $(PY)
+TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
+		 scripts/twrr/step02_apply_splits.py \
+		 scripts/twrr/step03_fetch_prices.py \
+		 scripts/twrr/step04_compute_holdings.py \
+		 scripts/twrr/step05_cashflows.py \
+		 scripts/twrr/step06_compute_twrr.py \
+		 scripts/twrr/step07_plot_twrr.py
 
 help:
 	@echo "Targets:"
@@ -134,3 +143,18 @@ completion:
 
 update-hooks:
 	$(PY) -m pre_commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
+
+twrr-refresh:
+	@mkdir -p data/checkpoints data/output/figures
+	@NEW_HASH=`$(PYTHON_BIN) scripts/pipeline_hash.py` ; \
+	 OLD_HASH=`cat data/checkpoints/input_hash.txt 2>/dev/null || echo ''` ; \
+	 if [ "$$NEW_HASH" = "$$OLD_HASH" ] && [ -n "$$OLD_HASH" ]; then \
+		 echo 'No changes detected'; \
+	 else \
+		 echo 'Changes detected; running TWRR pipeline...'; \
+		 for step in $(TWRR_STEPS); do \
+			 echo "Running $$step"; \
+			 $(PYTHON_BIN) $$step || exit $$?; \
+		 done; \
+		 $(PYTHON_BIN) scripts/pipeline_hash.py --write >/dev/null; \
+	 fi

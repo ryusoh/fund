@@ -1,0 +1,379 @@
+#!/usr/bin/env python3.11
+"""Step 03: Fetch historical adjusted prices with fallbacks and overrides."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Sequence
+
+import numpy as np
+import pandas as pd
+
+try:
+    import yfinance as yf
+except ImportError as exc:  # pragma: no cover - dependency check
+    raise RuntimeError('yfinance is required for price fetching. Install it and rerun.') from exc
+
+try:
+    from pandas_datareader import data as pdr  # type: ignore
+except ImportError:  # pragma: no cover - optional fallback
+    pdr = None
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = PROJECT_ROOT / 'data'
+CHECKPOINT_DIR = DATA_DIR / 'checkpoints'
+TRANSACTIONS_PATH = CHECKPOINT_DIR / 'transactions_with_splits.parquet'
+HISTORICAL_PRICES_PATH = DATA_DIR / 'historical_prices.parquet'
+OVERRIDE_PATH = DATA_DIR / 'historical_prices_overrides.parquet'
+
+AI_DIR = PROJECT_ROOT / 'ai'
+STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
+CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
+
+STEP_NAME = 'step-03_prices'
+TOOL_NAME = 'codex'
+
+YFINANCE_MAX_BATCH = 25
+
+# Map normalized tickers (post-cleaning) to vendor-specific symbols
+YFINANCE_ALIASES: Dict[str, str] = {
+    'BRKB': 'BRK-B',  # Berkshire Hathaway Class B
+    'BF.B': 'BF-B',  # Brown-Forman Class B (if normalization retains dot)
+    'BF_B': 'BF-B',  # Brown-Forman Class B (if dot stripped elsewhere)
+}
+
+
+def ensure_directories() -> None:
+    for path in [CHECKPOINT_DIR, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
+        path.mkdir(parents=True, exist_ok=True)
+
+
+def read_transactions() -> pd.DataFrame:
+    if not TRANSACTIONS_PATH.exists():
+        raise FileNotFoundError(
+            f"Missing checkpoint: {TRANSACTIONS_PATH}. Run step-02 before fetching prices."
+        )
+    try:
+        df = pd.read_parquet(TRANSACTIONS_PATH)
+    except ImportError as exc:
+        raise RuntimeError(
+            'Reading parquet requires pyarrow or fastparquet. Install one of them and rerun.'
+        ) from exc
+    return df
+
+
+def determine_date_range(transactions: pd.DataFrame) -> pd.DatetimeIndex:
+    start_date = transactions['trade_date'].min().date()
+    today_utc = datetime.now(timezone.utc).date()
+    # yfinance end is exclusive; we add one day later during request
+    full_range = pd.date_range(start=start_date, end=today_utc, freq='D')
+    return full_range
+
+
+def chunked(iterable: Sequence[str], size: int) -> Iterable[List[str]]:
+    for i in range(0, len(iterable), size):
+        yield list(iterable[i : i + size])
+
+
+def fetch_yfinance_prices(tickers: List[str], date_index: pd.DatetimeIndex):
+    if not tickers:
+        empty = pd.DataFrame(index=date_index)
+        return empty, [], []
+
+    normalized = [ticker.upper() for ticker in tickers]
+    request_map = {ticker: YFINANCE_ALIASES.get(ticker, ticker) for ticker in normalized}
+
+    start = date_index[0]
+    end = date_index[-1] + pd.Timedelta(days=1)  # yfinance exclusive end
+    frames: List[pd.DataFrame] = []
+    successes: List[str] = []
+    failures: List[str] = []
+
+    for batch in chunked(normalized, YFINANCE_MAX_BATCH):
+        batch_fetch = [request_map[ticker] for ticker in batch]
+        try:
+            data = yf.download(
+                batch_fetch,
+                start=start.strftime('%Y-%m-%d'),
+                end=end.strftime('%Y-%m-%d'),
+                interval='1d',
+                group_by='column',
+                auto_adjust=False,
+                progress=False,
+                threads=True,
+                actions=False,
+            )
+        except Exception as exc:  # pragma: no cover - network failures
+            print(f'yfinance batch failed for {batch}: {exc}')
+            failures.extend(batch)
+            continue
+
+        if data.empty:
+            failures.extend(batch)
+            continue
+
+        selected = pd.DataFrame(index=data.index)
+
+        def pick_series(symbol: str, use_close: bool) -> Optional[pd.Series]:
+            if isinstance(data.columns, pd.MultiIndex):
+                field = 'Close' if use_close else 'Adj Close'
+                if field in data.columns.get_level_values(0):
+                    try:
+                        series = data[field][symbol]
+                        return series
+                    except KeyError:
+                        return None
+            else:
+                cols = {col.upper(): col for col in data.columns}
+                key = 'CLOSE' if use_close else 'ADJ CLOSE'
+                if key in cols:
+                    return data[cols[key]]
+            return None
+
+        for norm in batch:
+            fetch_symbol = request_map[norm]
+            use_close = norm.endswith('X')
+            series = pick_series(fetch_symbol, use_close)
+
+            if series is None or series.empty:
+                failures.append(norm)
+                continue
+
+            series.name = norm
+            selected[norm] = series
+            successes.append(norm)
+
+        if selected.empty:
+            continue
+
+        selected = selected.reindex(date_index)
+        frames.append(selected)
+
+    combined = pd.concat(frames, axis=1) if frames else pd.DataFrame(index=date_index)
+    combined = combined.loc[:, ~combined.columns.duplicated()]
+    combined.columns = [col.upper() for col in combined.columns]
+
+    return combined, sorted(set(successes)), sorted(set(failures))
+
+
+def fetch_stooq_price(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> Optional[pd.Series]:
+    if pdr is None:
+        return None
+    try:
+        df = pdr.DataReader(ticker, 'stooq', start=start, end=end)
+        if df.empty or 'Close' not in df.columns:
+            return None
+        series = df['Close'].sort_index()
+        series.index = pd.DatetimeIndex(series.index.date)
+        series.name = ticker
+        return series
+    except Exception:
+        return None
+
+
+def attempt_fallbacks(
+    missing_tickers: List[str],
+    date_index: pd.DatetimeIndex,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> Dict[str, pd.Series]:
+    retrieved: Dict[str, pd.Series] = {}
+    for ticker in missing_tickers:
+        fetch_symbol = YFINANCE_ALIASES.get(ticker, ticker)
+        # Try yfinance single-ticker history first (sometimes succeeds when batch fails)
+        try:
+            hist = yf.Ticker(fetch_symbol).history(
+                start=start.strftime('%Y-%m-%d'),
+                end=(end + pd.Timedelta(days=1)).strftime('%Y-%m-%d'),
+                interval='1d',
+                auto_adjust=True,
+                actions=False,
+            )
+            if not hist.empty and 'Close' in hist.columns:
+                series = hist['Close']
+            elif not hist.empty and 'Adj Close' in hist.columns:
+                series = hist['Adj Close']
+            else:
+                series = None
+            if series is not None:
+                series.index = pd.DatetimeIndex(series.index.date)
+                series.name = ticker
+                retrieved[ticker] = series
+                continue
+        except Exception:
+            pass
+
+        stooq_series = fetch_stooq_price(fetch_symbol, start=start, end=end)
+        if stooq_series is not None:
+            retrieved[ticker] = stooq_series.rename(ticker)
+
+    for ticker in list(retrieved):
+        retrieved[ticker] = retrieved[ticker].reindex(date_index)
+    return retrieved
+
+
+def load_overrides(date_index: pd.DatetimeIndex) -> pd.DataFrame:
+    if not OVERRIDE_PATH.exists():
+        return pd.DataFrame(index=date_index)
+    try:
+        override_df = pd.read_parquet(OVERRIDE_PATH)
+    except ImportError as exc:
+        raise RuntimeError(
+            'Reading overrides requires pyarrow or fastparquet. Install one of them and rerun.'
+        ) from exc
+
+    expected_cols = {'date', 'ticker', 'adj_close'}
+    missing_cols = expected_cols - set(map(str.lower, override_df.columns))
+    if missing_cols:
+        raise ValueError(
+            f'Override parquet missing required columns: {sorted(missing_cols)}. Expected {sorted(expected_cols)}.'
+        )
+
+    rename_map = {col: col.lower() for col in override_df.columns}
+    override_df = override_df.rename(columns=rename_map)
+    override_df['date'] = pd.to_datetime(override_df['date'])
+    override_df['ticker'] = override_df['ticker'].str.upper()
+
+    pivot = override_df.pivot_table(
+        index='date', columns='ticker', values='adj_close', aggfunc='last'
+    ).reindex(date_index)
+    pivot.index = date_index
+    return pivot
+
+
+def combine_prices(
+    base_prices: pd.DataFrame,
+    fallback_prices: Dict[str, pd.Series],
+    overrides: pd.DataFrame,
+    date_index: pd.DatetimeIndex,
+) -> pd.DataFrame:
+    price_df = base_prices.copy()
+
+    for ticker, series in fallback_prices.items():
+        if ticker not in price_df.columns:
+            price_df[ticker] = series
+        else:
+            price_df[ticker] = price_df[ticker].combine_first(series)
+
+    if not overrides.empty:
+        override_tickers = overrides.columns.intersection(price_df.columns)
+        for ticker in override_tickers:
+            price_df[ticker] = price_df[ticker].combine_first(overrides[ticker])
+        missing = overrides.columns.difference(price_df.columns)
+        if not missing.empty:
+            price_df = pd.concat([price_df, overrides[missing]], axis=1)
+
+    price_df = price_df.reindex(date_index).sort_index()
+    price_df = price_df.loc[:, sorted(price_df.columns)]
+    return price_df
+
+
+def forward_fill_prices(price_df: pd.DataFrame) -> pd.DataFrame:
+    return price_df.ffill().bfill()
+
+
+def write_prices(price_df: pd.DataFrame) -> None:
+    try:
+        price_df.to_parquet(HISTORICAL_PRICES_PATH)
+    except ImportError as exc:
+        raise RuntimeError(
+            'Writing parquet requires pyarrow or fastparquet. Install one of them and rerun step-03.'
+        ) from exc
+    print(f'Historical prices written to {HISTORICAL_PRICES_PATH}')
+
+
+def update_status(artifacts: List[str], notes: str) -> None:
+    status_data = {
+        'step': STEP_NAME,
+        'tool': TOOL_NAME,
+        'artifacts': artifacts,
+        'ts': datetime.now(tz=timezone.utc).isoformat(),
+        'notes': notes,
+    }
+    STATUS_PATH.write_text(json.dumps(status_data, indent=2))
+
+
+def append_changelog_entry(artifacts: List[str], note: str = '') -> None:
+    bullet_list = '\n'.join(
+        f'- Fetched/merged historical prices ({artifact})' for artifact in artifacts
+    )
+    entry = f"\n\n### {STEP_NAME}\n{bullet_list}"
+    if note:
+        entry += f"\n- {note}"
+    entry += '\n'
+    if CHANGELOG_PATH.exists():
+        with CHANGELOG_PATH.open('a', encoding='utf-8') as f:
+            f.write(entry)
+    else:
+        CHANGELOG_PATH.write_text(entry, encoding='utf-8')
+
+
+def summarize(price_df: pd.DataFrame, overrides_applied: List[str]) -> None:
+    missing_counts = price_df.isna().sum()
+    top_missing = missing_counts.sort_values(ascending=False).head(5)
+
+    print('\nTop tickers by missing price days (after forward fill attempt):')
+    if top_missing.empty or top_missing.max() == 0:
+        print('  No missing values remaining.')
+    else:
+        for ticker, count in top_missing.items():
+            print(f'  {ticker}: {int(count)} missing days')
+
+    if overrides_applied:
+        print('\nTickers with override data applied:')
+        print('  ' + ', '.join(sorted(set(overrides_applied))))
+    else:
+        print('\nNo overrides applied.')
+
+    print('\nPrice DataFrame head:')
+    print(price_df.head())
+
+
+def main() -> None:
+    ensure_directories()
+    transactions = read_transactions()
+    date_index = determine_date_range(transactions)
+    unique_tickers = sorted(transactions['security'].dropna().unique())
+    print(
+        f'Fetching prices for {len(unique_tickers)} tickers from {date_index[0].date()} to {date_index[-1].date()}'
+    )
+
+    base_prices, successes, failures = fetch_yfinance_prices(unique_tickers, date_index)
+    print(f'yfinance success: {len(successes)} tickers, failures: {len(failures)} tickers')
+
+    start = date_index[0]
+    end = date_index[-1]
+    fallback_data = attempt_fallbacks(failures, date_index, start, end)
+    fallback_tickers = list(fallback_data.keys())
+    unresolved = sorted(set(failures) - set(fallback_tickers))
+    if fallback_tickers:
+        print(f'Fallback sources retrieved {len(fallback_tickers)} tickers: {fallback_tickers}')
+    if unresolved:
+        print(f'WARNING: Unable to retrieve any prices for tickers: {unresolved}')
+
+    overrides = load_overrides(date_index)
+    override_tickers = list(overrides.columns) if not overrides.empty else []
+    if override_tickers:
+        print(f'Overrides available for tickers: {override_tickers}')
+
+    combined = combine_prices(base_prices, fallback_data, overrides, date_index)
+    combined = forward_fill_prices(combined)
+
+    write_prices(combined)
+
+    artifacts = [f"./{HISTORICAL_PRICES_PATH.relative_to(PROJECT_ROOT)}"]
+    update_status(artifacts, 'Fetched historical adjusted prices with fallbacks and overrides.')
+    changelog_note = ''
+    if override_tickers:
+        changelog_note = f"Overrides applied for: {', '.join(sorted(set(override_tickers)))}"
+    elif unresolved:
+        changelog_note = f"Unresolved tickers: {', '.join(unresolved)}"
+
+    append_changelog_entry(artifacts, changelog_note)
+    summarize(combined, override_tickers)
+
+
+if __name__ == '__main__':
+    main()
