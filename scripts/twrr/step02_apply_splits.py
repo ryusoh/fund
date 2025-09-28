@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 import sys
+
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
 
@@ -145,8 +146,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
         'notes': notes,
     }
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
-
-
 
 
 def print_split_report(transactions: pd.DataFrame, splits: pd.DataFrame) -> None:

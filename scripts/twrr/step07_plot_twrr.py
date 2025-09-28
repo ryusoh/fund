@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 import sys
+
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
 
@@ -85,19 +86,16 @@ def write_outputs(fig: go.Figure) -> None:
         config={
             'displayModeBar': True,
             'displaylogo': False,
-            'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d']
+            'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
         },
         include_plotlyjs=True,
-        div_id='twrr-chart'
+        div_id='twrr-chart',
     )
-
 
     try:
         fig.write_image(OUTPUT_PNG)
     except Exception as exc:
         print(f'WARNING: Failed to write PNG figure ({OUTPUT_PNG}): {exc}')
-
-
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
@@ -109,8 +107,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
         'notes': notes,
     }
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
-
-
 
 
 def summarize(twrr: pd.Series) -> None:

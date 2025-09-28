@@ -78,8 +78,12 @@ def compute_portfolio_values(portfolio_mv: pd.Series, fx_history: pd.DataFrame) 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Backfill historical multi-currency portfolio values.')
-    parser.add_argument('--dry-run', action='store_true', help='Compute but do not write output file.')
+    parser = argparse.ArgumentParser(
+        description='Backfill historical multi-currency portfolio values.'
+    )
+    parser.add_argument(
+        '--dry-run', action='store_true', help='Compute but do not write output file.'
+    )
     args = parser.parse_args()
 
     portfolio_mv = load_market_value()

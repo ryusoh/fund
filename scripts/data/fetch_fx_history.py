@@ -22,14 +22,18 @@ def determine_date_range(start: str | None) -> tuple[str, str]:
     if start:
         return start, end
     # default to last 5 years if not specified
-    default_start = (datetime.now(timezone.utc).date().replace(day=1) - pd.DateOffset(years=5)).strftime('%Y-%m-%d')
+    default_start = (
+        datetime.now(timezone.utc).date().replace(day=1) - pd.DateOffset(years=5)
+    ).strftime('%Y-%m-%d')
     return default_start, end
 
 
 def fetch_rates(start: str, end: str) -> pd.DataFrame:
     frames = []
     for currency, symbol in ETFS.items():
-        data = yf.Ticker(symbol).history(start=start, end=end, interval='1d', actions=False)  # consider leave interval default? fallback
+        data = yf.Ticker(symbol).history(
+            start=start, end=end, interval='1d', actions=False
+        )  # consider leave interval default? fallback
         if 'Close' not in data.columns and 'Adj Close' not in data.columns:
             raise ValueError(f'Missing Close data for {symbol or currency}')
         series = data.get('Adj Close', data['Close'])

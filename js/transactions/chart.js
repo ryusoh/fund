@@ -22,7 +22,17 @@ export function createChartManager({ buildRunningAmountSeries }) {
         }
 
         const series = transactionState.runningAmountSeries;
-        if (!series || series.length === 0) {
+        const portfolioSeriesRaw = transactionState.portfolioSeries || [];
+        const visibility = transactionState.chartVisibility || {};
+        const showContribution = visibility.contribution !== false;
+        const showBalance = visibility.balance !== false;
+        const showBuy = visibility.buy !== false;
+        const showSell = visibility.sell !== false;
+
+        if (
+            (!series || series.length === 0 || (!showContribution && !showBuy && !showSell)) &&
+            (!showBalance || portfolioSeriesRaw.length === 0)
+        ) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 const dpr = window.devicePixelRatio || 1;
@@ -47,19 +57,43 @@ export function createChartManager({ buildRunningAmountSeries }) {
         const plotWidth = canvas.offsetWidth - padding.left - padding.right;
         const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
 
-        const parsedSeries = series
+        const parsedSeries = (series || [])
             .map((item) => ({ ...item, date: new Date(item.tradeDate) }))
             .filter((item) => !Number.isNaN(item.date.getTime()));
-        if (parsedSeries.length === 0) {
+
+        const portfolioSeries = (showBalance ? portfolioSeriesRaw : [])
+            .map((item) => ({ ...item, date: new Date(item.date), value: item.value }))
+            .filter((item) => !Number.isNaN(item.date.getTime()) && Number.isFinite(item.value))
+            .sort((a, b) => a.date - b.date);
+
+        if (
+            (parsedSeries.length === 0 || (!showContribution && !showBuy && !showSell)) &&
+            portfolioSeries.length === 0
+        ) {
             return;
         }
 
-        const maxAmount = Math.max(...parsedSeries.map((item) => item.amount), 0);
+        const includeContributionRange =
+            parsedSeries.length > 0 && (showContribution || showBuy || showSell);
+        const contributionMax = includeContributionRange
+            ? Math.max(...parsedSeries.map((item) => item.amount))
+            : 0;
+        const portfolioMax = portfolioSeries.length
+            ? Math.max(...portfolioSeries.map((item) => item.value))
+            : 0;
+        const maxAmount = Math.max(contributionMax, portfolioMax, 0);
         const yMax = maxAmount <= 0 ? 1 : maxAmount * 1.15;
 
-        const times = parsedSeries.map((item) => item.date.getTime());
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(new Date().setHours(0, 0, 0, 0), ...times);
+        const contributionTimes = includeContributionRange
+            ? parsedSeries.map((item) => item.date.getTime())
+            : [];
+        const portfolioTimes = portfolioSeries.map((item) => item.date.getTime());
+        const allTimes = [...contributionTimes, ...portfolioTimes];
+        if (allTimes.length === 0) {
+            return;
+        }
+        const minTime = Math.min(...allTimes);
+        const maxTime = Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
 
         const xScale = (t) => {
             if (maxTime === minTime) {
@@ -111,24 +145,48 @@ export function createChartManager({ buildRunningAmountSeries }) {
             );
         }
 
-        ctx.beginPath();
-        parsedSeries.forEach((item, index) => {
-            const x = xScale(item.date.getTime());
-            const y = yScale(item.amount);
-            if (index === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        });
         const rootStyles =
             typeof window !== 'undefined' && window.getComputedStyle
                 ? window.getComputedStyle(document.documentElement)
                 : null;
-        const mutedStroke = rootStyles ? rootStyles.getPropertyValue('--muted-text').trim() : '';
-        ctx.strokeStyle = mutedStroke || '#8b949e';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+
+        if (showBalance && portfolioSeries.length > 0) {
+            ctx.beginPath();
+            portfolioSeries.forEach((item, index) => {
+                const x = xScale(item.date.getTime());
+                const y = yScale(item.value);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            const portfolioColor = rootStyles
+                ? rootStyles.getPropertyValue('--portfolio-line').trim()
+                : '#7f7f7f';
+            ctx.strokeStyle = portfolioColor || '#e9c46a';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+
+        if (showContribution && parsedSeries.length > 0) {
+            ctx.beginPath();
+            parsedSeries.forEach((item, index) => {
+                const x = xScale(item.date.getTime());
+                const y = yScale(item.amount);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            const contributionColor = rootStyles
+                ? rootStyles.getPropertyValue('--contribution-line').trim()
+                : '';
+            ctx.strokeStyle = contributionColor || '#111111';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
 
         const drawMarker = (context, x, y, radius, isBuy) => {
             const clampedY = Math.max(
@@ -144,10 +202,16 @@ export function createChartManager({ buildRunningAmountSeries }) {
             context.stroke();
         };
 
-        const pointSeries = parsedSeries.filter(
-            (item) =>
-                item.orderType.toLowerCase() === 'buy' || item.orderType.toLowerCase() === 'sell'
-        );
+        const pointSeries = parsedSeries.filter((item) => {
+            const type = item.orderType.toLowerCase();
+            if (type === 'buy') {
+                return showBuy;
+            }
+            if (type === 'sell') {
+                return showSell;
+            }
+            return false;
+        });
         const grouped = new Map();
         if (pointSeries.length > 0) {
             pointSeries.forEach((item) => {
@@ -187,5 +251,14 @@ export function createChartManager({ buildRunningAmountSeries }) {
         });
     }
 
-    return { update, draw };
+    function redraw() {
+        const plotSection = document.getElementById('runningAmountSection');
+        if (plotSection && !plotSection.classList.contains('is-hidden')) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(draw);
+            });
+        }
+    }
+
+    return { update, redraw };
 }

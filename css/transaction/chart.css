@@ -68,6 +68,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.legend-item.legend-disabled {
+    opacity: 0.4;
 }
 
 .legend-swatch {
@@ -87,8 +93,17 @@
     border-color: rgba(255, 69, 58, 0.8);
 }
 
-.legend-swatch.line {
-    background: var(--muted-text);
+.legend-swatch.contribution {
+    background: var(--contribution-line);
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+    border: none;
+    align-self: center;
+}
+
+.legend-swatch.balance {
+    background: var(--portfolio-line);
     width: 16px;
     height: 2px;
     border-radius: 1px;

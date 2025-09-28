@@ -5,6 +5,13 @@ export const transactionState = {
     filteredTransactions: [],
     splitHistory: [],
     runningAmountSeries: [],
+    portfolioSeries: [],
+    chartVisibility: {
+        contribution: true,
+        balance: true,
+        buy: true,
+        sell: true,
+    },
     sortState,
     commandHistory: [],
     historyIndex: -1,
@@ -29,6 +36,20 @@ export function setSplitHistory(splits) {
 
 export function setRunningAmountSeries(series) {
     transactionState.runningAmountSeries = Array.isArray(series) ? series : [];
+}
+
+export function setPortfolioSeries(series) {
+    transactionState.portfolioSeries = Array.isArray(series) ? series : [];
+}
+
+export function setChartVisibility(key, visible) {
+    if (key in transactionState.chartVisibility) {
+        transactionState.chartVisibility[key] = Boolean(visible);
+    }
+}
+
+export function getChartVisibility() {
+    return { ...transactionState.chartVisibility };
 }
 
 export function pushCommandHistory(command) {

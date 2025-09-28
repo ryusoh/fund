@@ -7,7 +7,11 @@ import {
     setFilteredTransactions,
 } from '@js/transactions/state.js';
 import { buildRunningAmountSeries } from '@js/transactions/calculations.js';
-import { loadSplitHistory, loadTransactionData } from '@js/transactions/dataLoader.js';
+import {
+    loadSplitHistory,
+    loadTransactionData,
+    loadPortfolioSeries,
+} from '@js/transactions/dataLoader.js';
 import { initTable } from '@js/transactions/table.js';
 import { createChartManager } from '@js/transactions/chart.js';
 import { createUiController } from '@js/transactions/ui.js';
@@ -26,6 +30,7 @@ async function loadTransactions() {
         const transactions = await loadTransactionData();
         setAllTransactions(transactions);
         setFilteredTransactions(transactions);
+        await loadPortfolioSeries();
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {

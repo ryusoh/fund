@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 import sys
+
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
 
@@ -299,8 +300,6 @@ def update_status(artifacts: List[str], notes: str) -> None:
     STATUS_PATH.write_text(json.dumps(status_data, indent=2))
 
 
-
-
 def summarize(price_df: pd.DataFrame, overrides_applied: List[str]) -> None:
     missing_counts = price_df.isna().sum()
     top_missing = missing_counts.sort_values(ascending=False).head(5)
@@ -362,7 +361,9 @@ def main() -> None:
     elif unresolved:
         changelog_note = f"Unresolved tickers: {', '.join(unresolved)}"
 
-    append_changelog_entry(STEP_NAME, artifacts, f"Fetched/merged historical prices. {changelog_note}")
+    append_changelog_entry(
+        STEP_NAME, artifacts, f"Fetched/merged historical prices. {changelog_note}"
+    )
     summarize(combined, override_tickers)
 
 

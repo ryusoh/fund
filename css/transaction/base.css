@@ -13,6 +13,8 @@
     --transaction-panel-height: 360px;
     --transaction-panel-height-mobile: clamp(240px, calc(100vh - 300px), 360px);
     --font-family-mono: 'JetBrains Mono', monospace;
+    --contribution-line: #b3b3b3;
+    --portfolio-line: #7a7a7a;
 }
 
 .is-hidden {

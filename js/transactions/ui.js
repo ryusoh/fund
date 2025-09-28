@@ -1,4 +1,4 @@
-import { transactionState } from './state.js';
+import { transactionState, setChartVisibility } from './state.js';
 import { adjustMobilePanels } from './layout.js';
 
 export function createUiController({ chartManager }) {
@@ -53,6 +53,25 @@ export function createUiController({ chartManager }) {
             }
         });
     }
+
+    function initLegendToggles() {
+        const items = document.querySelectorAll('.chart-legend .legend-item[data-series]');
+        items.forEach((item) => {
+            const key = item.dataset.series;
+            if (!key) {
+                return;
+            }
+            item.addEventListener('click', () => {
+                const disabled = item.classList.toggle('legend-disabled');
+                setChartVisibility(key, !disabled);
+                if (typeof chartManager.redraw === 'function') {
+                    chartManager.redraw();
+                }
+            });
+        });
+    }
+
+    initLegendToggles();
 
     return {
         toggleTable,
