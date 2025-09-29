@@ -491,6 +491,16 @@ export function initTerminal({
             return;
         }
 
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            Array.from(outputContainer.children).forEach((child) => {
+                if (child && child.nodeType === 1) {
+                    child.style.opacity = '1';
+                }
+            });
+            return;
+        }
+
         const viewHeight = outputContainer.clientHeight;
         if (viewHeight <= 0) {
             return;
