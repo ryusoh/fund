@@ -385,18 +385,17 @@ function drawPerformanceChart(ctx, chartManager) {
 export function createChartManager({ buildRunningAmountSeries, buildPortfolioSeries }) {
     const chartManager = {
         update(transactions, splitHistory) {
-            if (transactionState.activeChart === 'contribution') {
-                const contributionSeries = buildRunningAmountSeries(transactions, splitHistory);
-                setRunningAmountSeries(contributionSeries);
+            // Always update contribution data when update is called
+            const contributionSeries = buildRunningAmountSeries(transactions, splitHistory);
+            setRunningAmountSeries(contributionSeries);
 
-                if (buildPortfolioSeries) {
-                    const portfolioSeries = buildPortfolioSeries(
-                        transactions,
-                        transactionState.historicalPrices,
-                        transactionState.splitHistory
-                    );
-                    setPortfolioSeries(portfolioSeries);
-                }
+            if (buildPortfolioSeries) {
+                const portfolioSeries = buildPortfolioSeries(
+                    transactions,
+                    transactionState.historicalPrices,
+                    transactionState.splitHistory
+                );
+                setPortfolioSeries(portfolioSeries);
             }
             this.redraw();
         },
