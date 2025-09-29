@@ -61,9 +61,12 @@ function updateLegend(series, chartManager) {
     });
 }
 
-function drawMarker(context, x, y, radius, isBuy, colors) {
+function drawMarker(context, x, y, radius, isBuy, colors, chartBounds) {
+    // Clamp Y position to stay within chart bounds
+    const clampedY = Math.max(chartBounds.top + radius, Math.min(y, chartBounds.bottom - radius));
+
     context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.arc(x, clampedY, radius, 0, Math.PI * 2);
     context.fillStyle = isBuy ? colors.buyFill : colors.sellFill;
     context.strokeStyle = isBuy ? colors.buy : colors.sell;
     context.lineWidth = 1;
@@ -246,18 +249,24 @@ function drawContributionChart(ctx, chartManager) {
         }
     });
 
+    // Define chart bounds for marker clamping
+    const chartBounds = {
+        top: padding.top,
+        bottom: padding.top + plotHeight,
+    };
+
     grouped.forEach((group, timestamp) => {
         const x = xScale(timestamp);
         let buyOffset = 8;
         group.buys.forEach((marker) => {
             const y = yScale(marker.amount) - buyOffset - marker.radius;
-            drawMarker(ctx, x, y, marker.radius, true, colors);
+            drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
             buyOffset += marker.radius * 2 + 8;
         });
         let sellOffset = 8;
         group.sells.forEach((marker) => {
             const y = yScale(marker.amount) + sellOffset + marker.radius;
-            drawMarker(ctx, x, y, marker.radius, false, colors);
+            drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
             sellOffset += marker.radius * 2 + 8;
         });
     });
