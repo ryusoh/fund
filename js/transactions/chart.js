@@ -203,18 +203,6 @@ function drawContributionChart(ctx, chartManager) {
     const colors = getChartColors(rootStyles);
 
     // Draw Lines
-    if (showBalance && balanceData.length > 0) {
-        ctx.beginPath();
-        balanceData.forEach((item, index) => {
-            const x = xScale(item.date.getTime());
-            const y = yScale(item.value);
-            index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = colors.portfolio;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-    }
-
     if (showContribution && contributionData.length > 0) {
         ctx.beginPath();
         contributionData.forEach((item, index) => {
@@ -227,7 +215,7 @@ function drawContributionChart(ctx, chartManager) {
         ctx.stroke();
     }
 
-    // Draw Markers
+    // --- Draw Markers ---
     const pointSeries = contributionData.filter((item) => {
         const type = item.orderType.toLowerCase();
         return (type === 'buy' && showBuy) || (type === 'sell' && showSell);
@@ -269,6 +257,18 @@ function drawContributionChart(ctx, chartManager) {
             sellOffset += marker.radius * 2 + 8;
         });
     });
+
+    if (showBalance && balanceData.length > 0) {
+        ctx.beginPath();
+        balanceData.forEach((item, index) => {
+            const x = xScale(item.date.getTime());
+            const y = yScale(item.value);
+            index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = colors.portfolio;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+    }
 
     // Update Legend
     const legendSeries = [
