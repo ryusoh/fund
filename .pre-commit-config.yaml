@@ -38,7 +38,7 @@ repos:
             entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
             language: system
             files: '\\.(js|css|json|yml|yaml|md|html)$'
-            exclude: ^data/.*\.html$
+            exclude: ^data/.*\.(html|json)$
             pass_filenames: true
 
     - repo: local
