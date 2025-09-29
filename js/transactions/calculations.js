@@ -156,20 +156,42 @@ export function buildRunningAmountSeries(transactions, splitHistory) {
     }
 
     const runningTotals = computeRunningTotals(transactions, splitHistory);
-    const series = [...transactions]
-        .sort(
-            (a, b) =>
-                new Date(a.tradeDate) - new Date(b.tradeDate) || a.transactionId - b.transactionId
-        )
-        .map((t) => {
-            const totals = runningTotals.get(t.transactionId);
-            return {
-                tradeDate: t.tradeDate,
-                amount: totals ? totals.portfolio : 0,
-                orderType: t.orderType,
-                netAmount: parseFloat(t.netAmount) || 0,
-            };
-        });
+    const sortedTransactions = [...transactions].sort(
+        (a, b) => new Date(a.tradeDate) - new Date(b.tradeDate) || a.transactionId - b.transactionId
+    );
+
+    const series = [];
+    sortedTransactions.forEach((t, index) => {
+        const totals = runningTotals.get(t.transactionId);
+        const currentPoint = {
+            tradeDate: t.tradeDate,
+            amount: totals ? totals.portfolio : 0,
+            orderType: t.orderType,
+            netAmount: parseFloat(t.netAmount) || 0,
+        };
+
+        if (index > 0) {
+            const prevTransaction = sortedTransactions[index - 1];
+            const prevTotals = runningTotals.get(prevTransaction.transactionId);
+            const prevAmount = prevTotals ? prevTotals.portfolio : 0;
+
+            const prevDate = new Date(prevTransaction.tradeDate);
+            const currentDate = new Date(t.tradeDate);
+
+            if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
+                const intermediateDate = new Date(currentDate);
+                intermediateDate.setDate(intermediateDate.getDate() - 1);
+
+                series.push({
+                    tradeDate: intermediateDate.toISOString().split('T')[0],
+                    amount: prevAmount,
+                    orderType: 'padding',
+                    netAmount: 0,
+                });
+            }
+        }
+        series.push(currentPoint);
+    });
 
     // Extend the line to today
     const lastPoint = series[series.length - 1];
