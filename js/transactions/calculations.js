@@ -151,8 +151,12 @@ export function calculateHoldings(transactions, splitHistory) {
 }
 
 export function buildRunningAmountSeries(transactions, splitHistory) {
+    if (transactions.length === 0) {
+        return [];
+    }
+
     const runningTotals = computeRunningTotals(transactions, splitHistory);
-    return [...transactions]
+    const series = [...transactions]
         .sort(
             (a, b) =>
                 new Date(a.tradeDate) - new Date(b.tradeDate) || a.transactionId - b.transactionId
@@ -166,6 +170,24 @@ export function buildRunningAmountSeries(transactions, splitHistory) {
                 netAmount: parseFloat(t.netAmount) || 0,
             };
         });
+
+    // Extend the line to today
+    const lastPoint = series[series.length - 1];
+    if (lastPoint) {
+        const today = new Date();
+        const lastTransactionDate = new Date(lastPoint.tradeDate);
+
+        if (today > lastTransactionDate) {
+            series.push({
+                tradeDate: today.toISOString().split('T')[0],
+                amount: lastPoint.amount,
+                orderType: 'padding', // Use a neutral type to avoid drawing a marker
+                netAmount: 0,
+            });
+        }
+    }
+
+    return series;
 }
 
 export function parseCSV(csvText) {
