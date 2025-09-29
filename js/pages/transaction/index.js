@@ -5,11 +5,15 @@ import {
     setSplitHistory,
     resetSortState,
     setFilteredTransactions,
+    setHistoricalPrices,
+    setPortfolioSeries,
+    setPerformanceSeries,
 } from '@js/transactions/state.js';
-import { buildRunningAmountSeries } from '@js/transactions/calculations.js';
+import { buildRunningAmountSeries, buildPortfolioSeries } from '@js/transactions/calculations.js';
 import {
     loadSplitHistory,
     loadTransactionData,
+    loadHistoricalPrices,
     loadPortfolioSeries,
     loadPerformanceSeries,
 } from '@js/transactions/dataLoader.js';
@@ -25,20 +29,29 @@ let uiController;
 
 async function loadTransactions() {
     try {
-        const splits = await loadSplitHistory();
-        setSplitHistory(splits);
+        // Use Promise.all to wait for all data to be loaded in parallel
+        const [transactions, splits, historicalPrices, portfolioSeries, performanceSeries] =
+            await Promise.all([
+                loadTransactionData(),
+                loadSplitHistory(),
+                loadHistoricalPrices(),
+                loadPortfolioSeries(),
+                loadPerformanceSeries(),
+            ]);
 
-        const transactions = await loadTransactionData();
         setAllTransactions(transactions);
         setFilteredTransactions(transactions);
-        await loadPortfolioSeries();
-        await loadPerformanceSeries();
+        setSplitHistory(splits);
+        setHistoricalPrices(historicalPrices);
+        setPortfolioSeries(portfolioSeries);
+        setPerformanceSeries(performanceSeries);
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {
             transactionTable.style.display = 'table';
         }
 
+        // Now that all data is loaded, perform the initial render
         if (tableController && typeof tableController.filterAndSort === 'function') {
             tableController.filterAndSort('');
         }
@@ -47,14 +60,14 @@ async function loadTransactions() {
         const errorDiv = document.getElementById('error');
         if (errorDiv) {
             errorDiv.style.display = 'block';
-            errorDiv.textContent = error.message;
+            errorDiv.textContent = `Failed to load critical data: ${error.message}`;
         }
-        logger.error('Error loading transactions:', error);
+        logger.error('Error during initial data load:', error);
     }
 }
 
 function initialize() {
-    chartManager = createChartManager({ buildRunningAmountSeries });
+    chartManager = createChartManager({ buildRunningAmountSeries, buildPortfolioSeries });
     tableController = initTable({
         onFilterChange: (filtered) => {
             if (chartManager && typeof chartManager.update === 'function') {

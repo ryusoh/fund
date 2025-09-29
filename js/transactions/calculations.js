@@ -193,3 +193,110 @@ export function parseCSV(csvText) {
     }
     return transactions;
 }
+
+export function buildPortfolioSeries(transactions, historicalPrices, splitHistory) {
+    if (!transactions || transactions.length === 0 || !historicalPrices) {
+        return [];
+    }
+
+    const sortedTransactions = [...transactions].sort(
+        (a, b) => new Date(a.tradeDate) - new Date(b.tradeDate)
+    );
+
+    if (sortedTransactions.length === 0) {
+        return [];
+    }
+
+    const splitsByDate = new Map();
+    splitHistory.forEach((split) => {
+        const dateStr = new Date(split.splitDate).toISOString().split('T')[0];
+        if (!splitsByDate.has(dateStr)) {
+            splitsByDate.set(dateStr, []);
+        }
+        splitsByDate.get(dateStr).push(split);
+    });
+
+    const firstTransactionDate = new Date(sortedTransactions[0].tradeDate);
+    const lastTransactionDate = new Date(
+        sortedTransactions[sortedTransactions.length - 1].tradeDate
+    );
+    const today = new Date();
+    const lastDate = today > lastTransactionDate ? today : lastTransactionDate;
+
+    const dailyHoldings = new Map();
+    const holdings = new Map(); // symbol -> quantity
+    let transactionIndex = 0;
+
+    for (let d = new Date(firstTransactionDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
+        const currentDateStr = d.toISOString().split('T')[0];
+
+        // Apply splits that occur on the current date
+        if (splitsByDate.has(currentDateStr)) {
+            splitsByDate.get(currentDateStr).forEach((split) => {
+                if (holdings.has(split.symbol)) {
+                    const currentQuantity = holdings.get(split.symbol);
+                    holdings.set(split.symbol, currentQuantity * split.splitMultiplier);
+                }
+            });
+        }
+
+        // Process transactions for the current day
+        while (
+            transactionIndex < sortedTransactions.length &&
+            new Date(sortedTransactions[transactionIndex].tradeDate).toISOString().split('T')[0] ===
+                currentDateStr
+        ) {
+            const t = sortedTransactions[transactionIndex];
+            const quantity = parseFloat(t.quantity);
+            const isBuy = t.orderType.toLowerCase() === 'buy';
+            const currentQuantity = holdings.get(t.security) || 0;
+            holdings.set(t.security, currentQuantity + (isBuy ? quantity : -quantity));
+            transactionIndex++;
+        }
+
+        dailyHoldings.set(currentDateStr, new Map(holdings));
+    }
+
+    const portfolioSeries = [];
+    for (let d = new Date(firstTransactionDate); d <= lastDate; d.setDate(d.getDate() + 1)) {
+        const currentDateStr = d.toISOString().split('T')[0];
+        const todaysHoldings = dailyHoldings.get(currentDateStr);
+        let totalValue = 0;
+
+        if (todaysHoldings) {
+            for (const [symbol, quantity] of todaysHoldings.entries()) {
+                const price = getPrice(historicalPrices, symbol, currentDateStr);
+                if (price !== null) {
+                    // The historical price is adjusted for future splits. We need to "un-adjust" it
+                    // to get the actual price on that day.
+                    const priceAdjustment = getSplitAdjustment(
+                        splitHistory,
+                        symbol,
+                        currentDateStr
+                    );
+                    const unadjustedPrice = price * priceAdjustment;
+                    totalValue += quantity * unadjustedPrice;
+                }
+            }
+        }
+        portfolioSeries.push({ date: currentDateStr, value: totalValue });
+    }
+
+    return portfolioSeries;
+}
+
+function getPrice(historicalPrices, symbol, dateStr) {
+    const prices = historicalPrices[symbol];
+    if (!prices) {
+        return null;
+    }
+
+    if (prices[dateStr]) {
+        return prices[dateStr];
+    }
+
+    // If no price for today, find the most recent one
+    const sortedDates = Object.keys(prices).sort((a, b) => new Date(b) - new Date(a));
+    const priorDate = sortedDates.find((d) => d < dateStr);
+    return priorDate ? prices[priorDate] : null;
+}

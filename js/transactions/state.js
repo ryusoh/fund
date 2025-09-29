@@ -7,6 +7,7 @@ export const transactionState = {
     runningAmountSeries: [],
     portfolioSeries: [],
     performanceSeries: {},
+    historicalPrices: {},
     chartVisibility: {
         contribution: true,
         balance: true,
@@ -68,4 +69,8 @@ export function resetHistoryIndex() {
 
 export function setHistoryIndex(index) {
     transactionState.historyIndex = index;
+}
+
+export function setHistoricalPrices(prices) {
+    transactionState.historicalPrices = prices && typeof prices === 'object' ? prices : {};
 }

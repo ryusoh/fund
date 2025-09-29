@@ -1,7 +1,6 @@
 import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';
-import { setPortfolioSeries, setPerformanceSeries } from './state.js';
 
 export async function loadSplitHistory() {
     try {
@@ -40,6 +39,20 @@ export async function loadTransactionData() {
     return parseCSV(csvText);
 }
 
+export async function loadHistoricalPrices() {
+    try {
+        const response = await fetch('../data/historical_prices.json');
+        if (!response.ok) {
+            logger.warn('historical_prices.json not found; dynamic portfolio balance disabled');
+            return {};
+        }
+        return await response.json();
+    } catch (error) {
+        logger.warn('Failed to load historical prices:', error);
+        return {};
+    }
+}
+
 export async function loadPortfolioSeries() {
     try {
         const response = await fetch('../data/historical_portfolio_values.csv');
@@ -47,15 +60,13 @@ export async function loadPortfolioSeries() {
             logger.warn(
                 'historical_portfolio_values.csv not found; portfolio balance line disabled'
             );
-            setPortfolioSeries([]);
-            return;
+            return [];
         }
 
         const text = await response.text();
         const lines = text.trim().split('\n');
         if (lines.length <= 1) {
-            setPortfolioSeries([]);
-            return;
+            return [];
         }
 
         const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
@@ -65,8 +76,7 @@ export async function loadPortfolioSeries() {
             logger.warn(
                 'historical_portfolio_values.csv missing required columns (date, value_usd)'
             );
-            setPortfolioSeries([]);
-            return;
+            return [];
         }
 
         const series = [];
@@ -82,10 +92,10 @@ export async function loadPortfolioSeries() {
             }
             series.push({ date, value });
         }
-        setPortfolioSeries(series);
+        return series;
     } catch (error) {
         logger.warn('Failed to load historical portfolio values:', error);
-        setPortfolioSeries([]);
+        return [];
     }
 }
 
@@ -143,15 +153,13 @@ export async function loadPerformanceSeries() {
         const response = await fetch('../data/output/figures/twrr.json');
         if (!response.ok) {
             logger.warn('twrr.json not found; CAGR terminal command disabled');
-            setPerformanceSeries({});
-            return;
+            return {};
         }
 
         const payload = await response.json();
         const traces = Array.isArray(payload.data) ? payload.data : [];
         if (traces.length === 0) {
-            setPerformanceSeries({});
-            return;
+            return {};
         }
 
         const seriesMap = {};
@@ -186,10 +194,10 @@ export async function loadPerformanceSeries() {
             }
         });
 
-        setPerformanceSeries(seriesMap);
+        return seriesMap;
     } catch (error) {
         logger.warn('Failed to load TWRR JSON:', error);
-        setPerformanceSeries({});
+        return {};
     }
 }
 

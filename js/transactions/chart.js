@@ -1,10 +1,19 @@
-import { transactionState, setRunningAmountSeries } from './state.js';
+import { transactionState, setRunningAmountSeries, setPortfolioSeries } from './state.js';
 import { formatCurrencyCompact } from './utils.js';
 
-export function createChartManager({ buildRunningAmountSeries }) {
+export function createChartManager({ buildRunningAmountSeries, buildPortfolioSeries }) {
     function update(transactions, splitHistory) {
-        const series = buildRunningAmountSeries(transactions, splitHistory);
-        setRunningAmountSeries(series);
+        const contributionSeries = buildRunningAmountSeries(transactions, splitHistory);
+        setRunningAmountSeries(contributionSeries);
+
+        if (buildPortfolioSeries) {
+            const portfolioSeries = buildPortfolioSeries(
+                transactions,
+                transactionState.historicalPrices,
+                transactionState.splitHistory
+            );
+            setPortfolioSeries(portfolioSeries);
+        }
 
         const plotSection = document.getElementById('runningAmountSection');
         if (plotSection && !plotSection.classList.contains('is-hidden')) {
