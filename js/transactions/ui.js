@@ -1,4 +1,4 @@
-import { setChartVisibility, setActiveChart } from './state.js';
+import { setChartVisibility, setActiveChart, transactionState } from './state.js';
 import { adjustMobilePanels } from './layout.js';
 
 export function createUiController({ chartManager }) {
@@ -26,12 +26,21 @@ export function createUiController({ chartManager }) {
     }
 
     function togglePlot() {
-        setActiveChart('contribution');
         const plotSection = document.getElementById('runningAmountSection');
         const tableContainer = document.querySelector('.table-responsive-container');
         const isVisible = plotSection && !plotSection.classList.contains('is-hidden');
+        const wasPerformanceChart = transactionState.activeChart === 'performance';
 
         if (!plotSection) {
+            return;
+        }
+
+        setActiveChart('contribution');
+
+        // If switching from performance chart, always show contribution chart
+        if (wasPerformanceChart && isVisible) {
+            // Chart is already visible, just switch to contribution data
+            chartManager.update(transactionState.allTransactions, transactionState.splitHistory);
             return;
         }
 
@@ -47,7 +56,11 @@ export function createUiController({ chartManager }) {
         requestAnimationFrame(() => {
             adjustMobilePanels();
             if (!plotSection.classList.contains('is-hidden')) {
-                chartManager.redraw();
+                // Force update to ensure contribution data is available
+                chartManager.update(
+                    transactionState.allTransactions,
+                    transactionState.splitHistory
+                );
             }
         });
     }
