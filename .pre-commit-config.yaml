@@ -7,7 +7,8 @@ exclude: |
     ^.ruff_cache/|
     ^coverage/|
     ^dist/|
-    ^build/
+    ^build/|
+    ^data/historical_prices\\.json$
 
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -15,13 +16,13 @@ repos:
       hooks:
           - id: end-of-file-fixer
             # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html)$
+            exclude: ^data/.*\.(csv|html|json)$
           - id: trailing-whitespace
             # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html)$
+            exclude: ^data/.*\.(csv|html|json)$
           - id: mixed-line-ending
             # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html)$
+            exclude: ^data/.*\.(csv|html|json)$
           - id: detect-private-key
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
