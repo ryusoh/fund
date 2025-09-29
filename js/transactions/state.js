@@ -8,6 +8,7 @@ export const transactionState = {
     portfolioSeries: [],
     performanceSeries: {},
     historicalPrices: {},
+    activeChart: 'contribution', // 'contribution' or 'performance'
     chartVisibility: {
         contribution: true,
         balance: true,
@@ -50,9 +51,7 @@ export function setPerformanceSeries(seriesMap) {
 }
 
 export function setChartVisibility(key, visible) {
-    if (key in transactionState.chartVisibility) {
-        transactionState.chartVisibility[key] = Boolean(visible);
-    }
+    transactionState.chartVisibility[key] = Boolean(visible);
 }
 
 export function getChartVisibility() {
@@ -69,6 +68,10 @@ export function resetHistoryIndex() {
 
 export function setHistoryIndex(index) {
     transactionState.historyIndex = index;
+}
+
+export function setActiveChart(chartType) {
+    transactionState.activeChart = chartType;
 }
 
 export function setHistoricalPrices(prices) {

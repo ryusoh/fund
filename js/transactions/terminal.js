@@ -447,6 +447,7 @@ const COMMAND_ALIASES = [
     't',
     'plot',
     'p',
+    'performance',
 ];
 
 const MIN_FADE_OPACITY = 0.1;
@@ -467,6 +468,7 @@ export function initTerminal({
     filterAndSort,
     toggleTable,
     togglePlot,
+    togglePerformanceChart, // Add this
     closeAllFilterDropdowns,
     resetSortState,
 }) {
@@ -682,6 +684,10 @@ export function initTerminal({
             case 'plot':
                 togglePlot();
                 result = 'Toggled plot visibility.';
+                break;
+            case 'performance':
+                togglePerformanceChart();
+                result = 'Toggled performance chart visibility.';
                 break;
             default:
                 filterAndSort(command);
