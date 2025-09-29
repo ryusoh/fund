@@ -1,4 +1,4 @@
-import { transactionState, setChartVisibility } from './state.js';
+import { setChartVisibility, setActiveChart } from './state.js';
 import { adjustMobilePanels } from './layout.js';
 
 export function createUiController({ chartManager }) {
@@ -26,6 +26,7 @@ export function createUiController({ chartManager }) {
     }
 
     function togglePlot() {
+        setActiveChart('contribution');
         const plotSection = document.getElementById('runningAmountSection');
         const tableContainer = document.querySelector('.table-responsive-container');
         const isVisible = plotSection && !plotSection.classList.contains('is-hidden');
@@ -46,11 +47,29 @@ export function createUiController({ chartManager }) {
         requestAnimationFrame(() => {
             adjustMobilePanels();
             if (!plotSection.classList.contains('is-hidden')) {
-                chartManager.update(
-                    transactionState.filteredTransactions,
-                    transactionState.splitHistory
-                );
+                chartManager.redraw();
             }
+        });
+    }
+
+    function togglePerformanceChart() {
+        setActiveChart('performance');
+        const plotSection = document.getElementById('runningAmountSection');
+        const tableContainer = document.querySelector('.table-responsive-container');
+
+        if (!plotSection) {
+            return;
+        }
+
+        // Always ensure the plot is visible when this command is run
+        plotSection.classList.remove('is-hidden');
+        if (tableContainer) {
+            tableContainer.classList.add('is-hidden');
+        }
+
+        requestAnimationFrame(() => {
+            adjustMobilePanels();
+            chartManager.redraw();
         });
     }
 
@@ -76,5 +95,6 @@ export function createUiController({ chartManager }) {
     return {
         toggleTable,
         togglePlot,
+        togglePerformanceChart,
     };
 }
