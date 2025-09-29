@@ -155,7 +155,6 @@ function drawContributionChart(ctx, chartManager) {
         .filter((item) => !isNaN(item.date.getTime()));
 
     if (contributionData.length === 0 && balanceData.length === 0) {
-        emptyState.style.display = 'block';
         return;
     }
     emptyState.style.display = 'none';
@@ -284,15 +283,12 @@ function drawContributionChart(ctx, chartManager) {
 function drawPerformanceChart(ctx, chartManager) {
     const { performanceSeries, chartVisibility } = transactionState;
     if (!performanceSeries || Object.keys(performanceSeries).length === 0) {
-        const emptyState = document.getElementById('runningAmountEmpty');
-        emptyState.style.display = 'block';
         return;
     }
 
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
     emptyState.style.display = 'none';
-
     const visibility = chartVisibility || {};
     const allPossibleSeries = Object.entries(performanceSeries).map(([key, data]) => ({
         key,
