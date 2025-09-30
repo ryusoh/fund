@@ -683,11 +683,11 @@ export function initTerminal({
                         '                       Use "stats" or "s" for subcommands\n' +
                         '                       Subcommands: transactions, holdings, cagr, return, ratio\n' +
                         '                       Examples: stats transactions, s cagr, stats ratio\n' +
-                        '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
                         '                       Subcommands: balance, performance\n' +
                         '                       Examples: plot balance, p performance, plot balance 2023\n' +
+                        '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
                         '  clear              - Clear the terminal screen\n' +
