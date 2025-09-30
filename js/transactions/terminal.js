@@ -3,6 +3,8 @@ import {
     pushCommandHistory,
     resetHistoryIndex,
     setHistoryIndex,
+    setChartDateRange,
+    setActiveChart,
 } from './state.js';
 import { formatCurrency } from './utils.js';
 import { calculateStats, calculateHoldings } from './calculations.js';
@@ -448,6 +450,8 @@ const COMMAND_ALIASES = [
     'plot',
     'p',
     'performance',
+    'from', // For simplified commands
+    'to', // For simplified commands
 ];
 
 const MIN_FADE_OPACITY = 0.1;
@@ -467,10 +471,9 @@ function resetAutocompleteState() {
 export function initTerminal({
     filterAndSort,
     toggleTable,
-    togglePlot,
-    togglePerformanceChart, // Add this
     closeAllFilterDropdowns,
     resetSortState,
+    chartManager,
 }) {
     const terminalInput = document.getElementById('terminalInput');
     const terminal = document.getElementById('terminal');
@@ -611,14 +614,37 @@ export function initTerminal({
         outputContainer.innerHTML += prompt;
         requestFadeUpdate();
 
-        const [cmd] = command.toLowerCase().split(' ');
+        const parts = command.toLowerCase().split(' ');
+        const cmd = parts[0];
+        const args = parts.slice(1);
+        let dateRange = { from: null, to: null };
         let result = '';
 
         switch (cmd.toLowerCase()) {
             case 'h':
             case 'help':
                 result =
-                    'Available commands:\n  stats              - Display summary statistics.\n  holdings           - Display current holdings.\n  cagr               - Show CAGR based on TWRR series.\n  return             - Show annual returns for portfolio and benchmarks.\n  ratio              - Show Sharpe and Sortino ratios for portfolio and benchmarks.\n  table (t)          - Toggle the transaction table visibility.\n  plot (p)           - Toggle the running cost basis chart.\n  performance        - Show TWRR performance chart.\n  filter             - Show available filter commands.\n  reset              - Restore full transaction list and show table/chart.\n  clear              - Clear the terminal screen.\n  help (h)           - Show this help message.\n\nHint: Press Tab to auto-complete command names.\n\nAny other input is treated as a filter for the transaction table.';
+                    'Available commands:\n' +
+                    '  stats              - Display summary statistics.\n' +
+                    '  holdings           - Display current holdings.\n' +
+                    '  cagr               - Show CAGR based on TWRR series.\n' +
+                    '  return             - Show annual returns for portfolio and benchmarks.\n' +
+                    '  ratio              - Show Sharpe and Sortino ratios for portfolio and benchmarks.\n' +
+                    '  table (t)          - Toggle the transaction table visibility.\n' +
+                    '  plot (p)           - Toggle the running cost basis chart.\n' +
+                    '                       Usage: plot [year] | [from <year>] | [<year1> to <year2>]\n' +
+                    '                       Example: plot 2023, plot from 2020, plot 2020 to 2023\n' +
+                    '  performance        - Show TWRR performance chart.\n' +
+                    '                       Usage: performance [year] | [from <year>] | [<year1> to <year2>]\n' +
+                    '                       Example: performance 2023, performance from 2020,\n' +
+                    '                                performance 2020 to 2023\n' +
+                    '  filter             - Show available filter commands.\n' +
+                    '  reset              - Restore full transaction list and show table/chart.\n' +
+                    '  clear              - Clear the terminal screen.\n' +
+                    '  help (h)           - Show this help message.\n\n' +
+                    'Hint: Press Tab to auto-complete command names.\n\n' +
+                    'Any other input is treated as a filter for the transaction table.\n' +
+                    "When a chart is active, you can use simplified date commands like '2023', 'from:2023', '2020:2023'.";
                 break;
             case 'filter':
                 result =
@@ -627,6 +653,7 @@ export function initTerminal({
             case 'reset':
                 closeAllFilterDropdowns();
                 resetSortState();
+                setChartDateRange({ from: null, to: null }); // Reset date range
                 if (terminalInput) {
                     terminalInput.value = '';
                 }
@@ -651,6 +678,7 @@ export function initTerminal({
                 outputContainer.innerHTML = '';
                 closeAllFilterDropdowns();
                 resetSortState();
+                setChartDateRange({ from: null, to: null }); // Reset date range
                 if (terminalInput) {
                     terminalInput.value = '';
                 }
@@ -682,14 +710,66 @@ export function initTerminal({
                 break;
             case 'p':
             case 'plot':
-                togglePlot();
-                result = 'Toggled plot visibility.';
+                dateRange = parseDateRange(args);
+                setChartDateRange(dateRange);
+                setActiveChart('contribution');
+                // Show the chart and hide the table
+                const contributionSection = document.getElementById('runningAmountSection');
+                const contributionTableContainer = document.querySelector(
+                    '.table-responsive-container'
+                );
+                if (contributionSection) {
+                    contributionSection.classList.remove('is-hidden');
+                    chartManager.update(
+                        transactionState.allTransactions,
+                        transactionState.splitHistory
+                    );
+                }
+                if (contributionTableContainer) {
+                    contributionTableContainer.classList.add('is-hidden');
+                }
+                result = `Toggled plot visibility for ${formatDateRange(dateRange)}.`;
                 break;
             case 'performance':
-                togglePerformanceChart();
-                result = 'Toggled performance chart visibility.';
+                dateRange = parseDateRange(args);
+                setChartDateRange(dateRange);
+                setActiveChart('performance');
+                // Show the chart and hide the table
+                const performanceSection = document.getElementById('runningAmountSection');
+                const performanceTableContainer = document.querySelector(
+                    '.table-responsive-container'
+                );
+                if (performanceSection) {
+                    performanceSection.classList.remove('is-hidden');
+                    chartManager.update(
+                        transactionState.allTransactions,
+                        transactionState.splitHistory
+                    );
+                }
+                if (performanceTableContainer) {
+                    performanceTableContainer.classList.add('is-hidden');
+                }
+                result = `Toggled performance chart visibility for ${formatDateRange(dateRange)}.`;
                 break;
             default:
+                // Handle simplified date commands if a chart is active
+                if (
+                    transactionState.activeChart &&
+                    (transactionState.activeChart === 'contribution' ||
+                        transactionState.activeChart === 'performance')
+                ) {
+                    const simplifiedDateRange = parseSimplifiedDateRange(command);
+                    if (simplifiedDateRange.from || simplifiedDateRange.to) {
+                        setChartDateRange(simplifiedDateRange);
+                        // Update the chart with filtered data
+                        chartManager.update(
+                            transactionState.allTransactions,
+                            transactionState.splitHistory
+                        );
+                        result = `Applied date filter ${formatDateRange(simplifiedDateRange)} to ${transactionState.activeChart} chart.`;
+                        break;
+                    }
+                }
                 filterAndSort(command);
                 result = `Filtering transactions by: "${command}"...`;
                 break;
@@ -702,6 +782,37 @@ export function initTerminal({
         }
         outputContainer.scrollTop = outputContainer.scrollHeight;
         requestFadeUpdate();
+    }
+
+    function parseSimplifiedDateRange(command) {
+        const parts = command.toLowerCase().split(':');
+        if (parts.length === 1) {
+            const year = parseInt(parts[0], 10);
+            if (!isNaN(year)) {
+                return { from: `${year}-01-01`, to: `${year}-12-31` };
+            }
+        } else if (parts.length === 2) {
+            const type = parts[0];
+            const value = parts[1];
+            if (type === 'from') {
+                const year = parseInt(value, 10);
+                if (!isNaN(year)) {
+                    return { from: `${year}-01-01`, to: null };
+                }
+            } else if (type === 'to') {
+                const year = parseInt(value, 10);
+                if (!isNaN(year)) {
+                    return { from: null, to: `${year}-12-31` };
+                }
+            } else {
+                const year1 = parseInt(type, 10);
+                const year2 = parseInt(value, 10);
+                if (!isNaN(year1) && !isNaN(year2) && year1 <= year2) {
+                    return { from: `${year1}-01-01`, to: `${year2}-12-31` };
+                }
+            }
+        }
+        return { from: null, to: null };
     }
 
     function handleTerminalInput(e) {
@@ -789,4 +900,60 @@ export function initTerminal({
     return {
         processCommand,
     };
+}
+
+function parseDateRange(args) {
+    const currentYear = new Date().getFullYear();
+    let from = null;
+    let to = null;
+
+    if (args.length === 1) {
+        const year = parseInt(args[0], 10);
+        if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+            from = `${year}-01-01`;
+            to = `${year}-12-31`;
+        }
+    } else if (args.length === 2 && args[0].toLowerCase() === 'from') {
+        const year = parseInt(args[1], 10);
+        if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+            from = `${year}-01-01`;
+            to = null; // To current date
+        }
+    } else if (args.length === 3 && args[1].toLowerCase() === 'to') {
+        const year1 = parseInt(args[0], 10);
+        const year2 = parseInt(args[2], 10);
+        if (
+            !isNaN(year1) &&
+            year1 >= 1900 &&
+            year1 <= currentYear + 5 &&
+            !isNaN(year2) &&
+            year2 >= 1900 &&
+            year2 <= currentYear + 5 &&
+            year1 <= year2
+        ) {
+            from = `${year1}-01-01`;
+            to = `${year2}-12-31`;
+        }
+    }
+
+    return { from, to };
+}
+
+function formatDateRange(range) {
+    if (range.from && range.to) {
+        if (range.from.endsWith('-01-01') && range.to.endsWith('-12-31')) {
+            const year1 = range.from.substring(0, 4);
+            const year2 = range.to.substring(0, 4);
+            if (year1 === year2) {
+                return year1;
+            }
+            return `${year1} to ${year2}`;
+        }
+        return `${range.from} to ${range.to}`;
+    } else if (range.from) {
+        return `from ${range.from}`;
+    } else if (range.to) {
+        return `to ${range.to}`;
+    }
+    return 'all time';
 }
