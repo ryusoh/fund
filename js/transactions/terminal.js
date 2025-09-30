@@ -437,7 +437,6 @@ let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
     'h',
-    'filter',
     'reset',
     'clear',
     'all',
@@ -454,6 +453,8 @@ const COMMAND_ALIASES = [
 const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
 
 const PLOT_SUBCOMMANDS = ['balance', 'performance'];
+
+const HELP_SUBCOMMANDS = ['filter'];
 
 const MIN_FADE_OPACITY = 0.1;
 
@@ -591,6 +592,11 @@ export function initTerminal({
                 matches = subPrefix
                     ? PLOT_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
                     : PLOT_SUBCOMMANDS;
+            } else if (parts.length >= 2 && (parts[0] === 'help' || parts[0] === 'h')) {
+                const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+                matches = subPrefix
+                    ? HELP_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+                    : HELP_SUBCOMMANDS;
             } else {
                 resetAutocompleteState();
                 return;
@@ -638,6 +644,12 @@ export function initTerminal({
         } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'p') {
             const baseCommand = 'p ';
             input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
+        } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'help') {
+            const baseCommand = 'help ';
+            input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
+        } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'h') {
+            const baseCommand = 'h ';
+            input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
         } else {
             input.value = completed + (shouldAppendSpace ? ' ' : '');
         }
@@ -663,29 +675,39 @@ export function initTerminal({
         switch (cmd.toLowerCase()) {
             case 'h':
             case 'help':
-                result =
-                    'Available commands:\n' +
-                    '  stats (s)          - Statistics commands\n' +
-                    '                       Use "stats" or "s" for subcommands\n' +
-                    '                       Subcommands: transactions, holdings, cagr, return, ratio\n' +
-                    '                       Examples: stats transactions, s cagr, stats ratio\n' +
-                    '  transaction (t)    - Toggle the transaction table visibility\n' +
-                    '  plot (p)           - Chart commands\n' +
-                    '                       Use "plot" or "p" for subcommands\n' +
-                    '                       Subcommands: balance, performance\n' +
-                    '                       Examples: plot balance, p performance, plot balance 2023\n' +
-                    '  filter             - Show available filter commands\n' +
-                    '  all                - Show all data (remove filters and date ranges)\n' +
-                    '  reset              - Restore full transaction list and show table/chart\n' +
-                    '  clear              - Clear the terminal screen\n' +
-                    '  help (h)           - Show this help message\n\n' +
-                    'Hint: Press Tab to auto-complete command names and subcommands\n\n' +
-                    'Any other input is treated as a filter for the transaction table\n' +
-                    "When a chart is active, you can use simplified date commands like '2023', 'from:2023', '2020:2023'";
-                break;
-            case 'filter':
-                result =
-                    'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nAny text not part of a command is used for a general text search.';
+                if (args.length === 0) {
+                    // Show main help
+                    result =
+                        'Available commands:\n' +
+                        '  stats (s)          - Statistics commands\n' +
+                        '                       Use "stats" or "s" for subcommands\n' +
+                        '                       Subcommands: transactions, holdings, cagr, return, ratio\n' +
+                        '                       Examples: stats transactions, s cagr, stats ratio\n' +
+                        '  transaction (t)    - Toggle the transaction table visibility\n' +
+                        '  plot (p)           - Chart commands\n' +
+                        '                       Use "plot" or "p" for subcommands\n' +
+                        '                       Subcommands: balance, performance\n' +
+                        '                       Examples: plot balance, p performance, plot balance 2023\n' +
+                        '  all                - Show all data (remove filters and date ranges)\n' +
+                        '  reset              - Restore full transaction list and show table/chart\n' +
+                        '  clear              - Clear the terminal screen\n' +
+                        '  help (h)           - Show this help message\n' +
+                        '                       Use "help filter" for filter commands\n\n' +
+                        'Hint: Press Tab to auto-complete command names and subcommands\n\n' +
+                        'Any other input is treated as a filter for the transaction table\n' +
+                        "When a chart is active, you can use simplified date commands like '2023', 'from:2023', '2020:2023'";
+                } else {
+                    const subcommand = args[0].toLowerCase();
+                    switch (subcommand) {
+                        case 'filter':
+                            result =
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nAny text not part of a command is used for a general text search.';
+                            break;
+                        default:
+                            result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;
+                            break;
+                    }
+                }
                 break;
             case 'all':
                 // Clear all filters and date ranges without changing view
