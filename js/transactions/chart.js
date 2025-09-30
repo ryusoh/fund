@@ -586,7 +586,14 @@ function drawContributionChart(ctx, chartManager) {
         ...contributionData.map((d) => d.date.getTime()),
         ...balanceData.map((d) => d.date.getTime()),
     ];
-    const minTime = Math.min(...allTimes);
+
+    // When filtering by date, start from the filter start date, not the first data point
+    let minTime;
+    if (filterFrom && allTimes.length > 0) {
+        minTime = Math.min(filterFrom.getTime(), Math.min(...allTimes));
+    } else {
+        minTime = Math.min(...allTimes);
+    }
     // If we have a date range filter, use only the filtered data range
     // Otherwise, extend to today for real-time data
     const maxTime =
@@ -627,10 +634,30 @@ function drawContributionChart(ctx, chartManager) {
     // Draw Lines
     if (showContribution && contributionData.length > 0) {
         ctx.beginPath();
+
+        // If we have a date filter and the filter start is before the first data point,
+        // start the line from the filter start date with the first data point's value
+        if (filterFrom && contributionData.length > 0) {
+            const firstDataPoint = contributionData[0];
+            const filterStartTime = filterFrom.getTime();
+            const firstDataTime = firstDataPoint.date.getTime();
+
+            if (filterStartTime < firstDataTime) {
+                // Start from filter start date with first data point's value
+                const x = xScale(filterStartTime);
+                const y = yScale(firstDataPoint.amount);
+                ctx.moveTo(x, y);
+            }
+        }
+
         contributionData.forEach((item, index) => {
             const x = xScale(item.date.getTime());
             const y = yScale(item.amount);
-            index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            if (index === 0 && (!filterFrom || filterFrom.getTime() >= item.date.getTime())) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
         });
         ctx.strokeStyle = colors.contribution;
         ctx.lineWidth = 2;
