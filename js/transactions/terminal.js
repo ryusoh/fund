@@ -679,21 +679,24 @@ export function initTerminal({
                 if (terminalInput) {
                     terminalInput.value = '';
                 }
-                const tableContainer = document.querySelector('.table-responsive-container');
-                const plotSection = document.getElementById('runningAmountSection');
-                if (tableContainer) {
-                    tableContainer.classList.remove('is-hidden');
-                    const transactionTable = document.getElementById('transactionTable');
-                    if (transactionTable) {
-                        transactionTable.style.display = 'table';
-                    }
+                // Hide both table and chart
+                const resetTableContainer = document.querySelector('.table-responsive-container');
+                const resetPlotSection = document.getElementById('runningAmountSection');
+                const resetPerformanceSection = document.getElementById('performanceSection');
+
+                if (resetTableContainer) {
+                    resetTableContainer.classList.add('is-hidden');
                 }
-                if (plotSection) {
-                    plotSection.classList.add('is-hidden');
+                if (resetPlotSection) {
+                    resetPlotSection.classList.add('is-hidden');
                 }
+                if (resetPerformanceSection) {
+                    resetPerformanceSection.classList.add('is-hidden');
+                }
+
                 filterAndSort('');
                 result =
-                    'Reset filters and displaying full transaction history. Use `plot` to view the chart.';
+                    'Reset filters and date ranges. All views hidden. Use `table`, `plot`, or `performance` to view data.';
                 requestFadeUpdate();
                 break;
             case 'clear':
@@ -734,44 +737,72 @@ export function initTerminal({
             case 'plot':
                 dateRange = parseDateRange(args);
                 setChartDateRange(dateRange);
-                setActiveChart('contribution');
-                // Show the chart and hide the table
                 const contributionSection = document.getElementById('runningAmountSection');
                 const contributionTableContainer = document.querySelector(
                     '.table-responsive-container'
                 );
-                if (contributionSection) {
-                    contributionSection.classList.remove('is-hidden');
-                    chartManager.update(
-                        transactionState.allTransactions,
-                        transactionState.splitHistory
-                    );
+
+                // Check if contribution chart is already active and visible
+                const isContributionActive = transactionState.activeChart === 'contribution';
+                const isChartVisible =
+                    contributionSection && !contributionSection.classList.contains('is-hidden');
+
+                if (isContributionActive && isChartVisible) {
+                    // Toggle off if contribution chart is already visible
+                    setActiveChart(null);
+                    if (contributionSection) {
+                        contributionSection.classList.add('is-hidden');
+                    }
+                    result = 'Hidden contribution chart.';
+                } else {
+                    // Show contribution chart
+                    setActiveChart('contribution');
+                    if (contributionSection) {
+                        contributionSection.classList.remove('is-hidden');
+                        chartManager.update(
+                            transactionState.allTransactions,
+                            transactionState.splitHistory
+                        );
+                    }
+                    if (contributionTableContainer) {
+                        contributionTableContainer.classList.add('is-hidden');
+                    }
+                    result = `Showing contribution chart for ${formatDateRange(dateRange)}.`;
                 }
-                if (contributionTableContainer) {
-                    contributionTableContainer.classList.add('is-hidden');
-                }
-                result = `Toggled plot visibility for ${formatDateRange(dateRange)}.`;
                 break;
             case 'performance':
                 dateRange = parseDateRange(args);
                 setChartDateRange(dateRange);
-                setActiveChart('performance');
-                // Show the chart and hide the table
-                const performanceSection = document.getElementById('runningAmountSection');
-                const performanceTableContainer = document.querySelector(
-                    '.table-responsive-container'
-                );
-                if (performanceSection) {
-                    performanceSection.classList.remove('is-hidden');
-                    chartManager.update(
-                        transactionState.allTransactions,
-                        transactionState.splitHistory
-                    );
+                const perfSection = document.getElementById('runningAmountSection');
+                const perfTableContainer = document.querySelector('.table-responsive-container');
+
+                // Check if performance chart is already active and visible
+                const isPerformanceActive = transactionState.activeChart === 'performance';
+                const isPerfChartVisible =
+                    perfSection && !perfSection.classList.contains('is-hidden');
+
+                if (isPerformanceActive && isPerfChartVisible) {
+                    // Toggle off if performance chart is already visible
+                    setActiveChart(null);
+                    if (perfSection) {
+                        perfSection.classList.add('is-hidden');
+                    }
+                    result = 'Hidden performance chart.';
+                } else {
+                    // Show performance chart
+                    setActiveChart('performance');
+                    if (perfSection) {
+                        perfSection.classList.remove('is-hidden');
+                        chartManager.update(
+                            transactionState.allTransactions,
+                            transactionState.splitHistory
+                        );
+                    }
+                    if (perfTableContainer) {
+                        perfTableContainer.classList.add('is-hidden');
+                    }
+                    result = `Showing performance chart for ${formatDateRange(dateRange)}.`;
                 }
-                if (performanceTableContainer) {
-                    performanceTableContainer.classList.add('is-hidden');
-                }
-                result = `Toggled performance chart visibility for ${formatDateRange(dateRange)}.`;
                 break;
             default:
                 // Handle simplified date commands if a chart is active
