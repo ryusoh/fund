@@ -440,6 +440,7 @@ const COMMAND_ALIASES = [
     'filter',
     'reset',
     'clear',
+    'all',
     'stats',
     'holdings',
     'cagr',
@@ -639,6 +640,7 @@ export function initTerminal({
                     '                       Example: performance 2023, performance from 2020,\n' +
                     '                                performance 2020 to 2023\n' +
                     '  filter             - Show available filter commands.\n' +
+                    '  all                - Show all data (remove filters and date ranges).\n' +
                     '  reset              - Restore full transaction list and show table/chart.\n' +
                     '  clear              - Clear the terminal screen.\n' +
                     '  help (h)           - Show this help message.\n\n' +
@@ -649,6 +651,26 @@ export function initTerminal({
             case 'filter':
                 result =
                     'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nAny text not part of a command is used for a general text search.';
+                break;
+            case 'all':
+                // Clear all filters and date ranges without changing view
+                closeAllFilterDropdowns();
+                resetSortState();
+                setChartDateRange({ from: null, to: null }); // Reset date range
+                filterAndSort(''); // Clear all filters
+
+                // Update chart if it's currently visible
+                if (
+                    transactionState.activeChart === 'contribution' ||
+                    transactionState.activeChart === 'performance'
+                ) {
+                    chartManager.update(
+                        transactionState.allTransactions,
+                        transactionState.splitHistory
+                    );
+                }
+
+                result = 'Showing all data (filters and date ranges cleared).';
                 break;
             case 'reset':
                 closeAllFilterDropdowns();
