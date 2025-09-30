@@ -54,7 +54,7 @@ body {
 
 .transaction-container {
     max-width: min(1400px, 50vw);
-    margin: 68px auto 0;
+    margin: 48px auto 0;
     padding: 0 24px 60px;
     box-sizing: border-box;
 }
