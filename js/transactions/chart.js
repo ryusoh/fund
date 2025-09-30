@@ -74,6 +74,86 @@ function drawMarker(context, x, y, radius, isBuy, colors, chartBounds) {
     context.stroke();
 }
 
+function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
+    if (isPerformanceChart) {
+        // Performance chart: use percentage ticks with adaptive spacing
+        const ticks = [];
+        const range = yMax - yMin;
+
+        // Determine appropriate tick spacing based on data range
+        let tickSpacing, startTick, endTick;
+
+        if (range <= 20) {
+            // Very small range: 5% increments
+            tickSpacing = 5;
+            startTick = Math.floor(yMin / 5) * 5;
+            endTick = Math.ceil(yMax / 5) * 5;
+        } else if (range <= 50) {
+            // Small range: 10% increments
+            tickSpacing = 10;
+            startTick = Math.floor(yMin / 10) * 10;
+            endTick = Math.ceil(yMax / 10) * 10;
+        } else if (range <= 100) {
+            // Medium range: 20% increments
+            tickSpacing = 20;
+            startTick = Math.floor(yMin / 20) * 20;
+            endTick = Math.ceil(yMax / 20) * 20;
+        } else {
+            // Large range: 50% increments
+            tickSpacing = 50;
+            startTick = Math.floor(yMin / 50) * 50;
+            endTick = Math.ceil(yMax / 50) * 50;
+        }
+
+        // Generate ticks
+        for (let i = startTick; i <= endTick; i += tickSpacing) {
+            ticks.push(i);
+        }
+
+        return ticks.filter((tick) => tick >= yMin && tick <= yMax);
+    }
+    // Contribution chart: use currency ticks with adaptive spacing
+    const ticks = [];
+
+    // Determine appropriate tick spacing based on data range
+    const range = yMax - yMin;
+    let tickSpacing, startTick, endTick;
+
+    if (range <= 50000) {
+        // Very small range: 10k increments
+        tickSpacing = 10000;
+        startTick = Math.max(0, Math.floor(yMin / 10000) * 10000);
+        endTick = Math.ceil(yMax / 10000) * 10000;
+    } else if (range <= 200000) {
+        // Small range: 25k increments
+        tickSpacing = 25000;
+        startTick = Math.max(0, Math.floor(yMin / 25000) * 25000);
+        endTick = Math.ceil(yMax / 25000) * 25000;
+    } else if (range <= 500000) {
+        // Medium-small range: 50k increments
+        tickSpacing = 50000;
+        startTick = Math.max(0, Math.floor(yMin / 50000) * 50000);
+        endTick = Math.ceil(yMax / 50000) * 50000;
+    } else if (range <= 2000000) {
+        // Medium range: 250k increments
+        tickSpacing = 250000;
+        startTick = Math.max(0, Math.floor(yMin / 250000) * 250000);
+        endTick = Math.ceil(yMax / 250000) * 250000;
+    } else {
+        // Large range: 500k increments
+        tickSpacing = 500000;
+        startTick = Math.max(0, Math.floor(yMin / 500000) * 500000);
+        endTick = Math.ceil(yMax / 500000) * 500000;
+    }
+
+    // Generate ticks
+    for (let i = startTick; i <= endTick; i += tickSpacing) {
+        ticks.push(i);
+    }
+
+    return ticks.filter((tick) => tick >= yMin && tick <= yMax);
+}
+
 function drawAxes(
     ctx,
     padding,
@@ -85,13 +165,16 @@ function drawAxes(
     yMax,
     xScale,
     yScale,
-    yLabelFormatter
+    yLabelFormatter,
+    isPerformanceChart = false
 ) {
     const isMobile = window.innerWidth <= 768;
 
+    // Generate concrete tick values
+    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart);
+
     // Y-axis grid lines and labels
-    for (let i = 0; i <= 4; i++) {
-        const value = yMin + (i / 4) * (yMax - yMin);
+    ticks.forEach((value) => {
         const y = yScale(value);
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
@@ -103,7 +186,7 @@ function drawAxes(
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
-    }
+    });
 
     // X-axis line
     ctx.beginPath();
@@ -216,7 +299,8 @@ function drawContributionChart(ctx, chartManager) {
         yMax,
         xScale,
         yScale,
-        formatCurrencyCompact
+        formatCurrencyCompact,
+        false // isPerformanceChart
     );
 
     const rootStyles = window.getComputedStyle(document.documentElement);
@@ -407,7 +491,8 @@ function drawPerformanceChart(ctx, chartManager) {
         yMax,
         xScale,
         yScale,
-        (v) => `${v.toFixed(0)}%`
+        (v) => `${v.toFixed(0)}%`,
+        true // isPerformanceChart
     );
 
     const rootStyles = window.getComputedStyle(document.documentElement);
