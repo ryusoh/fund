@@ -442,10 +442,7 @@ const COMMAND_ALIASES = [
     'clear',
     'all',
     'stats',
-    'holdings',
-    'cagr',
-    'return',
-    'ratio',
+    's',
     'transaction',
     't',
     'plot',
@@ -454,6 +451,8 @@ const COMMAND_ALIASES = [
     'from', // For simplified commands
     'to', // For simplified commands
 ];
+
+const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
 
 const MIN_FADE_OPACITY = 0.1;
 
@@ -570,17 +569,34 @@ export function initTerminal({
             }
         }
 
-        if (searchPrefix.includes(' ') || searchPrefix.includes(':')) {
+        if (searchPrefix.includes(':')) {
             resetAutocompleteState();
             return;
         }
 
         const lowerPrefix = searchPrefix.toLowerCase();
-        const matches = (
-            lowerPrefix
-                ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(lowerPrefix))
-                : COMMAND_ALIASES
-        ).filter((cmd, index, arr) => arr.indexOf(cmd) === index);
+        let matches = [];
+
+        // Handle stats subcommands
+        if (searchPrefix.includes(' ')) {
+            const parts = searchPrefix.split(' ');
+            if (parts.length >= 2 && (parts[0] === 'stats' || parts[0] === 's')) {
+                const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
+                matches = subPrefix
+                    ? STATS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+                    : STATS_SUBCOMMANDS;
+            } else {
+                resetAutocompleteState();
+                return;
+            }
+        } else {
+            // Handle main commands
+            matches = (
+                lowerPrefix
+                    ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(lowerPrefix))
+                    : COMMAND_ALIASES
+            ).filter((cmd, index, arr) => arr.indexOf(cmd) === index);
+        }
 
         if (matches.length === 0) {
             resetAutocompleteState();
@@ -602,7 +618,18 @@ export function initTerminal({
 
         const completed = autocompleteState.matches[autocompleteState.index];
         const shouldAppendSpace = matches.length === 1;
-        input.value = completed + (shouldAppendSpace ? ' ' : '');
+
+        // Handle stats subcommand completion
+        if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'stats') {
+            const baseCommand = 'stats ';
+            input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
+        } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 's') {
+            const baseCommand = 's ';
+            input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
+        } else {
+            input.value = completed + (shouldAppendSpace ? ' ' : '');
+        }
+
         const newLength = input.value.length;
         input.setSelectionRange(newLength, newLength);
     }
@@ -626,11 +653,9 @@ export function initTerminal({
             case 'help':
                 result =
                     'Available commands:\n' +
-                    '  stats              - Display summary statistics.\n' +
-                    '  holdings           - Display current holdings.\n' +
-                    '  cagr               - Show CAGR based on TWRR series.\n' +
-                    '  return             - Show annual returns for portfolio and benchmarks.\n' +
-                    '  ratio              - Show Sharpe and Sortino ratios for portfolio and benchmarks.\n' +
+                    '  stats (s)          - Statistics commands (use "stats" or "s" for subcommands)\n' +
+                    '                       Subcommands: transactions, holdings, cagr, return, ratio\n' +
+                    '                       Example: stats transactions, s cagr, stats ratio\n' +
                     '  transaction (t)    - Toggle the transaction table visibility.\n' +
                     '  plot (p)           - Toggle the running cost basis chart.\n' +
                     '                       Usage: plot [year] | [from <year>] | [<year1> to <year2>]\n' +
@@ -644,7 +669,7 @@ export function initTerminal({
                     '  reset              - Restore full transaction list and show table/chart.\n' +
                     '  clear              - Clear the terminal screen.\n' +
                     '  help (h)           - Show this help message.\n\n' +
-                    'Hint: Press Tab to auto-complete command names.\n\n' +
+                    'Hint: Press Tab to auto-complete command names and stats subcommands.\n\n' +
                     'Any other input is treated as a filter for the transaction table.\n' +
                     "When a chart is active, you can use simplified date commands like '2023', 'from:2023', '2020:2023'.";
                 break;
@@ -714,19 +739,34 @@ export function initTerminal({
                 requestFadeUpdate();
                 break;
             case 'stats':
-                result = getStatsText();
-                break;
-            case 'holdings':
-                result = getHoldingsText();
-                break;
-            case 'cagr':
-                result = getCagrText();
-                break;
-            case 'return':
-                result = getAnnualReturnText();
-                break;
-            case 'ratio':
-                result = getRatioText();
+            case 's':
+                if (args.length === 0) {
+                    // Show stats help
+                    result =
+                        'Stats commands:\n  stats transactions - Show transaction statistics\n  stats holdings     - Show current holdings\n  stats cagr         - Show CAGR based on TWRR series\n  stats return       - Show annual returns for portfolio and benchmarks\n  stats ratio        - Show Sharpe and Sortino ratios\n\nUsage: stats <subcommand> or s <subcommand>';
+                } else {
+                    const subcommand = args[0].toLowerCase();
+                    switch (subcommand) {
+                        case 'transactions':
+                            result = getStatsText();
+                            break;
+                        case 'holdings':
+                            result = getHoldingsText();
+                            break;
+                        case 'cagr':
+                            result = getCagrText();
+                            break;
+                        case 'return':
+                            result = getAnnualReturnText();
+                            break;
+                        case 'ratio':
+                            result = getRatioText();
+                            break;
+                        default:
+                            result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;
+                            break;
+                    }
+                }
                 break;
             case 't':
             case 'transaction':
