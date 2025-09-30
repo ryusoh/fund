@@ -9,6 +9,7 @@ export const transactionState = {
     performanceSeries: {},
     historicalPrices: {},
     activeChart: 'contribution', // 'contribution' or 'performance'
+    chartDateRange: { from: null, to: null },
     chartVisibility: {
         contribution: true,
         balance: true,
@@ -76,4 +77,8 @@ export function setActiveChart(chartType) {
 
 export function setHistoricalPrices(prices) {
     transactionState.historicalPrices = prices && typeof prices === 'object' ? prices : {};
+}
+
+export function setChartDateRange({ from, to }) {
+    transactionState.chartDateRange = { from, to };
 }

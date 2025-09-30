@@ -80,10 +80,9 @@ function initialize() {
     initTerminal({
         filterAndSort: tableController.filterAndSort,
         toggleTable: uiController.toggleTable,
-        togglePlot: uiController.togglePlot,
-        togglePerformanceChart: uiController.togglePerformanceChart,
         closeAllFilterDropdowns: tableController.closeAllFilterDropdowns,
         resetSortState,
+        chartManager,
     });
 
     loadTransactions();

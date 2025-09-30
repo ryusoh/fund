@@ -147,12 +147,27 @@ function drawContributionChart(ctx, chartManager) {
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
 
-    const contributionData = (runningAmountSeries || [])
-        .map((item) => ({ ...item, date: new Date(item.tradeDate) }))
-        .filter((item) => !isNaN(item.date.getTime()));
-    const balanceData = (portfolioSeries || [])
-        .map((item) => ({ ...item, date: new Date(item.date) }))
-        .filter((item) => !isNaN(item.date.getTime()));
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    const filterDataByDateRange = (data) => {
+        return data.filter((item) => {
+            const itemDate = new Date(item.date);
+            return (!filterFrom || itemDate >= filterFrom) && (!filterTo || itemDate <= filterTo);
+        });
+    };
+
+    const contributionData = filterDataByDateRange(
+        (runningAmountSeries || [])
+            .map((item) => ({ ...item, date: new Date(item.tradeDate) }))
+            .filter((item) => !isNaN(item.date.getTime()))
+    );
+    const balanceData = filterDataByDateRange(
+        (portfolioSeries || [])
+            .map((item) => ({ ...item, date: new Date(item.date) }))
+            .filter((item) => !isNaN(item.date.getTime()))
+    );
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         return;
@@ -171,7 +186,12 @@ function drawContributionChart(ctx, chartManager) {
         ...balanceData.map((d) => d.date.getTime()),
     ];
     const minTime = Math.min(...allTimes);
-    const maxTime = Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
+    // If we have a date range filter, use only the filtered data range
+    // Otherwise, extend to today for real-time data
+    const maxTime =
+        filterFrom || filterTo
+            ? Math.max(...allTimes)
+            : Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
 
     const contributionMax =
         contributionData.length > 0 ? Math.max(...contributionData.map((item) => item.amount)) : 0;
@@ -310,18 +330,63 @@ function drawPerformanceChart(ctx, chartManager) {
     const plotWidth = canvas.offsetWidth - padding.left - padding.right;
     const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
 
-    const allPoints = seriesToDraw.flatMap((s) =>
-        s.data.map((d) => ({ ...d, date: new Date(d.date) }))
-    );
-    const allTimes = allPoints.map((p) => p.date.getTime());
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    // When filtering, normalize each series to start from 100% at the beginning of the period
+    let normalizedSeriesToDraw = seriesToDraw;
+    if (filterFrom || filterTo) {
+        normalizedSeriesToDraw = seriesToDraw.map((series) => {
+            const filteredData = series.data
+                .map((d) => ({ ...d, date: new Date(d.date) }))
+                .filter((d) => {
+                    const pointDate = new Date(d.date);
+                    return (
+                        (!filterFrom || pointDate >= filterFrom) &&
+                        (!filterTo || pointDate <= filterTo)
+                    );
+                });
+
+            if (filteredData.length === 0) {
+                return series;
+            }
+
+            // Find the starting value (first data point in the filtered range)
+            const startValue = filteredData[0].value;
+
+            // Normalize all values relative to the starting value
+            const normalizedData = filteredData.map((d) => ({
+                ...d,
+                value: (d.value / startValue) * 100, // Convert to percentage
+            }));
+
+            return {
+                ...series,
+                data: normalizedData,
+            };
+        });
+    }
+
+    const allPoints = normalizedSeriesToDraw.flatMap((s) => s.data);
+    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
     const minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
     const allValues = allPoints.map((p) => p.value);
+    const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
 
-    const yMin = 100;
-    const yMax = Math.max(dataMax, 100) * 1.05;
+    // When filtering (normalized data), use flexible y-axis range
+    // When not filtering, use fixed range starting from 100
+    const yMin =
+        filterFrom || filterTo
+            ? Math.min(dataMin * 0.95, 100) // Allow some margin below 100% if needed
+            : 100;
+    const yMax =
+        filterFrom || filterTo
+            ? Math.max(dataMax * 1.05, 100) // Allow margin above 100% if needed
+            : Math.max(dataMax, 100) * 1.05;
 
     const xScale = (t) =>
         padding.left +
@@ -355,7 +420,7 @@ function drawPerformanceChart(ctx, chartManager) {
     };
 
     // Draw Lines
-    seriesToDraw.forEach((series) => {
+    normalizedSeriesToDraw.forEach((series) => {
         ctx.beginPath();
         series.data.forEach((point, index) => {
             const x = xScale(new Date(point.date).getTime());

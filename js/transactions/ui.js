@@ -1,4 +1,9 @@
-import { setChartVisibility, setActiveChart, transactionState } from './state.js';
+import {
+    setChartVisibility,
+    setActiveChart,
+    transactionState,
+    setChartDateRange,
+} from './state.js';
 import { adjustMobilePanels } from './layout.js';
 
 export function createUiController({ chartManager }) {
@@ -36,6 +41,7 @@ export function createUiController({ chartManager }) {
         }
 
         setActiveChart('contribution');
+        setChartDateRange({ from: null, to: null }); // Reset date range
 
         // If switching from performance chart, always show contribution chart
         if (wasPerformanceChart && isVisible) {
@@ -67,6 +73,7 @@ export function createUiController({ chartManager }) {
 
     function togglePerformanceChart() {
         setActiveChart('performance');
+        setChartDateRange({ from: null, to: null }); // Reset date range
         const plotSection = document.getElementById('runningAmountSection');
         const tableContainer = document.querySelector('.table-responsive-container');
 
