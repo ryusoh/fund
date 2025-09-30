@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from datetime import date
 from pathlib import Path
 from typing import Iterable
 
@@ -16,6 +17,11 @@ HASH_PATH = DATA_DIR / 'checkpoints' / 'input_hash.txt'
 
 def compute_hash(files: Iterable[Path]) -> str:
     sha = hashlib.sha256()
+
+    # Include current date to ensure daily updates for stock price changes
+    today = date.today().isoformat()
+    sha.update(today.encode('utf-8'))
+
     for file_path in files:
         if not file_path.exists():
             raise FileNotFoundError(f'Missing required input file: {file_path}')
