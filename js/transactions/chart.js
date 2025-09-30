@@ -234,6 +234,23 @@ function generateYearBasedTicks(minTime, maxTime) {
         isYearStart: false,
     });
 
+    // Add beginning month tick for desktop only
+    if (!isMobile) {
+        const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
+        const startYear = startDate.getFullYear();
+        const startLabel = `${startMonth} ${formatYear(startYear)}`;
+
+        // Check if we already have a tick for the start date
+        const hasStartTick = ticks.some((tick) => tick.time === minTime);
+        if (!hasStartTick) {
+            ticks.push({
+                time: minTime,
+                label: startLabel,
+                isYearStart: false,
+            });
+        }
+    }
+
     // Sort ticks by time
     ticks.sort((a, b) => a.time - b.time);
 
@@ -300,12 +317,18 @@ function drawAxes(
             }
         }
 
-        // Set text alignment based on tick position
-        if (index === 0) {
-            ctx.textAlign = 'left';
-        } else if (index === yearTicks.length - 1) {
-            ctx.textAlign = 'right';
+        // Set text alignment based on tick position and layout
+        if (isMobile) {
+            // Mobile: center-align first tick, right-align last tick, center-align others
+            if (index === 0) {
+                ctx.textAlign = 'center';
+            } else if (index === yearTicks.length - 1) {
+                ctx.textAlign = 'right';
+            } else {
+                ctx.textAlign = 'center';
+            }
         } else {
+            // Desktop: center-align all ticks
             ctx.textAlign = 'center';
         }
 
