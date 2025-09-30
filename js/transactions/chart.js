@@ -46,8 +46,42 @@ function updateLegend(series, chartManager) {
         item.appendChild(label);
 
         item.addEventListener('click', () => {
-            const disabled = item.classList.toggle('legend-disabled');
-            setChartVisibility(s.key, !disabled);
+            // Special handling for performance chart
+            if (transactionState.activeChart === 'performance') {
+                // LZ (portfolio) should always be visible - no toggle
+                if (s.key === '^LZ') {
+                    return; // Do nothing for portfolio
+                }
+
+                // Define all possible benchmarks (excluding portfolio)
+                const benchmarks = ['^GSPC', '^IXIC', '^WORLD', '^DJI'];
+
+                if (benchmarks.includes(s.key)) {
+                    const disabled = item.classList.toggle('legend-disabled');
+                    const isVisible = !disabled;
+
+                    // If clicking a benchmark, hide other benchmarks
+                    benchmarks.forEach((benchmark) => {
+                        if (benchmark !== s.key) {
+                            transactionState.chartVisibility[benchmark] = false;
+                            // Update legend appearance
+                            const otherItem = legendContainer.querySelector(
+                                `[data-series="${benchmark}"]`
+                            );
+                            if (otherItem) {
+                                otherItem.classList.add('legend-disabled');
+                            }
+                        }
+                    });
+                    // Set the clicked benchmark visibility
+                    transactionState.chartVisibility[s.key] = isVisible;
+                }
+            } else {
+                // Normal behavior for other charts
+                const disabled = item.classList.toggle('legend-disabled');
+                setChartVisibility(s.key, !disabled);
+            }
+
             if (typeof chartManager.redraw === 'function') {
                 chartManager.redraw();
             }
@@ -544,6 +578,23 @@ function drawPerformanceChart(ctx, chartManager) {
         return;
     }
 
+    // Set default visibility: always show LZ, show GSPC by default, hide other benchmarks
+    const availableSeries = Object.keys(performanceSeries);
+    if (availableSeries.length > 0) {
+        // Initialize visibility state if not set
+        availableSeries.forEach((key) => {
+            if (transactionState.chartVisibility[key] === undefined) {
+                if (key === '^LZ') {
+                    // Always show portfolio
+                    transactionState.chartVisibility[key] = true;
+                } else {
+                    // Show GSPC by default, hide other benchmarks
+                    transactionState.chartVisibility[key] = key === '^GSPC';
+                }
+            }
+        });
+    }
+
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
     emptyState.style.display = 'none';
@@ -658,8 +709,13 @@ function drawPerformanceChart(ctx, chartManager) {
         '^WORLD': colors.world,
     };
 
-    // Draw Lines
+    // Draw Lines (filter based on visibility)
     normalizedSeriesToDraw.forEach((series) => {
+        const isVisible = transactionState.chartVisibility[series.key] !== false;
+        if (!isVisible) {
+            return;
+        } // Skip hidden series
+
         ctx.beginPath();
         series.data.forEach((point, index) => {
             const x = xScale(new Date(point.date).getTime());
