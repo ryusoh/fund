@@ -21,6 +21,7 @@ function parseCommandPalette(value) {
                     val.toLowerCase() === 'buy' || val.toLowerCase() === 'sell' ? val : null;
                 break;
             case 'security':
+            case 's':
                 commands.security = val.toUpperCase();
                 break;
             case 'min':
