@@ -154,6 +154,92 @@ function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
     return ticks.filter((tick) => tick >= yMin && tick <= yMax);
 }
 
+function generateYearBasedTicks(minTime, maxTime) {
+    const ticks = [];
+    const startDate = new Date(minTime);
+    const endDate = new Date(maxTime);
+    const isMobile = window.innerWidth <= 768;
+
+    const formatYear = (year) => {
+        return isMobile ? `'${String(year).slice(2)}` : year;
+    };
+
+    // Calculate data span in months
+    const dataSpanMonths =
+        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (endDate.getMonth() - startDate.getMonth()) +
+        1;
+
+    // Check if data is within a single year (same year OR spans ≤15 months)
+    const isSingleYear = startDate.getFullYear() === endDate.getFullYear() || dataSpanMonths <= 15;
+
+    if (isSingleYear) {
+        // Single year: show quarterly ticks for the year
+        let year;
+        if (startDate.getFullYear() !== endDate.getFullYear()) {
+            const endOfStartYear = new Date(startDate.getFullYear(), 11, 31);
+            const startOfEndYear = new Date(endDate.getFullYear(), 0, 1);
+            const timeInStartYear = endOfStartYear.getTime() - startDate.getTime();
+            const timeInEndYear = endDate.getTime() - startOfEndYear.getTime();
+            if (timeInEndYear > timeInStartYear) {
+                year = endDate.getFullYear();
+            } else {
+                year = startDate.getFullYear();
+            }
+        } else {
+            year = startDate.getFullYear();
+        }
+        const formattedYear = formatYear(year);
+        const quarters = [
+            { month: 0, label: `Jan ${formattedYear}`, isYearStart: true },
+            { month: 3, label: `Apr ${formattedYear}`, isYearStart: false },
+            { month: 6, label: `Jul ${formattedYear}`, isYearStart: false },
+            { month: 9, label: `Oct ${formattedYear}`, isYearStart: false },
+        ];
+
+        quarters.forEach((q) => {
+            const quarterDate = new Date(year, q.month, 1).getTime();
+            // Always include quarterly ticks for the year, even if slightly outside the range
+            if (
+                quarterDate >= minTime - 30 * 24 * 60 * 60 * 1000 &&
+                quarterDate <= maxTime + 30 * 24 * 60 * 60 * 1000
+            ) {
+                ticks.push({
+                    time: quarterDate,
+                    label: q.label,
+                    isYearStart: q.isYearStart,
+                });
+            }
+        });
+    } else {
+        // Multi-year: show Jan for each year
+        for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
+            const jan1 = new Date(year, 0, 1).getTime();
+            if (jan1 >= minTime && jan1 <= maxTime) {
+                ticks.push({
+                    time: jan1,
+                    label: `Jan ${formatYear(year)}`,
+                    isYearStart: true,
+                });
+            }
+        }
+    }
+
+    // Add end date
+    const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
+    const endYear = endDate.getFullYear();
+    ticks.push({
+        time: maxTime,
+        label: `${endMonth} ${formatYear(endYear)}`,
+        isYearStart: false,
+    });
+
+    // Sort ticks by time
+    ticks.sort((a, b) => a.time - b.time);
+
+    return ticks;
+}
+
 function drawAxes(
     ctx,
     padding,
@@ -196,25 +282,70 @@ function drawAxes(
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // X-axis ticks and labels
-    const tickCount = Math.min(6, Math.floor(plotWidth / (isMobile ? 100 : 120)));
+    // Generate year-based x-axis ticks
+    const yearTicks = generateYearBasedTicks(minTime, maxTime);
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
-    for (let i = 0; i <= tickCount; i++) {
-        const time = minTime + (i / tickCount) * (maxTime - minTime);
-        const x = xScale(time);
+
+    yearTicks.forEach((tick, index) => {
+        const x = xScale(tick.time);
+
+        // Prevent label collision on mobile by hiding the last tick if it's too close to the previous one
+        if (isMobile && index === yearTicks.length - 1) {
+            const prevTickX = xScale(yearTicks[index - 1].time);
+            if (x - prevTickX < 40) {
+                return; // Skip the last tick
+            }
+        }
+
+        // Set text alignment based on tick position
+        if (index === 0) {
+            ctx.textAlign = 'left';
+        } else if (index === yearTicks.length - 1) {
+            ctx.textAlign = 'right';
+        } else {
+            ctx.textAlign = 'center';
+        }
+
+        // Draw tick mark
         ctx.beginPath();
         ctx.moveTo(x, padding.top + plotHeight);
         ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
         ctx.stroke();
-        const labelDate = new Date(time);
-        ctx.fillText(
-            labelDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-            x,
-            padding.top + plotHeight + (isMobile ? 8 : 10)
-        );
-    }
+
+        // Draw label
+        ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
+
+        // Draw vertical dashed line for year/quarter boundaries (but not at chart boundaries)
+        if (tick.isYearStart && x > padding.left + 5 && x < padding.left + plotWidth - 5) {
+            ctx.beginPath();
+            ctx.setLineDash([3, 3]); // Dashed line
+            ctx.moveTo(x, padding.top);
+            ctx.lineTo(x, padding.top + plotHeight);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // Draw dashed lines for quarterly boundaries (Apr, Jul, Oct)
+        if (x > padding.left + 5 && x < padding.left + plotWidth - 5) {
+            if (
+                tick.label.includes('Apr') ||
+                tick.label.includes('Jul') ||
+                tick.label.includes('Oct')
+            ) {
+                ctx.beginPath();
+                ctx.setLineDash([2, 2]); // Shorter dashes for quarters
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + plotHeight);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; // Lighter for quarters
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset to solid line
+            }
+        }
+    });
 }
 
 // --- Chart Drawing Functions ---
