@@ -108,6 +108,103 @@ function drawMarker(context, x, y, radius, isBuy, colors, chartBounds) {
     context.stroke();
 }
 
+function drawEndValue(
+    context,
+    x,
+    y,
+    value,
+    color,
+    isMobile,
+    padding,
+    plotWidth,
+    plotHeight,
+    formatValue,
+    showBackground = false
+) {
+    const text = formatValue(value);
+    const fontSize = isMobile ? 9 : 11;
+    const fontFamily = 'var(--font-family-mono)';
+
+    context.font = `${fontSize}px ${fontFamily}`;
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+
+    // Measure text width
+    const textMetrics = context.measureText(text);
+    const textWidth = textMetrics.width;
+    const textHeight = fontSize;
+    const bgPadding = 4;
+
+    // Calculate position with boundary checks
+    let textX, textY;
+
+    if (isMobile) {
+        // Mobile: always use right-side positioning with boundary check
+        textX = padding.left + plotWidth - textWidth - 5;
+        textY = Math.max(
+            padding.top + textHeight / 2,
+            Math.min(y, padding.top + plotHeight - textHeight / 2)
+        );
+    } else {
+        // Desktop: try above/below endpoint first
+        const spaceAbove = y - padding.top;
+        const spaceBelow = padding.top + plotHeight - y;
+
+        if (spaceAbove > textHeight + 8) {
+            // Position above
+            textX = x + 3;
+            textY = y - 3;
+
+            // Check if text would overflow right edge
+            if (textX + textWidth > padding.left + plotWidth - 5) {
+                textX = padding.left + plotWidth - textWidth - 5;
+            }
+        } else if (spaceBelow > textHeight + 8) {
+            // Position below
+            textX = x + 3;
+            textY = y + textHeight + 3;
+
+            // Check if text would overflow right edge
+            if (textX + textWidth > padding.left + plotWidth - 5) {
+                textX = padding.left + plotWidth - textWidth - 5;
+            }
+        } else {
+            // Fall back to right-side positioning
+            textX = padding.left + plotWidth - textWidth - 5;
+            textY = Math.max(
+                padding.top + textHeight / 2,
+                Math.min(y, padding.top + plotHeight - textHeight / 2)
+            );
+        }
+    }
+
+    // Ensure text stays within chart boundaries
+    textX = Math.max(padding.left + 2, Math.min(textX, padding.left + plotWidth - textWidth - 2));
+    textY = Math.max(
+        padding.top + textHeight / 2,
+        Math.min(textY, padding.top + plotHeight - textHeight / 2)
+    );
+
+    // Draw background for contribution chart only
+    if (showBackground) {
+        // Create subtle dark background with rounded corners effect
+        context.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        context.beginPath();
+        context.roundRect(
+            textX - bgPadding,
+            textY - textHeight / 2 - bgPadding,
+            textWidth + bgPadding * 2,
+            textHeight + bgPadding * 2,
+            3
+        );
+        context.fill();
+    }
+
+    // Draw text with series color
+    context.fillStyle = color;
+    context.fillText(text, textX, textY);
+}
+
 function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
     if (isPerformanceChart) {
         // Performance chart: use percentage ticks with adaptive spacing
@@ -288,7 +385,40 @@ function generateYearBasedTicks(minTime, maxTime) {
     // Sort ticks by time
     ticks.sort((a, b) => a.time - b.time);
 
-    return ticks;
+    // Remove duplicate ticks that are too close together (within 10 days)
+    const filteredTicks = [];
+    for (let i = 0; i < ticks.length; i++) {
+        const currentTick = ticks[i];
+        const isTooClose = filteredTicks.some(
+            (existingTick) =>
+                Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000 // 10 days in milliseconds
+        );
+
+        if (!isTooClose) {
+            filteredTicks.push(currentTick);
+        } else {
+            // If too close, prefer year boundaries (isYearStart: true) over start/end dates
+            const isYearBoundary = currentTick.isYearStart;
+            const existingIsYearBoundary = filteredTicks.some(
+                (existingTick) =>
+                    Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000 &&
+                    existingTick.isYearStart
+            );
+
+            if (isYearBoundary && !existingIsYearBoundary) {
+                // Replace the existing tick with the year boundary
+                const index = filteredTicks.findIndex(
+                    (existingTick) =>
+                        Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000
+                );
+                if (index !== -1) {
+                    filteredTicks[index] = currentTick;
+                }
+            }
+        }
+    }
+
+    return filteredTicks;
 }
 
 function drawAxes(
@@ -562,6 +692,63 @@ function drawContributionChart(ctx, chartManager) {
         ctx.stroke();
     }
 
+    // Draw end values
+    if (showContribution && contributionData.length > 0) {
+        const lastContribution = contributionData[contributionData.length - 1];
+        const x = xScale(lastContribution.date.getTime());
+        const y = yScale(lastContribution.amount);
+        drawEndValue(
+            ctx,
+            x,
+            y,
+            lastContribution.amount,
+            colors.contribution,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatCurrencyCompact,
+            true
+        );
+    }
+
+    if (showBalance && balanceData.length > 0) {
+        const lastBalance = balanceData[balanceData.length - 1];
+        const x = xScale(lastBalance.date.getTime());
+        const y = yScale(lastBalance.value);
+
+        // Use more granular formatting for balance line
+        const formatBalanceValue = (value) => {
+            const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+            const absolute = Math.abs(amount);
+            const sign = amount < 0 ? '-' : '';
+
+            if (absolute >= 1_000_000) {
+                const millions = absolute / 1_000_000;
+                return `${sign}$${millions.toFixed(2)}M`;
+            }
+            if (absolute >= 1_000) {
+                const thousands = absolute / 1_000;
+                return `${sign}$${thousands.toFixed(1)}k`;
+            }
+            return `${sign}$${amount.toFixed(0)}`;
+        };
+
+        drawEndValue(
+            ctx,
+            x,
+            y,
+            lastBalance.value,
+            colors.portfolio,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatBalanceValue,
+            true
+        );
+    }
+
     // Update Legend
     const legendSeries = [
         { key: 'contribution', name: 'Contribution', color: colors.contribution },
@@ -725,6 +912,36 @@ function drawPerformanceChart(ctx, chartManager) {
         ctx.strokeStyle = colorMap[series.key] || colors.contribution; // Fallback color
         ctx.lineWidth = series.key === '^LZ' ? 2.5 : 2;
         ctx.stroke();
+    });
+
+    // Draw end values for visible series
+    normalizedSeriesToDraw.forEach((series) => {
+        const isVisible = transactionState.chartVisibility[series.key] !== false;
+        if (!isVisible || series.data.length === 0) {
+            return;
+        }
+
+        const lastPoint = series.data[series.data.length - 1];
+        const x = xScale(new Date(lastPoint.date).getTime());
+        const y = yScale(lastPoint.value);
+        const color = colorMap[series.key] || colors.contribution;
+
+        // Format value as percentage for performance chart (values are already in percentage format)
+        const formatValue = (value) => `${value.toFixed(1)}%`;
+
+        drawEndValue(
+            ctx,
+            x,
+            y,
+            lastPoint.value,
+            color,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatValue,
+            false
+        );
     });
 
     // Update Legend
