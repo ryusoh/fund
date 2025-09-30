@@ -446,7 +446,7 @@ const COMMAND_ALIASES = [
     'cagr',
     'return',
     'ratio',
-    'table',
+    'transaction',
     't',
     'plot',
     'p',
@@ -631,7 +631,7 @@ export function initTerminal({
                     '  cagr               - Show CAGR based on TWRR series.\n' +
                     '  return             - Show annual returns for portfolio and benchmarks.\n' +
                     '  ratio              - Show Sharpe and Sortino ratios for portfolio and benchmarks.\n' +
-                    '  table (t)          - Toggle the transaction table visibility.\n' +
+                    '  transaction (t)    - Toggle the transaction table visibility.\n' +
                     '  plot (p)           - Toggle the running cost basis chart.\n' +
                     '                       Usage: plot [year] | [from <year>] | [<year1> to <year2>]\n' +
                     '                       Example: plot 2023, plot from 2020, plot 2020 to 2023\n' +
@@ -729,7 +729,7 @@ export function initTerminal({
                 result = getRatioText();
                 break;
             case 't':
-            case 'table':
+            case 'transaction':
                 toggleTable();
                 result = 'Toggled transaction table visibility.';
                 break;
