@@ -51,7 +51,7 @@
     border: none;
     color: var(--text-color);
     font-family: var(--font-family-mono);
-    font-size: 14px;
+    font-size: 12px;
     flex-grow: 1;
     outline: none;
     min-width: 0;

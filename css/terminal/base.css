@@ -45,7 +45,7 @@ body {
     background-size: cover !important;
     min-height: 100vh;
     color: var(--text-color);
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
