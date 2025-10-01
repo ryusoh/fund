@@ -1060,18 +1060,9 @@ function drawCompositionChart(ctx, chartManager) {
                 chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
             });
 
-            // Create Steve Jobs inspired graded blue palette
+            // Create granular blue spectrum palette (Steve Jobs inspired)
             const colors = [
-                '#1E3A8A',
-                '#1E40AF',
-                '#2563EB',
-                '#3B82F6',
-                '#60A5FA',
-                '#93C5FD',
-                '#BFDBFE',
-                '#DBEAFE',
-                '#EFF6FF',
-                '#F0F9FF',
+                // Deep navy blues
                 '#0F172A',
                 '#1E293B',
                 '#334155',
@@ -1082,6 +1073,20 @@ function drawCompositionChart(ctx, chartManager) {
                 '#E2E8F0',
                 '#F1F5F9',
                 '#F8FAFC',
+
+                // Rich blues
+                '#1E3A8A',
+                '#1E40AF',
+                '#2563EB',
+                '#3B82F6',
+                '#60A5FA',
+                '#93C5FD',
+                '#BFDBFE',
+                '#DBEAFE',
+                '#EFF6FF',
+                '#F0F9FF',
+
+                // Ocean blues
                 '#0C4A6E',
                 '#075985',
                 '#0369A1',
@@ -1092,16 +1097,8 @@ function drawCompositionChart(ctx, chartManager) {
                 '#BAE6FD',
                 '#E0F2FE',
                 '#F0F9FF',
-                '#1E1B4B',
-                '#312E81',
-                '#4338CA',
-                '#5B21B6',
-                '#7C3AED',
-                '#8B5CF6',
-                '#A78BFA',
-                '#C4B5FD',
-                '#DDD6FE',
-                '#EDE9FE',
+
+                // Sky blues
                 '#164E63',
                 '#155E75',
                 '#0E7490',
@@ -1112,6 +1109,8 @@ function drawCompositionChart(ctx, chartManager) {
                 '#A7F3D0',
                 '#D1FAE5',
                 '#ECFDF5',
+
+                // Steel blues
                 '#1F2937',
                 '#374151',
                 '#4B5563',
@@ -1122,6 +1121,30 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F3F4F6',
                 '#F9FAFB',
                 '#FFFFFF',
+
+                // Additional blue variations
+                '#1E3A8A',
+                '#1E40AF',
+                '#2563EB',
+                '#3B82F6',
+                '#60A5FA',
+                '#93C5FD',
+                '#BFDBFE',
+                '#DBEAFE',
+                '#EFF6FF',
+                '#F0F9FF',
+
+                // More blue tones
+                '#0C4A6E',
+                '#075985',
+                '#0369A1',
+                '#0284C7',
+                '#0EA5E9',
+                '#38BDF8',
+                '#7DD3FC',
+                '#BAE6FD',
+                '#E0F2FE',
+                '#F0F9FF',
             ];
 
             // Set up scales
