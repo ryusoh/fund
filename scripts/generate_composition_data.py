@@ -43,6 +43,13 @@ def calculate_daily_composition(holdings_df, prices_data):
                 price_ticker = ticker_mapping.get(ticker, ticker)
                 if price_ticker in prices_data:
                     price = prices_data[price_ticker].get(date_str)
+                    # If no price for this date, use the last available price
+                    if not price:
+                        available_dates = sorted(prices_data[price_ticker].keys())
+                        if available_dates:
+                            last_date = max([d for d in available_dates if d < date_str])
+                            price = prices_data[price_ticker][last_date]
+
                     if price:
                         market_value = shares * price
                         ticker_values[ticker] = market_value

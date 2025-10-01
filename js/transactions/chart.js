@@ -1439,17 +1439,40 @@ function drawCompositionChart(ctx, chartManager) {
 
             // Show latest 6 largest holdings in proper legend format
             const latestIndex = filteredDates.length - 1;
+
+            // Check if "Others" has any data
+            const othersPercentage = chartData['Others']
+                ? chartData['Others'][latestIndex] || 0
+                : 0;
+
+            // If "Others" is the dominant holding (>50%), include it in legend
+            const shouldIncludeOthers = othersPercentage > 50;
+
             const latestHoldings = topTickers
+                .filter((ticker) => shouldIncludeOthers || ticker !== 'Others') // Include Others if dominant
                 .map((ticker) => ({
                     ticker,
                     percentage: chartData[ticker][latestIndex] || 0,
                 }))
-                .filter((holding) => holding.percentage > 0.1)
+                .filter((holding) => holding.percentage > 0.1) // Back to 0.1% threshold
                 .sort((a, b) => b.percentage - a.percentage)
                 .slice(0, 6);
 
             // Create legend series in same format as other charts
-            const legendSeries = latestHoldings.map((holding) => {
+            // If no holdings above threshold, show top holdings regardless of percentage
+            const holdingsForLegend =
+                latestHoldings.length > 0
+                    ? latestHoldings
+                    : topTickers
+                          .filter((ticker) => shouldIncludeOthers || ticker !== 'Others') // Include Others if dominant
+                          .map((ticker) => ({
+                              ticker,
+                              percentage: chartData[ticker][latestIndex] || 0,
+                          }))
+                          .sort((a, b) => b.percentage - a.percentage)
+                          .slice(0, 6);
+
+            const legendSeries = holdingsForLegend.map((holding) => {
                 const tickerIndex = topTickers.indexOf(holding.ticker);
                 // Largest holdings get bluer colors - sortedTickers already puts largest first
                 // Fix BRKB ticker symbol display
