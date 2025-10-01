@@ -1039,8 +1039,17 @@ function drawCompositionChart(ctx, chartManager) {
                 }
             });
 
-            // Sort by average percentage during period (largest first)
-            const sortedTickers = Object.entries(allHoldings).sort((a, b) => b[1] - a[1]);
+            // Sort by latest date percentage (largest first, so largest goes at bottom of stack)
+            const sortLatestIndex = filteredDates.length - 1;
+            const sortedTickers = Object.entries(allHoldings).sort((a, b) => {
+                const aLatestValue = filteredIndices.map((i) => data.composition[a[0]][i] || 0)[
+                    sortLatestIndex
+                ];
+                const bLatestValue = filteredIndices.map((i) => data.composition[b[0]][i] || 0)[
+                    sortLatestIndex
+                ];
+                return bLatestValue - aLatestValue; // Largest first (bottom of stack)
+            });
 
             // Show ALL holdings (no limit)
             const topTickers = sortedTickers.map(([ticker]) => ticker);
