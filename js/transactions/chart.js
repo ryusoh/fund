@@ -1136,7 +1136,7 @@ function drawCompositionChart(ctx, chartManager) {
 
                 ctx.beginPath();
                 ctx.fillStyle = color + '80'; // Add transparency
-                ctx.strokeStyle = color;
+                ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Half opaque gray
                 ctx.lineWidth = 1;
 
                 // Draw area
