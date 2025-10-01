@@ -1060,9 +1060,9 @@ function drawCompositionChart(ctx, chartManager) {
                 chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
             });
 
-            // Create blue-to-green spectrum palette (Steve Jobs inspired)
+            // Create ultra-granular blue-to-green spectrum palette
             const colors = [
-                // Deep navy blues
+                // Deep navy blues (darkest)
                 '#0F172A',
                 '#1E293B',
                 '#334155',
@@ -1074,7 +1074,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F1F5F9',
                 '#F8FAFC',
 
-                // Rich blues
+                // Rich navy blues
                 '#1E3A8A',
                 '#1E40AF',
                 '#2563EB',
@@ -1086,7 +1086,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#EFF6FF',
                 '#F0F9FF',
 
-                // Ocean blues
+                // Deep ocean blues
                 '#0C4A6E',
                 '#075985',
                 '#0369A1',
@@ -1098,7 +1098,19 @@ function drawCompositionChart(ctx, chartManager) {
                 '#E0F2FE',
                 '#F0F9FF',
 
-                // Sky blues transitioning to teal
+                // Medium ocean blues
+                '#0F4C75',
+                '#1A5F8A',
+                '#2A7BA0',
+                '#3B9BC7',
+                '#4DB8E9',
+                '#5DD3FC',
+                '#7DE8FD',
+                '#9DF6FE',
+                '#C0F8FF',
+                '#E0FCFF',
+
+                // Sky blues
                 '#164E63',
                 '#155E75',
                 '#0E7490',
@@ -1110,7 +1122,31 @@ function drawCompositionChart(ctx, chartManager) {
                 '#D1FAE5',
                 '#ECFDF5',
 
-                // Teal spectrum
+                // Light sky blues
+                '#1A5F7A',
+                '#2A7BA0',
+                '#3B9BC7',
+                '#4DB8E9',
+                '#5DD3FC',
+                '#7DE8FD',
+                '#9DF6FE',
+                '#C0F8FF',
+                '#E0FCFF',
+                '#F0FDFF',
+
+                // Cyan blues
+                '#0D7377',
+                '#14A085',
+                '#2DD4BF',
+                '#5EEAD4',
+                '#99F6E4',
+                '#CCFBF1',
+                '#F0FDFA',
+                '#F0FDF4',
+                '#F7FEE7',
+                '#FEFCE8',
+
+                // Teal spectrum (blue-green transition)
                 '#0D9488',
                 '#14B8A6',
                 '#2DD4BF',
@@ -1121,6 +1157,30 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F0FDF4',
                 '#F7FEE7',
                 '#FEFCE8',
+
+                // Medium teals
+                '#0F766E',
+                '#1A9B8A',
+                '#2BB5A6',
+                '#3BC7B8',
+                '#4DD9CA',
+                '#5EEBDC',
+                '#7FFDEE',
+                '#9FFFF0',
+                '#C0FFF2',
+                '#E0FFF4',
+
+                // Light teals
+                '#134E4A',
+                '#1A6B5B',
+                '#2A8A7A',
+                '#3BA999',
+                '#4DC8B8',
+                '#5EE7D7',
+                '#7FF6E5',
+                '#9FFFF3',
+                '#C0FFF1',
+                '#E0FFF9',
 
                 // Green spectrum
                 '#166534',
@@ -1134,6 +1194,30 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F7FEE7',
                 '#FEFCE8',
 
+                // Medium greens
+                '#14532D',
+                '#15803D',
+                '#22C55E',
+                '#4ADE80',
+                '#86EFAC',
+                '#BBF7D0',
+                '#DCFCE7',
+                '#F0FDF4',
+                '#F7FEE7',
+                '#FEFCE8',
+
+                // Light greens
+                '#1A5F3A',
+                '#2A7B5A',
+                '#3B9B7A',
+                '#4DBB9A',
+                '#5EDBBA',
+                '#7EFBDA',
+                '#9EFBFA',
+                '#C0FBF0',
+                '#E0FBF5',
+                '#F0FBF9',
+
                 // Forest greens
                 '#14532D',
                 '#15803D',
@@ -1145,6 +1229,18 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F0FDF4',
                 '#F7FEE7',
                 '#FEFCE8',
+
+                // Dark forest greens
+                '#0F3D2A',
+                '#1A5F3A',
+                '#2A7B5A',
+                '#3B9B7A',
+                '#4DBB9A',
+                '#5EDBBA',
+                '#7EFBDA',
+                '#9EFBFA',
+                '#C0FBF0',
+                '#E0FBF5',
 
                 // Steel blues and grays
                 '#1F2937',
@@ -1158,7 +1254,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F9FAFB',
                 '#FFFFFF',
 
-                // Additional blue-green variations
+                // Additional ultra-granular variations
                 '#1E3A8A',
                 '#1E40AF',
                 '#2563EB',
@@ -1174,6 +1270,21 @@ function drawCompositionChart(ctx, chartManager) {
                 '#22C55E',
                 '#4ADE80',
                 '#86EFAC',
+                '#0F766E',
+                '#1A9B8A',
+                '#2BB5A6',
+                '#3BC7B8',
+                '#4DD9CA',
+                '#134E4A',
+                '#1A6B5B',
+                '#2A8A7A',
+                '#3BA999',
+                '#4DC8B8',
+                '#0F3D2A',
+                '#1A5F3A',
+                '#2A7B5A',
+                '#3B9B7A',
+                '#4DBB9A',
             ];
 
             // Set up scales
