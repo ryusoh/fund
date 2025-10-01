@@ -1257,6 +1257,49 @@ function drawCompositionChart(ctx, chartManager) {
                     legendElement.style.display = 'none';
                 }
             });
+
+            // Show latest 6 largest holdings summary at bottom
+            const latestIndex = filteredDates.length - 1;
+            const latestHoldings = topTickers
+                .map((ticker) => ({
+                    ticker,
+                    percentage: chartData[ticker][latestIndex] || 0,
+                }))
+                .filter((holding) => holding.percentage > 0.1)
+                .sort((a, b) => b.percentage - a.percentage)
+                .slice(0, 6);
+
+            // Draw summary at bottom of chart
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(padding.left, padding.top + plotHeight + 5, plotWidth, 25);
+
+            ctx.fillStyle = 'white';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.textAlign = 'left';
+
+            let xOffset = padding.left + 10;
+            latestHoldings.forEach((holding, index) => {
+                const tickerIndex = topTickers.indexOf(holding.ticker);
+                const color = colors[tickerIndex % colors.length];
+
+                // Draw color indicator
+                ctx.fillStyle = color;
+                ctx.fillRect(xOffset, padding.top + plotHeight + 10, 8, 8);
+
+                // Draw ticker and percentage
+                ctx.fillStyle = 'white';
+                ctx.fillText(
+                    `${holding.ticker}: ${holding.percentage.toFixed(1)}%`,
+                    xOffset + 12,
+                    padding.top + plotHeight + 17
+                );
+
+                // Calculate next position
+                const textWidth = ctx.measureText(
+                    `${holding.ticker}: ${holding.percentage.toFixed(1)}%`
+                ).width;
+                xOffset += textWidth + 25; // Add spacing between items
+            });
         })
         .catch((error) => {
             console.error('Error loading composition data:', error);
