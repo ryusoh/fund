@@ -1061,6 +1061,7 @@ function drawCompositionChart(ctx, chartManager) {
             });
 
             // Create natural spectrum progression: deep blue -> deep green (highest to lowest weight)
+            // Avoid extreme pale colors like white, light gray, and very pale tones for better visibility
             const colors = [
                 // Deep blue (highest weight) - darkest, most saturated blues
                 '#0F172A',
@@ -1113,7 +1114,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#C0F8FF',
                 '#E0FCFF',
 
-                // Light blue - lighter blues
+                // Light blue - vibrant lighter blues (avoiding very pale tones)
                 '#1A5F7A',
                 '#2A7BA0',
                 '#3B9BC7',
@@ -1130,7 +1131,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#4FC3F7',
                 '#29B6F6',
 
-                // Light green - transition from blue to green
+                // Light green - transition from blue to green (avoiding pale tones)
                 '#00ACC1',
                 '#00BCD4',
                 '#26C6DA',
@@ -1147,7 +1148,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#80DEEA',
                 '#B2EBF2',
 
-                // Cyan - blue-green transition
+                // Cyan - blue-green transition (avoiding pale tones)
                 '#0D7377',
                 '#14A085',
                 '#2DD4BF',
@@ -1181,7 +1182,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#4CAF50',
                 '#66BB6A',
 
-                // Dark green - deeper greens
+                // Dark green - deeper greens (avoiding pale tones)
                 '#14532D',
                 '#15803D',
                 '#1B5E20',
@@ -1215,7 +1216,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#4CAF50',
                 '#66BB6A',
 
-                // Additional granular variations for smooth transitions
+                // Additional vibrant variations for smooth transitions (avoiding pale colors)
                 '#0F172A',
                 '#1E293B',
                 '#1E3A8A',
@@ -1261,6 +1262,48 @@ function drawCompositionChart(ctx, chartManager) {
                 '#2E7D32',
                 '#388E3C',
                 '#43A047',
+
+                // Additional vibrant blues and greens to replace pale colors
+                '#1E3A8A',
+                '#1E40AF',
+                '#2563EB',
+                '#3B82F6',
+                '#60A5FA',
+                '#0D9488',
+                '#14B8A6',
+                '#2DD4BF',
+                '#5EEAD4',
+                '#99F6E4',
+                '#166534',
+                '#16A34A',
+                '#22C55E',
+                '#4ADE80',
+                '#86EFAC',
+                '#0F766E',
+                '#1A9B8A',
+                '#2BB5A6',
+                '#3BC7B8',
+                '#4DD9CA',
+                '#134E4A',
+                '#1A6B5B',
+                '#2A8A7A',
+                '#3BA999',
+                '#4DC8B8',
+                '#0F3D2A',
+                '#1A5F3A',
+                '#2A7B5A',
+                '#3B9B7A',
+                '#4DBB9A',
+                '#1A237E',
+                '#283593',
+                '#303F9F',
+                '#3949AB',
+                '#3F51B5',
+                '#00E676',
+                '#00C853',
+                '#00A152',
+                '#00897B',
+                '#00695C',
             ];
 
             // Set up scales
