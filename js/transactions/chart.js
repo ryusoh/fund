@@ -1169,13 +1169,94 @@ function drawCompositionChart(ctx, chartManager) {
                 cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
             });
 
-            // Draw legend
-            const legendSeries = topTickers.map((ticker, index) => ({
-                key: ticker,
-                name: ticker,
-                color: colors[index % colors.length],
-            }));
-            updateLegend(legendSeries, chartManager);
+            // Add hover detection for dynamic legend
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Check if mouse is over any composition area
+                let hoveredTicker = null;
+                let hoveredPercentage = 0;
+
+                // Find which ticker the mouse is over
+                for (let i = topTickers.length - 1; i >= 0; i--) {
+                    const ticker = topTickers[i];
+                    const values = chartData[ticker];
+
+                    // Find the closest date to mouse x position
+                    const mouseTime =
+                        minTime + ((x - padding.left) / plotWidth) * (maxTime - minTime);
+                    const closestIndex = Math.round(
+                        ((mouseTime - minTime) / (maxTime - minTime)) * (filteredDates.length - 1)
+                    );
+
+                    if (closestIndex >= 0 && closestIndex < values.length) {
+                        const tickerValue = values[closestIndex];
+                        const cumulativeValue = topTickers.slice(0, i).reduce((sum, prevTicker) => {
+                            return sum + chartData[prevTicker][closestIndex];
+                        }, 0);
+
+                        const tickerY = yScale(cumulativeValue + tickerValue);
+                        const prevY = yScale(cumulativeValue);
+
+                        if (y >= tickerY && y <= prevY && tickerValue > 0) {
+                            hoveredTicker = ticker;
+                            hoveredPercentage = tickerValue;
+                            break;
+                        }
+                    }
+                }
+
+                // Show/hide dynamic legend
+                const legendElement = document.getElementById('dynamicLegend');
+                if (hoveredTicker && hoveredPercentage > 0.1) {
+                    if (!legendElement) {
+                        // Create dynamic legend element
+                        const legend = document.createElement('div');
+                        legend.id = 'dynamicLegend';
+                        legend.style.cssText = `
+                            position: absolute;
+                            background: rgba(0, 0, 0, 0.8);
+                            color: white;
+                            padding: 8px 12px;
+                            border-radius: 6px;
+                            font-size: 12px;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            pointer-events: none;
+                            z-index: 1000;
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                        `;
+                        document.body.appendChild(legend);
+                    }
+
+                    const legend = document.getElementById('dynamicLegend');
+                    const tickerIndex = topTickers.indexOf(hoveredTicker);
+                    const tickerColor = colors[tickerIndex % colors.length];
+
+                    legend.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 12px; height: 12px; background: ${tickerColor}; border-radius: 2px;"></div>
+                            <span><strong>${hoveredTicker}</strong>: ${hoveredPercentage.toFixed(2)}%</span>
+                        </div>
+                    `;
+
+                    // Position legend near mouse
+                    legend.style.left = e.clientX + 10 + 'px';
+                    legend.style.top = e.clientY - 30 + 'px';
+                    legend.style.display = 'block';
+                } else if (legendElement) {
+                    legendElement.style.display = 'none';
+                }
+            });
+
+            // Hide legend when mouse leaves canvas
+            canvas.addEventListener('mouseleave', () => {
+                const legendElement = document.getElementById('dynamicLegend');
+                if (legendElement) {
+                    legendElement.style.display = 'none';
+                }
+            });
         })
         .catch((error) => {
             console.error('Error loading composition data:', error);
