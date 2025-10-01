@@ -1290,7 +1290,10 @@ function drawCompositionChart(ctx, chartManager) {
             });
 
             // Use the same updateLegend function for visual consistency
-            updateLegend(legendSeries, chartManager);
+            // Hide legend on mobile due to space constraints
+            if (!isMobile) {
+                updateLegend(legendSeries, chartManager);
+            }
         })
         .catch((error) => {
             console.error('Error loading composition data:', error);
