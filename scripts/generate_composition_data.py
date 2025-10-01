@@ -30,7 +30,7 @@ def calculate_daily_composition(holdings_df, prices_data):
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
-    for date in dates:
+    for i, date in enumerate(dates):
         date_str = date.strftime('%Y-%m-%d')
         daily_composition = {'date': date_str, 'total_value': 0}
 
@@ -38,6 +38,12 @@ def calculate_daily_composition(holdings_df, prices_data):
         ticker_values = {}
         for ticker in holdings_df.columns:
             shares = holdings_df.loc[date, ticker]
+            
+            # If shares is essentially zero (floating point error), use previous day's holdings
+            if abs(shares) < 0.01 and i > 0:
+                prev_date = dates[i-1]
+                shares = holdings_df.loc[prev_date, ticker]
+            
             if shares > 0:
                 # Use mapped ticker if available, otherwise use original
                 price_ticker = ticker_mapping.get(ticker, ticker)
