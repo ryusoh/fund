@@ -1036,31 +1036,23 @@ function drawCompositionChart(ctx, chartManager) {
             // Sort by current percentage (largest first)
             const sortedTickers = Object.entries(allHoldings).sort((a, b) => b[1] - a[1]);
 
-            // Show top 20 individual holdings
-            const topTickers = sortedTickers.slice(0, 20).map(([ticker]) => ticker);
+            // Show top holdings that sum to ~95% of portfolio
+            let cumulativePercentage = 0;
+            const topTickers = [];
 
-            // Normalize the top 20 holdings to sum to 100%
-            const normalizedData = {};
+            for (const [ticker, currentPercentage] of sortedTickers) {
+                topTickers.push(ticker);
+                cumulativePercentage += currentPercentage;
+                if (cumulativePercentage >= 95) {
+                    // Stop when we reach 95%
+                    break;
+                }
+            }
+
+            // Use original data without normalization
+            const chartData = {};
             topTickers.forEach((ticker) => {
-                normalizedData[ticker] = filteredIndices.map(
-                    (i) => data.composition[ticker][i] || 0
-                );
-            });
-
-            // Calculate normalization factor for each date
-            const normalizationFactors = filteredIndices.map((i) => {
-                let top20Sum = 0;
-                topTickers.forEach((ticker) => {
-                    top20Sum += data.composition[ticker][i] || 0;
-                });
-                return top20Sum > 0 ? 100 / top20Sum : 1;
-            });
-
-            // Apply normalization
-            topTickers.forEach((ticker) => {
-                normalizedData[ticker] = normalizedData[ticker].map(
-                    (value, index) => value * normalizationFactors[index]
-                );
+                chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
             });
 
             // Create color palette - more muted, professional colors
@@ -1115,7 +1107,7 @@ function drawCompositionChart(ctx, chartManager) {
 
             topTickers.forEach((ticker, tickerIndex) => {
                 const color = colors[tickerIndex % colors.length];
-                const values = normalizedData[ticker];
+                const values = chartData[ticker];
 
                 ctx.beginPath();
                 ctx.fillStyle = color + '80'; // Add transparency
