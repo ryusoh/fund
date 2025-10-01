@@ -452,7 +452,7 @@ const COMMAND_ALIASES = [
 
 const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
 
-const PLOT_SUBCOMMANDS = ['balance', 'performance'];
+const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition'];
 
 const HELP_SUBCOMMANDS = ['filter'];
 
@@ -685,8 +685,8 @@ export function initTerminal({
                         '                       Examples: stats transactions, s cagr, stats ratio\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
-                        '                       Subcommands: balance, performance\n' +
-                        '                       Examples: plot balance, p performance, plot balance 2023\n' +
+                        '                       Subcommands: balance, performance, composition\n' +
+                        '                       Examples: plot balance, p performance, plot composition 2023\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
@@ -810,7 +810,7 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        'Plot commands:\n  plot balance     - Show contribution/balance chart\n  plot performance - Show TWRR performance chart\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year] | [from <year>] | [<year1> to <year2>]\n       plot performance [year] | [from <year>] | [<year1> to <year2>]';
+                        'Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year] | [from <year>] | [<year1> to <year2>]\n       plot performance [year] | [from <year>] | [<year1> to <year2>]\n       plot composition [year] | [from <year>] | [<year1> to <year2>]';
                 } else {
                     const subcommand = args[0].toLowerCase();
                     dateRange = parseDateRange(args.slice(1));
@@ -889,6 +889,41 @@ export function initTerminal({
                                 result = `Showing performance chart for ${formatDateRange(dateRange)}.`;
                             }
                             break;
+                        case 'composition':
+                            const compSection = document.getElementById('runningAmountSection');
+                            const compTableContainer = document.querySelector(
+                                '.table-responsive-container'
+                            );
+
+                            // Check if composition chart is already active and visible
+                            const isCompositionActive =
+                                transactionState.activeChart === 'composition';
+                            const isCompChartVisible =
+                                compSection && !compSection.classList.contains('is-hidden');
+
+                            if (isCompositionActive && isCompChartVisible) {
+                                // Toggle off if composition chart is already visible
+                                setActiveChart(null);
+                                if (compSection) {
+                                    compSection.classList.add('is-hidden');
+                                }
+                                result = 'Hidden composition chart.';
+                            } else {
+                                // Show composition chart
+                                setActiveChart('composition');
+                                if (compSection) {
+                                    compSection.classList.remove('is-hidden');
+                                    chartManager.update(
+                                        transactionState.allTransactions,
+                                        transactionState.splitHistory
+                                    );
+                                }
+                                if (compTableContainer) {
+                                    compTableContainer.classList.add('is-hidden');
+                                }
+                                result = `Showing composition chart for ${formatDateRange(dateRange)}.`;
+                            }
+                            break;
                         default:
                             result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
                             break;
@@ -900,7 +935,8 @@ export function initTerminal({
                 if (
                     transactionState.activeChart &&
                     (transactionState.activeChart === 'contribution' ||
-                        transactionState.activeChart === 'performance')
+                        transactionState.activeChart === 'performance' ||
+                        transactionState.activeChart === 'composition')
                 ) {
                     const simplifiedDateRange = parseSimplifiedDateRange(command);
                     if (simplifiedDateRange.from || simplifiedDateRange.to) {
