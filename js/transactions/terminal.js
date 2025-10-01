@@ -14,11 +14,24 @@ function getStatsText() {
     return `\n-------------------- TRANSACTION STATS ---------------------\n  Total Transactions: ${stats.totalTransactions.toLocaleString()}\n  Buy Orders:         ${stats.totalBuys.toLocaleString()}\n  Sell Orders:        ${stats.totalSells.toLocaleString()}\n  Total Buy Amount:   ${formatCurrency(stats.totalBuyAmount)}\n  Total Sell Amount:  ${formatCurrency(stats.totalSellAmount)}\n  Net Amount:         ${formatCurrency(stats.netAmount)}\n  Realized Gain:      ${formatCurrency(stats.realizedGain)}\n`;
 }
 
-function getHoldingsText() {
+async function getHoldingsText() {
+    // Get share counts from transactions (for debugging)
     const holdings = calculateHoldings(
         transactionState.allTransactions,
         transactionState.splitHistory
     );
+
+    // Get authoritative cost basis from holdings_details.json
+    let holdingsDetails = {};
+    try {
+        const response = await fetch('../data/holdings_details.json');
+        holdingsDetails = await response.json();
+    } catch {
+        // console.warn(
+        //     'Could not load holdings_details.json, falling back to transaction-based calculation'
+        // );
+    }
+
     const activeHoldings = Object.entries(holdings).filter(
         ([, data]) => Math.abs(data.shares) > 0.001
     );
@@ -29,16 +42,40 @@ function getHoldingsText() {
     let table = '  Security        | Shares         | Avg Price      | Total Cost     \n';
     table += '  ----------------|----------------|----------------|----------------\n';
     activeHoldings
-        .sort((a, b) => b[1].totalCost - a[1].totalCost)
+        .sort((a, b) => {
+            // Sort by total cost, using authoritative data if available
+            const aCost = holdingsDetails[a[0]]
+                ? parseFloat(holdingsDetails[a[0]].shares) *
+                  parseFloat(holdingsDetails[a[0]].average_price)
+                : b[1].totalCost;
+            const bCost = holdingsDetails[b[0]]
+                ? parseFloat(holdingsDetails[b[0]].shares) *
+                  parseFloat(holdingsDetails[b[0]].average_price)
+                : b[1].totalCost;
+            return bCost - aCost;
+        })
         .forEach(([security, data]) => {
             const isNegative = data.shares < 0;
             const sec = `  ${security}${isNegative ? ' ⚠️' : ''}`.padEnd(17);
+
+            // Use transaction-based shares for debugging (normalized to 2 decimal places)
             const shares = data.shares
-                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 .padStart(14);
-            const avgPrice = `$${data.avgPrice.toFixed(2)}`.padStart(14);
-            const totalCost = formatCurrency(data.totalCost).padStart(14);
-            table += `${sec} | ${shares} | ${avgPrice} | ${totalCost}\n`;
+
+            // Use authoritative cost basis if available, otherwise fall back to transaction calculation
+            let avgPrice, totalCost;
+            if (holdingsDetails[security]) {
+                avgPrice = parseFloat(holdingsDetails[security].average_price);
+                totalCost = parseFloat(holdingsDetails[security].shares) * avgPrice;
+            } else {
+                avgPrice = data.avgPrice;
+                totalCost = data.totalCost;
+            }
+
+            const avgPriceStr = `$${avgPrice.toFixed(2)}`.padStart(14);
+            const totalCostStr = formatCurrency(totalCost).padStart(14);
+            table += `${sec} | ${shares} | ${avgPriceStr} | ${totalCostStr}\n`;
         });
     return table;
 }
@@ -658,7 +695,7 @@ export function initTerminal({
         input.setSelectionRange(newLength, newLength);
     }
 
-    function processCommand(command) {
+    async function processCommand(command) {
         if (!outputContainer) {
             return;
         }
@@ -783,7 +820,7 @@ export function initTerminal({
                             result = getStatsText();
                             break;
                         case 'holdings':
-                            result = getHoldingsText();
+                            result = await getHoldingsText();
                             break;
                         case 'cagr':
                             result = getCagrText();
@@ -995,7 +1032,7 @@ export function initTerminal({
         return { from: null, to: null };
     }
 
-    function handleTerminalInput(e) {
+    async function handleTerminalInput(e) {
         const input = e.target;
         switch (e.key) {
             case 'Enter':
@@ -1003,7 +1040,7 @@ export function initTerminal({
                     const command = input.value.trim();
                     pushCommandHistory(command);
                     resetHistoryIndex();
-                    processCommand(command);
+                    await processCommand(command);
                     input.value = '';
                 }
                 resetAutocompleteState();

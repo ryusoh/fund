@@ -55,7 +55,7 @@ function displayTransactions(transactions) {
             <td class="date">${formatDate(transaction.tradeDate)}</td>
             <td class="${orderTypeClass}">${transaction.orderType}</td>
             <td>${transaction.security}</td>
-            <td>${parseFloat(transaction.quantity).toLocaleString()}</td>
+            <td>${parseFloat(transaction.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             <td>$${parseFloat(transaction.price).toFixed(2)}</td>
             <td class="amount">${formatCurrency(transaction.netAmount)}</td>
             <td class="amount">${formatCurrency(runningTotals.portfolio)}</td>
