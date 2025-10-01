@@ -980,6 +980,187 @@ function drawPerformanceChart(ctx, chartManager) {
     updateLegend(legendSeries, chartManager);
 }
 
+function drawCompositionChart(ctx, chartManager) {
+    const canvas = ctx.canvas;
+    const emptyState = document.getElementById('runningAmountEmpty');
+
+    // Load composition data
+    fetch('../data/output/figures/composition.json')
+        .then((response) => response.json())
+        .then((data) => {
+            if (!data || !data.dates || data.dates.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            const isMobile = window.innerWidth <= 768;
+            const padding = isMobile
+                ? { top: 15, right: 20, bottom: 35, left: 50 }
+                : { top: 20, right: 30, bottom: 48, left: 70 };
+            const plotWidth = canvas.offsetWidth - padding.left - padding.right;
+            const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+
+            // Filter data by date range
+            const { chartDateRange } = transactionState;
+            const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+            const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+            const filteredIndices = [];
+            data.dates.forEach((dateStr, index) => {
+                const date = new Date(dateStr);
+                if ((!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+                    filteredIndices.push(index);
+                }
+            });
+
+            if (filteredIndices.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            const filteredDates = filteredIndices.map((i) => data.dates[i]);
+            const filteredTotalValues = filteredIndices.map((i) => data.total_values[i]);
+
+            // Get all holdings with non-zero values, ranked by most recent percentage
+            const allHoldings = {};
+            Object.keys(data.composition).forEach((ticker) => {
+                const values = filteredIndices.map((i) => data.composition[ticker][i] || 0);
+                const currentValue = values[values.length - 1]; // Most recent value
+                if (currentValue > 0) {
+                    // Include all holdings with current percentage > 0
+                    allHoldings[ticker] = currentValue;
+                }
+            });
+
+            // Sort by current percentage (largest first)
+            const sortedTickers = Object.entries(allHoldings).sort((a, b) => b[1] - a[1]);
+
+            // Show top 20 individual holdings
+            const topTickers = sortedTickers.slice(0, 20).map(([ticker]) => ticker);
+
+            // Normalize the top 20 holdings to sum to 100%
+            const normalizedData = {};
+            topTickers.forEach((ticker) => {
+                normalizedData[ticker] = filteredIndices.map(
+                    (i) => data.composition[ticker][i] || 0
+                );
+            });
+
+            // Calculate normalization factor for each date
+            const normalizationFactors = filteredIndices.map((i) => {
+                let top20Sum = 0;
+                topTickers.forEach((ticker) => {
+                    top20Sum += data.composition[ticker][i] || 0;
+                });
+                return top20Sum > 0 ? 100 / top20Sum : 1;
+            });
+
+            // Apply normalization
+            topTickers.forEach((ticker) => {
+                normalizedData[ticker] = normalizedData[ticker].map(
+                    (value, index) => value * normalizationFactors[index]
+                );
+            });
+
+            // Create color palette - more muted, professional colors
+            const colors = [
+                '#2E86AB',
+                '#A23B72',
+                '#F18F01',
+                '#C73E1D',
+                '#6A994E',
+                '#7209B7',
+                '#F77F00',
+                '#FCBF49',
+                '#06D6A0',
+                '#118AB2',
+                '#073B4C',
+                '#EF476F',
+                '#FFD166',
+                '#06D6A0',
+                '#118AB2',
+                '#8B5A2B',
+                '#4A5568',
+                '#E53E3E',
+                '#38A169',
+                '#D69E2E',
+            ];
+
+            // Set up scales
+            const minTime = new Date(filteredDates[0]).getTime();
+            const maxTime = new Date(filteredDates[filteredDates.length - 1]).getTime();
+            const xScale = (time) =>
+                padding.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
+            const yScale = (value) => padding.top + plotHeight - (value / 100) * plotHeight;
+
+            // Draw axes - always show 0-100% for composition
+            drawAxes(
+                ctx,
+                padding,
+                plotWidth,
+                plotHeight,
+                minTime,
+                maxTime,
+                0,
+                100,
+                xScale,
+                yScale,
+                (val) => `${val}%`,
+                false
+            );
+
+            // Draw stacked areas
+            let cumulativeValues = new Array(filteredDates.length).fill(0);
+
+            topTickers.forEach((ticker, tickerIndex) => {
+                const color = colors[tickerIndex % colors.length];
+                const values = normalizedData[ticker];
+
+                ctx.beginPath();
+                ctx.fillStyle = color + '80'; // Add transparency
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+
+                // Draw area
+                filteredDates.forEach((dateStr, index) => {
+                    const x = xScale(new Date(dateStr).getTime());
+                    const y = yScale(cumulativeValues[index] + values[index]);
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+
+                // Close the area
+                for (let i = filteredDates.length - 1; i >= 0; i--) {
+                    const x = xScale(new Date(filteredDates[i]).getTime());
+                    const y = yScale(cumulativeValues[i]);
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Update cumulative values
+                cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
+            });
+
+            // Draw legend
+            const legendSeries = topTickers.map((ticker, index) => ({
+                key: ticker,
+                name: ticker,
+                color: colors[index % colors.length],
+            }));
+            updateLegend(legendSeries, chartManager);
+        })
+        .catch((error) => {
+            console.error('Error loading composition data:', error);
+            emptyState.style.display = 'block';
+        });
+}
+
 // --- Main Chart Manager ---
 
 export function createChartManager({ buildRunningAmountSeries, buildPortfolioSeries }) {
@@ -1015,6 +1196,8 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
 
                 if (transactionState.activeChart === 'performance') {
                     drawPerformanceChart(ctx, this);
+                } else if (transactionState.activeChart === 'composition') {
+                    drawCompositionChart(ctx, this);
                 } else {
                     drawContributionChart(ctx, this);
                 }
