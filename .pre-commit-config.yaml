@@ -8,7 +8,8 @@ exclude: |
     ^coverage/|
     ^dist/|
     ^build/|
-    ^data/historical_prices\\.json$
+    ^data/historical_prices\\.json$|
+    ^ai/status/
 
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
