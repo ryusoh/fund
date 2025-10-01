@@ -45,47 +45,50 @@ function updateLegend(series, chartManager) {
         item.appendChild(swatch);
         item.appendChild(label);
 
-        item.addEventListener('click', () => {
-            // Special handling for performance chart
-            if (transactionState.activeChart === 'performance') {
-                // LZ (portfolio) should always be visible - no toggle
-                if (s.key === '^LZ') {
-                    return; // Do nothing for portfolio
-                }
+        // Skip click events for composition chart (non-interactive legend)
+        if (transactionState.activeChart !== 'composition') {
+            item.addEventListener('click', () => {
+                // Special handling for performance chart
+                if (transactionState.activeChart === 'performance') {
+                    // LZ (portfolio) should always be visible - no toggle
+                    if (s.key === '^LZ') {
+                        return; // Do nothing for portfolio
+                    }
 
-                // Define all possible benchmarks (excluding portfolio)
-                const benchmarks = ['^GSPC', '^IXIC', '^WORLD', '^DJI'];
+                    // Define all possible benchmarks (excluding portfolio)
+                    const benchmarks = ['^GSPC', '^IXIC', '^WORLD', '^DJI'];
 
-                if (benchmarks.includes(s.key)) {
-                    const disabled = item.classList.toggle('legend-disabled');
-                    const isVisible = !disabled;
+                    if (benchmarks.includes(s.key)) {
+                        const disabled = item.classList.toggle('legend-disabled');
+                        const isVisible = !disabled;
 
-                    // If clicking a benchmark, hide other benchmarks
-                    benchmarks.forEach((benchmark) => {
-                        if (benchmark !== s.key) {
-                            transactionState.chartVisibility[benchmark] = false;
-                            // Update legend appearance
-                            const otherItem = legendContainer.querySelector(
-                                `[data-series="${benchmark}"]`
-                            );
-                            if (otherItem) {
-                                otherItem.classList.add('legend-disabled');
+                        // If clicking a benchmark, hide other benchmarks
+                        benchmarks.forEach((benchmark) => {
+                            if (benchmark !== s.key) {
+                                transactionState.chartVisibility[benchmark] = false;
+                                // Update legend appearance
+                                const otherItem = legendContainer.querySelector(
+                                    `[data-series="${benchmark}"]`
+                                );
+                                if (otherItem) {
+                                    otherItem.classList.add('legend-disabled');
+                                }
                             }
-                        }
-                    });
-                    // Set the clicked benchmark visibility
-                    transactionState.chartVisibility[s.key] = isVisible;
+                        });
+                        // Set the clicked benchmark visibility
+                        transactionState.chartVisibility[s.key] = isVisible;
+                    }
+                } else {
+                    // Normal behavior for other charts
+                    const disabled = item.classList.toggle('legend-disabled');
+                    setChartVisibility(s.key, !disabled);
                 }
-            } else {
-                // Normal behavior for other charts
-                const disabled = item.classList.toggle('legend-disabled');
-                setChartVisibility(s.key, !disabled);
-            }
 
-            if (typeof chartManager.redraw === 'function') {
-                chartManager.redraw();
-            }
-        });
+                if (typeof chartManager.redraw === 'function') {
+                    chartManager.redraw();
+                }
+            });
+        } // End of conditional for non-composition charts
 
         if (transactionState.chartVisibility[s.key] === false) {
             item.classList.add('legend-disabled');
