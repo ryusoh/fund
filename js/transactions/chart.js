@@ -1319,7 +1319,7 @@ function drawCompositionChart(ctx, chartManager) {
                 const values = chartData[ticker];
 
                 ctx.beginPath();
-                ctx.fillStyle = color + '59'; // Add 35% opacity
+                ctx.fillStyle = color + '80'; // Add 50% opacity
                 ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Half opaque gray
                 ctx.lineWidth = 1;
 
