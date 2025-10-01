@@ -1026,14 +1026,14 @@ function drawCompositionChart(ctx, chartManager) {
             const allHoldings = {};
             Object.keys(data.composition).forEach((ticker) => {
                 const values = filteredIndices.map((i) => data.composition[ticker][i] || 0);
-                const maxValue = Math.max(...values); // Maximum percentage during period
-                if (maxValue > 0) {
-                    // Include all holdings that had any percentage > 0
-                    allHoldings[ticker] = maxValue; // Rank by maximum percentage
+                const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length; // Average percentage
+                if (avgValue > 0.1) {
+                    // Include holdings with average > 0.1%
+                    allHoldings[ticker] = avgValue; // Rank by average percentage
                 }
             });
 
-            // Sort by maximum percentage during period (largest first)
+            // Sort by average percentage during period (largest first)
             const sortedTickers = Object.entries(allHoldings).sort((a, b) => b[1] - a[1]);
 
             // Show top holdings that sum to ~95% of portfolio
