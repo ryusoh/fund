@@ -1022,13 +1022,13 @@ function drawCompositionChart(ctx, chartManager) {
             const filteredDates = filteredIndices.map((i) => data.dates[i]);
             const filteredTotalValues = filteredIndices.map((i) => data.total_values[i]);
 
-            // Get all holdings that had any percentage during the filtered period
+            // Get ALL holdings that had any percentage during the filtered period
             const allHoldings = {};
             Object.keys(data.composition).forEach((ticker) => {
                 const values = filteredIndices.map((i) => data.composition[ticker][i] || 0);
                 const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length; // Average percentage
-                if (avgValue > 0.1) {
-                    // Include holdings with average > 0.1%
+                if (avgValue > 0) {
+                    // Include ALL holdings with any percentage > 0
                     allHoldings[ticker] = avgValue; // Rank by average percentage
                 }
             });
@@ -1036,18 +1036,8 @@ function drawCompositionChart(ctx, chartManager) {
             // Sort by average percentage during period (largest first)
             const sortedTickers = Object.entries(allHoldings).sort((a, b) => b[1] - a[1]);
 
-            // Show top holdings that sum to ~95% of portfolio
-            let cumulativePercentage = 0;
-            const topTickers = [];
-
-            for (const [ticker, currentPercentage] of sortedTickers) {
-                topTickers.push(ticker);
-                cumulativePercentage += currentPercentage;
-                if (cumulativePercentage >= 95) {
-                    // Stop when we reach 95%
-                    break;
-                }
-            }
+            // Show ALL holdings (no limit)
+            const topTickers = sortedTickers.map(([ticker]) => ticker);
 
             // Use original data without normalization
             const chartData = {};
@@ -1055,7 +1045,7 @@ function drawCompositionChart(ctx, chartManager) {
                 chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
             });
 
-            // Create color palette - more muted, professional colors
+            // Create expanded color palette for all holdings
             const colors = [
                 '#2E86AB',
                 '#A23B72',
@@ -1070,13 +1060,48 @@ function drawCompositionChart(ctx, chartManager) {
                 '#073B4C',
                 '#EF476F',
                 '#FFD166',
-                '#06D6A0',
-                '#118AB2',
                 '#8B5A2B',
                 '#4A5568',
                 '#E53E3E',
                 '#38A169',
                 '#D69E2E',
+                '#9F7AEA',
+                '#ED8936',
+                '#48BB78',
+                '#38B2AC',
+                '#4299E1',
+                '#ECC94B',
+                '#F56565',
+                '#68D391',
+                '#4FD1C7',
+                '#63B3ED',
+                '#F6AD55',
+                '#FC8181',
+                '#9AE6B4',
+                '#81E6D9',
+                '#90CDF4',
+                '#FBD38D',
+                '#FEB2B2',
+                '#C6F6D5',
+                '#B2F5EA',
+                '#BEE3F8',
+                '#FED7AA',
+                '#FED7D7',
+                '#E6FFFA',
+                '#EBF8FF',
+                '#FFFAF0',
+                '#FFF5F5',
+                '#F7FAFC',
+                '#EDF2F7',
+                '#E2E8F0',
+                '#CBD5E0',
+                '#A0AEC0',
+                '#718096',
+                '#4A5568',
+                '#2D3748',
+                '#1A202C',
+                '#171923',
+                '#0D1117',
             ];
 
             // Set up scales
