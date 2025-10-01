@@ -695,13 +695,13 @@ export function initTerminal({
                         '                       Use "help filter" for filter commands\n\n' +
                         'Hint: Press Tab to auto-complete command names and subcommands\n\n' +
                         'Any other input is treated as a filter for the transaction table\n' +
-                        "When a chart is active, you can use simplified date commands like '2023', 'from:2023', '2020:2023'";
+                        "When a chart is active, you can use simplified date commands like '2023', 'from:2023' (or 'f:2023'), '2020:2023'";
                 } else {
                     const subcommand = args[0].toLowerCase();
                     switch (subcommand) {
                         case 'filter':
                             result =
-                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nAny text not part of a command is used for a general text search.';
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY          - Filter year range (e.g., 2022:2023)\n\nAny text not part of a command is used for a general text search.';
                             break;
                         default:
                             result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;
@@ -974,7 +974,7 @@ export function initTerminal({
         } else if (parts.length === 2) {
             const type = parts[0];
             const value = parts[1];
-            if (type === 'from') {
+            if (type === 'from' || type === 'f') {
                 const year = parseInt(value, 10);
                 if (!isNaN(year)) {
                     return { from: `${year}-01-01`, to: null };
