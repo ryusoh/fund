@@ -1314,7 +1314,9 @@ function drawCompositionChart(ctx, chartManager) {
             let cumulativeValues = new Array(filteredDates.length).fill(0);
 
             topTickers.forEach((ticker, tickerIndex) => {
-                const color = colors[tickerIndex % colors.length];
+                // Reverse color assignment: largest holdings get bluer colors (shorter wavelengths)
+                const colorIndex = (topTickers.length - 1 - tickerIndex) % colors.length;
+                const color = colors[colorIndex];
                 const values = chartData[ticker];
 
                 ctx.beginPath();
@@ -1410,7 +1412,9 @@ function drawCompositionChart(ctx, chartManager) {
 
                     const legend = document.getElementById('dynamicLegend');
                     const tickerIndex = topTickers.indexOf(hoveredTicker);
-                    const tickerColor = colors[tickerIndex % colors.length];
+                    // Reverse color assignment to match stacked areas: largest holdings get bluer colors
+                    const colorIndex = (topTickers.length - 1 - tickerIndex) % colors.length;
+                    const tickerColor = colors[colorIndex];
 
                     // Fix BRKB ticker symbol display in tooltip
                     const displayTicker = hoveredTicker === 'BRKB' ? 'BRK-B' : hoveredTicker;
@@ -1452,12 +1456,14 @@ function drawCompositionChart(ctx, chartManager) {
             // Create legend series in same format as other charts
             const legendSeries = latestHoldings.map((holding, index) => {
                 const tickerIndex = topTickers.indexOf(holding.ticker);
+                // Reverse color assignment to match stacked areas: largest holdings get bluer colors
+                const colorIndex = (topTickers.length - 1 - tickerIndex) % colors.length;
                 // Fix BRKB ticker symbol display
                 const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
                 return {
                     key: holding.ticker,
                     name: displayName,
-                    color: colors[tickerIndex % colors.length],
+                    color: colors[colorIndex],
                 };
             });
 
