@@ -1125,7 +1125,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#C0F8FF',
                 '#E0FCFF',
                 '#F0FDFF',
-                '#E1F5FE',
                 '#B3E5FC',
                 '#81D4FA',
                 '#4FC3F7',
@@ -1138,10 +1137,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#4DD0E1',
                 '#80DEEA',
                 '#B2EBF2',
-                '#E0F2F1',
-                '#E8F5E8',
-                '#F1F8E9',
-                '#F9FBE7',
                 '#00BCD4',
                 '#26C6DA',
                 '#4DD0E1',
@@ -1160,10 +1155,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#4DD0E1',
                 '#80DEEA',
                 '#B2EBF2',
-                '#E0F2F1',
-                '#E8F5E8',
-                '#F1F8E9',
-                '#F9FBE7',
 
                 // Green - vibrant greens
                 '#166534',
@@ -1194,10 +1185,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#81C784',
                 '#A5D6A7',
                 '#C8E6C9',
-                '#E8F5E8',
-                '#F1F8E9',
-                '#F9FBE7',
-                '#FFFDE7',
 
                 // Deep green (lowest weight) - darkest, most saturated greens
                 '#0F3D2A',
