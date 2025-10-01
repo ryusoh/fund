@@ -1060,7 +1060,7 @@ function drawCompositionChart(ctx, chartManager) {
                 chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
             });
 
-            // Create granular blue spectrum palette (Steve Jobs inspired)
+            // Create blue-to-green spectrum palette (Steve Jobs inspired)
             const colors = [
                 // Deep navy blues
                 '#0F172A',
@@ -1098,7 +1098,7 @@ function drawCompositionChart(ctx, chartManager) {
                 '#E0F2FE',
                 '#F0F9FF',
 
-                // Sky blues
+                // Sky blues transitioning to teal
                 '#164E63',
                 '#155E75',
                 '#0E7490',
@@ -1110,7 +1110,43 @@ function drawCompositionChart(ctx, chartManager) {
                 '#D1FAE5',
                 '#ECFDF5',
 
-                // Steel blues
+                // Teal spectrum
+                '#0D9488',
+                '#14B8A6',
+                '#2DD4BF',
+                '#5EEAD4',
+                '#99F6E4',
+                '#CCFBF1',
+                '#F0FDFA',
+                '#F0FDF4',
+                '#F7FEE7',
+                '#FEFCE8',
+
+                // Green spectrum
+                '#166534',
+                '#16A34A',
+                '#22C55E',
+                '#4ADE80',
+                '#86EFAC',
+                '#BBF7D0',
+                '#DCFCE7',
+                '#F0FDF4',
+                '#F7FEE7',
+                '#FEFCE8',
+
+                // Forest greens
+                '#14532D',
+                '#15803D',
+                '#22C55E',
+                '#4ADE80',
+                '#86EFAC',
+                '#BBF7D0',
+                '#DCFCE7',
+                '#F0FDF4',
+                '#F7FEE7',
+                '#FEFCE8',
+
+                // Steel blues and grays
                 '#1F2937',
                 '#374151',
                 '#4B5563',
@@ -1122,29 +1158,22 @@ function drawCompositionChart(ctx, chartManager) {
                 '#F9FAFB',
                 '#FFFFFF',
 
-                // Additional blue variations
+                // Additional blue-green variations
                 '#1E3A8A',
                 '#1E40AF',
                 '#2563EB',
                 '#3B82F6',
                 '#60A5FA',
-                '#93C5FD',
-                '#BFDBFE',
-                '#DBEAFE',
-                '#EFF6FF',
-                '#F0F9FF',
-
-                // More blue tones
-                '#0C4A6E',
-                '#075985',
-                '#0369A1',
-                '#0284C7',
-                '#0EA5E9',
-                '#38BDF8',
-                '#7DD3FC',
-                '#BAE6FD',
-                '#E0F2FE',
-                '#F0F9FF',
+                '#0D9488',
+                '#14B8A6',
+                '#2DD4BF',
+                '#5EEAD4',
+                '#99F6E4',
+                '#166534',
+                '#16A34A',
+                '#22C55E',
+                '#4ADE80',
+                '#86EFAC',
             ];
 
             // Set up scales
