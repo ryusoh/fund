@@ -1026,7 +1026,7 @@ function drawCompositionChart(ctx, chartManager) {
             }
 
             const filteredDates = filteredIndices.map((i) => data.dates[i]);
-            const filteredTotalValues = filteredIndices.map((i) => data.total_values[i]);
+            // const filteredTotalValues = filteredIndices.map((i) => data.total_values[i]);
 
             // Get ALL holdings that had any percentage during the filtered period
             const allHoldings = {};
@@ -1452,7 +1452,7 @@ function drawCompositionChart(ctx, chartManager) {
                 .slice(0, 6);
 
             // Create legend series in same format as other charts
-            const legendSeries = latestHoldings.map((holding, index) => {
+            const legendSeries = latestHoldings.map((holding) => {
                 const tickerIndex = topTickers.indexOf(holding.ticker);
                 // Largest holdings get bluer colors - sortedTickers already puts largest first
                 // Fix BRKB ticker symbol display
@@ -1470,8 +1470,8 @@ function drawCompositionChart(ctx, chartManager) {
                 updateLegend(legendSeries, chartManager);
             }
         })
-        .catch((error) => {
-            console.error('Error loading composition data:', error);
+        .catch(() => {
+            // console.error('Error loading composition data:', error);
             emptyState.style.display = 'block';
         });
 }
