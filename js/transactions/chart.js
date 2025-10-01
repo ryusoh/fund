@@ -1264,7 +1264,7 @@ function drawCompositionChart(ctx, chartManager) {
                 }
             });
 
-            // Show latest 6 largest holdings summary at bottom
+            // Show latest 6 largest holdings in proper legend format
             const latestIndex = filteredDates.length - 1;
             const latestHoldings = topTickers
                 .map((ticker) => ({
@@ -1275,37 +1275,18 @@ function drawCompositionChart(ctx, chartManager) {
                 .sort((a, b) => b.percentage - a.percentage)
                 .slice(0, 6);
 
-            // Draw summary at bottom of chart
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(padding.left, padding.top + plotHeight + 5, plotWidth, 25);
-
-            ctx.fillStyle = 'white';
-            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'left';
-
-            let xOffset = padding.left + 10;
-            latestHoldings.forEach((holding, index) => {
+            // Create legend series in same format as other charts
+            const legendSeries = latestHoldings.map((holding, index) => {
                 const tickerIndex = topTickers.indexOf(holding.ticker);
-                const color = colors[tickerIndex % colors.length];
-
-                // Draw color indicator
-                ctx.fillStyle = color;
-                ctx.fillRect(xOffset, padding.top + plotHeight + 10, 8, 8);
-
-                // Draw ticker and percentage
-                ctx.fillStyle = 'white';
-                ctx.fillText(
-                    `${holding.ticker}: ${holding.percentage.toFixed(1)}%`,
-                    xOffset + 12,
-                    padding.top + plotHeight + 17
-                );
-
-                // Calculate next position
-                const textWidth = ctx.measureText(
-                    `${holding.ticker}: ${holding.percentage.toFixed(1)}%`
-                ).width;
-                xOffset += textWidth + 25; // Add spacing between items
+                return {
+                    key: holding.ticker,
+                    name: `${holding.ticker}: ${holding.percentage.toFixed(1)}%`,
+                    color: colors[tickerIndex % colors.length],
+                };
             });
+
+            // Use the same updateLegend function for visual consistency
+            updateLegend(legendSeries, chartManager);
         })
         .catch((error) => {
             console.error('Error loading composition data:', error);
