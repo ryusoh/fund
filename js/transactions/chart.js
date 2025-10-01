@@ -1240,10 +1240,12 @@ function drawCompositionChart(ctx, chartManager) {
                     const tickerIndex = topTickers.indexOf(hoveredTicker);
                     const tickerColor = colors[tickerIndex % colors.length];
 
+                    // Fix BRKB ticker symbol display in tooltip
+                    const displayTicker = hoveredTicker === 'BRKB' ? 'BRK-B' : hoveredTicker;
                     legend.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div style="width: 12px; height: 12px; background: ${tickerColor}; border-radius: 2px;"></div>
-                            <span><strong>${hoveredTicker}</strong>: ${hoveredPercentage.toFixed(2)}%</span>
+                            <span><strong>${displayTicker}</strong>: ${hoveredPercentage.toFixed(2)}%</span>
                         </div>
                     `;
 
@@ -1278,9 +1280,11 @@ function drawCompositionChart(ctx, chartManager) {
             // Create legend series in same format as other charts
             const legendSeries = latestHoldings.map((holding, index) => {
                 const tickerIndex = topTickers.indexOf(holding.ticker);
+                // Fix BRKB ticker symbol display
+                const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
                 return {
                     key: holding.ticker,
-                    name: `${holding.ticker}: ${holding.percentage.toFixed(1)}%`,
+                    name: displayName,
                     color: colors[tickerIndex % colors.length],
                 };
             });
