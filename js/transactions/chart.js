@@ -1094,8 +1094,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#42A5F5',
                 '#64B5F6',
                 '#90CAF9',
-                '#BBDEFB',
-                '#E3F2FD',
 
                 // Blue - medium blues
                 '#164E63',
@@ -1111,8 +1109,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#5DD3FC',
                 '#7DE8FD',
                 '#9DF6FE',
-                '#C0F8FF',
-                '#E0FCFF',
 
                 // Light blue - vibrant lighter blues (avoiding very pale tones)
                 '#1A5F7A',
@@ -1122,10 +1118,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#5DD3FC',
                 '#7DE8FD',
                 '#9DF6FE',
-                '#C0F8FF',
-                '#E0FCFF',
-                '#F0FDFF',
-                '#B3E5FC',
                 '#81D4FA',
                 '#4FC3F7',
                 '#29B6F6',
@@ -1136,12 +1128,10 @@ function drawCompositionChart(ctx, chartManager) {
                 '#26C6DA',
                 '#4DD0E1',
                 '#80DEEA',
-                '#B2EBF2',
                 '#00BCD4',
                 '#26C6DA',
                 '#4DD0E1',
                 '#80DEEA',
-                '#B2EBF2',
 
                 // Cyan - blue-green transition (avoiding pale tones)
                 '#0D7377',
@@ -1154,7 +1144,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#26C6DA',
                 '#4DD0E1',
                 '#80DEEA',
-                '#B2EBF2',
 
                 // Green - vibrant greens
                 '#166534',
@@ -1184,7 +1173,6 @@ function drawCompositionChart(ctx, chartManager) {
                 '#66BB6A',
                 '#81C784',
                 '#A5D6A7',
-                '#C8E6C9',
 
                 // Deep green (lowest weight) - darkest, most saturated greens
                 '#0F3D2A',
