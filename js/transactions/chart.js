@@ -1122,7 +1122,7 @@ function drawCompositionChart(ctx, chartManager) {
                 padding.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
             const yScale = (value) => padding.top + plotHeight - (value / 100) * plotHeight;
 
-            // Draw axes - always show 0-100% for composition
+            // Draw axes - always show 0-100% for composition with more tick marks
             drawAxes(
                 ctx,
                 padding,
@@ -1135,7 +1135,7 @@ function drawCompositionChart(ctx, chartManager) {
                 xScale,
                 yScale,
                 (val) => `${val}%`,
-                false
+                true // Use performance chart tick generation for more y-axis values
             );
 
             // Draw stacked areas
