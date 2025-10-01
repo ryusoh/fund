@@ -984,6 +984,12 @@ function drawCompositionChart(ctx, chartManager) {
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
 
+    // Clear any existing legend
+    const legendContainer = document.querySelector('.chart-legend');
+    if (legendContainer) {
+        legendContainer.innerHTML = '';
+    }
+
     // Load composition data
     fetch('../data/output/figures/composition.json')
         .then((response) => response.json())
