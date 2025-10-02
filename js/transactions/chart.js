@@ -1347,6 +1347,11 @@ function drawCompositionChart(ctx, chartManager) {
 
             // Add hover detection for dynamic legend
             canvas.addEventListener('mousemove', (e) => {
+                // Only show composition hover when composition chart is active
+                if (transactionState.activeChart !== 'composition') {
+                    return;
+                }
+                
                 const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -1431,6 +1436,11 @@ function drawCompositionChart(ctx, chartManager) {
 
             // Hide legend when mouse leaves canvas
             canvas.addEventListener('mouseleave', () => {
+                // Only hide composition legend when composition chart is active
+                if (transactionState.activeChart !== 'composition') {
+                    return;
+                }
+                
                 const legendElement = document.getElementById('dynamicLegend');
                 if (legendElement) {
                     legendElement.style.display = 'none';
