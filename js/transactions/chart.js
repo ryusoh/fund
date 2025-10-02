@@ -1351,7 +1351,7 @@ function drawCompositionChart(ctx, chartManager) {
                 if (transactionState.activeChart !== 'composition') {
                     return;
                 }
-                
+
                 const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -1440,7 +1440,7 @@ function drawCompositionChart(ctx, chartManager) {
                 if (transactionState.activeChart !== 'composition') {
                     return;
                 }
-                
+
                 const legendElement = document.getElementById('dynamicLegend');
                 if (legendElement) {
                     legendElement.style.display = 'none';
