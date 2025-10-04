@@ -16,8 +16,8 @@ repos:
       rev: v5.0.0
       hooks:
           - id: end-of-file-fixer
-            # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html|json)$
+            # Do not touch generated data files or AI status files
+            exclude: ^data/.*\.(csv|html|json)$|^ai/status/
           - id: trailing-whitespace
             # Do not touch generated data files
             exclude: ^data/.*\.(csv|html|json)$
