@@ -16,3 +16,4 @@ venv/
 .pre-commit-config.yaml
 **/*.min.js
 data/
+**/ai/status/**
