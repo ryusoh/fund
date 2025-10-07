@@ -2,8 +2,8 @@ name: Prepare Frontend Data
 
 on:
     schedule:
-        # Runs at 09:30 UTC every day, after the TWRR refresh
-        - cron: '30 9 * * *'
+        # Runs at 09:45 UTC every day, after the TWRR refresh
+        - cron: '45 9 * * *'
     workflow_dispatch: # Allows manual triggering
 
 permissions:
