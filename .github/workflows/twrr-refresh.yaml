@@ -40,6 +40,6 @@ jobs:
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
                   else
-                    git commit -m "Automated TWRR refresh"
+                    git commit -m "chore(data): TWRRを自動更新 [skip ci]"
                     git push
                   fi
