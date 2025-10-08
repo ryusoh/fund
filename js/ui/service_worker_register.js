@@ -1,7 +1,11 @@
 (function () {
     try {
         // Skip service worker registration on local development addresses
-        const hostname = window.location.hostname;
+        const forcedHostname =
+            typeof window !== 'undefined' && typeof window.__SW_FORCE_SW_HOSTNAME__ === 'string'
+                ? window.__SW_FORCE_SW_HOSTNAME__
+                : null;
+        const hostname = forcedHostname || window.location.hostname;
         const isLocalDev =
             hostname === 'localhost' ||
             hostname === '127.0.0.1' ||

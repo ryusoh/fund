@@ -2,9 +2,12 @@ describe('service_worker_register.js', () => {
     const SCRIPT_PATH = '@ui/service_worker_register.js';
 
     let originalAddEventListener;
+    let hostnameOverride;
 
     beforeEach(() => {
         jest.resetModules();
+        hostnameOverride = 'example.com';
+        window.__SW_FORCE_SW_HOSTNAME__ = hostnameOverride;
         originalAddEventListener = window.addEventListener;
         Object.defineProperty(window.navigator, 'serviceWorker', {
             configurable: true,
@@ -19,6 +22,7 @@ describe('service_worker_register.js', () => {
         jest.resetModules();
         delete document.currentScript;
         delete window.navigator.serviceWorker;
+        delete window.__SW_FORCE_SW_HOSTNAME__;
     });
 
     function withCurrentScript(attributes, callback) {
