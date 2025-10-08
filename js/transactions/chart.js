@@ -25,6 +25,7 @@ const glowAnimator = createGlowTrailAnimator(ANIMATED_LINE_SETTINGS);
 const isAnimationEnabled = (chartKey) => glowAnimator.isEnabledFor(chartKey);
 
 let performanceLegendDirty = true;
+let contributionLegendDirty = true;
 
 function stopPerformanceAnimation() {
     glowAnimator.stop('performance');
@@ -142,16 +143,9 @@ function updateLegend(series, chartManager) {
                     }
                 } else {
                     // Normal behavior for other charts (like Contribution)
-                    const isCurrentlyVisible = transactionState.chartVisibility[s.key] !== false;
-                    const newVisibility = !isCurrentlyVisible;
-                    setChartVisibility(s.key, newVisibility);
-
-                    // Manually update class for immediate feedback, as the legend is rebuilt on redraw
-                    if (newVisibility) {
-                        item.classList.remove('legend-disabled');
-                    } else {
-                        item.classList.add('legend-disabled');
-                    }
+                    const isDisabled = item.classList.toggle('legend-disabled');
+                    setChartVisibility(s.key, !isDisabled);
+                    contributionLegendDirty = true; // Set flag to redraw legend
                 }
 
                 // Redraw the chart to apply visibility changes
@@ -909,14 +903,16 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         );
     }
 
-    // Update Legend
-    const legendSeries = [
-        { key: 'contribution', name: 'Contribution', color: colors.contribution },
-        { key: 'balance', name: 'Balance', color: colors.portfolio },
-        { key: 'buy', name: 'Buy', color: colors.buy },
-        { key: 'sell', name: 'Sell', color: colors.sell },
-    ];
-    updateLegend(legendSeries, chartManager);
+    if (contributionLegendDirty) {
+        const legendSeries = [
+            { key: 'contribution', name: 'Contribution', color: colors.contribution },
+            { key: 'balance', name: 'Balance', color: colors.portfolio },
+            { key: 'buy', name: 'Buy', color: colors.buy },
+            { key: 'sell', name: 'Sell', color: colors.sell },
+        ];
+        updateLegend(legendSeries, chartManager);
+        contributionLegendDirty = false;
+    }
 
     if (contributionAnimationEnabled && hasAnimatedSeries) {
         scheduleContributionAnimation(chartManager);
@@ -1770,6 +1766,7 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
                 setPortfolioSeries(portfolioSeries);
             }
             performanceLegendDirty = true;
+            contributionLegendDirty = true;
             this.redraw();
         },
 
