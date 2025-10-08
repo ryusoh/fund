@@ -37,11 +37,17 @@ BENCHMARKS = {
     '^GSPC': '^GSPC',
     '^IXIC': '^IXIC',
     '^DJI': '^DJI',
+    '^SSE': '000001.SS',
+    '^HSI': '^HSI',
+    '^N225': '^N225',
 }
 BENCHMARK_STYLES = {
-    '^GSPC': {'color': '#ef553b', 'dash': 'dash'},
-    '^IXIC': {'color': '#00cc96', 'dash': 'dot'},
-    '^DJI': {'color': '#ab63fa', 'dash': 'dashdot'},
+    '^GSPC': {'color': '#64b5f6', 'dash': 'dash'},
+    '^IXIC': {'color': '#74c0fc', 'dash': 'dot'},
+    '^DJI': {'color': '#6aaefc', 'dash': 'dashdot'},
+    '^SSE': {'color': '#5da9f6', 'dash': 'longdash'},
+    '^HSI': {'color': '#7ab8ff', 'dash': 'longdashdot'},
+    '^N225': {'color': '#89c2ff', 'dash': 'solid'},
 }
 
 

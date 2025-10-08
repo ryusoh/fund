@@ -8,13 +8,26 @@ import { formatCurrencyCompact } from './utils.js';
 
 // --- Helper Functions ---
 
+const BENCHMARK_GRADIENTS = {
+    '^LZ': ['#fb8500', '#ffef2f'],
+    '^GSPC': ['#0d3b66', '#64b5f6'],
+    '^IXIC': ['#0f4c81', '#74c0fc'],
+    '^DJI': ['#123c69', '#6aaefc'],
+    '^SSE': ['#0e487a', '#5da9f6'],
+    '^HSI': ['#0d4977', '#7ab8ff'],
+    '^N225': ['#0b3d63', '#89c2ff'],
+};
+
 function getChartColors(rootStyles) {
     return {
-        portfolio: rootStyles.getPropertyValue('--portfolio-line').trim() || '#666666',
+        portfolio: rootStyles.getPropertyValue('--portfolio-line').trim() || '#ffef2f',
         contribution: rootStyles.getPropertyValue('--contribution-line').trim() || '#b3b3b3',
         sp500: rootStyles.getPropertyValue('--sp500-line').trim() || '#ef553b',
         nasdaq: rootStyles.getPropertyValue('--nasdaq-line').trim() || '#00d5ff',
-        world: rootStyles.getPropertyValue('--world-line').trim() || '#e8a824',
+        dji: rootStyles.getPropertyValue('--dji-line').trim() || '#ab63fa',
+        sse: rootStyles.getPropertyValue('--sse-line').trim() || '#ffa15a',
+        hsi: rootStyles.getPropertyValue('--hsi-line').trim() || '#19d3f3',
+        nikkei: rootStyles.getPropertyValue('--n225-line').trim() || '#ff6692',
         buy: 'rgba(48, 209, 88, 0.8)',
         sell: 'rgba(255, 69, 58, 0.8)',
         buyFill: 'rgba(48, 209, 88, 0.45)',
@@ -37,7 +50,14 @@ function updateLegend(series, chartManager) {
 
         const swatch = document.createElement('span');
         swatch.className = 'legend-swatch';
-        swatch.style.backgroundColor = s.color;
+        if (s.gradient) {
+            swatch.style.background = s.gradient;
+            swatch.style.border = 'none';
+        } else {
+            swatch.style.background = 'none';
+            swatch.style.backgroundColor = s.color;
+            swatch.style.border = '';
+        }
 
         const label = document.createElement('span');
         label.textContent = s.name;
@@ -56,7 +76,7 @@ function updateLegend(series, chartManager) {
                     }
 
                     // Define all possible benchmarks (excluding portfolio)
-                    const benchmarks = ['^GSPC', '^IXIC', '^WORLD', '^DJI'];
+                    const benchmarks = ['^GSPC', '^IXIC', '^DJI', '^SSE', '^HSI', '^N225'];
 
                     if (benchmarks.includes(s.key)) {
                         const disabled = item.classList.toggle('legend-disabled');
@@ -875,6 +895,9 @@ function drawPerformanceChart(ctx, chartManager) {
     }
 
     const allPoints = normalizedSeriesToDraw.flatMap((s) => s.data);
+    if (allPoints.length === 0) {
+        return;
+    }
     const allTimes = allPoints.map((p) => new Date(p.date).getTime());
     const minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
@@ -882,17 +905,10 @@ function drawPerformanceChart(ctx, chartManager) {
     const allValues = allPoints.map((p) => p.value);
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
-
-    // When filtering (normalized data), use flexible y-axis range
-    // When not filtering, use fixed range starting from 100
-    const yMin =
-        filterFrom || filterTo
-            ? Math.min(dataMin * 0.95, 100) // Allow some margin below 100% if needed
-            : 100;
-    const yMax =
-        filterFrom || filterTo
-            ? Math.max(dataMax * 1.05, 100) // Allow margin above 100% if needed
-            : Math.max(dataMax, 100) * 1.05;
+    const valueRange = dataMax - dataMin;
+    const yPadding = Math.max(valueRange * 0.05, 5);
+    const yMin = Math.max(dataMin - yPadding, 0);
+    const yMax = dataMax + yPadding;
 
     const xScale = (t) =>
         padding.left +
@@ -920,18 +936,43 @@ function drawPerformanceChart(ctx, chartManager) {
     const rootStyles = window.getComputedStyle(document.documentElement);
     const colors = getChartColors(rootStyles);
     const colorMap = {
-        '^LZ': colors.portfolio,
-        '^GSPC': colors.sp500,
-        '^IXIC': colors.nasdaq,
-        '^WORLD': colors.world,
+        '^LZ': BENCHMARK_GRADIENTS['^LZ'][1],
+        '^GSPC': BENCHMARK_GRADIENTS['^GSPC'][1],
+        '^IXIC': BENCHMARK_GRADIENTS['^IXIC'][1],
+        '^DJI': BENCHMARK_GRADIENTS['^DJI'][1],
+        '^SSE': BENCHMARK_GRADIENTS['^SSE'][1],
+        '^HSI': BENCHMARK_GRADIENTS['^HSI'][1],
+        '^N225': BENCHMARK_GRADIENTS['^N225'][1],
     };
 
+    const seriesForDrawing = normalizedSeriesToDraw.slice().sort((a, b) => {
+        const aIsPortfolio = a.key === '^LZ';
+        const bIsPortfolio = b.key === '^LZ';
+        if (aIsPortfolio && !bIsPortfolio) {
+            return 1;
+        }
+        if (!aIsPortfolio && bIsPortfolio) {
+            return -1;
+        }
+        return 0;
+    });
+
     // Draw Lines (filter based on visibility)
-    normalizedSeriesToDraw.forEach((series) => {
+    seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
         if (!isVisible) {
             return;
         } // Skip hidden series
+
+        const gradientStops = BENCHMARK_GRADIENTS[series.key];
+        if (gradientStops) {
+            const gradient = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
+            gradient.addColorStop(0, gradientStops[0]);
+            gradient.addColorStop(1, gradientStops[1]);
+            ctx.strokeStyle = gradient;
+        } else {
+            ctx.strokeStyle = colorMap[series.key] || colors.contribution; // Fallback color
+        }
 
         ctx.beginPath();
         series.data.forEach((point, index) => {
@@ -939,13 +980,12 @@ function drawPerformanceChart(ctx, chartManager) {
             const y = yScale(point.value);
             index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         });
-        ctx.strokeStyle = colorMap[series.key] || colors.contribution; // Fallback color
-        ctx.lineWidth = series.key === '^LZ' ? 2.5 : 2;
+        ctx.lineWidth = 2;
         ctx.stroke();
     });
 
     // Draw end values for visible series
-    normalizedSeriesToDraw.forEach((series) => {
+    seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
         if (!isVisible || series.data.length === 0) {
             return;
@@ -954,7 +994,10 @@ function drawPerformanceChart(ctx, chartManager) {
         const lastPoint = series.data[series.data.length - 1];
         const x = xScale(new Date(lastPoint.date).getTime());
         const y = yScale(lastPoint.value);
-        const color = colorMap[series.key] || colors.contribution;
+        const gradientStops = BENCHMARK_GRADIENTS[series.key];
+        const color = gradientStops
+            ? gradientStops[1]
+            : colorMap[series.key] || colors.contribution;
 
         // Format value as percentage for performance chart (values are already in percentage format)
         const formatValue = (value) => `${value.toFixed(1)}%`;
@@ -975,11 +1018,19 @@ function drawPerformanceChart(ctx, chartManager) {
     });
 
     // Update Legend
-    const legendSeries = allPossibleSeries.map((s) => ({
-        key: s.key,
-        name: s.name,
-        color: colorMap[s.key] || colors.contribution,
-    }));
+    const legendSeries = allPossibleSeries.map((s) => {
+        const gradientStops = BENCHMARK_GRADIENTS[s.key];
+        const entry = {
+            key: s.key,
+            name: s.name,
+            color: colorMap[s.key] || colors.contribution,
+        };
+        if (gradientStops) {
+            entry.gradient = `linear-gradient(90deg, ${gradientStops[0]}, ${gradientStops[1]})`;
+            entry.color = gradientStops[1];
+        }
+        return entry;
+    });
     updateLegend(legendSeries, chartManager);
 }
 

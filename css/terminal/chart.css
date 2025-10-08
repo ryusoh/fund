@@ -72,6 +72,28 @@
     user-select: none;
 }
 
+@media (max-width: 768px) {
+    .chart-legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+        justify-items: start;
+        gap: 8px 10px;
+        margin-top: 12px;
+    }
+
+    .legend-item {
+        justify-content: flex-start;
+        gap: 6px;
+    }
+
+    .legend-item span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+    }
+}
+
 .legend-item.legend-disabled {
     opacity: 0.4;
 }
