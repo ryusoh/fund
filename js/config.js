@@ -26,6 +26,31 @@ export const CHART_DEFAULTS = {
     CUTOUT: '50%',
 };
 
+export const ANIMATED_LINE_SETTINGS = {
+    enabled: true,
+    tailRatio: 0.12,
+    tailOpacity: 0.85,
+    shadowOpacity: 0.45,
+    mobileShadowBlur: 4,
+    desktopShadowBlur: 12,
+    mobileHaloBase: 5.5,
+    desktopHaloBase: 7,
+    mobileHaloOscillation: 2.2,
+    desktopHaloOscillation: 3.5,
+    oscillationSpeed: 4,
+    phaseOffsetStep: 0.85,
+    minPulseRadius: 0.5,
+    maxDelta: 0.12,
+    charts: {
+        performance: {
+            enabled: true,
+        },
+        contribution: {
+            enabled: true,
+        },
+    },
+};
+
 export const APP_SETTINGS = {
     DATA_REFRESH_INTERVAL: 300000, // ms (5 minutes)
 };

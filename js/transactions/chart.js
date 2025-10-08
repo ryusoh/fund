@@ -5,6 +5,8 @@ import {
     setChartVisibility,
 } from './state.js';
 import { formatCurrencyCompact } from './utils.js';
+import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
+import { ANIMATED_LINE_SETTINGS } from '../config.js';
 
 // --- Helper Functions ---
 
@@ -18,149 +20,57 @@ const BENCHMARK_GRADIENTS = {
     '^N225': ['#0b3d63', '#89c2ff'],
 };
 
-const performanceAnimationState = {
-    handle: null,
-    lastFrameTs: null,
-    phase: 0,
-};
+const glowAnimator = createGlowTrailAnimator(ANIMATED_LINE_SETTINGS);
+
+const isAnimationEnabled = (chartKey) => glowAnimator.isEnabledFor(chartKey);
 
 let performanceLegendDirty = true;
 
 function stopPerformanceAnimation() {
-    if (performanceAnimationState.handle !== null) {
-        cancelAnimationFrame(performanceAnimationState.handle);
-        performanceAnimationState.handle = null;
-    }
-    performanceAnimationState.lastFrameTs = null;
-    performanceAnimationState.phase = 0;
+    glowAnimator.stop('performance');
+}
+
+function stopContributionAnimation() {
+    glowAnimator.stop('contribution');
 }
 
 function schedulePerformanceAnimation(chartManager) {
-    if (performanceAnimationState.handle !== null) {
+    if (!isAnimationEnabled('performance')) {
+        glowAnimator.stop('performance');
         return;
     }
-    performanceAnimationState.handle = requestAnimationFrame(() => {
-        performanceAnimationState.handle = null;
-        if (transactionState.activeChart !== 'performance') {
-            stopPerformanceAnimation();
-            return;
-        }
-        chartManager.redraw();
+    glowAnimator.schedule('performance', chartManager, {
+        isActive: () => transactionState.activeChart === 'performance',
+    });
+}
+
+function scheduleContributionAnimation(chartManager) {
+    if (!isAnimationEnabled('contribution')) {
+        glowAnimator.stop('contribution');
+        return;
+    }
+    glowAnimator.schedule('contribution', chartManager, {
+        isActive: () => transactionState.activeChart === 'contribution',
     });
 }
 
 function advancePerformanceAnimation(timestamp) {
-    const state = performanceAnimationState;
-    const nowFn = () => {
-        if (typeof globalThis !== 'undefined' && globalThis.performance) {
-            return globalThis.performance.now();
-        }
-        if (typeof window !== 'undefined' && window.performance) {
-            return window.performance.now();
-        }
-        return Date.now();
-    };
-    const ts = typeof timestamp === 'number' ? timestamp : nowFn();
-    if (state.lastFrameTs === null) {
-        state.lastFrameTs = ts;
-        return state.phase;
+    if (!isAnimationEnabled('performance')) {
+        return 0;
     }
-    const delta = Math.min((ts - state.lastFrameTs) / 1000, 0.12);
-    state.lastFrameTs = ts;
-    state.phase = (state.phase + delta) % (Math.PI * 2);
-    return state.phase;
+    return glowAnimator.advance('performance', timestamp);
 }
 
-function hexToRgb(color) {
-    if (!color) {
-        return null;
+function advanceContributionAnimation(timestamp) {
+    if (!isAnimationEnabled('contribution')) {
+        return 0;
     }
-    const trimmed = color.trim();
-
-    if (trimmed.startsWith('rgb')) {
-        const match = trimmed.replace(/\s+/g, '').match(/rgba?\((\d+),(\d+),(\d+)/i);
-        if (match) {
-            return {
-                r: Number.parseInt(match[1], 10),
-                g: Number.parseInt(match[2], 10),
-                b: Number.parseInt(match[3], 10),
-            };
-        }
-    }
-
-    let hex = trimmed;
-    if (hex.startsWith('#')) {
-        hex = hex.slice(1);
-    }
-    if (hex.length === 3) {
-        hex = hex
-            .split('')
-            .map((char) => char + char)
-            .join('');
-    }
-    if (hex.length !== 6) {
-        return null;
-    }
-    const num = Number.parseInt(hex, 16);
-    if (Number.isNaN(num)) {
-        return null;
-    }
-    return {
-        r: (num >> 16) & 255,
-        g: (num >> 8) & 255,
-        b: num & 255,
-    };
-}
-
-function drawGlowingPulse(ctx, x, y, color, baseRadius, phase, isMobile, tailColor) {
-    const rgb = hexToRgb(color) || hexToRgb('#ffffff');
-    const oscillation = 0.5 + 0.5 * Math.sin(phase * 4);
-    const effectiveBase = Math.max(baseRadius, 0.5);
-    const haloRadius = effectiveBase + (isMobile ? 5.5 : 7) + oscillation * (isMobile ? 2.2 : 3.5);
-
-    const gradient = ctx.createRadialGradient(x, y, effectiveBase * 0.6, x, y, haloRadius);
-    gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.96)`);
-    gradient.addColorStop(0.35, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
-    gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(x, y, haloRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    const coreRadius = effectiveBase;
-    ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.95)`;
-    ctx.beginPath();
-    ctx.arc(x, y, coreRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    const ringRadius = coreRadius + Math.min(coreRadius * 0.4, 0.5);
-    ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    if (tailColor) {
-        ctx.save();
-        ctx.shadowColor = tailColor;
-        const glowBlur = (isMobile ? 6 : 10) + oscillation * (isMobile ? 1.5 : 2.5);
-        ctx.shadowBlur = glowBlur;
-        ctx.globalAlpha = 0.6 + 0.4 * oscillation;
-        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`;
-        ctx.beginPath();
-        ctx.arc(x, y, coreRadius + 1.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
+    return glowAnimator.advance('contribution', timestamp);
 }
 
 function getChartColors(rootStyles) {
     return {
-        portfolio: rootStyles.getPropertyValue('--portfolio-line').trim() || '#ffef2f',
+        portfolio: rootStyles.getPropertyValue('--portfolio-line').trim() || '#7a7a7a',
         contribution: rootStyles.getPropertyValue('--contribution-line').trim() || '#b3b3b3',
         sp500: rootStyles.getPropertyValue('--sp500-line').trim() || '#ef553b',
         nasdaq: rootStyles.getPropertyValue('--nasdaq-line').trim() || '#00d5ff',
@@ -203,25 +113,21 @@ function updateLegend(series, chartManager) {
         // Skip click events for composition chart (non-interactive legend)
         if (transactionState.activeChart !== 'composition') {
             item.addEventListener('click', () => {
-                // Special handling for performance chart
                 if (transactionState.activeChart === 'performance') {
-                    // LZ (portfolio) should always be visible - no toggle
+                    // Special handling for performance chart
                     if (s.key === '^LZ') {
-                        return; // Do nothing for portfolio
+                        return; // Portfolio line ('^LZ') is not toggleable
                     }
 
-                    // Define all possible benchmarks (excluding portfolio)
                     const benchmarks = ['^GSPC', '^IXIC', '^DJI', '^SSE', '^HSI', '^N225'];
-
                     if (benchmarks.includes(s.key)) {
-                        const disabled = item.classList.toggle('legend-disabled');
-                        const isVisible = !disabled;
+                        const isDisabled = item.classList.toggle('legend-disabled');
+                        const isVisible = !isDisabled;
 
-                        // If clicking a benchmark, hide other benchmarks
+                        // Hide other benchmarks for a "radio button" style interaction
                         benchmarks.forEach((benchmark) => {
                             if (benchmark !== s.key) {
                                 transactionState.chartVisibility[benchmark] = false;
-                                // Update legend appearance
                                 const otherItem = legendContainer.querySelector(
                                     `[data-series="${benchmark}"]`
                                 );
@@ -230,19 +136,25 @@ function updateLegend(series, chartManager) {
                                 }
                             }
                         });
-                        // Set the clicked benchmark visibility
-                        transactionState.chartVisibility[s.key] = isVisible;
 
-                        if (transactionState.activeChart === 'performance') {
-                            performanceLegendDirty = true;
-                        }
+                        transactionState.chartVisibility[s.key] = isVisible;
+                        performanceLegendDirty = true; // Mark legend as needing update
                     }
                 } else {
-                    // Normal behavior for other charts
-                    const disabled = item.classList.toggle('legend-disabled');
-                    setChartVisibility(s.key, !disabled);
+                    // Normal behavior for other charts (like Contribution)
+                    const isCurrentlyVisible = transactionState.chartVisibility[s.key] !== false;
+                    const newVisibility = !isCurrentlyVisible;
+                    setChartVisibility(s.key, newVisibility);
+
+                    // Manually update class for immediate feedback, as the legend is rebuilt on redraw
+                    if (newVisibility) {
+                        item.classList.remove('legend-disabled');
+                    } else {
+                        item.classList.add('legend-disabled');
+                    }
                 }
 
+                // Redraw the chart to apply visibility changes
                 if (typeof chartManager.redraw === 'function') {
                     chartManager.redraw();
                 }
@@ -699,7 +611,7 @@ function drawAxes(
 
 // --- Chart Drawing Functions ---
 
-function drawContributionChart(ctx, chartManager) {
+function drawContributionChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
     const { runningAmountSeries, portfolioSeries, chartVisibility } = transactionState;
     const visibility = chartVisibility || {};
@@ -734,6 +646,7 @@ function drawContributionChart(ctx, chartManager) {
     );
 
     if (contributionData.length === 0 && balanceData.length === 0) {
+        stopContributionAnimation();
         return;
     }
     emptyState.style.display = 'none';
@@ -793,39 +706,63 @@ function drawContributionChart(ctx, chartManager) {
 
     const rootStyles = window.getComputedStyle(document.documentElement);
     const colors = getChartColors(rootStyles);
+    const contributionAnimationEnabled = isAnimationEnabled('contribution');
+    const animationPhase = advanceContributionAnimation(timestamp);
 
-    // Draw Lines
+    const animatedSeries = [];
+    const filterStartTime = filterFrom ? filterFrom.getTime() : null;
+
     if (showContribution && contributionData.length > 0) {
-        ctx.beginPath();
+        animatedSeries.push({
+            key: 'contribution',
+            color: colors.contribution,
+            lineWidth: 2,
+            order: 1,
+            data: contributionData.map((item) => ({
+                time: item.date.getTime(),
+                value: item.amount,
+            })),
+        });
+    }
 
-        // If we have a date filter and the filter start is before the first data point,
-        // start the line from the filter start date with the first data point's value
-        if (filterFrom && contributionData.length > 0) {
-            const firstDataPoint = contributionData[0];
-            const filterStartTime = filterFrom.getTime();
-            const firstDataTime = firstDataPoint.date.getTime();
+    if (showBalance && balanceData.length > 0) {
+        animatedSeries.push({
+            key: 'balance',
+            color: colors.portfolio,
+            lineWidth: 2,
+            order: 2,
+            data: balanceData.map((item) => ({
+                time: item.date.getTime(),
+                value: item.value,
+            })),
+        });
+    }
 
-            if (filterStartTime < firstDataTime) {
-                // Start from filter start date with first data point's value
-                const x = xScale(filterStartTime);
-                const y = yScale(firstDataPoint.amount);
-                ctx.moveTo(x, y);
+    animatedSeries.forEach((series) => {
+        const coords = [];
+        if (filterStartTime !== null && series.data.length > 0) {
+            const firstPoint = series.data[0];
+            if (filterStartTime < firstPoint.time) {
+                coords.push({
+                    x: xScale(filterStartTime),
+                    y: yScale(firstPoint.value),
+                    time: filterStartTime,
+                    value: firstPoint.value,
+                });
             }
         }
 
-        contributionData.forEach((item, index) => {
-            const x = xScale(item.date.getTime());
-            const y = yScale(item.amount);
-            if (index === 0 && (!filterFrom || filterFrom.getTime() >= item.date.getTime())) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
+        series.data.forEach((point) => {
+            coords.push({
+                x: xScale(point.time),
+                y: yScale(point.value),
+                time: point.time,
+                value: point.value,
+            });
         });
-        ctx.strokeStyle = colors.contribution;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
+
+        series.coords = coords;
+    });
 
     // --- Draw Markers ---
     const pointSeries = contributionData.filter((item) => {
@@ -870,16 +807,49 @@ function drawContributionChart(ctx, chartManager) {
         });
     });
 
-    if (showBalance && balanceData.length > 0) {
+    const sortedSeries = animatedSeries
+        .map((series) => ({ ...series }))
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    let hasAnimatedSeries = false;
+
+    sortedSeries.forEach((series, index) => {
+        const coords = series.coords || [];
+        if (coords.length === 0) {
+            return;
+        }
+
         ctx.beginPath();
-        balanceData.forEach((item, index) => {
-            const x = xScale(item.date.getTime());
-            const y = yScale(item.value);
-            index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        coords.forEach((coord, coordIndex) => {
+            if (coordIndex === 0) {
+                ctx.moveTo(coord.x, coord.y);
+            } else {
+                ctx.lineTo(coord.x, coord.y);
+            }
         });
-        ctx.strokeStyle = colors.portfolio;
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = series.color;
+        ctx.lineWidth = series.lineWidth;
         ctx.stroke();
+
+        if (contributionAnimationEnabled) {
+            glowAnimator.drawSeriesGlow(
+                ctx,
+                { coords, color: series.color, lineWidth: series.lineWidth },
+                {
+                    basePhase: animationPhase,
+                    seriesIndex: index,
+                    isMobile,
+                    chartKey: 'contribution',
+                }
+            );
+            hasAnimatedSeries = true;
+        }
+    });
+
+    if (contributionAnimationEnabled && hasAnimatedSeries) {
+        scheduleContributionAnimation(chartManager);
+    } else {
+        stopContributionAnimation();
     }
 
     // Draw end values
@@ -947,34 +917,29 @@ function drawContributionChart(ctx, chartManager) {
         { key: 'sell', name: 'Sell', color: colors.sell },
     ];
     updateLegend(legendSeries, chartManager);
+
+    if (contributionAnimationEnabled && hasAnimatedSeries) {
+        scheduleContributionAnimation(chartManager);
+    } else {
+        stopContributionAnimation();
+    }
 }
 
 function drawPerformanceChart(ctx, chartManager, timestamp) {
     const { performanceSeries, chartVisibility } = transactionState;
+    stopContributionAnimation();
     if (!performanceSeries || Object.keys(performanceSeries).length === 0) {
         stopPerformanceAnimation();
         return;
     }
 
-    // Set default visibility: always show LZ, show GSPC by default, hide other benchmarks
     const availableSeries = Object.keys(performanceSeries);
     if (availableSeries.length > 0) {
-        // Initialize visibility state if not set
         availableSeries.forEach((key) => {
             if (transactionState.chartVisibility[key] === undefined) {
-                if (key === '^LZ') {
-                    // Always show portfolio
-                    transactionState.chartVisibility[key] = true;
-                } else {
-                    // Show GSPC by default, hide other benchmarks
-                    transactionState.chartVisibility[key] = key === '^GSPC';
-                }
+                transactionState.chartVisibility[key] = key === '^LZ' ? true : key === '^GSPC';
             }
         });
-    }
-
-    if (performanceAnimationState.lastFrameTs === null) {
-        performanceLegendDirty = true;
     }
 
     const canvas = ctx.canvas;
@@ -989,7 +954,7 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     const seriesToDraw = allPossibleSeries.filter((s) => visibility[s.key] !== false);
 
     if (seriesToDraw.length === 0 && allPossibleSeries.length > 0) {
-        // If all are hidden, we still need to draw axes and legend
+        // Draw axes and legend only
     } else if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
         return;
@@ -1006,7 +971,6 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
 
-    // When filtering, normalize each series to start from 100% at the beginning of the period
     let normalizedSeriesToDraw = seriesToDraw;
     if (filterFrom || filterTo) {
         normalizedSeriesToDraw = seriesToDraw.map((series) => {
@@ -1024,13 +988,10 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
                 return series;
             }
 
-            // Find the starting value (first data point in the filtered range)
             const startValue = filteredData[0].value;
-
-            // Normalize all values relative to the starting value
             const normalizedData = filteredData.map((d) => ({
                 ...d,
-                value: (d.value / startValue) * 100, // Convert to percentage
+                value: (d.value / startValue) * 100,
             }));
 
             return {
@@ -1045,10 +1006,10 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         stopPerformanceAnimation();
         return;
     }
+
     const allTimes = allPoints.map((p) => new Date(p.date).getTime());
     const minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
-
     const allValues = allPoints.map((p) => p.value);
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
@@ -1077,9 +1038,10 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         xScale,
         yScale,
         (v) => `${v.toFixed(0)}%`,
-        true // isPerformanceChart
+        true
     );
 
+    const performanceAnimationEnabled = isAnimationEnabled('performance');
     const animationPhase = advancePerformanceAnimation(timestamp);
 
     const rootStyles = window.getComputedStyle(document.documentElement);
@@ -1107,9 +1069,8 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     });
 
     const lineThickness = 2;
-    const tailLineWidth = lineThickness;
     const renderedSeries = [];
-    let visibleSeriesIndex = 0;
+    let glowIndex = 0;
 
     seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
@@ -1132,11 +1093,13 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
             ctx.strokeStyle = resolvedColor;
         }
 
+        const coords = [];
         ctx.beginPath();
         points.forEach((point, index) => {
             const time = new Date(point.date).getTime();
             const x = xScale(time);
             const y = yScale(point.value);
+            coords.push({ x, y });
             if (index === 0) {
                 ctx.moveTo(x, y);
             } else {
@@ -1146,56 +1109,32 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
-        const rgb = hexToRgb(resolvedColor);
-        if (rgb && points.length > 1) {
-            const tailCount = Math.max(2, Math.floor(points.length * 0.12));
-            const tailPoints = points.slice(-tailCount);
-            const startPoint = tailPoints[0];
-            const endPoint = tailPoints[tailPoints.length - 1];
-            const startX = xScale(new Date(startPoint.date).getTime());
-            const startY = yScale(startPoint.value);
-            const endX = xScale(new Date(endPoint.date).getTime());
-            const endY = yScale(endPoint.value);
-
-            const tailGradient = ctx.createLinearGradient(startX, startY, endX, endY);
-            tailGradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-            tailGradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.85)`);
-
-            ctx.save();
-            ctx.lineWidth = tailLineWidth;
-            ctx.strokeStyle = tailGradient;
-            ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`;
-            ctx.shadowBlur = isMobile ? 5 : 12;
-            ctx.beginPath();
-            tailPoints.forEach((point, index) => {
-                const tailX = xScale(new Date(point.date).getTime());
-                const tailY = yScale(point.value);
-                if (index === 0) {
-                    ctx.moveTo(tailX, tailY);
-                } else {
-                    ctx.lineTo(tailX, tailY);
-                }
-            });
-            ctx.stroke();
-            ctx.restore();
-        }
-
         const lastPoint = points[points.length - 1];
-        const lastX = xScale(new Date(lastPoint.date).getTime());
-        const lastY = yScale(lastPoint.value);
+        const lastCoord = coords[coords.length - 1] || { x: 0, y: 0 };
 
         renderedSeries.push({
             key: series.key,
             name: series.name,
             color: resolvedColor,
-            x: lastX,
-            y: lastY,
+            x: lastCoord.x,
+            y: lastCoord.y,
             value: lastPoint.value,
-            rgb,
-            indexOffset: visibleSeriesIndex,
+            coords,
         });
 
-        visibleSeriesIndex += 1;
+        if (performanceAnimationEnabled) {
+            glowAnimator.drawSeriesGlow(
+                ctx,
+                { coords, color: resolvedColor, lineWidth: lineThickness },
+                {
+                    basePhase: animationPhase,
+                    seriesIndex: glowIndex,
+                    isMobile,
+                    chartKey: 'performance',
+                }
+            );
+            glowIndex += 1;
+        }
     });
 
     if (renderedSeries.length === 0) {
@@ -1203,22 +1142,16 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         return;
     }
 
+    if (performanceAnimationEnabled && glowIndex > 0) {
+        schedulePerformanceAnimation(chartManager);
+    } else if (!performanceAnimationEnabled) {
+        stopPerformanceAnimation();
+    }
+
     const formatValue = (value) => `${value.toFixed(1)}%`;
-    const basePulseRadius = Math.max(lineThickness / 2, 0.5);
 
     renderedSeries.forEach((series) => {
-        const { x, y, color, value, rgb, indexOffset } = series;
-        const tailGlowColor = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)` : color;
-        drawGlowingPulse(
-            ctx,
-            x,
-            y,
-            color,
-            basePulseRadius,
-            animationPhase + indexOffset * 0.85,
-            isMobile,
-            tailGlowColor
-        );
+        const { x, y, color, value } = series;
 
         drawEndValue(
             ctx,
@@ -1236,27 +1169,19 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     });
 
     if (performanceLegendDirty) {
-        const legendSeries = allPossibleSeries.map((s) => {
-            const gradientStops = BENCHMARK_GRADIENTS[s.key];
-            const entry = {
-                key: s.key,
-                name: s.name,
-                color: colorMap[s.key] || colors.contribution,
-            };
-            if (gradientStops) {
-                entry.color = gradientStops[1];
-            }
-            return entry;
-        });
+        const legendSeries = allPossibleSeries.map((s) => ({
+            key: s.key,
+            name: s.name,
+            color: colorMap[s.key] || colors.contribution,
+        }));
         updateLegend(legendSeries, chartManager);
         performanceLegendDirty = false;
     }
-
-    schedulePerformanceAnimation(chartManager);
 }
 
 function drawCompositionChart(ctx, chartManager) {
     stopPerformanceAnimation();
+    stopContributionAnimation();
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
 
@@ -1789,12 +1714,14 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
         const canvas = document.getElementById('runningAmountCanvas');
         if (!canvas) {
             stopPerformanceAnimation();
+            stopContributionAnimation();
             return;
         }
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             stopPerformanceAnimation();
+            stopContributionAnimation();
             return;
         }
 
@@ -1804,6 +1731,7 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
 
         if (displayWidth === 0 || displayHeight === 0) {
             stopPerformanceAnimation();
+            stopContributionAnimation();
             return;
         }
 
@@ -1823,7 +1751,7 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
         } else {
-            drawContributionChart(ctx, chartManager);
+            drawContributionChart(ctx, chartManager, timestamp);
         }
     };
 
