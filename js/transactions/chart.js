@@ -50,14 +50,9 @@ function updateLegend(series, chartManager) {
 
         const swatch = document.createElement('span');
         swatch.className = 'legend-swatch';
-        if (s.gradient) {
-            swatch.style.background = s.gradient;
-            swatch.style.border = 'none';
-        } else {
-            swatch.style.background = 'none';
-            swatch.style.backgroundColor = s.color;
-            swatch.style.border = '';
-        }
+        swatch.style.background = 'none';
+        swatch.style.backgroundColor = s.color;
+        swatch.style.border = '';
 
         const label = document.createElement('span');
         label.textContent = s.name;
@@ -1026,7 +1021,6 @@ function drawPerformanceChart(ctx, chartManager) {
             color: colorMap[s.key] || colors.contribution,
         };
         if (gradientStops) {
-            entry.gradient = `linear-gradient(90deg, ${gradientStops[0]}, ${gradientStops[1]})`;
             entry.color = gradientStops[1];
         }
         return entry;
