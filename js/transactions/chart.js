@@ -518,77 +518,87 @@ function drawAxes(
     xScale,
     yScale,
     yLabelFormatter,
-    isPerformanceChart = false
+    isPerformanceChart = false,
+    axisOptions = {}
 ) {
     const isMobile = window.innerWidth <= 768;
+    const { drawXAxis = true, drawYAxis = true } = axisOptions;
 
     // Generate concrete tick values
     const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart);
 
     // Y-axis grid lines and labels
-    ticks.forEach((value) => {
-        const y = yScale(value);
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(padding.left + plotWidth, y);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.stroke();
-        ctx.fillStyle = '#8b949e';
-        ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
-    });
+    if (drawYAxis) {
+        ticks.forEach((value) => {
+            const y = yScale(value);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(padding.left + plotWidth, y);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.stroke();
+            ctx.fillStyle = '#8b949e';
+            ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
+        });
+    }
 
     // X-axis line
-    ctx.beginPath();
-    ctx.moveTo(padding.left, padding.top + plotHeight);
-    ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    if (drawXAxis) {
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top + plotHeight);
+        ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
 
     // Generate year-based x-axis ticks
     const yearTicks = generateYearBasedTicks(minTime, maxTime);
 
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
+    if (drawXAxis) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
+    }
 
     yearTicks.forEach((tick, index) => {
         const x = xScale(tick.time);
 
-        // Prevent label collision on mobile by hiding the last tick if it's too close to the previous one
-        if (isMobile && index === yearTicks.length - 1) {
-            const prevTickX = xScale(yearTicks[index - 1].time);
-            if (x - prevTickX < 40) {
-                return; // Skip the last tick
+        if (drawXAxis) {
+            // Prevent label collision on mobile by hiding the last tick if it's too close to the previous one
+            if (isMobile && index === yearTicks.length - 1 && index > 0) {
+                const prevTickX = xScale(yearTicks[index - 1].time);
+                if (x - prevTickX < 40) {
+                    return; // Skip the last tick
+                }
             }
-        }
 
-        // Set text alignment based on tick position and layout
-        if (isMobile) {
-            // Mobile: center-align first tick, right-align last tick, center-align others
-            if (index === 0) {
-                ctx.textAlign = 'center';
-            } else if (index === yearTicks.length - 1) {
-                ctx.textAlign = 'right';
+            // Set text alignment based on tick position and layout
+            if (isMobile) {
+                // Mobile: center-align first tick, right-align last tick, center-align others
+                if (index === 0) {
+                    ctx.textAlign = 'center';
+                } else if (index === yearTicks.length - 1) {
+                    ctx.textAlign = 'right';
+                } else {
+                    ctx.textAlign = 'center';
+                }
             } else {
+                // Desktop: center-align all ticks
                 ctx.textAlign = 'center';
             }
-        } else {
-            // Desktop: center-align all ticks
-            ctx.textAlign = 'center';
+
+            // Draw tick mark
+            ctx.beginPath();
+            ctx.moveTo(x, padding.top + plotHeight);
+            ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
+            ctx.stroke();
+
+            // Draw label
+            ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
         }
-
-        // Draw tick mark
-        ctx.beginPath();
-        ctx.moveTo(x, padding.top + plotHeight);
-        ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
-        ctx.stroke();
-
-        // Draw label
-        ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
 
         // Draw vertical dashed line for year/quarter boundaries (but not at chart boundaries)
         if (tick.isYearStart && x > padding.left + 5 && x < padding.left + plotWidth - 5) {
@@ -687,7 +697,32 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         ? { top: 15, right: 20, bottom: 35, left: 50 }
         : { top: 20, right: 30, bottom: 48, left: 70 };
     const plotWidth = canvas.offsetWidth - padding.left - padding.right;
-    const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+    const totalPlotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+    const volumeGap = isMobile ? 10 : 16;
+    const minMainHeight = isMobile ? 120 : 180;
+    const minVolumeHeight = isMobile ? 50 : 80;
+    const availableHeight = Math.max(totalPlotHeight - volumeGap, 0);
+
+    let mainPlotHeight = 0;
+    let volumeHeight = 0;
+
+    if (availableHeight <= 0) {
+        mainPlotHeight = Math.max(totalPlotHeight, 0);
+    } else if (availableHeight < minMainHeight + minVolumeHeight) {
+        const scale = availableHeight / (minMainHeight + minVolumeHeight);
+        mainPlotHeight = minMainHeight * scale;
+        volumeHeight = minVolumeHeight * scale;
+    } else {
+        mainPlotHeight = Math.max(minMainHeight, availableHeight * 0.7);
+        volumeHeight = availableHeight - mainPlotHeight;
+        if (volumeHeight < minVolumeHeight) {
+            volumeHeight = minVolumeHeight;
+            mainPlotHeight = availableHeight - volumeHeight;
+        }
+    }
+
+    const plotHeight = mainPlotHeight;
+    const volumeTop = padding.top + plotHeight + (volumeHeight > 0 ? volumeGap : 0);
 
     const allTimes = [
         ...contributionData.map((d) => d.date.getTime()),
@@ -732,7 +767,8 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         xScale,
         yScale,
         formatCurrencyCompact,
-        false // isPerformanceChart
+        false, // isPerformanceChart
+        volumeHeight > 0 ? { drawXAxis: false } : {}
     );
 
     const rootStyles = window.getComputedStyle(document.documentElement);
@@ -809,44 +845,145 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             grouped.set(timestamp, { buys: [], sells: [] });
         }
         const group = grouped.get(timestamp);
-        const radius = Math.min(8, Math.max(2, Math.abs(item.netAmount) / 500));
+        const netAmount = Number(item.netAmount) || 0;
+        const amount = Number(item.amount) || 0;
+        const radius = Math.min(8, Math.max(2, Math.abs(netAmount) / 500));
         if (item.orderType.toLowerCase() === 'buy') {
-            group.buys.push({ radius, amount: item.amount });
+            group.buys.push({ radius, amount, netAmount });
         } else {
-            group.sells.push({ radius, amount: item.amount });
+            group.sells.push({ radius, amount, netAmount });
         }
     });
 
-    // Define chart bounds for marker clamping
     const chartBounds = {
         top: padding.top,
         bottom: padding.top + plotHeight,
     };
 
-    // Sort markers by radius (largest first) so bigger dots are closer to the line
+    const volumeEntries = [];
+    let maxVolume = 0;
+    grouped.forEach((group, timestamp) => {
+        const totalBuyVolume = group.buys.reduce(
+            (sum, marker) => sum + Math.abs(marker.netAmount),
+            0
+        );
+        const totalSellVolume = group.sells.reduce(
+            (sum, marker) => sum + Math.abs(marker.netAmount),
+            0
+        );
+        if (totalBuyVolume === 0 && totalSellVolume === 0) {
+            return;
+        }
+
+        maxVolume = Math.max(maxVolume, totalBuyVolume, totalSellVolume);
+        volumeEntries.push({
+            timestamp,
+            totalBuyVolume,
+            totalSellVolume,
+        });
+    });
+
+    const volumePadding = {
+        top: volumeTop,
+        right: padding.right,
+        bottom: padding.bottom,
+        left: padding.left,
+    };
+
+    let volumeYScale;
+    if (volumeHeight > 0) {
+        const volumeYMin = 0;
+        const volumeYMax = maxVolume > 0 ? maxVolume * 1.1 : 1;
+        const volumeRange = volumeYMax - volumeYMin || 1;
+        volumeYScale = (value) =>
+            volumePadding.top + volumeHeight - ((value - volumeYMin) / volumeRange) * volumeHeight;
+
+        drawAxes(
+            ctx,
+            volumePadding,
+            plotWidth,
+            volumeHeight,
+            minTime,
+            maxTime,
+            volumeYMin,
+            volumeYMax,
+            xScale,
+            volumeYScale,
+            formatCurrencyCompact,
+            false,
+            { drawYAxis: maxVolume > 0 }
+        );
+    }
+
+    if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
+        const barWidth = 8;
+        const barGap = 3;
+        const baselineY = volumePadding.top + volumeHeight;
+
+        volumeEntries.forEach((entry) => {
+            const { timestamp, totalBuyVolume, totalSellVolume } = entry;
+            const x = xScale(timestamp);
+
+            const bars = [];
+            if (totalBuyVolume > 0) {
+                bars.push({
+                    volume: totalBuyVolume,
+                    fill: 'rgba(76, 175, 80, 0.6)',
+                    stroke: 'rgba(76, 175, 80, 0.8)',
+                });
+            }
+            if (totalSellVolume > 0) {
+                bars.push({
+                    volume: totalSellVolume,
+                    fill: 'rgba(244, 67, 54, 0.6)',
+                    stroke: 'rgba(244, 67, 54, 0.8)',
+                });
+            }
+            if (bars.length === 0) {
+                return;
+            }
+
+            const totalBarWidth = bars.length * barWidth + (bars.length - 1) * barGap;
+            let currentX = x - totalBarWidth / 2;
+
+            bars.forEach((bar) => {
+                const topY = volumeYScale(bar.volume);
+                const height = baselineY - topY;
+                if (height <= 0) {
+                    currentX += barWidth + barGap;
+                    return;
+                }
+
+                ctx.fillStyle = bar.fill;
+                ctx.fillRect(currentX, topY, barWidth, height);
+
+                ctx.strokeStyle = bar.stroke;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(currentX, topY, barWidth, height);
+
+                currentX += barWidth + barGap;
+            });
+        });
+    }
+
+    // Draw transaction markers above the contribution line
     grouped.forEach((group, timestamp) => {
         const x = xScale(timestamp);
 
-        // Sort buy markers by radius (largest first) for closer positioning to line
         const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
         let buyOffset = 8;
-
-        // Draw buy markers with largest dots closest to line
         sortedBuys.forEach((marker) => {
             const y = yScale(marker.amount) - buyOffset - marker.radius;
             drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
-            buyOffset += marker.radius * 2 + 4; // Use marker's own diameter + small gap
+            buyOffset += marker.radius * 2 + 4;
         });
 
-        // Sort sell markers by radius (largest first) for closer positioning to line
         const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
         let sellOffset = 8;
-
-        // Draw sell markers with largest dots closest to line
         sortedSells.forEach((marker) => {
             const y = yScale(marker.amount) + sellOffset + marker.radius;
             drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
-            sellOffset += marker.radius * 2 + 4; // Use marker's own diameter + small gap
+            sellOffset += marker.radius * 2 + 4;
         });
     });
 
