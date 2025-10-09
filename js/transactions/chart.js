@@ -5,8 +5,9 @@ import {
     setChartVisibility,
 } from './state.js';
 import { formatCurrencyCompact } from './utils.js';
+import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
-import { ANIMATED_LINE_SETTINGS } from '../config.js';
+import { ANIMATED_LINE_SETTINGS, CHART_SMOOTHING } from '../config.js';
 
 // --- Helper Functions ---
 
@@ -25,6 +26,16 @@ const BALANCE_GRADIENTS = {
     balance: ['#fb8500', '#ffef2f'], // Yellow gradient for balance line (same as portfolio)
     contribution: ['#0d3b66', '#64b5f6'], // Blue gradient for contribution line (same as S&P 500)
 };
+
+// Helper function to get smoothing configuration
+function getSmoothingConfig(chartType) {
+    if (!CHART_SMOOTHING.enabled) {
+        return null; // Smoothing disabled
+    }
+
+    const methodName = CHART_SMOOTHING.charts[chartType] || 'balanced';
+    return CHART_SMOOTHING.methods[methodName] || CHART_SMOOTHING.methods.balanced;
+}
 
 const glowAnimator = createGlowTrailAnimator(ANIMATED_LINE_SETTINGS);
 
@@ -634,16 +645,36 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         });
     };
 
-    const contributionData = filterDataByDateRange(
+    const rawContributionData = filterDataByDateRange(
         (runningAmountSeries || [])
             .map((item) => ({ ...item, date: new Date(item.tradeDate) }))
             .filter((item) => !isNaN(item.date.getTime()))
     );
-    const balanceData = filterDataByDateRange(
+    const rawBalanceData = filterDataByDateRange(
         (portfolioSeries || [])
             .map((item) => ({ ...item, date: new Date(item.date) }))
             .filter((item) => !isNaN(item.date.getTime()))
     );
+
+    // Apply smoothing to contribution and balance data
+    const contributionSmoothingConfig = getSmoothingConfig('contribution');
+    const contributionData =
+        rawContributionData.length > 2 && contributionSmoothingConfig
+            ? smoothFinancialData(
+                  rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
+                  contributionSmoothingConfig,
+                  true // preserveEnd - keep the last point unchanged
+              ).map((p) => ({ date: new Date(p.x), amount: p.y }))
+            : rawContributionData;
+
+    const balanceData =
+        rawBalanceData.length > 2 && contributionSmoothingConfig
+            ? smoothFinancialData(
+                  rawBalanceData.map((item) => ({ x: item.date.getTime(), y: item.value })),
+                  contributionSmoothingConfig,
+                  true // preserveEnd - keep the last point unchanged
+              ).map((p) => ({ date: new Date(p.x), value: p.y }))
+            : rawBalanceData;
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         stopContributionAnimation();
@@ -765,7 +796,8 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     });
 
     // --- Draw Markers ---
-    const pointSeries = contributionData.filter((item) => {
+    // Use raw data for markers since smoothed data doesn't have orderType
+    const pointSeries = rawContributionData.filter((item) => {
         const type = item.orderType.toLowerCase();
         return (type === 'buy' && showBuy) || (type === 'sell' && showSell);
     });
@@ -864,9 +896,9 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         stopContributionAnimation();
     }
 
-    // Draw end values
-    if (showContribution && contributionData.length > 0) {
-        const lastContribution = contributionData[contributionData.length - 1];
+    // Draw end values using raw data to ensure accuracy
+    if (showContribution && rawContributionData.length > 0) {
+        const lastContribution = rawContributionData[rawContributionData.length - 1];
         const x = xScale(lastContribution.date.getTime());
         const y = yScale(lastContribution.amount);
         // Use gradient end color for contribution end marker
@@ -889,8 +921,8 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         );
     }
 
-    if (showBalance && balanceData.length > 0) {
-        const lastBalance = balanceData[balanceData.length - 1];
+    if (showBalance && rawBalanceData.length > 0) {
+        const lastBalance = rawBalanceData[rawBalanceData.length - 1];
         const x = xScale(lastBalance.date.getTime());
         const y = yScale(lastBalance.value);
 
@@ -1111,7 +1143,18 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
             return;
         }
 
-        const points = series.data;
+        // Apply smoothing to the series data
+        const rawPoints = series.data;
+        const smoothingConfig = getSmoothingConfig('performance');
+        const smoothedPoints = smoothingConfig
+            ? smoothFinancialData(
+                  rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value })),
+                  smoothingConfig,
+                  true // preserveEnd - keep the last point unchanged
+              )
+            : rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+
+        const points = smoothedPoints.map((p) => ({ date: new Date(p.x), value: p.y }));
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops
             ? gradientStops[1]
@@ -1288,10 +1331,26 @@ function drawCompositionChart(ctx, chartManager) {
             // Show ALL holdings (no limit)
             const topTickers = sortedTickers.map(([ticker]) => ticker);
 
-            // Use original data without normalization
+            // Apply smoothing to composition data for each ticker
             const chartData = {};
             topTickers.forEach((ticker) => {
-                chartData[ticker] = filteredIndices.map((i) => data.composition[ticker][i] || 0);
+                const rawValues = filteredIndices.map((i) => data.composition[ticker][i] || 0);
+
+                // Apply smoothing to the percentage data
+                const compositionSmoothingConfig = getSmoothingConfig('composition');
+                const smoothedValues =
+                    rawValues.length > 2 && compositionSmoothingConfig
+                        ? smoothFinancialData(
+                              rawValues.map((value, index) => ({
+                                  x: new Date(filteredDates[index]).getTime(),
+                                  y: value,
+                              })),
+                              compositionSmoothingConfig,
+                              true // preserveEnd - keep the last point unchanged
+                          ).map((p) => p.y)
+                        : rawValues;
+
+                chartData[ticker] = smoothedValues;
             });
 
             // Create natural spectrum progression: deep blue -> deep green (highest to lowest weight)

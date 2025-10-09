@@ -51,6 +51,45 @@ export const ANIMATED_LINE_SETTINGS = {
     },
 };
 
+export const CHART_SMOOTHING = {
+    enabled: true, // Toggle smoothing on/off
+    methods: {
+        // Conservative smoothing - minimal impact
+        conservative: {
+            method: 'exponential',
+            params: { alpha: 0.8 },
+            description: 'Minimal smoothing, preserves most detail',
+        },
+
+        // Balanced smoothing - industry standard
+        balanced: {
+            method: 'exponential',
+            params: { alpha: 0.5 },
+            description: 'Balanced smoothing, good for most financial data',
+        },
+
+        // Aggressive smoothing - very smooth lines
+        aggressive: {
+            method: 'exponential',
+            params: { alpha: 0.2 },
+            description: 'Strong smoothing, reduces noise significantly',
+        },
+
+        // Adaptive smoothing - automatically adjusts
+        adaptive: {
+            method: 'adaptive',
+            params: {},
+            description: 'Automatically adjusts based on data volatility',
+        },
+    },
+    // Chart-specific smoothing configurations
+    charts: {
+        performance: 'balanced', // EMA with alpha=0.3 for performance charts
+        contribution: 'balanced', // EMA with alpha=0.2 for contribution charts (less smoothing)
+        composition: 'conservative', // EMA with alpha=0.2 for composition charts
+    },
+};
+
 export const APP_SETTINGS = {
     DATA_REFRESH_INTERVAL: 300000, // ms (5 minutes)
 };
