@@ -306,7 +306,7 @@ def write_raw_json_prices(raw_df: pd.DataFrame) -> None:
                 if pd.notna(value)
             }
 
-    HISTORICAL_PRICES_JSON.write_text(json.dumps(payload, indent=2) + "\n")
+    HISTORICAL_PRICES_JSON.write_text(json.dumps(payload, separators=(',', ':')) + "\n")
     print(f'Raw historical prices written to {HISTORICAL_PRICES_JSON}')
 
 
