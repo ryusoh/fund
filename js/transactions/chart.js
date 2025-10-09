@@ -20,6 +20,12 @@ const BENCHMARK_GRADIENTS = {
     '^N225': ['#0b3d63', '#89c2ff'],
 };
 
+// Gradient definitions for balance chart lines
+const BALANCE_GRADIENTS = {
+    balance: ['#fb8500', '#ffef2f'], // Yellow gradient for balance line (same as portfolio)
+    contribution: ['#0d3b66', '#64b5f6'], // Blue gradient for contribution line (same as S&P 500)
+};
+
 const glowAnimator = createGlowTrailAnimator(ANIMATED_LINE_SETTINGS);
 
 const isAnimationEnabled = (chartKey) => glowAnimator.isEnabledFor(chartKey);
@@ -813,6 +819,17 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             return;
         }
 
+        // Apply gradient effect for balance chart lines
+        const gradientStops = BALANCE_GRADIENTS[series.key];
+        if (gradientStops) {
+            const gradient = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
+            gradient.addColorStop(0, gradientStops[0]);
+            gradient.addColorStop(1, gradientStops[1]);
+            ctx.strokeStyle = gradient;
+        } else {
+            ctx.strokeStyle = series.color;
+        }
+
         ctx.beginPath();
         coords.forEach((coord, coordIndex) => {
             if (coordIndex === 0) {
@@ -821,14 +838,15 @@ function drawContributionChart(ctx, chartManager, timestamp) {
                 ctx.lineTo(coord.x, coord.y);
             }
         });
-        ctx.strokeStyle = series.color;
         ctx.lineWidth = series.lineWidth;
         ctx.stroke();
 
         if (contributionAnimationEnabled) {
+            // Use gradient end color for glow effect
+            const glowColor = gradientStops ? gradientStops[1] : series.color;
             glowAnimator.drawSeriesGlow(
                 ctx,
-                { coords, color: series.color, lineWidth: series.lineWidth },
+                { coords, color: glowColor, lineWidth: series.lineWidth },
                 {
                     basePhase: animationPhase,
                     seriesIndex: index,
@@ -851,12 +869,17 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         const lastContribution = contributionData[contributionData.length - 1];
         const x = xScale(lastContribution.date.getTime());
         const y = yScale(lastContribution.amount);
+        // Use gradient end color for contribution end marker
+        const contributionGradient = BALANCE_GRADIENTS['contribution'];
+        const contributionColor = contributionGradient
+            ? contributionGradient[1]
+            : colors.contribution;
         drawEndValue(
             ctx,
             x,
             y,
             lastContribution.amount,
-            colors.contribution,
+            contributionColor,
             isMobile,
             padding,
             plotWidth,
@@ -888,12 +911,15 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             return `${sign}$${amount.toFixed(0)}`;
         };
 
+        // Use gradient end color for balance end marker
+        const balanceGradient = BALANCE_GRADIENTS['balance'];
+        const balanceColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
         drawEndValue(
             ctx,
             x,
             y,
             lastBalance.value,
-            colors.portfolio,
+            balanceColor,
             isMobile,
             padding,
             plotWidth,
@@ -904,9 +930,20 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     }
 
     if (contributionLegendDirty) {
+        // Use gradient end colors for legend
+        const contributionGradient = BALANCE_GRADIENTS['contribution'];
+        const balanceGradient = BALANCE_GRADIENTS['balance'];
         const legendSeries = [
-            { key: 'contribution', name: 'Contribution', color: colors.contribution },
-            { key: 'balance', name: 'Balance', color: colors.portfolio },
+            {
+                key: 'contribution',
+                name: 'Contribution',
+                color: contributionGradient ? contributionGradient[1] : colors.contribution,
+            },
+            {
+                key: 'balance',
+                name: 'Balance',
+                color: balanceGradient ? balanceGradient[1] : colors.portfolio,
+            },
             { key: 'buy', name: 'Buy', color: colors.buy },
             { key: 'sell', name: 'Sell', color: colors.sell },
         ];
