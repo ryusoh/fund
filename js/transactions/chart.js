@@ -293,6 +293,61 @@ function drawEndValue(
     // Draw text with series color
     context.fillStyle = color;
     context.fillText(text, textX, textY);
+
+    return textY;
+}
+
+function drawStartValue(
+    context,
+    x,
+    y,
+    value,
+    color,
+    isMobile,
+    padding,
+    plotWidth,
+    plotHeight,
+    formatValue,
+    showBackground = false
+) {
+    const text = formatValue(value);
+    const fontSize = isMobile ? 9 : 11;
+    const fontFamily = 'var(--font-family-mono)';
+
+    context.font = `${fontSize}px ${fontFamily}`;
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+
+    const textMetrics = context.measureText(text);
+    const textWidth = textMetrics.width;
+    const textHeight = fontSize;
+    const bgPadding = 4;
+
+    // Anchor near the left plot boundary while respecting vertical limits
+    const baseX = padding.left + (isMobile ? 4 : 6);
+    const textX = Math.min(baseX, padding.left + plotWidth - textWidth - 2);
+    const textY = Math.max(
+        padding.top + textHeight / 2,
+        Math.min(y, padding.top + plotHeight - textHeight / 2)
+    );
+
+    if (showBackground) {
+        context.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        context.beginPath();
+        context.roundRect(
+            textX - bgPadding,
+            textY - textHeight / 2 - bgPadding,
+            textWidth + bgPadding * 2,
+            textHeight + bgPadding * 2,
+            3
+        );
+        context.fill();
+    }
+
+    context.fillStyle = color;
+    context.fillText(text, textX, textY);
+
+    return textY;
 }
 
 function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
@@ -825,6 +880,25 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     const animatedSeries = [];
     const filterStartTime = filterFrom ? filterFrom.getTime() : null;
 
+    const formatBalanceValue = (value) => {
+        const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+        const absolute = Math.abs(amount);
+        const sign = amount < 0 ? '-' : '';
+
+        if (absolute >= 1_000_000) {
+            const millions = absolute / 1_000_000;
+            return `${sign}$${millions.toFixed(2)}M`;
+        }
+        if (absolute >= 1_000) {
+            const thousands = absolute / 1_000;
+            return `${sign}$${thousands.toFixed(1)}k`;
+        }
+        return `${sign}$${amount.toFixed(0)}`;
+    };
+
+    let firstContributionLabelY = null;
+    let contributionEndLabelY = null;
+
     if (showContribution && contributionData.length > 0) {
         animatedSeries.push({
             key: 'contribution',
@@ -1121,22 +1195,48 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         stopContributionAnimation();
     }
 
-    // Draw end values using raw data to ensure accuracy
+    // Draw start and end values using raw data to ensure accuracy
     if (showContribution && rawContributionData.length > 0) {
-        const lastContribution = rawContributionData[rawContributionData.length - 1];
-        const x = xScale(lastContribution.date.getTime());
-        const y = yScale(lastContribution.amount);
-        // Use gradient end color for contribution end marker
         const contributionGradient = BALANCE_GRADIENTS['contribution'];
-        const contributionColor = contributionGradient
+        const contributionStartColor = contributionGradient
+            ? contributionGradient[0]
+            : colors.contribution;
+        const contributionEndColor = contributionGradient
             ? contributionGradient[1]
             : colors.contribution;
-        drawEndValue(
+
+        const firstContribution =
+            rawContributionData.find((item) => {
+                if (typeof item.orderType !== 'string') {
+                    return true;
+                }
+                return item.orderType.toLowerCase() !== 'padding';
+            }) ?? rawContributionData[0];
+        const firstContributionX = xScale(firstContribution.date.getTime());
+        const firstContributionY = yScale(firstContribution.amount);
+        firstContributionLabelY = drawStartValue(
             ctx,
-            x,
-            y,
+            firstContributionX,
+            firstContributionY,
+            firstContribution.amount,
+            contributionStartColor,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatCurrencyCompact,
+            true
+        );
+
+        const lastContribution = rawContributionData[rawContributionData.length - 1];
+        const lastContributionX = xScale(lastContribution.date.getTime());
+        const lastContributionY = yScale(lastContribution.amount);
+        contributionEndLabelY = drawEndValue(
+            ctx,
+            lastContributionX,
+            lastContributionY,
             lastContribution.amount,
-            contributionColor,
+            contributionEndColor,
             isMobile,
             padding,
             plotWidth,
@@ -1147,36 +1247,62 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     }
 
     if (showBalance && rawBalanceData.length > 0) {
-        const lastBalance = rawBalanceData[rawBalanceData.length - 1];
-        const x = xScale(lastBalance.date.getTime());
-        const y = yScale(lastBalance.value);
-
-        // Use more granular formatting for balance line
-        const formatBalanceValue = (value) => {
-            const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
-            const absolute = Math.abs(amount);
-            const sign = amount < 0 ? '-' : '';
-
-            if (absolute >= 1_000_000) {
-                const millions = absolute / 1_000_000;
-                return `${sign}$${millions.toFixed(2)}M`;
-            }
-            if (absolute >= 1_000) {
-                const thousands = absolute / 1_000;
-                return `${sign}$${thousands.toFixed(1)}k`;
-            }
-            return `${sign}$${amount.toFixed(0)}`;
-        };
-
-        // Use gradient end color for balance end marker
         const balanceGradient = BALANCE_GRADIENTS['balance'];
-        const balanceColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
+        const balanceStartColor = balanceGradient ? balanceGradient[0] : colors.portfolio;
+        const balanceEndColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
+
+        const firstBalance = rawBalanceData[0];
+        const firstBalanceX = xScale(firstBalance.date.getTime());
+        let firstBalanceY = yScale(firstBalance.value);
+        if (firstContributionLabelY !== null) {
+            const minGap = isMobile ? 18 : 14;
+            if (Math.abs(firstBalanceY - firstContributionLabelY) < minGap) {
+                if (firstBalanceY >= firstContributionLabelY) {
+                    firstBalanceY = Math.min(
+                        firstBalanceY + minGap,
+                        padding.top + plotHeight - minGap / 2
+                    );
+                } else {
+                    firstBalanceY = Math.max(firstBalanceY - minGap, padding.top + minGap / 2);
+                }
+            }
+        }
+        drawStartValue(
+            ctx,
+            firstBalanceX,
+            firstBalanceY,
+            firstBalance.value,
+            balanceStartColor,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatBalanceValue,
+            true
+        );
+
+        const lastBalance = rawBalanceData[rawBalanceData.length - 1];
+        const lastBalanceX = xScale(lastBalance.date.getTime());
+        let lastBalanceY = yScale(lastBalance.value);
+        if (contributionEndLabelY !== null) {
+            const minGap = isMobile ? 18 : 14;
+            if (Math.abs(lastBalanceY - contributionEndLabelY) < minGap) {
+                if (lastBalanceY >= contributionEndLabelY) {
+                    lastBalanceY = Math.min(
+                        lastBalanceY + minGap,
+                        padding.top + plotHeight - minGap / 2
+                    );
+                } else {
+                    lastBalanceY = Math.max(lastBalanceY - minGap, padding.top + minGap / 2);
+                }
+            }
+        }
         drawEndValue(
             ctx,
-            x,
-            y,
+            lastBalanceX,
+            lastBalanceY,
             lastBalance.value,
-            balanceColor,
+            balanceEndColor,
             isMobile,
             padding,
             plotWidth,
