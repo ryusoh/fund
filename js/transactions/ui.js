@@ -46,7 +46,7 @@ export function createUiController({ chartManager }) {
         // If switching from performance chart, always show contribution chart
         if (wasPerformanceChart && isVisible) {
             // Chart is already visible, just switch to contribution data
-            chartManager.update(transactionState.allTransactions, transactionState.splitHistory);
+            chartManager.update();
             return;
         }
 
@@ -63,10 +63,7 @@ export function createUiController({ chartManager }) {
             adjustMobilePanels();
             if (!plotSection.classList.contains('is-hidden')) {
                 // Force update to ensure contribution data is available
-                chartManager.update(
-                    transactionState.allTransactions,
-                    transactionState.splitHistory
-                );
+                chartManager.update();
             }
         });
     }

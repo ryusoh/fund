@@ -1,0 +1,18 @@
+
+  --------------------------------- RISK RATIOS --------------------------------------
+  Series                         Sharpe Ratio     Sortino Ratio     Treynor Ratio         Beta
+  ----------------------------   --------------   ---------------   ---------------   ----------
+  ^LZ                                    0.621            0.535            0.173         1.032
+  ^DJI                                   0.258            0.210            0.076         0.917
+  ^GSPC                                  0.418            0.339            0.104         1.016
+  ^HSI                                  -0.102           -0.086           -0.027         0.349
+  ^IXIC                                  0.389            0.309            0.103         1.186
+  ^N225                                  0.373            0.299            0.172         0.614
+  ^SSEC                                 -0.054           -0.043            0.043         0.239
+
+  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).
+        Higher values indicate better risk-adjusted returns.
+
+        - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)
+        - Sortino Ratio: (Return - Risk-Free) / Downside Volatility
+        - Treynor Ratio: (Return - Risk-Free) / Beta (vs ^GSPC)

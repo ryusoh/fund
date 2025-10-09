@@ -18,6 +18,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/generate_composition_data.py \
 		 scripts/twrr/step05_cashflows.py \
 		 scripts/twrr/step06_compute_twrr.py \
+		 scripts/ratios/calculate_ratios.py \
 		 scripts/twrr/step07_plot_twrr.py
 
 help:

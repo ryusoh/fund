@@ -51,183 +51,98 @@ export async function loadTransactionData() {
     return parseCSV(csvText);
 }
 
-export async function loadHistoricalPrices() {
-    try {
-        const response = await fetch('../data/historical_prices.json');
-        if (!response.ok) {
-            logger.warn('historical_prices.json not found; dynamic portfolio balance disabled');
-            return {};
-        }
-        return await response.json();
-    } catch (error) {
-        logger.warn('Failed to load historical prices:', error);
-        return {};
-    }
-}
-
 export async function loadPortfolioSeries() {
     try {
-        const response = await fetch('../data/historical_portfolio_values.csv');
+        const response = await fetch('../data/output/balance_series.json');
         if (!response.ok) {
-            logger.warn(
-                'historical_portfolio_values.csv not found; portfolio balance line disabled'
-            );
+            logger.warn('balance_series.json not found; portfolio balance line disabled');
             return [];
         }
-
-        const text = await response.text();
-        const lines = text.trim().split('\n');
-        if (lines.length <= 1) {
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
             return [];
         }
-
-        const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-        const dateIndex = headers.indexOf('date');
-        const valueIndex = headers.indexOf('value_usd');
-        if (dateIndex === -1 || valueIndex === -1) {
-            logger.warn(
-                'historical_portfolio_values.csv missing required columns (date, value_usd)'
-            );
-            return [];
-        }
-
-        const series = [];
-        for (let i = 1; i < lines.length; i += 1) {
-            const row = lines[i].split(',');
-            if (row.length <= Math.max(dateIndex, valueIndex)) {
-                continue;
-            }
-            const date = row[dateIndex];
-            const value = parseFloat(row[valueIndex]);
-            if (!Number.isFinite(value)) {
-                continue;
-            }
-            series.push({ date, value });
-        }
-        return series;
+        return payload
+            .map((entry) => ({
+                date: typeof entry.date === 'string' ? entry.date : null,
+                value: Number(entry.value),
+            }))
+            .filter((entry) => typeof entry.date === 'string' && Number.isFinite(entry.value));
     } catch (error) {
-        logger.warn('Failed to load historical portfolio values:', error);
+        logger.warn('Failed to load balance series:', error);
         return [];
     }
 }
 
-function decodePlotlyVector(column) {
-    if (!column) {
+export async function loadContributionSeries() {
+    try {
+        const response = await fetch('../data/output/contribution_series.json');
+        if (!response.ok) {
+            logger.warn('contribution_series.json not found; contribution chart disabled');
+            return [];
+        }
+
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+            return [];
+        }
+
+        return payload
+            .map((entry) => ({
+                tradeDate: typeof entry.tradeDate === 'string' ? entry.tradeDate : null,
+                amount: Number(entry.amount),
+                orderType: typeof entry.orderType === 'string' ? entry.orderType : 'padding',
+                netAmount: Number(entry.netAmount || 0),
+            }))
+            .filter(
+                (entry) =>
+                    typeof entry.tradeDate === 'string' &&
+                    Number.isFinite(entry.amount) &&
+                    Number.isFinite(entry.netAmount)
+            );
+    } catch (error) {
+        logger.warn('Failed to load contribution series:', error);
         return [];
     }
-
-    if (Array.isArray(column)) {
-        const numericValues = column
-            .map((value) => Number(value))
-            .filter((value) => Number.isFinite(value));
-        if (numericValues.length === column.length && column.length > 0) {
-            return numericValues;
-        }
-        return [...column];
-    }
-
-    if (typeof column === 'object' && typeof column.bdata === 'string') {
-        const binaryString = globalThis.atob(column.bdata);
-        const { length } = binaryString;
-        const bytes = new Uint8Array(length);
-        for (let i = 0; i < length; i += 1) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const buffer = bytes.buffer;
-        switch (column.dtype) {
-            case 'f8':
-                return Array.from(new Float64Array(buffer));
-            case 'f4':
-                return Array.from(new Float32Array(buffer));
-            case 'i4':
-                return Array.from(new Int32Array(buffer));
-            case 'u4':
-                return Array.from(new Uint32Array(buffer));
-            case 'i2':
-                return Array.from(new Int16Array(buffer));
-            case 'u2':
-                return Array.from(new Uint16Array(buffer));
-            case 'i1':
-                return Array.from(new Int8Array(buffer));
-            case 'u1':
-                return Array.from(new Uint8Array(buffer));
-            default:
-                return [];
-        }
-    }
-
-    return [];
 }
 
 export async function loadPerformanceSeries() {
     try {
-        const response = await fetch('../data/output/figures/twrr.json');
+        const response = await fetch('../data/output/performance_series.json');
         if (!response.ok) {
-            logger.warn('twrr.json not found; CAGR terminal command disabled');
+            logger.warn('performance_series.json not found; performance chart disabled');
             return {};
         }
 
         const payload = await response.json();
-        const traces = Array.isArray(payload.data) ? payload.data : [];
-        if (traces.length === 0) {
+        if (!payload || typeof payload !== 'object') {
             return {};
         }
 
         const seriesMap = {};
-
-        traces.forEach((trace, index) => {
-            const rawDates = Array.isArray(trace.x) ? trace.x : decodePlotlyVector(trace.x);
-            const values = decodePlotlyVector(trace.y);
-            if (!rawDates || rawDates.length === 0 || values.length === 0) {
+        Object.entries(payload).forEach(([rawKey, points]) => {
+            if (!Array.isArray(points) || points.length === 0) {
                 return;
             }
 
-            const points = [];
-            const count = Math.min(rawDates.length, values.length);
-            for (let i = 0; i < count; i += 1) {
-                const rawDate = rawDates[i];
-                const numericValue = values[i];
-                if (!Number.isFinite(numericValue)) {
-                    continue;
-                }
-                const parsedDate = normalizeDate(rawDate);
-                if (!parsedDate) {
-                    continue;
-                }
-                points.push({ date: parsedDate, value: numericValue });
+            const normalizedPoints = points
+                .map((point) => ({
+                    date: typeof point.date === 'string' ? point.date : null,
+                    value: Number(point.value),
+                }))
+                .filter((point) => typeof point.date === 'string' && Number.isFinite(point.value));
+
+            if (normalizedPoints.length === 0) {
+                return;
             }
-            if (points.length > 0) {
-                const rawKey =
-                    typeof trace.name === 'string' && trace.name.trim()
-                        ? trace.name.trim()
-                        : `Series ${index + 1}`;
-                const key = normalizeSeriesKey(rawKey, `Series ${index + 1}`);
-                seriesMap[key] = points;
-            }
+
+            const key = normalizeSeriesKey(rawKey, rawKey);
+            seriesMap[key] = normalizedPoints;
         });
 
         return seriesMap;
     } catch (error) {
-        logger.warn('Failed to load TWRR JSON:', error);
+        logger.warn('Failed to load performance series:', error);
         return {};
     }
-}
-
-function normalizeDate(input) {
-    if (input instanceof Date) {
-        if (Number.isNaN(input.getTime())) {
-            return null;
-        }
-        return input.toISOString();
-    }
-    if (typeof input === 'number') {
-        const fromNumber = new Date(input);
-        return Number.isNaN(fromNumber.getTime()) ? null : fromNumber.toISOString();
-    }
-    if (typeof input === 'string') {
-        const parsed = new Date(input);
-        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-    }
-    return null;
 }

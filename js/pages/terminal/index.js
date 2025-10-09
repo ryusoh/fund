@@ -5,16 +5,15 @@ import {
     setSplitHistory,
     resetSortState,
     setFilteredTransactions,
-    setHistoricalPrices,
     setPortfolioSeries,
+    setRunningAmountSeries,
     setPerformanceSeries,
 } from '@js/transactions/state.js';
-import { buildRunningAmountSeries, buildPortfolioSeries } from '@js/transactions/calculations.js';
 import {
     loadSplitHistory,
     loadTransactionData,
-    loadHistoricalPrices,
     loadPortfolioSeries,
+    loadContributionSeries,
     loadPerformanceSeries,
 } from '@js/transactions/dataLoader.js';
 import { initTable } from '@js/transactions/table.js';
@@ -29,21 +28,20 @@ let uiController;
 
 async function loadTransactions() {
     try {
-        // Use Promise.all to wait for all data to be loaded in parallel
-        const [transactions, splits, historicalPrices, portfolioSeries, performanceSeries] =
+        const [transactions, splits, portfolioSeries, runningSeries, performanceSeries] =
             await Promise.all([
                 loadTransactionData(),
                 loadSplitHistory(),
-                loadHistoricalPrices(),
                 loadPortfolioSeries(),
+                loadContributionSeries(),
                 loadPerformanceSeries(),
             ]);
 
         setAllTransactions(transactions);
         setFilteredTransactions(transactions);
         setSplitHistory(splits);
-        setHistoricalPrices(historicalPrices);
         setPortfolioSeries(portfolioSeries);
+        setRunningAmountSeries(runningSeries);
         setPerformanceSeries(performanceSeries);
 
         const transactionTable = document.getElementById('transactionTable');
@@ -67,11 +65,13 @@ async function loadTransactions() {
 }
 
 function initialize() {
-    chartManager = createChartManager({ buildRunningAmountSeries, buildPortfolioSeries });
+    chartManager = createChartManager();
     tableController = initTable({
-        onFilterChange: (filtered) => {
+        onFilterChange: () => {
             if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update(filtered, transactionState.splitHistory);
+                if (transactionState.activeChart) {
+                    chartManager.update();
+                }
             }
         },
     });

@@ -1,9 +1,4 @@
-import {
-    transactionState,
-    setRunningAmountSeries,
-    setPortfolioSeries,
-    setChartVisibility,
-} from './state.js';
+import { transactionState, setChartVisibility } from './state.js';
 import { formatCurrencyCompact } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
@@ -859,9 +854,17 @@ function drawAxes(
 
 // --- Chart Drawing Functions ---
 
-function drawContributionChart(ctx, chartManager, timestamp) {
+async function drawContributionChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
-    const { runningAmountSeries, portfolioSeries, chartVisibility } = transactionState;
+
+    const runningAmountSeries = Array.isArray(transactionState.runningAmountSeries)
+        ? transactionState.runningAmountSeries
+        : [];
+    const portfolioSeries = Array.isArray(transactionState.portfolioSeries)
+        ? transactionState.portfolioSeries
+        : [];
+
+    const { chartVisibility } = transactionState;
     const visibility = chartVisibility || {};
     const showContribution = visibility.contribution !== false;
     const showBalance = visibility.balance !== false;
@@ -915,9 +918,14 @@ function drawContributionChart(ctx, chartManager, timestamp) {
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         stopContributionAnimation();
+        if (emptyState) {
+            emptyState.style.display = '';
+        }
         return;
     }
-    emptyState.style.display = 'none';
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
 
     const isMobile = window.innerWidth <= 768;
     const padding = isMobile
@@ -1135,6 +1143,9 @@ function drawContributionChart(ctx, chartManager, timestamp) {
 
     if (showMarkersConfig) {
         rawContributionData.forEach((item) => {
+            if (typeof item.orderType !== 'string') {
+                return;
+            }
             const type = item.orderType.toLowerCase();
             if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
                 return;
@@ -1164,6 +1175,9 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     const volumeGroups = new Map();
 
     rawContributionData.forEach((item) => {
+        if (typeof item.orderType !== 'string') {
+            return;
+        }
         const type = item.orderType.toLowerCase();
         if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
             return;
@@ -1538,32 +1552,48 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     }
 }
 
-function drawPerformanceChart(ctx, chartManager, timestamp) {
-    const { performanceSeries, chartVisibility } = transactionState;
+async function drawPerformanceChart(ctx, chartManager, timestamp) {
+    const performanceSeries =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+
+    const { chartVisibility } = transactionState;
     stopContributionAnimation();
-    if (!performanceSeries || Object.keys(performanceSeries).length === 0) {
+    if (Object.keys(performanceSeries).length === 0) {
         stopPerformanceAnimation();
         return;
     }
 
-    const availableSeries = Object.keys(performanceSeries);
-    if (availableSeries.length > 0) {
-        availableSeries.forEach((key) => {
-            if (transactionState.chartVisibility[key] === undefined) {
-                transactionState.chartVisibility[key] = key === '^LZ' ? true : key === '^GSPC';
-            }
-        });
-    }
+    const orderedKeys = Object.keys(performanceSeries).sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
 
-    const canvas = ctx.canvas;
-    const emptyState = document.getElementById('runningAmountEmpty');
-    emptyState.style.display = 'none';
+    orderedKeys.forEach((key) => {
+        if (transactionState.chartVisibility[key] === undefined) {
+            transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
+        }
+    });
+
+    const allPossibleSeries = orderedKeys.map((key) => {
+        const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        return {
+            key,
+            name: key,
+            data: points.map((point) => ({
+                date: point.date,
+                value: Number(point.value),
+            })),
+        };
+    });
+
     const visibility = chartVisibility || {};
-    const allPossibleSeries = Object.entries(performanceSeries).map(([key, data]) => ({
-        key,
-        name: key,
-        data,
-    }));
     const seriesToDraw = allPossibleSeries.filter((s) => visibility[s.key] !== false);
 
     if (seriesToDraw.length === 0 && allPossibleSeries.length > 0) {
@@ -1571,6 +1601,12 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     } else if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
         return;
+    }
+
+    const canvas = ctx.canvas;
+    const emptyState = document.getElementById('runningAmountEmpty');
+    if (emptyState) {
+        emptyState.style.display = 'none';
     }
 
     const isMobile = window.innerWidth <= 768;
@@ -1584,13 +1620,19 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
 
-    let normalizedSeriesToDraw = seriesToDraw;
+    const cloneSeries = (series) => ({
+        ...series,
+        data: Array.isArray(series.data) ? series.data.map((point) => ({ ...point })) : [],
+    });
+
+    let normalizedSeriesToDraw = seriesToDraw.map(cloneSeries);
+
     if (filterFrom || filterTo) {
-        normalizedSeriesToDraw = seriesToDraw.map((series) => {
+        normalizedSeriesToDraw = normalizedSeriesToDraw.map((series) => {
             const filteredData = series.data
                 .map((d) => ({ ...d, date: new Date(d.date) }))
                 .filter((d) => {
-                    const pointDate = new Date(d.date);
+                    const pointDate = d.date;
                     return (
                         (!filterFrom || pointDate >= filterFrom) &&
                         (!filterTo || pointDate <= filterTo)
@@ -1598,13 +1640,13 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
                 });
 
             if (filteredData.length === 0) {
-                return series;
+                return { ...series, data: [] };
             }
 
             const startValue = filteredData[0].value;
             const normalizedData = filteredData.map((d) => ({
                 ...d,
-                value: (d.value / startValue) * 100,
+                value: Number.isFinite(startValue) && startValue !== 0 ? d.value / startValue : 1,
             }));
 
             return {
@@ -1614,7 +1656,22 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         });
     }
 
-    const allPoints = normalizedSeriesToDraw.flatMap((s) => s.data);
+    const percentSeriesToDraw = normalizedSeriesToDraw.map((series) => {
+        if (!Array.isArray(series.data) || series.data.length === 0) {
+            return { ...series, data: [] };
+        }
+        const baseValue = series.data[0].value;
+        const safeBase = Number.isFinite(baseValue) && baseValue !== 0 ? baseValue : 1;
+        return {
+            ...series,
+            data: series.data.map((point) => ({
+                ...point,
+                value: (point.value / safeBase - 1) * 100,
+            })),
+        };
+    });
+
+    const allPoints = percentSeriesToDraw.flatMap((s) => s.data);
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;
@@ -1628,7 +1685,7 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.05, 5);
-    const yMin = Math.max(dataMin - yPadding, 0);
+    const yMin = dataMin - yPadding;
     const yMax = dataMax + yPadding;
 
     const xScale = (t) =>
@@ -1669,7 +1726,7 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         '^N225': BENCHMARK_GRADIENTS['^N225'][1],
     };
 
-    const seriesForDrawing = normalizedSeriesToDraw.slice().sort((a, b) => {
+    const seriesForDrawing = percentSeriesToDraw.slice().sort((a, b) => {
         const aIsPortfolio = a.key === '^LZ';
         const bIsPortfolio = b.key === '^LZ';
         if (aIsPortfolio && !bIsPortfolio) {
@@ -1692,7 +1749,7 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         right: padding.left + plotWidth,
     };
 
-    const performanceBaselineY = chartBounds.bottom;
+    const performanceBaselineY = yScale(0);
 
     seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
@@ -2368,10 +2425,10 @@ function drawCompositionChart(ctx, chartManager) {
 
 // --- Main Chart Manager ---
 
-export function createChartManager({ buildRunningAmountSeries, buildPortfolioSeries }) {
+export function createChartManager() {
     let pendingFrame = null;
 
-    const renderFrame = (timestamp) => {
+    const renderFrame = async (timestamp) => {
         pendingFrame = null;
         const canvas = document.getElementById('runningAmountCanvas');
         if (!canvas) {
@@ -2409,28 +2466,16 @@ export function createChartManager({ buildRunningAmountSeries, buildPortfolioSer
         ctx.clearRect(0, 0, displayWidth, displayHeight);
 
         if (transactionState.activeChart === 'performance') {
-            drawPerformanceChart(ctx, chartManager, timestamp);
+            await drawPerformanceChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
         } else {
-            drawContributionChart(ctx, chartManager, timestamp);
+            await drawContributionChart(ctx, chartManager, timestamp);
         }
     };
 
     const chartManager = {
-        update(transactions, splitHistory) {
-            // Always update contribution data when update is called
-            const contributionSeries = buildRunningAmountSeries(transactions, splitHistory);
-            setRunningAmountSeries(contributionSeries);
-
-            if (buildPortfolioSeries) {
-                const portfolioSeries = buildPortfolioSeries(
-                    transactions,
-                    transactionState.historicalPrices,
-                    transactionState.splitHistory
-                );
-                setPortfolioSeries(portfolioSeries);
-            }
+        update() {
             performanceLegendDirty = true;
             contributionLegendDirty = true;
             this.redraw();

@@ -1,9 +1,13 @@
 import { jest } from '@jest/globals';
 
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('Contribution chart legend toggles', () => {
     let originalRAF;
     let originalCAF;
     let originalGetContext;
+    let originalFetch;
+    let fetchMock;
 
     beforeEach(() => {
         global.HTMLCanvasElement = global.HTMLCanvasElement || class {};
@@ -16,6 +20,33 @@ describe('Contribution chart legend toggles', () => {
         };
         global.cancelAnimationFrame = jest.fn();
         originalGetContext = global.HTMLCanvasElement.prototype.getContext;
+
+        originalFetch = global.fetch;
+        fetchMock = jest.fn((url) => {
+            if (url.includes('contribution_series')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => [
+                        { tradeDate: '2024-01-01', amount: 100 },
+                        { tradeDate: '2024-01-02', amount: 200 },
+                    ],
+                });
+            }
+            if (url.includes('balance_series')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => [
+                        { date: '2024-01-01', value: 200 },
+                        { date: '2024-01-02', value: 210 },
+                    ],
+                });
+            }
+            return Promise.resolve({
+                ok: true,
+                json: async () => ({}),
+            });
+        });
+        global.fetch = fetchMock;
     });
 
     afterEach(() => {
@@ -31,13 +62,20 @@ describe('Contribution chart legend toggles', () => {
         }
         global.HTMLCanvasElement.prototype.getContext = originalGetContext;
         document.body.innerHTML = '';
+
+        if (originalFetch) {
+            global.fetch = originalFetch;
+        } else {
+            delete global.fetch;
+        }
     });
 
-    test('legend clicks toggle contribution visibility', () => {
-        const { ANIMATED_LINE_SETTINGS } = require('../../js/config.js');
+    test('legend clicks toggle contribution visibility', async () => {
+        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('../../js/config.js');
         ANIMATED_LINE_SETTINGS.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.contribution.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.performance.enabled = false;
+        mountainFill.enabled = false;
 
         const { transactionState } = require('../../js/transactions/state.js');
         const { createChartManager } = require('../../js/transactions/chart.js');
@@ -51,8 +89,8 @@ describe('Contribution chart legend toggles', () => {
         };
         transactionState.chartDateRange = { from: null, to: null };
         transactionState.runningAmountSeries = [
-            { tradeDate: '2024-01-01', orderType: 'buy', amount: 100, netAmount: 500 },
-            { tradeDate: '2024-01-02', orderType: 'sell', amount: 120, netAmount: -300 },
+            { tradeDate: '2024-01-01', amount: 100, orderType: 'Buy', netAmount: 100 },
+            { tradeDate: '2024-01-02', amount: 120, orderType: 'Sell', netAmount: -20 },
         ];
         transactionState.portfolioSeries = [
             { date: '2024-01-01', value: 200 },
@@ -89,17 +127,17 @@ describe('Contribution chart legend toggles', () => {
             fillText: jest.fn(),
             measureText: jest.fn(() => ({ width: 10 })),
             roundRect: jest.fn(),
+            fillRect: jest.fn(),
+            strokeRect: jest.fn(),
         };
         ctxStub.canvas = canvas;
 
         global.HTMLCanvasElement.prototype.getContext = jest.fn(() => ctxStub);
 
-        const chartManager = createChartManager({
-            buildRunningAmountSeries: () => transactionState.runningAmountSeries,
-            buildPortfolioSeries: () => transactionState.portfolioSeries,
-        });
-
+        const chartManager = createChartManager();
         chartManager.redraw();
+        await flushPromises();
+        await flushPromises();
 
         let contributionLegend = document.querySelector(
             '.chart-legend .legend-item[data-series="contribution"]'
@@ -108,6 +146,8 @@ describe('Contribution chart legend toggles', () => {
         expect(transactionState.chartVisibility.contribution).toBe(true);
 
         contributionLegend.dispatchEvent(new Event('click', { bubbles: true }));
+        await flushPromises();
+        await flushPromises();
 
         contributionLegend = document.querySelector(
             '.chart-legend .legend-item[data-series="contribution"]'
@@ -117,6 +157,8 @@ describe('Contribution chart legend toggles', () => {
         expect(transactionState.chartVisibility.contribution).toBe(false);
 
         contributionLegend.dispatchEvent(new Event('click', { bubbles: true }));
+        await flushPromises();
+        await flushPromises();
 
         contributionLegend = document.querySelector(
             '.chart-legend .legend-item[data-series="contribution"]'

@@ -6,692 +6,65 @@ import {
     setChartDateRange,
     setActiveChart,
 } from './state.js';
-import { formatCurrency } from './utils.js';
-import { calculateStats, calculateHoldings } from './calculations.js';
 
-const ALLOWED_BENCHMARKS = new Set(['^GSPC', '^IXIC', '^DJI', '^SSEC', '^HSI', '^N225']);
-
-function isPortfolioSymbol(name) {
-    const lower = String(name || '').toLowerCase();
-    return lower.includes('portfolio') || lower.includes('twrr') || lower.includes('lz');
-}
-
-function getStatsText() {
-    const stats = calculateStats(transactionState.allTransactions, transactionState.splitHistory);
-    return `\n-------------------- TRANSACTION STATS ---------------------\n  Total Transactions: ${stats.totalTransactions.toLocaleString()}\n  Buy Orders:         ${stats.totalBuys.toLocaleString()}\n  Sell Orders:        ${stats.totalSells.toLocaleString()}\n  Total Buy Amount:   ${formatCurrency(stats.totalBuyAmount)}\n  Total Sell Amount:  ${formatCurrency(stats.totalSellAmount)}\n  Net Amount:         ${formatCurrency(stats.netAmount)}\n  Realized Gain:      ${formatCurrency(stats.realizedGain)}\n`;
+async function getStatsText() {
+    try {
+        const response = await fetch('../data/output/transaction_stats.txt');
+        if (!response.ok) {
+            return 'Error loading transaction stats.';
+        }
+        return await response.text();
+    } catch {
+        return 'Error loading transaction stats.';
+    }
 }
 
 async function getHoldingsText() {
-    // Get share counts from transactions (for debugging)
-    const holdings = calculateHoldings(
-        transactionState.allTransactions,
-        transactionState.splitHistory
-    );
-
-    // Get authoritative cost basis from holdings_details.json
-    let holdingsDetails = {};
     try {
-        const response = await fetch('../data/holdings_details.json');
-        holdingsDetails = await response.json();
+        const response = await fetch('../data/output/holdings.txt');
+        if (!response.ok) {
+            return 'Error loading holdings data.';
+        }
+        return await response.text();
     } catch {
-        // console.warn(
-        //     'Could not load holdings_details.json, falling back to transaction-based calculation'
-        // );
+        return 'Error loading holdings data.';
     }
-
-    const activeHoldings = Object.entries(holdings).filter(
-        ([, data]) => Math.abs(data.shares) > 0.001
-    );
-    if (activeHoldings.length === 0) {
-        return 'No current holdings.';
-    }
-
-    let table = '  Security        | Shares         | Avg Price      | Total Cost     \n';
-    table += '  ----------------|----------------|----------------|----------------\n';
-    activeHoldings
-        .sort((a, b) => {
-            // Sort by total cost, using authoritative data if available
-            const aCost = holdingsDetails[a[0]]
-                ? parseFloat(holdingsDetails[a[0]].shares) *
-                  parseFloat(holdingsDetails[a[0]].average_price)
-                : b[1].totalCost;
-            const bCost = holdingsDetails[b[0]]
-                ? parseFloat(holdingsDetails[b[0]].shares) *
-                  parseFloat(holdingsDetails[b[0]].average_price)
-                : b[1].totalCost;
-            return bCost - aCost;
-        })
-        .forEach(([security, data]) => {
-            const isNegative = data.shares < 0;
-            const sec = `  ${security}${isNegative ? ' ⚠️' : ''}`.padEnd(17);
-
-            // Use transaction-based shares for debugging (normalized to 2 decimal places)
-            const shares = data.shares
-                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                .padStart(14);
-
-            // Use authoritative cost basis if available, otherwise fall back to transaction calculation
-            let avgPrice, totalCost;
-            if (holdingsDetails[security]) {
-                avgPrice = parseFloat(holdingsDetails[security].average_price);
-                totalCost = parseFloat(holdingsDetails[security].shares) * avgPrice;
-            } else {
-                avgPrice = data.avgPrice;
-                totalCost = data.totalCost;
-            }
-
-            const avgPriceStr = `$${avgPrice.toFixed(2)}`.padStart(14);
-            const totalCostStr = formatCurrency(totalCost).padStart(14);
-            table += `${sec} | ${shares} | ${avgPriceStr} | ${totalCostStr}\n`;
-        });
-    return table;
 }
 
-function formatPercent(value) {
-    if (!Number.isFinite(value)) {
-        return 'N/A';
-    }
-    const percentage = value * 100;
-    const sign = percentage >= 0 ? '' : '-';
-    return `${sign}${Math.abs(percentage).toFixed(2)}%`;
-}
-
-function getCagrText() {
-    const seriesMap =
-        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
-            ? transactionState.performanceSeries
-            : {};
-
-    const entries = Object.entries(seriesMap);
-    if (entries.length === 0) {
-        return 'CAGR unavailable: performance series not loaded yet.';
-    }
-
-    const baseEntry = selectBaseSeries(entries);
-    const baseSeries = baseEntry[1];
-    if (!Array.isArray(baseSeries) || baseSeries.length < 2) {
-        return 'CAGR unavailable: insufficient portfolio observations.';
-    }
-
-    const sortedBase = [...baseSeries].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    const baseFirst = sortedBase.find((point) => Number.isFinite(point.value) && point.value > 0);
-    const baseLast = [...sortedBase]
-        .reverse()
-        .find((point) => Number.isFinite(point.value) && point.value > 0);
-
-    if (!baseFirst || !baseLast) {
-        return 'CAGR unavailable: portfolio series contains invalid values.';
-    }
-
-    const startDate = new Date(baseFirst.date);
-    const endDate = new Date(baseLast.date);
-    const durationMs = endDate.getTime() - startDate.getTime();
-    const years = durationMs / (365.25 * 24 * 60 * 60 * 1000);
-
-    if (!Number.isFinite(years) || years <= 0) {
-        return 'CAGR unavailable: invalid measurement period.';
-    }
-
-    const startLabel = startDate.toISOString().slice(0, 10);
-    const endLabel = endDate.toISOString().slice(0, 10);
-
-    const metrics = entries
-        .map(([name, points]) => ({
-            name,
-            ...computeSeriesMetrics(points, startDate, endDate, years),
-        }))
-        .filter((item) => item.cagr !== null);
-
-    if (metrics.length === 0) {
-        return 'CAGR unavailable: no comparable series with valid data.';
-    }
-
-    const header =
-        '\n--------------------- PERFORMANCE CAGR --------------------\n' +
-        `  Period:        ${startLabel} → ${endLabel}\n` +
-        `  Years:         ${years.toFixed(2)}\n\n` +
-        '  Series                         Total Return        CAGR\n' +
-        '  ----------------------------   ------------   ---------\n';
-
-    const lines = metrics
-        .map((item) => {
-            const name = `  ${item.name}`.padEnd(30);
-            const total = formatPercent(item.totalReturn).padStart(12);
-            const cagrValue = formatPercent(item.cagr).padStart(9);
-            return `${name}   ${total}   ${cagrValue}`;
-        })
-        .join('\n');
-
-    const skipped = entries.length - metrics.length;
-    const footer = skipped
-        ? `\n\n  Note: ${skipped} series omitted due to missing data in this window.`
-        : '';
-
-    return header + lines + footer + '\n';
-}
-
-function computeSeriesMetrics(points, startDate, endDate, years) {
-    if (!Array.isArray(points) || points.length < 2) {
-        return { totalReturn: null, cagr: null };
-    }
-
-    const filtered = points
-        .map((point) => ({
-            date: new Date(point.date),
-            value: Number(point.value),
-        }))
-        .filter(
-            (point) =>
-                Number.isFinite(point.value) &&
-                !Number.isNaN(point.date.getTime()) &&
-                point.date >= startDate &&
-                point.date <= endDate
-        )
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    if (filtered.length < 2) {
-        return { totalReturn: null, cagr: null };
-    }
-
-    const first = filtered.find((point) => point.value > 0);
-    const last = [...filtered].reverse().find((point) => point.value > 0);
-
-    if (!first || !last) {
-        return { totalReturn: null, cagr: null };
-    }
-
-    const growthRatio = last.value / first.value;
-    if (!Number.isFinite(growthRatio) || growthRatio <= 0) {
-        return { totalReturn: null, cagr: null };
-    }
-
-    const totalReturn = growthRatio - 1;
-    const cagr = Math.pow(growthRatio, 1 / years) - 1;
-    return { totalReturn, cagr };
-}
-
-function computeAnnualReturns(points) {
-    if (!Array.isArray(points) || points.length < 2) {
-        return {};
-    }
-
-    const grouped = new Map();
-
-    points.forEach((point) => {
-        const value = Number(point.value);
-        const date = new Date(point.date);
-        if (!Number.isFinite(value) || Number.isNaN(date.getTime()) || value <= 0) {
-            return;
+async function getCagrText() {
+    try {
+        const response = await fetch('../data/output/cagr.txt');
+        if (!response.ok) {
+            return 'Error loading CAGR data.';
         }
-        const year = date.getUTCFullYear();
-        if (!grouped.has(year)) {
-            grouped.set(year, []);
-        }
-        grouped.get(year).push({ date, value });
-    });
-
-    const result = {};
-    grouped.forEach((entries, year) => {
-        const sorted = entries.sort((a, b) => a.date.getTime() - b.date.getTime());
-        if (sorted.length < 2) {
-            return;
-        }
-        const first = sorted[0];
-        const last = sorted[sorted.length - 1];
-        if (first.value <= 0 || last.value <= 0) {
-            return;
-        }
-        const growthRatio = last.value / first.value;
-        if (!Number.isFinite(growthRatio) || growthRatio <= 0) {
-            return;
-        }
-        result[year] = growthRatio - 1;
-    });
-
-    return result;
+        return await response.text();
+    } catch {
+        return 'Error loading CAGR data.';
+    }
 }
 
-function selectBaseSeries(entries) {
-    const preferences = ['lz', 'portfolio', 'twrr'];
-    for (const preference of preferences) {
-        const match = entries.find(([name]) => name.toLowerCase().includes(preference));
-        if (match) {
-            return match;
+async function getAnnualReturnText() {
+    try {
+        const response = await fetch('../data/output/annual_returns.txt');
+        if (!response.ok) {
+            return 'Error loading annual returns.';
         }
+        return await response.text();
+    } catch {
+        return 'Error loading annual returns.';
     }
-    return entries[0];
-}
-
-function getAnnualReturnText() {
-    const seriesMap =
-        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
-            ? transactionState.performanceSeries
-            : {};
-
-    const entries = Object.entries(seriesMap);
-    if (entries.length === 0) {
-        return 'Return breakdown unavailable: performance series not loaded yet.';
-    }
-
-    const annualData = entries
-        .map(([name, points]) => ({ name, returns: computeAnnualReturns(points) }))
-        .filter((entry) => Object.keys(entry.returns).length > 0);
-
-    if (annualData.length === 0) {
-        return 'Return breakdown unavailable: no series contain annual data.';
-    }
-
-    const baseName = selectBaseSeries(entries)[0];
-    const baseEntry = annualData.find((entry) => entry.name === baseName);
-    const others = annualData
-        .filter((entry) => entry.name !== baseName)
-        .sort((a, b) => (a.name > b.name ? 1 : -1));
-    const orderedSeries = baseEntry ? [baseEntry, ...others] : others;
-
-    const yearSet = new Set();
-    annualData.forEach((entry) => {
-        Object.keys(entry.returns).forEach((year) => yearSet.add(Number(year)));
-    });
-
-    if (yearSet.size === 0) {
-        return 'Return breakdown unavailable: unable to derive annual windows.';
-    }
-
-    const years = Array.from(yearSet).sort((a, b) => a - b);
-
-    // Calculate the total width of the data rows to match the header
-    const yearColumnWidth = 8;
-    const seriesColumnWidth = 12;
-    const totalDataWidth = yearColumnWidth + orderedSeries.length * seriesColumnWidth;
-    const headerWidth = Math.max(55, totalDataWidth); // Ensure minimum width of 55
-
-    const header =
-        '\n' +
-        '-'.repeat(headerWidth) +
-        '\n' +
-        '  ANNUAL RETURNS'.padStart(Math.floor(headerWidth / 2) + 8).padEnd(headerWidth) +
-        '\n' +
-        '-'.repeat(headerWidth) +
-        '\n' +
-        '  Year'.padEnd(yearColumnWidth) +
-        orderedSeries.map((entry) => entry.name.padStart(seriesColumnWidth)).join('') +
-        '\n';
-
-    const rows = years
-        .map((year) => {
-            const yearLabel = `  ${year}`.padEnd(8);
-            const columns = orderedSeries
-                .map((entry) => {
-                    const value = entry.returns[year];
-                    return formatPercent(Number.isFinite(value) ? value : NaN).padStart(12);
-                })
-                .join('');
-            return yearLabel + columns;
-        })
-        .join('\n');
-
-    return `${header}${rows}\n`;
-}
-
-function calculateSharpeRatio(returns, riskFreeRate = 0.053) {
-    if (!Array.isArray(returns) || returns.length < 2) {
-        return null;
-    }
-
-    const validReturns = returns.filter((r) => Number.isFinite(r));
-    if (validReturns.length < 2) {
-        return null;
-    }
-
-    const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
-    const variance =
-        validReturns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) /
-        (validReturns.length - 1);
-    const stdDev = Math.sqrt(variance);
-
-    if (stdDev === 0) {
-        return null;
-    }
-
-    return (meanReturn - riskFreeRate / 252) / stdDev; // Daily risk-free rate
-}
-
-function calculateSortinoRatio(returns, riskFreeRate = 0.053) {
-    if (!Array.isArray(returns) || returns.length < 2) {
-        return null;
-    }
-
-    const validReturns = returns.filter((r) => Number.isFinite(r));
-    if (validReturns.length < 2) {
-        return null;
-    }
-
-    const meanReturn = validReturns.reduce((sum, r) => sum + r, 0) / validReturns.length;
-    const negativeReturns = validReturns.filter((r) => r < 0);
-
-    if (negativeReturns.length === 0) {
-        return null; // No downside risk
-    }
-
-    const downsideVariance =
-        negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / validReturns.length;
-    const downsideDeviation = Math.sqrt(downsideVariance);
-
-    if (downsideDeviation === 0) {
-        return null;
-    }
-
-    return (meanReturn - riskFreeRate / 252) / downsideDeviation; // Daily risk-free rate
-}
-
-function calculateBeta(portfolioReturns, benchmarkReturns) {
-    if (
-        !Array.isArray(portfolioReturns) ||
-        !Array.isArray(benchmarkReturns) ||
-        portfolioReturns.length !== benchmarkReturns.length ||
-        portfolioReturns.length < 2
-    ) {
-        return null;
-    }
-
-    const n = portfolioReturns.length;
-    const portfolioMean = portfolioReturns.reduce((sum, r) => sum + r, 0) / n;
-    const benchmarkMean = benchmarkReturns.reduce((sum, r) => sum + r, 0) / n;
-
-    let covariance = 0;
-    let benchmarkVariance = 0;
-
-    for (let i = 0; i < n; i++) {
-        covariance += (portfolioReturns[i] - portfolioMean) * (benchmarkReturns[i] - benchmarkMean);
-        benchmarkVariance += Math.pow(benchmarkReturns[i] - benchmarkMean, 2);
-    }
-
-    covariance /= n - 1;
-    benchmarkVariance /= n - 1;
-
-    if (benchmarkVariance === 0) {
-        return null;
-    }
-
-    return covariance / benchmarkVariance;
-}
-
-function calculateTreynorRatio(meanReturn, beta, riskFreeRate = 0.053, periodsPerYear = 252) {
-    if (!Number.isFinite(meanReturn) || !Number.isFinite(beta) || beta === 0) {
-        return null;
-    }
-    // Annualize and convert to percentage points for calculation
-    const annualizedReturn = meanReturn * periodsPerYear * 100;
-    const riskFreeRatePercent = riskFreeRate * 100;
-    return (annualizedReturn - riskFreeRatePercent) / beta;
-}
-
-function computeReturns(points, period = 'daily') {
-    if (!Array.isArray(points) || points.length < 2) {
-        return [];
-    }
-
-    const sorted = points
-        .map((point) => ({
-            date: new Date(point.date),
-            value: Number(point.value),
-        }))
-        .filter(
-            (point) =>
-                Number.isFinite(point.value) &&
-                !Number.isNaN(point.date.getTime()) &&
-                point.value > 0
-        )
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    if (sorted.length < 2) {
-        return [];
-    }
-
-    if (period === 'monthly') {
-        const monthlyCloses = [];
-        let currentKey = '';
-        let lastPoint = null;
-
-        sorted.forEach((point) => {
-            const year = point.date.getUTCFullYear();
-            const month = point.date.getUTCMonth();
-            const key = `${year}-${month}`;
-            if (currentKey !== '' && key !== currentKey && lastPoint) {
-                monthlyCloses.push(lastPoint);
-            }
-            currentKey = key;
-            lastPoint = point;
-        });
-
-        if (lastPoint) {
-            monthlyCloses.push(lastPoint);
-        }
-
-        if (monthlyCloses.length < 2) {
-            return [];
-        }
-
-        const monthlyReturns = [];
-        for (let i = 1; i < monthlyCloses.length; i += 1) {
-            const prevValue = monthlyCloses[i - 1].value;
-            const currValue = monthlyCloses[i].value;
-            if (prevValue > 0) {
-                const monthlyReturn = (currValue - prevValue) / prevValue;
-                if (Number.isFinite(monthlyReturn)) {
-                    monthlyReturns.push({ date: monthlyCloses[i].date, value: monthlyReturn });
-                }
-            }
-        }
-
-        return monthlyReturns;
-    }
-
-    const returns = [];
-    for (let i = 1; i < sorted.length; i += 1) {
-        const prevValue = sorted[i - 1].value;
-        const currValue = sorted[i].value;
-        if (prevValue > 0) {
-            const dailyReturn = (currValue - prevValue) / prevValue;
-            if (Number.isFinite(dailyReturn)) {
-                returns.push({ date: sorted[i].date, value: dailyReturn });
-            }
-        }
-    }
-
-    return returns;
-}
-
-const SYMBOL_ALIASES = {
-    '^SSE': '^SSEC',
-    '^SSEC': '^SSEC',
-};
-
-function normalizeSymbol(symbol) {
-    return SYMBOL_ALIASES[symbol] || symbol;
-}
-
-function getMonthKey(date) {
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-}
-
-async function convertHistoricalPricesToSeries(historicalPrices) {
-    const seriesMap = {};
-
-    Object.entries(historicalPrices).forEach(([symbol, prices]) => {
-        const normalizedSymbol = normalizeSymbol(symbol);
-        if (!ALLOWED_BENCHMARKS.has(normalizedSymbol) || !prices || typeof prices !== 'object') {
-            return;
-        }
-
-        const points = Object.entries(prices)
-            .map(([date, price]) => ({ date, value: Number(price) }))
-            .filter((point) => Number.isFinite(point.value) && point.value > 0)
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        if (points.length > 0) {
-            seriesMap[normalizedSymbol] = points;
-        }
-    });
-
-    return seriesMap;
 }
 
 async function getRatioText() {
-    // Load raw historical prices for accurate beta calculations
-    let historicalPrices = {};
     try {
-        const response = await fetch('../data/historical_prices.json');
-        if (response.ok) {
-            historicalPrices = await response.json();
+        const response = await fetch('../data/output/ratios.txt');
+        if (!response.ok) {
+            return 'Error loading risk ratios.';
         }
+        return await response.text();
     } catch {
-        // Historical prices unavailable; proceed with existing performance series.
+        return 'Error loading risk ratios.';
     }
-
-    const fallbackSeries =
-        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
-            ? transactionState.performanceSeries
-            : {};
-
-    const rawSeries =
-        Object.keys(historicalPrices).length > 0
-            ? await convertHistoricalPricesToSeries(historicalPrices)
-            : {};
-
-    const seriesMap = {};
-    Object.entries(fallbackSeries).forEach(([symbol, points]) => {
-        if (Array.isArray(points) && points.length > 0) {
-            const normalizedSymbol = normalizeSymbol(symbol);
-            seriesMap[normalizedSymbol] = points;
-        }
-    });
-    Object.entries(rawSeries).forEach(([symbol, points]) => {
-        if (Array.isArray(points) && points.length > 0) {
-            seriesMap[normalizeSymbol(symbol)] = points;
-        }
-    });
-
-    const entries = Object.entries(seriesMap).filter(([name]) => {
-        const normalized = normalizeSymbol(name);
-        return ALLOWED_BENCHMARKS.has(normalized) || isPortfolioSymbol(normalized);
-    });
-    if (entries.length === 0) {
-        return 'Risk ratios unavailable: no price data available.';
-    }
-
-    const dailyReturnsData = new Map(
-        entries.map(([name, points]) => [name, computeReturns(points, 'daily')])
-    );
-    const monthlyReturnsData = new Map(
-        entries.map(([name, points]) => [name, computeReturns(points, 'monthly')])
-    );
-    const benchmarkMonthlyReturns = monthlyReturnsData.get('^GSPC');
-    const benchmarkMonthlyMap = benchmarkMonthlyReturns
-        ? new Map(benchmarkMonthlyReturns.map((r) => [getMonthKey(r.date), r.value]))
-        : null;
-
-    const ratioData = entries
-        .map(([name]) => {
-            const portfolioReturnsData = dailyReturnsData.get(name) || [];
-            const dailyReturns = portfolioReturnsData.map((r) => r.value);
-            const sharpe = calculateSharpeRatio(dailyReturns);
-            const sortino = calculateSortinoRatio(dailyReturns);
-
-            let beta = null;
-            let treynor = null;
-
-            if (benchmarkMonthlyMap) {
-                if (name === '^GSPC') {
-                    beta = 1.0;
-                    const monthlyReturns = monthlyReturnsData.get(name) || [];
-                    if (monthlyReturns.length > 1) {
-                        const meanMonthlyReturn =
-                            monthlyReturns.reduce((sum, r) => sum + r.value, 0) /
-                            monthlyReturns.length;
-                        treynor = calculateTreynorRatio(meanMonthlyReturn, beta, 0.053, 12);
-                    }
-                } else {
-                    const alignedPortfolioReturns = [];
-                    const alignedBenchmarkReturns = [];
-                    const monthlyReturns = monthlyReturnsData.get(name) || [];
-
-                    monthlyReturns.forEach((r) => {
-                        const monthKey = getMonthKey(r.date);
-                        if (benchmarkMonthlyMap.has(monthKey)) {
-                            alignedPortfolioReturns.push(r.value);
-                            alignedBenchmarkReturns.push(benchmarkMonthlyMap.get(monthKey));
-                        }
-                    });
-
-                    if (alignedPortfolioReturns.length > 1) {
-                        beta = calculateBeta(alignedPortfolioReturns, alignedBenchmarkReturns);
-                        const meanMonthlyReturn =
-                            alignedPortfolioReturns.reduce((sum, r) => sum + r, 0) /
-                            alignedPortfolioReturns.length;
-                        treynor = calculateTreynorRatio(meanMonthlyReturn, beta, 0.053, 12);
-                    }
-                }
-            }
-
-            return {
-                name,
-                dailyReturns: dailyReturns.length,
-                sharpe: sharpe !== null ? sharpe * Math.sqrt(252) : null, // Annualized
-                sortino: sortino !== null ? sortino * Math.sqrt(252) : null, // Annualized
-                treynor, // Already annualized
-                beta,
-            };
-        })
-        .filter((item) => item.dailyReturns > 0);
-
-    if (ratioData.length === 0) {
-        return 'Risk ratios unavailable: no series contain sufficient data.';
-    }
-
-    // Sort by portfolio first, then alphabetically
-    const portfolioEntry = ratioData.find(
-        (item) =>
-            item.name.toLowerCase().includes('portfolio') ||
-            item.name.toLowerCase().includes('twrr') ||
-            item.name.toLowerCase().includes('lz')
-    );
-    const others = ratioData
-        .filter((item) => item !== portfolioEntry)
-        .sort((a, b) => a.name.localeCompare(b.name));
-    const orderedData = portfolioEntry ? [portfolioEntry, ...others] : others;
-
-    const header =
-        '\n  --------------------------------- RISK RATIOS --------------------------------------\n' +
-        '  Series                         Sharpe Ratio   Sortino Ratio   Treynor Ratio     Beta  \n' +
-        '  ----------------------------   ------------   -------------   -------------   ------\n';
-
-    const lines = orderedData
-        .map((item) => {
-            const name = `  ${item.name}`.padEnd(30);
-            const sharpe =
-                item.sharpe !== null ? item.sharpe.toFixed(3).padStart(12) : 'N/A'.padStart(12);
-            const sortino =
-                item.sortino !== null ? item.sortino.toFixed(3).padStart(13) : 'N/A'.padStart(13);
-            const treynor =
-                item.treynor !== null ? item.treynor.toFixed(3).padStart(13) : 'N/A'.padStart(13);
-            const beta = item.beta !== null ? item.beta.toFixed(3).padStart(6) : 'N/A'.padStart(6);
-            return `${name}   ${sharpe}   ${sortino}   ${treynor}   ${beta}`;
-        })
-        .join('\n');
-
-    const footer =
-        '\n\n  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).\n' +
-        '        Higher values indicate better risk-adjusted returns.\n\n' +
-        '        - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)\n' +
-        '        - Sortino Ratio: (Return - Risk-Free) / Downside Volatility\n' +
-        '        - Treynor Ratio: (Return - Risk-Free) / Beta (vs ^GSPC)';
-
-    return header + lines + footer + '\n';
 }
 let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
@@ -981,10 +354,7 @@ export function initTerminal({
                     transactionState.activeChart === 'contribution' ||
                     transactionState.activeChart === 'performance'
                 ) {
-                    chartManager.update(
-                        transactionState.allTransactions,
-                        transactionState.splitHistory
-                    );
+                    chartManager.update();
                 }
 
                 result = 'Showing all data (filters and date ranges cleared).';
@@ -1040,16 +410,16 @@ export function initTerminal({
                     const subcommand = args[0].toLowerCase();
                     switch (subcommand) {
                         case 'transactions':
-                            result = getStatsText();
+                            result = await getStatsText();
                             break;
                         case 'holdings':
                             result = await getHoldingsText();
                             break;
                         case 'cagr':
-                            result = getCagrText();
+                            result = await getCagrText();
                             break;
                         case 'return':
-                            result = getAnnualReturnText();
+                            result = await getAnnualReturnText();
                             break;
                         case 'ratio':
                             result = await getRatioText();
@@ -1103,10 +473,7 @@ export function initTerminal({
                                 setActiveChart('contribution');
                                 if (contributionSection) {
                                     contributionSection.classList.remove('is-hidden');
-                                    chartManager.update(
-                                        transactionState.allTransactions,
-                                        transactionState.splitHistory
-                                    );
+                                    chartManager.update();
                                 }
                                 if (contributionTableContainer) {
                                     contributionTableContainer.classList.add('is-hidden');
@@ -1138,10 +505,7 @@ export function initTerminal({
                                 setActiveChart('performance');
                                 if (perfSection) {
                                     perfSection.classList.remove('is-hidden');
-                                    chartManager.update(
-                                        transactionState.allTransactions,
-                                        transactionState.splitHistory
-                                    );
+                                    chartManager.update();
                                 }
                                 if (perfTableContainer) {
                                     perfTableContainer.classList.add('is-hidden');
@@ -1173,10 +537,7 @@ export function initTerminal({
                                 setActiveChart('composition');
                                 if (compSection) {
                                     compSection.classList.remove('is-hidden');
-                                    chartManager.update(
-                                        transactionState.allTransactions,
-                                        transactionState.splitHistory
-                                    );
+                                    chartManager.update();
                                 }
                                 if (compTableContainer) {
                                     compTableContainer.classList.add('is-hidden');
@@ -1202,10 +563,7 @@ export function initTerminal({
                     if (simplifiedDateRange.from || simplifiedDateRange.to) {
                         setChartDateRange(simplifiedDateRange);
                         // Update the chart with filtered data
-                        chartManager.update(
-                            transactionState.allTransactions,
-                            transactionState.splitHistory
-                        );
+                        chartManager.update();
                         result = `Applied date filter ${formatDateRange(simplifiedDateRange)} to ${transactionState.activeChart} chart.`;
                         break;
                     }
