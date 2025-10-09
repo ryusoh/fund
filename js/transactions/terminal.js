@@ -301,10 +301,22 @@ function getAnnualReturnText() {
 
     const years = Array.from(yearSet).sort((a, b) => a - b);
 
+    // Calculate the total width of the data rows to match the header
+    const yearColumnWidth = 8;
+    const seriesColumnWidth = 12;
+    const totalDataWidth = yearColumnWidth + orderedSeries.length * seriesColumnWidth;
+    const headerWidth = Math.max(55, totalDataWidth); // Ensure minimum width of 55
+
     const header =
-        '\n----------------------- ANNUAL RETURNS --------------------\n' +
-        '  Year'.padEnd(8) +
-        orderedSeries.map((entry) => entry.name.padStart(12)).join('') +
+        '\n' +
+        '-'.repeat(headerWidth) +
+        '\n' +
+        '  ANNUAL RETURNS'.padStart(Math.floor(headerWidth / 2) + 8).padEnd(headerWidth) +
+        '\n' +
+        '-'.repeat(headerWidth) +
+        '\n' +
+        '  Year'.padEnd(yearColumnWidth) +
+        orderedSeries.map((entry) => entry.name.padStart(seriesColumnWidth)).join('') +
         '\n';
 
     const rows = years
