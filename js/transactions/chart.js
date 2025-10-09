@@ -12,9 +12,176 @@ import {
     CHART_SMOOTHING,
     CHART_MARKERS,
     CONTRIBUTION_CHART_SETTINGS,
+    mountainFill,
 } from '../config.js';
 
 // --- Helper Functions ---
+
+const COLOR_PARSER_CONTEXT = (() => {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.getContext('2d');
+})();
+
+function clamp01(value) {
+    if (!Number.isFinite(value)) {
+        return 0;
+    }
+    return Math.min(1, Math.max(0, value));
+}
+
+function componentFromChannel(channel) {
+    const trimmed = channel.trim();
+    if (trimmed.endsWith('%')) {
+        const percentage = parseFloat(trimmed.slice(0, -1));
+        if (!Number.isFinite(percentage)) {
+            return 0;
+        }
+        return Math.round((percentage / 100) * 255);
+    }
+    const numeric = parseFloat(trimmed);
+    return Number.isFinite(numeric) ? Math.round(numeric) : 0;
+}
+
+function colorWithAlpha(baseColor, alpha) {
+    const normalizedAlpha = clamp01(alpha);
+    if (normalizedAlpha <= 0) {
+        return 'rgba(0, 0, 0, 0)';
+    }
+
+    if (typeof baseColor !== 'string' || baseColor.length === 0) {
+        return baseColor;
+    }
+
+    const hexMatch = baseColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+        let hex = hexMatch[1];
+        if (hex.length === 3) {
+            hex = hex
+                .split('')
+                .map((char) => char + char)
+                .join('');
+        }
+        const intVal = parseInt(hex, 16);
+        const r = (intVal >> 16) & 255;
+        const g = (intVal >> 8) & 255;
+        const b = intVal & 255;
+        return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+    }
+
+    const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
+    if (rgbMatch) {
+        const parts = rgbMatch[1].split(',');
+        if (parts.length >= 3) {
+            const r = componentFromChannel(parts[0]);
+            const g = componentFromChannel(parts[1]);
+            const b = componentFromChannel(parts[2]);
+            return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+        }
+    }
+
+    if (COLOR_PARSER_CONTEXT) {
+        const ctx = COLOR_PARSER_CONTEXT;
+        ctx.save();
+        ctx.fillStyle = baseColor;
+        const computed = ctx.fillStyle;
+        ctx.restore();
+        if (computed && computed !== baseColor) {
+            return colorWithAlpha(computed, normalizedAlpha);
+        }
+    }
+
+    return baseColor;
+}
+
+function drawMountainFill(ctx, coords, baselineY, options) {
+    if (!Array.isArray(coords) || coords.length === 0) {
+        return;
+    }
+
+    const { color, colorStops, opacityTop = 0.35, opacityBottom = 0, bounds } = options || {};
+
+    if (!bounds) {
+        return;
+    }
+
+    if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) {
+        return;
+    }
+
+    if (typeof document === 'undefined') {
+        return;
+    }
+
+    let clampedBaselineY = baselineY;
+    if (!Number.isFinite(clampedBaselineY)) {
+        return;
+    }
+    clampedBaselineY = Math.min(Math.max(clampedBaselineY, bounds.top), bounds.bottom);
+
+    const areaCoords = (coords.length === 1 ? [coords[0], coords[0]] : coords).map((coord) => ({
+        x: coord.x,
+        y: coord.y,
+    }));
+
+    const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
+    const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = width;
+    offscreen.height = height;
+    const offCtx = offscreen.getContext('2d');
+    if (!offCtx) {
+        return;
+    }
+
+    offCtx.beginPath();
+    offCtx.moveTo(areaCoords[0].x - bounds.left, areaCoords[0].y - bounds.top);
+    for (let i = 1; i < areaCoords.length; i += 1) {
+        offCtx.lineTo(areaCoords[i].x - bounds.left, areaCoords[i].y - bounds.top);
+    }
+    offCtx.lineTo(areaCoords[areaCoords.length - 1].x - bounds.left, clampedBaselineY - bounds.top);
+    offCtx.lineTo(areaCoords[0].x - bounds.left, clampedBaselineY - bounds.top);
+    offCtx.closePath();
+
+    let horizontalGradient = null;
+    if (Array.isArray(colorStops) && colorStops.length > 0) {
+        horizontalGradient = offCtx.createLinearGradient(0, 0, width, 0);
+        const stopCount = colorStops.length;
+        colorStops.forEach((stopColor, index) => {
+            const offset = stopCount === 1 ? 0 : index / (stopCount - 1);
+            horizontalGradient.addColorStop(offset, colorWithAlpha(stopColor, 1));
+        });
+    }
+
+    if (horizontalGradient) {
+        offCtx.fillStyle = horizontalGradient;
+    } else {
+        offCtx.fillStyle = colorWithAlpha(color, 1);
+    }
+    offCtx.fill();
+
+    const relativeYs = areaCoords.map((c) => c.y - bounds.top);
+    relativeYs.push(clampedBaselineY - bounds.top);
+    const minYRel = Math.min(...relativeYs);
+    const maxYRel = Math.max(...relativeYs);
+    const gradientTop = Math.min(minYRel, maxYRel - 0.0001);
+    const gradientBottom = Math.max(maxYRel, gradientTop + 0.0001);
+
+    offCtx.globalCompositeOperation = 'destination-in';
+    const alphaGradient = offCtx.createLinearGradient(0, gradientTop, 0, gradientBottom);
+    alphaGradient.addColorStop(0, `rgba(0, 0, 0, ${clamp01(opacityTop)})`);
+    alphaGradient.addColorStop(1, `rgba(0, 0, 0, ${clamp01(opacityBottom)})`);
+    offCtx.fillStyle = alphaGradient;
+    offCtx.fillRect(0, 0, width, height);
+    offCtx.globalCompositeOperation = 'source-over';
+
+    ctx.drawImage(offscreen, bounds.left, bounds.top);
+}
 
 const BENCHMARK_GRADIENTS = {
     '^LZ': ['#fb8500', '#ffef2f'],
@@ -1111,12 +1278,14 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         });
     }
 
-    if (showMarkersConfig && markerGroups.size > 0) {
-        const chartBounds = {
-            top: padding.top,
-            bottom: padding.top + plotHeight,
-        };
+    const chartBounds = {
+        top: padding.top,
+        bottom: volumeHeight > 0 ? volumeTop : padding.top + plotHeight,
+        left: padding.left,
+        right: padding.left + plotWidth,
+    };
 
+    if (showMarkersConfig && markerGroups.size > 0) {
         markerGroups.forEach((group, timestamp) => {
             const x = xScale(timestamp);
 
@@ -1144,6 +1313,8 @@ function drawContributionChart(ctx, chartManager, timestamp) {
 
     let hasAnimatedSeries = false;
 
+    const areaBaselineY = chartBounds.bottom;
+
     sortedSeries.forEach((series, index) => {
         const coords = series.coords || [];
         if (coords.length === 0) {
@@ -1159,6 +1330,22 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             ctx.strokeStyle = gradient;
         } else {
             ctx.strokeStyle = series.color;
+        }
+
+        if (mountainFill.enabled) {
+            const gradientStops = BALANCE_GRADIENTS[series.key];
+            const colorStops =
+                gradientStops && gradientStops.length === 2
+                    ? gradientStops
+                    : [series.color, series.color];
+
+            drawMountainFill(ctx, coords, areaBaselineY, {
+                color: series.color,
+                colorStops,
+                opacityTop: 0.35,
+                opacityBottom: 0,
+                bounds: chartBounds,
+            });
         }
 
         ctx.beginPath();
@@ -1488,6 +1675,15 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
     const renderedSeries = [];
     let glowIndex = 0;
 
+    const chartBounds = {
+        top: padding.top,
+        bottom: padding.top + plotHeight,
+        left: padding.left,
+        right: padding.left + plotWidth,
+    };
+
+    const performanceBaselineY = chartBounds.bottom;
+
     seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
         if (!isVisible || !Array.isArray(series.data) || series.data.length === 0) {
@@ -1520,17 +1716,30 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
             ctx.strokeStyle = resolvedColor;
         }
 
-        const coords = [];
-        ctx.beginPath();
-        points.forEach((point, index) => {
+        const coords = points.map((point) => {
             const time = new Date(point.date).getTime();
             const x = xScale(time);
             const y = yScale(point.value);
-            coords.push({ x, y });
+            return { x, y };
+        });
+
+        if (mountainFill.enabled) {
+            const gradientStops = BENCHMARK_GRADIENTS[series.key];
+            drawMountainFill(ctx, coords, performanceBaselineY, {
+                color: resolvedColor,
+                colorStops: gradientStops || [resolvedColor, resolvedColor],
+                opacityTop: 0.35,
+                opacityBottom: 0,
+                bounds: chartBounds,
+            });
+        }
+
+        ctx.beginPath();
+        coords.forEach((coord, index) => {
             if (index === 0) {
-                ctx.moveTo(x, y);
+                ctx.moveTo(coord.x, coord.y);
             } else {
-                ctx.lineTo(x, y);
+                ctx.lineTo(coord.x, coord.y);
             }
         });
         ctx.lineWidth = lineThickness;

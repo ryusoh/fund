@@ -104,6 +104,10 @@ export const CONTRIBUTION_CHART_SETTINGS = {
     minPaddingValue: 0, // Absolute minimum padding applied in dollars
 };
 
+export const mountainFill = {
+    enabled: true,
+};
+
 export const APP_SETTINGS = {
     DATA_REFRESH_INTERVAL: 300000, // ms (5 minutes)
 };
