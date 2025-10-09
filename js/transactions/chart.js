@@ -970,6 +970,16 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             ? Math.max(...allTimes)
             : Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
 
+    if (showContribution && contributionData.length > 0) {
+        const lastDataPoint = contributionData[contributionData.length - 1];
+        if (lastDataPoint.date.getTime() < maxTime) {
+            contributionData.push({
+                ...lastDataPoint,
+                date: new Date(maxTime),
+            });
+        }
+    }
+
     const contributionValues = contributionData.map((item) => item.amount);
     const balanceValues = balanceData.map((item) => item.value);
     const combinedValues = [...contributionValues, ...balanceValues].filter((value) =>
