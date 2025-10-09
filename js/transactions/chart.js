@@ -823,19 +823,30 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         bottom: padding.top + plotHeight,
     };
 
+    // Sort markers by radius (largest first) so bigger dots are closer to the line
     grouped.forEach((group, timestamp) => {
         const x = xScale(timestamp);
+
+        // Sort buy markers by radius (largest first) for closer positioning to line
+        const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
         let buyOffset = 8;
-        group.buys.forEach((marker) => {
+
+        // Draw buy markers with largest dots closest to line
+        sortedBuys.forEach((marker) => {
             const y = yScale(marker.amount) - buyOffset - marker.radius;
             drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
-            buyOffset += marker.radius * 2 + 8;
+            buyOffset += marker.radius * 2 + 4; // Use marker's own diameter + small gap
         });
+
+        // Sort sell markers by radius (largest first) for closer positioning to line
+        const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
         let sellOffset = 8;
-        group.sells.forEach((marker) => {
+
+        // Draw sell markers with largest dots closest to line
+        sortedSells.forEach((marker) => {
             const y = yScale(marker.amount) + sellOffset + marker.radius;
             drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
-            sellOffset += marker.radius * 2 + 8;
+            sellOffset += marker.radius * 2 + 4; // Use marker's own diameter + small gap
         });
     });
 

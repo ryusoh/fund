@@ -90,6 +90,13 @@ export const CHART_SMOOTHING = {
     },
 };
 
+export const CHART_MARKERS = {
+    // Uniform spacing for buy/sell markers on contribution chart
+    // Spacing is automatically calculated as: smallest_radius * 2 (diameter of smallest dot)
+    // This ensures dots are touching but not overlapping
+    fallbackSpacing: 20, // Fallback spacing if no markers are found
+};
+
 export const APP_SETTINGS = {
     DATA_REFRESH_INTERVAL: 300000, // ms (5 minutes)
 };
