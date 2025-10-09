@@ -1219,12 +1219,28 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         ...balanceData.map((d) => d.date.getTime()),
     ];
 
-    // When filtering by date, start from the filter start date, not the first data point
-    let minTime;
-    if (filterFrom && allTimes.length > 0) {
-        minTime = Math.min(filterFrom.getTime(), Math.min(...allTimes));
-    } else {
-        minTime = Math.min(...allTimes);
+    const effectiveMinTimes = [];
+    if (rawContributionData.length > 0) {
+        const firstContributionPoint = filtersActive
+            ? rawContributionData.find(
+                  (item) =>
+                      typeof item.orderType !== 'string' ||
+                      item.orderType.toLowerCase() !== 'padding'
+              )
+            : rawContributionData[0];
+        if (firstContributionPoint) {
+            effectiveMinTimes.push(firstContributionPoint.date.getTime());
+        }
+    }
+    if (showBalance && rawBalanceData.length > 0) {
+        effectiveMinTimes.push(rawBalanceData[0].date.getTime());
+    }
+
+    const fallbackMinTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
+    let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
+
+    if (filterFrom && Number.isFinite(filterFrom.getTime())) {
+        minTime = Math.max(minTime, filterFrom.getTime());
     }
     // If we have a date range filter, use only the filtered data range
     // Otherwise, extend to today for real-time data

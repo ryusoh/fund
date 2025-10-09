@@ -24,8 +24,11 @@ def calculate_daily_composition(holdings_df, prices_data):
     """Calculate daily portfolio composition."""
     composition_data = []
 
-    # Ticker mapping for mismatched symbols
-    ticker_mapping = {'BRKB': 'BRK-B'}  # Berkshire Hathaway Class B
+    # Helper to align portfolio tickers with price symbols (remove punctuation etc.)
+    def map_ticker(ticker: str) -> str:
+        if not isinstance(ticker, str):
+            return ticker
+        return ticker.replace('-', '').upper()
 
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
@@ -45,16 +48,15 @@ def calculate_daily_composition(holdings_df, prices_data):
                 shares = holdings_df.loc[prev_date, ticker]
 
             if shares > 0:
-                # Use mapped ticker if available, otherwise use original
-                price_ticker = ticker_mapping.get(ticker, ticker)
+                price_ticker = map_ticker(ticker)
                 if price_ticker in prices_data:
                     price = prices_data[price_ticker].get(date_str)
                     # If no price for this date, use the last available price
                     if not price:
-                        available_dates = sorted(prices_data[price_ticker].keys())
+                        available_dates = [d for d in prices_data[price_ticker] if d < date_str]
                         if available_dates:
-                            last_date = max([d for d in available_dates if d < date_str])
-                            price = prices_data[price_ticker][last_date]
+                            last_date = max(available_dates)
+                            price = prices_data[price_ticker].get(last_date)
 
                     if price:
                         market_value = shares * price
