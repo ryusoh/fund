@@ -95,6 +95,13 @@ export const CHART_MARKERS = {
     // Spacing is automatically calculated as: smallest_radius * 2 (diameter of smallest dot)
     // This ensures dots are touching but not overlapping
     fallbackSpacing: 20, // Fallback spacing if no markers are found
+    showContributionMarkers: false, // Toggle buy/sell dots on the contribution chart
+};
+
+export const CONTRIBUTION_CHART_SETTINGS = {
+    startYAxisAtZero: false, // When true, clamp baseline to zero instead of data minimum
+    paddingRatio: 0.05, // Extra space added above (and below when not clamped) as a % of range
+    minPaddingValue: 0, // Absolute minimum padding applied in dollars
 };
 
 export const APP_SETTINGS = {

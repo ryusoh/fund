@@ -7,7 +7,12 @@ import {
 import { formatCurrencyCompact } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
-import { ANIMATED_LINE_SETTINGS, CHART_SMOOTHING } from '../config.js';
+import {
+    ANIMATED_LINE_SETTINGS,
+    CHART_SMOOTHING,
+    CHART_MARKERS,
+    CONTRIBUTION_CHART_SETTINGS,
+} from '../config.js';
 
 // --- Helper Functions ---
 
@@ -743,12 +748,53 @@ function drawContributionChart(ctx, chartManager, timestamp) {
             ? Math.max(...allTimes)
             : Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
 
-    const contributionMax =
-        contributionData.length > 0 ? Math.max(...contributionData.map((item) => item.amount)) : 0;
-    const balanceMax =
-        balanceData.length > 0 ? Math.max(...balanceData.map((item) => item.value)) : 0;
-    const yMax = Math.max(contributionMax, balanceMax, 0) * 1.15 || 1;
-    const yMin = 0;
+    const contributionValues = contributionData.map((item) => item.amount);
+    const balanceValues = balanceData.map((item) => item.value);
+    const combinedValues = [...contributionValues, ...balanceValues].filter((value) =>
+        Number.isFinite(value)
+    );
+    const hasValues = combinedValues.length > 0;
+    const rawMin = hasValues ? Math.min(...combinedValues) : 0;
+    const rawMax = hasValues ? Math.max(...combinedValues) : 0;
+
+    const {
+        startYAxisAtZero = true,
+        paddingRatio: configuredPaddingRatio = 0.05,
+        minPaddingValue: configuredMinPadding = 0,
+    } = CONTRIBUTION_CHART_SETTINGS || {};
+
+    const paddingRatio = Number.isFinite(configuredPaddingRatio)
+        ? Math.max(configuredPaddingRatio, 0)
+        : 0.05;
+    const minPaddingValue = Number.isFinite(configuredMinPadding)
+        ? Math.max(configuredMinPadding, 0)
+        : 0;
+
+    let yMin = startYAxisAtZero ? Math.min(0, rawMin) : rawMin;
+    let yMax = startYAxisAtZero ? Math.max(rawMax, 0) : rawMax;
+
+    if (!hasValues) {
+        yMin = startYAxisAtZero ? 0 : 0;
+        yMax = 1;
+    }
+
+    const range = yMax - yMin;
+    const paddingDelta =
+        range > 0
+            ? Math.max(range * paddingRatio, minPaddingValue)
+            : Math.max(Math.abs(yMax || yMin) * paddingRatio, minPaddingValue || 1);
+
+    if (startYAxisAtZero) {
+        yMax += paddingDelta;
+    } else {
+        yMin -= paddingDelta;
+        yMax += paddingDelta;
+    }
+
+    if (yMax <= yMin) {
+        const fallbackSpan = paddingDelta || 1;
+        yMax = yMin + fallbackSpan;
+    }
 
     const xScale = (t) =>
         padding.left +
@@ -833,44 +879,68 @@ function drawContributionChart(ctx, chartManager, timestamp) {
 
     // --- Draw Markers ---
     // Use raw data for markers since smoothed data doesn't have orderType
-    const pointSeries = rawContributionData.filter((item) => {
-        const type = item.orderType.toLowerCase();
-        return (type === 'buy' && showBuy) || (type === 'sell' && showSell);
-    });
+    const showMarkersConfig = CHART_MARKERS?.showContributionMarkers !== false;
+    const markerGroups = new Map();
 
-    const grouped = new Map();
-    pointSeries.forEach((item) => {
-        const timestamp = item.date.getTime();
-        if (!grouped.has(timestamp)) {
-            grouped.set(timestamp, { buys: [], sells: [] });
-        }
-        const group = grouped.get(timestamp);
-        const netAmount = Number(item.netAmount) || 0;
-        const amount = Number(item.amount) || 0;
-        const radius = Math.min(8, Math.max(2, Math.abs(netAmount) / 500));
-        if (item.orderType.toLowerCase() === 'buy') {
-            group.buys.push({ radius, amount, netAmount });
-        } else {
-            group.sells.push({ radius, amount, netAmount });
-        }
-    });
+    if (showMarkersConfig) {
+        rawContributionData.forEach((item) => {
+            const type = item.orderType.toLowerCase();
+            if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
+                return;
+            }
+            const timestamp = item.date.getTime();
+            if (!Number.isFinite(timestamp)) {
+                return;
+            }
 
-    const chartBounds = {
-        top: padding.top,
-        bottom: padding.top + plotHeight,
-    };
+            if (!markerGroups.has(timestamp)) {
+                markerGroups.set(timestamp, { buys: [], sells: [] });
+            }
+            const group = markerGroups.get(timestamp);
+            const netAmount = Number(item.netAmount) || 0;
+            const amount = Number(item.amount) || 0;
+            const radius = Math.min(8, Math.max(2, Math.abs(netAmount) / 500));
+            if (type === 'buy') {
+                group.buys.push({ radius, amount, netAmount });
+            } else {
+                group.sells.push({ radius, amount, netAmount });
+            }
+        });
+    }
 
     const volumeEntries = [];
     let maxVolume = 0;
-    grouped.forEach((group, timestamp) => {
-        const totalBuyVolume = group.buys.reduce(
-            (sum, marker) => sum + Math.abs(marker.netAmount),
-            0
-        );
-        const totalSellVolume = group.sells.reduce(
-            (sum, marker) => sum + Math.abs(marker.netAmount),
-            0
-        );
+    const volumeGroups = new Map();
+
+    rawContributionData.forEach((item) => {
+        const type = item.orderType.toLowerCase();
+        if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
+            return;
+        }
+        const timestamp = item.date.getTime();
+        if (!Number.isFinite(timestamp)) {
+            return;
+        }
+        const netAmount = Math.abs(Number(item.netAmount) || 0);
+        if (netAmount <= 0) {
+            return;
+        }
+
+        if (!volumeGroups.has(timestamp)) {
+            volumeGroups.set(timestamp, { totalBuy: 0, totalSell: 0 });
+        }
+        const totals = volumeGroups.get(timestamp);
+        if (type === 'buy') {
+            totals.totalBuy += netAmount;
+        } else {
+            totals.totalSell += netAmount;
+        }
+    });
+
+    volumeGroups.forEach((totals, timestamp) => {
+        const { totalBuy, totalSell } = totals;
+        const totalBuyVolume = totalBuy;
+        const totalSellVolume = totalSell;
         if (totalBuyVolume === 0 && totalSellVolume === 0) {
             return;
         }
@@ -916,6 +986,7 @@ function drawContributionChart(ctx, chartManager, timestamp) {
     }
 
     if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
+        volumeEntries.sort((a, b) => a.timestamp - b.timestamp);
         const barWidth = 8;
         const barGap = 3;
         const baselineY = volumePadding.top + volumeHeight;
@@ -966,26 +1037,32 @@ function drawContributionChart(ctx, chartManager, timestamp) {
         });
     }
 
-    // Draw transaction markers above the contribution line
-    grouped.forEach((group, timestamp) => {
-        const x = xScale(timestamp);
+    if (showMarkersConfig && markerGroups.size > 0) {
+        const chartBounds = {
+            top: padding.top,
+            bottom: padding.top + plotHeight,
+        };
 
-        const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
-        let buyOffset = 8;
-        sortedBuys.forEach((marker) => {
-            const y = yScale(marker.amount) - buyOffset - marker.radius;
-            drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
-            buyOffset += marker.radius * 2 + 4;
-        });
+        markerGroups.forEach((group, timestamp) => {
+            const x = xScale(timestamp);
 
-        const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
-        let sellOffset = 8;
-        sortedSells.forEach((marker) => {
-            const y = yScale(marker.amount) + sellOffset + marker.radius;
-            drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
-            sellOffset += marker.radius * 2 + 4;
+            const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
+            let buyOffset = 8;
+            sortedBuys.forEach((marker) => {
+                const y = yScale(marker.amount) - buyOffset - marker.radius;
+                drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
+                buyOffset += marker.radius * 2 + 4;
+            });
+
+            const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
+            let sellOffset = 8;
+            sortedSells.forEach((marker) => {
+                const y = yScale(marker.amount) + sellOffset + marker.radius;
+                drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
+                sellOffset += marker.radius * 2 + 4;
+            });
         });
-    });
+    }
 
     const sortedSeries = animatedSeries
         .map((series) => ({ ...series }))
