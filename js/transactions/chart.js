@@ -1,4 +1,5 @@
-import { transactionState, setChartVisibility } from './state.js';
+import { transactionState, setChartVisibility, setHistoricalPrices } from './state.js';
+import { computeRunningTotals, getSplitAdjustment } from './calculations.js';
 import { formatCurrencyCompact } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
@@ -9,6 +10,224 @@ import {
     CONTRIBUTION_CHART_SETTINGS,
     mountainFill,
 } from '../config.js';
+
+function hasActiveTransactionFilters() {
+    const allTransactions = transactionState.allTransactions || [];
+    const filteredTransactions = transactionState.filteredTransactions || [];
+    if (!allTransactions.length) {
+        return false;
+    }
+    return (
+        filteredTransactions.length > 0 && filteredTransactions.length !== allTransactions.length
+    );
+}
+
+function buildContributionSeriesFromTransactions(transactions) {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        return [];
+    }
+
+    const runningTotals = computeRunningTotals(transactions, transactionState.splitHistory);
+    const sortedTransactions = [...transactions].sort(
+        (a, b) =>
+            new Date(a.tradeDate) - new Date(b.tradeDate) ||
+            (a.transactionId ?? 0) - (b.transactionId ?? 0)
+    );
+
+    const series = [];
+
+    sortedTransactions.forEach((t, index) => {
+        const totals = runningTotals.get(t.transactionId);
+        const currentPoint = {
+            tradeDate: t.tradeDate,
+            amount: totals ? totals.portfolio : 0,
+            orderType: t.orderType,
+            netAmount: parseFloat(t.netAmount) || 0,
+        };
+
+        if (index > 0) {
+            const prevTransaction = sortedTransactions[index - 1];
+            const prevTotals = runningTotals.get(prevTransaction.transactionId);
+            const prevAmount = prevTotals ? prevTotals.portfolio : 0;
+
+            const prevDate = new Date(prevTransaction.tradeDate);
+            const currentDate = new Date(t.tradeDate);
+
+            if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
+                const intermediateDate = new Date(currentDate);
+                intermediateDate.setDate(intermediateDate.getDate() - 1);
+
+                series.push({
+                    tradeDate: intermediateDate.toISOString().split('T')[0],
+                    amount: prevAmount,
+                    orderType: 'padding',
+                    netAmount: 0,
+                });
+            }
+        }
+
+        series.push(currentPoint);
+    });
+
+    const lastPoint = series[series.length - 1];
+    if (lastPoint) {
+        const today = new Date();
+        const lastTransactionDate = new Date(lastPoint.tradeDate);
+
+        if (today > lastTransactionDate) {
+            series.push({
+                tradeDate: today.toISOString().split('T')[0],
+                amount: lastPoint.amount,
+                orderType: 'padding',
+                netAmount: 0,
+            });
+        }
+    }
+
+    return series;
+}
+
+function normalizeSymbolForPricing(symbol) {
+    if (typeof symbol !== 'string') {
+        return symbol;
+    }
+    return symbol.replace(/-/g, '').toUpperCase();
+}
+
+function getPriceFromHistoricalData(historicalPrices, symbol, dateStr) {
+    if (!historicalPrices || typeof historicalPrices !== 'object') {
+        return null;
+    }
+    const normalized = normalizeSymbolForPricing(symbol);
+    const priceSeries =
+        historicalPrices[normalized] ||
+        historicalPrices[symbol] ||
+        historicalPrices[symbol?.toUpperCase?.()] ||
+        null;
+    if (!priceSeries) {
+        return null;
+    }
+    if (priceSeries[dateStr] !== undefined) {
+        return priceSeries[dateStr];
+    }
+    const fallbackDate = new Date(dateStr);
+    if (Number.isNaN(fallbackDate.getTime())) {
+        return null;
+    }
+    for (let i = 0; i < 10; i += 1) {
+        fallbackDate.setDate(fallbackDate.getDate() - 1);
+        const priorStr = fallbackDate.toISOString().split('T')[0];
+        if (priceSeries[priorStr] !== undefined) {
+            return priceSeries[priorStr];
+        }
+    }
+    return null;
+}
+
+function buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory) {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        return [];
+    }
+
+    const sortedTransactions = [...transactions].sort(
+        (a, b) =>
+            new Date(a.tradeDate) - new Date(b.tradeDate) ||
+            (a.transactionId ?? 0) - (b.transactionId ?? 0)
+    );
+
+    const firstDate = new Date(sortedTransactions[0].tradeDate);
+    const lastTransactionDate = new Date(
+        sortedTransactions[sortedTransactions.length - 1].tradeDate
+    );
+    if (Number.isNaN(firstDate.getTime()) || Number.isNaN(lastTransactionDate.getTime())) {
+        return [];
+    }
+
+    firstDate.setHours(0, 0, 0, 0);
+    lastTransactionDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDate = today > lastTransactionDate ? today : lastTransactionDate;
+
+    const splitsByDate = new Map();
+    (Array.isArray(splitHistory) ? splitHistory : []).forEach((split) => {
+        if (!split || !split.splitDate || !split.symbol) {
+            return;
+        }
+        const dateKey = new Date(split.splitDate).toISOString().split('T')[0];
+        const multiplier = Number(split.splitMultiplier) || Number(split.split_multiplier) || 1;
+        const symbolKey = normalizeSymbolForPricing(split.symbol);
+        if (!splitsByDate.has(dateKey)) {
+            splitsByDate.set(dateKey, []);
+        }
+        splitsByDate.get(dateKey).push({ symbol: symbolKey, multiplier });
+    });
+
+    const transactionsByDate = new Map();
+    sortedTransactions.forEach((txn) => {
+        const dateStr = new Date(txn.tradeDate).toISOString().split('T')[0];
+        if (!transactionsByDate.has(dateStr)) {
+            transactionsByDate.set(dateStr, []);
+        }
+        transactionsByDate.get(dateStr).push(txn);
+    });
+
+    const holdings = new Map();
+    const series = [];
+    const iterDate = new Date(firstDate);
+
+    while (iterDate <= lastDate) {
+        const dateStr = iterDate.toISOString().split('T')[0];
+
+        const splitsToday = splitsByDate.get(dateStr);
+        if (splitsToday) {
+            splitsToday.forEach(({ symbol, multiplier }) => {
+                if (!Number.isFinite(multiplier) || multiplier <= 0) {
+                    return;
+                }
+                const currentQty = holdings.get(symbol);
+                if (currentQty !== undefined) {
+                    holdings.set(symbol, currentQty * multiplier);
+                }
+            });
+        }
+
+        const todaysTransactions = transactionsByDate.get(dateStr) || [];
+        todaysTransactions.forEach((txn) => {
+            const normalizedSymbol = normalizeSymbolForPricing(txn.security);
+            const quantity = parseFloat(txn.quantity) || 0;
+            if (!Number.isFinite(quantity) || quantity === 0) {
+                return;
+            }
+            const isBuy = String(txn.orderType).toLowerCase() === 'buy';
+            const currentQty = holdings.get(normalizedSymbol) || 0;
+            const updatedQty = currentQty + (isBuy ? quantity : -quantity);
+            if (Math.abs(updatedQty) < 1e-8) {
+                holdings.delete(normalizedSymbol);
+            } else {
+                holdings.set(normalizedSymbol, updatedQty);
+            }
+        });
+
+        let totalValue = 0;
+        holdings.forEach((qty, symbol) => {
+            if (!Number.isFinite(qty) || Math.abs(qty) < 1e-8) {
+                return;
+            }
+            const price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
+            if (price === null) {
+                return;
+            }
+            const adjustment = getSplitAdjustment(splitHistory, symbol, dateStr);
+            totalValue += qty * price * adjustment;
+        });
+
+        series.push({ date: dateStr, value: totalValue });
+        iterDate.setDate(iterDate.getDate() + 1);
+    }
+
+    return series;
+}
 
 // --- Helper Functions ---
 
@@ -863,11 +1082,45 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const portfolioSeries = Array.isArray(transactionState.portfolioSeries)
         ? transactionState.portfolioSeries
         : [];
+    const filteredTransactions = Array.isArray(transactionState.filteredTransactions)
+        ? transactionState.filteredTransactions
+        : [];
+
+    const filtersActive = hasActiveTransactionFilters();
+    const contributionSource = filtersActive
+        ? buildContributionSeriesFromTransactions(filteredTransactions)
+        : runningAmountSeries;
+
+    let historicalPrices = transactionState.historicalPrices;
+    if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
+        try {
+            const response = await fetch('../data/historical_prices.json');
+            if (response.ok) {
+                historicalPrices = await response.json();
+                setHistoricalPrices(historicalPrices);
+            } else {
+                historicalPrices = {};
+            }
+        } catch {
+            historicalPrices = {};
+        }
+    } else {
+        historicalPrices = historicalPrices || {};
+    }
+
+    const balanceSource = filtersActive
+        ? buildFilteredBalanceSeries(
+              filteredTransactions,
+              historicalPrices,
+              transactionState.splitHistory
+          )
+        : portfolioSeries;
+    const hasBalanceSeries = Array.isArray(balanceSource) && balanceSource.length > 0;
 
     const { chartVisibility } = transactionState;
     const visibility = chartVisibility || {};
     const showContribution = visibility.contribution !== false;
-    const showBalance = visibility.balance !== false;
+    const showBalance = visibility.balance !== false && hasBalanceSeries;
     const showBuy = visibility.buy !== false;
     const showSell = visibility.sell !== false;
 
@@ -886,15 +1139,17 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     };
 
     const rawContributionData = filterDataByDateRange(
-        (runningAmountSeries || [])
-            .map((item) => ({ ...item, date: new Date(item.tradeDate) }))
-            .filter((item) => !isNaN(item.date.getTime()))
+        (contributionSource || [])
+            .map((item) => ({ ...item, date: new Date(item.tradeDate || item.date) }))
+            .filter((item) => !Number.isNaN(item.date.getTime()))
     );
-    const rawBalanceData = filterDataByDateRange(
-        (portfolioSeries || [])
-            .map((item) => ({ ...item, date: new Date(item.date) }))
-            .filter((item) => !isNaN(item.date.getTime()))
-    );
+    const rawBalanceData = showBalance
+        ? filterDataByDateRange(
+              (balanceSource || [])
+                  .map((item) => ({ ...item, date: new Date(item.date) }))
+                  .filter((item) => !Number.isNaN(item.date.getTime()))
+          )
+        : [];
 
     // Apply smoothing to contribution and balance data
     const contributionSmoothingConfig = getSmoothingConfig('contribution');
@@ -1533,14 +1788,16 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
                 name: 'Contribution',
                 color: contributionGradient ? contributionGradient[1] : colors.contribution,
             },
-            {
+        ];
+        if (showBalance && rawBalanceData.length > 0) {
+            legendSeries.push({
                 key: 'balance',
                 name: 'Balance',
                 color: balanceGradient ? balanceGradient[1] : colors.portfolio,
-            },
-            { key: 'buy', name: 'Buy', color: colors.buy },
-            { key: 'sell', name: 'Sell', color: colors.sell },
-        ];
+            });
+        }
+        legendSeries.push({ key: 'buy', name: 'Buy', color: colors.buy });
+        legendSeries.push({ key: 'sell', name: 'Sell', color: colors.sell });
         updateLegend(legendSeries, chartManager);
         contributionLegendDirty = false;
     }
