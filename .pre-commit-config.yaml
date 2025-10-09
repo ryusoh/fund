@@ -17,13 +17,13 @@ repos:
       hooks:
           - id: end-of-file-fixer
             # Do not touch generated data files or AI status files
-            exclude: ^data/.*\.(csv|html|json)$|^ai/status/
+            exclude: ^data/.*\.(csv|html|json|txt)$|^ai/status/
           - id: trailing-whitespace
             # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html|json)$
+            exclude: ^data/.*\.(csv|html|json|txt)$
           - id: mixed-line-ending
             # Do not touch generated data files
-            exclude: ^data/.*\.(csv|html|json)$
+            exclude: ^data/.*\.(csv|html|json|txt)$
           - id: detect-private-key
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
