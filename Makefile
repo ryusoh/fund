@@ -146,15 +146,8 @@ update-hooks:
 
 twrr-refresh:
 	@mkdir -p data/checkpoints data/output/figures
-	@NEW_HASH=`$(PYTHON_BIN) scripts/pipeline_hash.py` ; \
-	 OLD_HASH=`cat data/checkpoints/input_hash.txt 2>/dev/null || echo ''` ; \
-	 if [ "$$NEW_HASH" = "$$OLD_HASH" ] && [ -n "$$OLD_HASH" ]; then \
-		 echo 'No changes detected'; \
-	 else \
-		 echo 'Changes detected; running TWRR pipeline...'; \
-		 for step in $(TWRR_STEPS); do \
-			 echo "Running $$step"; \
-			 $(PYTHON_BIN) $$step || exit $$?; \
-		 done; \
-		 $(PYTHON_BIN) scripts/pipeline_hash.py --write >/dev/null; \
-	 fi
+	@echo 'Running TWRR pipeline...'
+	@for step in $(TWRR_STEPS); do \
+		echo "Running $$step"; \
+		$(PYTHON_BIN) $$step || exit $$?; \
+	done
