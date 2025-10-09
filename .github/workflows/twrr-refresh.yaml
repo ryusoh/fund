@@ -34,8 +34,8 @@ jobs:
 
             - name: Commit outputs if changed
               run: |
-                  git config user.name 'github-actions'
-                  git config user.email 'github-actions@github.com'
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
                   git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_prices.parquet data/historical_prices.json data/historical_prices_overrides.parquet data/output data/twrr_series.parquet ai/status/AI_STATUS.json ai/handoff/CHANGELOG-AI.md
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
