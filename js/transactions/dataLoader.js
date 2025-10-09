@@ -2,6 +2,18 @@ import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';
 
+const SERIES_SYMBOL_ALIASES = {
+    '^SSE': '^SSEC',
+};
+
+function normalizeSeriesKey(name, fallback) {
+    const trimmed = typeof name === 'string' ? name.trim() : '';
+    if (!trimmed) {
+        return fallback;
+    }
+    return SERIES_SYMBOL_ALIASES[trimmed] || trimmed;
+}
+
 export async function loadSplitHistory() {
     try {
         const response = await fetch('../data/split_history.csv');
@@ -186,10 +198,11 @@ export async function loadPerformanceSeries() {
                 points.push({ date: parsedDate, value: numericValue });
             }
             if (points.length > 0) {
-                const key =
+                const rawKey =
                     typeof trace.name === 'string' && trace.name.trim()
                         ? trace.name.trim()
                         : `Series ${index + 1}`;
+                const key = normalizeSeriesKey(rawKey, `Series ${index + 1}`);
                 seriesMap[key] = points;
             }
         });

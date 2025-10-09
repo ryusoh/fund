@@ -9,6 +9,13 @@ import {
 import { formatCurrency } from './utils.js';
 import { calculateStats, calculateHoldings } from './calculations.js';
 
+const ALLOWED_BENCHMARKS = new Set(['^GSPC', '^IXIC', '^DJI', '^SSEC', '^HSI', '^N225']);
+
+function isPortfolioSymbol(name) {
+    const lower = String(name || '').toLowerCase();
+    return lower.includes('portfolio') || lower.includes('twrr') || lower.includes('lz');
+}
+
 function getStatsText() {
     const stats = calculateStats(transactionState.allTransactions, transactionState.splitHistory);
     return `\n-------------------- TRANSACTION STATS ---------------------\n  Total Transactions: ${stats.totalTransactions.toLocaleString()}\n  Buy Orders:         ${stats.totalBuys.toLocaleString()}\n  Sell Orders:        ${stats.totalSells.toLocaleString()}\n  Total Buy Amount:   ${formatCurrency(stats.totalBuyAmount)}\n  Total Sell Amount:  ${formatCurrency(stats.totalSellAmount)}\n  Net Amount:         ${formatCurrency(stats.netAmount)}\n  Realized Gain:      ${formatCurrency(stats.realizedGain)}\n`;
@@ -367,7 +374,49 @@ function calculateSortinoRatio(returns, riskFreeRate = 0.053) {
     return (meanReturn - riskFreeRate / 252) / downsideDeviation; // Daily risk-free rate
 }
 
-function computeDailyReturns(points) {
+function calculateBeta(portfolioReturns, benchmarkReturns) {
+    if (
+        !Array.isArray(portfolioReturns) ||
+        !Array.isArray(benchmarkReturns) ||
+        portfolioReturns.length !== benchmarkReturns.length ||
+        portfolioReturns.length < 2
+    ) {
+        return null;
+    }
+
+    const n = portfolioReturns.length;
+    const portfolioMean = portfolioReturns.reduce((sum, r) => sum + r, 0) / n;
+    const benchmarkMean = benchmarkReturns.reduce((sum, r) => sum + r, 0) / n;
+
+    let covariance = 0;
+    let benchmarkVariance = 0;
+
+    for (let i = 0; i < n; i++) {
+        covariance += (portfolioReturns[i] - portfolioMean) * (benchmarkReturns[i] - benchmarkMean);
+        benchmarkVariance += Math.pow(benchmarkReturns[i] - benchmarkMean, 2);
+    }
+
+    covariance /= n - 1;
+    benchmarkVariance /= n - 1;
+
+    if (benchmarkVariance === 0) {
+        return null;
+    }
+
+    return covariance / benchmarkVariance;
+}
+
+function calculateTreynorRatio(meanReturn, beta, riskFreeRate = 0.053, periodsPerYear = 252) {
+    if (!Number.isFinite(meanReturn) || !Number.isFinite(beta) || beta === 0) {
+        return null;
+    }
+    // Annualize and convert to percentage points for calculation
+    const annualizedReturn = meanReturn * periodsPerYear * 100;
+    const riskFreeRatePercent = riskFreeRate * 100;
+    return (annualizedReturn - riskFreeRatePercent) / beta;
+}
+
+function computeReturns(points, period = 'daily') {
     if (!Array.isArray(points) || points.length < 2) {
         return [];
     }
@@ -389,14 +438,53 @@ function computeDailyReturns(points) {
         return [];
     }
 
+    if (period === 'monthly') {
+        const monthlyCloses = [];
+        let currentKey = '';
+        let lastPoint = null;
+
+        sorted.forEach((point) => {
+            const year = point.date.getUTCFullYear();
+            const month = point.date.getUTCMonth();
+            const key = `${year}-${month}`;
+            if (currentKey !== '' && key !== currentKey && lastPoint) {
+                monthlyCloses.push(lastPoint);
+            }
+            currentKey = key;
+            lastPoint = point;
+        });
+
+        if (lastPoint) {
+            monthlyCloses.push(lastPoint);
+        }
+
+        if (monthlyCloses.length < 2) {
+            return [];
+        }
+
+        const monthlyReturns = [];
+        for (let i = 1; i < monthlyCloses.length; i += 1) {
+            const prevValue = monthlyCloses[i - 1].value;
+            const currValue = monthlyCloses[i].value;
+            if (prevValue > 0) {
+                const monthlyReturn = (currValue - prevValue) / prevValue;
+                if (Number.isFinite(monthlyReturn)) {
+                    monthlyReturns.push({ date: monthlyCloses[i].date, value: monthlyReturn });
+                }
+            }
+        }
+
+        return monthlyReturns;
+    }
+
     const returns = [];
-    for (let i = 1; i < sorted.length; i++) {
+    for (let i = 1; i < sorted.length; i += 1) {
         const prevValue = sorted[i - 1].value;
         const currValue = sorted[i].value;
         if (prevValue > 0) {
             const dailyReturn = (currValue - prevValue) / prevValue;
             if (Number.isFinite(dailyReturn)) {
-                returns.push(dailyReturn);
+                returns.push({ date: sorted[i].date, value: dailyReturn });
             }
         }
     }
@@ -404,28 +492,147 @@ function computeDailyReturns(points) {
     return returns;
 }
 
-function getRatioText() {
-    const seriesMap =
+const SYMBOL_ALIASES = {
+    '^SSE': '^SSEC',
+    '^SSEC': '^SSEC',
+};
+
+function normalizeSymbol(symbol) {
+    return SYMBOL_ALIASES[symbol] || symbol;
+}
+
+function getMonthKey(date) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+}
+
+async function convertHistoricalPricesToSeries(historicalPrices) {
+    const seriesMap = {};
+
+    Object.entries(historicalPrices).forEach(([symbol, prices]) => {
+        const normalizedSymbol = normalizeSymbol(symbol);
+        if (!ALLOWED_BENCHMARKS.has(normalizedSymbol) || !prices || typeof prices !== 'object') {
+            return;
+        }
+
+        const points = Object.entries(prices)
+            .map(([date, price]) => ({ date, value: Number(price) }))
+            .filter((point) => Number.isFinite(point.value) && point.value > 0)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (points.length > 0) {
+            seriesMap[normalizedSymbol] = points;
+        }
+    });
+
+    return seriesMap;
+}
+
+async function getRatioText() {
+    // Load raw historical prices for accurate beta calculations
+    let historicalPrices = {};
+    try {
+        const response = await fetch('../data/historical_prices.json');
+        if (response.ok) {
+            historicalPrices = await response.json();
+        }
+    } catch {
+        // Historical prices unavailable; proceed with existing performance series.
+    }
+
+    const fallbackSeries =
         transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
             ? transactionState.performanceSeries
             : {};
 
-    const entries = Object.entries(seriesMap);
+    const rawSeries =
+        Object.keys(historicalPrices).length > 0
+            ? await convertHistoricalPricesToSeries(historicalPrices)
+            : {};
+
+    const seriesMap = {};
+    Object.entries(fallbackSeries).forEach(([symbol, points]) => {
+        if (Array.isArray(points) && points.length > 0) {
+            const normalizedSymbol = normalizeSymbol(symbol);
+            seriesMap[normalizedSymbol] = points;
+        }
+    });
+    Object.entries(rawSeries).forEach(([symbol, points]) => {
+        if (Array.isArray(points) && points.length > 0) {
+            seriesMap[normalizeSymbol(symbol)] = points;
+        }
+    });
+
+    const entries = Object.entries(seriesMap).filter(([name]) => {
+        const normalized = normalizeSymbol(name);
+        return ALLOWED_BENCHMARKS.has(normalized) || isPortfolioSymbol(normalized);
+    });
     if (entries.length === 0) {
-        return 'Risk ratios unavailable: performance series not loaded yet.';
+        return 'Risk ratios unavailable: no price data available.';
     }
 
+    const dailyReturnsData = new Map(
+        entries.map(([name, points]) => [name, computeReturns(points, 'daily')])
+    );
+    const monthlyReturnsData = new Map(
+        entries.map(([name, points]) => [name, computeReturns(points, 'monthly')])
+    );
+    const benchmarkMonthlyReturns = monthlyReturnsData.get('^GSPC');
+    const benchmarkMonthlyMap = benchmarkMonthlyReturns
+        ? new Map(benchmarkMonthlyReturns.map((r) => [getMonthKey(r.date), r.value]))
+        : null;
+
     const ratioData = entries
-        .map(([name, points]) => {
-            const dailyReturns = computeDailyReturns(points);
+        .map(([name]) => {
+            const portfolioReturnsData = dailyReturnsData.get(name) || [];
+            const dailyReturns = portfolioReturnsData.map((r) => r.value);
             const sharpe = calculateSharpeRatio(dailyReturns);
             const sortino = calculateSortinoRatio(dailyReturns);
+
+            let beta = null;
+            let treynor = null;
+
+            if (benchmarkMonthlyMap) {
+                if (name === '^GSPC') {
+                    beta = 1.0;
+                    const monthlyReturns = monthlyReturnsData.get(name) || [];
+                    if (monthlyReturns.length > 1) {
+                        const meanMonthlyReturn =
+                            monthlyReturns.reduce((sum, r) => sum + r.value, 0) /
+                            monthlyReturns.length;
+                        treynor = calculateTreynorRatio(meanMonthlyReturn, beta, 0.053, 12);
+                    }
+                } else {
+                    const alignedPortfolioReturns = [];
+                    const alignedBenchmarkReturns = [];
+                    const monthlyReturns = monthlyReturnsData.get(name) || [];
+
+                    monthlyReturns.forEach((r) => {
+                        const monthKey = getMonthKey(r.date);
+                        if (benchmarkMonthlyMap.has(monthKey)) {
+                            alignedPortfolioReturns.push(r.value);
+                            alignedBenchmarkReturns.push(benchmarkMonthlyMap.get(monthKey));
+                        }
+                    });
+
+                    if (alignedPortfolioReturns.length > 1) {
+                        beta = calculateBeta(alignedPortfolioReturns, alignedBenchmarkReturns);
+                        const meanMonthlyReturn =
+                            alignedPortfolioReturns.reduce((sum, r) => sum + r, 0) /
+                            alignedPortfolioReturns.length;
+                        treynor = calculateTreynorRatio(meanMonthlyReturn, beta, 0.053, 12);
+                    }
+                }
+            }
 
             return {
                 name,
                 dailyReturns: dailyReturns.length,
                 sharpe: sharpe !== null ? sharpe * Math.sqrt(252) : null, // Annualized
                 sortino: sortino !== null ? sortino * Math.sqrt(252) : null, // Annualized
+                treynor, // Already annualized
+                beta,
             };
         })
         .filter((item) => item.dailyReturns > 0);
@@ -447,9 +654,9 @@ function getRatioText() {
     const orderedData = portfolioEntry ? [portfolioEntry, ...others] : others;
 
     const header =
-        '\n  ------------------------- RISK RATIOS ---------------------\n' +
-        '  Series                         Sharpe Ratio   Sortino Ratio\n' +
-        '  ----------------------------   ------------   -------------\n';
+        '\n  --------------------------------- RISK RATIOS --------------------------------------\n' +
+        '  Series                         Sharpe Ratio   Sortino Ratio   Treynor Ratio     Beta  \n' +
+        '  ----------------------------   ------------   -------------   -------------   ------\n';
 
     const lines = orderedData
         .map((item) => {
@@ -458,18 +665,22 @@ function getRatioText() {
                 item.sharpe !== null ? item.sharpe.toFixed(3).padStart(12) : 'N/A'.padStart(12);
             const sortino =
                 item.sortino !== null ? item.sortino.toFixed(3).padStart(13) : 'N/A'.padStart(13);
-            return `${name}   ${sharpe}   ${sortino}`;
+            const treynor =
+                item.treynor !== null ? item.treynor.toFixed(3).padStart(13) : 'N/A'.padStart(13);
+            const beta = item.beta !== null ? item.beta.toFixed(3).padStart(6) : 'N/A'.padStart(6);
+            return `${name}   ${sharpe}   ${sortino}   ${treynor}   ${beta}`;
         })
         .join('\n');
 
     const footer =
         '\n\n  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).\n' +
-        '        Higher values indicate better risk-adjusted returns.\n' +
-        '        Sharpe uses total volatility; Sortino uses only downside volatility.';
+        '        Higher values indicate better risk-adjusted returns.\n\n' +
+        '        - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)\n' +
+        '        - Sortino Ratio: (Return - Risk-Free) / Downside Volatility\n' +
+        '        - Treynor Ratio: (Return - Risk-Free) / Beta (vs ^GSPC)';
 
     return header + lines + footer + '\n';
 }
-
 let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
@@ -829,7 +1040,7 @@ export function initTerminal({
                             result = getAnnualReturnText();
                             break;
                         case 'ratio':
-                            result = getRatioText();
+                            result = await getRatioText();
                             break;
                         default:
                             result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;

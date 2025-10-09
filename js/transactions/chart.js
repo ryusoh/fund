@@ -15,7 +15,7 @@ const BENCHMARK_GRADIENTS = {
     '^GSPC': ['#0d3b66', '#64b5f6'],
     '^IXIC': ['#0f4c81', '#74c0fc'],
     '^DJI': ['#123c69', '#6aaefc'],
-    '^SSE': ['#0e487a', '#5da9f6'],
+    '^SSEC': ['#0e487a', '#5da9f6'],
     '^HSI': ['#0d4977', '#7ab8ff'],
     '^N225': ['#0b3d63', '#89c2ff'],
 };
@@ -76,7 +76,7 @@ function getChartColors(rootStyles) {
         sp500: rootStyles.getPropertyValue('--sp500-line').trim() || '#ef553b',
         nasdaq: rootStyles.getPropertyValue('--nasdaq-line').trim() || '#00d5ff',
         dji: rootStyles.getPropertyValue('--dji-line').trim() || '#ab63fa',
-        sse: rootStyles.getPropertyValue('--sse-line').trim() || '#ffa15a',
+        ssec: rootStyles.getPropertyValue('--sse-line').trim() || '#ffa15a',
         hsi: rootStyles.getPropertyValue('--hsi-line').trim() || '#19d3f3',
         nikkei: rootStyles.getPropertyValue('--n225-line').trim() || '#ff6692',
         buy: 'rgba(48, 209, 88, 0.8)',
@@ -120,7 +120,7 @@ function updateLegend(series, chartManager) {
                         return; // Portfolio line ('^LZ') is not toggleable
                     }
 
-                    const benchmarks = ['^GSPC', '^IXIC', '^DJI', '^SSE', '^HSI', '^N225'];
+                    const benchmarks = ['^GSPC', '^IXIC', '^DJI', '^SSEC', '^HSI', '^N225'];
                     if (benchmarks.includes(s.key)) {
                         const isDisabled = item.classList.toggle('legend-disabled');
                         const isVisible = !isDisabled;
@@ -1047,7 +1047,7 @@ function drawPerformanceChart(ctx, chartManager, timestamp) {
         '^GSPC': BENCHMARK_GRADIENTS['^GSPC'][1],
         '^IXIC': BENCHMARK_GRADIENTS['^IXIC'][1],
         '^DJI': BENCHMARK_GRADIENTS['^DJI'][1],
-        '^SSE': BENCHMARK_GRADIENTS['^SSE'][1],
+        '^SSEC': BENCHMARK_GRADIENTS['^SSEC'][1],
         '^HSI': BENCHMARK_GRADIENTS['^HSI'][1],
         '^N225': BENCHMARK_GRADIENTS['^N225'][1],
     };

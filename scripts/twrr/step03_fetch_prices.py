@@ -32,6 +32,9 @@ CHECKPOINT_DIR = DATA_DIR / 'checkpoints'
 TRANSACTIONS_PATH = CHECKPOINT_DIR / 'transactions_with_splits.parquet'
 HISTORICAL_PRICES_PATH = DATA_DIR / 'historical_prices.parquet'
 OVERRIDE_PATH = DATA_DIR / 'historical_prices_overrides.parquet'
+HISTORICAL_PRICES_JSON = DATA_DIR / 'historical_prices.json'
+
+BENCHMARK_TICKERS = ['^GSPC', '^IXIC', '^DJI', '^N225', '^HSI', '^SSEC']
 
 AI_DIR = PROJECT_ROOT / 'ai'
 STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
@@ -44,9 +47,10 @@ YFINANCE_MAX_BATCH = 25
 
 # Map normalized tickers (post-cleaning) to vendor-specific symbols
 YFINANCE_ALIASES: Dict[str, str] = {
-    'BRKB': 'BRK-B',  # Berkshire Hathaway Class B
-    'BF.B': 'BF-B',  # Brown-Forman Class B (if normalization retains dot)
-    'BF_B': 'BF-B',  # Brown-Forman Class B (if dot stripped elsewhere)
+    'BRKB': 'BRK-B',
+    'BF.B': 'BF-B',
+    'BF_B': 'BF-B',
+    '^SSEC': '000001.SS',
 }
 
 
@@ -289,6 +293,23 @@ def write_prices(price_df: pd.DataFrame) -> None:
     print(f'Historical prices written to {HISTORICAL_PRICES_PATH}')
 
 
+def write_raw_json_prices(raw_df: pd.DataFrame) -> None:
+    payload = {}
+    if not raw_df.empty:
+        for column in raw_df.columns:
+            series = raw_df[column].dropna()
+            if series.empty:
+                continue
+            payload[column] = {
+                idx.strftime('%Y-%m-%d'): float(value)
+                for idx, value in series.items()
+                if pd.notna(value)
+            }
+
+    HISTORICAL_PRICES_JSON.write_text(json.dumps(payload, indent=2) + "\n")
+    print(f'Raw historical prices written to {HISTORICAL_PRICES_JSON}')
+
+
 def update_status(artifacts: List[str], notes: str) -> None:
     status_data = {
         'step': STEP_NAME,
@@ -325,7 +346,10 @@ def main() -> None:
     ensure_directories()
     transactions = read_transactions()
     date_index = determine_date_range(transactions)
-    unique_tickers = sorted(transactions['security'].dropna().unique())
+    transaction_tickers = (
+        transactions['security'].dropna().astype(str).str.upper().unique().tolist()
+    )
+    unique_tickers = sorted(set(transaction_tickers + BENCHMARK_TICKERS))
     print(
         f'Fetching prices for {len(unique_tickers)} tickers from {date_index[0].date()} to {date_index[-1].date()}'
     )
@@ -348,9 +372,10 @@ def main() -> None:
     if override_tickers:
         print(f'Overrides available for tickers: {override_tickers}')
 
-    combined = combine_prices(base_prices, fallback_data, overrides, date_index)
-    combined = forward_fill_prices(combined)
+    combined_raw = combine_prices(base_prices, fallback_data, overrides, date_index)
+    write_raw_json_prices(combined_raw)
 
+    combined = forward_fill_prices(combined_raw)
     write_prices(combined)
 
     artifacts = [f"./{HISTORICAL_PRICES_PATH.relative_to(PROJECT_ROOT)}"]

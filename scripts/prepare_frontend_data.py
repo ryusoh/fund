@@ -18,6 +18,12 @@ def prepare_historical_prices():
         print(f"Error: {prices_path} not found.")
         return
 
+    if os.environ.get('FORCE_REBUILD_HISTORICAL_JSON') != '1' and os.path.exists(output_path):
+        print(
+            f"{output_path} already exists; skipping rebuild. Set FORCE_REBUILD_HISTORICAL_JSON=1 to regenerate."
+        )
+        return
+
     # Load data
     prices_df = pd.read_parquet(prices_path)
     prices_df.reset_index(inplace=True)
