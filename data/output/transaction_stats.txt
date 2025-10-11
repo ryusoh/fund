@@ -1,9 +1,9 @@
 
 --------------------- TRANSACTION STATS ---------------------
-  Total Transactions: 2,540
-  Buy Orders:         1,917
+  Total Transactions: 2,541
+  Buy Orders:         1,918
   Sell Orders:        623
-  Total Buy Amount:   $1,675,360.14
+  Total Buy Amount:   $1,676,356.46
   Total Sell Amount:  $965,619.46
-  Net Contributions:  $709,740.68
+  Net Contributions:  $710,737.00
   Realized Gain:      $108,243.18
