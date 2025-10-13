@@ -30,7 +30,7 @@ jobs:
               run: python scripts/data/fetch_forex.py
 
             - name: Commit and push changes
-              uses: stefanzweifel/git-auto-commit-action@v6
+              uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): 為替レートを自動更新 [skip ci]'
                   file_pattern: 'data/fx_data.json data/fx_daily_rates.csv' # Only commit if these files change

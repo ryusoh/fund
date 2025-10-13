@@ -32,7 +32,7 @@ jobs:
               run: python scripts/pnl/update_daily_pnl.py
 
             - name: Commit and push changes
-              uses: stefanzweifel/git-auto-commit-action@v6
+              uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): 日次ポートフォリオ履歴を自動更新 [skip ci]'
                   file_pattern: 'data/historical_portfolio_values.csv'
