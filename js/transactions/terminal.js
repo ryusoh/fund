@@ -90,6 +90,10 @@ const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition'];
 const HELP_SUBCOMMANDS = ['filter'];
 
 const MIN_FADE_OPACITY = 0.1;
+const TWRR_MESSAGE =
+    'TWRR (Time-Weighted Rate of Return) describes how efficiently the portfolio has grown regardless of when money moved in or out. It focuses purely on investment performance, so the result is not distorted by the size or timing of deposits and withdrawals.\n' +
+    '\n' +
+    'We follow the industry-standard method: for each day we compute a return factor by dividing the ending market value by the prior-day value after applying that day’s net contribution (cash in is added, cash out is subtracted). Multiplying, or “chaining,” these daily factors produces the cumulative TWRR curve shown in the chart.';
 
 const autocompleteState = {
     prefix: '',
@@ -510,7 +514,9 @@ export function initTerminal({
                                 if (perfTableContainer) {
                                     perfTableContainer.classList.add('is-hidden');
                                 }
-                                result = `Showing performance chart for ${formatDateRange(dateRange)}.`;
+                                result = `Showing performance chart for ${formatDateRange(
+                                    dateRange
+                                )}.\n\n${TWRR_MESSAGE}`;
                             }
                             break;
                         case 'composition':
