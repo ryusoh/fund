@@ -9,6 +9,8 @@ const CORE_ASSETS = [
     './css/main_index.css',
     './css/perf.css',
     './js/ui/scroll_control.js',
+    './js/ui/nav_prefetch.js',
+    './js/ui/video_warmup.js',
     './assets/vendor/css/font-awesome-4.7.0.min.css',
     './assets/vendor/fonts/fontawesome-webfont.woff2',
     './assets/vendor/fonts/fontawesome-webfont.woff',
