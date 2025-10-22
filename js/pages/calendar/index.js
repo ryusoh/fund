@@ -4,6 +4,7 @@ import {
     DATA_PATHS,
     CALENDAR_SELECTORS,
     CALENDAR_CONFIG,
+    UI_BREAKPOINTS,
     getCalendarRange,
 } from '@js/config.js';
 import { getNyDate } from '@utils/date.js';
@@ -867,6 +868,15 @@ export async function initCalendar() {
 
         await cal.paint(paintConfig);
         initCalendarResponsiveHandlers();
+        const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
+        if (toggleContainer) {
+            const activate = () => toggleContainer.classList.add('chart-loaded');
+            if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
+                window.setTimeout(activate, 200);
+            } else {
+                activate();
+            }
+        }
     } catch (error) {
         logger.error('Error initializing calendar:', error);
         logger.log(error);

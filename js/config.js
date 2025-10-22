@@ -242,6 +242,7 @@ export const CALENDAR_SELECTORS = {
     todayButton: '#cal-today',
     currencyToggle: '#currencyToggleContainer',
     pageWrapper: '.page-center-wrapper',
+    navControls: '#calendar-navigation-controls',
 };
 
 // Dynamic calendar range calculation based on viewport and zoom state

@@ -6,9 +6,12 @@ describe('Responsive Utilities', () => {
     let bodyElement;
     let toggleContainer;
     let chartContainer;
-    let heatmapContainer;
+    let calendarContainer;
+    let heatmapRoot;
+    let heatmapSvg;
     let todayButton;
     let pageWrapper;
+    let requestAnimationFrameSpy;
 
     const originalInnerWidth = window.innerWidth;
 
@@ -17,10 +20,13 @@ describe('Responsive Utilities', () => {
             <html style="overflow-y: scroll;"><body>
                 <div id="currencyToggleContainer"></div>
                 <div id="fundPieChartContainer" style="height: 100px; width: 100px;"></div>
-                <div id="calendar-container">
-                    <div id="cal-heatmap" style="height: 100px; width: 100px;"></div>
+                <div id="calendar-container" style="height: 100px; width: 100px;">
+                    <div id="cal-heatmap" style="height: 100%; width: 100%;">
+                        <svg id="heatmap-svg"></svg>
+                    </div>
                     <button id="cal-today"></button>
                 </div>
+                <div id="calendar-navigation-controls" style="height: 80px;"></div>
                 <div class="page-center-wrapper"></div>
             </body></html>
         `;
@@ -28,7 +34,9 @@ describe('Responsive Utilities', () => {
         bodyElement = document.body;
         toggleContainer = document.getElementById('currencyToggleContainer');
         chartContainer = document.getElementById('fundPieChartContainer');
-        heatmapContainer = document.getElementById('cal-heatmap');
+        calendarContainer = document.getElementById('calendar-container');
+        heatmapRoot = document.getElementById('cal-heatmap');
+        heatmapSvg = document.getElementById('heatmap-svg');
         todayButton = document.getElementById('cal-today');
         pageWrapper = document.querySelector('.page-center-wrapper');
 
@@ -36,6 +44,18 @@ describe('Responsive Utilities', () => {
         jest.spyOn(document, 'querySelector');
         jest.spyOn(document, 'getElementById');
         jest.spyOn(window, 'addEventListener');
+        window.ResizeObserver = jest.fn().mockImplementation(() => ({
+            observe: jest.fn(),
+            disconnect: jest.fn(),
+        }));
+        requestAnimationFrameSpy = jest
+            .spyOn(window, 'requestAnimationFrame')
+            .mockImplementation((cb) => {
+                if (typeof cb === 'function') {
+                    cb();
+                }
+                return 1;
+            });
 
         Object.defineProperty(window, 'innerWidth', {
             writable: true,
@@ -46,11 +66,15 @@ describe('Responsive Utilities', () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
+        if (requestAnimationFrameSpy) {
+            requestAnimationFrameSpy.mockRestore();
+        }
         Object.defineProperty(window, 'innerWidth', {
             writable: true,
             configurable: true,
             value: originalInnerWidth,
         });
+        delete window.ResizeObserver;
     });
 
     describe('checkAndToggleVerticalScroll', () => {
@@ -144,22 +168,42 @@ describe('Responsive Utilities', () => {
     });
 
     describe('initCalendarResponsiveHandlers', () => {
-        it('should return early if toggleContainer or heatmapContainer is null', () => {
+        it('should return early if toggleContainer or calendarContainer is null', () => {
             document.body.innerHTML = '';
             const result = responsive.initCalendarResponsiveHandlers();
             expect(document.querySelector).toHaveBeenCalledWith(CALENDAR_SELECTORS.currencyToggle);
             expect(document.querySelector).toHaveBeenCalledWith(CALENDAR_SELECTORS.heatmap);
+            expect(document.querySelector).toHaveBeenCalledWith(CALENDAR_SELECTORS.container);
+            expect(document.querySelector).toHaveBeenCalledWith(CALENDAR_SELECTORS.navControls);
             expect(result).toBeUndefined(); // Function returns early
         });
 
         it('should set position and top for mobile', () => {
             window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
 
-            // Mock getBoundingClientRect for heatmapContainer
-            heatmapContainer.getBoundingClientRect = jest.fn().mockReturnValue({
+            const heatmapRect = {
                 top: 150,
-                height: 300,
-            });
+                height: 240,
+                bottom: 390,
+            };
+            const calendarRect = {
+                top: 100,
+                height: 200,
+                bottom: 300,
+            };
+            const navRect = {
+                top: 400,
+                height: 80,
+                bottom: 480,
+            };
+
+            heatmapSvg.getBoundingClientRect = jest.fn().mockReturnValue(heatmapRect);
+            calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(calendarRect);
+            heatmapRoot.getBoundingClientRect = jest.fn().mockReturnValue(calendarRect);
+            const navElement = document.getElementById('calendar-navigation-controls');
+            if (navElement) {
+                navElement.getBoundingClientRect = jest.fn().mockReturnValue(navRect);
+            }
 
             // Mock offsetHeight for toggleContainer
             Object.defineProperty(toggleContainer, 'offsetHeight', {
@@ -168,21 +212,27 @@ describe('Responsive Utilities', () => {
             });
 
             responsive.initCalendarResponsiveHandlers();
-            expect(toggleContainer.style.position).toBe('fixed');
-            expect(toggleContainer.style.left).toBe('0px');
-            // heatmapCenterY = top + height/2 = 150 + 150 = 300
-            // toggleTop = heatmapCenterY - toggleHeight/2 = 300 - 20 = 280
-            expect(toggleContainer.style.top).toBe('280px');
+            expect(toggleContainer.style.position).toBe('');
+            expect(toggleContainer.style.left).toBe('');
+            // combined rect spans 150 to 480 -> center at 315
+            expect(toggleContainer.style.top).toBe('315px');
+            expect(toggleContainer.style.transform).toBe('');
+            expect(heatmapSvg.getBoundingClientRect).toHaveBeenCalled();
+            if (navElement) {
+                expect(navElement.getBoundingClientRect).toHaveBeenCalled();
+            }
         });
 
         it('should reset position and top for desktop', () => {
             toggleContainer.style.position = 'fixed';
             toggleContainer.style.top = '100px';
             toggleContainer.style.left = '100px';
+            toggleContainer.style.transform = 'translateY(-50%)';
             responsive.initCalendarResponsiveHandlers();
             expect(toggleContainer.style.position).toBe('');
             expect(toggleContainer.style.top).toBe('');
             expect(toggleContainer.style.left).toBe('');
+            expect(toggleContainer.style.transform).toBe('');
         });
 
         it('should toggle zoomed class on dblclick of todayButton', () => {

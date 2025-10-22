@@ -52,27 +52,137 @@ export function initCalendarResponsiveHandlers() {
     const alignToggle = () => {
         const isMobile = window.innerWidth <= UI_BREAKPOINTS.MOBILE;
         const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
-        const heatmapContainer = document.querySelector(CALENDAR_SELECTORS.heatmap);
+        const heatmapRoot = document.querySelector(CALENDAR_SELECTORS.heatmap);
+        const calendarContainer = document.querySelector(CALENDAR_SELECTORS.container);
+        const navControls = document.querySelector(CALENDAR_SELECTORS.navControls);
 
-        if (!toggleContainer || !heatmapContainer) {
+        if (!toggleContainer || !heatmapRoot) {
             return;
         }
 
+        const normalizeRect = (rect) => {
+            if (!rect || typeof rect.top !== 'number') {
+                return null;
+            }
+            const top = rect.top;
+            const bottom = typeof rect.bottom === 'number' ? rect.bottom : top + (rect.height || 0);
+            const height = bottom - top;
+            if (!(height > 0)) {
+                return null;
+            }
+            return { top, bottom, height };
+        };
+
+        const rectFromElement = (element) => {
+            if (!element || typeof element.getBoundingClientRect !== 'function') {
+                return null;
+            }
+            return normalizeRect(element.getBoundingClientRect());
+        };
+
+        const mergeRects = (rects) => {
+            if (!rects.length) {
+                return null;
+            }
+            if (rects.length === 1) {
+                return rects[0];
+            }
+            const top = Math.min(...rects.map((rect) => rect.top));
+            const bottom = Math.max(...rects.map((rect) => rect.bottom));
+            return { top, bottom, height: bottom - top };
+        };
+
+        const resolveHeatmapRect = () => {
+            const domainNodes = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            const domainRects = Array.from(domainNodes)
+                .map((node) => rectFromElement(node))
+                .filter(Boolean);
+
+            if (domainRects.length) {
+                return mergeRects(domainRects);
+            }
+
+            const svgRect = rectFromElement(heatmapRoot.querySelector('svg'));
+            if (svgRect) {
+                return svgRect;
+            }
+
+            const firstChildRect = rectFromElement(heatmapRoot.firstElementChild);
+            if (firstChildRect) {
+                return firstChildRect;
+            }
+
+            if (calendarContainer) {
+                const containerRect = rectFromElement(calendarContainer);
+                if (containerRect) {
+                    return containerRect;
+                }
+            }
+
+            return rectFromElement(heatmapRoot);
+        };
+
         if (isMobile) {
-            toggleContainer.style.position = 'fixed';
-            toggleContainer.style.left = '0px';
-            const heatmapRect = heatmapContainer.getBoundingClientRect();
-            const heatmapCenterY = heatmapRect.top + heatmapRect.height / 2;
-            const toggleHeight = toggleContainer.offsetHeight;
-            toggleContainer.style.top = `${heatmapCenterY - toggleHeight / 2}px`;
+            toggleContainer.style.removeProperty('left');
+            toggleContainer.style.removeProperty('right');
+            const heatmapRect = resolveHeatmapRect();
+            if (!heatmapRect) {
+                return;
+            }
+            let targetRect = heatmapRect;
+            const navRect = rectFromElement(navControls);
+            if (navRect) {
+                targetRect = mergeRects([heatmapRect, navRect]);
+            }
+            if (!targetRect) {
+                return;
+            }
+            const targetCenterY = targetRect.top + targetRect.height / 2;
+            toggleContainer.style.setProperty('top', `${targetCenterY}px`, 'important');
         } else {
-            toggleContainer.style.position = '';
-            toggleContainer.style.top = '';
-            toggleContainer.style.left = '';
+            toggleContainer.style.removeProperty('position');
+            toggleContainer.style.removeProperty('top');
+            toggleContainer.style.removeProperty('left');
+            toggleContainer.style.removeProperty('right');
+            toggleContainer.style.removeProperty('transform');
         }
     };
+
     alignToggle();
-    window.addEventListener('resize', alignToggle);
+
+    let alignRafId = null;
+    const scheduleAlign = () => {
+        if (alignRafId !== null) {
+            return;
+        }
+        alignRafId = window.requestAnimationFrame(() => {
+            alignRafId = null;
+            alignToggle();
+        });
+    };
+
+    window.addEventListener('resize', scheduleAlign);
+    window.addEventListener('scroll', scheduleAlign, { passive: true });
+    window.addEventListener('calendar-zoom-end', scheduleAlign);
+    if (typeof window !== 'undefined' && window.ResizeObserver) {
+        const observer = new window.ResizeObserver(scheduleAlign);
+        const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
+        const heatmapRoot = document.querySelector(CALENDAR_SELECTORS.heatmap);
+        const calendarContainer = document.querySelector(CALENDAR_SELECTORS.container);
+        const navControls = document.querySelector(CALENDAR_SELECTORS.navControls);
+        if (toggleContainer) {
+            observer.observe(toggleContainer);
+        }
+        if (heatmapRoot) {
+            observer.observe(heatmapRoot);
+        }
+        if (calendarContainer) {
+            observer.observe(calendarContainer);
+        }
+        if (navControls) {
+            observer.observe(navControls);
+        }
+    }
 
     const todayButton = document.querySelector(CALENDAR_SELECTORS.todayButton);
     const pageWrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
