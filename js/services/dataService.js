@@ -200,7 +200,7 @@ function updateTableAndPrepareChartData(
         );
 
         const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || {
-            src: '/assets/logo/vt.png',
+            src: '/assets/logos/vt.png',
             scale: 1.0,
         };
         const resolvedSrc =

@@ -176,42 +176,42 @@ const renderAsWhite = true;
 const opacity = 0.5;
 export const TICKER_TO_LOGO_MAP = {
     GEO: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/geo.png',
+        src: '/assets/logos/geo.png',
         scale: 1,
         rotation: 0,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     ANET: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/anet.png',
+        src: '/assets/logos/anet.png',
         scale: 0.5,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     GOOG: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/goog.png',
+        src: '/assets/logos/goog.png',
         scale: 1.05,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     PDD: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/pdd.png',
+        src: '/assets/logos/pdd.png',
         scale: 1.7,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     OXY: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/oxy.png',
+        src: '/assets/logos/oxy.png',
         scale: 1.9,
         rotation: false,
         renderAsWhite: renderAsWhite,
         opacity: opacity,
     },
     'BRK-B': {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/brk.png',
+        src: '/assets/logos/brk.png',
         scale: 2,
         rotation: 'radial-in',
         renderAsWhite: renderAsWhite,
@@ -219,7 +219,7 @@ export const TICKER_TO_LOGO_MAP = {
         radialMargin: 1.2,
     },
     VT: {
-        src: 'https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/brand/logos/fund/vt.png',
+        src: '/assets/logos/vt.png',
         scale: 2,
         rotation: false,
         renderAsWhite: renderAsWhite,
