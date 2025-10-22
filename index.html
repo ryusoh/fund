@@ -49,7 +49,14 @@
         <title>Fund</title>
         <!-- Load Font Awesome with fallbacks -->
         <script defer src="./js/loader/cdnFallback.js"></script>
-        <script defer src="./js/loader/vendorLoader.js"></script>
+        <link
+            rel="preload"
+            href="./assets/vendor/fonts/fontawesome-webfont.woff2?v=4.7.0"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link rel="stylesheet" href="./assets/vendor/css/font-awesome-4.7.0.min.css" />
         <link rel="stylesheet" href="./css/base.css" />
         <link rel="stylesheet" href="./css/layout.css" />
         <link rel="stylesheet" href="./css/main_index.css" />
@@ -104,15 +111,15 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub Profile"
-            >
-                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
-            </a>
+                ><i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i
+            ></a>
         </footer>
         <!-- Image fallback and Ambient via CDN fallback loader -->
         <script defer src="./js/loader/imageFallback.js"></script>
         <script defer src="./js/ambient/loader.js"></script>
         <script defer src="./js/ui/reduced_motion.js"></script>
         <script src="./js/ui/scroll_control.js"></script>
+        <script defer src="./js/ui/icon_font_ready.js"></script>
         <script defer src="./js/ui/nav_current_page.js"></script>
         <!-- Video fallback for iOS web app mode -->
         <script type="module">

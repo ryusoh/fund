@@ -60,9 +60,13 @@
             }
         </script>
         <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+            rel="preload"
+            href="../assets/vendor/fonts/fontawesome-webfont.woff2?v=4.7.0"
+            as="font"
+            type="font/woff2"
+            crossorigin
         />
+        <link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />
         <link rel="stylesheet" href="../css/base.css" />
         <link rel="stylesheet" href="../css/layout.css" />
         <link rel="stylesheet" href="../css/main_index.css" />
@@ -75,7 +79,7 @@
         <div class="container">
             <ul>
                 <li>
-                    <a href="..//">
+                    <a href="../">
                         <i class="fa fa-chevron-right"></i>
                     </a>
                 </li>
@@ -140,9 +144,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub Profile"
-            >
-                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
-            </a>
+                ><i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i
+            ></a>
         </footer>
 
         <!-- Load Chart.js and plugin in order with local-first, CDN-fallback, then load app module -->
@@ -188,6 +191,7 @@
                 })();
             })();
         </script>
+        <script defer src="../js/ui/icon_font_ready.js"></script>
         <script defer src="../js/ui/nav_current_page.js"></script>
         <script
             defer

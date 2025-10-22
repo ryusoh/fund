@@ -59,6 +59,14 @@ body {
     touch-action: manipulation; /* Prevent double-tap to zoom globally, allow pan/pinch */
 }
 
+body:not(.icon-font-ready) .fa {
+    visibility: hidden;
+}
+
+body.icon-font-ready .fa {
+    visibility: visible;
+}
+
 .hidden {
     display: none;
 }
