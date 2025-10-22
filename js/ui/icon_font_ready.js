@@ -16,6 +16,12 @@
 
         const fallbackTimer = window.setTimeout(markReady, FALLBACK_DELAY);
 
+        if (document.fonts && document.fonts.check && document.fonts.check('1em FontAwesome')) {
+            window.clearTimeout(fallbackTimer);
+            markReady();
+            return;
+        }
+
         if (document.fonts && document.fonts.load) {
             Promise.all([
                 document.fonts.load('1em FontAwesome'),
