@@ -1,6 +1,6 @@
 /* Simple service worker for Fund */
 /* eslint-env serviceworker */
-const CACHE_NAME = 'fund-cache-v1';
+const CACHE_NAME = 'fund-cache-v2';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -16,7 +16,7 @@ const CORE_ASSETS = [
     './assets/vendor/fonts/fontawesome-webfont.woff',
     './assets/vendor/fonts/fontawesome-webfont.ttf',
     'https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png',
-    'https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png',
+    './assets/icons/icon-180.png',
     './assets/mobile_bg.jpg',
 ];
 

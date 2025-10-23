@@ -4,52 +4,45 @@ Create PWA icons from existing avatar image
 Resize and optimize the existing icon for different sizes
 """
 
+from pathlib import Path
 from PIL import Image
-import requests
-import os
-from io import BytesIO
 
 
-def download_and_resize_icon():
-    """Download the existing avatar and create different sizes"""
-    # URL of the existing avatar
-    avatar_url = "https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/avatars/avatar_152x152.png"
+def generate_icons_from_source():
+    """Create different sized icons using the local source image."""
+    repo_root = Path(__file__).resolve().parents[1]
+    source_path = repo_root / "assets" / "icons" / "icon-src.png"
 
-    print("Downloading existing avatar...")
-    try:
-        response = requests.get(avatar_url)
-        response.raise_for_status()
-
-        # Open the image
-        original_img = Image.open(BytesIO(response.content))
-        print(f"Original image size: {original_img.size}")
-
-        # Create assets directory if it doesn't exist
-        os.makedirs('assets', exist_ok=True)
-
-        # Create different sizes
-        sizes = [152, 180, 192, 512]
-
-        for size in sizes:
-            print(f"Creating {size}x{size} icon...")
-
-            # Resize with high quality
-            resized_img = original_img.resize((size, size), Image.Resampling.LANCZOS)
-
-            # Save the resized image
-            filename = f'assets/icon-{size}.png'
-            resized_img.save(filename, 'PNG', optimize=True)
-            print(f"Saved {filename}")
-
-        print("\n✅ All icons created successfully!")
-        print("Using your existing avatar design for consistency")
-
-    except Exception as e:
-        print(f"Error downloading or processing image: {e}")
+    if not source_path.exists():
+        print(f"❌ Source icon not found at {source_path}")
         return False
 
+    print(f"Using local source icon: {source_path}")
+    original_img = Image.open(source_path)
+    print(f"Original image size: {original_img.size}")
+
+    # Create assets directory if it doesn't exist
+    assets_dir = repo_root / "assets" / "icons"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create different sizes
+    sizes = [152, 180, 192, 512]
+
+    for size in sizes:
+        print(f"Creating {size}x{size} icon...")
+
+        # Resize with high quality
+        resized_img = original_img.resize((size, size), Image.Resampling.LANCZOS)
+
+        # Save the resized image
+        filename = assets_dir / f"icon-{size}.png"
+        resized_img.save(filename, "PNG", optimize=True)
+        print(f"Saved {filename}")
+
+    print("\n✅ All icons created successfully!")
+    print("Local source ensures consistent branding without CDN lag.")
     return True
 
 
 if __name__ == "__main__":
-    download_and_resize_icon()
+    generate_icons_from_source()
