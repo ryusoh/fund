@@ -1,18 +1,20 @@
 
-  --------------------------------- RISK RATIOS --------------------------------------
-  Series                         Sharpe Ratio     Sortino Ratio     Treynor Ratio         Beta
-  ----------------------------   --------------   ---------------   ---------------   ----------
-  ^LZ                                    0.609            0.525            0.171         1.032
-  ^DJI                                   0.256            0.209            0.077         0.917
-  ^GSPC                                  0.411            0.332            0.104         1.016
-  ^HSI                                  -0.122           -0.103           -0.042         0.350
-  ^IXIC                                  0.381            0.304            0.103         1.186
-  ^N225                                  0.369            0.297            0.172         0.613
-  ^SSEC                                 -0.059           -0.047            0.041         0.239
++--------+--------------+---------------+
+|              RISK RATIOS              |
++--------+--------------+---------------+
+| Series | Sharpe Ratio | Sortino Ratio |
++========+==============+===============+
+| ^LZ    |        0.609 |         0.525 |
+| ^DJI   |        0.256 |         0.209 |
+| ^GSPC  |        0.411 |         0.332 |
+| ^HSI   |       -0.122 |        -0.103 |
+| ^IXIC  |        0.381 |         0.304 |
+| ^N225  |        0.369 |         0.297 |
+| ^SSEC  |       -0.059 |        -0.047 |
++--------+--------------+---------------+
 
   Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).
-        Higher values indicate better risk-adjusted returns.
+  Higher values indicate better risk-adjusted returns.
 
-        - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)
-        - Sortino Ratio: (Return - Risk-Free) / Downside Volatility
-        - Treynor Ratio: (Return - Risk-Free) / Beta (vs ^GSPC)
+  - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)
+  - Sortino Ratio: (Return - Risk-Free) / Downside Volatility

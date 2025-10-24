@@ -46,6 +46,89 @@ def format_percent(value):
     return f"{sign}{abs(percentage):.2f}%"
 
 
+def render_box_table(
+    *,
+    title=None,
+    headers=None,
+    rows=None,
+    alignments=None,
+    show_header=True,
+    header_separator=True,
+    width_hint=None,
+    include_top_border=True,
+    include_bottom_border=True,
+):
+    rows = rows or []
+    if headers:
+        column_count = len(headers)
+    elif rows:
+        column_count = len(rows[0])
+    else:
+        column_count = 0
+
+    if column_count == 0:
+        total_width = len(title or '')
+        return '', total_width
+
+    alignments = alignments or ['left'] * column_count
+
+    widths = [0] * column_count
+    if headers:
+        for index, header in enumerate(headers):
+            widths[index] = max(widths[index], len(str(header)))
+
+    for row in rows:
+        if len(row) != column_count:
+            raise ValueError('Row has incorrect number of columns')
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], len(str(cell)))
+
+    total_width = sum(width + 2 for width in widths) + column_count + 1
+    if width_hint and width_hint > total_width:
+        widths[-1] += width_hint - total_width
+        total_width = width_hint
+
+    def make_border(char='-'):
+        return '+' + '+'.join(char * (width + 2) for width in widths) + '+'
+
+    def format_row(values):
+        cells = []
+        for idx, value in enumerate(values):
+            text = str(value)
+            width = widths[idx]
+            alignment = alignments[idx] if idx < len(alignments) else 'left'
+            if alignment == 'right':
+                text = text.rjust(width)
+            elif alignment == 'center':
+                text = text.center(width)
+            else:
+                text = text.ljust(width)
+            cells.append(f' {text} ')
+        return '|' + '|'.join(cells) + '|'
+
+    lines = []
+    if include_top_border:
+        lines.append(make_border('-'))
+
+    if title:
+        title_line = '|' + title.center(total_width - 2) + '|'
+        lines.append(title_line)
+        lines.append(make_border('-'))
+
+    if headers and show_header:
+        lines.append(format_row(headers))
+        if header_separator:
+            lines.append(make_border('='))
+
+    for row in rows:
+        lines.append(format_row(row))
+
+    if include_bottom_border:
+        lines.append(make_border('-'))
+
+    return '\n'.join(lines), total_width
+
+
 def calculate_stats():
     """Calculate transaction statistics using split-adjusted data."""
     transactions_df = pd.read_parquet(DATA_DIR / 'checkpoints' / 'transactions_with_splits.parquet')
@@ -97,16 +180,24 @@ def calculate_stats():
 
     net_contributions = total_buy_amount - total_sell_amount
 
-    return (
-        "\n--------------------- TRANSACTION STATS ---------------------\n"
-        f"  Total Transactions: {total_transactions:,}\n"
-        f"  Buy Orders:         {buy_mask.sum():,}\n"
-        f"  Sell Orders:        {sell_mask.sum():,}\n"
-        f"  Total Buy Amount:   {format_currency(total_buy_amount)}\n"
-        f"  Total Sell Amount:  {format_currency(total_sell_amount)}\n"
-        f"  Net Contributions:  {format_currency(net_contributions)}\n"
-        f"  Realized Gain:      {format_currency(realized_gain_total)}\n"
+    rows = [
+        ['Total Transactions', f"{total_transactions:,}"],
+        ['Buy Orders', f"{buy_mask.sum():,}"],
+        ['Sell Orders', f"{sell_mask.sum():,}"],
+        ['Total Buy Amount', format_currency(total_buy_amount)],
+        ['Total Sell Amount', format_currency(total_sell_amount)],
+        ['Net Contributions', format_currency(net_contributions)],
+        ['Realized Gain', format_currency(realized_gain_total)],
+    ]
+
+    table, _ = render_box_table(
+        title='TRANSACTION STATS',
+        headers=['Metric', 'Value'],
+        rows=rows,
+        alignments=['left', 'right'],
     )
+
+    return '\n' + table + '\n'
 
 
 def calculate_holdings():
@@ -124,9 +215,6 @@ def calculate_holdings():
     if active_holdings.empty:
         return "No current holdings."
 
-    table = "  Security        | Shares         | Avg Price      | Total Cost     \n"
-    table += "  ----------------|----------------|----------------|----------------\n"
-
     holdings_frame = pd.DataFrame(active_holdings).rename(columns={active_holdings.name: 'shares'})
     holdings_frame.index.name = 'symbol'
 
@@ -143,14 +231,24 @@ def calculate_holdings():
     holdings_frame = holdings_frame[holdings_frame['average_price'] > 0]
     holdings_frame = holdings_frame.sort_values(by='total_cost', ascending=False)
 
+    data_rows = []
     for symbol, data in holdings_frame.iterrows():
-        sec = f"  {data.get('display_symbol', symbol)}".ljust(17)
-        shares = f"{data['shares']:,.2f}".rjust(14)
-        avg_price_str = f"${data['average_price']:.2f}".rjust(14)
-        total_cost_str = format_currency(data['total_cost']).rjust(14)
-        table += f"{sec} | {shares} | {avg_price_str} | {total_cost_str}\n"
+        data_rows.append(
+            [
+                data.get('display_symbol', symbol),
+                f"{data['shares']:,.2f}",
+                f"${data['average_price']:.2f}",
+                format_currency(data['total_cost']),
+            ]
+        )
 
-    return table
+    table, _ = render_box_table(
+        title='HOLDINGS',
+        headers=['Security', 'Shares', 'Avg Price', 'Total Cost'],
+        rows=data_rows,
+        alignments=['left', 'right', 'right', 'right'],
+    )
+    return '\n' + table + '\n'
 
 
 def get_performance_series():
@@ -196,15 +294,7 @@ def calculate_cagr(series_map):
     if years <= 0:
         return "CAGR unavailable: invalid measurement period."
 
-    header = (
-        "\n-------------------------- PERFORMANCE CAGR --------------------------\n"
-        f"  Period:        {start_date.strftime('%Y-%m-%d')} → {end_date.strftime('%Y-%m-%d')}\n"
-        f"  Years:         {years:.2f}\n\n"
-        "  Series                         Total Return (%)      CAGR (%)\n"
-        "  ----------------------------   ----------------   ------------\n"
-    )
-
-    lines = []
+    data_rows = []
     for name in order_series_names(series_map.keys()):
         series = series_map[name]
         total_return = (
@@ -214,12 +304,37 @@ def calculate_cagr(series_map):
         )
         cagr = compute_cagr(series, years)
 
-        name_str = f"  {name:<28}"
-        total_str = f"{format_percent(total_return):>18}"
-        cagr_str = f"{format_percent(cagr):>14}"
-        lines.append(f"{name_str}{total_str}{cagr_str}")
+        data_rows.append([name, format_percent(total_return), format_percent(cagr)])
 
-    return header + "\n".join(lines) + "\n"
+    data_table, data_width = render_box_table(
+        headers=['Series', 'Total Return (%)', 'CAGR (%)'],
+        rows=data_rows,
+        alignments=['left', 'right', 'right'],
+        include_top_border=False,
+    )
+
+    info_rows = [
+        ['Period', f"{start_date.strftime('%Y-%m-%d')} → {end_date.strftime('%Y-%m-%d')}"],
+        ['Years', f"{years:.2f}"],
+    ]
+
+    info_table, _ = render_box_table(
+        title='PERFORMANCE CAGR',
+        rows=info_rows,
+        alignments=['left', 'right'],
+        show_header=False,
+        width_hint=data_width,
+    )
+
+    data_table, _ = render_box_table(
+        headers=['Series', 'Total Return (%)', 'CAGR (%)'],
+        rows=data_rows,
+        alignments=['left', 'right', 'right'],
+        include_top_border=False,
+        width_hint=data_width,
+    )
+
+    return '\n' + info_table + '\n' + data_table + '\n'
 
 
 def compute_returns(points, period='daily'):
@@ -236,7 +351,8 @@ def compute_returns(points, period='daily'):
         return {str(idx.year): val for idx, val in returns.items()}
 
     if period == 'monthly':
-        resampled = df.resample('ME').last()
+        # Use month-end observations so beta aligns with Yahoo Finance (yfinance) methodology.
+        resampled = df.resample('M').last()
         returns = resampled.pct_change()['value'].dropna()
         return {pd.to_datetime(idx).strftime('%Y-%m'): val for idx, val in returns.items()}
 
@@ -290,39 +406,27 @@ def calculate_annual_returns(series_map):
         return "Return breakdown unavailable: no annual data."
 
     sorted_series_names = order_series_names(annual_data.keys())
-    column_width = max(12, max(len(name) for name in sorted_series_names) + 2)
-    header_width = 10 + column_width * len(sorted_series_names)
-    header = (
-        '\n'
-        + '-' * header_width
-        + '\n'
-        + '  ANNUAL RETURNS'.center(header_width)
-        + '\n'
-        + '-' * header_width
-        + '\n'
-        + '  Year    '
-        + ''.join([f'{name:>{column_width}}' for name in sorted_series_names])
-        + '\n'
-    )
-
     rows = []
     for year in all_years:
-        row = f"  {year}    "
+        row = [str(year)]
         for name in sorted_series_names:
             ret = annual_data[name].get(year)
-            row += f"{format_percent(ret if ret is not None else np.nan):>{column_width}}"
+            row.append(format_percent(ret if ret is not None else np.nan))
         rows.append(row)
 
-    return header + "\n".join(rows) + "\n"
+    headers = ['Year'] + sorted_series_names
+    alignments = ['left'] + ['right'] * len(sorted_series_names)
+    table, _ = render_box_table(
+        title='ANNUAL RETURNS',
+        headers=headers,
+        rows=rows,
+        alignments=alignments,
+    )
+    return '\n' + table + '\n'
 
 
 def calculate_ratios(series_map, risk_free_rate=0.053):
     daily_returns = {name: compute_returns(points, 'daily') for name, points in series_map.items()}
-    monthly_returns = {
-        name: compute_returns(points, 'monthly') for name, points in series_map.items()
-    }
-
-    benchmark_monthly_returns = monthly_returns.get('^GSPC', {})
 
     ratio_data = []
     for name, returns in daily_returns.items():
@@ -345,53 +449,35 @@ def calculate_ratios(series_map, risk_free_rate=0.053):
             else None
         )
 
-        beta, treynor = None, None
-        portfolio_monthly = monthly_returns.get(name, {})
-        if portfolio_monthly and benchmark_monthly_returns:
-            common_months = set(portfolio_monthly.keys()) & set(benchmark_monthly_returns.keys())
-            if len(common_months) > 1:
-                p_returns = [portfolio_monthly[m] for m in common_months]
-                b_returns = [benchmark_monthly_returns[m] for m in common_months]
-                cov = np.cov(p_returns, b_returns)[0][1]
-                var = np.var(b_returns)
-                beta = cov / var if var > 0 else None
+        ratio_data.append({'name': name, 'sharpe': sharpe, 'sortino': sortino})
 
-                if beta is not None and beta != 0:
-                    annualized_return = np.mean(p_returns) * 12
-                    treynor = (annualized_return - risk_free_rate) / beta
-
-        ratio_data.append(
-            {'name': name, 'sharpe': sharpe, 'sortino': sortino, 'treynor': treynor, 'beta': beta}
-        )
-
-    header = (
-        '\n  --------------------------------- RISK RATIOS --------------------------------------\n'
-        '  Series                         Sharpe Ratio     Sortino Ratio     Treynor Ratio         Beta\n'
-        '  ----------------------------   --------------   ---------------   ---------------   ----------\n'
-    )
-    lines = []
-    for item in sorted(ratio_data, key=lambda x: (x['name'] != PORTFOLIO_SERIES_KEY, x['name'])):
-        name_str = f"  {item['name']:<28}"
+    sorted_items = sorted(ratio_data, key=lambda x: (x['name'] != PORTFOLIO_SERIES_KEY, x['name']))
+    rows = []
+    for item in sorted_items:
         sharpe_str = (
-            f"{item['sharpe']:.3f}".rjust(16) if item['sharpe'] is not None else 'N/A'.rjust(16)
+            f"{item['sharpe']:.3f}" if item['sharpe'] is not None else 'N/A'
         )
         sortino_str = (
-            f"{item['sortino']:.3f}".rjust(17) if item['sortino'] is not None else 'N/A'.rjust(17)
+            f"{item['sortino']:.3f}" if item['sortino'] is not None else 'N/A'
         )
-        treynor_str = (
-            f"{item['treynor']:.3f}".rjust(17) if item['treynor'] is not None else 'N/A'.rjust(17)
-        )
-        beta_str = f"{item['beta']:.3f}".rjust(14) if item['beta'] is not None else 'N/A'.rjust(14)
-        lines.append(f"{name_str}{sharpe_str}{sortino_str}{treynor_str}{beta_str}")
+        rows.append([item['name'], sharpe_str, sortino_str])
 
-    footer = (
-        '\n\n  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).\n'
-        + '        Higher values indicate better risk-adjusted returns.\n\n'
-        + '        - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)\n'
-        + '        - Sortino Ratio: (Return - Risk-Free) / Downside Volatility\n'
-        + '        - Treynor Ratio: (Return - Risk-Free) / Beta (vs ^GSPC)'
+    table, _ = render_box_table(
+        title='RISK RATIOS',
+        headers=['Series', 'Sharpe Ratio', 'Sortino Ratio'],
+        rows=rows,
+        alignments=['left', 'right', 'right'],
     )
-    return header + "\n".join(lines) + footer + "\n"
+
+    indent = '  '
+    notes = [
+        f"{indent}Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).",
+        f"{indent}Higher values indicate better risk-adjusted returns.",
+        '',
+        f"{indent}- Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)",
+        f"{indent}- Sortino Ratio: (Return - Risk-Free) / Downside Volatility",
+    ]
+    return '\n'.join(['', table, ''] + notes) + '\n'
 
 
 def main():
