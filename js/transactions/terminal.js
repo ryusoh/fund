@@ -824,7 +824,13 @@ export function initTerminal({
                     }
                 }
                 filterAndSort(command);
+                const summaryText = await getContributionSummaryText(
+                    transactionState.chartDateRange
+                );
                 result = `Filtering transactions by: "${command}"...`;
+                if (summaryText) {
+                    result += `\n${summaryText}`;
+                }
                 break;
         }
 
