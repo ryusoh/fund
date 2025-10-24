@@ -11,7 +11,7 @@ import {
     mountainFill,
 } from '../config.js';
 
-function hasActiveTransactionFilters() {
+export function hasActiveTransactionFilters() {
     const allTransactions = transactionState.allTransactions || [];
     const filteredTransactions = transactionState.filteredTransactions || [];
     if (!allTransactions.length) {
@@ -22,7 +22,7 @@ function hasActiveTransactionFilters() {
     );
 }
 
-function buildContributionSeriesFromTransactions(transactions) {
+export function buildContributionSeriesFromTransactions(transactions) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }
@@ -124,7 +124,7 @@ function getPriceFromHistoricalData(historicalPrices, symbol, dateStr) {
     return null;
 }
 
-function buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory) {
+export function buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }

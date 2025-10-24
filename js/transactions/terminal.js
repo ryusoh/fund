@@ -5,7 +5,14 @@ import {
     setHistoryIndex,
     setChartDateRange,
     setActiveChart,
+    setHistoricalPrices,
 } from './state.js';
+import { formatCurrency } from './utils.js';
+import {
+    hasActiveTransactionFilters,
+    buildContributionSeriesFromTransactions,
+    buildFilteredBalanceSeries,
+} from './chart.js';
 
 async function getStatsText() {
     try {
@@ -105,6 +112,232 @@ function resetAutocompleteState() {
     autocompleteState.prefix = '';
     autocompleteState.matches = [];
     autocompleteState.index = -1;
+}
+
+function normalizeDateOnly(input) {
+    if (!input) {
+        return null;
+    }
+    const date = input instanceof Date ? new Date(input) : new Date(input);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+
+function normalizeSeriesPoints(series, primaryDateKey, valueKey) {
+    if (!Array.isArray(series) || series.length === 0) {
+        return [];
+    }
+
+    return series
+        .map((item) => {
+            const rawDate = item[primaryDateKey] || item.date || item.tradeDate;
+            const value = Number(item[valueKey]);
+            const date = normalizeDateOnly(rawDate);
+            if (!date || !Number.isFinite(value)) {
+                return null;
+            }
+            return { date, value };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.date - b.date);
+}
+
+function findLastPointAtOrBefore(points, targetDate) {
+    for (let i = points.length - 1; i >= 0; i -= 1) {
+        if (points[i].date <= targetDate) {
+            return points[i];
+        }
+    }
+    return null;
+}
+
+function findFirstPointAtOrAfter(points, targetDate) {
+    for (let i = 0; i < points.length; i += 1) {
+        if (points[i].date >= targetDate) {
+            return points[i];
+        }
+    }
+    return null;
+}
+
+function computeSeriesSummary(series, dateRange, dateKey, valueKey) {
+    const points = normalizeSeriesPoints(series, dateKey, valueKey);
+    if (points.length === 0) {
+        return { hasData: false };
+    }
+
+    const fromDate = dateRange?.from ? normalizeDateOnly(dateRange.from) : null;
+    const toDate = dateRange?.to ? normalizeDateOnly(dateRange.to) : null;
+
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+
+    if (toDate && toDate < firstPoint.date) {
+        return { hasData: false };
+    }
+
+    const effectiveStartDate = fromDate || firstPoint.date;
+    const startPoint =
+        findLastPointAtOrBefore(points, effectiveStartDate) ||
+        findFirstPointAtOrAfter(points, effectiveStartDate);
+
+    if (!startPoint) {
+        return { hasData: false };
+    }
+
+    const effectiveEndDate = toDate || lastPoint.date;
+    const endPoint =
+        findLastPointAtOrBefore(points, effectiveEndDate) ||
+        findFirstPointAtOrAfter(points, effectiveEndDate);
+
+    if (!endPoint || endPoint.date < startPoint.date) {
+        return { hasData: false };
+    }
+
+    return {
+        hasData: true,
+        startValue: startPoint.value,
+        endValue: endPoint.value,
+        netChange: endPoint.value - startPoint.value,
+        startDate: new Date(startPoint.date),
+        endDate: new Date(endPoint.date),
+    };
+}
+
+function formatCurrencyChange(value) {
+    if (!Number.isFinite(value)) {
+        return 'n/a';
+    }
+    const formatted = formatCurrency(value);
+    if (value > 0) {
+        return `+${formatted}`;
+    }
+    return formatted;
+}
+
+function formatSummaryDateSuffix(actualDate, targetDateStr) {
+    if (!(actualDate instanceof Date)) {
+        return '';
+    }
+    const actual = actualDate.toISOString().split('T')[0];
+    if (!targetDateStr || actual === targetDateStr) {
+        return '';
+    }
+    return ` (${actual})`;
+}
+
+function formatSummaryBlock(label, summary, dateRange) {
+    if (!summary || !summary.hasData) {
+        return `  ${label}\n    (no data for selected range)`;
+    }
+    const startSuffix = formatSummaryDateSuffix(summary.startDate, dateRange?.from);
+    const endSuffix = formatSummaryDateSuffix(summary.endDate, dateRange?.to);
+    const startText = formatCurrency(summary.startValue);
+    const endText = formatCurrency(summary.endValue);
+    const changeText = formatCurrencyChange(summary.netChange);
+    return [
+        `  ${label}`,
+        `    Start: ${startText}${startSuffix}`,
+        `    End: ${endText}${endSuffix}`,
+        `    Change: ${changeText}`,
+    ].join('\n');
+}
+
+function formatAppreciationBlock(balanceSummary, contributionSummary) {
+    if (
+        !balanceSummary ||
+        !contributionSummary ||
+        !balanceSummary.hasData ||
+        !contributionSummary.hasData
+    ) {
+        return '';
+    }
+    const deltaContribution = contributionSummary.netChange;
+    const deltaBalance = balanceSummary.netChange;
+    const valueAdded = deltaBalance - deltaContribution;
+    if (!Number.isFinite(valueAdded)) {
+        return '';
+    }
+    const changeText = formatCurrencyChange(valueAdded);
+    return [
+        '  Appreciation',
+        `    Value: ${changeText}`,
+        '    (balance change minus contribution change)',
+    ].join('\n');
+}
+
+async function ensureHistoricalPricesAvailable(filtersActive) {
+    if (!filtersActive) {
+        return transactionState.historicalPrices || {};
+    }
+
+    let historicalPrices = transactionState.historicalPrices;
+    if (historicalPrices && Object.keys(historicalPrices).length > 0) {
+        return historicalPrices;
+    }
+
+    try {
+        const response = await fetch('../data/historical_prices.json');
+        if (response.ok) {
+            historicalPrices = await response.json();
+            setHistoricalPrices(historicalPrices);
+        } else {
+            historicalPrices = {};
+        }
+    } catch {
+        historicalPrices = {};
+    }
+    return historicalPrices;
+}
+
+async function buildContributionChartSummary(dateRange = transactionState.chartDateRange) {
+    const filtersActive = hasActiveTransactionFilters();
+    let contributionSource = [];
+    if (filtersActive) {
+        contributionSource = buildContributionSeriesFromTransactions(
+            transactionState.filteredTransactions || []
+        );
+    } else if (Array.isArray(transactionState.runningAmountSeries)) {
+        contributionSource = transactionState.runningAmountSeries;
+    }
+
+    const historicalPrices = await ensureHistoricalPricesAvailable(filtersActive);
+    let balanceSource = [];
+    if (filtersActive) {
+        balanceSource = buildFilteredBalanceSeries(
+            transactionState.filteredTransactions || [],
+            historicalPrices,
+            transactionState.splitHistory || []
+        );
+    } else if (Array.isArray(transactionState.portfolioSeries)) {
+        balanceSource = transactionState.portfolioSeries;
+    }
+
+    const contributionSummary = computeSeriesSummary(
+        contributionSource,
+        dateRange,
+        'tradeDate',
+        'amount'
+    );
+    const balanceSummary = computeSeriesSummary(balanceSource, dateRange, 'date', 'value');
+
+    return { contributionSummary, balanceSummary };
+}
+
+async function getContributionSummaryText(dateRange = transactionState.chartDateRange) {
+    const { contributionSummary, balanceSummary } = await buildContributionChartSummary(dateRange);
+    const blocks = [
+        formatSummaryBlock('Contribution', contributionSummary, dateRange),
+        formatSummaryBlock('Balance', balanceSummary, dateRange),
+        formatAppreciationBlock(balanceSummary, contributionSummary),
+    ].filter(Boolean);
+    if (blocks.length === 0) {
+        return '';
+    }
+    return ['Contribution & Balance Summary', ...blocks].join('\n');
 }
 
 export function initTerminal({
@@ -482,7 +715,13 @@ export function initTerminal({
                                 if (contributionTableContainer) {
                                     contributionTableContainer.classList.add('is-hidden');
                                 }
+                                const summaryText = await getContributionSummaryText(
+                                    transactionState.chartDateRange
+                                );
                                 result = `Showing contribution chart for ${formatDateRange(dateRange)}.`;
+                                if (summaryText) {
+                                    result += `\n${summaryText}`;
+                                }
                             }
                             break;
                         case 'performance':
@@ -570,7 +809,17 @@ export function initTerminal({
                         setChartDateRange(simplifiedDateRange);
                         // Update the chart with filtered data
                         chartManager.update();
-                        result = `Applied date filter ${formatDateRange(simplifiedDateRange)} to ${transactionState.activeChart} chart.`;
+                        result = `Applied date filter ${formatDateRange(
+                            simplifiedDateRange
+                        )} to ${transactionState.activeChart} chart.`;
+                        if (transactionState.activeChart === 'contribution') {
+                            const summaryText = await getContributionSummaryText(
+                                transactionState.chartDateRange
+                            );
+                            if (summaryText) {
+                                result += `\n${summaryText}`;
+                            }
+                        }
                         break;
                     }
                 }
