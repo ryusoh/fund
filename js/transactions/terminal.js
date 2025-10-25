@@ -595,6 +595,14 @@ export function initTerminal({
                 }
 
                 result = 'Showing all data (filters and date ranges cleared).';
+                if (transactionState.activeChart === 'contribution') {
+                    const summaryText = await getContributionSummaryText(
+                        transactionState.chartDateRange
+                    );
+                    if (summaryText) {
+                        result += `\n${summaryText}`;
+                    }
+                }
                 break;
             case 'reset':
                 closeAllFilterDropdowns();

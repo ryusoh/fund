@@ -454,12 +454,8 @@ def calculate_ratios(series_map, risk_free_rate=0.053):
     sorted_items = sorted(ratio_data, key=lambda x: (x['name'] != PORTFOLIO_SERIES_KEY, x['name']))
     rows = []
     for item in sorted_items:
-        sharpe_str = (
-            f"{item['sharpe']:.3f}" if item['sharpe'] is not None else 'N/A'
-        )
-        sortino_str = (
-            f"{item['sortino']:.3f}" if item['sortino'] is not None else 'N/A'
-        )
+        sharpe_str = f"{item['sharpe']:.3f}" if item['sharpe'] is not None else 'N/A'
+        sortino_str = f"{item['sortino']:.3f}" if item['sortino'] is not None else 'N/A'
         rows.append([item['name'], sharpe_str, sortino_str])
 
     table, _ = render_box_table(
