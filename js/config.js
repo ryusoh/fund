@@ -58,6 +58,7 @@ export const CHART_SMOOTHING = {
         conservative: {
             method: 'exponential',
             params: { alpha: 0.8 },
+            passes: 1,
             description: 'Minimal smoothing, preserves most detail',
         },
 
@@ -65,6 +66,7 @@ export const CHART_SMOOTHING = {
         balanced: {
             method: 'exponential',
             params: { alpha: 0.5 },
+            passes: 1,
             description: 'Balanced smoothing, good for most financial data',
         },
 
@@ -72,6 +74,7 @@ export const CHART_SMOOTHING = {
         aggressive: {
             method: 'exponential',
             params: { alpha: 0.2 },
+            passes: 2,
             description: 'Strong smoothing, reduces noise significantly',
         },
 
@@ -79,14 +82,16 @@ export const CHART_SMOOTHING = {
         adaptive: {
             method: 'adaptive',
             params: {},
+            passes: 1,
             description: 'Automatically adjusts based on data volatility',
         },
     },
     // Chart-specific smoothing configurations
     charts: {
-        performance: 'balanced', // EMA with alpha=0.3 for performance charts
-        contribution: 'balanced', // EMA with alpha=0.2 for contribution charts (less smoothing)
-        composition: 'conservative', // EMA with alpha=0.2 for composition charts
+        balance: 'balanced', // EMA smoothing for balance series
+        contribution: 'aggressive', // Stronger smoothing to soften contribution steps
+        performance: 'balanced', // EMA smoothing for performance charts
+        composition: 'conservative', // EMA smoothing with minimal impact for composition charts
     },
 };
 

@@ -281,6 +281,7 @@ export const SMOOTHING_CONFIGS = {
     conservative: {
         method: 'exponential',
         params: { alpha: 0.2 },
+        passes: 1,
         description: 'Minimal smoothing, preserves most detail',
     },
 
@@ -288,6 +289,7 @@ export const SMOOTHING_CONFIGS = {
     balanced: {
         method: 'exponential',
         params: { alpha: 0.3 },
+        passes: 1,
         description: 'Balanced smoothing, good for most financial data',
     },
 
@@ -295,6 +297,7 @@ export const SMOOTHING_CONFIGS = {
     aggressive: {
         method: 'exponential',
         params: { alpha: 0.5 },
+        passes: 2,
         description: 'Strong smoothing, reduces noise significantly',
     },
 
@@ -302,6 +305,7 @@ export const SMOOTHING_CONFIGS = {
     adaptive: {
         method: 'adaptive',
         params: {},
+        passes: 1,
         description: 'Automatically adjusts based on data volatility',
     },
 };
@@ -325,23 +329,46 @@ export function smoothFinancialData(data, config = 'balanced', preserveEnd = tru
             : config;
 
     // Apply the appropriate smoothing method
-    switch (smoothingConfig.method) {
-        case 'simple':
-            return simpleMovingAverage(data, smoothingConfig.params.window || 3, preserveEnd);
-        case 'exponential':
-            return exponentialMovingAverage(data, smoothingConfig.params.alpha || 0.3, preserveEnd);
-        case 'savitzky':
-            return savitzkyGolay(
-                data,
-                smoothingConfig.params.window || 5,
-                smoothingConfig.params.order || 2,
-                preserveEnd
-            );
-        case 'lowess':
-            return lowess(data, smoothingConfig.params.bandwidth || 0.3, preserveEnd);
-        case 'adaptive':
-            return adaptiveSmoothing(data, preserveEnd);
-        default:
-            return exponentialMovingAverage(data, 0.3, preserveEnd);
+    const passes = Number.isFinite(smoothingConfig.passes)
+        ? Math.max(1, Math.round(smoothingConfig.passes))
+        : 1;
+
+    let result = data;
+    for (let i = 0; i < passes; i += 1) {
+        switch (smoothingConfig.method) {
+            case 'simple':
+                result = simpleMovingAverage(
+                    result,
+                    smoothingConfig.params.window || 3,
+                    preserveEnd
+                );
+                break;
+            case 'exponential':
+                result = exponentialMovingAverage(
+                    result,
+                    smoothingConfig.params.alpha || 0.3,
+                    preserveEnd
+                );
+                break;
+            case 'savitzky':
+                result = savitzkyGolay(
+                    result,
+                    smoothingConfig.params.window || 5,
+                    smoothingConfig.params.order || 2,
+                    preserveEnd
+                );
+                break;
+            case 'lowess':
+                result = lowess(result, smoothingConfig.params.bandwidth || 0.3, preserveEnd);
+                break;
+            case 'adaptive':
+                result = adaptiveSmoothing(result, preserveEnd);
+                break;
+            default:
+                result = exponentialMovingAverage(result, 0.3, preserveEnd);
+                break;
+        }
     }
+
+    return result;
 }

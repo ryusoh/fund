@@ -1153,6 +1153,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
 
     // Apply smoothing to contribution and balance data
     const contributionSmoothingConfig = getSmoothingConfig('contribution');
+    const balanceSmoothingConfig = getSmoothingConfig('balance') || contributionSmoothingConfig;
     const contributionData =
         rawContributionData.length > 2 && contributionSmoothingConfig
             ? smoothFinancialData(
@@ -1163,10 +1164,10 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             : rawContributionData;
 
     const balanceData =
-        rawBalanceData.length > 2 && contributionSmoothingConfig
+        rawBalanceData.length > 2 && balanceSmoothingConfig
             ? smoothFinancialData(
                   rawBalanceData.map((item) => ({ x: item.date.getTime(), y: item.value })),
-                  contributionSmoothingConfig,
+                  balanceSmoothingConfig,
                   true // preserveEnd - keep the last point unchanged
               ).map((p) => ({ date: new Date(p.x), value: p.y }))
             : rawBalanceData;
