@@ -15,5 +15,3 @@ venv/
 .markdownlint.jsonc
 .pre-commit-config.yaml
 **/*.min.js
-data/
-**/ai/status/**
