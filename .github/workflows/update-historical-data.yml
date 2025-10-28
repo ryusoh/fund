@@ -2,9 +2,9 @@ name: Daily Historical Data Update
 
 on:
     schedule:
-        # Runs at 21:15 UTC on weekdays (Mon-Fri), 1 hour 15 minutes after NYSE close.
+        # Runs at 21:45 UTC on weekdays (Mon-Fri), 1 hour 45 minutes after NYSE close.
         # Delayed to avoid conflicts with fund data updates that run every 30 minutes.
-        - cron: '15 21 * * 1-5'
+        - cron: '45 21 * * 1-5'
     workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:

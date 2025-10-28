@@ -2,8 +2,8 @@ name: TWRR Refresh
 
 on:
     schedule:
-        # Run at 22:45 UTC on weekdays (~1h45 after NYSE close) after other data jobs finish.
-        - cron: '45 22 * * 1-5'
+        # Run at 21:15 UTC on weekdays (~1h15 after NYSE close) after other data jobs finish.
+        - cron: '15 21 * * 1-5'
     workflow_dispatch:
 
 jobs:
