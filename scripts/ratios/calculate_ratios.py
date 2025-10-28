@@ -6,6 +6,9 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, getcontext
+
+getcontext().prec = 12
 
 PORTFOLIO_SERIES_KEY = '^LZ'
 
@@ -201,44 +204,101 @@ def calculate_stats():
 
 
 def calculate_holdings():
-    """Calculate current holdings."""
-    holdings_df = pd.read_parquet(DATA_DIR / 'checkpoints' / 'holdings_daily.parquet')
+    """Calculate current holdings directly from the transaction ledger."""
+    transactions_path = DATA_DIR / 'transactions.csv'
+    if not transactions_path.exists():
+        return "No current holdings."
+
+    transactions_df = pd.read_csv(transactions_path)
+    transactions_df['Trade Date'] = pd.to_datetime(transactions_df['Trade Date'])
+    transactions_df['Order Type'] = transactions_df['Order Type'].str.strip().str.lower()
+    transactions_df = transactions_df[transactions_df['Order Type'].isin(['buy', 'sell'])].copy()
+    transactions_df['Quantity'] = pd.to_numeric(
+        transactions_df['Quantity'], errors='coerce'
+    ).fillna(0.0)
+
+    split_history_path = DATA_DIR / 'split_history.csv'
+    splits_by_symbol: dict[str, list[tuple[pd.Timestamp, Decimal]]] = {}
+    if split_history_path.exists():
+        splits_df = pd.read_csv(split_history_path)
+        if not splits_df.empty:
+            splits_df['Split Date'] = pd.to_datetime(splits_df['Split Date'])
+            for _, row in splits_df.iterrows():
+                symbol = str(row['Symbol'])
+                multiplier = Decimal(str(row.get('Split Multiplier', 1)))
+                splits_by_symbol.setdefault(symbol, []).append((row['Split Date'], multiplier))
+            for symbol_splits in splits_by_symbol.values():
+                symbol_splits.sort(key=lambda item: item[0])
+
+    share_totals: dict[str, Decimal] = {}
+    for _, row in transactions_df.iterrows():
+        symbol = str(row['Security'])
+        quantity = Decimal(str(row['Quantity']))
+        if quantity == 0:
+            continue
+        trade_date = row['Trade Date']
+        order_type = row['Order Type']
+
+        multiplier = Decimal('1')
+        for split_date, split_multiplier in splits_by_symbol.get(symbol, []):
+            if split_date > trade_date:
+                multiplier *= split_multiplier
+
+        adjusted_quantity = quantity * multiplier
+        if order_type == 'sell':
+            adjusted_quantity = -adjusted_quantity
+
+        share_totals[symbol] = share_totals.get(symbol, Decimal('0')) + adjusted_quantity
+
+    if not share_totals:
+        return "No current holdings."
+
+    holdings_frame = pd.Series(
+        {symbol: float(total) for symbol, total in share_totals.items()}, name='shares'
+    ).to_frame()
+    holdings_frame.index.name = 'symbol'
+    holdings_frame = holdings_frame[holdings_frame['shares'] > 0.01]
 
     try:
         holdings_details = pd.read_json(DATA_DIR / 'holdings_details.json', orient='index')
     except (FileNotFoundError, ValueError):
         holdings_details = pd.DataFrame(columns=['average_price', 'shares'])
-
-    latest_holdings = holdings_df.iloc[-1]
-    active_holdings = latest_holdings[latest_holdings > 0.01]
-
-    if active_holdings.empty:
-        return "No current holdings."
-
-    holdings_frame = pd.DataFrame(active_holdings).rename(columns={active_holdings.name: 'shares'})
-    holdings_frame.index.name = 'symbol'
-
     normalized_details = normalize_symbol_index(holdings_details)
-    holdings_frame = holdings_frame.join(normalized_details, how='left')
+    holdings_frame = holdings_frame.reset_index().rename(
+        columns={'symbol': 'Symbol', 'shares': 'shares'}
+    )
+    holdings_frame['normalized_symbol'] = holdings_frame['Symbol'].str.replace('-', '', regex=False)
+    normalized_details = normalized_details.reset_index().rename(
+        columns={'index': 'details_symbol'}
+    )
+    normalized_details['normalized_symbol'] = normalized_details['details_symbol']
+    holdings_frame = holdings_frame.merge(
+        normalized_details,
+        on='normalized_symbol',
+        how='left',
+        suffixes=('', '_broker'),
+    )
+    holdings_frame.set_index('Symbol', inplace=True)
 
-    holdings_frame['display_symbol'] = holdings_frame['display_symbol'].fillna(
-        holdings_frame.index.to_series()
+    fallback_display = holdings_frame.index.to_series()
+    holdings_frame['display_symbol'] = holdings_frame['display_symbol'].combine_first(
+        fallback_display
     )
     holdings_frame['average_price'] = pd.to_numeric(
         holdings_frame['average_price'], errors='coerce'
     ).fillna(0.0)
     holdings_frame['total_cost'] = holdings_frame['shares'] * holdings_frame['average_price']
-    holdings_frame = holdings_frame[holdings_frame['average_price'] > 0]
     holdings_frame = holdings_frame.sort_values(by='total_cost', ascending=False)
 
     data_rows = []
     for symbol, data in holdings_frame.iterrows():
+        total_cost = data['total_cost'] if data['average_price'] > 0 else np.nan
         data_rows.append(
             [
                 data.get('display_symbol', symbol),
                 f"{data['shares']:,.2f}",
-                f"${data['average_price']:.2f}",
-                format_currency(data['total_cost']),
+                f"${data['average_price']:.2f}" if data['average_price'] > 0 else 'N/A',
+                format_currency(total_cost) if np.isfinite(total_cost) else 'N/A',
             ]
         )
 
