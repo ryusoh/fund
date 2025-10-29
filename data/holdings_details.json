@@ -5,7 +5,7 @@
     },
     "ANET": {
         "shares": "2413.5504",
-        "average_price": "62.37"
+        "average_price": "62.370000"
     },
     "GOOG": {
         "shares": "810.049",
@@ -20,11 +20,11 @@
         "average_price": "334.960000"
     },
     "OXY": {
-        "shares": "1421.006",
-        "average_price": "48.693707"
+        "shares": "1445.006",
+        "average_price": "48.563752"
     },
     "GEO": {
-        "shares": "659.834",
-        "average_price": "18.792129"
+        "shares": "660.834",
+        "average_price": "18.789742"
     }
 }
