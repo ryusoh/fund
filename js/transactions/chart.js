@@ -1806,7 +1806,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
                 color: contributionGradient ? contributionGradient[1] : colors.contribution,
             },
         ];
-        if (showBalance && rawBalanceData.length > 0) {
+        if (hasBalanceSeries) {
             legendSeries.push({
                 key: 'balance',
                 name: 'Balance',
