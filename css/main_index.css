@@ -175,7 +175,7 @@ footer .fa-github {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: clamp(72vw, 86vw, 92vw);
+        width: clamp(220vw, 86vw, 92vw);
         aspect-ratio: 1;
         filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.55));
     }
