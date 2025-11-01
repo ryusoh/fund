@@ -45,6 +45,8 @@ module.exports = [
                 // App-provided globals from CDN
                 Chart: 'readonly',
                 ChartDataLabels: 'readonly',
+                d3: 'readonly',
+                CalHeatmap: 'readonly',
             },
         },
         rules: {

@@ -39,9 +39,7 @@ const mockCalHeatmapInstance = {
     on: jest.fn(),
 };
 
-jest.mock('../../vendor/cal-heatmap-4.2.4.mjs', () =>
-    jest.fn().mockImplementation(() => mockCalHeatmapInstance)
-);
+global.CalHeatmap = jest.fn().mockImplementation(() => mockCalHeatmapInstance);
 
 const createProcessedEntry = (overrides = {}) => ({
     date: '2025-01-01',
@@ -77,105 +75,6 @@ const createCalendarData = (entries = [{}], extra = {}) => {
 
 // Capture class attribute values set during label rendering
 const capturedClassValues = [];
-
-jest.mock('../../vendor/d3.v7.mjs', () => {
-    // eslint-disable-next-line prefer-const
-    let mockSelectInstance;
-
-    const createMockElement = () => ({
-        attr: jest.fn().mockImplementation((name, value) => {
-            if (name === 'x' && typeof value === 'undefined') {
-                return '50'; // return x coordinate
-            }
-            if (name === 'class' && typeof value !== 'undefined') {
-                capturedClassValues.push(value);
-            }
-            return createMockElement();
-        }),
-        append: jest.fn().mockImplementation(() => {
-            const child = createMockElement();
-            return child;
-        }),
-        html: jest.fn().mockReturnThis(),
-        text: jest.fn().mockReturnThis(),
-    });
-
-    const createMockSelection = () => ({
-        datum: jest.fn().mockReturnValue({
-            t: new Date('2025-01-01T00:00:00Z').getTime(),
-        }),
-        ...createMockElement(),
-    });
-
-    const createScale = () => {
-        const scale = jest.fn().mockReturnValue('rgba(120, 120, 125, 0.5)');
-        scale.domain = jest.fn().mockReturnValue(scale);
-        scale.range = jest.fn().mockReturnValue(scale);
-        scale.clamp = jest.fn().mockReturnValue(scale);
-        return scale;
-    };
-
-    const d3 = {
-        select: jest.fn().mockImplementation((selector) => {
-            if (typeof selector === 'string') {
-                // Return the main selection object for selector strings
-                return mockSelectInstance;
-            }
-            // Return a mock element for element references (like 'this' in each callback)
-            // Always return a selection that can handle datum() calls
-            return createMockSelection();
-        }),
-        scaleLinear: jest.fn(createScale),
-    };
-
-    // Create the main selection chain
-    mockSelectInstance = {
-        selectAll: jest.fn().mockReturnValue({
-            html: jest.fn().mockReturnThis(),
-            each: jest.fn().mockImplementation((callback) => {
-                // Simulate multiple DOM elements including edge cases
-                const mockElements = [
-                    { parentNode: {} }, // normal case
-                    { parentNode: {} }, // normal case
-                    { parentNode: null }, // null parent case (should trigger lines 48-49)
-                    { parentNode: {} }, // case for datum without 't' property
-                ];
-
-                let elementIndex = 0;
-                mockElements.forEach((element) => {
-                    // For the 4th element, return a datum without 't' property
-                    if (elementIndex === 3) {
-                        const originalSelect = d3.select;
-                        d3.select = jest.fn().mockImplementation((sel) => {
-                            if (sel === element) {
-                                return createMockSelection();
-                            }
-                            if (sel === element.parentNode) {
-                                return {
-                                    datum: jest.fn().mockReturnValue({}), // no 't' property
-                                    ...createMockElement(),
-                                };
-                            }
-                            return createMockSelection();
-                        });
-
-                        callback.call(element);
-
-                        // Restore
-                        d3.select = originalSelect;
-                    } else {
-                        callback.call(element);
-                    }
-                    elementIndex++;
-                });
-
-                return mockSelectInstance;
-            }),
-        }),
-    };
-
-    return d3;
-});
 
 describe('calendar page', () => {
     let prevBtnRef, nextBtnRef, todayBtnRef, containerRef;
@@ -279,7 +178,7 @@ describe('calendar page', () => {
 
         await initCalendar();
 
-        const CalHeatmap = require('../../vendor/cal-heatmap-4.2.4.mjs');
+        const CalHeatmap = require('../../vendor/cal-heatmap.v4.min.js');
         expect(CalHeatmap).toHaveBeenCalledTimes(1);
         expect(mockCalHeatmapInstance.paint).toHaveBeenCalledTimes(1);
 

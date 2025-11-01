@@ -16,8 +16,6 @@ import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
 
 // --- STATE ---
-let d3; // will be loaded lazily from local vendor or CDN
-let CalHeatmap; // will be loaded lazily from local vendor or CDN
 let calendarInstance = null; // Store calendar instance for resize handling
 let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
@@ -729,25 +727,7 @@ function handleViewportChange() {
  */
 export async function initCalendar() {
     try {
-        // Lazy-load libraries (prefer local vendor, fallback to CDN)
-        if (!d3) {
-            try {
-                d3 = await import('@vendor/d3.v7.mjs');
-            } catch {
-                d3 = await import('../../vendor/d3.v7.mjs');
-            }
-        }
-        if (!CalHeatmap) {
-            try {
-                const mod = await import('@vendor/cal-heatmap-4.2.4.mjs');
-                /* istanbul ignore next: alias resolves in tests; fallback tested separately */
-                CalHeatmap = mod.default || mod;
-            } catch {
-                const mod = await import('../../vendor/cal-heatmap-4.2.4.mjs');
-                /* istanbul ignore next: network path only in production */
-                CalHeatmap = mod.default || mod;
-            }
-        }
+        // d3 and CalHeatmap are now loaded globally via script tags
 
         initCurrencyToggle();
 

@@ -1,6 +1,9 @@
 import { loadAndDisplayPortfolioData, getCalendarData } from '@services/dataService.js';
 import * as chartManager from '@charts/allocationChartManager.js';
-import * as d3 from '../../vendor/d3.v7.mjs';
+global.d3 = {
+    csv: jest.fn(),
+    json: jest.fn(),
+};
 import { getNyDate, isTradingDay } from '@utils/date.js';
 
 // Mock dependencies
@@ -8,10 +11,6 @@ global.fetch = jest.fn();
 global.console = { ...console, log: jest.fn(), error: jest.fn() };
 
 // Mock d3
-jest.mock('../../vendor/d3.v7.mjs', () => ({
-    csv: jest.fn(),
-    json: jest.fn(),
-}));
 
 // Mock chartManager
 jest.mock('@charts/allocationChartManager.js', () => ({

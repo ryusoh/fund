@@ -215,13 +215,6 @@ function updateTableAndPrepareChartData(
 }
 
 async function fetchData(paths) {
-    // Lazy-load d3 (prefer local vendor, fallback to CDN)
-    let d3;
-    try {
-        d3 = await import('@vendor/d3.v7.mjs');
-    } catch {
-        d3 = await import('../vendor/d3.v7.mjs');
-    }
     const timestamp = new Date().getTime();
     const [historical, fx, holdings, fund] = await Promise.all([
         d3.csv(`${paths.historical}?t=${timestamp}`),

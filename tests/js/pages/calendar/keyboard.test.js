@@ -22,9 +22,7 @@ const mockCalHeatmapInstance = {
     on: jest.fn(),
 };
 
-jest.mock('../../vendor/cal-heatmap-4.2.4.mjs', () =>
-    jest.fn().mockImplementation(() => mockCalHeatmapInstance)
-);
+global.CalHeatmap = jest.fn().mockImplementation(() => mockCalHeatmapInstance);
 
 const createProcessedEntry = (overrides = {}) => ({
     date: '2025-01-01',
@@ -57,29 +55,6 @@ const createCalendarData = (entries = [{}], extra = {}) => {
         ...extra,
     };
 };
-
-// Mock D3 CDN import minimally
-jest.mock('../../vendor/d3.v7.mjs', () => {
-    const chain = {
-        select: jest.fn().mockReturnThis(),
-        selectAll: jest.fn().mockReturnThis(),
-        each: jest.fn().mockReturnThis(),
-        html: jest.fn().mockReturnThis(),
-        append: jest.fn().mockReturnThis(),
-        text: jest.fn().mockReturnThis(),
-        attr: jest.fn().mockReturnThis(),
-        datum: jest.fn().mockReturnValue({ t: Date.now() }),
-        style: jest.fn().mockReturnThis(),
-        scaleLinear: jest.fn(() => {
-            const scale = jest.fn().mockReturnValue('rgba(120, 120, 125, 0.5)');
-            scale.domain = jest.fn().mockReturnValue(scale);
-            scale.range = jest.fn().mockReturnValue(scale);
-            scale.clamp = jest.fn().mockReturnValue(scale);
-            return scale;
-        }),
-    };
-    return chain;
-});
 
 describe('calendar keyboard only tests', () => {
     beforeEach(() => {
