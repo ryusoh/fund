@@ -18,9 +18,7 @@ body.body-main {
 /* Set a different background for the calendar page ONLY on desktop screens */
 @media (min-width: 769px) {
     body.body-main {
-        background: #000
-            url(https://ghproxy.net/https://raw.githubusercontent.com/ryusoh/host/master/archive/personal/DSCF0332.jpg)
-            center center no-repeat !important;
+        background: #000 url(../assets/backgrounds/main_background.jpg) center center no-repeat !important;
         background-size: cover !important;
     }
 
