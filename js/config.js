@@ -1,6 +1,28 @@
 import { isLocalhost } from './utils/host.js';
 
-export const BASE_URL = isLocalhost(window.location.hostname) ? '' : '/fund';
+const FUND_BASE_PATH = '/fund';
+
+const isServedFromFundDirectory = (pathname) => {
+    if (typeof pathname !== 'string' || pathname.length === 0) {
+        return false;
+    }
+    const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+    const [firstSegment] = normalizedPath.split('/').filter(Boolean);
+    return firstSegment === FUND_BASE_PATH.slice(1);
+};
+
+export const getBaseUrl = (location) => {
+    if (!location) {
+        return '';
+    }
+    const { hostname = '', pathname = '' } = location;
+    if (!isLocalhost(hostname) && isServedFromFundDirectory(pathname)) {
+        return FUND_BASE_PATH;
+    }
+    return '';
+};
+
+export const BASE_URL = typeof window !== 'undefined' ? getBaseUrl(window.location) : '';
 export const HOLDINGS_DETAILS_URL = '../data/holdings_details.json';
 export const FUND_DATA_URL = '../data/fund_data.json';
 

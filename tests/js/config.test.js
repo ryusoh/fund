@@ -1,4 +1,6 @@
 import {
+    BASE_URL,
+    getBaseUrl,
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
     COLORS,
@@ -20,16 +22,43 @@ jest.mock('@utils/host');
 describe('Configuration', () => {
     // Test BASE_URL
     describe('BASE_URL', () => {
-        it('should be an empty string when isLocalhost is true', () => {
-            isLocalhost.mockReturnValue(true);
-            const { BASE_URL } = require('@js/config.js');
-            expect(BASE_URL).toBe('/fund');
+        beforeEach(() => {
+            jest.clearAllMocks();
         });
 
-        it('should be "/fund" when isLocalhost is false', () => {
+        it('should return an empty string for localhost environments', () => {
+            isLocalhost.mockImplementation((hostname) => hostname === 'localhost');
+            expect(
+                getBaseUrl({
+                    hostname: 'localhost',
+                    pathname: '/',
+                })
+            ).toBe('');
+        });
+
+        it('should return "/fund" when served from the fund subdirectory on production', () => {
             isLocalhost.mockReturnValue(false);
-            const { BASE_URL } = require('@js/config.js');
-            expect(BASE_URL).toBe('/fund');
+            expect(
+                getBaseUrl({
+                    hostname: 'lyeutsaon.com',
+                    pathname: '/fund/',
+                })
+            ).toBe('/fund');
+        });
+
+        it('should return an empty string when served from the fund subdomain root', () => {
+            isLocalhost.mockReturnValue(false);
+            expect(
+                getBaseUrl({
+                    hostname: 'fund.lyeutsaon.com',
+                    pathname: '/',
+                })
+            ).toBe('');
+        });
+
+        it('should match the value derived from the current window location', () => {
+            isLocalhost.mockImplementation((hostname) => hostname === 'localhost');
+            expect(BASE_URL).toBe('');
         });
     });
 
