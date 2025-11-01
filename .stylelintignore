@@ -1,12 +1,5 @@
 node_modules/
 coverage/
-assets/
-venv/
 dist/
-**/*.min.css
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
-.idea/
-.vscode/
-.git/
+assets/vendor/
+js/vendor/

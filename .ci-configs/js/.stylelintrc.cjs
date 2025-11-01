@@ -17,7 +17,7 @@ const rules = {
     'color-hex-length': 'short',
 };
 
-const config = { rules };
+const config = { rules, ignoreFiles: ['venv/**'] };
 
 try {
     // Make plugin optional so repos without package.json still work

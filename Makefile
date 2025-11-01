@@ -15,11 +15,13 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/twrr/step02_apply_splits.py \
 		 scripts/twrr/step03_fetch_prices.py \
 		 scripts/twrr/step04_compute_holdings.py \
-		 scripts/generate_composition_data.py \
-		 scripts/twrr/step05_cashflows.py \
-		 scripts/twrr/step06_compute_twrr.py \
-		 scripts/ratios/calculate_ratios.py \
-		 scripts/twrr/step07_plot_twrr.py
+	 scripts/generate_composition_data.py \
+	 scripts/twrr/step05_cashflows.py \
+	 scripts/twrr/step06_compute_twrr.py \
+	 scripts/ratios/calculate_ratios.py \
+	 scripts/twrr/step07_plot_twrr.py
+
+PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | tr '\n' ' ')
 
 help:
 	@echo "Targets:"
@@ -73,22 +75,30 @@ lint: js-lint
 fmt:
 	black .
 	@# Prefer shared config if present
-	@if [ -f .ci-configs/js/.prettierrc.json ]; then \
-		npx prettier --write . \
-		  --config .ci-configs/js/.prettierrc.json \
-		  --ignore-path .ci-configs/js/.prettierignore; \
+	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
+		if [ -f .ci-configs/js/.prettierrc.json ]; then \
+			npx prettier --write $(PRETTIER_FILE_LIST) \
+			  --config .ci-configs/js/.prettierrc.json \
+			  --ignore-path .ci-configs/js/.prettierignore; \
+		else \
+			prettier --write $(PRETTIER_FILE_LIST); \
+		fi; \
 	else \
-		prettier --write .; \
+		echo "No Prettier targets"; \
 	fi
 
 fmt-check:
 	@# Prefer shared config if present
-	@if [ -f .ci-configs/js/.prettierrc.json ]; then \
-		npx prettier -c . \
-		  --config .ci-configs/js/.prettierrc.json \
-		  --ignore-path .ci-configs/js/.prettierignore; \
+	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
+		if [ -f .ci-configs/js/.prettierrc.json ]; then \
+			npx prettier -c $(PRETTIER_FILE_LIST) \
+			  --config .ci-configs/js/.prettierrc.json \
+			  --ignore-path .ci-configs/js/.prettierignore; \
+		else \
+			prettier --check $(PRETTIER_FILE_LIST); \
+		fi; \
 	else \
-		prettier --check .; \
+		echo "No Prettier targets"; \
 	fi
 
 type:

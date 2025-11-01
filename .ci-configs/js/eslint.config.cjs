@@ -9,6 +9,7 @@ module.exports = [
             '.ci-configs/**',
             'venv/**',
             'dist/**',
+            'data/**',
             '**/*.min.js',
             '.mypy_cache/**',
             '.pytest_cache/**',

@@ -43,15 +43,15 @@
     },
     "lint-staged": {
         "*.js": [
-            "prettier --write",
+            "prettier --write --ignore-path .ci-configs/js/.prettierignore",
             "eslint --fix"
         ],
         "*.css": [
-            "prettier --write",
+            "prettier --write --ignore-path .ci-configs/js/.prettierignore",
             "stylelint --fix"
         ],
         "*.{md,json,html,yml,yaml}": [
-            "prettier --write"
+            "prettier --write --ignore-path .ci-configs/js/.prettierignore"
         ]
     },
     "jest": {
