@@ -32,6 +32,14 @@ const appState = {
     isAnimating: false,
 };
 
+function getLatestMonthlyKey(monthlyPnl) {
+    if (!(monthlyPnl instanceof Map) || monthlyPnl.size === 0) {
+        return null;
+    }
+    const keys = Array.from(monthlyPnl.keys());
+    return keys[keys.length - 1] || null;
+}
+
 let pendingPostPaintFrame = null;
 let latestPostPaintArgs = null;
 
@@ -746,6 +754,7 @@ export async function initCalendar() {
         const { processedData, byDate, rates, monthlyPnl } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
         appState.monthlyPnl = monthlyPnl instanceof Map ? monthlyPnl : new Map();
+        const latestMonthlyKey = getLatestMonthlyKey(appState.monthlyPnl);
         calendarByDate = byDate; // Store globally for resize handling
 
         const parseDataDate = (dateString) => {
@@ -812,7 +821,13 @@ export async function initCalendar() {
         const lastVisibleMonth = new Date(
             Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
         );
-        appState.highlightMonthKey = `${lastVisibleMonth.getFullYear()}-${String(lastVisibleMonth.getMonth() + 1).padStart(2, '0')}`;
+        if (typeof latestMonthlyKey === 'string') {
+            appState.highlightMonthKey = latestMonthlyKey;
+        } else {
+            appState.highlightMonthKey = `${lastVisibleMonth.getFullYear()}-${String(
+                lastVisibleMonth.getMonth() + 1
+            ).padStart(2, '0')}`;
+        }
 
         /* istanbul ignore next: mathematical utility function for date calculations */
         const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
