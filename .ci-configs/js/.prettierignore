@@ -1,7 +1,6 @@
 node_modules/
 coverage/
-assets/
-js/vendor/
+assets/vendor/
 dist/
 venv/
 .husky/_/
