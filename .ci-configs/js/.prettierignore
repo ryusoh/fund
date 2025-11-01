@@ -28,3 +28,4 @@ data/**
 ./data/**
 ../../**/ai/status/**
 **/*.min.js
+js/vendor/**
