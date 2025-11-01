@@ -10,3 +10,4 @@ node_modules/
 # Test coverage reports
 coverage/
 .DS_Store
+.gemini/
