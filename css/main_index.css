@@ -77,6 +77,10 @@ h1 {
     .mobile-banner.is-fallback-ready {
         opacity: 0.5;
     }
+
+    .hide-on-mobile {
+        display: none;
+    }
 }
 
 footer .fa-github {
