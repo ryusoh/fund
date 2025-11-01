@@ -29,6 +29,10 @@ jobs:
                   pip install -r requirements-dev.txt
                   pip install yfinance pandas plotly kaleido pandas-datareader
 
+            - name: Update historical portfolio data
+              run: |
+                  python scripts/pnl/update_daily_pnl.py
+
             - name: Run TWRR pipeline
               run: |
                   make twrr-refresh
@@ -37,7 +41,7 @@ jobs:
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_prices.parquet data/historical_prices.json data/historical_prices_overrides.parquet data/output data/twrr_series.parquet ai/status/AI_STATUS.json ai/handoff/CHANGELOG-AI.md
+                  git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_portfolio_values.csv data/historical_prices.parquet data/historical_prices.json data/historical_prices_overrides.parquet data/output data/twrr_series.parquet
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
                   else
