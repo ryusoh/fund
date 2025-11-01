@@ -835,6 +835,51 @@ describe('dataService', () => {
             expect(todayEntry.value).toBeCloseTo(0.1, 5);
         });
 
+        it('computes per-currency daily changes using historical currency columns', async () => {
+            d3.csv.mockResolvedValue([
+                {
+                    date: '2024-01-14',
+                    value_usd: '100.00',
+                    value_cny: '700.00',
+                    value_jpy: '11000',
+                    value_krw: '120000',
+                },
+                {
+                    date: '2024-01-15',
+                    value_usd: '110.00',
+                    value_cny: '690.00',
+                    value_jpy: '11150',
+                    value_krw: '119000',
+                },
+            ]);
+            d3.json.mockImplementation((url) => {
+                if (url.includes('fx')) {
+                    return Promise.resolve({
+                        rates: { USD: 1, CNY: 7, JPY: 110, KRW: 1200 },
+                    });
+                }
+                if (url.includes('holdings') || url.includes('fund')) {
+                    return Promise.resolve(null);
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+            getNyDate.mockReturnValue(new Date('2024-01-15T12:00:00Z'));
+
+            const result = await getCalendarData({
+                historical: 'historical.csv',
+                fx: 'fx.json',
+                holdings: 'holdings.json',
+                fund: 'fund.json',
+            });
+
+            const dayEntry = result.processedData.find((d) => d.date === '2024-01-15');
+            expect(dayEntry).toBeDefined();
+            expect(dayEntry.valueUSD).toBeCloseTo(0.1, 5);
+            expect(dayEntry.valueCNY).toBeCloseTo(-10 / 700, 5);
+            expect(dayEntry.dailyChangeCNY).toBeCloseTo(-10);
+            expect(dayEntry.valueJPY).toBeCloseTo((11150 - 11000) / 11000, 5);
+        });
+
         it('sums only tickers present in fund data (line 211)', async () => {
             d3.csv.mockResolvedValue([{ date: '2024-01-14', value_usd: '900' }]);
             d3.json.mockImplementation((url) => {

@@ -13,6 +13,7 @@ import { getCalendarData } from '@services/dataService.js';
 import { initCalendarResponsiveHandlers } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
+import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
 
 // --- STATE ---
 let d3; // will be loaded lazily from local vendor or CDN
@@ -192,6 +193,7 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
 function setupEventListeners(cal, byDate, state, currencySymbols) {
     cal.on('fill', () => {
         renderLabels(cal, byDate, state, currencySymbols);
+        applyCurrencyColors(d3, state, byDate);
         // Reset touch navigation state when calendar updates
         if (touchNavigationState.isNavigating) {
             setTimeout(() => {
@@ -203,6 +205,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
 
     window.addEventListener('calendar-zoom-end', () => {
         renderLabels(cal, byDate, state, currencySymbols);
+        applyCurrencyColors(d3, state, byDate);
     });
 
     // Navigation
@@ -283,8 +286,13 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
 
     // Currency toggle
     document.addEventListener('currencyChangedGlobal', (event) => {
-        state.selectedCurrency = event.detail.currency;
+        const newCurrency = event?.detail?.currency;
+        if (!newCurrency) {
+            return;
+        }
+        state.selectedCurrency = newCurrency;
         renderLabels(cal, byDate, state, currencySymbols);
+        applyCurrencyColors(d3, state, byDate);
     });
 
     // Keyboard navigation: Left/Right for prev/next, Down for today button behavior,
@@ -643,8 +651,8 @@ function handleViewportChange() {
                 .paint(basePaintConfig)
                 .then(() => {
                     logger.log('Calendar successfully repainted with new range');
-                    // Force a re-render of labels after the calendar is repainted
                     renderLabels(calendarInstance, calendarByDate, appState, CURRENCY_SYMBOLS);
+                    applyCurrencyColors(d3, appState, calendarByDate);
                 })
                 .catch((error) => {
                     logger.error('Error repainting calendar:', error);
@@ -655,7 +663,20 @@ function handleViewportChange() {
                         if (calendarElement) {
                             calendarElement.innerHTML = '';
                         }
-                        calendarInstance.paint(basePaintConfig);
+                        calendarInstance
+                            .paint(basePaintConfig)
+                            .then(() => {
+                                renderLabels(
+                                    calendarInstance,
+                                    calendarByDate,
+                                    appState,
+                                    CURRENCY_SYMBOLS
+                                );
+                                applyCurrencyColors(d3, appState, calendarByDate);
+                            })
+                            .catch((refreshError) => {
+                                logger.error('Full calendar refresh also failed:', refreshError);
+                            });
                     } catch (refreshError) {
                         logger.error('Full calendar refresh also failed:', refreshError);
                     }
@@ -824,13 +845,15 @@ export async function initCalendar() {
             },
         };
 
+        const valueField = getValueFieldForCurrency(appState.selectedCurrency);
+
         const paintConfig = {
             ...CALENDAR_CONFIG,
             range: effectiveRange,
             data: {
                 source: processedData,
                 x: 'date',
-                y: 'value',
+                y: valueField,
                 groupY: 'max',
             },
             date: {
@@ -867,6 +890,7 @@ export async function initCalendar() {
         basePaintConfig = { ...paintConfig };
 
         await cal.paint(paintConfig);
+        applyCurrencyColors(d3, appState, calendarByDate);
         initCalendarResponsiveHandlers();
         const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
         if (toggleContainer) {

@@ -236,39 +236,61 @@ function processHistoricalData(rawData) {
     if (!rawData || rawData.length === 0) {
         return [];
     }
+
+    const toNumber = (value) => {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const calculatePnlPercentage = (change, previous) => {
+        if (!Number.isFinite(change) || !Number.isFinite(previous) || previous === 0) {
+            return 0;
+        }
+        return change / previous;
+    };
+
     return rawData
         .map((d, i) => {
             // Extract all currency values from the CSV
-            const currentValueUSD = parseFloat(d.value_usd);
-            const currentValueCNY = parseFloat(d.value_cny);
-            const currentValueJPY = parseFloat(d.value_jpy);
-            const currentValueKRW = parseFloat(d.value_krw);
+            const currentValueUSD = toNumber(d.value_usd);
+            const currentValueCNY = toNumber(d.value_cny);
+            const currentValueJPY = toNumber(d.value_jpy);
+            const currentValueKRW = toNumber(d.value_krw);
 
             // Calculate daily changes for each currency (using USD as reference for PnL percentage)
             let dailyChangeUSD = 0;
             let dailyChangeCNY = 0;
             let dailyChangeJPY = 0;
             let dailyChangeKRW = 0;
-            let pnl = 0;
+            let pnlUSD = 0;
+            let pnlCNY = 0;
+            let pnlJPY = 0;
+            let pnlKRW = 0;
 
             if (i > 0) {
-                const previousValueUSD = parseFloat(rawData[i - 1].value_usd);
-                const previousValueCNY = parseFloat(rawData[i - 1].value_cny);
-                const previousValueJPY = parseFloat(rawData[i - 1].value_jpy);
-                const previousValueKRW = parseFloat(rawData[i - 1].value_krw);
+                const previousValueUSD = toNumber(rawData[i - 1].value_usd);
+                const previousValueCNY = toNumber(rawData[i - 1].value_cny);
+                const previousValueJPY = toNumber(rawData[i - 1].value_jpy);
+                const previousValueKRW = toNumber(rawData[i - 1].value_krw);
 
                 dailyChangeUSD = currentValueUSD - previousValueUSD;
                 dailyChangeCNY = currentValueCNY - previousValueCNY;
                 dailyChangeJPY = currentValueJPY - previousValueJPY;
                 dailyChangeKRW = currentValueKRW - previousValueKRW;
 
-                // Use USD for PnL percentage calculation (consistent baseline)
-                pnl = previousValueUSD === 0 ? 0 : dailyChangeUSD / previousValueUSD;
+                pnlUSD = calculatePnlPercentage(dailyChangeUSD, previousValueUSD);
+                pnlCNY = calculatePnlPercentage(dailyChangeCNY, previousValueCNY);
+                pnlJPY = calculatePnlPercentage(dailyChangeJPY, previousValueJPY);
+                pnlKRW = calculatePnlPercentage(dailyChangeKRW, previousValueKRW);
             }
 
             return {
                 date: d.date,
-                value: pnl,
+                value: pnlUSD,
+                valueUSD: pnlUSD,
+                valueCNY: pnlCNY,
+                valueJPY: pnlJPY,
+                valueKRW: pnlKRW,
                 // Store all currency totals and daily changes
                 total: currentValueUSD, // Keep USD as default for backwards compatibility
                 totalUSD: currentValueUSD,
@@ -285,7 +307,7 @@ function processHistoricalData(rawData) {
         .filter((d) => d.date);
 }
 
-function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue, rates = {}) {
+function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {}) {
     if (!holdingsData || !fundData) {
         return null;
     }
@@ -305,26 +327,59 @@ function calculateRealtimePnl(holdingsData, fundData, lastHistoricalValue, rates
         }
     }
 
+    const baselineTotals = {
+        totalUSD:
+            (baselineEntry && Number.isFinite(baselineEntry.totalUSD)
+                ? baselineEntry.totalUSD
+                : baselineEntry && Number.isFinite(baselineEntry.total)
+                  ? baselineEntry.total
+                  : 0) || 0,
+        totalCNY:
+            (baselineEntry && Number.isFinite(baselineEntry.totalCNY)
+                ? baselineEntry.totalCNY
+                : 0) || 0,
+        totalJPY:
+            (baselineEntry && Number.isFinite(baselineEntry.totalJPY)
+                ? baselineEntry.totalJPY
+                : 0) || 0,
+        totalKRW:
+            (baselineEntry && Number.isFinite(baselineEntry.totalKRW)
+                ? baselineEntry.totalKRW
+                : 0) || 0,
+    };
+
     // Convert to other currencies using current exchange rates for real-time data
     const currentTotalValueCNY = currentTotalValueUSD * (rates.CNY || 1);
     const currentTotalValueJPY = currentTotalValueUSD * (rates.JPY || 1);
     const currentTotalValueKRW = currentTotalValueUSD * (rates.KRW || 1);
 
     // Calculate daily changes (using USD as baseline for percentage)
-    const dailyChangeUSD = currentTotalValueUSD - lastHistoricalValue;
-    const pnl = lastHistoricalValue === 0 ? 0 : dailyChangeUSD / lastHistoricalValue;
+    const dailyChangeUSD = currentTotalValueUSD - baselineTotals.totalUSD;
+    const dailyChangeCNY = currentTotalValueCNY - baselineTotals.totalCNY;
+    const dailyChangeJPY = currentTotalValueJPY - baselineTotals.totalJPY;
+    const dailyChangeKRW = currentTotalValueKRW - baselineTotals.totalKRW;
 
-    // For real-time data, we convert the USD daily change using current rates
-    // This is acceptable since it's today's data, not historical
-    const dailyChangeCNY = dailyChangeUSD * (rates.CNY || 1);
-    const dailyChangeJPY = dailyChangeUSD * (rates.JPY || 1);
-    const dailyChangeKRW = dailyChangeUSD * (rates.KRW || 1);
+    const calculatePnlPercentage = (change, previous) => {
+        if (!Number.isFinite(change) || !Number.isFinite(previous) || previous === 0) {
+            return 0;
+        }
+        return change / previous;
+    };
+
+    const pnlUSD = calculatePnlPercentage(dailyChangeUSD, baselineTotals.totalUSD);
+    const pnlCNY = calculatePnlPercentage(dailyChangeCNY, baselineTotals.totalCNY);
+    const pnlJPY = calculatePnlPercentage(dailyChangeJPY, baselineTotals.totalJPY);
+    const pnlKRW = calculatePnlPercentage(dailyChangeKRW, baselineTotals.totalKRW);
 
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     return {
         date: todayStr,
-        value: pnl,
+        value: pnlUSD,
+        valueUSD: pnlUSD,
+        valueCNY: pnlCNY,
+        valueJPY: pnlJPY,
+        valueKRW: pnlKRW,
         // Backwards compatibility
         total: currentTotalValueUSD,
         dailyChange: dailyChangeUSD,
@@ -633,25 +688,13 @@ export async function getCalendarData(dataPaths) {
     const today = getNyDate();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    let valueForPnlCalculation;
     const lastHistoricalData = historicalData[historicalData.length - 1];
+    const baselineEntry =
+        lastHistoricalData.date === todayStr && historicalData.length > 1
+            ? historicalData[historicalData.length - 2]
+            : lastHistoricalData;
 
-    if (lastHistoricalData.date === todayStr) {
-        if (historicalData.length > 1) {
-            valueForPnlCalculation = historicalData[historicalData.length - 2].total;
-        } else {
-            valueForPnlCalculation = 0;
-        }
-    } else {
-        valueForPnlCalculation = lastHistoricalData.total;
-    }
-
-    const realtimeData = calculateRealtimePnl(
-        allData.holdings,
-        allData.fund,
-        valueForPnlCalculation,
-        rates
-    );
+    const realtimeData = calculateRealtimePnl(allData.holdings, allData.fund, baselineEntry, rates);
 
     const processedData = combineData(historicalData, realtimeData);
     const byDate = new Map(processedData.map((d) => [d.date, d]));

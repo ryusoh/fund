@@ -43,6 +43,38 @@ jest.mock('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm', () =>
     jest.fn().mockImplementation(() => mockCalHeatmapInstance)
 );
 
+const createProcessedEntry = (overrides = {}) => ({
+    date: '2025-01-01',
+    value: 0,
+    valueUSD: 0,
+    valueCNY: 0,
+    valueJPY: 0,
+    valueKRW: 0,
+    total: 0,
+    totalUSD: 0,
+    totalCNY: 0,
+    totalJPY: 0,
+    totalKRW: 0,
+    dailyChange: 0,
+    dailyChangeUSD: 0,
+    dailyChangeCNY: 0,
+    dailyChangeJPY: 0,
+    dailyChangeKRW: 0,
+    ...overrides,
+});
+
+const createCalendarData = (entries = [{}], extra = {}) => {
+    const processedData = entries.map((overrides) => createProcessedEntry(overrides));
+    const byDate = new Map(processedData.map((entry) => [entry.date, entry]));
+    return {
+        processedData,
+        byDate,
+        rates: { USD: 1 },
+        monthlyPnl: new Map(),
+        ...extra,
+    };
+};
+
 // Capture class attribute values set during label rendering
 const capturedClassValues = [];
 
@@ -75,6 +107,14 @@ jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
         ...createMockElement(),
     });
 
+    const createScale = () => {
+        const scale = jest.fn().mockReturnValue('rgba(120, 120, 125, 0.5)');
+        scale.domain = jest.fn().mockReturnValue(scale);
+        scale.range = jest.fn().mockReturnValue(scale);
+        scale.clamp = jest.fn().mockReturnValue(scale);
+        return scale;
+    };
+
     const d3 = {
         select: jest.fn().mockImplementation((selector) => {
             if (typeof selector === 'string') {
@@ -85,6 +125,7 @@ jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
             // Always return a selection that can handle datum() calls
             return createMockSelection();
         }),
+        scaleLinear: jest.fn(createScale),
     };
 
     // Create the main selection chain
@@ -150,6 +191,7 @@ describe('calendar page', () => {
     `;
 
         jest.clearAllMocks();
+        capturedClassValues.length = 0;
 
         const eventListeners = {};
 
@@ -217,12 +259,22 @@ describe('calendar page', () => {
         // Explicitly ensure desktop branch for start date (innerWidth > 768)
         const originalWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000, dailyChange: 5 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 0, percentChange: 0 }]]),
-        };
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-01',
+                    value: 1,
+                    valueUSD: 1,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 5,
+                    dailyChangeUSD: 5,
+                },
+            ],
+            {
+                monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 0, percentChange: 0 }]]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         await initCalendar();
@@ -272,18 +324,34 @@ describe('calendar page', () => {
             .spyOn(dateUtils, 'getNyDate')
             .mockReturnValue(new Date('2025-07-15T00:00:00Z'));
 
-        const mockData = {
-            processedData: [
-                { date: '2025-05-30', value: 0, total: 900, dailyChange: 0 },
-                { date: '2025-06-02', value: 0.01, total: 920, dailyChange: 20 },
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-05-30',
+                    value: 0,
+                    valueUSD: 0,
+                    total: 900,
+                    totalUSD: 900,
+                    dailyChange: 0,
+                    dailyChangeUSD: 0,
+                },
+                {
+                    date: '2025-06-02',
+                    value: 0.01,
+                    valueUSD: 0.01,
+                    total: 920,
+                    totalUSD: 920,
+                    dailyChange: 20,
+                    dailyChangeUSD: 20,
+                },
             ],
-            byDate: new Map(),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([
-                ['2025-05', { absoluteChangeUSD: 0, percentChange: 0 }],
-                ['2025-06', { absoluteChangeUSD: 20, percentChange: 0.022 }],
-            ]),
-        };
+            {
+                monthlyPnl: new Map([
+                    ['2025-05', { absoluteChangeUSD: 0, percentChange: 0 }],
+                    ['2025-06', { absoluteChangeUSD: 20, percentChange: 0.022 }],
+                ]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         await initCalendar();
@@ -306,20 +374,44 @@ describe('calendar page', () => {
             .spyOn(dateUtils, 'getNyDate')
             .mockReturnValue(new Date('2025-07-10T00:00:00Z'));
 
-        const mockData = {
-            processedData: [
-                { date: '2025-03-31', value: 0, total: 850, dailyChange: 0 },
-                { date: '2025-04-15', value: 0.02, total: 870, dailyChange: 17.4 },
-                { date: '2025-05-30', value: 0, total: 900, dailyChange: 0 },
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-03-31',
+                    value: 0,
+                    valueUSD: 0,
+                    total: 850,
+                    totalUSD: 850,
+                    dailyChange: 0,
+                    dailyChangeUSD: 0,
+                },
+                {
+                    date: '2025-04-15',
+                    value: 0.02,
+                    valueUSD: 0.02,
+                    total: 870,
+                    totalUSD: 870,
+                    dailyChange: 17.4,
+                    dailyChangeUSD: 17.4,
+                },
+                {
+                    date: '2025-05-30',
+                    value: 0,
+                    valueUSD: 0,
+                    total: 900,
+                    totalUSD: 900,
+                    dailyChange: 0,
+                    dailyChangeUSD: 0,
+                },
             ],
-            byDate: new Map(),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([
-                ['2025-03', { absoluteChangeUSD: 0, percentChange: 0 }],
-                ['2025-04', { absoluteChangeUSD: 20, percentChange: 0.023 }],
-                ['2025-05', { absoluteChangeUSD: 0, percentChange: 0 }],
-            ]),
-        };
+            {
+                monthlyPnl: new Map([
+                    ['2025-03', { absoluteChangeUSD: 0, percentChange: 0 }],
+                    ['2025-04', { absoluteChangeUSD: 20, percentChange: 0.023 }],
+                    ['2025-05', { absoluteChangeUSD: 0, percentChange: 0 }],
+                ]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         await initCalendar();
@@ -340,15 +432,31 @@ describe('calendar page', () => {
             .spyOn(dateUtils, 'getNyDate')
             .mockReturnValue(new Date('2025-06-20T00:00:00Z'));
 
-        const mockData = {
-            processedData: [
-                { date: '2025-04-01', value: 0, total: 800, dailyChange: 0 },
-                { date: '2025-AA-10', value: 0.03, total: 825, dailyChange: 25 },
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-04-01',
+                    value: 0,
+                    valueUSD: 0,
+                    total: 800,
+                    totalUSD: 800,
+                    dailyChange: 0,
+                    dailyChangeUSD: 0,
+                },
+                {
+                    date: '2025-AA-10',
+                    value: 0.03,
+                    valueUSD: 0.03,
+                    total: 825,
+                    totalUSD: 825,
+                    dailyChange: 25,
+                    dailyChangeUSD: 25,
+                },
             ],
-            byDate: new Map(),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([['2025-04', { absoluteChangeUSD: 0, percentChange: 0 }]]),
-        };
+            {
+                monthlyPnl: new Map([['2025-04', { absoluteChangeUSD: 0, percentChange: 0 }]]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         await initCalendar();
@@ -366,11 +474,15 @@ describe('calendar page', () => {
 
     it('should handle nav clicks and today toggle with timer', async () => {
         jest.useFakeTimers();
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 1,
+                valueUSD: 1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -407,11 +519,15 @@ describe('calendar page', () => {
     });
 
     it('should ignore unrelated keydown events (default switch branch)', async () => {
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 1,
+                valueUSD: 1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -422,11 +538,15 @@ describe('calendar page', () => {
     });
 
     it('should navigate with ArrowLeft/ArrowRight and respect disabled state', async () => {
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 1,
+                valueUSD: 1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -458,11 +578,15 @@ describe('calendar page', () => {
     });
 
     it('should handle ArrowDown with and without today button', async () => {
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 1,
+                valueUSD: 1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -498,11 +622,15 @@ describe('calendar page', () => {
 
     it('should map ArrowUp to dblclick on today (enlarge) and cancel pending single action', async () => {
         jest.useFakeTimers();
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 1,
+                valueUSD: 1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -530,11 +658,15 @@ describe('calendar page', () => {
 
     it('should render labels and handle visibility toggle paths', async () => {
         // Ensure d3 is initialized in module under test
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 0.1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1000 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 0.1,
+                valueUSD: 0.1,
+                total: 1000,
+                totalUSD: 1000,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
         // Reset capture array in case prior tests populated it
@@ -562,14 +694,10 @@ describe('calendar page', () => {
 
     it('should handle invalid date format in parseDataDate', async () => {
         // Mock data with invalid date format to trigger line 265
-        const mockData = {
-            processedData: [
-                { date: 'invalid-date', value: 0.1, total: 1000 },
-                { date: '2025-01', value: 0.1, total: 1000 }, // missing day
-            ],
-            byDate: new Map(),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            { date: 'invalid-date', value: 0.1, valueUSD: 0.1, total: 1000, totalUSD: 1000 },
+            { date: '2025-01', value: 0.1, valueUSD: 0.1, total: 1000, totalUSD: 1000 },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
 
         // This should exercise the date parsing error handling (line 265)
@@ -584,23 +712,43 @@ describe('calendar page', () => {
 
     it('should fully initialize calendar and register all event listeners', async () => {
         // Ensure a complete calendar initialization that reaches setupEventListeners
-        const mockData = {
-            processedData: [
-                { date: '2025-01-01', value: 0.1, total: 1000 },
-                { date: '2025-01-15', value: 0.05, total: 1050 },
-                { date: '2025-02-01', value: 0.02, total: 1071 },
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-01',
+                    value: 0.1,
+                    valueUSD: 0.1,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 100,
+                    dailyChangeUSD: 100,
+                },
+                {
+                    date: '2025-01-15',
+                    value: 0.05,
+                    valueUSD: 0.05,
+                    total: 1050,
+                    totalUSD: 1050,
+                    dailyChange: 50,
+                    dailyChangeUSD: 50,
+                },
+                {
+                    date: '2025-02-01',
+                    value: 0.02,
+                    valueUSD: 0.02,
+                    total: 1071,
+                    totalUSD: 1071,
+                    dailyChange: 0,
+                    dailyChangeUSD: 0,
+                },
             ],
-            byDate: new Map([
-                ['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1000, dailyChange: 100 }],
-                ['2025-01-15', { date: '2025-01-15', value: 0.05, total: 1050, dailyChange: 50 }],
-                ['2025-02-01', { date: '2025-02-01', value: 0.02, total: 1071, dailyChange: 0 }], // zero dailyChange for line 67
-            ]),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([
-                ['2025-01', { absoluteChangeUSD: 71, percentChange: 0.071 }],
-                ['2025-02', { absoluteChangeUSD: 21, percentChange: 0.02 }],
-            ]),
-        };
+            {
+                monthlyPnl: new Map([
+                    ['2025-01', { absoluteChangeUSD: 71, percentChange: 0.071 }],
+                    ['2025-02', { absoluteChangeUSD: 21, percentChange: 0.02 }],
+                ]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         // This should complete full initialization including setupEventListeners
@@ -678,28 +826,41 @@ describe('calendar page', () => {
         expect(console.error).toHaveBeenCalled();
     });
 
-    it('should handle currency change event and re-render labels', async () => {
-        const mockData = {
-            processedData: [{ date: '2025-01-01', value: 0.1, total: 1234 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1234 }]]),
-            rates: { USD: 1, JPY: 110 },
-        };
+    it('recolors heatmap cells when currency selection changes', async () => {
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-01',
+                    value: 0.1,
+                    valueUSD: 0.1,
+                    valueJPY: 0.1,
+                    total: 1234,
+                    totalUSD: 1234,
+                    totalJPY: 1234,
+                },
+            ],
+            { rates: { USD: 1, JPY: 110 } }
+        );
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
         document.dispatchEvent(
             new CustomEvent('currencyChangedGlobal', { detail: { currency: 'JPY' } })
         );
-        // No assertion needed; firing the event covers lines 129-130
+        // No specific assertion; event firing covers handler execution path.
     });
 
     it('should handle mobile start-date branch and tooltip variants', async () => {
         const originalWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 }); // mobile
-        const mockData = {
-            processedData: [{ date: '2025-02-01', value: 0.0, total: 0 }],
-            byDate: new Map([['2025-02-01', { date: '2025-02-01', value: 0.0, total: 0 }]]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            {
+                date: '2025-02-01',
+                value: 0,
+                valueUSD: 0,
+                total: 0,
+                totalUSD: 0,
+            },
+        ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
 
@@ -732,17 +893,10 @@ describe('calendar page', () => {
     });
 
     it('should handle keyboard navigation and ignore modifiers/inputs', async () => {
-        const mockData = {
-            processedData: [
-                { date: '2025-01-01', value: 0.1, total: 1234 },
-                { date: '2025-01-02', value: -0.2, total: 1200 },
-            ],
-            byDate: new Map([
-                ['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1234 }],
-                ['2025-01-02', { date: '2025-01-02', value: -0.2, total: 1200 }],
-            ]),
-            rates: { USD: 1 },
-        };
+        const mockData = createCalendarData([
+            { date: '2025-01-01', value: 0.1, valueUSD: 0.1, total: 1234, totalUSD: 1234 },
+            { date: '2025-01-02', value: -0.2, valueUSD: -0.2, total: 1200, totalUSD: 1200 },
+        ]);
         // Ensure click handlers exist so keydown can trigger them
         prevBtnRef.click = jest.fn();
         nextBtnRef.click = jest.fn();
@@ -822,12 +976,22 @@ describe('calendar page', () => {
         calendarContainer.id = 'calendar-container';
         document.body.appendChild(calendarContainer);
 
-        const mockData = {
-            processedData: [{ date: '2025-01-15', value: 0.01, total: 1000, dailyChange: 10 }],
-            byDate: new Map(),
-            rates: { USD: 1 },
-            monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 10, percentChange: 0.01 }]]),
-        };
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-15',
+                    value: 0.01,
+                    valueUSD: 0.01,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 10,
+                    dailyChangeUSD: 10,
+                },
+            ],
+            {
+                monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 10, percentChange: 0.01 }]]),
+            }
+        );
         getCalendarData.mockResolvedValue(mockData);
 
         await initCalendar();

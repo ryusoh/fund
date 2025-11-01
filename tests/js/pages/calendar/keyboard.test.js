@@ -26,6 +26,38 @@ jest.mock('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm', () =>
     jest.fn().mockImplementation(() => mockCalHeatmapInstance)
 );
 
+const createProcessedEntry = (overrides = {}) => ({
+    date: '2025-01-01',
+    value: 0,
+    valueUSD: 0,
+    valueCNY: 0,
+    valueJPY: 0,
+    valueKRW: 0,
+    total: 0,
+    totalUSD: 0,
+    totalCNY: 0,
+    totalJPY: 0,
+    totalKRW: 0,
+    dailyChange: 0,
+    dailyChangeUSD: 0,
+    dailyChangeCNY: 0,
+    dailyChangeJPY: 0,
+    dailyChangeKRW: 0,
+    ...overrides,
+});
+
+const createCalendarData = (entries = [{}], extra = {}) => {
+    const processedData = entries.map((overrides) => createProcessedEntry(overrides));
+    const byDate = new Map(processedData.map((entry) => [entry.date, entry]));
+    return {
+        processedData,
+        byDate,
+        rates: { USD: 1 },
+        monthlyPnl: new Map(),
+        ...extra,
+    };
+};
+
 // Mock D3 CDN import minimally
 jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
     const chain = {
@@ -37,6 +69,14 @@ jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
         text: jest.fn().mockReturnThis(),
         attr: jest.fn().mockReturnThis(),
         datum: jest.fn().mockReturnValue({ t: Date.now() }),
+        style: jest.fn().mockReturnThis(),
+        scaleLinear: jest.fn(() => {
+            const scale = jest.fn().mockReturnValue('rgba(120, 120, 125, 0.5)');
+            scale.domain = jest.fn().mockReturnValue(scale);
+            scale.range = jest.fn().mockReturnValue(scale);
+            scale.clamp = jest.fn().mockReturnValue(scale);
+            return scale;
+        }),
     };
     return chain;
 });
@@ -67,11 +107,17 @@ describe('calendar keyboard only tests', () => {
             return { addEventListener: jest.fn(), innerHTML: '', disabled: false };
         });
 
-        getCalendarData.mockResolvedValue({
-            processedData: [{ date: '2025-01-01', value: 0.1, total: 1000 }],
-            byDate: new Map([['2025-01-01', { date: '2025-01-01', value: 0.1, total: 1000 }]]),
-            rates: { USD: 1 },
-        });
+        getCalendarData.mockResolvedValue(
+            createCalendarData([
+                {
+                    date: '2025-01-01',
+                    value: 0.1,
+                    valueUSD: 0.1,
+                    total: 1000,
+                    totalUSD: 1000,
+                },
+            ])
+        );
     });
 
     it('covers ArrowDown when today button is absent', async () => {
