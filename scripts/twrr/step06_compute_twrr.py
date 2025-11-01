@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,16 +22,12 @@ TWRR_PATH = DATA_DIR / 'twrr_series.parquet'
 FIGURE_HTML = DATA_DIR / 'output/figures/twrr.html'
 FIGURE_PNG = DATA_DIR / 'output/figures/twrr.png'
 
-AI_DIR = PROJECT_ROOT / 'ai'
-STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
-CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
-
 STEP_NAME = 'step-06_twrr'
 TOOL_NAME = 'codex'
 
 
 def ensure_directories() -> None:
-    for path in [TWRR_PATH.parent, STATUS_PATH.parent, CHANGELOG_PATH.parent, FIGURE_HTML.parent]:
+    for path in [TWRR_PATH.parent, FIGURE_HTML.parent]:
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -98,14 +93,8 @@ def write_twrr(twrr_index: pd.Series) -> None:
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
-    status_data = {
-        'step': STEP_NAME,
-        'tool': TOOL_NAME,
-        'artifacts': artifacts,
-        'ts': datetime.now(timezone.utc).isoformat(),
-        'notes': notes,
-    }
-    STATUS_PATH.write_text(json.dumps(status_data, indent=2))
+    timestamp = datetime.now(timezone.utc).isoformat()
+    print(f'[STATUS] {STEP_NAME} ({TOOL_NAME}) @ {timestamp}: {notes} -> {artifacts}')
 
 
 def summarize(twrr_index: pd.Series) -> None:

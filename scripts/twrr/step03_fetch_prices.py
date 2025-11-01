@@ -34,10 +34,6 @@ HISTORICAL_PRICES_JSON = DATA_DIR / 'historical_prices.json'
 
 BENCHMARK_TICKERS = ['^GSPC', '^IXIC', '^DJI', '^N225', '^HSI', '^SSEC']
 
-AI_DIR = PROJECT_ROOT / 'ai'
-STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
-CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
-
 STEP_NAME = 'step-03_prices'
 TOOL_NAME = 'codex'
 
@@ -53,8 +49,7 @@ YFINANCE_ALIASES: Dict[str, str] = {
 
 
 def ensure_directories() -> None:
-    for path in [CHECKPOINT_DIR, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
-        path.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def read_transactions() -> pd.DataFrame:
@@ -309,14 +304,8 @@ def write_raw_json_prices(raw_df: pd.DataFrame) -> None:
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
-    status_data = {
-        'step': STEP_NAME,
-        'tool': TOOL_NAME,
-        'artifacts': artifacts,
-        'ts': datetime.now(tz=timezone.utc).isoformat(),
-        'notes': notes,
-    }
-    STATUS_PATH.write_text(json.dumps(status_data, indent=2))
+    timestamp = datetime.now(tz=timezone.utc).isoformat()
+    print(f'[STATUS] {STEP_NAME} ({TOOL_NAME}) @ {timestamp}: {notes} -> {artifacts}')
 
 
 def summarize(price_df: pd.DataFrame, overrides_applied: List[str]) -> None:

@@ -25,10 +25,6 @@ OUTPUT_JSON = OUTPUT_DIR / 'twrr.json'
 OUTPUT_PNG = OUTPUT_DIR / 'twrr.png'
 FRONTEND_HTML = PROJECT_ROOT / 'performance' / 'index.html'
 
-AI_DIR = PROJECT_ROOT / 'ai'
-STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
-CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
-
 STEP_NAME = 'step-07_plot'
 TOOL_NAME = 'codex'
 
@@ -51,7 +47,7 @@ BENCHMARK_STYLES = {
 
 
 def ensure_directories() -> None:
-    for path in [OUTPUT_DIR, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
+    for path in [OUTPUT_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -178,14 +174,8 @@ def write_outputs(fig: go.Figure) -> None:
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
-    status_data = {
-        'step': STEP_NAME,
-        'tool': TOOL_NAME,
-        'artifacts': artifacts,
-        'ts': datetime.now(timezone.utc).isoformat(),
-        'notes': notes,
-    }
-    STATUS_PATH.write_text(json.dumps(status_data, indent=2))
+    timestamp = datetime.now(timezone.utc).isoformat()
+    print(f'[STATUS] {STEP_NAME} ({TOOL_NAME}) @ {timestamp}: {notes} -> {artifacts}')
 
 
 def summarize(twrr: pd.Series) -> None:

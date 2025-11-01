@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,17 +19,13 @@ DATA_DIR = PROJECT_ROOT / 'data'
 RAW_TRANSACTIONS_PATH = DATA_DIR / 'transactions.csv'
 CHECKPOINT_DIR = DATA_DIR / 'checkpoints'
 CHECKPOINT_PATH = CHECKPOINT_DIR / 'transactions_clean.parquet'
-AI_DIR = PROJECT_ROOT / 'ai'
-STATUS_PATH = AI_DIR / 'status' / 'AI_STATUS.json'
-CHANGELOG_PATH = AI_DIR / 'handoff' / 'CHANGELOG-AI.md'
 
 STEP_NAME = 'step-01_loader'
 TOOL_NAME = 'codex'
 
 
 def ensure_directories() -> None:
-    for path in [CHECKPOINT_DIR, STATUS_PATH.parent, CHANGELOG_PATH.parent]:
-        path.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_transactions() -> pd.DataFrame:
@@ -118,14 +113,8 @@ def write_checkpoint(df: pd.DataFrame) -> None:
 
 
 def update_status(artifacts: List[str], notes: str) -> None:
-    status_data = {
-        'step': STEP_NAME,
-        'tool': TOOL_NAME,
-        'artifacts': artifacts,
-        'ts': datetime.now(tz=timezone.utc).isoformat(),
-        'notes': notes,
-    }
-    STATUS_PATH.write_text(json.dumps(status_data, indent=2))
+    timestamp = datetime.now(tz=timezone.utc).isoformat()
+    print(f'[STATUS] {STEP_NAME} ({TOOL_NAME}) @ {timestamp}: {notes} -> {artifacts}')
 
 
 def print_summary(df: pd.DataFrame) -> None:
