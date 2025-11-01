@@ -1,3 +1,4 @@
+import 'd3';
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendar, renderLabels, autoInitCalendar } from '@pages/calendar/index.js';
 import * as dateUtils from '@utils/date.js';
@@ -64,6 +65,7 @@ const createProcessedEntry = (overrides = {}) => ({
 const createCalendarData = (entries = [{}], extra = {}) => {
     const processedData = entries.map((overrides) => createProcessedEntry(overrides));
     const byDate = new Map(processedData.map((entry) => [entry.date, entry]));
+    global.__mockCalendarDatums = processedData.map((entry) => entry.date);
     return {
         processedData,
         byDate,
@@ -74,8 +76,6 @@ const createCalendarData = (entries = [{}], extra = {}) => {
 };
 
 // Capture class attribute values set during label rendering
-const capturedClassValues = [];
-
 describe('calendar page', () => {
     let prevBtnRef, nextBtnRef, todayBtnRef, containerRef;
 
@@ -90,7 +90,8 @@ describe('calendar page', () => {
     `;
 
         jest.clearAllMocks();
-        capturedClassValues.length = 0;
+        global.__d3HeatmapRoot = null;
+        global.__d3TextNodes = [];
 
         const eventListeners = {};
 
@@ -568,21 +569,23 @@ describe('calendar page', () => {
         ]);
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
-        // Reset capture array in case prior tests populated it
-        capturedClassValues.length = 0;
-        // With labelsVisible=false: should clear labels
         const byDate = new Map([
-            ['2025-01-01', { dailyChange: 10, total: 1000 }],
-            ['2025-01-02', { dailyChange: 0, total: 1100 }],
+            ['2025-01-01', { dailyChange: 10, total: 1000, valueUSD: 1000 }],
+            ['2025-01-02', { dailyChange: 0, total: 1100, valueUSD: 1100 }],
         ]);
+        global.__mockCalendarDatums = Array.from(byDate.keys());
         const state = { labelsVisible: false, selectedCurrency: 'USD', rates: { USD: 1 } };
         const symbols = { USD: '$' };
         renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
-        // Now enable and render again to exercise branch paths
         state.labelsVisible = true;
         renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
-        // Verify that the first line tspan with class 'subdomain-line0' was appended
-        expect(capturedClassValues).toEqual(expect.arrayContaining(['subdomain-line0']));
+        const textNodes = global.__d3TextNodes || [];
+        expect(textNodes.length).toBeGreaterThan(0);
+        const first = textNodes[0];
+        expect(first.children.length).toBeGreaterThanOrEqual(3);
+        expect(first.children[0].attributes.class).toBe('subdomain-line0');
+        expect(first.children[1].attributes.class).toBe('subdomain-line1');
+        expect(first.children[2].attributes.class).toBe('subdomain-line2');
     });
 
     it('should handle edge cases in renderLabels with null/missing datum', () => {
