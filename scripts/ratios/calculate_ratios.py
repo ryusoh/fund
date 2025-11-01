@@ -2,11 +2,12 @@
 """Pre-calculate statistics and ratios for the frontend terminal."""
 
 import json
-import pandas as pd
-from pathlib import Path
-import numpy as np
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, getcontext
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 getcontext().prec = 12
 

@@ -4,14 +4,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
 
-import numpy as np
 import pandas as pd
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
@@ -125,20 +123,20 @@ def fetch_yfinance_prices(tickers: List[str], date_index: pd.DatetimeIndex):
 
         selected = pd.DataFrame(index=data.index)
 
-        def pick_series(symbol: str, use_close: bool) -> Optional[pd.Series]:
+        def pick_series(symbol: str, use_close: bool, data=data) -> Optional[pd.Series]:
             if isinstance(data.columns, pd.MultiIndex):
                 field = 'Close' if use_close else 'Adj Close'
                 if field in data.columns.get_level_values(0):
                     try:
                         series = data[field][symbol]
-                        return series
+                        return pd.Series(series)  # type: ignore
                     except KeyError:
                         return None
             else:
                 cols = {col.upper(): col for col in data.columns}
                 key = 'CLOSE' if use_close else 'ADJ CLOSE'
                 if key in cols:
-                    return data[cols[key]]
+                    return pd.Series(data[cols[key]])  # type: ignore
             return None
 
         for norm in batch:
@@ -177,7 +175,7 @@ def fetch_stooq_price(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> Op
         series = df['Close'].sort_index()
         series.index = pd.DatetimeIndex(series.index.date)
         series.name = ticker
-        return series
+        return pd.Series(series)  # type: ignore
     except Exception:
         return None
 
@@ -294,17 +292,17 @@ def write_prices(price_df: pd.DataFrame) -> None:
 
 
 def write_raw_json_prices(raw_df: pd.DataFrame) -> None:
-    payload = {}
+    payload: dict = {}
     if not raw_df.empty:
         for column in raw_df.columns:
             series = raw_df[column].dropna()
             if series.empty:
                 continue
-            payload[column] = {
-                idx.strftime('%Y-%m-%d'): float(value)
-                for idx, value in series.items()
-                if pd.notna(value)
-            }
+            payload[column] = {}
+            for idx, value in series.items():
+                if pd.notna(value):
+                    date_str = pd.to_datetime(idx).strftime('%Y-%m-%d')  # type: ignore
+                    payload[column][date_str] = float(value)
 
     HISTORICAL_PRICES_JSON.write_text(json.dumps(payload, separators=(',', ':')) + "\n")
     print(f'Raw historical prices written to {HISTORICAL_PRICES_JSON}')

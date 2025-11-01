@@ -43,12 +43,20 @@ def update_fx_daily_csv(rates: dict[str, float]) -> None:
 
     df = df[df["date"].astype(str) != today]
 
-    new_row = {column: pd.NA for column in ordered_columns}
-    new_row["date"] = today
-    for currency, value in rates.items():
-        new_row[currency] = value
+    # Initialize new row with proper types
+    new_row: dict = {}
+    for col in ordered_columns:
+        if col == "date":
+            new_row[col] = today
+        else:
+            new_row[col] = None  # Use None instead of pd.NA
 
-    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    for currency, value in rates.items():
+        if currency in new_row:
+            new_row[currency] = value
+
+    new_df = pd.DataFrame([new_row], columns=ordered_columns)
+    df = pd.concat([df, new_df], ignore_index=True)
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"]).sort_values("date")

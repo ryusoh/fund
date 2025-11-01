@@ -69,8 +69,8 @@ perms:
 
 lint: js-lint
 	ruff check scripts tests
-	stylelint "**/*.css"
-	markdownlint "**/*.md" --ignore node_modules
+	npx stylelint "**/*.css"
+	markdownlint "**/*.md" --ignore-path .gitignore
 
 fmt:
 	black .
@@ -113,7 +113,7 @@ js-lint:
 lint-fix:
 	eslint . --ext .js --fix || true
 	@# Ensure stylistic plugin availability if needed
-	npx -y -p @stylistic/stylelint-plugin stylelint "**/*.css" --config-basedir "$(PWD)" --fix || true
+	npx stylelint "**/*.css" --fix || true
 
 js-test:
 	npm test

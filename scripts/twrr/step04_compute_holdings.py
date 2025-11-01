@@ -4,14 +4,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-import numpy as np
 import pandas as pd
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
@@ -77,9 +75,7 @@ def build_holdings(transactions: pd.DataFrame, date_index: pd.DatetimeIndex) -> 
 
     delta = transactions.assign(delta_quantity=signed_quantity)
 
-    pivot = (
-        delta.groupby(['trade_date', 'security'])['delta_quantity'].sum().unstack(fill_value=0.0)
-    )
+    pivot = delta.groupby(['trade_date', 'security'])['delta_quantity'].sum().unstack(fill_value=0)
 
     pivot.index = pd.DatetimeIndex(pivot.index).tz_localize(None)
     pivot = pivot.reindex(date_index, fill_value=0.0)

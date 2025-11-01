@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
 
@@ -37,6 +38,7 @@ def fetch_rates(start: str, end: str) -> pd.DataFrame:
         if 'Close' not in data.columns and 'Adj Close' not in data.columns:
             raise ValueError(f'Missing Close data for {symbol or currency}')
         series = data.get('Adj Close', data['Close'])
+        series = pd.Series(series)
         series.name = currency
         series.index = pd.to_datetime(series.index).tz_localize(None)
         frames.append(series)
@@ -45,7 +47,7 @@ def fetch_rates(start: str, end: str) -> pd.DataFrame:
     df['USD'] = 1.0
     df = df[['USD'] + TARGETS]
     df.index.name = 'date'
-    return df
+    return df  # type: ignore
 
 
 def main() -> None:

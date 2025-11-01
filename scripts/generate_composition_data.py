@@ -2,9 +2,9 @@
 """Generate portfolio composition data for stacked area chart."""
 
 import json
-import pandas as pd
 from pathlib import Path
-from datetime import datetime
+
+import pandas as pd
 
 
 def load_data():

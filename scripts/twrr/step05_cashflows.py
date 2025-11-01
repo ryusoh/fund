@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
 import pandas as pd
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry

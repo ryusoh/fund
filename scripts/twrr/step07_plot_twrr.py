@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
@@ -12,8 +13,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
 import yfinance as yf
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
@@ -97,7 +96,7 @@ def build_figure(twrr: pd.Series) -> go.Figure:
         hovermode='x unified',
     )
 
-    benchmark_traces = build_benchmark_traces(indexed.index)
+    benchmark_traces = build_benchmark_traces(pd.DatetimeIndex(indexed.index))
     for trace in benchmark_traces:
         fig.add_trace(trace)
 

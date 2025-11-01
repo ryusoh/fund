@@ -29,8 +29,8 @@ from pandas.tseries.holiday import (
     USMemorialDay,
     USPresidentsDay,
     USThanksgivingDay,
+    nearest_workday,
 )
-from pandas.tseries.holiday import nearest_workday
 from pandas.tseries.offsets import CustomBusinessDay
 
 # Increase decimal precision for monetary calculations

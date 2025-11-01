@@ -5,6 +5,7 @@ Resize and optimize the existing icon for different sizes
 """
 
 from pathlib import Path
+
 from PIL import Image
 
 

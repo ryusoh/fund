@@ -1,6 +1,6 @@
+import argparse
 import csv
 from datetime import datetime
-import argparse
 from pathlib import Path
 
 

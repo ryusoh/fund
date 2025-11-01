@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import pandas as pd
-
-import sys
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry
@@ -35,18 +34,18 @@ def ensure_directories() -> None:
 
 
 def load_transactions() -> pd.DataFrame:
-    dtype_spec: Dict[str, str] = {
+    dtype_spec = {
         'Trade Date': 'string',
         'Order Type': 'string',
         'Security': 'string',
         'Quantity': 'float64',
         'Executed Price': 'float64',
-    }
+    }  # type: ignore
 
     if not RAW_TRANSACTIONS_PATH.exists():
         raise FileNotFoundError(f"Missing transactions file: {RAW_TRANSACTIONS_PATH}")
 
-    df = pd.read_csv(RAW_TRANSACTIONS_PATH, dtype=dtype_spec)
+    df = pd.read_csv(RAW_TRANSACTIONS_PATH, dtype=dtype_spec)  # type: ignore
     return df
 
 
