@@ -73,8 +73,8 @@
             "^.+\\.js$": "babel-jest"
         },
         "moduleNameMapper": {
-            "^https://cdn\\.jsdelivr\\.net/npm/d3@7/\\+esm$": "<rootDir>/tests/js/__mocks__/d3.js",
-            "^https://cdn\\.jsdelivr\\.net/npm/cal-heatmap@4\\.2\\.4/\\+esm$": "<rootDir>/tests/js/__mocks__/cal-heatmap.js",
+            "^d3$": "<rootDir>/js/vendor/d3.v7.mjs",
+            "^cal-heatmap$": "<rootDir>/js/vendor/cal-heatmap-4.2.4.mjs",
             "^@js/(.*)$": "<rootDir>/js/$1",
             "^@pages/(.*)$": "<rootDir>/js/pages/$1",
             "^@services/(.*)$": "<rootDir>/js/services/$1",

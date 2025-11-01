@@ -39,7 +39,7 @@ const mockCalHeatmapInstance = {
     on: jest.fn(),
 };
 
-jest.mock('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm', () =>
+jest.mock('../../vendor/cal-heatmap-4.2.4.mjs', () =>
     jest.fn().mockImplementation(() => mockCalHeatmapInstance)
 );
 
@@ -78,7 +78,7 @@ const createCalendarData = (entries = [{}], extra = {}) => {
 // Capture class attribute values set during label rendering
 const capturedClassValues = [];
 
-jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
+jest.mock('../../vendor/d3.v7.mjs', () => {
     // eslint-disable-next-line prefer-const
     let mockSelectInstance;
 
@@ -279,7 +279,7 @@ describe('calendar page', () => {
 
         await initCalendar();
 
-        const CalHeatmap = require('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm');
+        const CalHeatmap = require('../../vendor/cal-heatmap-4.2.4.mjs');
         expect(CalHeatmap).toHaveBeenCalledTimes(1);
         expect(mockCalHeatmapInstance.paint).toHaveBeenCalledTimes(1);
 

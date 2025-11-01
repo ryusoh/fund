@@ -14,7 +14,7 @@
         <meta property="og:image:height" content="965" />
         <meta name="twitter:image" content="../assets/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
         <link rel="preconnect" href="https://ghproxy.net" crossorigin />
         <link rel="shortcut icon" href="../assets/icons/icon-180.png" type="image/png" />
@@ -172,7 +172,7 @@
                     // Load Chart.js then Datalabels (prettified versions for easier customization)
                     await loadLocalOrCdn(
                         '../assets/vendor/js/chart.umd.js',
-                        'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js'
+                        './js/vendor/chart.umd.min.js'
                     );
                     await loadLocalOrCdn(
                         '../assets/vendor/js/chartjs-plugin-datalabels.js',

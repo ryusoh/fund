@@ -734,7 +734,7 @@ export async function initCalendar() {
             try {
                 d3 = await import('@vendor/d3.v7.mjs');
             } catch {
-                d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+                d3 = await import('../../vendor/d3.v7.mjs');
             }
         }
         if (!CalHeatmap) {
@@ -743,7 +743,7 @@ export async function initCalendar() {
                 /* istanbul ignore next: alias resolves in tests; fallback tested separately */
                 CalHeatmap = mod.default || mod;
             } catch {
-                const mod = await import('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm');
+                const mod = await import('../../vendor/cal-heatmap-4.2.4.mjs');
                 /* istanbul ignore next: network path only in production */
                 CalHeatmap = mod.default || mod;
             }

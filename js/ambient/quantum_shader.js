@@ -33,7 +33,7 @@ function createContainer() {
 }
 
 async function loadThree() {
-    const module = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+    const module = await import('../../js/vendor/three.module.js');
     return module;
 }
 

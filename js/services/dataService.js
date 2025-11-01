@@ -220,7 +220,7 @@ async function fetchData(paths) {
     try {
         d3 = await import('@vendor/d3.v7.mjs');
     } catch {
-        d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+        d3 = await import('../vendor/d3.v7.mjs');
     }
     const timestamp = new Date().getTime();
     const [historical, fx, holdings, fund] = await Promise.all([

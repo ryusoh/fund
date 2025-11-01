@@ -22,7 +22,7 @@ const mockCalHeatmapInstance = {
     on: jest.fn(),
 };
 
-jest.mock('https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm', () =>
+jest.mock('../../vendor/cal-heatmap-4.2.4.mjs', () =>
     jest.fn().mockImplementation(() => mockCalHeatmapInstance)
 );
 
@@ -59,7 +59,7 @@ const createCalendarData = (entries = [{}], extra = {}) => {
 };
 
 // Mock D3 CDN import minimally
-jest.mock('https://cdn.jsdelivr.net/npm/d3@7/+esm', () => {
+jest.mock('../../vendor/d3.v7.mjs', () => {
     const chain = {
         select: jest.fn().mockReturnThis(),
         selectAll: jest.fn().mockReturnThis(),

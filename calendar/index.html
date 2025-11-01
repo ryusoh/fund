@@ -14,7 +14,7 @@
         <meta property="og:image:height" content="965" />
         <meta name="twitter:image" content="../assets/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
         <link rel="shortcut icon" href="../assets/icons/icon-180.png" type="image/png" />
         <link rel="icon" href="../assets/icons/icon-180.png" type="image/png" />
@@ -31,10 +31,7 @@
             content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=auto"
         />
         <title>Calendar</title>
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
-        />
+        <link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />
         <link rel="stylesheet" href="../css/base.css" />
         <link rel="stylesheet" href="../css/layout.css" />
         <link rel="stylesheet" href="../css/main_index.css" />
@@ -56,15 +53,11 @@
                         if (r.ok) {
                             loadCss('../assets/vendor/css/cal-heatmap-4.2.4.css');
                         } else {
-                            loadCss(
-                                'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css'
-                            );
+                            loadCss('../assets/vendor/css/cal-heatmap-4.2.4.css');
                         }
                     })
                     .catch(function () {
-                        loadCss(
-                            'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css'
-                        );
+                        loadCss('../assets/vendor/css/cal-heatmap-4.2.4.css');
                     });
             })();
         </script>
