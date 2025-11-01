@@ -1,4 +1,4 @@
-const sortState = { column: 'tradeDate', order: 'asc' };
+const sortState = { column: 'tradeDate', order: 'desc' };
 
 export const transactionState = {
     allTransactions: [],
@@ -23,7 +23,7 @@ export const transactionState = {
 
 export function resetSortState() {
     sortState.column = 'tradeDate';
-    sortState.order = 'asc';
+    sortState.order = 'desc';
 }
 
 export function setAllTransactions(transactions) {

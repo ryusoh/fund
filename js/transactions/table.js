@@ -118,30 +118,71 @@ function filterAndSort(searchTerm = '') {
         }
     }
 
+    const runningTotalsMap = computeRunningTotals(filtered, transactionState.splitHistory);
+    const compareValues = (valueA, valueB, order) => {
+        if (valueA < valueB) {
+            return order === 'asc' ? -1 : 1;
+        }
+        if (valueA > valueB) {
+            return order === 'asc' ? 1 : -1;
+        }
+        return 0;
+    };
+
     filtered.sort((a, b) => {
-        let valA;
-        let valB;
-        switch (transactionState.sortState.column) {
-            case 'security':
-                valA = a.security;
-                valB = b.security;
-                break;
-            case 'netAmount':
-                valA = Math.abs(parseFloat(a.netAmount) || 0);
-                valB = Math.abs(parseFloat(b.netAmount) || 0);
-                break;
-            default:
-                valA = new Date(a.tradeDate);
-                valB = new Date(b.tradeDate);
-                break;
+        const { column, order } = transactionState.sortState;
+        switch (column) {
+            case 'security': {
+                const result = compareValues(
+                    a.security.toLowerCase(),
+                    b.security.toLowerCase(),
+                    order
+                );
+                if (result !== 0) {
+                    return result;
+                }
+                return compareValues(
+                    new Date(a.tradeDate).getTime(),
+                    new Date(b.tradeDate).getTime(),
+                    'desc'
+                );
+            }
+            case 'netAmount': {
+                const amountA = Math.abs(parseFloat(a.netAmount) || 0);
+                const amountB = Math.abs(parseFloat(b.netAmount) || 0);
+                const result = compareValues(amountA, amountB, order);
+                if (result !== 0) {
+                    return result;
+                }
+                return compareValues(
+                    new Date(a.tradeDate).getTime(),
+                    new Date(b.tradeDate).getTime(),
+                    'desc'
+                );
+            }
+            case 'tradeDate':
+            default: {
+                const dateA = new Date(a.tradeDate).getTime();
+                const dateB = new Date(b.tradeDate).getTime();
+                const dateComparison = compareValues(dateA, dateB, order);
+                if (dateComparison !== 0) {
+                    return dateComparison;
+                }
+                const totalA =
+                    runningTotalsMap.get(a.transactionId)?.portfolio ??
+                    runningTotalsMap.get(a.transactionId)?.amount ??
+                    0;
+                const totalB =
+                    runningTotalsMap.get(b.transactionId)?.portfolio ??
+                    runningTotalsMap.get(b.transactionId)?.amount ??
+                    0;
+                const totalComparison = compareValues(totalA, totalB, 'desc');
+                if (totalComparison !== 0) {
+                    return totalComparison;
+                }
+                return compareValues(a.transactionId, b.transactionId, 'desc');
+            }
         }
-        if (valA < valB) {
-            return transactionState.sortState.order === 'asc' ? -1 : 1;
-        }
-        if (valA > valB) {
-            return transactionState.sortState.order === 'asc' ? 1 : -1;
-        }
-        return new Date(b.tradeDate) - new Date(a.tradeDate);
     });
 
     displayTransactions(filtered);
