@@ -35,52 +35,19 @@ body {
     overscroll-behavior: none;
 }
 
-/*
-    Terminal page specific styles
-*/
-
-/* Set a different background for the calendar page ONLY on desktop screens */
-@media (min-width: 769px) {
-    body.body-terminal {
-        background: #000 url(../../assets/backgrounds/terminal_background.jpg) center center
-            no-repeat !important;
-        background-size: cover !important;
-    }
-}
-
-#terminal-container {
-    font-family: 'JetBrains Mono', monospace;
-    color: #fff;
-    background-color: rgba(0, 0, 0, 0.75);
-    border-radius: 8px;
-    padding: 20px;
-    width: 90%;
-    max-width: 1200px;
-    height: 80vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* for smooth scrolling on iOS */
-}
-
-#terminal-output {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.prompt {
-    color: #0f0;
-}
-
-.prompt-input {
-    color: #fff;
-    background: transparent;
-    border: none;
-    width: calc(100% - 20px);
-    font-family: inherit;
-    font-size: inherit;
-}
-
-.prompt-input:focus {
-    outline: none;
+body {
+    font-family: var(--font-family-mono);
+    margin: 0;
+    padding: -10px;
+    background: #000 url(../../assets/backgrounds/terminal_background.jpg) center center no-repeat !important;
+    background-size: cover !important;
+    min-height: 100vh;
+    color: var(--text-color);
+    font-size: 12px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
 }
 
 .transaction-container {
