@@ -54,16 +54,16 @@ describe('service_worker_register.js', () => {
         triggerLoadImmediately();
         withCurrentScript(
             {
-                'data-sw-path': '/fund/sw.js',
-                'data-sw-scope': '/fund/',
+                'data-sw-path': '../sw.js',
+                'data-sw-scope': '../',
             },
             () => {
                 loadScript();
             }
         );
 
-        expect(window.navigator.serviceWorker.register).toHaveBeenCalledWith('/fund/sw.js', {
-            scope: '/fund/',
+        expect(window.navigator.serviceWorker.register).toHaveBeenCalledWith('../sw.js', {
+            scope: '../',
         });
     });
 
