@@ -13,3 +13,4 @@ venv/
 .vscode/
 .git/
 ai/status/
+js/vendor/
