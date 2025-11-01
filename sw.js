@@ -15,7 +15,7 @@ const CORE_ASSETS = [
     './assets/vendor/fonts/fontawesome-webfont.woff2',
     './assets/vendor/fonts/fontawesome-webfont.woff',
     './assets/vendor/fonts/fontawesome-webfont.ttf',
-    'https://cdn.jsdelivr.net/gh/ryusoh/host@master/brand/banners/banner.png',
+    './assets/banners/banner.png',
     './assets/icons/icon-180.png',
     './assets/mobile_bg.jpg',
 ];
