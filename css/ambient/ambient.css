@@ -1,0 +1,6 @@
+/* Hide ambient on small screens as a safety net */
+@media (max-width: 1023px) {
+    canvas.ambient-canvas {
+        display: none !important;
+    }
+}
