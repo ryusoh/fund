@@ -373,24 +373,54 @@ function drawCrosshairOverlay(ctx, layout) {
         const topHoldings = nonZeroHoldings.sort((a, b) => b.value - a.value).slice(0, 7);
 
         // Add to seriesSnapshot - show only available holdings (may be fewer than 7)
-        topHoldings.forEach((item) => {
-            const y = layout.yScale(item.value);
-            if (
-                Number.isFinite(y) &&
-                layout.series.find((s) => s.key === item.key)?.drawMarker !== false
-            ) {
-                ctx.save();
-                ctx.fillStyle = item.color;
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                ctx.restore();
+        // For composition chart, we need to calculate the correct Y position based on the original rendering order.
+        // Get all values at the crosshair time to calculate cumulative positions.
+        const valuesAtTimeMap = new Map();
+        for (const series of layout.series) {
+            const value = series.getValueAtTime(time);
+            if (value !== null && value !== undefined) {
+                valuesAtTimeMap.set(series.key, { value, series });
             }
-            seriesSnapshot.push(item);
-        });
+        }
+
+        // In a stacked area chart:
+        // 1. Components are rendered in a specific order (bottom to top).
+        // 2. Each component's visual position depends on the cumulative sum of all components BELOW it.
+        // 3. The crosshair dot for a component should appear at the TOP of that component's area.
+        // 4. The dot color should match the component's color in the chart.
+        const topHoldingsKeys = new Set(topHoldings.map((h) => h.key));
+        let cumulativeValue = 0;
+
+        for (const series of layout.series) {
+            const seriesData = valuesAtTimeMap.get(series.key);
+            if (!seriesData) {
+                continue;
+            }
+
+            const { value: componentValue } = seriesData;
+
+            if (topHoldingsKeys.has(series.key)) {
+                const dotPositionValue = cumulativeValue + componentValue;
+                const y = layout.yScale(dotPositionValue);
+
+                if (Number.isFinite(y) && series.drawMarker !== false) {
+                    ctx.save();
+                    ctx.fillStyle = series.color || '#ffffff';
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            cumulativeValue += componentValue;
+        }
+
+        // Add this item to the crosshair display (sorted by value at crosshair time)
+        seriesSnapshot.push(...topHoldings);
     } else {
         // Original behavior for other charts
         layout.series.forEach((series) => {
@@ -3141,7 +3171,7 @@ function renderCompositionChart(ctx, chartManager, data) {
 
     // Include ALL tickers to ensure historical holdings are available for crosshair
     // For each crosshair position, we'll dynamically determine the top holdings
-    Object.keys(chartData).forEach((ticker, index) => {
+    Object.keys(chartData).forEach((ticker) => {
         const values = chartData[ticker];
         if (!Array.isArray(values) || values.length !== dates.length) {
             return;
@@ -3151,16 +3181,23 @@ function renderCompositionChart(ctx, chartManager, data) {
             value: values[idx],
         }));
         const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
+        const tickerIndex = topTickers.indexOf(ticker);
+        const color = colors[tickerIndex % colors.length];
         seriesForCrosshair.push({
             key: ticker,
             label,
-            color: colors[index % colors.length],
+            color,
             getValueAtTime: createTimeInterpolator(points),
             formatValue: (value) => `${value.toFixed(2)}%`,
             formatDelta: (delta) => formatPercentInline(delta),
-            // Additional properties for dynamic top holdings calculation
-            originalIndex: index,
+            originalIndex: tickerIndex,
         });
+    });
+
+    const sortedSeriesForCrosshair = seriesForCrosshair.sort((a, b) => {
+        const indexA = topTickers.indexOf(a.key);
+        const indexB = topTickers.indexOf(b.key);
+        return indexA - indexB;
     });
 
     chartLayouts.composition = {
@@ -3183,7 +3220,7 @@ function renderCompositionChart(ctx, chartManager, data) {
             const ratio = (clampedX - padding.left) / plotWidth;
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
-        series: seriesForCrosshair,
+        series: sortedSeriesForCrosshair,
     };
 
     // For composition chart, only draw crosshair without range functionality
