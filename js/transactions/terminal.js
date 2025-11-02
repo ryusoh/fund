@@ -13,6 +13,7 @@ import {
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
 } from './chart.js';
+import { cycleCurrency } from '@ui/currencyToggleManager.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -21,6 +22,79 @@ const crosshairDateFormatter =
     typeof Intl !== 'undefined'
         ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
         : null;
+
+let statsDataCache = null;
+let holdingsDataCache = null;
+
+function renderAsciiTable({ title = null, headers = [], rows = [], alignments = [] }) {
+    const columnCount = headers.length || (rows[0]?.length ?? 0);
+    if (columnCount === 0) {
+        return title ? `${title}` : '';
+    }
+
+    const normalizedAlignments = Array.from({ length: columnCount }, (_, index) => {
+        return alignments[index] || 'left';
+    });
+
+    const widths = new Array(columnCount).fill(0);
+    headers.forEach((header, index) => {
+        widths[index] = Math.max(widths[index], String(header).length);
+    });
+    rows.forEach((row) => {
+        row.forEach((cell, index) => {
+            widths[index] = Math.max(widths[index], String(cell ?? '').length);
+        });
+    });
+
+    const totalWidth = widths.reduce((sum, width) => sum + width + 2, 0) + columnCount + 1;
+
+    const makeBorder = (char = '-') =>
+        '+' + widths.map((width) => char.repeat(width + 2)).join('+') + '+';
+
+    const formatRow = (cells) => {
+        const formatted = cells.map((cell, index) => {
+            const text = String(cell ?? '');
+            const width = widths[index];
+            const alignment = normalizedAlignments[index];
+            if (alignment === 'right') {
+                return ` ${text.padStart(width)} `;
+            }
+            if (alignment === 'center') {
+                const leftPadding = Math.floor((width - text.length) / 2);
+                const rightPadding = width - text.length - leftPadding;
+                return ` ${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)} `;
+            }
+            return ` ${text.padEnd(width)} `;
+        });
+        return `|${formatted.join('|')}|`;
+    };
+
+    const lines = [];
+    lines.push(makeBorder('-'));
+
+    if (title) {
+        const text = String(title);
+        const padding = Math.max(totalWidth - 2 - text.length, 0);
+        const leftPadding = Math.floor(padding / 2);
+        const rightPadding = padding - leftPadding;
+        const titleLine = `|${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)}|`;
+        lines.push(titleLine);
+        lines.push(makeBorder('-'));
+    }
+
+    if (headers.length) {
+        lines.push(formatRow(headers));
+        lines.push(makeBorder('='));
+    }
+
+    rows.forEach((row) => {
+        lines.push(formatRow(row));
+    });
+
+    lines.push(makeBorder('-'));
+
+    return lines.join('\n');
+}
 
 function toIsoDate(date) {
     return date.toISOString().split('T')[0];
@@ -312,6 +386,52 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
 }
 
 async function getStatsText() {
+    const currency = transactionState.selectedCurrency || 'USD';
+    try {
+        if (!statsDataCache) {
+            const response = await fetch('../data/output/transaction_stats.json');
+            if (response.ok) {
+                statsDataCache = await response.json();
+            }
+        }
+        if (statsDataCache) {
+            const availableCurrencies = statsDataCache.currency_values || {};
+            const selectedCurrency = availableCurrencies[currency] ? currency : 'USD';
+            const counts = statsDataCache.counts || {};
+            const values = availableCurrencies[selectedCurrency] || {};
+            const rows = [
+                ['Total Transactions', Number(counts.total_transactions || 0).toLocaleString()],
+                ['Buy Orders', Number(counts.buy_orders || 0).toLocaleString()],
+                ['Sell Orders', Number(counts.sell_orders || 0).toLocaleString()],
+                [
+                    'Total Buy Amount',
+                    formatCurrency(values.total_buy_amount || 0, { currency: selectedCurrency }),
+                ],
+                [
+                    'Total Sell Amount',
+                    formatCurrency(values.total_sell_amount || 0, { currency: selectedCurrency }),
+                ],
+                [
+                    'Net Contributions',
+                    formatCurrency(values.net_contributions || 0, { currency: selectedCurrency }),
+                ],
+                [
+                    'Realized Gain',
+                    formatCurrency(values.realized_gain || 0, { currency: selectedCurrency }),
+                ],
+            ];
+            const table = renderAsciiTable({
+                title: 'TRANSACTION STATS',
+                headers: ['Metric', 'Value'],
+                rows,
+                alignments: ['left', 'right'],
+            });
+            return `\n${table}\n`;
+        }
+    } catch {
+        // Fall through to legacy text fallback
+    }
+
     try {
         const response = await fetch('../data/output/transaction_stats.txt');
         if (!response.ok) {
@@ -324,6 +444,48 @@ async function getStatsText() {
 }
 
 async function getHoldingsText() {
+    const currency = transactionState.selectedCurrency || 'USD';
+    try {
+        if (!holdingsDataCache) {
+            const response = await fetch('../data/output/holdings.json');
+            if (response.ok) {
+                holdingsDataCache = await response.json();
+            }
+        }
+        if (holdingsDataCache) {
+            const currencyData = holdingsDataCache[currency]
+                ? holdingsDataCache[currency]
+                : holdingsDataCache.USD;
+            if (!Array.isArray(currencyData) || currencyData.length === 0) {
+                return 'No current holdings.';
+            }
+            const rows = currencyData.map((item) => {
+                const shares = Number(item.shares || 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+                const avgPrice =
+                    item.average_price !== null && item.average_price !== undefined
+                        ? formatCurrency(item.average_price, { currency })
+                        : 'N/A';
+                const totalCost =
+                    item.total_cost !== null && item.total_cost !== undefined
+                        ? formatCurrency(item.total_cost, { currency })
+                        : 'N/A';
+                return [item.security, shares, avgPrice, totalCost];
+            });
+            const table = renderAsciiTable({
+                title: 'HOLDINGS',
+                headers: ['Security', 'Shares', 'Avg Price', 'Total Cost'],
+                rows,
+                alignments: ['left', 'right', 'right', 'right'],
+            });
+            return `\n${table}\n`;
+        }
+    } catch {
+        // fallback to legacy text
+    }
+
     try {
         const response = await fetch('../data/output/holdings.txt');
         if (!response.ok) {
@@ -1266,6 +1428,43 @@ export function initTerminal({
                 } else {
                     resetHistoryIndex();
                     input.value = '';
+                }
+                resetAutocompleteState();
+                requestFadeUpdate();
+                break;
+            case 'ArrowLeft':
+                // Only cycle currency if the input is empty
+                if (input.value.trim() === '') {
+                    e.preventDefault();
+                    import('@ui/currencyToggleManager.js').then(({ cycleCurrency }) => {
+                        cycleCurrency(-1); // Move left/cycle backward
+                    });
+                }
+                resetAutocompleteState();
+                requestFadeUpdate();
+                break;
+            case 'ArrowLeft':
+                // Only cycle currency if the input is empty and no modifier keys (don't interfere when user is editing text)
+                if (input.value.trim() === '' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    cycleCurrency(-1); // Move left/cycle backward
+                } else if (e.ctrlKey || e.metaKey) {
+                    // Process Cmd/Ctrl+arrows synchronously to prevent double firing
+                    e.preventDefault();
+                    cycleCurrency(-1); // Move left/cycle backward
+                }
+                resetAutocompleteState();
+                requestFadeUpdate();
+                break;
+            case 'ArrowRight':
+                // Only cycle currency if the input is empty and no modifier keys (don't interfere when user is editing text)
+                if (input.value.trim() === '' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    cycleCurrency(1); // Move right/cycle forward
+                } else if (e.ctrlKey || e.metaKey) {
+                    // Process Cmd/Ctrl+arrows synchronously to prevent double firing
+                    e.preventDefault();
+                    cycleCurrency(1); // Move right/cycle forward
                 }
                 resetAutocompleteState();
                 requestFadeUpdate();

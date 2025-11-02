@@ -1,3 +1,32 @@
+function niceNumber(range, round) {
+    if (!Number.isFinite(range) || range === 0) {
+        return 1;
+    }
+    const exponent = Math.floor(Math.log10(Math.abs(range)));
+    const fraction = Math.abs(range) / 10 ** exponent;
+    let niceFraction;
+    if (round) {
+        if (fraction < 1.5) {
+            niceFraction = 1;
+        } else if (fraction < 3) {
+            niceFraction = 2;
+        } else if (fraction < 7) {
+            niceFraction = 5;
+        } else {
+            niceFraction = 10;
+        }
+    } else if (fraction <= 1) {
+        niceFraction = 1;
+    } else if (fraction <= 2) {
+        niceFraction = 2;
+    } else if (fraction <= 5) {
+        niceFraction = 5;
+    } else {
+        niceFraction = 10;
+    }
+    return (range < 0 ? -1 : 1) * niceFraction * 10 ** exponent;
+}
+
 import {
     transactionState,
     setChartVisibility,
@@ -5,7 +34,11 @@ import {
     setRunningAmountSeries,
 } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
-import { formatCurrencyCompact } from './utils.js';
+import {
+    formatCurrencyCompact,
+    formatCurrencyInlineValue,
+    convertValueToCurrency,
+} from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
 import {
@@ -132,20 +165,21 @@ function createTimeInterpolator(points) {
 
 const formatCurrencyInline = (value) => {
     if (!Number.isFinite(value)) {
-        return '$0';
+        return formatCurrencyInlineValue(0);
     }
     const absolute = Math.abs(value);
     const sign = value < 0 ? '-' : '';
+    const symbol = transactionState.currencySymbol || '$';
     if (absolute >= 1_000_000) {
-        return `${sign}$${(absolute / 1_000_000).toFixed(2)}M`;
+        return `${sign}${symbol}${(absolute / 1_000_000).toFixed(2)}M`;
     }
     if (absolute >= 1_000) {
-        return `${sign}$${(absolute / 1_000).toFixed(1)}k`;
+        return `${sign}${symbol}${(absolute / 1_000).toFixed(1)}k`;
     }
     if (absolute >= 1) {
-        return `${sign}$${absolute.toFixed(0)}`;
+        return `${sign}${symbol}${absolute.toFixed(0)}`;
     }
-    return `${sign}$${absolute.toFixed(2)}`;
+    return `${sign}${symbol}${absolute.toFixed(2)}`;
 };
 
 const formatPercentInline = (value) => {
@@ -728,10 +762,12 @@ function getContributionSeriesForTransactions(transactions, includeSyntheticStar
     }
     const splitHistoryRef = transactionState.splitHistory;
     const cached = contributionSeriesCache.get(transactions);
+    const currentCurrency = transactionState.selectedCurrency || 'USD';
     if (
         cached &&
         cached.splitHistory === splitHistoryRef &&
-        cached.includeSyntheticStart === includeSyntheticStart
+        cached.includeSyntheticStart === includeSyntheticStart &&
+        cached.currency === currentCurrency
     ) {
         return cached.series;
     }
@@ -741,6 +777,7 @@ function getContributionSeriesForTransactions(transactions, includeSyntheticStar
     contributionSeriesCache.set(transactions, {
         splitHistory: splitHistoryRef,
         includeSyntheticStart,
+        currency: currentCurrency,
         series,
     });
     return series;
@@ -833,7 +870,16 @@ export function buildContributionSeriesFromTransactions(
         }
     }
 
-    return series;
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    if (selectedCurrency === 'USD') {
+        return series;
+    }
+
+    return series.map((point) => ({
+        ...point,
+        amount: convertValueToCurrency(point.amount, point.tradeDate, selectedCurrency),
+        netAmount: convertValueToCurrency(point.netAmount, point.tradeDate, selectedCurrency),
+    }));
 }
 
 function normalizeSymbolForPricing(symbol) {
@@ -1568,7 +1614,7 @@ function drawStartValue(
     return textY;
 }
 
-function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
+function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD') {
     if (isPerformanceChart) {
         // Performance chart: use percentage ticks with adaptive spacing
         const ticks = [];
@@ -1606,46 +1652,53 @@ function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
 
         return ticks.filter((tick) => tick >= yMin && tick <= yMax);
     }
-    // Contribution chart: use currency ticks with adaptive spacing
-    const ticks = [];
 
-    // Determine appropriate tick spacing based on data range
+    const desiredTicks = 6;
     const range = yMax - yMin;
-    let tickSpacing, startTick, endTick;
-
-    if (range <= 50000) {
-        // Very small range: 10k increments
-        tickSpacing = 10000;
-        startTick = Math.max(0, Math.floor(yMin / 10000) * 10000);
-        endTick = Math.ceil(yMax / 10000) * 10000;
-    } else if (range <= 200000) {
-        // Small range: 25k increments
-        tickSpacing = 25000;
-        startTick = Math.max(0, Math.floor(yMin / 25000) * 25000);
-        endTick = Math.ceil(yMax / 25000) * 25000;
-    } else if (range <= 500000) {
-        // Medium-small range: 50k increments
-        tickSpacing = 50000;
-        startTick = Math.max(0, Math.floor(yMin / 50000) * 50000);
-        endTick = Math.ceil(yMax / 50000) * 50000;
-    } else if (range <= 2000000) {
-        // Medium range: 250k increments
-        tickSpacing = 250000;
-        startTick = Math.max(0, Math.floor(yMin / 250000) * 250000);
-        endTick = Math.ceil(yMax / 250000) * 250000;
-    } else {
-        // Large range: 500k increments
-        tickSpacing = 500000;
-        startTick = Math.max(0, Math.floor(yMin / 500000) * 500000);
-        endTick = Math.ceil(yMax / 500000) * 500000;
+    if (!Number.isFinite(range) || range <= 0) {
+        return [yMin];
     }
 
-    // Generate ticks
-    for (let i = startTick; i <= endTick; i += tickSpacing) {
-        ticks.push(i);
+    const niceRange = niceNumber(range, false);
+    const targetSegments = Math.max(1, desiredTicks - 1);
+    let tickSpacing = Math.abs(niceNumber(niceRange / targetSegments, true));
+    if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
+        tickSpacing = Math.abs(niceNumber(range / targetSegments, true));
+    }
+    if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
+        tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
+    }
+    tickSpacing = Math.max(tickSpacing, 1);
+
+    const clampToZero = currency !== 'USD' || yMin >= 0;
+    let niceMin = clampToZero
+        ? Math.max(0, Math.floor(yMin / tickSpacing) * tickSpacing)
+        : Math.floor(yMin / tickSpacing) * tickSpacing;
+    let niceMax = Math.ceil(yMax / tickSpacing) * tickSpacing;
+
+    let tickCount = Math.round((niceMax - niceMin) / tickSpacing);
+    while (tickCount < targetSegments) {
+        tickSpacing /= 2;
+        if (!Number.isFinite(tickSpacing) || tickSpacing <= 0) {
+            tickSpacing = 1;
+            break;
+        }
+        niceMin = clampToZero
+            ? Math.max(0, Math.floor(yMin / tickSpacing) * tickSpacing)
+            : Math.floor(yMin / tickSpacing) * tickSpacing;
+        niceMax = Math.ceil(yMax / tickSpacing) * tickSpacing;
+        tickCount = Math.round((niceMax - niceMin) / tickSpacing);
     }
 
-    return ticks.filter((tick) => tick >= yMin && tick <= yMax);
+    const ticks = [];
+    for (let tick = niceMin; tick <= niceMax + tickSpacing * 0.5; tick += tickSpacing) {
+        const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
+        ticks.push(rounded);
+    }
+
+    return ticks.filter(
+        (tick) => tick >= yMin - tickSpacing * 0.25 && tick <= yMax + tickSpacing * 0.25
+    );
 }
 
 function generateYearBasedTicks(minTime, maxTime) {
@@ -1797,13 +1850,14 @@ function drawAxes(
     yScale,
     yLabelFormatter,
     isPerformanceChart = false,
-    axisOptions = {}
+    axisOptions = {},
+    currency = 'USD'
 ) {
     const isMobile = window.innerWidth <= 768;
     const { drawXAxis = true, drawYAxis = true } = axisOptions;
 
     // Generate concrete tick values
-    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart);
+    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart, currency);
 
     // Y-axis grid lines and labels
     if (drawYAxis) {
@@ -1939,14 +1993,35 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             setRunningAmountSeries(contributionSource);
         }
     } else {
-        contributionSource = runningAmountSeries;
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
+        const mappedSeries =
+            transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
+        if (mappedSeries && mappedSeries === runningAmountSeries) {
+            contributionSource = runningAmountSeries;
+        } else {
+            contributionSource = runningAmountSeries.map((entry) => {
+                const tradeDate = entry.tradeDate || entry.date;
+                return {
+                    ...entry,
+                    amount: convertValueToCurrency(entry.amount, tradeDate, selectedCurrency),
+                    netAmount: convertValueToCurrency(entry.netAmount, tradeDate, selectedCurrency),
+                };
+            });
+        }
     }
 
     if (
         (!Array.isArray(contributionSource) || contributionSource.length === 0) &&
         runningAmountSeries.length > 0
     ) {
-        contributionSource = runningAmountSeries;
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
+        const mappedSeries =
+            transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
+        if (mappedSeries) {
+            contributionSource = mappedSeries;
+        } else {
+            contributionSource = runningAmountSeries;
+        }
     }
 
     let historicalPrices = transactionState.historicalPrices;
@@ -2189,7 +2264,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         yScale,
         formatCurrencyCompact,
         false, // isPerformanceChart
-        volumeHeight > 0 ? { drawXAxis: false } : {}
+        volumeHeight > 0 ? { drawXAxis: false } : {},
+        transactionState.selectedCurrency || 'USD'
     );
 
     const rootStyles = window.getComputedStyle(document.documentElement);
@@ -2204,16 +2280,26 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
         const absolute = Math.abs(amount);
         const sign = amount < 0 ? '-' : '';
+        const symbol = transactionState.currencySymbol || '$';
 
         if (absolute >= 1_000_000) {
             const millions = absolute / 1_000_000;
-            return `${sign}$${millions.toFixed(2)}M`;
+            return `${sign}${symbol}${millions.toFixed(2)}M`;
         }
         if (absolute >= 1_000) {
             const thousands = absolute / 1_000;
-            return `${sign}$${thousands.toFixed(1)}k`;
+            return `${sign}${symbol}${thousands.toFixed(1)}k`;
         }
-        return `${sign}$${amount.toFixed(0)}`;
+        return `${sign}${symbol}${amount.toFixed(0)}`;
+    };
+
+    const formatContributionAnnotationValue = (value) => {
+        const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+        if (Math.abs(amount) < 1) {
+            return formatBalanceValue(amount);
+        }
+        const currency = transactionState.selectedCurrency || 'USD';
+        return formatCurrencyCompact(amount, { currency });
     };
 
     let firstContributionLabelY = null;
@@ -2394,7 +2480,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             volumeYScale,
             formatCurrencyCompact,
             false,
-            { drawYAxis: maxVolume > 0 }
+            { drawYAxis: maxVolume > 0 },
+            transactionState.selectedCurrency || 'USD'
         );
     }
 
@@ -2607,7 +2694,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
                 padding,
                 plotWidth,
                 plotHeight,
-                formatCurrencyCompact,
+                formatContributionAnnotationValue,
                 true
             );
         }
@@ -2625,7 +2712,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             padding,
             plotWidth,
             plotHeight,
-            formatCurrencyCompact,
+            formatContributionAnnotationValue,
             true
         );
     }
@@ -2749,33 +2836,29 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
 
     const volumeSeries = [];
     const makeVolumeGetter = (map) => (time) => {
-        const value = map.get(normalizeToDay(time)) || 0;
-        return value > 0 ? value : null;
+        const value = map.get(normalizeToDay(time));
+        return Number.isFinite(value) ? value : 0;
     };
 
-    if (buyVolumeMap.size > 0) {
-        volumeSeries.push({
-            key: 'buyVolume',
-            label: 'Buy',
-            color: colors.buy,
-            getValueAtTime: makeVolumeGetter(buyVolumeMap),
-            formatValue: formatCurrencyInline,
-            includeInRangeSummary: false,
-            drawMarker: false,
-        });
-    }
+    volumeSeries.push({
+        key: 'buyVolume',
+        label: 'Buy',
+        color: colors.buy,
+        getValueAtTime: makeVolumeGetter(buyVolumeMap),
+        formatValue: formatCurrencyInline,
+        includeInRangeSummary: false,
+        drawMarker: false,
+    });
 
-    if (sellVolumeMap.size > 0) {
-        volumeSeries.push({
-            key: 'sellVolume',
-            label: 'Sell',
-            color: colors.sell,
-            getValueAtTime: makeVolumeGetter(sellVolumeMap),
-            formatValue: formatCurrencyInline,
-            includeInRangeSummary: false,
-            drawMarker: false,
-        });
-    }
+    volumeSeries.push({
+        key: 'sellVolume',
+        label: 'Sell',
+        color: colors.sell,
+        getValueAtTime: makeVolumeGetter(sellVolumeMap),
+        formatValue: formatCurrencyInline,
+        includeInRangeSummary: false,
+        drawMarker: false,
+    });
 
     chartLayouts.contribution = {
         key: 'contribution',

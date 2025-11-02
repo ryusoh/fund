@@ -1,6 +1,6 @@
 import { transactionState, setFilteredTransactions } from './state.js';
 import { computeRunningTotals } from './calculations.js';
-import { formatDate, formatCurrency } from './utils.js';
+import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
 import { adjustMobilePanels } from './layout.js';
 
 function parseCommandPalette(value) {
@@ -47,18 +47,44 @@ function displayTransactions(transactions) {
     tbody.innerHTML = '';
     const runningTotalsMap = computeRunningTotals(transactions, transactionState.splitHistory);
 
+    const currentCurrency = transactionState.selectedCurrency;
+
     transactions.forEach((transaction) => {
         const row = document.createElement('tr');
         const orderTypeClass = transaction.orderType.toLowerCase();
         const runningTotals = runningTotalsMap.get(transaction.transactionId) || {};
+        const tradeDate = transaction.tradeDate;
+        const convertedPrice = convertValueToCurrency(
+            transaction.price,
+            tradeDate,
+            currentCurrency
+        );
+        const convertedNetAmount = convertValueToCurrency(
+            transaction.netAmount,
+            tradeDate,
+            currentCurrency
+        );
+        const convertedPortfolio = convertValueToCurrency(
+            runningTotals.portfolio,
+            tradeDate,
+            currentCurrency
+        );
+        // Format the currency values with two decimal places for better precision
+        const formattedNetAmount = formatCurrency(convertedNetAmount, {
+            currency: currentCurrency,
+        });
+        const formattedPortfolio = formatCurrency(convertedPortfolio, {
+            currency: currentCurrency,
+        });
+
         row.innerHTML = `
             <td class="date">${formatDate(transaction.tradeDate)}</td>
             <td class="${orderTypeClass}">${transaction.orderType}</td>
             <td>${transaction.security}</td>
             <td>${parseFloat(transaction.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>$${parseFloat(transaction.price).toFixed(2)}</td>
-            <td class="amount">${formatCurrency(transaction.netAmount)}</td>
-            <td class="amount">${formatCurrency(runningTotals.portfolio)}</td>
+            <td>${formatCurrency(convertedPrice)}</td>
+            <td class="amount">${formattedNetAmount}</td>
+            <td class="amount">${formattedPortfolio}</td>
         `;
         tbody.appendChild(row);
     });
@@ -83,6 +109,7 @@ function closeAllFilterDropdowns() {
 
 function filterAndSort(searchTerm = '') {
     let filtered = [...transactionState.allTransactions];
+    const currentCurrency = transactionState.selectedCurrency;
 
     if (searchTerm) {
         const { text, commands } = parseCommandPalette(searchTerm);
@@ -100,12 +127,16 @@ function filterAndSort(searchTerm = '') {
         }
         if (commands.min !== null && !Number.isNaN(commands.min)) {
             filtered = filtered.filter(
-                (t) => Math.abs(parseFloat(t.netAmount) || 0) >= commands.min
+                (t) =>
+                    Math.abs(convertValueToCurrency(t.netAmount, t.tradeDate, currentCurrency)) >=
+                    commands.min
             );
         }
         if (commands.max !== null && !Number.isNaN(commands.max)) {
             filtered = filtered.filter(
-                (t) => Math.abs(parseFloat(t.netAmount) || 0) <= commands.max
+                (t) =>
+                    Math.abs(convertValueToCurrency(t.netAmount, t.tradeDate, currentCurrency)) <=
+                    commands.max
             );
         }
         if (term) {
@@ -148,8 +179,12 @@ function filterAndSort(searchTerm = '') {
                 );
             }
             case 'netAmount': {
-                const amountA = Math.abs(parseFloat(a.netAmount) || 0);
-                const amountB = Math.abs(parseFloat(b.netAmount) || 0);
+                const amountA = Math.abs(
+                    convertValueToCurrency(a.netAmount, a.tradeDate, currentCurrency)
+                );
+                const amountB = Math.abs(
+                    convertValueToCurrency(b.netAmount, b.tradeDate, currentCurrency)
+                );
                 const result = compareValues(amountA, amountB, order);
                 if (result !== 0) {
                     return result;
@@ -176,7 +211,17 @@ function filterAndSort(searchTerm = '') {
                     runningTotalsMap.get(b.transactionId)?.portfolio ??
                     runningTotalsMap.get(b.transactionId)?.amount ??
                     0;
-                const totalComparison = compareValues(totalA, totalB, 'desc');
+                const convertedTotalA = convertValueToCurrency(
+                    totalA,
+                    a.tradeDate,
+                    currentCurrency
+                );
+                const convertedTotalB = convertValueToCurrency(
+                    totalB,
+                    b.tradeDate,
+                    currentCurrency
+                );
+                const totalComparison = compareValues(convertedTotalA, convertedTotalB, 'desc');
                 if (totalComparison !== 0) {
                     return totalComparison;
                 }
