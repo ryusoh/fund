@@ -160,7 +160,7 @@ def update_transactions(
     modifications: List[Dict[str, str]] = []
 
     for row in rows:
-        price_raw = row.get("Executed Price") or row.get("Price")
+        price_raw = row.get("Executed Price") or row.get("Price") or ""
         price = maybe_parse_price(price_raw)
         if price is None or price > 0:
             updated_rows.append(row)
@@ -213,8 +213,8 @@ def update_transactions(
 def read_transactions(path: Path) -> Tuple[List[str], List[Dict[str, str]]]:
     with path.open("r", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        rows = list(reader)
-        fieldnames = reader.fieldnames or []
+        rows: List[Dict[str, str]] = list(reader)
+        fieldnames: List[str] = list(reader.fieldnames or [])
     return fieldnames, rows
 
 
