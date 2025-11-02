@@ -477,6 +477,23 @@ function drawCrosshairOverlay(ctx, layout) {
                 formatted,
             });
         });
+
+        if (layout.key === 'contribution' && seriesSnapshot.length > 1) {
+            const priorityMap = new Map([
+                ['buyVolume', 0],
+                ['sellVolume', 1],
+                ['contribution', 2],
+                ['balance', 3],
+            ]);
+            seriesSnapshot.sort((a, b) => {
+                const priorityA = priorityMap.has(a.key) ? priorityMap.get(a.key) : 99;
+                const priorityB = priorityMap.has(b.key) ? priorityMap.get(b.key) : 99;
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                return (a.label || '').localeCompare(b.label || '');
+            });
+        }
     }
 
     const snapshot =
