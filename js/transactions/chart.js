@@ -337,39 +337,96 @@ function drawCrosshairOverlay(ctx, layout) {
 
     const seriesSnapshot = [];
 
-    layout.series.forEach((series) => {
-        if (typeof series.getValueAtTime !== 'function') {
-            return;
-        }
-        const value = series.getValueAtTime(time);
-        if (value === null || value === undefined) {
-            return;
-        }
-        const y = layout.yScale(value);
-        if (Number.isFinite(y) && series.drawMarker !== false) {
-            ctx.save();
-            ctx.fillStyle = series.color || '#ffffff';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(x, y, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-        }
-        const formatted = series.formatValue
-            ? series.formatValue(value)
-            : layout.valueType === 'percent'
-              ? formatPercentInline(value)
-              : formatCurrencyInline(value);
-        seriesSnapshot.push({
-            key: series.key,
-            label: series.label || series.key,
-            color: series.color || '#ffffff',
-            value,
-            formatted,
+    // Special handling for composition chart to show top 7 holdings at the crosshair time
+    if (layout.key === 'composition') {
+        // Get values at the current time for all series
+        const valuesAtTime = [];
+        layout.series.forEach((series) => {
+            if (typeof series.getValueAtTime !== 'function') {
+                return;
+            }
+            const value = series.getValueAtTime(time);
+            // For composition chart, include all non-null values, even if very small
+            // This ensures holdings like FNSFX at 100% on Jan 01, 2021 are shown
+            if (value === null || value === undefined) {
+                return;
+            }
+
+            valuesAtTime.push({
+                key: series.key,
+                label: series.label || series.key,
+                color: series.color || '#ffffff',
+                value,
+                formatted: series.formatValue
+                    ? series.formatValue(value)
+                    : layout.valueType === 'percent'
+                      ? formatPercentInline(value)
+                      : formatCurrencyInline(value),
+            });
         });
-    });
+
+        // Filter out holdings that had 0% allocation at this time (were not held)
+        // Only keep holdings that had actual positive allocation
+        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.01); // Using small threshold to account for floating point precision
+
+        // Sort by value (percentage) in descending order and take up to 7 (or fewer if less available)
+        const topHoldings = nonZeroHoldings.sort((a, b) => b.value - a.value).slice(0, 7);
+
+        // Add to seriesSnapshot - show only available holdings (may be fewer than 7)
+        topHoldings.forEach((item) => {
+            const y = layout.yScale(item.value);
+            if (
+                Number.isFinite(y) &&
+                layout.series.find((s) => s.key === item.key)?.drawMarker !== false
+            ) {
+                ctx.save();
+                ctx.fillStyle = item.color;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+            seriesSnapshot.push(item);
+        });
+    } else {
+        // Original behavior for other charts
+        layout.series.forEach((series) => {
+            if (typeof series.getValueAtTime !== 'function') {
+                return;
+            }
+            const value = series.getValueAtTime(time);
+            if (value === null || value === undefined) {
+                return;
+            }
+            const y = layout.yScale(value);
+            if (Number.isFinite(y) && series.drawMarker !== false) {
+                ctx.save();
+                ctx.fillStyle = series.color || '#ffffff';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+            const formatted = series.formatValue
+                ? series.formatValue(value)
+                : layout.valueType === 'percent'
+                  ? formatPercentInline(value)
+                  : formatCurrencyInline(value);
+            seriesSnapshot.push({
+                key: series.key,
+                label: series.label || series.key,
+                color: series.color || '#ffffff',
+                value,
+                formatted,
+            });
+        });
+    }
 
     const snapshot =
         seriesSnapshot.length > 0
@@ -381,7 +438,12 @@ function drawCrosshairOverlay(ctx, layout) {
             : null;
 
     let rangeSummary = null;
-    if (hasRange && crosshairState.rangeStart !== crosshairState.rangeEnd) {
+    // Skip range summary for composition chart
+    if (
+        hasRange &&
+        crosshairState.rangeStart !== crosshairState.rangeEnd &&
+        layout.key !== 'composition'
+    ) {
         rangeSummary = buildRangeSummary(
             layout,
             crosshairState.rangeStart,
@@ -443,7 +505,13 @@ function handlePointerMove(event) {
 
     crosshairState.active = true;
     crosshairState.hoverTime = time;
-    if (crosshairState.dragging) {
+
+    // Skip range functionality for composition chart
+    if (layout.key === 'composition') {
+        crosshairState.dragging = false;
+        crosshairState.rangeStart = null;
+        crosshairState.rangeEnd = null;
+    } else if (crosshairState.dragging) {
         crosshairState.rangeEnd = time;
     }
 
@@ -482,6 +550,18 @@ function handlePointerDown(event) {
     if (!Number.isFinite(time)) {
         return;
     }
+
+    // Skip range functionality for composition chart
+    if (layout.key === 'composition') {
+        crosshairState.pointerId = event.pointerId;
+        crosshairState.active = true;
+        crosshairState.hoverTime = time;
+        crosshairState.rangeStart = null;
+        crosshairState.rangeEnd = null;
+        requestChartRedraw();
+        return;
+    }
+
     crosshairState.pointerId = event.pointerId;
     crosshairState.active = true;
     crosshairState.dragging = true;
@@ -508,7 +588,16 @@ function handlePointerUp(event) {
             crosshairState.hoverTime = time;
         }
     }
-    crosshairState.dragging = false;
+
+    // Skip range functionality for composition chart
+    if (layout && layout.key === 'composition') {
+        crosshairState.dragging = false;
+        crosshairState.rangeStart = null;
+        crosshairState.rangeEnd = null;
+    } else {
+        crosshairState.dragging = false;
+    }
+
     crosshairState.pointerId = null;
     requestChartRedraw();
 }
@@ -518,6 +607,7 @@ function handleDoubleClick() {
     crosshairState.rangeEnd = null;
     crosshairState.hoverTime = null;
     crosshairState.active = false;
+    crosshairState.dragging = false;
     updateCrosshairUI(null, null);
     requestChartRedraw();
 }
@@ -3046,28 +3136,32 @@ function renderCompositionChart(ctx, chartManager, data) {
         };
     });
 
-    const seriesForCrosshair = topTickers
-        .slice(0, 7)
-        .map((ticker, index) => {
-            const values = chartData[ticker];
-            if (!Array.isArray(values) || values.length !== dates.length) {
-                return null;
-            }
-            const points = dateTimes.map((time, idx) => ({
-                time,
-                value: values[idx],
-            }));
-            const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
-            return {
-                key: ticker,
-                label,
-                color: colors[index % colors.length],
-                getValueAtTime: createTimeInterpolator(points),
-                formatValue: (value) => `${value.toFixed(2)}%`,
-                formatDelta: (delta) => formatPercentInline(delta),
-            };
-        })
-        .filter(Boolean);
+    // Create series for crosshair that will show top 7 holdings at crosshair position
+    const seriesForCrosshair = [];
+
+    // Include ALL tickers to ensure historical holdings are available for crosshair
+    // For each crosshair position, we'll dynamically determine the top holdings
+    Object.keys(chartData).forEach((ticker, index) => {
+        const values = chartData[ticker];
+        if (!Array.isArray(values) || values.length !== dates.length) {
+            return;
+        }
+        const points = dateTimes.map((time, idx) => ({
+            time,
+            value: values[idx],
+        }));
+        const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
+        seriesForCrosshair.push({
+            key: ticker,
+            label,
+            color: colors[index % colors.length],
+            getValueAtTime: createTimeInterpolator(points),
+            formatValue: (value) => `${value.toFixed(2)}%`,
+            formatDelta: (delta) => formatPercentInline(delta),
+            // Additional properties for dynamic top holdings calculation
+            originalIndex: index,
+        });
+    });
 
     chartLayouts.composition = {
         key: 'composition',
@@ -3092,6 +3186,7 @@ function renderCompositionChart(ctx, chartManager, data) {
         series: seriesForCrosshair,
     };
 
+    // For composition chart, only draw crosshair without range functionality
     drawCrosshairOverlay(ctx, chartLayouts.composition);
 
     if (!isMobile) {
