@@ -1,4 +1,9 @@
-import { transactionState, setChartVisibility, setHistoricalPrices } from './state.js';
+import {
+    transactionState,
+    setChartVisibility,
+    setHistoricalPrices,
+    setRunningAmountSeries,
+} from './state.js';
 import { computeRunningTotals, getSplitAdjustment } from './calculations.js';
 import { formatCurrencyCompact } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
@@ -36,6 +41,8 @@ let pointerEventsAttached = false;
 let crosshairExternalUpdate = null;
 let containerPointerBound = false;
 let crosshairChartManager = null;
+
+const contributionSeriesCache = new WeakMap();
 
 const crosshairDateFormatter =
     typeof Intl !== 'undefined'
@@ -675,6 +682,23 @@ export function hasActiveTransactionFilters() {
     return (
         filteredTransactions.length > 0 && filteredTransactions.length !== allTransactions.length
     );
+}
+
+function getContributionSeriesForTransactions(transactions) {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        return [];
+    }
+    const splitHistoryRef = transactionState.splitHistory;
+    const cached = contributionSeriesCache.get(transactions);
+    if (cached && cached.splitHistory === splitHistoryRef) {
+        return cached.series;
+    }
+    const series = buildContributionSeriesFromTransactions(transactions);
+    contributionSeriesCache.set(transactions, {
+        splitHistory: splitHistoryRef,
+        series,
+    });
+    return series;
 }
 
 export function buildContributionSeriesFromTransactions(transactions) {
@@ -1740,11 +1764,32 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const filteredTransactions = Array.isArray(transactionState.filteredTransactions)
         ? transactionState.filteredTransactions
         : [];
+    const allTransactions = Array.isArray(transactionState.allTransactions)
+        ? transactionState.allTransactions
+        : [];
 
     const filtersActive = hasActiveTransactionFilters();
-    const contributionSource = filtersActive
-        ? buildContributionSeriesFromTransactions(filteredTransactions)
-        : runningAmountSeries;
+    const contributionTransactions = filtersActive ? filteredTransactions : allTransactions;
+    let contributionSource = [];
+    let contributionFromTransactions = false;
+
+    if (contributionTransactions.length > 0) {
+        contributionSource = getContributionSeriesForTransactions(contributionTransactions);
+        contributionFromTransactions =
+            filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
+        if (!filtersActive && contributionSource !== runningAmountSeries) {
+            setRunningAmountSeries(contributionSource);
+        }
+    } else {
+        contributionSource = runningAmountSeries;
+    }
+
+    if (
+        (!Array.isArray(contributionSource) || contributionSource.length === 0) &&
+        runningAmountSeries.length > 0
+    ) {
+        contributionSource = runningAmountSeries;
+    }
 
     let historicalPrices = transactionState.historicalPrices;
     if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
@@ -1809,14 +1854,17 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     // Apply smoothing to contribution and balance data
     const contributionSmoothingConfig = getSmoothingConfig('contribution');
     const balanceSmoothingConfig = getSmoothingConfig('balance') || contributionSmoothingConfig;
-    const contributionData =
-        rawContributionData.length > 2 && contributionSmoothingConfig
-            ? smoothFinancialData(
-                  rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
-                  contributionSmoothingConfig,
-                  true // preserveEnd - keep the last point unchanged
-              ).map((p) => ({ date: new Date(p.x), amount: p.y }))
-            : rawContributionData;
+    const shouldSmoothContribution =
+        !contributionFromTransactions &&
+        rawContributionData.length > 2 &&
+        contributionSmoothingConfig;
+    const contributionData = shouldSmoothContribution
+        ? smoothFinancialData(
+              rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
+              contributionSmoothingConfig,
+              true // preserveEnd - keep the last point unchanged
+          ).map((p) => ({ date: new Date(p.x), amount: p.y }))
+        : rawContributionData;
 
     const balanceData =
         rawBalanceData.length > 2 && balanceSmoothingConfig
