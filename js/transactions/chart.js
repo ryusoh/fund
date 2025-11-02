@@ -664,6 +664,14 @@ function handlePointerUp(event) {
         crosshairState.rangeEnd = null;
     } else {
         crosshairState.dragging = false;
+        const hasRangeSelection =
+            Number.isFinite(crosshairState.rangeStart) &&
+            Number.isFinite(crosshairState.rangeEnd) &&
+            Math.abs(crosshairState.rangeEnd - crosshairState.rangeStart) >= 1;
+        if (!hasRangeSelection) {
+            crosshairState.rangeStart = null;
+            crosshairState.rangeEnd = null;
+        }
     }
 
     crosshairState.pointerId = null;

@@ -22,6 +22,142 @@ const crosshairDateFormatter =
         ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
         : null;
 
+function toIsoDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+let lastContextYear = null;
+
+function updateContextYearFromRange(range) {
+    if (!range) {
+        return;
+    }
+    const year = parseYearFromDate(range.from) ?? parseYearFromDate(range.to);
+    if (Number.isFinite(year)) {
+        lastContextYear = year;
+    }
+}
+
+const noopDebug = () => {};
+const debugContext = noopDebug;
+
+function getEarliestDataYear() {
+    const transactions = transactionState.allTransactions || [];
+    let minYear = Infinity;
+
+    transactions.forEach((txn) => {
+        const year = parseYearFromDate(txn.tradeDate || txn.date);
+        if (Number.isFinite(year)) {
+            minYear = Math.min(minYear, year);
+        }
+    });
+
+    if (!Number.isFinite(minYear)) {
+        const runningSeries = transactionState.runningAmountSeries || [];
+        runningSeries.forEach((item) => {
+            const year = parseYearFromDate(item.tradeDate || item.date);
+            if (Number.isFinite(year)) {
+                minYear = Math.min(minYear, year);
+            }
+        });
+    }
+
+    if (!Number.isFinite(minYear)) {
+        const portfolioSeries = transactionState.portfolioSeries || [];
+        portfolioSeries.forEach((item) => {
+            const year = parseYearFromDate(item.date);
+            if (Number.isFinite(year)) {
+                minYear = Math.min(minYear, year);
+            }
+        });
+    }
+
+    if (!Number.isFinite(minYear)) {
+        const currentYear = new Date().getFullYear();
+        return currentYear;
+    }
+
+    return minYear;
+}
+
+function parseYearFromDate(value) {
+    if (!value || (typeof value !== 'string' && !(value instanceof Date))) {
+        return null;
+    }
+    if (value instanceof Date) {
+        return value.getUTCFullYear();
+    }
+    const match = String(value).match(/^\s*(\d{4})/);
+    if (!match) {
+        return null;
+    }
+    const year = Number.parseInt(match[1], 10);
+    return Number.isFinite(year) ? year : null;
+}
+
+function getContextYear() {
+    const { chartDateRange } = transactionState;
+    if (chartDateRange) {
+        const fromYear = parseYearFromDate(chartDateRange.from);
+        if (Number.isFinite(fromYear)) {
+            lastContextYear = fromYear;
+            return fromYear;
+        }
+        const toYear = parseYearFromDate(chartDateRange.to);
+        if (Number.isFinite(toYear)) {
+            lastContextYear = toYear;
+            return toYear;
+        }
+    }
+    if (Number.isFinite(lastContextYear)) {
+        return lastContextYear;
+    }
+    const fallback = getEarliestDataYear();
+    lastContextYear = fallback;
+    return fallback;
+}
+
+function parseQuarterToken(token, fallbackYear) {
+    if (typeof token !== 'string') {
+        return null;
+    }
+    const explicit = token.match(/^\s*(\d{4})q([1-4])\s*$/i);
+    if (explicit) {
+        return {
+            year: Number.parseInt(explicit[1], 10),
+            quarter: Number.parseInt(explicit[2], 10),
+        };
+    }
+    const simple = token.match(/^\s*q([1-4])\s*$/i);
+    if (simple && Number.isFinite(fallbackYear)) {
+        return {
+            year: fallbackYear,
+            quarter: Number.parseInt(simple[1], 10),
+        };
+    }
+    return null;
+}
+
+function resolveQuarterRange(year, quarter, mode = 'full') {
+    if (Number.isFinite(year)) {
+        lastContextYear = year;
+    }
+    const startDate = new Date(Date.UTC(year, (quarter - 1) * 3, 1));
+    const nextQuarter = new Date(Date.UTC(year, quarter * 3, 1));
+    const endDate = new Date(nextQuarter.getTime() - 24 * 60 * 60 * 1000);
+
+    const from = toIsoDate(startDate);
+    const to = toIsoDate(endDate);
+
+    if (mode === 'start') {
+        return { from, to: null };
+    }
+    if (mode === 'end') {
+        return { from: null, to };
+    }
+    return { from, to };
+}
+
 function formatCrosshairDateLabel(time) {
     if (!Number.isFinite(time)) {
         return '';
@@ -136,6 +272,7 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
     if (details.range) {
         if (!rangeSummary) {
             details.range.hidden = true;
+            details.range.innerHTML = '';
         } else {
             const durationLabel =
                 rangeSummary.durationDays >= 1
@@ -727,7 +864,7 @@ export function initTerminal({
                     switch (subcommand) {
                         case 'filter':
                             result =
-                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n\nAny text not part of a command is used for a general text search.';
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nAny text not part of a command is used for a general text search.';
                             break;
                         default:
                             result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;
@@ -740,6 +877,7 @@ export function initTerminal({
                 closeAllFilterDropdowns();
                 resetSortState();
                 setChartDateRange({ from: null, to: null }); // Reset date range
+                updateContextYearFromRange({ from: null, to: null });
                 filterAndSort(''); // Clear all filters
 
                 // Update chart if it's currently visible
@@ -764,6 +902,7 @@ export function initTerminal({
                 closeAllFilterDropdowns();
                 resetSortState();
                 setChartDateRange({ from: null, to: null }); // Reset date range
+                updateContextYearFromRange({ from: null, to: null });
                 if (terminalInput) {
                     terminalInput.value = '';
                 }
@@ -792,6 +931,7 @@ export function initTerminal({
                 closeAllFilterDropdowns();
                 resetSortState();
                 setChartDateRange({ from: null, to: null }); // Reset date range
+                updateContextYearFromRange({ from: null, to: null });
                 if (terminalInput) {
                     terminalInput.value = '';
                 }
@@ -841,11 +981,12 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        'Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year|quarter] | [from <year|quarter>] | [<year|quarter1> to <year|quarter2>]\n       plot performance [year|quarter] | [from <year|quarter>] | [<year|quarter1> to <year|quarter2>]\n       plot composition [year|quarter] | [from <year|quarter>] | [<year|quarter1> to <year|quarter2>]\n\nExamples:\n       plot balance 2023     - Show data for entire year 2023\n       plot balance 2023q1   - Show data for Q1 of 2023 (Jan 1 - Mar 31)\n       plot balance from 2022q3  - Show data from Q3 2022 to present\n       plot balance 2022q2 to 2023q1  - Show data from Q2 2022 to Q1 2023';
+                        "Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot performance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot composition [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n\nExamples:\n       plot balance 2023     - Show data for entire year 2023\n       plot balance 2023q1   - Show data for Q1 of 2023 (Jan 1 - Mar 31)\n       plot balance q2       - Show the second quarter of the current range\n       plot balance from q1  - Show from the start of the current range's first quarter\n       plot balance q2 to q3 - Show Q2 through Q3 of the current range";
                 } else {
                     const subcommand = args[0].toLowerCase();
                     dateRange = parseDateRange(args.slice(1));
                     setChartDateRange(dateRange);
+                    updateContextYearFromRange(dateRange);
 
                     switch (subcommand) {
                         case 'balance':
@@ -971,6 +1112,7 @@ export function initTerminal({
                     const simplifiedDateRange = parseSimplifiedDateRange(command);
                     if (simplifiedDateRange.from || simplifiedDateRange.to) {
                         setChartDateRange(simplifiedDateRange);
+                        updateContextYearFromRange(simplifiedDateRange);
                         // Update the chart with filtered data
                         chartManager.update();
                         result = `Applied date filter ${formatDateRange(
@@ -1008,90 +1150,80 @@ export function initTerminal({
     }
 
     function parseSimplifiedDateRange(command) {
+        const defaultYear = getContextYear();
+        debugContext('parseSimplifiedDateRange:default', { command, defaultYear });
         const parts = command.toLowerCase().split(':');
         if (parts.length === 1) {
-            // Check for quarter format first (e.g., 2023q2)
-            const quarterMatch = parts[0].match(/^(\d{4})q([1-4])$/i);
-            if (quarterMatch) {
-                const year = parseInt(quarterMatch[1], 10);
-                const quarter = parseInt(quarterMatch[2], 10);
-                if (
-                    year >= 1900 &&
-                    year <= new Date().getFullYear() + 5 &&
-                    quarter >= 1 &&
-                    quarter <= 4
-                ) {
-                    const startMonth = String((quarter - 1) * 3 + 1).padStart(2, '0');
-                    const endMonth = String(quarter * 3).padStart(2, '0');
-                    const endDay =
-                        quarter === 1 || quarter === 3 ? '31' : quarter === 2 ? '30' : '31';
-                    return {
-                        from: `${year}-${startMonth}-01`,
-                        to: `${year}-${endMonth}-${endDay}`,
-                    };
-                }
+            const quarterToken = parseQuarterToken(parts[0], defaultYear);
+            if (quarterToken) {
+                return resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'full');
             }
 
             // Then check for year format (e.g., 2023)
             const year = parseInt(parts[0], 10);
             if (!isNaN(year)) {
+                lastContextYear = year;
                 return { from: `${year}-01-01`, to: `${year}-12-31` };
             }
         } else if (parts.length === 2) {
             const type = parts[0];
             const value = parts[1];
             if (type === 'from' || type === 'f') {
-                // Check for quarter format first (e.g., f:2023q2)
-                const quarterMatch = value.match(/^(\d{4})q([1-4])$/i);
-                if (quarterMatch) {
-                    const year = parseInt(quarterMatch[1], 10);
-                    const quarter = parseInt(quarterMatch[2], 10);
-                    if (
-                        year >= 1900 &&
-                        year <= new Date().getFullYear() + 5 &&
-                        quarter >= 1 &&
-                        quarter <= 4
-                    ) {
-                        const startMonth = String((quarter - 1) * 3 + 1).padStart(2, '0');
-                        return { from: `${year}-${startMonth}-01`, to: null }; // From quarter start to now
-                    }
+                const quarterToken = parseQuarterToken(value, defaultYear);
+                if (quarterToken) {
+                    return resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'start');
                 }
 
                 // Then check for year format (e.g., f:2023)
                 const year = parseInt(value, 10);
                 if (!isNaN(year)) {
+                    lastContextYear = year;
                     return { from: `${year}-01-01`, to: null };
                 }
             } else if (type === 'to') {
-                // Check for quarter format first (e.g., to:2023q2)
-                const quarterMatch = value.match(/^(\d{4})q([1-4])$/i);
-                if (quarterMatch) {
-                    const year = parseInt(quarterMatch[1], 10);
-                    const quarter = parseInt(quarterMatch[2], 10);
-                    if (
-                        year >= 1900 &&
-                        year <= new Date().getFullYear() + 5 &&
-                        quarter >= 1 &&
-                        quarter <= 4
-                    ) {
-                        const endMonth = String(quarter * 3).padStart(2, '0');
-                        const endDay =
-                            quarter === 1 || quarter === 3 ? '31' : quarter === 2 ? '30' : '31';
-                        return { from: null, to: `${year}-${endMonth}-${endDay}` };
-                    }
+                const quarterToken = parseQuarterToken(value, defaultYear);
+                if (quarterToken) {
+                    return resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'end');
                 }
 
                 // Then check for year format (e.g., to:2023)
                 const year = parseInt(value, 10);
                 if (!isNaN(year)) {
+                    lastContextYear = year;
                     return { from: null, to: `${year}-12-31` };
                 }
             } else {
                 // Check for year range format (e.g., 2020:2023)
                 // Also check for quarter range format (e.g., 2020q1:2023q2)
+                const quarterTokenStart = parseQuarterToken(type, defaultYear);
+                const quarterTokenEnd = parseQuarterToken(value, defaultYear);
+                if (quarterTokenStart && quarterTokenEnd) {
+                    const startDate = resolveQuarterRange(
+                        quarterTokenStart.year,
+                        quarterTokenStart.quarter,
+                        'full'
+                    );
+                    const endDate = resolveQuarterRange(
+                        quarterTokenEnd.year,
+                        quarterTokenEnd.quarter,
+                        'full'
+                    );
+                    const start = new Date(startDate.from);
+                    const end = new Date(endDate.to || endDate.from);
+                    if (
+                        !Number.isNaN(start.getTime()) &&
+                        !Number.isNaN(end.getTime()) &&
+                        start <= end
+                    ) {
+                        lastContextYear = quarterTokenStart.year;
+                        return { from: startDate.from, to: endDate.to };
+                    }
+                }
+
                 const year1 = parseInt(type, 10);
                 const year2 = parseInt(value, 10);
                 if (!isNaN(year1) && !isNaN(year2) && year1 <= year2) {
+                    lastContextYear = year1;
                     return { from: `${year1}-01-01`, to: `${year2}-12-31` };
                 }
             }
@@ -1188,6 +1320,7 @@ export function initTerminal({
 
 function parseDateRange(args) {
     const currentYear = new Date().getFullYear();
+    const defaultYear = getContextYear();
     let from = null;
     let to = null;
 
@@ -1195,87 +1328,94 @@ function parseDateRange(args) {
         const arg = args[0];
 
         // Check for quarter format (e.g., 2023q1, 2024q2)
-        const quarterMatch = arg.match(/^(\d{4})q([1-4])$/i);
-        if (quarterMatch) {
-            const year = parseInt(quarterMatch[1], 10);
-            const quarter = parseInt(quarterMatch[2], 10);
-            if (year >= 1900 && year <= currentYear + 5 && quarter >= 1 && quarter <= 4) {
-                const startMonth = String((quarter - 1) * 3 + 1).padStart(2, '0');
-                const endMonth = String(quarter * 3).padStart(2, '0');
-                const endDay = quarter === 1 || quarter === 3 ? '31' : quarter === 2 ? '30' : '31';
-                from = `${year}-${startMonth}-01`;
-                to = `${year}-${endMonth}-${endDay}`;
-                return { from, to };
-            }
+        const quarterToken = parseQuarterToken(arg, defaultYear);
+        if (quarterToken) {
+            const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'full');
+            debugContext('parseDateRange:single-quarter', { arg, defaultYear, resolved });
+            return resolved;
         }
 
         // Check for year format
         const year = parseInt(arg, 10);
         if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+            lastContextYear = year;
             from = `${year}-01-01`;
             to = `${year}-12-31`;
+            debugContext('parseDateRange:single-year', { arg, year });
         }
     } else if (args.length === 2 && args[0].toLowerCase() === 'from') {
         const arg = args[1];
 
         // Check for quarter format (e.g., from 2023q1)
-        const quarterMatch = arg.match(/^(\d{4})q([1-4])$/i);
-        if (quarterMatch) {
-            const year = parseInt(quarterMatch[1], 10);
-            const quarter = parseInt(quarterMatch[2], 10);
-            if (year >= 1900 && year <= currentYear + 5 && quarter >= 1 && quarter <= 4) {
-                const startMonth = String((quarter - 1) * 3 + 1).padStart(2, '0');
-                from = `${year}-${startMonth}-01`;
-                to = null; // To current date
-                return { from, to };
-            }
+        const quarterToken = parseQuarterToken(arg, defaultYear);
+        if (quarterToken) {
+            const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'start');
+            debugContext('parseDateRange:from-quarter', { arg, defaultYear, resolved });
+            return resolved;
         }
 
         // Check for year format
         const year = parseInt(arg, 10);
         if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+            lastContextYear = year;
             from = `${year}-01-01`;
             to = null; // To current date
+            debugContext('parseDateRange:from-year', { arg, year });
         }
     } else if (args.length === 3 && args[1].toLowerCase() === 'to') {
         const arg1 = args[0];
         const arg2 = args[2];
 
         // Parse first argument (could be year or quarter)
-        let year1, quarter1, year2, quarter2;
+        let year1, year2;
         let fromDate, toDate;
 
         // Parse first date
-        const quarterMatch1 = arg1.match(/^(\d{4})q([1-4])$/i);
-        if (quarterMatch1) {
-            year1 = parseInt(quarterMatch1[1], 10);
-            quarter1 = parseInt(quarterMatch1[2], 10);
-            if (year1 >= 1900 && year1 <= currentYear + 5 && quarter1 >= 1 && quarter1 <= 4) {
-                const startMonth = String((quarter1 - 1) * 3 + 1).padStart(2, '0');
-                fromDate = `${year1}-${startMonth}-01`;
-            }
+        const quarterTokenStart = parseQuarterToken(arg1, defaultYear);
+        if (quarterTokenStart) {
+            const resolvedStart = resolveQuarterRange(
+                quarterTokenStart.year,
+                quarterTokenStart.quarter,
+                'full'
+            );
+            fromDate = resolvedStart.from;
+            lastContextYear = quarterTokenStart.year;
+            debugContext('parseDateRange:range-start-quarter', {
+                arg1,
+                defaultYear,
+                resolvedStart,
+            });
         } else {
             year1 = parseInt(arg1, 10);
             if (!isNaN(year1) && year1 >= 1900 && year1 <= currentYear + 5) {
                 fromDate = `${year1}-01-01`;
+                lastContextYear = year1;
+                debugContext('parseDateRange:range-start-year', { arg1, year1 });
             }
         }
 
         // Parse second date
-        const quarterMatch2 = arg2.match(/^(\d{4})q([1-4])$/i);
-        if (quarterMatch2) {
-            year2 = parseInt(quarterMatch2[1], 10);
-            quarter2 = parseInt(quarterMatch2[2], 10);
-            if (year2 >= 1900 && year2 <= currentYear + 5 && quarter2 >= 1 && quarter2 <= 4) {
-                const endMonth = String(quarter2 * 3).padStart(2, '0');
-                const endDay =
-                    quarter2 === 1 || quarter2 === 3 ? '31' : quarter2 === 2 ? '30' : '31';
-                toDate = `${year2}-${endMonth}-${endDay}`;
-            }
+        const quarterTokenEnd = parseQuarterToken(arg2, defaultYear);
+        if (quarterTokenEnd) {
+            const resolvedEnd = resolveQuarterRange(
+                quarterTokenEnd.year,
+                quarterTokenEnd.quarter,
+                'full'
+            );
+            toDate = resolvedEnd.to;
+            debugContext('parseDateRange:range-end-quarter', {
+                arg2,
+                defaultYear,
+                resolvedEnd,
+            });
         } else {
             year2 = parseInt(arg2, 10);
             if (!isNaN(year2) && year2 >= 1900 && year2 <= currentYear + 5) {
                 toDate = `${year2}-12-31`;
+                if (!Number.isFinite(lastContextYear)) {
+                    lastContextYear = year2;
+                }
+                debugContext('parseDateRange:range-end-year', { arg2, year2 });
             }
         }
 
