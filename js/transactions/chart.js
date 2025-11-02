@@ -9,6 +9,7 @@ import {
     CHART_MARKERS,
     CONTRIBUTION_CHART_SETTINGS,
     mountainFill,
+    COLOR_PALETTES,
 } from '../config.js';
 
 const chartLayouts = {
@@ -3035,33 +3036,7 @@ function renderCompositionChart(ctx, chartManager, data) {
         return;
     }
 
-    const colors = [
-        '#0B3D91',
-        '#1550AF',
-        '#2A6EC1',
-        '#3984D9',
-        '#4DA3F4',
-        '#134E4A',
-        '#1A6B5B',
-        '#2A8A7A',
-        '#3BA999',
-        '#4DC8B8',
-        '#0F3D2A',
-        '#1A5F3A',
-        '#2A7B5A',
-        '#3B9B7A',
-        '#4DBB9A',
-        '#1A237E',
-        '#283593',
-        '#303F9F',
-        '#3949AB',
-        '#3F51B5',
-        '#00E676',
-        '#00C853',
-        '#00A152',
-        '#00897B',
-        '#00695C',
-    ];
+    const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
 
     const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
     const minTime = Math.min(...dateTimes);

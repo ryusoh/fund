@@ -162,6 +162,46 @@ export const COLOR_PALETTES = {
         '#A0A0A0',
         '#BDBDBD',
     ],
+
+    // Quantum Mechanics Inspired Color Palette - Futuristic Blue Hues
+    COMPOSITION_CHART_COLORS: [
+        // Quantum Mechanics Inspired Color Palette - Futuristic Blue Hues
+        // Deep Space Quantum Blues
+        '#0B3D91', // Deep Cosmic Blue - NASA-inspired deep space blue
+        '#1550AF', // Quantum Field Blue - Vibrant electron field blue
+        '#2A6EC1', // Particle Accelerator Blue - High-energy physics blue
+        '#3984D9', // Neutron Star Blue - Celestial object blue
+        '#4DA3F4', // Plasma Discharge Blue - Electric discharge blue
+
+        // Complementary Quantum Hues
+        '#0D4B8C', // Wave Function Blue - Schrödinger wave blue
+        '#1A6BB5', // Superposition Blue - Quantum superposition state
+        '#2A8ACC', // Entanglement Blue - Quantum entanglement connection
+        '#3BA9E8', // Probability Cloud Blue - Electron probability distribution
+        '#4DC8FF', // Quantum Tunneling Blue - Barrier penetration blue
+
+        // Accent Quantum Colors
+        '#0F3D66', // Dark Matter Blue - Mysterious cosmic blue
+        '#1A5F8C', // Boson Field Blue - Force carrier particle blue
+        '#2A7BA3', // Fermion Blue - Matter particle blue
+        '#3B9BC9', // Lepton Blue - Fundamental particle blue
+        '#4DBBEF', // Hadron Blue - Composite particle blue
+
+        // Secondary Quantum Tones
+        '#123C7A', // Quark Confinement Blue - Strong force blue
+        '#284D93', // Gluon Exchange Blue - Color charge interaction
+        '#305FAF', // Chromodynamic Blue - Quantum chromodynamics
+        '#3971CB', // Electroweak Blue - Unified force blue
+        '#3F83E8', // Higgs Field Blue - Mass-giving field blue
+        '#4595FF', // Standard Model Blue - Particle physics blue
+
+        // Luminous Quantum Effects
+        '#00B4D8', // Cherenkov Radiation Blue - Faster-than-light particle blue
+        '#00C8FF', // Synchrotron Radiation Blue - Accelerated electron blue
+        '#00DCFF', // Bremsstrahlung Blue - Decelerated particle blue
+        '#00F0FF', // Vacuum Polarization Blue - Quantum fluctuation blue
+        '#45F0FF', // Zero Point Energy Blue - Ground state energy blue
+    ],
 };
 
 export const PLUGIN_CONFIGS = {
