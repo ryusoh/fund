@@ -25,7 +25,7 @@ export function formatCurrencyCompact(value) {
     if (absolute >= 1_000_000) {
         const millions = absolute / 1_000_000;
         if (millions >= 1 && millions < 10) {
-            return `${sign}$${millions.toFixed(1)}M`;
+            return `${sign}$${millions.toFixed(2)}M`;
         }
         return `${sign}$${Math.round(millions)}M`;
     }
