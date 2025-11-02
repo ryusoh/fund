@@ -41,6 +41,33 @@ function updateContextYearFromRange(range) {
 const noopDebug = () => {};
 const debugContext = noopDebug;
 
+function getActiveRangeYear() {
+    const { chartDateRange } = transactionState;
+    if (!chartDateRange) {
+        return null;
+    }
+    const fromYear = parseYearFromDate(chartDateRange.from);
+    if (Number.isFinite(fromYear)) {
+        return fromYear;
+    }
+    const toYear = parseYearFromDate(chartDateRange.to);
+    return Number.isFinite(toYear) ? toYear : null;
+}
+
+function getDefaultYear() {
+    const rangeYear = getActiveRangeYear();
+    if (Number.isFinite(rangeYear)) {
+        lastContextYear = rangeYear;
+        return rangeYear;
+    }
+    if (Number.isFinite(lastContextYear)) {
+        return lastContextYear;
+    }
+    const fallback = getEarliestDataYear();
+    lastContextYear = fallback;
+    return fallback;
+}
+
 function getEarliestDataYear() {
     const transactions = transactionState.allTransactions || [];
     let minYear = Infinity;
@@ -93,28 +120,6 @@ function parseYearFromDate(value) {
     }
     const year = Number.parseInt(match[1], 10);
     return Number.isFinite(year) ? year : null;
-}
-
-function getContextYear() {
-    const { chartDateRange } = transactionState;
-    if (chartDateRange) {
-        const fromYear = parseYearFromDate(chartDateRange.from);
-        if (Number.isFinite(fromYear)) {
-            lastContextYear = fromYear;
-            return fromYear;
-        }
-        const toYear = parseYearFromDate(chartDateRange.to);
-        if (Number.isFinite(toYear)) {
-            lastContextYear = toYear;
-            return toYear;
-        }
-    }
-    if (Number.isFinite(lastContextYear)) {
-        return lastContextYear;
-    }
-    const fallback = getEarliestDataYear();
-    lastContextYear = fallback;
-    return fallback;
 }
 
 function parseQuarterToken(token, fallbackYear) {
@@ -1150,8 +1155,7 @@ export function initTerminal({
     }
 
     function parseSimplifiedDateRange(command) {
-        const defaultYear = getContextYear();
-        debugContext('parseSimplifiedDateRange:default', { command, defaultYear });
+        const defaultYear = getDefaultYear();
         const parts = command.toLowerCase().split(':');
         if (parts.length === 1) {
             const quarterToken = parseQuarterToken(parts[0], defaultYear);
@@ -1320,7 +1324,7 @@ export function initTerminal({
 
 function parseDateRange(args) {
     const currentYear = new Date().getFullYear();
-    const defaultYear = getContextYear();
+    const defaultYear = getDefaultYear();
     let from = null;
     let to = null;
 
