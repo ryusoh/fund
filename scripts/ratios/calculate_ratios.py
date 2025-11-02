@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, getcontext
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -50,17 +51,17 @@ def load_fx_rates():
     return fx_df
 
 
-def build_fx_json(fx_df: pd.DataFrame) -> dict:
-    payload = {
-        'base': 'USD',
-        'currencies': SUPPORTED_CURRENCIES,
-        'rates': {},
-    }
+def build_fx_json(fx_df: pd.DataFrame) -> dict[str, Any]:
+    rates: dict[str, dict[str, float]] = {}
     for date, row in fx_df.iterrows():
-        payload['rates'][date.strftime('%Y-%m-%d')] = {
+        rates[date.strftime('%Y-%m-%d')] = {
             currency: float(row[currency]) for currency in SUPPORTED_CURRENCIES
         }
-    return payload
+    return {
+        'base': 'USD',
+        'currencies': SUPPORTED_CURRENCIES,
+        'rates': rates,
+    }
 
 
 def get_latest_rates(fx_df: pd.DataFrame) -> dict:
