@@ -2422,23 +2422,39 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             const totalBarWidth = bars.length * barWidth + (bars.length - 1) * barGap;
             let currentX = x - totalBarWidth / 2;
 
-            bars.forEach((bar) => {
+            const rectangles = [];
+            bars.forEach((bar, index) => {
                 const topY = volumeYScale(bar.volume);
                 const height = baselineY - topY;
-                if (height <= 0) {
-                    currentX += barWidth + barGap;
-                    return;
+                if (height > 0) {
+                    rectangles.push({
+                        x: currentX,
+                        width: barWidth,
+                        topY,
+                        height,
+                        fill: bar.fill,
+                        stroke: bar.stroke,
+                        order: index,
+                    });
                 }
-
-                ctx.fillStyle = bar.fill;
-                ctx.fillRect(currentX, topY, barWidth, height);
-
-                ctx.strokeStyle = bar.stroke;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(currentX, topY, barWidth, height);
-
                 currentX += barWidth + barGap;
             });
+
+            rectangles
+                .sort((a, b) => {
+                    if (b.height !== a.height) {
+                        return b.height - a.height;
+                    }
+                    return a.order - b.order;
+                })
+                .forEach((rect) => {
+                    ctx.fillStyle = rect.fill;
+                    ctx.fillRect(rect.x, rect.topY, rect.width, rect.height);
+
+                    ctx.strokeStyle = rect.stroke;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(rect.x, rect.topY, rect.width, rect.height);
+                });
         });
     }
 
