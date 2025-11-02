@@ -59,18 +59,29 @@ export async function loadPortfolioSeries() {
             return [];
         }
         const payload = await response.json();
-        if (!Array.isArray(payload)) {
-            return [];
+        const normalizeSeries = (entries) =>
+            (Array.isArray(entries) ? entries : [])
+                .map((entry) => ({
+                    date: typeof entry.date === 'string' ? entry.date : null,
+                    value: Number(entry.value),
+                }))
+                .filter((entry) => typeof entry.date === 'string' && Number.isFinite(entry.value));
+
+        if (Array.isArray(payload)) {
+            return { USD: normalizeSeries(payload) };
         }
-        return payload
-            .map((entry) => ({
-                date: typeof entry.date === 'string' ? entry.date : null,
-                value: Number(entry.value),
-            }))
-            .filter((entry) => typeof entry.date === 'string' && Number.isFinite(entry.value));
+
+        if (payload && typeof payload === 'object') {
+            const result = {};
+            Object.entries(payload).forEach(([currency, entries]) => {
+                result[currency] = normalizeSeries(entries);
+            });
+            return result;
+        }
+        return { USD: [] };
     } catch (error) {
         logger.warn('Failed to load balance series:', error);
-        return [];
+        return { USD: [] };
     }
 }
 
@@ -79,30 +90,39 @@ export async function loadContributionSeries() {
         const response = await fetch('../data/output/contribution_series.json');
         if (!response.ok) {
             logger.warn('contribution_series.json not found; contribution chart disabled');
-            return [];
+            return { USD: [] };
         }
 
         const payload = await response.json();
-        if (!Array.isArray(payload)) {
-            return [];
-        }
+        const normalizeSeries = (entries) =>
+            (Array.isArray(entries) ? entries : [])
+                .map((entry) => ({
+                    tradeDate: typeof entry.tradeDate === 'string' ? entry.tradeDate : null,
+                    amount: Number(entry.amount),
+                    orderType: typeof entry.orderType === 'string' ? entry.orderType : 'padding',
+                    netAmount: Number(entry.netAmount || 0),
+                }))
+                .filter(
+                    (entry) =>
+                        typeof entry.tradeDate === 'string' &&
+                        Number.isFinite(entry.amount) &&
+                        Number.isFinite(entry.netAmount)
+                );
 
-        return payload
-            .map((entry) => ({
-                tradeDate: typeof entry.tradeDate === 'string' ? entry.tradeDate : null,
-                amount: Number(entry.amount),
-                orderType: typeof entry.orderType === 'string' ? entry.orderType : 'padding',
-                netAmount: Number(entry.netAmount || 0),
-            }))
-            .filter(
-                (entry) =>
-                    typeof entry.tradeDate === 'string' &&
-                    Number.isFinite(entry.amount) &&
-                    Number.isFinite(entry.netAmount)
-            );
+        if (Array.isArray(payload)) {
+            return { USD: normalizeSeries(payload) };
+        }
+        if (payload && typeof payload === 'object') {
+            const result = {};
+            Object.entries(payload).forEach(([currency, entries]) => {
+                result[currency] = normalizeSeries(entries);
+            });
+            return result;
+        }
+        return { USD: [] };
     } catch (error) {
         logger.warn('Failed to load contribution series:', error);
-        return [];
+        return { USD: [] };
     }
 }
 
@@ -144,5 +164,23 @@ export async function loadPerformanceSeries() {
     } catch (error) {
         logger.warn('Failed to load performance series:', error);
         return {};
+    }
+}
+
+export async function loadFxDailyRates() {
+    try {
+        const response = await fetch('../data/output/fx_daily_rates.json');
+        if (!response.ok) {
+            logger.warn('fx_daily_rates.json not found; currency conversion disabled');
+            return null;
+        }
+        const payload = await response.json();
+        if (!payload || typeof payload !== 'object' || !payload.rates) {
+            return null;
+        }
+        return payload;
+    } catch (error) {
+        logger.warn('Failed to load FX daily rates:', error);
+        return null;
     }
 }

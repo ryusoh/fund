@@ -6,29 +6,76 @@ import {
     resetSortState,
     setFilteredTransactions,
     setPortfolioSeries,
+    setPortfolioSeriesMap,
     setRunningAmountSeries,
+    setRunningAmountSeriesMap,
     setPerformanceSeries,
+    setSelectedCurrency,
+    setFxRatesByCurrency,
 } from '@js/transactions/state.js';
+import { convertValueToCurrency } from '@js/transactions/utils.js';
+
+// Helper function to convert currency series
+function convertCurrencySeries(series, targetCurrency) {
+    if (!Array.isArray(series) || targetCurrency === 'USD') {
+        return series;
+    }
+
+    return series.map((item) => {
+        const result = { ...item };
+
+        // For runningAmountSeries (contribution), the amount and netAmount fields need conversion
+        if ('amount' in item) {
+            result.amount = convertValueToCurrency(
+                item.amount,
+                item.tradeDate || item.date,
+                targetCurrency
+            );
+        }
+        if ('netAmount' in item) {
+            result.netAmount = convertValueToCurrency(
+                item.netAmount,
+                item.tradeDate || item.date,
+                targetCurrency
+            );
+        }
+        // For portfolioSeries (balance), the value field needs conversion
+        if ('value' in item) {
+            result.value = convertValueToCurrency(item.value, item.date, targetCurrency);
+        }
+        return result;
+    });
+}
 import {
     loadSplitHistory,
     loadTransactionData,
     loadPortfolioSeries,
     loadContributionSeries,
     loadPerformanceSeries,
+    loadFxDailyRates,
 } from '@js/transactions/dataLoader.js';
 import { initTable } from '@js/transactions/table.js';
 import { createChartManager } from '@js/transactions/chart.js';
 import { createUiController } from '@js/transactions/ui.js';
 import { initTerminal, updateTerminalCrosshair } from '@js/transactions/terminal.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
+import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
 
 let chartManager;
 let tableController;
 let uiController;
 
 const ZERO_EPSILON = 1e-6;
+const SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'KRW'];
 
 function ensureSyntheticStart(series, { dateKey, valueKey, zeroProps = {} }) {
+    if (series && typeof series === 'object' && !Array.isArray(series)) {
+        const result = {};
+        Object.entries(series).forEach(([key, entries]) => {
+            result[key] = ensureSyntheticStart(entries, { dateKey, valueKey, zeroProps });
+        });
+        return result;
+    }
     if (!Array.isArray(series) || series.length === 0) {
         return Array.isArray(series) ? series : [];
     }
@@ -89,31 +136,86 @@ function ensureSyntheticStart(series, { dateKey, valueKey, zeroProps = {} }) {
     return [syntheticPoint, ...series];
 }
 
+function buildFxRateMaps(fxPayload) {
+    if (!fxPayload || typeof fxPayload !== 'object' || !fxPayload.rates) {
+        return {};
+    }
+    const fxRates = {};
+    Object.entries(fxPayload.rates).forEach(([date, rateMap]) => {
+        const timestamp = Date.parse(date);
+        Object.entries(rateMap || {}).forEach(([currency, rateValue]) => {
+            const normalizedCurrency = currency.toUpperCase();
+            const rateNumber = Number(rateValue);
+            if (!Number.isFinite(rateNumber)) {
+                return;
+            }
+            const entry = fxRates[normalizedCurrency] || { map: new Map(), sorted: [] };
+            if (!entry.map.has(date)) {
+                entry.sorted.push({
+                    date,
+                    ts: Number.isFinite(timestamp) ? timestamp : Date.parse(date),
+                });
+            }
+            entry.map.set(date, rateNumber);
+            fxRates[normalizedCurrency] = entry;
+        });
+    });
+    Object.values(fxRates).forEach((entry) => {
+        entry.sorted.sort((a, b) => a.ts - b.ts);
+    });
+    if (!fxRates.USD) {
+        fxRates.USD = { map: new Map(), sorted: [] };
+    }
+    if (fxRates.USD.sorted.length === 0) {
+        fxRates.USD.map.set('1970-01-01', 1);
+        fxRates.USD.sorted.push({ date: '1970-01-01', ts: 0 });
+    }
+    return fxRates;
+}
+
 async function loadTransactions() {
     try {
-        const [transactions, splits, portfolioSeries, runningSeries, performanceSeries] =
-            await Promise.all([
-                loadTransactionData(),
-                loadSplitHistory(),
-                loadPortfolioSeries(),
-                loadContributionSeries(),
-                loadPerformanceSeries(),
-            ]);
+        const [
+            transactions,
+            splits,
+            portfolioSeriesMap,
+            runningSeriesMap,
+            performanceSeries,
+            fxRatesPayload,
+        ] = await Promise.all([
+            loadTransactionData(),
+            loadSplitHistory(),
+            loadPortfolioSeries(),
+            loadContributionSeries(),
+            loadPerformanceSeries(),
+            loadFxDailyRates(),
+        ]);
 
         setAllTransactions(transactions);
         setFilteredTransactions(transactions);
         setSplitHistory(splits);
-        const normalizedPortfolioSeries = ensureSyntheticStart(portfolioSeries, {
+        const normalizedPortfolioSeriesMap = ensureSyntheticStart(portfolioSeriesMap, {
             dateKey: 'date',
             valueKey: 'value',
         });
-        const normalizedRunningSeries = ensureSyntheticStart(runningSeries, {
+        const normalizedRunningSeriesMap = ensureSyntheticStart(runningSeriesMap, {
             dateKey: 'tradeDate',
             valueKey: 'amount',
             zeroProps: { orderType: 'padding', netAmount: 0 },
         });
-        setPortfolioSeries(normalizedPortfolioSeries);
-        setRunningAmountSeries(normalizedRunningSeries);
+        setPortfolioSeriesMap(normalizedPortfolioSeriesMap);
+        setRunningAmountSeriesMap(normalizedRunningSeriesMap);
+
+        const fxRatesByCurrency = buildFxRateMaps(fxRatesPayload);
+        setFxRatesByCurrency(fxRatesByCurrency);
+
+        const defaultCurrency = SUPPORTED_CURRENCIES.find(
+            (currency) => normalizedPortfolioSeriesMap?.[currency]?.length
+        );
+        const initialCurrency = defaultCurrency || 'USD';
+        setSelectedCurrency(initialCurrency);
+        setPortfolioSeries(normalizedPortfolioSeriesMap[initialCurrency] || []);
+        setRunningAmountSeries(normalizedRunningSeriesMap[initialCurrency] || []);
         setPerformanceSeries(performanceSeries);
 
         const transactionTable = document.getElementById('transactionTable');
@@ -153,6 +255,7 @@ function initialize() {
     });
     uiController = createUiController({ chartManager });
 
+    initCurrencyToggle();
     initTerminal({
         filterAndSort: tableController.filterAndSort,
         toggleTable: uiController.toggleTable,
@@ -173,4 +276,100 @@ if (document.readyState === 'loading') {
 
 window.addEventListener('resize', () => {
     adjustMobilePanels();
+});
+
+document.addEventListener('currencyChangedGlobal', (event) => {
+    const newCurrency = event?.detail?.currency;
+    if (!newCurrency) {
+        return;
+    }
+    const normalized = newCurrency.toUpperCase();
+    if (!SUPPORTED_CURRENCIES.includes(normalized)) {
+        return;
+    }
+
+    // Always switch to the requested currency, even if pre-computed series doesn't exist
+    setSelectedCurrency(normalized);
+
+    // Get the USD source data first
+    const usdRunningSeries = transactionState.runningAmountSeriesByCurrency?.['USD'] || [];
+    const usdBalanceSeries = transactionState.portfolioSeriesByCurrency?.['USD'] || [];
+
+    // Use pre-computed series if available for the target currency, otherwise convert from USD
+    const runningSeries =
+        transactionState.runningAmountSeriesByCurrency?.[normalized] ||
+        convertCurrencySeries(usdRunningSeries, normalized);
+    const balanceSeries =
+        transactionState.portfolioSeriesByCurrency?.[normalized] ||
+        convertCurrencySeries(usdBalanceSeries, normalized);
+
+    setRunningAmountSeries(runningSeries);
+    setPortfolioSeries(balanceSeries);
+
+    if (chartManager && typeof chartManager.update === 'function') {
+        chartManager.update();
+    }
+    if (tableController && typeof tableController.filterAndSort === 'function') {
+        const terminalInput = document.getElementById('terminalInput');
+        const searchTerm = terminalInput ? terminalInput.value : '';
+        tableController.filterAndSort(searchTerm);
+    }
+    adjustMobilePanels();
+});
+
+window.addEventListener('keydown', (event) => {
+    // Handle Ctrl/Cmd + Arrow keys (should work even when terminal input has text)
+    if (
+        (event.metaKey || event.ctrlKey) &&
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+    ) {
+        const active = document.activeElement;
+        if (
+            active &&
+            (active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                active.tagName === 'SELECT' ||
+                active.isContentEditable)
+        ) {
+            // If terminal input is focused, the terminal input handler will process Cmd/Ctrl+arrows
+            if (active.id === 'terminalInput') {
+                // Return early to let terminal input handler handle it
+                return;
+            }
+            // For other inputs, don't interfere with their functionality
+            return;
+        }
+
+        // If not in any input field, handle the arrow key to cycle currency
+        event.preventDefault();
+        cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
+    }
+
+    // Handle Arrow keys alone for currency toggle when not in input fields
+    if (
+        !event.metaKey &&
+        !event.ctrlKey &&
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+    ) {
+        const active = document.activeElement;
+        if (
+            active &&
+            (active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                active.tagName === 'SELECT' ||
+                active.isContentEditable)
+        ) {
+            // If we're in the terminal input, let that handle the event in handleTerminalInput
+            // The terminal input handler only cycles when empty
+            if (active.id === 'terminalInput') {
+                return;
+            }
+            // For other inputs, don't interfere with their functionality
+            return;
+        }
+
+        // If not in any input field, handle the arrow key to cycle currency
+        event.preventDefault();
+        cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
+    }
 });

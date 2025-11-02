@@ -38,6 +38,7 @@
         <link rel="stylesheet" href="../css/terminal/table.css" />
         <link rel="stylesheet" href="../css/terminal/chart.css" />
         <link rel="stylesheet" href="../css/terminal/responsive.css" />
+        <link rel="stylesheet" href="../css/toggle.css" />
         <script type="importmap">
             {
                 "imports": {
@@ -62,7 +63,7 @@
         />
         <link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />
     </head>
-    <body>
+    <body class="body-terminal no-pull-to-refresh">
         <div class="nav-container">
             <ul>
                 <li>
@@ -86,6 +87,12 @@
                     </a>
                 </li>
             </ul>
+        </div>
+        <div id="currencyToggleContainer" class="hide-on-mobile">
+            <button class="currency-toggle active" data-currency="USD">$</button>
+            <button class="currency-toggle" data-currency="CNY">¥</button>
+            <button class="currency-toggle" data-currency="JPY">¥</button>
+            <button class="currency-toggle" data-currency="KRW">₩</button>
         </div>
         <div class="transaction-container">
             <div class="terminal" id="terminal">

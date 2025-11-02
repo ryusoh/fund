@@ -22,6 +22,49 @@ table {
     font-size: medium;
 }
 
+#transactionTable {
+    table-layout: auto;
+    width: 100%;
+    border-spacing: 0;
+}
+
+#transactionTable th,
+#transactionTable td {
+    white-space: nowrap;
+    padding: 4px 6px;
+    font-size: 11px;
+    overflow: visible;
+}
+
+#transactionTable th:nth-child(1),
+#transactionTable td:nth-child(1) {
+    min-width: 75px;
+}
+
+#transactionTable th:nth-child(2),
+#transactionTable td:nth-child(2) {
+    min-width: 50px;
+}
+
+#transactionTable th:nth-child(3),
+#transactionTable td:nth-child(3) {
+    min-width: 100px;
+}
+
+#transactionTable th:nth-child(4),
+#transactionTable td:nth-child(4),
+#transactionTable th:nth-child(5),
+#transactionTable td:nth-child(5) {
+    min-width: 70px;
+}
+
+#transactionTable th:nth-child(6),
+#transactionTable td:nth-child(6),
+#transactionTable th:nth-child(7),
+#transactionTable td:nth-child(7) {
+    min-width: 140px;
+}
+
 thead {
     position: -webkit-sticky;
     position: sticky;
@@ -41,13 +84,7 @@ thead {
 }
 
 th {
-    font-size: 12px;
-}
-
-#transactionTable th:first-child,
-#transactionTable td.date {
-    white-space: nowrap;
-    width: 1%;
+    font-size: 11px;
 }
 
 .buy {
@@ -63,6 +100,7 @@ th {
 .amount {
     text-align: right;
     font-weight: 500;
+    font-size: 12px;
 }
 
 strong {

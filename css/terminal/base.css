@@ -50,6 +50,22 @@ body {
     overflow-x: hidden;
 }
 
+.body-terminal #currencyToggleContainer {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+}
+
+@media (max-width: 768px) {
+    .body-terminal #currencyToggleContainer {
+        display: none !important;
+    }
+
+    .hide-on-mobile {
+        display: none !important;
+    }
+}
+
 .transaction-container {
     max-width: min(1400px, 50vw);
     margin: 48px auto 0;

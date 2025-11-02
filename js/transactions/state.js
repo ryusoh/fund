@@ -1,4 +1,8 @@
+import { CURRENCY_SYMBOLS } from '@js/config.js';
+
 const sortState = { column: 'tradeDate', order: 'desc' };
+const DEFAULT_CURRENCY = 'USD';
+const DEFAULT_SYMBOL = CURRENCY_SYMBOLS[DEFAULT_CURRENCY] || '$';
 
 export const transactionState = {
     allTransactions: [],
@@ -19,6 +23,11 @@ export const transactionState = {
     sortState,
     commandHistory: [],
     historyIndex: -1,
+    selectedCurrency: DEFAULT_CURRENCY,
+    currencySymbol: DEFAULT_SYMBOL,
+    runningAmountSeriesByCurrency: {},
+    portfolioSeriesByCurrency: {},
+    fxRatesByCurrency: {},
 };
 
 export function resetSortState() {
@@ -42,8 +51,18 @@ export function setRunningAmountSeries(series) {
     transactionState.runningAmountSeries = Array.isArray(series) ? series : [];
 }
 
+export function setRunningAmountSeriesMap(seriesMap) {
+    transactionState.runningAmountSeriesByCurrency =
+        seriesMap && typeof seriesMap === 'object' ? { ...seriesMap } : {};
+}
+
 export function setPortfolioSeries(series) {
     transactionState.portfolioSeries = Array.isArray(series) ? series : [];
+}
+
+export function setPortfolioSeriesMap(seriesMap) {
+    transactionState.portfolioSeriesByCurrency =
+        seriesMap && typeof seriesMap === 'object' ? { ...seriesMap } : {};
 }
 
 export function setPerformanceSeries(seriesMap) {
@@ -81,4 +100,21 @@ export function setHistoricalPrices(prices) {
 
 export function setChartDateRange({ from, to }) {
     transactionState.chartDateRange = { from, to };
+}
+
+export function setSelectedCurrency(currency) {
+    if (typeof currency !== 'string' || !currency) {
+        return;
+    }
+    const normalized = currency.toUpperCase();
+    transactionState.selectedCurrency = normalized;
+    transactionState.currencySymbol = CURRENCY_SYMBOLS[normalized] || DEFAULT_SYMBOL;
+}
+
+export function getSelectedCurrency() {
+    return transactionState.selectedCurrency || DEFAULT_CURRENCY;
+}
+
+export function setFxRatesByCurrency(fxMap) {
+    transactionState.fxRatesByCurrency = fxMap && typeof fxMap === 'object' ? fxMap : {};
 }

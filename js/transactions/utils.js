@@ -1,3 +1,6 @@
+import { transactionState, getSelectedCurrency } from './state.js';
+import { CURRENCY_SYMBOLS } from '@js/config.js';
+
 export function formatDate(dateString) {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -6,7 +9,76 @@ export function formatDate(dateString) {
     return `${year}-${month}-${day}`;
 }
 
-export function formatCurrency(value) {
+function getSymbolForCurrency(currency) {
+    const normalized = typeof currency === 'string' ? currency.toUpperCase() : null;
+    if (normalized && CURRENCY_SYMBOLS[normalized]) {
+        return CURRENCY_SYMBOLS[normalized];
+    }
+    const selected = transactionState.selectedCurrency;
+    if (selected && CURRENCY_SYMBOLS[selected]) {
+        return CURRENCY_SYMBOLS[selected];
+    }
+    return transactionState.currencySymbol || '$';
+}
+
+function getFxEntry(currency) {
+    return transactionState.fxRatesByCurrency?.[currency] || null;
+}
+
+function findFxRate(dateString, currency) {
+    if (!currency || currency === 'USD') {
+        return 1;
+    }
+    const fxEntry = getFxEntry(currency);
+    if (!fxEntry || !fxEntry.map || !fxEntry.sorted?.length) {
+        return 1;
+    }
+    if (fxEntry.map.has(dateString)) {
+        return fxEntry.map.get(dateString) || 1;
+    }
+    const timestamp = Date.parse(dateString);
+    if (!Number.isFinite(timestamp)) {
+        const firstKey = fxEntry.sorted[0]?.date;
+        return (firstKey && fxEntry.map.get(firstKey)) || 1;
+    }
+    let left = 0;
+    let right = fxEntry.sorted.length - 1;
+    let candidateIndex = 0;
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const midValue = fxEntry.sorted[mid].ts;
+        if (midValue === timestamp) {
+            candidateIndex = mid;
+            break;
+        }
+        if (midValue < timestamp) {
+            candidateIndex = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    const candidateDate = fxEntry.sorted[candidateIndex]?.date;
+    return (candidateDate && fxEntry.map.get(candidateDate)) || 1;
+}
+
+export function convertValueToCurrency(value, dateString, currency = getSelectedCurrency()) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) {
+        return 0;
+    }
+    let normalizedDate = dateString;
+    if (normalizedDate instanceof Date) {
+        normalizedDate = normalizedDate.toISOString().split('T')[0];
+    }
+    if (!currency || currency === 'USD') {
+        return amount;
+    }
+    const rate = findFxRate(normalizedDate, currency);
+    return amount * rate;
+}
+
+export function formatCurrency(value, { currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);
     const formatted = absolute.toLocaleString('en-US', {
@@ -14,34 +86,79 @@ export function formatCurrency(value) {
         maximumFractionDigits: 2,
     });
     const sign = amount < 0 ? '-' : '';
-    return `${sign}$${formatted}`;
+    const symbol = getSymbolForCurrency(currency || transactionState.selectedCurrency);
+    return `${sign}${symbol}${formatted}`;
 }
 
-export function formatCurrencyCompact(value) {
+export function formatCurrencyInlineValue(value, { digits = 0, currency } = {}) {
+    const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+    const absolute = Math.abs(amount);
+    const formatted = absolute.toLocaleString('en-US', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    });
+    const sign = amount < 0 ? '-' : '';
+    const symbol = getSymbolForCurrency(currency || transactionState.selectedCurrency);
+    return `${sign}${symbol}${formatted}`;
+}
+
+export function formatCurrencyCompact(value, { currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);
     const sign = amount < 0 ? '-' : '';
+    const selectedCurrency = (currency || getSelectedCurrency() || 'USD').toUpperCase();
+    const symbol = getSymbolForCurrency(selectedCurrency);
+    const isCJKCurrency =
+        selectedCurrency === 'CNY' || selectedCurrency === 'JPY' || selectedCurrency === 'KRW';
 
     if (absolute >= 1_000_000) {
         const millions = absolute / 1_000_000;
-        if (millions >= 1 && millions < 10) {
-            return `${sign}$${millions.toFixed(2)}M`;
+        if (isCJKCurrency) {
+            const rounded = Math.round(millions);
+            if (Math.abs(millions - rounded) > 0.1) {
+                return `${sign}${symbol}${millions.toFixed(1)}M`;
+            }
+            return `${sign}${symbol}${rounded}M`;
         }
-        return `${sign}$${Math.round(millions)}M`;
+        if (millions >= 100) {
+            return `${sign}${symbol}${millions.toFixed(0)}M`;
+        }
+        if (millions >= 10) {
+            return `${sign}${symbol}${millions.toFixed(1)}M`;
+        }
+        return `${sign}${symbol}${millions.toFixed(2)}M`;
     }
 
     if (absolute >= 1_000) {
         const thousands = absolute / 1_000;
+        if (isCJKCurrency) {
+            const rounded = Math.round(thousands);
+            if (Math.abs(thousands - rounded) > 0.1) {
+                return `${sign}${symbol}${thousands.toFixed(1)}k`;
+            }
+            return `${sign}${symbol}${Math.max(1, rounded)}k`;
+        }
         if (thousands >= 100) {
-            return `${sign}$${Math.round(thousands)}k`;
+            return `${sign}${symbol}${thousands.toFixed(0)}k`;
         }
         if (thousands >= 10) {
-            return `${sign}$${thousands.toFixed(0)}k`;
+            return `${sign}${symbol}${thousands.toFixed(1)}k`;
         }
-        return `${sign}$${thousands.toFixed(1)}k`;
+        return `${sign}${symbol}${thousands.toFixed(1)}k`;
     }
 
-    return `${sign}$${absolute.toFixed(0)}`;
+    if (absolute >= 1) {
+        if (isCJKCurrency) {
+            return `${sign}${symbol}${Math.round(absolute)}`;
+        }
+        return `${sign}${symbol}${absolute.toFixed(0)}`;
+    }
+
+    if (isCJKCurrency) {
+        return `${sign}${symbol}${Math.round(absolute)}`;
+    }
+
+    return `${sign}${symbol}${absolute.toFixed(2)}`;
 }
 
 export function parseCSVLine(line) {

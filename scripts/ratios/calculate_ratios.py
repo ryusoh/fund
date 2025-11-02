@@ -16,6 +16,7 @@ PORTFOLIO_SERIES_KEY = '^LZ'
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
 OUTPUT_DIR = DATA_DIR / 'output'
+SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'KRW']
 
 
 def order_series_names(names):
@@ -34,6 +35,39 @@ def normalize_symbol_index(df):
         if 'shares' in normalized.columns:
             normalized = normalized.rename(columns={'shares': 'broker_shares'})
     return normalized
+
+
+def load_fx_rates():
+    fx_path = DATA_DIR / 'fx_daily_rates.csv'
+    if not fx_path.exists():
+        raise FileNotFoundError(f'FX rates file not found: {fx_path}')
+    fx_df = pd.read_csv(fx_path, parse_dates=['date'])
+    fx_df = fx_df.set_index('date').sort_index()
+    missing = [currency for currency in SUPPORTED_CURRENCIES if currency not in fx_df.columns]
+    if missing:
+        raise ValueError(f'Missing FX columns: {missing}')
+    fx_df = fx_df[SUPPORTED_CURRENCIES].ffill().bfill()
+    return fx_df
+
+
+def build_fx_json(fx_df: pd.DataFrame) -> dict:
+    payload = {
+        'base': 'USD',
+        'currencies': SUPPORTED_CURRENCIES,
+        'rates': {},
+    }
+    for date, row in fx_df.iterrows():
+        payload['rates'][date.strftime('%Y-%m-%d')] = {
+            currency: float(row[currency]) for currency in SUPPORTED_CURRENCIES
+        }
+    return payload
+
+
+def get_latest_rates(fx_df: pd.DataFrame) -> dict:
+    if fx_df.empty:
+        return {currency: 1.0 for currency in SUPPORTED_CURRENCIES}
+    latest_row = fx_df.iloc[-1]
+    return {currency: float(latest_row.get(currency, 1.0)) for currency in SUPPORTED_CURRENCIES}
 
 
 def format_currency(value):
@@ -133,7 +167,7 @@ def render_box_table(
     return '\n'.join(lines), total_width
 
 
-def calculate_stats():
+def calculate_stats(latest_fx_rates):
     """Calculate transaction statistics using split-adjusted data."""
     transactions_df = pd.read_parquet(DATA_DIR / 'checkpoints' / 'transactions_with_splits.parquet')
     transactions_df = transactions_df.sort_values(
@@ -184,6 +218,22 @@ def calculate_stats():
 
     net_contributions = total_buy_amount - total_sell_amount
 
+    counts_data = {
+        'total_transactions': int(total_transactions),
+        'buy_orders': int(buy_mask.sum()),
+        'sell_orders': int(sell_mask.sum()),
+    }
+
+    currency_values = {}
+    for currency in SUPPORTED_CURRENCIES:
+        rate = float(latest_fx_rates.get(currency, 1.0))
+        currency_values[currency] = {
+            'total_buy_amount': float(total_buy_amount * rate),
+            'total_sell_amount': float(total_sell_amount * rate),
+            'net_contributions': float(net_contributions * rate),
+            'realized_gain': float(realized_gain_total * rate),
+        }
+
     rows = [
         ['Total Transactions', f"{total_transactions:,}"],
         ['Buy Orders', f"{buy_mask.sum():,}"],
@@ -201,14 +251,19 @@ def calculate_stats():
         alignments=['left', 'right'],
     )
 
-    return '\n' + table + '\n'
+    stats_json = {
+        'counts': counts_data,
+        'currency_values': currency_values,
+    }
+
+    return '\n' + table + '\n', stats_json
 
 
-def calculate_holdings():
+def calculate_holdings(latest_fx_rates):
     """Calculate current holdings directly from the transaction ledger."""
     transactions_path = DATA_DIR / 'transactions.csv'
     if not transactions_path.exists():
-        return "No current holdings."
+        return "No current holdings.", {}
 
     transactions_df = pd.read_csv(transactions_path)
     transactions_df['Trade Date'] = pd.to_datetime(transactions_df['Trade Date'])
@@ -292,8 +347,19 @@ def calculate_holdings():
     holdings_frame = holdings_frame.sort_values(by='total_cost', ascending=False)
 
     data_rows = []
+    holdings_data = []
     for symbol, data in holdings_frame.iterrows():
         total_cost = data['total_cost'] if data['average_price'] > 0 else np.nan
+        holdings_data.append(
+            {
+                'security': str(data.get('display_symbol', symbol)),
+                'shares': float(data['shares']),
+                'average_price_usd': (
+                    float(data['average_price']) if data['average_price'] > 0 else None
+                ),
+                'total_cost_usd': float(total_cost) if np.isfinite(total_cost) else None,
+            }
+        )
         data_rows.append(
             [
                 data.get('display_symbol', symbol),
@@ -309,7 +375,30 @@ def calculate_holdings():
         rows=data_rows,
         alignments=['left', 'right', 'right', 'right'],
     )
-    return '\n' + table + '\n'
+    holdings_json = {}
+    for currency in SUPPORTED_CURRENCIES:
+        rate = float(latest_fx_rates.get(currency, 1.0))
+        converted_rows = []
+        for item in holdings_data:
+            avg_price = (
+                float(item['average_price_usd'] * rate)
+                if item['average_price_usd'] is not None
+                else None
+            )
+            total_cost_value = (
+                float(item['total_cost_usd'] * rate) if item['total_cost_usd'] is not None else None
+            )
+            converted_rows.append(
+                {
+                    'security': item['security'],
+                    'shares': item['shares'],
+                    'average_price': avg_price,
+                    'total_cost': total_cost_value,
+                }
+            )
+        holdings_json[currency] = converted_rows
+
+    return '\n' + table + '\n', holdings_json
 
 
 def get_performance_series():
@@ -541,12 +630,33 @@ def main():
     """Generate all stats files."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    fx_df = load_fx_rates()
+    fx_payload = build_fx_json(fx_df)
+
     # --- Generate data for frontend charts ---
     balance_df = pd.read_parquet(DATA_DIR / 'daily_market_value.parquet')
-    balance_df = balance_df.reset_index().rename(columns={'index': 'date', 'market_value': 'value'})
-    balance_df['date'] = pd.to_datetime(balance_df['date']).dt.strftime('%Y-%m-%d')
+    balance_df = (
+        balance_df.reset_index()
+        .rename(columns={'index': 'date', 'market_value': 'value'})
+        .sort_values('date')
+    )
+    balance_df['date'] = pd.to_datetime(balance_df['date'])
+    balance_df = balance_df.set_index('date')
+
+    balance_series_by_currency: dict[str, list[dict[str, float]]] = {}
+    for currency in SUPPORTED_CURRENCIES:
+        rates = fx_df[currency].reindex(balance_df.index).ffill().bfill()
+        converted = balance_df['value'] * rates
+        converted_df = pd.DataFrame(
+            {
+                'date': balance_df.index.strftime('%Y-%m-%d'),
+                'value': converted.astype(float),
+            }
+        )
+        balance_series_by_currency[currency] = converted_df.to_dict(orient='records')
+
     with open(OUTPUT_DIR / 'balance_series.json', 'w') as f:
-        balance_df.to_json(f, orient='records', date_format='iso')
+        json.dump(balance_series_by_currency, f)
     print("Successfully created balance_series.json")
 
     transactions_df = pd.read_parquet(DATA_DIR / 'checkpoints' / 'transactions_with_splits.parquet')
@@ -617,9 +727,41 @@ def main():
                 }
             )
 
+    contribution_series_by_currency: dict[str, list[dict[str, float]]] = {
+        currency: [] for currency in SUPPORTED_CURRENCIES
+    }
+    if running_rows:
+        running_df = pd.DataFrame(running_rows)
+        running_df['tradeDate'] = pd.to_datetime(running_df['tradeDate'])
+        running_df = running_df.sort_values('tradeDate')
+        running_df = running_df.set_index('tradeDate')
+
+        for currency in SUPPORTED_CURRENCIES:
+            rates = fx_df[currency].reindex(running_df.index).ffill().bfill()
+            converted_df = running_df.copy()
+            converted_df['amount'] = converted_df['amount'].astype(float) * rates.values
+            converted_df['netAmount'] = converted_df['netAmount'].astype(float) * rates.values
+            converted_df = converted_df.reset_index()
+            converted_df['tradeDate'] = converted_df['tradeDate'].dt.strftime('%Y-%m-%d')
+            contribution_series_by_currency[currency] = [
+                {
+                    'tradeDate': str(row['tradeDate']),
+                    'amount': float(row['amount']),
+                    'orderType': row['orderType'],
+                    'netAmount': float(row['netAmount']),
+                }
+                for _, row in converted_df.iterrows()
+            ]
+
     with open(OUTPUT_DIR / 'contribution_series.json', 'w') as f:
-        json.dump(running_rows, f)
+        json.dump(contribution_series_by_currency, f)
     print("Successfully created contribution_series.json")
+
+    with open(OUTPUT_DIR / 'fx_daily_rates.json', 'w') as f:
+        json.dump(fx_payload, f)
+    print("Successfully created fx_daily_rates.json")
+
+    latest_rates = get_latest_rates(fx_df)
 
     perf_series = get_performance_series()
     with open(OUTPUT_DIR / 'performance_series.json', 'w') as f:
@@ -627,13 +769,19 @@ def main():
     print("Successfully created performance_series.json")
 
     # --- Generate text files for terminal stats ---
-    stats_text = calculate_stats()
+    stats_text, stats_json = calculate_stats(latest_rates)
     (OUTPUT_DIR / 'transaction_stats.txt').write_text(stats_text)
+    with open(OUTPUT_DIR / 'transaction_stats.json', 'w') as f:
+        json.dump(stats_json, f)
     print("Successfully created transaction_stats.txt")
+    print("Successfully created transaction_stats.json")
 
-    holdings_text = calculate_holdings()
+    holdings_text, holdings_json = calculate_holdings(latest_rates)
     (OUTPUT_DIR / 'holdings.txt').write_text(holdings_text)
+    with open(OUTPUT_DIR / 'holdings.json', 'w') as f:
+        json.dump(holdings_json, f)
     print("Successfully created holdings.txt")
+    print("Successfully created holdings.json")
 
     cagr_text = calculate_cagr(perf_series)
     (OUTPUT_DIR / 'cagr.txt').write_text(cagr_text)
