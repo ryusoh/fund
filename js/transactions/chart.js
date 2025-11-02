@@ -4,7 +4,7 @@ import {
     setHistoricalPrices,
     setRunningAmountSeries,
 } from './state.js';
-import { computeRunningTotals, getSplitAdjustment } from './calculations.js';
+import { getSplitAdjustment } from './calculations.js';
 import { formatCurrencyCompact } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
@@ -716,7 +716,6 @@ export function buildContributionSeriesFromTransactions(
         return [];
     }
 
-    const runningTotals = computeRunningTotals(transactions, transactionState.splitHistory);
     const sortedTransactions = [...transactions].sort(
         (a, b) =>
             new Date(a.tradeDate) - new Date(b.tradeDate) ||
@@ -724,21 +723,13 @@ export function buildContributionSeriesFromTransactions(
     );
 
     const series = [];
+    let cumulativeAmount = 0;
 
     sortedTransactions.forEach((t, index) => {
-        const totals = runningTotals.get(t.transactionId);
-        const currentPoint = {
-            tradeDate: t.tradeDate,
-            amount: totals ? totals.portfolio : 0,
-            orderType: t.orderType,
-            netAmount: parseFloat(t.netAmount) || 0,
-        };
+        const netDelta = Number.parseFloat(t.netAmount) || 0;
 
         if (index > 0) {
             const prevTransaction = sortedTransactions[index - 1];
-            const prevTotals = runningTotals.get(prevTransaction.transactionId);
-            const prevAmount = prevTotals ? prevTotals.portfolio : 0;
-
             const prevDate = new Date(prevTransaction.tradeDate);
             const currentDate = new Date(t.tradeDate);
 
@@ -748,14 +739,21 @@ export function buildContributionSeriesFromTransactions(
 
                 series.push({
                     tradeDate: intermediateDate.toISOString().split('T')[0],
-                    amount: prevAmount,
+                    amount: cumulativeAmount,
                     orderType: 'padding',
                     netAmount: 0,
                 });
             }
         }
 
-        series.push(currentPoint);
+        cumulativeAmount += netDelta;
+
+        series.push({
+            tradeDate: t.tradeDate,
+            amount: cumulativeAmount,
+            orderType: t.orderType,
+            netAmount: netDelta,
+        });
     });
 
     const lastPoint = series[series.length - 1];
@@ -774,12 +772,13 @@ export function buildContributionSeriesFromTransactions(
     }
 
     if (includeSyntheticStart && series.length > 0) {
-        const firstTransaction = sortedTransactions[0];
-        const firstTotals = runningTotals.get(firstTransaction.transactionId);
-        const firstAmount = firstTotals ? firstTotals.portfolio : 0;
         const epsilon = 1e-6;
-        const firstDate = new Date(firstTransaction.tradeDate);
-        if (!Number.isNaN(firstDate.getTime()) && Math.abs(firstAmount) > epsilon) {
+        const firstActual =
+            series.find((point) => (point.orderType || '').toLowerCase() !== 'padding') ||
+            series[0];
+        const firstValue = Number(firstActual?.amount) || 0;
+        const firstDate = new Date(firstActual?.tradeDate || firstActual?.date);
+        if (!Number.isNaN(firstDate.getTime()) && Math.abs(firstValue) > epsilon) {
             const syntheticDate = new Date(firstDate);
             syntheticDate.setDate(syntheticDate.getDate() - 1);
             const syntheticDateStr = syntheticDate.toISOString().split('T')[0];
