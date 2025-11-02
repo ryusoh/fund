@@ -11,6 +11,540 @@ import {
     mountainFill,
 } from '../config.js';
 
+const chartLayouts = {
+    contribution: null,
+    performance: null,
+    composition: null,
+};
+
+let compositionDataCache = null;
+let compositionDataLoading = false;
+
+const crosshairState = {
+    active: false,
+    hoverTime: null,
+    dragging: false,
+    rangeStart: null,
+    rangeEnd: null,
+    pointerId: null,
+};
+
+let crosshairElementsCache = null;
+let pointerCanvas = null;
+let pointerEventsAttached = false;
+let crosshairExternalUpdate = null;
+let containerPointerBound = false;
+let crosshairChartManager = null;
+
+const crosshairDateFormatter =
+    typeof Intl !== 'undefined'
+        ? new Intl.DateTimeFormat('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit',
+          })
+        : null;
+
+function getCrosshairElements() {
+    if (crosshairElementsCache) {
+        return crosshairElementsCache;
+    }
+    if (typeof document === 'undefined') {
+        crosshairElementsCache = {
+            info: null,
+            date: null,
+            values: null,
+            range: null,
+        };
+        return crosshairElementsCache;
+    }
+    crosshairElementsCache = {
+        info: document.getElementById('chartCrosshairInfo'),
+        date: document.getElementById('chartCrosshairDate'),
+        values: document.getElementById('chartCrosshairValues'),
+        range: document.getElementById('chartRangeSummary'),
+    };
+    return crosshairElementsCache;
+}
+
+function clampTime(value, min, max) {
+    if (!Number.isFinite(value)) {
+        return min;
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        return value;
+    }
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}
+
+function createTimeInterpolator(points) {
+    if (!Array.isArray(points) || points.length === 0) {
+        return () => null;
+    }
+    const sorted = points.slice().sort((a, b) => a.time - b.time);
+    return (time) => {
+        if (!Number.isFinite(time)) {
+            return null;
+        }
+        const clampedTime = clampTime(time, sorted[0].time, sorted[sorted.length - 1].time);
+        let low = 0;
+        let high = sorted.length - 1;
+        while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            const midTime = sorted[mid].time;
+            if (midTime === clampedTime) {
+                return sorted[mid].value;
+            }
+            if (midTime < clampedTime) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        const leftIndex = Math.max(0, Math.min(sorted.length - 1, high));
+        const rightIndex = Math.max(0, Math.min(sorted.length - 1, low));
+        const leftPoint = sorted[leftIndex];
+        const rightPoint = sorted[rightIndex] || leftPoint;
+        if (!leftPoint || !rightPoint) {
+            return null;
+        }
+        if (leftPoint.time === rightPoint.time) {
+            return leftPoint.value;
+        }
+        const ratio = (clampedTime - leftPoint.time) / (rightPoint.time - leftPoint.time || 1e-12);
+        return leftPoint.value + (rightPoint.value - leftPoint.value) * ratio;
+    };
+}
+
+const formatCurrencyInline = (value) => {
+    if (!Number.isFinite(value)) {
+        return '$0';
+    }
+    const absolute = Math.abs(value);
+    const sign = value < 0 ? '-' : '';
+    if (absolute >= 1_000_000) {
+        return `${sign}$${(absolute / 1_000_000).toFixed(2)}M`;
+    }
+    if (absolute >= 1_000) {
+        return `${sign}$${(absolute / 1_000).toFixed(1)}k`;
+    }
+    if (absolute >= 1) {
+        return `${sign}$${absolute.toFixed(0)}`;
+    }
+    return `${sign}$${absolute.toFixed(2)}`;
+};
+
+const formatPercentInline = (value) => {
+    if (!Number.isFinite(value)) {
+        return '0%';
+    }
+    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+};
+
+function formatCrosshairDateLabel(time) {
+    if (!Number.isFinite(time)) {
+        return '';
+    }
+    const date = new Date(time);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+    if (crosshairDateFormatter) {
+        return crosshairDateFormatter.format(date);
+    }
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function getActiveChartKey() {
+    const active = transactionState.activeChart || 'contribution';
+    if (active === 'performance' || active === 'composition' || active === 'contribution') {
+        return active;
+    }
+    return 'contribution';
+}
+
+function getActiveLayout() {
+    const key = getActiveChartKey();
+    return chartLayouts[key];
+}
+
+function buildRangeSummary(layout, rawStart, rawEnd) {
+    if (!layout || !Array.isArray(layout.series) || layout.series.length === 0) {
+        return null;
+    }
+    if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd) || rawStart === rawEnd) {
+        return null;
+    }
+
+    const start = clampTime(Math.min(rawStart, rawEnd), layout.minTime, layout.maxTime);
+    const end = clampTime(Math.max(rawStart, rawEnd), layout.minTime, layout.maxTime);
+    if (start === end) {
+        return null;
+    }
+
+    const entries = [];
+
+    layout.series.forEach((series) => {
+        if (series && series.includeInRangeSummary === false) {
+            return;
+        }
+        if (typeof series.getValueAtTime !== 'function') {
+            return;
+        }
+        const startValue = series.getValueAtTime(start);
+        const endValue = series.getValueAtTime(end);
+        if (
+            startValue === null ||
+            startValue === undefined ||
+            endValue === null ||
+            endValue === undefined
+        ) {
+            return;
+        }
+        const delta = endValue - startValue;
+        const percent =
+            Number.isFinite(startValue) && Math.abs(startValue) > 1e-9
+                ? (delta / Math.abs(startValue)) * 100
+                : null;
+        const formattedDelta = series.formatDelta
+            ? series.formatDelta(delta, percent)
+            : layout.valueType === 'percent'
+              ? formatPercentInline(delta)
+              : formatCurrencyInline(delta);
+        if (formattedDelta === null || formattedDelta === undefined) {
+            return;
+        }
+        const formattedPercent =
+            percent !== null && Number.isFinite(percent) ? formatPercentInline(percent) : null;
+
+        entries.push({
+            key: series.key,
+            label: series.label || series.key,
+            color: series.color || '#ffffff',
+            delta,
+            percent,
+            deltaFormatted: formattedDelta,
+            percentFormatted: formattedPercent,
+        });
+    });
+
+    if (entries.length === 0) {
+        return null;
+    }
+
+    const durationMs = end - start;
+    const durationDays = durationMs / (1000 * 60 * 60 * 24);
+
+    return {
+        start,
+        end,
+        durationMs,
+        durationDays,
+        entries,
+    };
+}
+
+function updateCrosshairUI(snapshot, rangeSummary) {
+    const elements = getCrosshairElements();
+    const { info, range } = elements;
+
+    if (info) {
+        info.hidden = true;
+    }
+    if (range) {
+        range.hidden = true;
+    }
+
+    if (typeof crosshairExternalUpdate === 'function') {
+        crosshairExternalUpdate(snapshot, rangeSummary);
+    }
+}
+
+function drawCrosshairOverlay(ctx, layout) {
+    if (!layout) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const hasHover = crosshairState.active && Number.isFinite(crosshairState.hoverTime);
+    const hasRange =
+        Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
+
+    if (!hasHover && !hasRange) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const referenceTime = hasHover
+        ? crosshairState.hoverTime
+        : hasRange
+          ? (crosshairState.rangeEnd ?? crosshairState.rangeStart)
+          : null;
+
+    if (!Number.isFinite(referenceTime)) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const time = clampTime(referenceTime, layout.minTime, layout.maxTime);
+    const x = layout.xScale(time);
+    if (!Number.isFinite(x) || x < layout.chartBounds.left || x > layout.chartBounds.right) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    if (hasRange) {
+        const startTime = clampTime(
+            Math.min(crosshairState.rangeStart, crosshairState.rangeEnd),
+            layout.minTime,
+            layout.maxTime
+        );
+        const endTime = clampTime(
+            Math.max(crosshairState.rangeStart, crosshairState.rangeEnd),
+            layout.minTime,
+            layout.maxTime
+        );
+        const startX = layout.xScale(startTime);
+        const endX = layout.xScale(endTime);
+        ctx.save();
+        ctx.fillStyle = 'rgba(120, 145, 255, 0.12)';
+        ctx.fillRect(
+            Math.min(startX, endX),
+            layout.chartBounds.top,
+            Math.abs(endX - startX),
+            layout.chartBounds.bottom - layout.chartBounds.top
+        );
+        ctx.restore();
+    }
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, layout.chartBounds.top);
+    ctx.lineTo(x, layout.chartBounds.bottom);
+    ctx.stroke();
+    ctx.restore();
+
+    const seriesSnapshot = [];
+
+    layout.series.forEach((series) => {
+        if (typeof series.getValueAtTime !== 'function') {
+            return;
+        }
+        const value = series.getValueAtTime(time);
+        if (value === null || value === undefined) {
+            return;
+        }
+        const y = layout.yScale(value);
+        if (Number.isFinite(y) && series.drawMarker !== false) {
+            ctx.save();
+            ctx.fillStyle = series.color || '#ffffff';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+        const formatted = series.formatValue
+            ? series.formatValue(value)
+            : layout.valueType === 'percent'
+              ? formatPercentInline(value)
+              : formatCurrencyInline(value);
+        seriesSnapshot.push({
+            key: series.key,
+            label: series.label || series.key,
+            color: series.color || '#ffffff',
+            value,
+            formatted,
+        });
+    });
+
+    const snapshot =
+        seriesSnapshot.length > 0
+            ? {
+                  time,
+                  label: formatCrosshairDateLabel(time),
+                  series: seriesSnapshot,
+              }
+            : null;
+
+    let rangeSummary = null;
+    if (hasRange && crosshairState.rangeStart !== crosshairState.rangeEnd) {
+        rangeSummary = buildRangeSummary(
+            layout,
+            crosshairState.rangeStart,
+            crosshairState.rangeEnd
+        );
+    }
+
+    updateCrosshairUI(snapshot, rangeSummary);
+}
+
+function requestChartRedraw() {
+    if (crosshairChartManager && typeof crosshairChartManager.redraw === 'function') {
+        crosshairChartManager.redraw();
+    }
+}
+
+function handleContainerLeave() {
+    if (crosshairState.dragging) {
+        return;
+    }
+    crosshairState.active = false;
+    crosshairState.hoverTime = null;
+    crosshairState.rangeStart = null;
+    crosshairState.rangeEnd = null;
+    requestChartRedraw();
+}
+
+function handlePointerMove(event) {
+    if (!pointerCanvas) {
+        return;
+    }
+    const layout = getActiveLayout();
+    if (!layout) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+    if (event.pointerType === 'touch') {
+        event.preventDefault();
+    }
+    const rect = pointerCanvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const insideX = x >= layout.chartBounds.left && x <= layout.chartBounds.right;
+    const insideY = y >= layout.chartBounds.top && y <= layout.chartBounds.bottom;
+
+    if (!insideX || !insideY) {
+        if (!crosshairState.dragging) {
+            crosshairState.active = false;
+            crosshairState.hoverTime = null;
+        }
+        requestChartRedraw();
+        return;
+    }
+
+    const time = layout.invertX ? layout.invertX(x) : null;
+    if (!Number.isFinite(time)) {
+        return;
+    }
+
+    crosshairState.active = true;
+    crosshairState.hoverTime = time;
+    if (crosshairState.dragging) {
+        crosshairState.rangeEnd = time;
+    }
+
+    requestChartRedraw();
+}
+
+function handlePointerLeave() {
+    if (crosshairState.dragging) {
+        return;
+    }
+    crosshairState.active = false;
+    crosshairState.hoverTime = null;
+    requestChartRedraw();
+}
+
+function handlePointerDown(event) {
+    const layout = getActiveLayout();
+    if (!layout) {
+        return;
+    }
+    if (event.pointerType === 'touch') {
+        event.preventDefault();
+    }
+    if (pointerCanvas && pointerCanvas.setPointerCapture) {
+        pointerCanvas.setPointerCapture(event.pointerId);
+    }
+    const rect = pointerCanvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const insideX = x >= layout.chartBounds.left && x <= layout.chartBounds.right;
+    const insideY = y >= layout.chartBounds.top && y <= layout.chartBounds.bottom;
+    if (!insideX || !insideY) {
+        return;
+    }
+    const time = layout.invertX ? layout.invertX(x) : null;
+    if (!Number.isFinite(time)) {
+        return;
+    }
+    crosshairState.pointerId = event.pointerId;
+    crosshairState.active = true;
+    crosshairState.dragging = true;
+    crosshairState.hoverTime = time;
+    crosshairState.rangeStart = time;
+    crosshairState.rangeEnd = time;
+    requestChartRedraw();
+}
+
+function handlePointerUp(event) {
+    if (pointerCanvas && pointerCanvas.releasePointerCapture) {
+        try {
+            pointerCanvas.releasePointerCapture(event.pointerId);
+        } catch {
+            // Ignore release errors
+        }
+    }
+    const layout = getActiveLayout();
+    if (layout) {
+        const rect = pointerCanvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const time = layout.invertX ? layout.invertX(x) : null;
+        if (Number.isFinite(time)) {
+            crosshairState.hoverTime = time;
+        }
+    }
+    crosshairState.dragging = false;
+    crosshairState.pointerId = null;
+    requestChartRedraw();
+}
+
+function handleDoubleClick() {
+    crosshairState.rangeStart = null;
+    crosshairState.rangeEnd = null;
+    crosshairState.hoverTime = null;
+    crosshairState.active = false;
+    updateCrosshairUI(null, null);
+    requestChartRedraw();
+}
+
+function attachCrosshairEvents(canvas, chartManager) {
+    if (!canvas) {
+        return;
+    }
+    pointerCanvas = canvas;
+    crosshairChartManager = chartManager;
+    if (pointerEventsAttached) {
+        return;
+    }
+    canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
+    canvas.addEventListener('pointerleave', handlePointerLeave);
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+    canvas.addEventListener('pointerup', handlePointerUp);
+    canvas.addEventListener('pointercancel', handlePointerUp);
+    canvas.addEventListener('dblclick', handleDoubleClick);
+    const container = canvas.closest('.chart-container');
+    if (container && !containerPointerBound) {
+        container.addEventListener('pointerleave', handleContainerLeave);
+        containerPointerBound = true;
+    }
+    pointerEventsAttached = true;
+}
+
 export function hasActiveTransactionFilters() {
     const allTransactions = transactionState.allTransactions || [];
     const filteredTransactions = transactionState.filteredTransactions || [];
@@ -1454,7 +1988,9 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
             return;
         }
-        const timestamp = item.date.getTime();
+        const normalizedDate = new Date(item.date.getTime());
+        normalizedDate.setHours(0, 0, 0, 0);
+        const timestamp = normalizedDate.getTime();
         if (!Number.isFinite(timestamp)) {
             return;
         }
@@ -1488,6 +2024,17 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             totalBuyVolume,
             totalSellVolume,
         });
+    });
+
+    const buyVolumeMap = new Map();
+    const sellVolumeMap = new Map();
+    volumeEntries.forEach(({ timestamp, totalBuyVolume, totalSellVolume }) => {
+        if (totalBuyVolume > 0) {
+            buyVolumeMap.set(timestamp, totalBuyVolume);
+        }
+        if (totalSellVolume > 0) {
+            sellVolumeMap.set(timestamp, totalSellVolume);
+        }
     });
 
     const volumePadding = {
@@ -1819,6 +2366,94 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         contributionLegendDirty = false;
     }
 
+    const normalizeToDay = (time) => {
+        const day = new Date(time);
+        day.setHours(0, 0, 0, 0);
+        return day.getTime();
+    };
+
+    const baseSeries = animatedSeries.map((series) => {
+        const displayLabel = series.key === 'balance' ? 'Balance' : 'Contribution';
+        let displayColor = series.color;
+        if (series.key === 'balance') {
+            displayColor =
+                (BALANCE_GRADIENTS.balance && BALANCE_GRADIENTS.balance[1]) || colors.portfolio;
+        } else if (series.key === 'contribution') {
+            displayColor =
+                (BALANCE_GRADIENTS.contribution && BALANCE_GRADIENTS.contribution[1]) ||
+                colors.contribution;
+        }
+        return {
+            key: series.key,
+            label: displayLabel,
+            color: displayColor,
+            getValueAtTime: createTimeInterpolator(series.data),
+            formatValue: formatBalanceValue,
+            formatDelta: (delta, percent) => {
+                const base = formatCurrencyInline(delta);
+                if (percent === null || percent === undefined) {
+                    return base;
+                }
+                return `${base} (${formatPercentInline(percent)})`;
+            },
+        };
+    });
+
+    const volumeSeries = [];
+    const makeVolumeGetter = (map) => (time) => {
+        const value = map.get(normalizeToDay(time)) || 0;
+        return value > 0 ? value : null;
+    };
+
+    if (buyVolumeMap.size > 0) {
+        volumeSeries.push({
+            key: 'buyVolume',
+            label: 'Buy Volume',
+            color: colors.buy,
+            getValueAtTime: makeVolumeGetter(buyVolumeMap),
+            formatValue: formatCurrencyInline,
+            includeInRangeSummary: false,
+            drawMarker: false,
+        });
+    }
+
+    if (sellVolumeMap.size > 0) {
+        volumeSeries.push({
+            key: 'sellVolume',
+            label: 'Sell Volume',
+            color: colors.sell,
+            getValueAtTime: makeVolumeGetter(sellVolumeMap),
+            formatValue: formatCurrencyInline,
+            includeInRangeSummary: false,
+            drawMarker: false,
+        });
+    }
+
+    chartLayouts.contribution = {
+        key: 'contribution',
+        minTime,
+        maxTime,
+        valueType: 'currency',
+        padding,
+        chartBounds,
+        xScale,
+        yScale,
+        invertX: (pixelX) => {
+            if (!Number.isFinite(pixelX)) {
+                return minTime;
+            }
+            const clampedX = Math.max(padding.left, Math.min(padding.left + plotWidth, pixelX));
+            if (plotWidth <= 0 || maxTime === minTime) {
+                return minTime;
+            }
+            const ratio = (clampedX - padding.left) / plotWidth;
+            return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
+        },
+        series: [...baseSeries, ...volumeSeries],
+    };
+
+    drawCrosshairOverlay(ctx, chartLayouts.contribution);
+
     if (contributionAnimationEnabled && hasAnimatedSeries) {
         scheduleContributionAnimation(chartManager);
     } else {
@@ -1836,6 +2471,8 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
     stopContributionAnimation();
     if (Object.keys(performanceSeries).length === 0) {
         stopPerformanceAnimation();
+        chartLayouts.performance = null;
+        updateCrosshairUI(null, null);
         return;
     }
 
@@ -1874,6 +2511,8 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
         // Draw axes and legend only
     } else if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
+        chartLayouts.performance = null;
+        updateCrosshairUI(null, null);
         return;
     }
 
@@ -2061,7 +2700,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
             const time = new Date(point.date).getTime();
             const x = xScale(time);
             const y = yScale(point.value);
-            return { x, y };
+            return { x, y, time, value: point.value };
         });
 
         if (mountainFill.enabled) {
@@ -2097,6 +2736,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
             y: lastCoord.y,
             value: lastPoint.value,
             coords,
+            points: coords.map((coord) => ({ time: coord.time, value: coord.value })),
         });
 
         if (performanceAnimationEnabled) {
@@ -2145,6 +2785,38 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
         );
     });
 
+    chartLayouts.performance = {
+        key: 'performance',
+        minTime,
+        maxTime,
+        valueType: 'percent',
+        padding,
+        chartBounds,
+        xScale,
+        yScale,
+        invertX: (pixelX) => {
+            if (!Number.isFinite(pixelX)) {
+                return minTime;
+            }
+            const clampedX = Math.max(padding.left, Math.min(padding.left + plotWidth, pixelX));
+            if (plotWidth <= 0 || maxTime === minTime) {
+                return minTime;
+            }
+            const ratio = (clampedX - padding.left) / plotWidth;
+            return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
+        },
+        series: renderedSeries.map((series) => ({
+            key: series.key,
+            label: series.name,
+            color: series.color,
+            getValueAtTime: createTimeInterpolator(series.points || []),
+            formatValue: (value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
+            formatDelta: (delta) => formatPercentInline(delta),
+        })),
+    };
+
+    drawCrosshairOverlay(ctx, chartLayouts.performance);
+
     if (performanceLegendDirty) {
         const legendSeries = allPossibleSeries.map((s) => ({
             key: s.key,
@@ -2156,550 +2828,322 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
     }
 }
 
-function drawCompositionChart(ctx, chartManager) {
-    stopPerformanceAnimation();
-    stopContributionAnimation();
+function renderCompositionChart(ctx, chartManager, data) {
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
 
-    // Clear any existing legend
-    const legendContainer = document.querySelector('.chart-legend');
-    if (legendContainer) {
-        legendContainer.innerHTML = '';
+    if (!data || !Array.isArray(data.dates) || data.dates.length === 0) {
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+        chartLayouts.composition = null;
+        updateCrosshairUI(null, null);
+        return;
     }
 
-    // Load composition data
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+
+    const rawDates = data.dates.slice();
+    const rawSeries = data.composition || data.series || {};
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    const filteredIndices = rawDates
+        .map((dateStr, index) => {
+            const date = new Date(dateStr);
+            return { index, date };
+        })
+        .filter(({ date }) => {
+            if (Number.isNaN(date.getTime())) {
+                return false;
+            }
+            if (filterFrom && date < filterFrom) {
+                return false;
+            }
+            if (filterTo && date > filterTo) {
+                return false;
+            }
+            return true;
+        })
+        .map(({ index }) => index);
+
+    const dates =
+        filteredIndices.length > 0 ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
+
+    if (dates.length === 0) {
+        chartLayouts.composition = null;
+        updateCrosshairUI(null, null);
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+        return;
+    }
+
+    const chartData = {};
+    Object.entries(rawSeries).forEach(([ticker, values]) => {
+        const arr = Array.isArray(values) ? values : [];
+        const mappedValues =
+            filteredIndices.length > 0
+                ? filteredIndices.map((i) => Number(arr[i] ?? 0))
+                : arr.map((value) => Number(value ?? 0));
+        chartData[ticker] = mappedValues;
+    });
+
+    const topTickers = Object.keys(chartData).sort((a, b) => {
+        const arrA = chartData[a] || [];
+        const arrB = chartData[b] || [];
+        const lastA = arrA[arrA.length - 1] ?? 0;
+        const lastB = arrB[arrB.length - 1] ?? 0;
+        return lastB - lastA;
+    });
+
+    const canvasWidth = canvas.offsetWidth;
+    const canvasHeight = canvas.offsetHeight;
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile
+        ? { top: 15, right: 18, bottom: 36, left: 48 }
+        : { top: 22, right: 26, bottom: 48, left: 68 };
+    const plotWidth = canvasWidth - padding.left - padding.right;
+    const plotHeight = canvasHeight - padding.top - padding.bottom;
+    if (plotWidth <= 0 || plotHeight <= 0) {
+        chartLayouts.composition = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const colors = [
+        '#0B3D91',
+        '#1550AF',
+        '#2A6EC1',
+        '#3984D9',
+        '#4DA3F4',
+        '#134E4A',
+        '#1A6B5B',
+        '#2A8A7A',
+        '#3BA999',
+        '#4DC8B8',
+        '#0F3D2A',
+        '#1A5F3A',
+        '#2A7B5A',
+        '#3B9B7A',
+        '#4DBB9A',
+        '#1A237E',
+        '#283593',
+        '#303F9F',
+        '#3949AB',
+        '#3F51B5',
+        '#00E676',
+        '#00C853',
+        '#00A152',
+        '#00897B',
+        '#00695C',
+    ];
+
+    const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
+    const minTime = Math.min(...dateTimes);
+    const maxTime = Math.max(...dateTimes);
+
+    const xScale = (time) =>
+        padding.left +
+        (maxTime === minTime
+            ? plotWidth / 2
+            : ((time - minTime) / (maxTime - minTime)) * plotWidth);
+    const yScale = (value) => padding.top + plotHeight - (value / 100) * plotHeight;
+    const chartBounds = {
+        top: padding.top,
+        bottom: padding.top + plotHeight,
+        left: padding.left,
+        right: padding.left + plotWidth,
+    };
+
+    drawAxes(
+        ctx,
+        padding,
+        plotWidth,
+        plotHeight,
+        minTime,
+        maxTime,
+        0,
+        100,
+        xScale,
+        yScale,
+        (val) => `${val}%`,
+        true
+    );
+
+    let cumulativeValues = new Array(dates.length).fill(0);
+
+    topTickers.forEach((ticker, tickerIndex) => {
+        const values = chartData[ticker] || [];
+        if (!Array.isArray(values) || values.length !== dates.length) {
+            return;
+        }
+        const color = colors[tickerIndex % colors.length];
+        ctx.beginPath();
+        ctx.fillStyle = `${color}80`;
+        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+        ctx.lineWidth = 1;
+
+        dates.forEach((dateStr, index) => {
+            const x = xScale(new Date(dateStr).getTime());
+            const y = yScale(cumulativeValues[index] + values[index]);
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        for (let i = dates.length - 1; i >= 0; i -= 1) {
+            const x = xScale(new Date(dates[i]).getTime());
+            const y = yScale(cumulativeValues[i]);
+            ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
+    });
+
+    const latestIndex = dates.length - 1;
+    const othersPercentage = chartData.Others ? (chartData.Others[latestIndex] ?? 0) : 0;
+    const shouldIncludeOthers = othersPercentage > 50;
+
+    const latestHoldings = topTickers
+        .filter((ticker) => shouldIncludeOthers || ticker !== 'Others')
+        .map((ticker) => ({
+            ticker,
+            percentage: (chartData[ticker] || [])[latestIndex] ?? 0,
+        }))
+        .filter((holding) => holding.percentage > 0.1)
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 6);
+
+    const holdingsForLegend =
+        latestHoldings.length > 0
+            ? latestHoldings
+            : topTickers
+                  .filter((ticker) => shouldIncludeOthers || ticker !== 'Others')
+                  .map((ticker) => ({
+                      ticker,
+                      percentage: (chartData[ticker] || [])[latestIndex] ?? 0,
+                  }))
+                  .sort((a, b) => b.percentage - a.percentage)
+                  .slice(0, 6);
+
+    const legendSeries = holdingsForLegend.map((holding) => {
+        const tickerIndex = topTickers.indexOf(holding.ticker);
+        const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
+        return {
+            key: holding.ticker,
+            name: displayName,
+            color: colors[tickerIndex % colors.length],
+        };
+    });
+
+    const seriesForCrosshair = topTickers
+        .slice(0, 7)
+        .map((ticker, index) => {
+            const values = chartData[ticker];
+            if (!Array.isArray(values) || values.length !== dates.length) {
+                return null;
+            }
+            const points = dateTimes.map((time, idx) => ({
+                time,
+                value: values[idx],
+            }));
+            const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
+            return {
+                key: ticker,
+                label,
+                color: colors[index % colors.length],
+                getValueAtTime: createTimeInterpolator(points),
+                formatValue: (value) => `${value.toFixed(2)}%`,
+                formatDelta: (delta) => formatPercentInline(delta),
+            };
+        })
+        .filter(Boolean);
+
+    chartLayouts.composition = {
+        key: 'composition',
+        minTime,
+        maxTime,
+        valueType: 'percent',
+        padding,
+        chartBounds,
+        xScale,
+        yScale,
+        invertX: (pixelX) => {
+            if (!Number.isFinite(pixelX)) {
+                return minTime;
+            }
+            const clampedX = Math.max(padding.left, Math.min(padding.left + plotWidth, pixelX));
+            if (plotWidth <= 0 || maxTime === minTime) {
+                return minTime;
+            }
+            const ratio = (clampedX - padding.left) / plotWidth;
+            return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
+        },
+        series: seriesForCrosshair,
+    };
+
+    drawCrosshairOverlay(ctx, chartLayouts.composition);
+
+    if (!isMobile) {
+        updateLegend(legendSeries, chartManager);
+    }
+}
+
+function drawCompositionChart(ctx, chartManager) {
+    stopPerformanceAnimation();
+    stopContributionAnimation();
+    const emptyState = document.getElementById('runningAmountEmpty');
+
+    if (!compositionDataCache && compositionDataLoading) {
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+        return;
+    }
+
+    if (compositionDataCache) {
+        renderCompositionChart(ctx, chartManager, compositionDataCache);
+        return;
+    }
+
+    compositionDataLoading = true;
     fetch('../data/output/figures/composition.json')
         .then((response) => response.json())
         .then((data) => {
-            if (!data || !data.dates || data.dates.length === 0) {
-                emptyState.style.display = 'block';
-                return;
-            }
-            emptyState.style.display = 'none';
-
-            const isMobile = window.innerWidth <= 768;
-            const padding = isMobile
-                ? { top: 15, right: 20, bottom: 35, left: 50 }
-                : { top: 20, right: 30, bottom: 48, left: 70 };
-            const plotWidth = canvas.offsetWidth - padding.left - padding.right;
-            const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
-
-            // Filter data by date range
-            const { chartDateRange } = transactionState;
-            const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-            const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
-
-            const filteredIndices = [];
-            data.dates.forEach((dateStr, index) => {
-                const date = new Date(dateStr);
-                if ((!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
-                    filteredIndices.push(index);
-                }
-            });
-
-            if (filteredIndices.length === 0) {
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            const filteredDates = filteredIndices.map((i) => data.dates[i]);
-            // const filteredTotalValues = filteredIndices.map((i) => data.total_values[i]);
-
-            // Get ALL holdings that had any percentage during the filtered period
-            const allHoldings = {};
-            Object.keys(data.composition).forEach((ticker) => {
-                const values = filteredIndices.map((i) => data.composition[ticker][i] || 0);
-                const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length; // Average percentage
-                if (avgValue > 0) {
-                    // Include ALL holdings with any percentage > 0
-                    allHoldings[ticker] = avgValue; // Rank by average percentage
-                }
-            });
-
-            // Sort by latest date percentage (largest first, so largest goes at bottom of stack)
-            const sortLatestIndex = filteredDates.length - 1;
-            const sortedTickers = Object.entries(allHoldings).sort((a, b) => {
-                const aLatestValue = filteredIndices.map((i) => data.composition[a[0]][i] || 0)[
-                    sortLatestIndex
-                ];
-                const bLatestValue = filteredIndices.map((i) => data.composition[b[0]][i] || 0)[
-                    sortLatestIndex
-                ];
-                return bLatestValue - aLatestValue; // Largest first (bottom of stack)
-            });
-
-            // Show ALL holdings (no limit)
-            const topTickers = sortedTickers.map(([ticker]) => ticker);
-
-            // Apply smoothing to composition data for each ticker
-            const chartData = {};
-            topTickers.forEach((ticker) => {
-                const rawValues = filteredIndices.map((i) => data.composition[ticker][i] || 0);
-
-                // Apply smoothing to the percentage data
-                const compositionSmoothingConfig = getSmoothingConfig('composition');
-                const smoothedValues =
-                    rawValues.length > 2 && compositionSmoothingConfig
-                        ? smoothFinancialData(
-                              rawValues.map((value, index) => ({
-                                  x: new Date(filteredDates[index]).getTime(),
-                                  y: value,
-                              })),
-                              compositionSmoothingConfig,
-                              true // preserveEnd - keep the last point unchanged
-                          ).map((p) => p.y)
-                        : rawValues;
-
-                chartData[ticker] = smoothedValues;
-            });
-
-            // Create natural spectrum progression: deep blue -> deep green (highest to lowest weight)
-            // Avoid extreme pale colors like white, light gray, and very pale tones for better visibility
-            const colors = [
-                // Deep blue (highest weight) - darkest, most saturated blues
-                '#0F172A',
-                '#1E293B',
-                '#1E3A8A',
-                '#1E40AF',
-                '#2563EB',
-                '#1A237E',
-                '#283593',
-                '#303F9F',
-                '#3949AB',
-                '#3F51B5',
-                '#0D47A1',
-                '#1565C0',
-                '#1976D2',
-                '#1E88E5',
-                '#2196F3',
-
-                // Dark blue - rich, deep blues
-                '#0C4A6E',
-                '#075985',
-                '#0369A1',
-                '#0284C7',
-                '#0EA5E9',
-                '#0D47A1',
-                '#1565C0',
-                '#1976D2',
-                '#1E88E5',
-                '#2196F3',
-                '#42A5F5',
-                '#64B5F6',
-                '#90CAF9',
-
-                // Blue - medium blues
-                '#164E63',
-                '#155E75',
-                '#0E7490',
-                '#0891B2',
-                '#06B6D4',
-                '#0F4C75',
-                '#1A5F8A',
-                '#2A7BA0',
-                '#3B9BC7',
-                '#4DB8E9',
-                '#5DD3FC',
-                '#7DE8FD',
-                '#9DF6FE',
-
-                // Light blue - vibrant lighter blues (avoiding very pale tones)
-                '#1A5F7A',
-                '#2A7BA0',
-                '#3B9BC7',
-                '#4DB8E9',
-                '#5DD3FC',
-                '#7DE8FD',
-                '#9DF6FE',
-                '#81D4FA',
-                '#4FC3F7',
-                '#29B6F6',
-
-                // Light green - transition from blue to green (avoiding pale tones)
-                '#00ACC1',
-                '#00BCD4',
-                '#26C6DA',
-                '#4DD0E1',
-                '#80DEEA',
-                '#00BCD4',
-                '#26C6DA',
-                '#4DD0E1',
-                '#80DEEA',
-
-                // Cyan - blue-green transition (avoiding pale tones)
-                '#0D7377',
-                '#14A085',
-                '#2DD4BF',
-                '#5EEAD4',
-                '#99F6E4',
-                '#00ACC1',
-                '#00BCD4',
-                '#26C6DA',
-                '#4DD0E1',
-                '#80DEEA',
-
-                // Green - vibrant greens
-                '#166534',
-                '#16A34A',
-                '#22C55E',
-                '#4ADE80',
-                '#86EFAC',
-                '#00E676',
-                '#00C853',
-                '#00A152',
-                '#00897B',
-                '#00695C',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-                '#4CAF50',
-                '#66BB6A',
-
-                // Dark green - deeper greens (avoiding pale tones)
-                '#14532D',
-                '#15803D',
-                '#1B5E20',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-                '#4CAF50',
-                '#66BB6A',
-                '#81C784',
-                '#A5D6A7',
-
-                // Deep green (lowest weight) - darkest, most saturated greens
-                '#0F3D2A',
-                '#1A5F3A',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-                '#1B5E20',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-                '#4CAF50',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-                '#4CAF50',
-                '#66BB6A',
-
-                // Additional vibrant variations for smooth transitions (avoiding pale colors)
-                '#0F172A',
-                '#1E293B',
-                '#1E3A8A',
-                '#1E40AF',
-                '#2563EB',
-                '#0C4A6E',
-                '#075985',
-                '#0369A1',
-                '#0284C7',
-                '#0EA5E9',
-                '#164E63',
-                '#155E75',
-                '#0E7490',
-                '#0891B2',
-                '#06B6D4',
-                '#1A5F7A',
-                '#2A7BA0',
-                '#3B9BC7',
-                '#4DB8E9',
-                '#5DD3FC',
-                '#00ACC1',
-                '#00BCD4',
-                '#26C6DA',
-                '#4DD0E1',
-                '#80DEEA',
-                '#0D7377',
-                '#14A085',
-                '#2DD4BF',
-                '#5EEAD4',
-                '#99F6E4',
-                '#166534',
-                '#16A34A',
-                '#22C55E',
-                '#4ADE80',
-                '#86EFAC',
-                '#14532D',
-                '#15803D',
-                '#1B5E20',
-                '#2E7D32',
-                '#388E3C',
-                '#0F3D2A',
-                '#1A5F3A',
-                '#2E7D32',
-                '#388E3C',
-                '#43A047',
-
-                // Additional vibrant blues and greens to replace pale colors
-                '#1E3A8A',
-                '#1E40AF',
-                '#2563EB',
-                '#3B82F6',
-                '#60A5FA',
-                '#0D9488',
-                '#14B8A6',
-                '#2DD4BF',
-                '#5EEAD4',
-                '#99F6E4',
-                '#166534',
-                '#16A34A',
-                '#22C55E',
-                '#4ADE80',
-                '#86EFAC',
-                '#0F766E',
-                '#1A9B8A',
-                '#2BB5A6',
-                '#3BC7B8',
-                '#4DD9CA',
-                '#134E4A',
-                '#1A6B5B',
-                '#2A8A7A',
-                '#3BA999',
-                '#4DC8B8',
-                '#0F3D2A',
-                '#1A5F3A',
-                '#2A7B5A',
-                '#3B9B7A',
-                '#4DBB9A',
-                '#1A237E',
-                '#283593',
-                '#303F9F',
-                '#3949AB',
-                '#3F51B5',
-                '#00E676',
-                '#00C853',
-                '#00A152',
-                '#00897B',
-                '#00695C',
-            ];
-
-            // Set up scales
-            const minTime = new Date(filteredDates[0]).getTime();
-            const maxTime = new Date(filteredDates[filteredDates.length - 1]).getTime();
-            const xScale = (time) =>
-                padding.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
-            const yScale = (value) => padding.top + plotHeight - (value / 100) * plotHeight;
-
-            // Draw axes - always show 0-100% for composition with more tick marks
-            drawAxes(
-                ctx,
-                padding,
-                plotWidth,
-                plotHeight,
-                minTime,
-                maxTime,
-                0,
-                100,
-                xScale,
-                yScale,
-                (val) => `${val}%`,
-                true // Use performance chart tick generation for more y-axis values
-            );
-
-            // Draw stacked areas
-            let cumulativeValues = new Array(filteredDates.length).fill(0);
-
-            topTickers.forEach((ticker, tickerIndex) => {
-                // Largest holdings get bluer colors (shorter wavelengths) - sortedTickers already puts largest first
-                const color = colors[tickerIndex % colors.length];
-                const values = chartData[ticker];
-
-                ctx.beginPath();
-                ctx.fillStyle = color + '80'; // Add 50% opacity
-                ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Half opaque gray
-                ctx.lineWidth = 1;
-
-                // Draw area
-                filteredDates.forEach((dateStr, index) => {
-                    const x = xScale(new Date(dateStr).getTime());
-                    const y = yScale(cumulativeValues[index] + values[index]);
-                    if (index === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                });
-
-                // Close the area
-                for (let i = filteredDates.length - 1; i >= 0; i--) {
-                    const x = xScale(new Date(filteredDates[i]).getTime());
-                    const y = yScale(cumulativeValues[i]);
-                    ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                // Update cumulative values
-                cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
-            });
-
-            // Add hover detection for dynamic legend
-            canvas.addEventListener('mousemove', (e) => {
-                // Only show composition hover when composition chart is active
-                if (transactionState.activeChart !== 'composition') {
-                    return;
-                }
-
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                // Check if mouse is over any composition area
-                let hoveredTicker = null;
-                let hoveredPercentage = 0;
-
-                // Find which ticker the mouse is over
-                for (let i = topTickers.length - 1; i >= 0; i--) {
-                    const ticker = topTickers[i];
-                    const values = chartData[ticker];
-
-                    // Find the closest date to mouse x position
-                    const mouseTime =
-                        minTime + ((x - padding.left) / plotWidth) * (maxTime - minTime);
-                    const closestIndex = Math.round(
-                        ((mouseTime - minTime) / (maxTime - minTime)) * (filteredDates.length - 1)
-                    );
-
-                    if (closestIndex >= 0 && closestIndex < values.length) {
-                        const tickerValue = values[closestIndex];
-                        const cumulativeValue = topTickers.slice(0, i).reduce((sum, prevTicker) => {
-                            return sum + chartData[prevTicker][closestIndex];
-                        }, 0);
-
-                        const tickerY = yScale(cumulativeValue + tickerValue);
-                        const prevY = yScale(cumulativeValue);
-
-                        if (y >= tickerY && y <= prevY && tickerValue > 0) {
-                            hoveredTicker = ticker;
-                            hoveredPercentage = tickerValue;
-                            break;
-                        }
-                    }
-                }
-
-                // Show/hide dynamic legend
-                const legendElement = document.getElementById('dynamicLegend');
-                if (hoveredTicker && hoveredPercentage > 0.1) {
-                    if (!legendElement) {
-                        // Create dynamic legend element
-                        const legend = document.createElement('div');
-                        legend.id = 'dynamicLegend';
-                        legend.style.cssText = `
-                            position: absolute;
-                            background: rgba(0, 0, 0, 0.8);
-                            color: white;
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            font-size: 12px;
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                            pointer-events: none;
-                            z-index: 1000;
-                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                        `;
-                        document.body.appendChild(legend);
-                    }
-
-                    const legend = document.getElementById('dynamicLegend');
-                    const tickerIndex = topTickers.indexOf(hoveredTicker);
-                    // Largest holdings get bluer colors - sortedTickers already puts largest first
-                    const tickerColor = colors[tickerIndex % colors.length];
-
-                    // Fix BRKB ticker symbol display in tooltip
-                    const displayTicker = hoveredTicker === 'BRKB' ? 'BRK-B' : hoveredTicker;
-                    legend.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 12px; height: 12px; background: ${tickerColor}; border-radius: 2px;"></div>
-                            <span><strong>${displayTicker}</strong>: ${hoveredPercentage.toFixed(2)}%</span>
-                        </div>
-                    `;
-
-                    // Position legend near mouse
-                    legend.style.left = e.clientX + 10 + 'px';
-                    legend.style.top = e.clientY - 30 + 'px';
-                    legend.style.display = 'block';
-                } else if (legendElement) {
-                    legendElement.style.display = 'none';
-                }
-            });
-
-            // Hide legend when mouse leaves canvas
-            canvas.addEventListener('mouseleave', () => {
-                // Only hide composition legend when composition chart is active
-                if (transactionState.activeChart !== 'composition') {
-                    return;
-                }
-
-                const legendElement = document.getElementById('dynamicLegend');
-                if (legendElement) {
-                    legendElement.style.display = 'none';
-                }
-            });
-
-            // Show latest 6 largest holdings in proper legend format
-            const latestIndex = filteredDates.length - 1;
-
-            // Check if "Others" has any data
-            const othersPercentage = chartData['Others']
-                ? chartData['Others'][latestIndex] || 0
-                : 0;
-
-            // If "Others" is the dominant holding (>50%), include it in legend
-            const shouldIncludeOthers = othersPercentage > 50;
-
-            const latestHoldings = topTickers
-                .filter((ticker) => shouldIncludeOthers || ticker !== 'Others') // Include Others if dominant
-                .map((ticker) => ({
-                    ticker,
-                    percentage: chartData[ticker][latestIndex] || 0,
-                }))
-                .filter((holding) => holding.percentage > 0.1) // Back to 0.1% threshold
-                .sort((a, b) => b.percentage - a.percentage)
-                .slice(0, 6);
-
-            // Create legend series in same format as other charts
-            // If no holdings above threshold, show top holdings regardless of percentage
-            const holdingsForLegend =
-                latestHoldings.length > 0
-                    ? latestHoldings
-                    : topTickers
-                          .filter((ticker) => shouldIncludeOthers || ticker !== 'Others') // Include Others if dominant
-                          .map((ticker) => ({
-                              ticker,
-                              percentage: chartData[ticker][latestIndex] || 0,
-                          }))
-                          .sort((a, b) => b.percentage - a.percentage)
-                          .slice(0, 6);
-
-            const legendSeries = holdingsForLegend.map((holding) => {
-                const tickerIndex = topTickers.indexOf(holding.ticker);
-                // Largest holdings get bluer colors - sortedTickers already puts largest first
-                // Fix BRKB ticker symbol display
-                const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
-                return {
-                    key: holding.ticker,
-                    name: displayName,
-                    color: colors[tickerIndex % colors.length],
-                };
-            });
-
-            // Use the same updateLegend function for visual consistency
-            // Hide legend on mobile due to space constraints
-            if (!isMobile) {
-                updateLegend(legendSeries, chartManager);
-            }
+            compositionDataCache = data;
+            renderCompositionChart(ctx, chartManager, data);
         })
         .catch(() => {
-            // console.error('Error loading composition data:', error);
-            emptyState.style.display = 'block';
+            chartLayouts.composition = null;
+            updateCrosshairUI(null, null);
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+        })
+        .finally(() => {
+            compositionDataLoading = false;
         });
 }
 
 // --- Main Chart Manager ---
 
-export function createChartManager() {
+export function createChartManager(options = {}) {
+    const crosshairCallbacks = options.crosshairCallbacks || {};
+    crosshairExternalUpdate = crosshairCallbacks.onUpdate || null;
+    if (typeof crosshairExternalUpdate === 'function') {
+        crosshairExternalUpdate(null, null);
+    }
+
     let pendingFrame = null;
 
     const renderFrame = async (timestamp) => {
@@ -2708,6 +3152,7 @@ export function createChartManager() {
         if (!canvas) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            updateCrosshairUI(null, null);
             return;
         }
 
@@ -2715,8 +3160,11 @@ export function createChartManager() {
         if (!ctx) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            updateCrosshairUI(null, null);
             return;
         }
+
+        attachCrosshairEvents(canvas, chartManager);
 
         const dpr = window.devicePixelRatio || 1;
         const displayWidth = canvas.offsetWidth;
@@ -2725,6 +3173,7 @@ export function createChartManager() {
         if (displayWidth === 0 || displayHeight === 0) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            updateCrosshairUI(null, null);
             return;
         }
 

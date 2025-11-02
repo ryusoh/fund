@@ -1,4 +1,5 @@
 .terminal {
+    position: relative;
     background: rgba(17, 17, 17, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 16px;
@@ -59,4 +60,116 @@
     box-sizing: border-box;
     resize: none;
     overflow: hidden;
+}
+
+.terminal-crosshair-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    pointer-events: none;
+    padding: 12px 40px 42px 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 120ms ease,
+        visibility 120ms ease;
+    background: rgba(7, 9, 15, 0.12);
+}
+
+.terminal-crosshair-overlay.terminal-crosshair-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.terminal-crosshair-panel {
+    pointer-events: auto;
+    min-width: clamp(220px, 30vw, 320px);
+    max-height: 87%;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(12, 16, 24, 0.82);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 24px 32px rgba(0, 0, 0, 0.45);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.terminal-crosshair-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
+
+.terminal-crosshair-date {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: rgba(245, 248, 255, 0.92);
+}
+
+.terminal-crosshair-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.terminal-crosshair-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.terminal-crosshair-row,
+.terminal-crosshair-range-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    color: rgba(230, 236, 255, 0.88);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.terminal-crosshair-key {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.terminal-crosshair-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
+.terminal-crosshair-value {
+    margin-left: auto;
+}
+
+.terminal-crosshair-range {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.terminal-crosshair-range-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(205, 214, 237, 0.72);
+    text-align: right;
+}
+
+.terminal-crosshair-range-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }

@@ -19,7 +19,7 @@ import {
 import { initTable } from '@js/transactions/table.js';
 import { createChartManager } from '@js/transactions/chart.js';
 import { createUiController } from '@js/transactions/ui.js';
-import { initTerminal } from '@js/transactions/terminal.js';
+import { initTerminal, updateTerminalCrosshair } from '@js/transactions/terminal.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
 
 let chartManager;
@@ -65,7 +65,11 @@ async function loadTransactions() {
 }
 
 function initialize() {
-    chartManager = createChartManager();
+    chartManager = createChartManager({
+        crosshairCallbacks: {
+            onUpdate: updateTerminalCrosshair,
+        },
+    });
     tableController = initTable({
         onFilterChange: () => {
             if (chartManager && typeof chartManager.update === 'function') {

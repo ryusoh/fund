@@ -14,6 +14,161 @@ import {
     buildFilteredBalanceSeries,
 } from './chart.js';
 
+let crosshairOverlay = null;
+let crosshairDetails = null;
+let crosshairTimeout = null;
+const crosshairDateFormatter =
+    typeof Intl !== 'undefined'
+        ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        : null;
+
+function formatCrosshairDateLabel(time) {
+    if (!Number.isFinite(time)) {
+        return '';
+    }
+    const date = new Date(time);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+    if (crosshairDateFormatter) {
+        return crosshairDateFormatter.format(date);
+    }
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function ensureCrosshairOverlay() {
+    if (crosshairOverlay && crosshairDetails) {
+        return { overlay: crosshairOverlay, details: crosshairDetails };
+    }
+
+    const terminalElement = document.getElementById('terminal');
+    if (!terminalElement) {
+        return { overlay: null, details: null };
+    }
+
+    let overlay = document.getElementById('terminalCrosshairOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'terminalCrosshairOverlay';
+        overlay.className = 'terminal-crosshair-overlay';
+        overlay.style.visibility = 'hidden';
+        overlay.classList.remove('terminal-crosshair-active');
+        overlay.innerHTML = `
+            <div class="terminal-crosshair-panel">
+                <div class="terminal-crosshair-header">
+                    <span class="terminal-crosshair-date" id="terminalCrosshairDate"></span>
+                </div>
+                <div class="terminal-crosshair-body">
+                    <div id="terminalCrosshairList" class="terminal-crosshair-list"></div>
+                    <div id="terminalCrosshairRange" class="terminal-crosshair-range" hidden></div>
+                </div>
+            </div>
+        `;
+        terminalElement.appendChild(overlay);
+    }
+
+    const details = {
+        date: overlay.querySelector('#terminalCrosshairDate'),
+        list: overlay.querySelector('#terminalCrosshairList'),
+        range: overlay.querySelector('#terminalCrosshairRange'),
+    };
+
+    crosshairOverlay = overlay;
+    crosshairDetails = details;
+
+    overlay.addEventListener('transitionend', () => {
+        if (!overlay.classList.contains('terminal-crosshair-active')) {
+            overlay.style.visibility = 'hidden';
+        }
+    });
+
+    return { overlay, details };
+}
+
+export function updateTerminalCrosshair(snapshot, rangeSummary) {
+    const { overlay, details } = ensureCrosshairOverlay();
+    if (!overlay || !details) {
+        return;
+    }
+
+    if (!snapshot) {
+        overlay.classList.remove('terminal-crosshair-active');
+        if (crosshairTimeout) {
+            clearTimeout(crosshairTimeout);
+        }
+        crosshairTimeout = setTimeout(() => {
+            overlay.style.visibility = 'hidden';
+        }, 160);
+        return;
+    }
+
+    if (crosshairTimeout) {
+        clearTimeout(crosshairTimeout);
+        crosshairTimeout = null;
+    }
+
+    overlay.style.visibility = 'visible';
+    requestAnimationFrame(() => overlay.classList.add('terminal-crosshair-active'));
+
+    if (details.date) {
+        details.date.textContent = snapshot.label || '';
+    }
+
+    if (details.list) {
+        const markup = snapshot.series
+            .map(
+                (series) => `
+                <div class="terminal-crosshair-row">
+                    <span class="terminal-crosshair-key">
+                        <span class="terminal-crosshair-dot" style="background:${series.color};"></span>
+                        ${series.label}
+                    </span>
+                    <span class="terminal-crosshair-value">${series.formatted}</span>
+                </div>
+            `
+            )
+            .join('');
+        details.list.innerHTML = markup;
+    }
+
+    if (details.range) {
+        if (!rangeSummary) {
+            details.range.hidden = true;
+        } else {
+            const durationLabel =
+                rangeSummary.durationDays >= 1
+                    ? `${Math.round(rangeSummary.durationDays)} day${
+                          Math.round(rangeSummary.durationDays) === 1 ? '' : 's'
+                      }`
+                    : `${Math.max(1, Math.round(rangeSummary.durationMs / (1000 * 60 * 60)))} hrs`;
+            const entriesMarkup = rangeSummary.entries
+                .map(
+                    (entry) => `
+                        <div class="terminal-crosshair-range-row">
+                            <span class="terminal-crosshair-key">
+                                <span class="terminal-crosshair-dot" style="background:${entry.color};"></span>
+                                ${entry.label}
+                            </span>
+                            <span class="terminal-crosshair-value">${entry.deltaFormatted}${
+                                entry.percentFormatted ? ` (${entry.percentFormatted})` : ''
+                            }</span>
+                        </div>
+                    `
+                )
+                .join('');
+            const startLabel = formatCrosshairDateLabel(rangeSummary.start);
+            const endLabel = formatCrosshairDateLabel(rangeSummary.end);
+            details.range.innerHTML = `
+                <div class="terminal-crosshair-range-header">${startLabel} → ${endLabel} · ${durationLabel}</div>
+                ${entriesMarkup ? `<div class="terminal-crosshair-range-body">${entriesMarkup}</div>` : ''}
+            `;
+            details.range.hidden = false;
+        }
+    }
+}
+
 async function getStatsText() {
     try {
         const response = await fetch('../data/output/transaction_stats.txt');
