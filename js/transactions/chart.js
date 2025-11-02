@@ -218,10 +218,20 @@ function buildRangeSummary(layout, rawStart, rawEnd) {
             return;
         }
         const delta = endValue - startValue;
-        const percent =
-            Number.isFinite(startValue) && Math.abs(startValue) > 1e-9
-                ? (delta / Math.abs(startValue)) * 100
-                : null;
+        let percent = null;
+        if (layout.valueType === 'percent') {
+            const startFactor = 1 + startValue / 100;
+            const endFactor = 1 + endValue / 100;
+            if (
+                Number.isFinite(startFactor) &&
+                Number.isFinite(endFactor) &&
+                Math.abs(startFactor) > 1e-9
+            ) {
+                percent = (endFactor / startFactor - 1) * 100;
+            }
+        } else if (Number.isFinite(startValue) && Math.abs(startValue) > 1e-9) {
+            percent = (delta / Math.abs(startValue)) * 100;
+        }
         const formattedDelta = series.formatDelta
             ? series.formatDelta(delta, percent)
             : layout.valueType === 'percent'
@@ -230,8 +240,11 @@ function buildRangeSummary(layout, rawStart, rawEnd) {
         if (formattedDelta === null || formattedDelta === undefined) {
             return;
         }
-        const formattedPercent =
+        let formattedPercent =
             percent !== null && Number.isFinite(percent) ? formatPercentInline(percent) : null;
+        if (layout.valueType === 'percent') {
+            formattedPercent = null;
+        }
 
         entries.push({
             key: series.key,
@@ -2684,13 +2697,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             color: displayColor,
             getValueAtTime: createTimeInterpolator(series.data),
             formatValue: formatBalanceValue,
-            formatDelta: (delta, percent) => {
-                const base = formatCurrencyInline(delta);
-                if (percent === null || percent === undefined) {
-                    return base;
-                }
-                return `${base} (${formatPercentInline(percent)})`;
-            },
+            formatDelta: (delta) => formatCurrencyInline(delta),
         };
     });
 
@@ -2703,7 +2710,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     if (buyVolumeMap.size > 0) {
         volumeSeries.push({
             key: 'buyVolume',
-            label: 'Buy Volume',
+            label: 'Buy',
             color: colors.buy,
             getValueAtTime: makeVolumeGetter(buyVolumeMap),
             formatValue: formatCurrencyInline,
@@ -2715,7 +2722,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     if (sellVolumeMap.size > 0) {
         volumeSeries.push({
             key: 'sellVolume',
-            label: 'Sell Volume',
+            label: 'Sell',
             color: colors.sell,
             getValueAtTime: makeVolumeGetter(sellVolumeMap),
             formatValue: formatCurrencyInline,
@@ -3106,7 +3113,8 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
             color: series.color,
             getValueAtTime: createTimeInterpolator(series.points || []),
             formatValue: (value) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
-            formatDelta: (delta) => formatPercentInline(delta),
+            formatDelta: (delta, percent) =>
+                formatPercentInline(percent !== null && percent !== undefined ? percent : delta),
         })),
     };
 
