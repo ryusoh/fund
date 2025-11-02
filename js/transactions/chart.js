@@ -684,24 +684,34 @@ export function hasActiveTransactionFilters() {
     );
 }
 
-function getContributionSeriesForTransactions(transactions) {
+function getContributionSeriesForTransactions(transactions, includeSyntheticStart = false) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }
     const splitHistoryRef = transactionState.splitHistory;
     const cached = contributionSeriesCache.get(transactions);
-    if (cached && cached.splitHistory === splitHistoryRef) {
+    if (
+        cached &&
+        cached.splitHistory === splitHistoryRef &&
+        cached.includeSyntheticStart === includeSyntheticStart
+    ) {
         return cached.series;
     }
-    const series = buildContributionSeriesFromTransactions(transactions);
+    const series = buildContributionSeriesFromTransactions(transactions, {
+        includeSyntheticStart,
+    });
     contributionSeriesCache.set(transactions, {
         splitHistory: splitHistoryRef,
+        includeSyntheticStart,
         series,
     });
     return series;
 }
 
-export function buildContributionSeriesFromTransactions(transactions) {
+export function buildContributionSeriesFromTransactions(
+    transactions,
+    { includeSyntheticStart = false } = {}
+) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }
@@ -760,6 +770,29 @@ export function buildContributionSeriesFromTransactions(transactions) {
                 orderType: 'padding',
                 netAmount: 0,
             });
+        }
+    }
+
+    if (includeSyntheticStart && series.length > 0) {
+        const firstTransaction = sortedTransactions[0];
+        const firstTotals = runningTotals.get(firstTransaction.transactionId);
+        const firstAmount = firstTotals ? firstTotals.portfolio : 0;
+        const epsilon = 1e-6;
+        const firstDate = new Date(firstTransaction.tradeDate);
+        if (!Number.isNaN(firstDate.getTime()) && Math.abs(firstAmount) > epsilon) {
+            const syntheticDate = new Date(firstDate);
+            syntheticDate.setDate(syntheticDate.getDate() - 1);
+            const syntheticDateStr = syntheticDate.toISOString().split('T')[0];
+            const existing = series.find((point) => point.tradeDate === syntheticDateStr);
+            if (!existing) {
+                series.unshift({
+                    tradeDate: syntheticDateStr,
+                    amount: 0,
+                    orderType: 'padding',
+                    netAmount: 0,
+                    synthetic: true,
+                });
+            }
         }
     }
 
@@ -853,7 +886,10 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
     const holdings = new Map();
     const series = [];
-    const iterDate = new Date(firstDate);
+    const iterationStart = new Date(firstDate);
+    iterationStart.setDate(iterationStart.getDate() - 1);
+
+    const iterDate = new Date(iterationStart);
 
     while (iterDate <= lastDate) {
         const dateStr = iterDate.toISOString().split('T')[0];
@@ -905,10 +941,95 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         iterDate.setDate(iterDate.getDate() + 1);
     }
 
+    const epsilon = 1e-6;
+    let keepSyntheticStart = false;
+    for (let i = 0; i < series.length; i += 1) {
+        const point = series[i];
+        if (!point || !Number.isFinite(point.value)) {
+            continue;
+        }
+        if (Math.abs(point.value) > epsilon) {
+            if (i > 0 && Math.abs(series[i - 1]?.value || 0) <= epsilon) {
+                keepSyntheticStart = true;
+            }
+            break;
+        }
+    }
+
+    if (keepSyntheticStart && series.length > 0) {
+        series[0].synthetic = true;
+    } else if (series.length > 0 && Math.abs(series[0].value || 0) <= epsilon) {
+        series.shift();
+    }
+
     return series;
 }
 
 // --- Helper Functions ---
+
+function injectSyntheticStartPoint(filteredData, fullSeries) {
+    if (!Array.isArray(filteredData) || filteredData.length === 0) {
+        return filteredData;
+    }
+    if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
+        return filteredData;
+    }
+
+    const firstFiltered = filteredData[0];
+    const firstTime =
+        firstFiltered && firstFiltered.date instanceof Date
+            ? firstFiltered.date.getTime()
+            : new Date(firstFiltered.date).getTime();
+    if (!Number.isFinite(firstTime)) {
+        return filteredData;
+    }
+
+    const matchingIndex = fullSeries.findIndex((item) => {
+        if (!item) {
+            return false;
+        }
+        const itemDate = new Date(item.date);
+        if (Number.isNaN(itemDate.getTime())) {
+            return false;
+        }
+        return itemDate.getTime() === firstTime;
+    });
+
+    if (matchingIndex <= 0) {
+        return filteredData;
+    }
+
+    const previousPoint = fullSeries[matchingIndex - 1];
+    if (!previousPoint || !previousPoint.synthetic) {
+        return filteredData;
+    }
+
+    const prevDate = new Date(previousPoint.date);
+    if (Number.isNaN(prevDate.getTime())) {
+        return filteredData;
+    }
+
+    const prevValue = Number(previousPoint.value);
+    const epsilon = 1e-6;
+    if (!Number.isFinite(prevValue) || Math.abs(prevValue) > epsilon) {
+        return filteredData;
+    }
+
+    if (
+        filteredData[0].date instanceof Date &&
+        filteredData[0].date.getTime() === prevDate.getTime()
+    ) {
+        return filteredData;
+    }
+
+    const syntheticPoint = {
+        date: prevDate,
+        value: Number.isFinite(prevValue) ? prevValue : 0,
+        synthetic: true,
+    };
+
+    return [syntheticPoint, ...filteredData];
+}
 
 const COLOR_PARSER_CONTEXT = (() => {
     if (typeof document === 'undefined') {
@@ -1774,7 +1895,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     let contributionFromTransactions = false;
 
     if (contributionTransactions.length > 0) {
-        contributionSource = getContributionSeriesForTransactions(contributionTransactions);
+        contributionSource = getContributionSeriesForTransactions(contributionTransactions, true);
         contributionFromTransactions =
             filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
         if (!filtersActive && contributionSource !== runningAmountSeries) {
@@ -1843,12 +1964,13 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             .map((item) => ({ ...item, date: new Date(item.tradeDate || item.date) }))
             .filter((item) => !Number.isNaN(item.date.getTime()))
     );
+    const mappedBalanceSource = showBalance
+        ? (balanceSource || [])
+              .map((item) => ({ ...item, date: new Date(item.date) }))
+              .filter((item) => !Number.isNaN(item.date.getTime()))
+        : [];
     const rawBalanceData = showBalance
-        ? filterDataByDateRange(
-              (balanceSource || [])
-                  .map((item) => ({ ...item, date: new Date(item.date) }))
-                  .filter((item) => !Number.isNaN(item.date.getTime()))
-          )
+        ? injectSyntheticStartPoint(filterDataByDateRange(mappedBalanceSource), balanceSource)
         : [];
 
     // Apply smoothing to contribution and balance data
@@ -1866,14 +1988,15 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
           ).map((p) => ({ date: new Date(p.x), amount: p.y }))
         : rawContributionData;
 
-    const balanceData =
-        rawBalanceData.length > 2 && balanceSmoothingConfig
-            ? smoothFinancialData(
-                  rawBalanceData.map((item) => ({ x: item.date.getTime(), y: item.value })),
-                  balanceSmoothingConfig,
-                  true // preserveEnd - keep the last point unchanged
-              ).map((p) => ({ date: new Date(p.x), value: p.y }))
-            : rawBalanceData;
+    const shouldSmoothBalance =
+        !filtersActive && rawBalanceData.length > 2 && balanceSmoothingConfig;
+    const balanceData = shouldSmoothBalance
+        ? smoothFinancialData(
+              rawBalanceData.map((item) => ({ x: item.date.getTime(), y: item.value })),
+              balanceSmoothingConfig,
+              true // preserveEnd - keep the last point unchanged
+          ).map((p) => ({ date: new Date(p.x), value: p.y }))
+        : rawBalanceData;
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         stopContributionAnimation();
@@ -2405,27 +2528,31 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             : colors.contribution;
 
         const firstContribution =
+            rawContributionData.find((item) => item.synthetic) ||
             rawContributionData.find((item) => {
                 if (typeof item.orderType !== 'string') {
                     return true;
                 }
                 return item.orderType.toLowerCase() !== 'padding';
-            }) ?? rawContributionData[0];
-        const firstContributionX = xScale(firstContribution.date.getTime());
-        const firstContributionY = yScale(firstContribution.amount);
-        firstContributionLabelY = drawStartValue(
-            ctx,
-            firstContributionX,
-            firstContributionY,
-            firstContribution.amount,
-            contributionStartColor,
-            isMobile,
-            padding,
-            plotWidth,
-            plotHeight,
-            formatCurrencyCompact,
-            true
-        );
+            }) ||
+            rawContributionData[0];
+        if (firstContribution) {
+            const firstContributionX = xScale(firstContribution.date.getTime());
+            const firstContributionY = yScale(firstContribution.amount);
+            firstContributionLabelY = drawStartValue(
+                ctx,
+                firstContributionX,
+                firstContributionY,
+                firstContribution.amount,
+                contributionStartColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                formatCurrencyCompact,
+                true
+            );
+        }
 
         const lastContribution = rawContributionData[rawContributionData.length - 1];
         const lastContributionX = xScale(lastContribution.date.getTime());

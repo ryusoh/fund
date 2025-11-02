@@ -453,7 +453,8 @@ async function buildContributionChartSummary(dateRange = transactionState.chartD
     let contributionSource = [];
     if (filtersActive) {
         contributionSource = buildContributionSeriesFromTransactions(
-            transactionState.filteredTransactions || []
+            transactionState.filteredTransactions || [],
+            { includeSyntheticStart: true }
         );
     } else if (Array.isArray(transactionState.runningAmountSeries)) {
         contributionSource = transactionState.runningAmountSeries;
