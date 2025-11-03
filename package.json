@@ -33,7 +33,7 @@
         "@stylistic/stylelint-plugin": "^4.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "babel-jest": "^30.2.0",
-        "eslint": "^9.38.0",
+        "eslint": "^9.39.0",
         "husky": "^9.1.6",
         "lint-staged": "^16.2.6",
         "prettier": "^3.3.3",
