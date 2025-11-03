@@ -4,16 +4,16 @@
 +--------+--------------+---------------+
 | Series | Sharpe Ratio | Sortino Ratio |
 +========+==============+===============+
-| ^LZ    |        0.579 |         0.495 |
-| ^DJI   |        0.271 |         0.221 |
-| ^GSPC  |        0.421 |         0.340 |
-| ^HSI   |       -0.124 |        -0.105 |
-| ^IXIC  |        0.402 |         0.319 |
-| ^N225  |        0.422 |         0.340 |
-| ^SSEC  |       -0.052 |        -0.042 |
+| ^LZ    |        0.883 |         0.755 |
+| ^DJI   |        0.691 |         0.563 |
+| ^GSPC  |        0.796 |         0.644 |
+| ^HSI   |        0.142 |         0.120 |
+| ^IXIC  |        0.685 |         0.544 |
+| ^N225  |        0.733 |         0.591 |
+| ^SSEC  |        0.352 |         0.285 |
 +--------+--------------+---------------+
 
-  Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).
+  Note: Ratios assume a 0% minimum acceptable (risk-free) return.
   Higher values indicate better risk-adjusted returns.
 
   - Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)
