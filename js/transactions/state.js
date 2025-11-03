@@ -7,6 +7,7 @@ const DEFAULT_SYMBOL = CURRENCY_SYMBOLS[DEFAULT_CURRENCY] || '$';
 export const transactionState = {
     allTransactions: [],
     filteredTransactions: [],
+    activeFilterTerm: '',
     splitHistory: [],
     runningAmountSeries: [],
     portfolioSeries: [],
@@ -29,6 +30,18 @@ export const transactionState = {
     portfolioSeriesByCurrency: {},
     fxRatesByCurrency: {},
 };
+
+export function setActiveFilterTerm(term) {
+    if (typeof term === 'string') {
+        transactionState.activeFilterTerm = term.trim();
+    } else {
+        transactionState.activeFilterTerm = '';
+    }
+}
+
+export function getActiveFilterTerm() {
+    return transactionState.activeFilterTerm || '';
+}
 
 export function resetSortState() {
     sortState.column = 'tradeDate';

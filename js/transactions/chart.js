@@ -1981,6 +1981,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         : [];
 
     const filtersActive = hasActiveTransactionFilters();
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
     const contributionTransactions = filtersActive ? filteredTransactions : allTransactions;
     let contributionSource = [];
     let contributionFromTransactions = false;
@@ -1993,7 +1994,6 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             setRunningAmountSeries(contributionSource);
         }
     } else {
-        const selectedCurrency = transactionState.selectedCurrency || 'USD';
         const mappedSeries =
             transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
         if (mappedSeries && mappedSeries === runningAmountSeries) {
@@ -2014,7 +2014,6 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         (!Array.isArray(contributionSource) || contributionSource.length === 0) &&
         runningAmountSeries.length > 0
     ) {
-        const selectedCurrency = transactionState.selectedCurrency || 'USD';
         const mappedSeries =
             transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
         if (mappedSeries) {
@@ -2041,13 +2040,19 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         historicalPrices = historicalPrices || {};
     }
 
-    const balanceSource = filtersActive
+    let balanceSource = filtersActive
         ? buildFilteredBalanceSeries(
               filteredTransactions,
               historicalPrices,
               transactionState.splitHistory
           )
         : portfolioSeries;
+    if (filtersActive && selectedCurrency !== 'USD' && Array.isArray(balanceSource)) {
+        balanceSource = balanceSource.map((entry) => ({
+            ...entry,
+            value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+        }));
+    }
     const hasBalanceSeries = Array.isArray(balanceSource) && balanceSource.length > 0;
 
     const { chartVisibility } = transactionState;

@@ -1,4 +1,4 @@
-import { transactionState, setFilteredTransactions } from './state.js';
+import { transactionState, setFilteredTransactions, setActiveFilterTerm } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
 import { adjustMobilePanels } from './layout.js';
@@ -108,11 +108,14 @@ function closeAllFilterDropdowns() {
 }
 
 function filterAndSort(searchTerm = '') {
+    const normalizedSearchTerm = typeof searchTerm === 'string' ? searchTerm.trim() : '';
+    setActiveFilterTerm(normalizedSearchTerm);
+
     let filtered = [...transactionState.allTransactions];
     const currentCurrency = transactionState.selectedCurrency;
 
-    if (searchTerm) {
-        const { text, commands } = parseCommandPalette(searchTerm);
+    if (normalizedSearchTerm) {
+        const { text, commands } = parseCommandPalette(normalizedSearchTerm);
         const term = text.toLowerCase();
 
         if (commands.security) {
@@ -238,7 +241,7 @@ function filterAndSort(searchTerm = '') {
     const filterResultEvent = new CustomEvent('transactionFilterResult', {
         detail: {
             count: filtered.length,
-            searchTerm,
+            searchTerm: normalizedSearchTerm,
         },
     });
     document.dispatchEvent(filterResultEvent);

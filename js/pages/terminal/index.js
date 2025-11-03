@@ -12,6 +12,7 @@ import {
     setPerformanceSeries,
     setSelectedCurrency,
     setFxRatesByCurrency,
+    getActiveFilterTerm,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
 
@@ -306,14 +307,16 @@ document.addEventListener('currencyChangedGlobal', (event) => {
     setRunningAmountSeries(runningSeries);
     setPortfolioSeries(balanceSeries);
 
-    if (chartManager && typeof chartManager.update === 'function') {
+    let filtersHandled = false;
+    if (tableController && typeof tableController.filterAndSort === 'function') {
+        const activeFilterTerm = getActiveFilterTerm();
+        tableController.filterAndSort(activeFilterTerm);
+        filtersHandled = true;
+    }
+    if (!filtersHandled && chartManager && typeof chartManager.update === 'function') {
         chartManager.update();
     }
-    if (tableController && typeof tableController.filterAndSort === 'function') {
-        const terminalInput = document.getElementById('terminalInput');
-        const searchTerm = terminalInput ? terminalInput.value : '';
-        tableController.filterAndSort(searchTerm);
-    }
+
     adjustMobilePanels();
 });
 
