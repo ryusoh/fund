@@ -1,40 +1,143 @@
+const STORAGE_KEY = 'fund.selectedCurrency';
+
+let toggleContainerRef = null;
+let currencyButtons = [];
+let currentCurrency = null;
+let isDispatching = false;
+let globalListenerAttached = false;
+
+function normalizeCurrency(value) {
+    return typeof value === 'string' && value.trim() ? value.trim().toUpperCase() : null;
+}
+
+function readStoredCurrency() {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            const stored = window.localStorage.getItem(STORAGE_KEY);
+            return normalizeCurrency(stored);
+        }
+    } catch {
+        // Ignore storage errors (e.g., private mode)
+    }
+    return null;
+}
+
+function persistCurrency(currency) {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(STORAGE_KEY, currency);
+        }
+    } catch {
+        // Ignore storage errors
+    }
+}
+
+function ensureToggleElements() {
+    if (!toggleContainerRef || !document.body.contains(toggleContainerRef)) {
+        toggleContainerRef = document.getElementById('currencyToggleContainer');
+        currencyButtons = toggleContainerRef
+            ? Array.from(toggleContainerRef.querySelectorAll('.currency-toggle'))
+            : [];
+    }
+    return toggleContainerRef;
+}
+
+function activateCurrency(currency, { emit = true, persist = true } = {}) {
+    const normalized = normalizeCurrency(currency) || 'USD';
+    ensureToggleElements();
+    const hasButtons = Array.isArray(currencyButtons) && currencyButtons.length > 0;
+
+    if (hasButtons) {
+        const targetButton = currencyButtons.find(
+            (btn) => normalizeCurrency(btn.dataset.currency) === normalized
+        );
+        if (!targetButton) {
+            return false;
+        }
+        if (currentCurrency !== normalized) {
+            currencyButtons.forEach((btn) => btn.classList.remove('active'));
+            targetButton.classList.add('active');
+            currentCurrency = normalized;
+        } else if (!targetButton.classList.contains('active')) {
+            targetButton.classList.add('active');
+        }
+    } else {
+        currentCurrency = normalized;
+    }
+
+    if (persist) {
+        persistCurrency(normalized);
+    }
+
+    if (emit && !isDispatching) {
+        try {
+            isDispatching = true;
+            document.dispatchEvent(
+                new CustomEvent('currencyChangedGlobal', {
+                    detail: { currency: normalized },
+                })
+            );
+        } finally {
+            isDispatching = false;
+        }
+    }
+
+    return true;
+}
+
+function attachGlobalListener() {
+    if (globalListenerAttached) {
+        return;
+    }
+    document.addEventListener('currencyChangedGlobal', (event) => {
+        if (isDispatching) {
+            return;
+        }
+        const eventCurrency = normalizeCurrency(event?.detail?.currency);
+        if (!eventCurrency || eventCurrency === currentCurrency) {
+            return;
+        }
+        activateCurrency(eventCurrency, { emit: false, persist: true });
+    });
+    globalListenerAttached = true;
+}
+
 /**
- * Initializes the currency toggle behavior.
+ * Initializes the currency toggle behavior and aligns it with any stored selection.
  */
 export function initCurrencyToggle() {
-    const toggleContainer = document.getElementById('currencyToggleContainer');
-    if (!toggleContainer) {
-        return;
-    }
-    const currencyButtons = Array.from(toggleContainer.querySelectorAll('.currency-toggle'));
-    if (currencyButtons.length === 0) {
+    const container = ensureToggleElements();
+    if (!container || !currencyButtons.length) {
         return;
     }
 
-    let selectedCurrency;
+    attachGlobalListener();
 
-    const activeButton = currencyButtons.find((button) => button.classList.contains('active'));
-    if (activeButton) {
-        selectedCurrency = activeButton.dataset.currency;
-    } else {
-        selectedCurrency = 'USD'; // Default
+    let initialCurrency =
+        normalizeCurrency(
+            currencyButtons.find((button) => button.classList.contains('active'))?.dataset.currency
+        ) || 'USD';
+
+    const storedCurrency = readStoredCurrency();
+    if (
+        storedCurrency &&
+        currencyButtons.some((btn) => normalizeCurrency(btn.dataset.currency) === storedCurrency)
+    ) {
+        initialCurrency = storedCurrency;
     }
 
-    toggleContainer.addEventListener('click', (event) => {
+    activateCurrency(initialCurrency, { emit: false, persist: true });
+
+    container.addEventListener('click', (event) => {
         const clickedButton = event.target.closest('.currency-toggle');
-        if (clickedButton) {
-            const newCurrency = clickedButton.dataset.currency;
-            if (selectedCurrency !== newCurrency) {
-                currencyButtons.forEach((btn) => btn.classList.remove('active'));
-                clickedButton.classList.add('active');
-                selectedCurrency = newCurrency;
-                document.dispatchEvent(
-                    new CustomEvent('currencyChangedGlobal', {
-                        detail: { currency: selectedCurrency },
-                    })
-                );
-            }
+        if (!clickedButton) {
+            return;
         }
+        const newCurrency = clickedButton.dataset.currency;
+        if (!newCurrency || normalizeCurrency(newCurrency) === currentCurrency) {
+            return;
+        }
+        activateCurrency(newCurrency, { emit: true, persist: true });
     });
 }
 
@@ -43,34 +146,40 @@ export function initCurrencyToggle() {
  * @param {number} step - +1 to move right/forward, -1 to move left/backward.
  */
 export function cycleCurrency(step) {
-    const toggleContainer = document.getElementById('currencyToggleContainer');
-    if (!toggleContainer) {
-        return;
-    }
-    const buttons = Array.from(toggleContainer.querySelectorAll('.currency-toggle'));
-    if (!buttons.length) {
+    const container = ensureToggleElements();
+    if (!container || !currencyButtons.length) {
         return;
     }
 
-    let currentIndex = buttons.findIndex((btn) => btn.classList.contains('active'));
+    let currentIndex = currencyButtons.findIndex((btn) => btn.classList.contains('active'));
     if (currentIndex < 0) {
         currentIndex = 0;
     }
 
-    const len = buttons.length;
-    const nextIndex = (((currentIndex + (step || 0)) % len) + len) % len; // safe modulo
+    const len = currencyButtons.length;
+    const nextIndex = (((currentIndex + (step || 0)) % len) + len) % len;
     if (nextIndex === currentIndex) {
-        return; // no change
+        return;
     }
 
-    const nextBtn = buttons[nextIndex];
-    buttons.forEach((btn) => btn.classList.remove('active'));
-    nextBtn.classList.add('active');
-
+    const nextBtn = currencyButtons[nextIndex];
     const newCurrency = nextBtn?.dataset?.currency || 'USD';
-    document.dispatchEvent(
-        new CustomEvent('currencyChangedGlobal', {
-            detail: { currency: newCurrency },
-        })
-    );
+    activateCurrency(newCurrency, { emit: true, persist: true });
+}
+
+/**
+ * Applies a currency selection programmatically (used during page initialization).
+ * @param {string} currency
+ * @param {{ emitEvent?: boolean, persist?: boolean }} options
+ */
+export function applyCurrencySelection(currency, { emitEvent = true, persist = true } = {}) {
+    activateCurrency(currency, { emit: emitEvent, persist });
+}
+
+/**
+ * Returns the persisted currency selection, if available.
+ * @returns {string|null}
+ */
+export function getStoredCurrency() {
+    return readStoredCurrency();
 }

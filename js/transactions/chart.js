@@ -394,6 +394,8 @@ function drawCrosshairOverlay(ctx, layout) {
 
     // Special handling for composition chart to show top 7 holdings at the crosshair time
     if (layout.key === 'composition') {
+        const crosshairDate = new Date(time);
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
         // Get values at the current time for all series
         const valuesAtTime = [];
         layout.series.forEach((series) => {
@@ -427,6 +429,28 @@ function drawCrosshairOverlay(ctx, layout) {
         // Sort by value (percentage) in descending order and take up to 7 (or fewer if less available)
         const topHoldings = nonZeroHoldings.sort((a, b) => b.value - a.value).slice(0, 7);
 
+        const totalValueRaw =
+            typeof layout.getTotalValueAtTime === 'function'
+                ? layout.getTotalValueAtTime(time)
+                : null;
+        const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
+
+        const enhancedHoldings = topHoldings.map((holding) => {
+            const baseAbsoluteValue = (totalValueBase * holding.value) / 100;
+            const absoluteValue = convertValueToCurrency(
+                baseAbsoluteValue,
+                crosshairDate,
+                selectedCurrency
+            );
+            const currencyText = formatCurrencyInline(absoluteValue);
+            const percentText = `${holding.value.toFixed(2)}%`;
+            return {
+                ...holding,
+                absoluteValue,
+                formatted: `${currencyText} (${percentText})`,
+            };
+        });
+
         // Add to seriesSnapshot - show only available holdings (may be fewer than 7)
         // For composition chart, we need to calculate the correct Y position based on the original rendering order.
         // Get all values at the crosshair time to calculate cumulative positions.
@@ -443,7 +467,7 @@ function drawCrosshairOverlay(ctx, layout) {
         // 2. Each component's visual position depends on the cumulative sum of all components BELOW it.
         // 3. The crosshair dot for a component should appear at the TOP of that component's area.
         // 4. The dot color should match the component's color in the chart.
-        const topHoldingsKeys = new Set(topHoldings.map((h) => h.key));
+        const topHoldingsKeys = new Set(enhancedHoldings.map((h) => h.key));
         let cumulativeValue = 0;
 
         for (const series of layout.series) {
@@ -475,7 +499,7 @@ function drawCrosshairOverlay(ctx, layout) {
         }
 
         // Add this item to the crosshair display (sorted by value at crosshair time)
-        seriesSnapshot.push(...topHoldings);
+        seriesSnapshot.push(...enhancedHoldings);
     } else {
         // Original behavior for other charts
         layout.series.forEach((series) => {
@@ -3320,6 +3344,16 @@ function renderCompositionChart(ctx, chartManager, data) {
         return;
     }
 
+    const rawTotalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const mappedTotalValues =
+        filteredIndices.length > 0
+            ? filteredIndices.map((index) => Number(rawTotalValues[index] ?? 0))
+            : rawTotalValues.map((value) => Number(value ?? 0));
+    const totalValues =
+        mappedTotalValues.length === dates.length
+            ? mappedTotalValues
+            : dates.map((_, idx) => Number(mappedTotalValues[idx] ?? 0));
+
     const chartData = {};
     Object.entries(rawSeries).forEach(([ticker, values]) => {
         const arr = Array.isArray(values) ? values : [];
@@ -3491,6 +3525,11 @@ function renderCompositionChart(ctx, chartManager, data) {
         return indexA - indexB;
     });
 
+    const totalValuePoints = dateTimes.map((time, idx) => ({
+        time,
+        value: Number(totalValues[idx] ?? 0),
+    }));
+
     chartLayouts.composition = {
         key: 'composition',
         minTime,
@@ -3512,6 +3551,7 @@ function renderCompositionChart(ctx, chartManager, data) {
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
         series: sortedSeriesForCrosshair,
+        getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
 
     // For composition chart, only draw crosshair without range functionality

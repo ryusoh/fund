@@ -11,7 +11,12 @@ document.addEventListener(
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
-import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
+import {
+    initCurrencyToggle,
+    cycleCurrency,
+    applyCurrencySelection,
+    getStoredCurrency,
+} from '@ui/currencyToggleManager.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import {
     APP_SETTINGS,
@@ -105,6 +110,11 @@ async function startApp() {
         Chart.register(waveAnimationPlugin);
 
         initCurrencyToggle();
+        const storedCurrency = getStoredCurrency();
+        if (storedCurrency) {
+            currentSelectedCurrency = storedCurrency;
+        }
+        applyCurrencySelection(currentSelectedCurrency, { emitEvent: false });
         initFooterToggle();
 
         // Wait for multiple animation frames to ensure proper layout in real browsers.

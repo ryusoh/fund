@@ -1,4 +1,9 @@
-import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
+import {
+    initCurrencyToggle,
+    cycleCurrency,
+    applyCurrencySelection,
+    getStoredCurrency,
+} from '@ui/currencyToggleManager.js';
 import {
     CURRENCY_SYMBOLS,
     DATA_PATHS,
@@ -730,6 +735,11 @@ export async function initCalendar() {
         // d3 and CalHeatmap are now loaded globally via script tags
 
         initCurrencyToggle();
+        const storedCurrency = getStoredCurrency();
+        if (storedCurrency) {
+            appState.selectedCurrency = storedCurrency;
+        }
+        applyCurrencySelection(appState.selectedCurrency, { emitEvent: false });
 
         const { processedData, byDate, rates, monthlyPnl } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;

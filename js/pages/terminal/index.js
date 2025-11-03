@@ -60,7 +60,12 @@ import { createChartManager } from '@js/transactions/chart.js';
 import { createUiController } from '@js/transactions/ui.js';
 import { initTerminal, updateTerminalCrosshair } from '@js/transactions/terminal.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
-import { initCurrencyToggle, cycleCurrency } from '@ui/currencyToggleManager.js';
+import {
+    initCurrencyToggle,
+    cycleCurrency,
+    applyCurrencySelection,
+    getStoredCurrency,
+} from '@ui/currencyToggleManager.js';
 
 let chartManager;
 let tableController;
@@ -213,11 +218,15 @@ async function loadTransactions() {
         const defaultCurrency = SUPPORTED_CURRENCIES.find(
             (currency) => normalizedPortfolioSeriesMap?.[currency]?.length
         );
-        const initialCurrency = defaultCurrency || 'USD';
+        const storedCurrency = getStoredCurrency();
+        const normalizedStoredCurrency =
+            storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency) ? storedCurrency : null;
+        const initialCurrency = normalizedStoredCurrency || defaultCurrency || 'USD';
         setSelectedCurrency(initialCurrency);
         setPortfolioSeries(normalizedPortfolioSeriesMap[initialCurrency] || []);
         setRunningAmountSeries(normalizedRunningSeriesMap[initialCurrency] || []);
         setPerformanceSeries(performanceSeries);
+        applyCurrencySelection(initialCurrency, { emitEvent: false });
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {

@@ -576,7 +576,7 @@ def calculate_annual_returns(series_map):
     return '\n' + table + '\n'
 
 
-def calculate_ratios(series_map, risk_free_rate=0.053):
+def calculate_ratios(series_map, risk_free_rate=0.0):
     daily_returns = {name: compute_returns(points, 'daily') for name, points in series_map.items()}
 
     ratio_data = []
@@ -586,18 +586,15 @@ def calculate_ratios(series_map, risk_free_rate=0.053):
 
         mean_return = returns.mean()
         std_dev = returns.std()
-        sharpe = (
-            (mean_return * 252 - risk_free_rate) / (std_dev * np.sqrt(252)) if std_dev > 0 else None
-        )
+        excess_return = mean_return * 252 - risk_free_rate
+        sharpe = excess_return / (std_dev * np.sqrt(252)) if std_dev > 0 else None
 
         downside_returns = returns[returns < 0]
         downside_deviation = (
             np.sqrt((downside_returns**2).mean()) if len(downside_returns) > 0 else 0
         )
         sortino = (
-            (mean_return * 252 - risk_free_rate) / (downside_deviation * np.sqrt(252))
-            if downside_deviation > 0
-            else None
+            excess_return / (downside_deviation * np.sqrt(252)) if downside_deviation > 0 else None
         )
 
         ratio_data.append({'name': name, 'sharpe': sharpe, 'sortino': sortino})
@@ -618,7 +615,7 @@ def calculate_ratios(series_map, risk_free_rate=0.053):
 
     indent = '  '
     notes = [
-        f"{indent}Note: Ratios are annualized using 5.3% risk-free rate (3-month T-bill).",
+        f"{indent}Note: Ratios assume a 0% minimum acceptable (risk-free) return.",
         f"{indent}Higher values indicate better risk-adjusted returns.",
         '',
         f"{indent}- Sharpe Ratio: (Return - Risk-Free) / Volatility (Std. Dev. of returns)",
