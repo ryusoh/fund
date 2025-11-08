@@ -33,6 +33,7 @@ html.force-hide-cursor .custom-cursor {
     pointer-events: none;
     transform: translate(-50%, -50%);
     z-index: 99999 !important; /* Very high z-index to ensure visibility above all other elements */
+    mix-blend-mode: difference;
 }
 
 .custom-cursor__core {
@@ -40,10 +41,10 @@ html.force-hide-cursor .custom-cursor {
     height: 20px;
     border: 2px solid #fff;
     border-radius: 50%;
-    mix-blend-mode: difference;
     transition: transform 0.15s ease;
     transform: scale(1);
     will-change: transform;
+    background: transparent;
 }
 
 .custom-cursor__core.is-hovered {
