@@ -5,6 +5,9 @@ import { initFooterToggle } from '@ui/footerToggle.js';
 // Mock all imported modules
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
+    cycleCurrency: jest.fn(),
+    applyCurrencySelection: jest.fn(),
+    getStoredCurrency: jest.fn(() => null),
 }));
 jest.mock('@ui/footerToggle.js', () => ({
     initFooterToggle: jest.fn(),

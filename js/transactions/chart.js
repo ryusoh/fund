@@ -899,11 +899,17 @@ export function buildContributionSeriesFromTransactions(
         return series;
     }
 
-    return series.map((point) => ({
-        ...point,
-        amount: convertValueToCurrency(point.amount, point.tradeDate, selectedCurrency),
-        netAmount: convertValueToCurrency(point.netAmount, point.tradeDate, selectedCurrency),
-    }));
+    let cumulative = 0;
+    return series.map((point) => {
+        const dateRef = point.tradeDate || point.date;
+        const convertedNet = convertValueToCurrency(point.netAmount, dateRef, selectedCurrency);
+        cumulative += convertedNet;
+        return {
+            ...point,
+            netAmount: convertedNet,
+            amount: cumulative,
+        };
+    });
 }
 
 function normalizeSymbolForPricing(symbol) {

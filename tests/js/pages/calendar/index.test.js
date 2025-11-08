@@ -10,6 +10,8 @@ jest.mock('@services/dataService.js', () => ({
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
     cycleCurrency: jest.fn(),
+    applyCurrencySelection: jest.fn(),
+    getStoredCurrency: jest.fn(() => null),
 }));
 
 jest.mock('@ui/responsive.js', () => ({

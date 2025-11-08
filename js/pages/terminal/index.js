@@ -22,25 +22,29 @@ function convertCurrencySeries(series, targetCurrency) {
         return series;
     }
 
+    const hasNetAmount = series.some((entry) =>
+        Object.prototype.hasOwnProperty.call(entry, 'netAmount')
+    );
+
+    if (hasNetAmount) {
+        let cumulative = 0;
+        return series.map((item) => {
+            const dateRef = item.tradeDate || item.date;
+            const convertedNet = convertValueToCurrency(item.netAmount, dateRef, targetCurrency);
+            cumulative += convertedNet;
+            const result = { ...item, netAmount: convertedNet };
+            if (Object.prototype.hasOwnProperty.call(item, 'amount')) {
+                result.amount = cumulative;
+            }
+            if (item.synthetic && item.orderType === 'padding') {
+                result.amount = cumulative;
+            }
+            return result;
+        });
+    }
+
     return series.map((item) => {
         const result = { ...item };
-
-        // For runningAmountSeries (contribution), the amount and netAmount fields need conversion
-        if ('amount' in item) {
-            result.amount = convertValueToCurrency(
-                item.amount,
-                item.tradeDate || item.date,
-                targetCurrency
-            );
-        }
-        if ('netAmount' in item) {
-            result.netAmount = convertValueToCurrency(
-                item.netAmount,
-                item.tradeDate || item.date,
-                targetCurrency
-            );
-        }
-        // For portfolioSeries (balance), the value field needs conversion
         if ('value' in item) {
             result.value = convertValueToCurrency(item.value, item.date, targetCurrency);
         }
@@ -60,12 +64,7 @@ import { createChartManager } from '@js/transactions/chart.js';
 import { createUiController } from '@js/transactions/ui.js';
 import { initTerminal, updateTerminalCrosshair } from '@js/transactions/terminal.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
-import {
-    initCurrencyToggle,
-    cycleCurrency,
-    applyCurrencySelection,
-    getStoredCurrency,
-} from '@ui/currencyToggleManager.js';
+import { initCurrencyToggle, cycleCurrency, getStoredCurrency } from '@ui/currencyToggleManager.js';
 
 let chartManager;
 let tableController;
@@ -226,7 +225,6 @@ async function loadTransactions() {
         setPortfolioSeries(normalizedPortfolioSeriesMap[initialCurrency] || []);
         setRunningAmountSeries(normalizedRunningSeriesMap[initialCurrency] || []);
         setPerformanceSeries(performanceSeries);
-        applyCurrencySelection(initialCurrency, { emitEvent: false });
 
         const transactionTable = document.getElementById('transactionTable');
         if (transactionTable) {

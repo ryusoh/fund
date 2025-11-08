@@ -8,6 +8,8 @@ import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
 jest.mock('@ui/currencyToggleManager.js', () => ({
     initCurrencyToggle: jest.fn(),
     cycleCurrency: jest.fn(),
+    applyCurrencySelection: jest.fn(),
+    getStoredCurrency: jest.fn(() => null),
 }));
 jest.mock('@ui/footerToggle.js', () => ({
     initFooterToggle: jest.fn(),
