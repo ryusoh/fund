@@ -200,18 +200,6 @@ export class PerlinNoisePlane extends Points {
     update(delta = 0) {
         this.material.uniforms.time.value += this.velocity + delta;
     }
-
-    onRoute(pathname) {
-        if (pathname === '/about') {
-            this.material.uniforms.multiplier.value = 1;
-            this.position.y = -this.height / 4;
-            this.rotation.x = -Math.PI / 2;
-        } else {
-            this.material.uniforms.multiplier.value = 0;
-            this.position.y = 0;
-            this.rotation.x = 0;
-        }
-    }
 }
 
 const canUseWebGL = () => {
