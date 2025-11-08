@@ -1,22 +1,53 @@
-/* Hide the default cursor when custom cursor is active */
-* {
-    cursor: none !important;
+:root {
+    --hidden-cursor-value:
+        url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==') 0 0, none;
 }
 
-.custom-cursor {
+/* Global switch that wins every specificity battle */
+html.force-hide-cursor,
+html.force-hide-cursor body,
+html.force-hide-cursor body *,
+html.force-hide-cursor body *::before,
+html.force-hide-cursor body *::after {
+    cursor: var(--hidden-cursor-value, none) !important;
+}
+
+html.force-hide-cursor a,
+html.force-hide-cursor button,
+html.force-hide-cursor [role='button'],
+html.force-hide-cursor [class*='nav'],
+html.force-hide-cursor [class*='back'],
+html.force-hide-cursor .nav-back,
+html.force-hide-cursor .nav-back *,
+html.force-hide-cursor .nav-container *,
+html.force-hide-cursor .nav-container a {
+    cursor: var(--hidden-cursor-value, none) !important;
+}
+
+html.force-hide-cursor .custom-cursor {
+    cursor: var(--hidden-cursor-value, none) !important;
+}
+
+.custom-cursor--wrapper {
     position: fixed;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 99999 !important; /* Very high z-index to ensure visibility above all other elements */
+}
+
+.custom-cursor__core {
     width: 20px;
     height: 20px;
     border: 2px solid #fff;
     border-radius: 50%;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-    z-index: 99999 !important; /* Very high z-index to ensure visibility above all other elements */
     mix-blend-mode: difference;
+    transition: transform 0.15s ease;
+    transform: scale(1);
+    will-change: transform;
 }
 
-.custom-cursor.is-hovered {
-    transform: translate(-50%, -50%) scale(3);
+.custom-cursor__core.is-hovered {
+    transform: scale(3);
 }
 
 .logo-button {
