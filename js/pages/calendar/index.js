@@ -19,6 +19,8 @@ import { initCalendarResponsiveHandlers } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
+import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
+import { PERLIN_BACKGROUND_SETTINGS } from '@js/config.js';
 
 // --- STATE ---
 let calendarInstance = null; // Store calendar instance for resize handling
@@ -940,13 +942,24 @@ export async function initCalendar() {
     }
 }
 
+// --- PERLIN BACKGROUND ---
+let perlinBackgroundHandle = null;
+
 // --- START ---
 // Avoid auto-running during Jest tests to prevent async side-effects
 export function autoInitCalendar() {
     if (!(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
+        if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
+            perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+        }
         initCalendar();
     }
 }
 
 // Auto-initialize the calendar
 autoInitCalendar();
+
+window.addEventListener('beforeunload', () => {
+    perlinBackgroundHandle?.dispose();
+    perlinBackgroundHandle = null;
+});

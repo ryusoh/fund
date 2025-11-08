@@ -27,9 +27,12 @@ import {
 import { triggerCenterToggle } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
+import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
+import { PERLIN_BACKGROUND_SETTINGS } from '@js/config.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
+let perlinBackgroundHandle = null;
 
 // Make glass effect config globally available for Chart.js
 function cloneGlassEffectConfig(config) {
@@ -116,6 +119,11 @@ async function startApp() {
         }
         applyCurrencySelection(currentSelectedCurrency, { emitEvent: false });
         initFooterToggle();
+
+        // Initialize perlin background
+        if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
+            perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+        }
 
         // Wait for multiple animation frames to ensure proper layout in real browsers.
         // In test environments, skip this to avoid flakiness from timer/raf scheduling.
@@ -246,4 +254,9 @@ document.addEventListener('visibilitychange', async () => {
             logger.error('Error updating portfolio on visibility change:', error);
         }
     }
+});
+
+window.addEventListener('beforeunload', () => {
+    perlinBackgroundHandle?.dispose();
+    perlinBackgroundHandle = null;
 });
