@@ -38,6 +38,7 @@ import {
     formatCurrencyCompact,
     formatCurrencyInlineValue,
     convertValueToCurrency,
+    convertBetweenCurrencies,
 } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
@@ -58,6 +59,16 @@ const chartLayouts = {
 
 let compositionDataCache = null;
 let compositionDataLoading = false;
+
+const PERFORMANCE_SERIES_CURRENCY = {
+    '^LZ': 'USD',
+    '^DJI': 'USD',
+    '^GSPC': 'USD',
+    '^IXIC': 'USD',
+    '^HSI': 'USD', // treat HKD as USD due to peg
+    '^N225': 'JPY',
+    '^SSEC': 'CNY',
+};
 
 const crosshairState = {
     active: false,
@@ -2961,27 +2972,19 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const allPossibleSeries = orderedKeys.map((key) => {
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
         return {
             key,
             name: key,
-            data: points.map((point) => {
-                const numericValue = Number(point.value);
-                if (key !== '^LZ' || selectedCurrency === 'USD') {
-                    return {
-                        date: point.date,
-                        value: numericValue,
-                    };
-                }
-                const convertedValue = convertValueToCurrency(
-                    numericValue,
+            data: points.map((point) => ({
+                date: point.date,
+                value: convertBetweenCurrencies(
+                    Number(point.value),
+                    sourceCurrency,
                     point.date,
                     selectedCurrency
-                );
-                return {
-                    date: point.date,
-                    value: convertedValue,
-                };
-            }),
+                ),
+            })),
         };
     });
 

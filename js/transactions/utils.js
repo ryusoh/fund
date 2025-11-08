@@ -78,6 +78,47 @@ export function convertValueToCurrency(value, dateString, currency = getSelected
     return amount * rate;
 }
 
+export function convertBetweenCurrencies(
+    value,
+    fromCurrency,
+    dateString,
+    toCurrency = getSelectedCurrency()
+) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) {
+        return 0;
+    }
+    const normalizedDate =
+        dateString instanceof Date ? dateString.toISOString().split('T')[0] : dateString;
+    const source =
+        typeof fromCurrency === 'string' && fromCurrency.trim()
+            ? fromCurrency.trim().toUpperCase()
+            : 'USD';
+    const target =
+        typeof toCurrency === 'string' && toCurrency.trim()
+            ? toCurrency.trim().toUpperCase()
+            : 'USD';
+    if (source === target) {
+        return amount;
+    }
+    let usdAmount = amount;
+    if (source !== 'USD') {
+        const fromRate = findFxRate(normalizedDate, source);
+        if (!Number.isFinite(fromRate) || fromRate === 0) {
+            return amount;
+        }
+        usdAmount = amount / fromRate;
+    }
+    if (target === 'USD') {
+        return usdAmount;
+    }
+    const targetRate = findFxRate(normalizedDate, target);
+    if (!Number.isFinite(targetRate) || targetRate === 0) {
+        return usdAmount;
+    }
+    return usdAmount * targetRate;
+}
+
 export function formatCurrency(value, { currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);
