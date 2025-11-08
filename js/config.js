@@ -532,3 +532,15 @@ export const PIE_CHART_GLASS_EFFECT = {
         seamOffsetRad: 0,
     },
 };
+
+export const PERLIN_BACKGROUND_SETTINGS = {
+    enabled: true,
+    blendMode: 'screen',
+    opacity: 0.85,
+    tint: [1, 1, 1],
+    sizeFactor: 0.5,
+    speed: 0.001,
+    angle: 0,
+    respectReducedMotion: true,
+    maxPixelRatio: 10,
+};

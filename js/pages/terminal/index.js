@@ -1,4 +1,5 @@
 import { logger } from '@utils/logger.js';
+import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 import {
     transactionState,
     setAllTransactions,
@@ -15,6 +16,7 @@ import {
     getActiveFilterTerm,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
+import { PERLIN_BACKGROUND_SETTINGS } from '../../config.js';
 
 // Helper function to convert currency series
 function convertCurrencySeries(series, targetCurrency) {
@@ -69,6 +71,12 @@ import { initCurrencyToggle, cycleCurrency, getStoredCurrency } from '@ui/curren
 let chartManager;
 let tableController;
 let uiController;
+
+// ---------------------------------------------------------------------------
+// Perlin background helpers
+// ---------------------------------------------------------------------------
+
+let perlinBackgroundHandle = null;
 
 const ZERO_EPSILON = 1e-6;
 const SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'KRW'];
@@ -247,6 +255,9 @@ async function loadTransactions() {
 }
 
 function initialize() {
+    if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
+        perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+    }
     chartManager = createChartManager({
         crosshairCallbacks: {
             onUpdate: updateTerminalCrosshair,
@@ -325,6 +336,11 @@ document.addEventListener('currencyChangedGlobal', (event) => {
     }
 
     adjustMobilePanels();
+});
+
+window.addEventListener('beforeunload', () => {
+    perlinBackgroundHandle?.dispose();
+    perlinBackgroundHandle = null;
 });
 
 window.addEventListener('keydown', (event) => {
