@@ -21,6 +21,12 @@ import {
     getAnnualReturnText,
     getRatioText,
 } from './terminalStats.js';
+import {
+    parseYearFromDate,
+    parseQuarterToken,
+    resolveQuarterRange as computeQuarterRange,
+    normalizeDateOnly,
+} from '@utils/date.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -29,10 +35,6 @@ const crosshairDateFormatter =
     typeof Intl !== 'undefined'
         ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
         : null;
-
-function toIsoDate(date) {
-    return date.toISOString().split('T')[0];
-}
 
 let lastContextYear = null;
 
@@ -115,60 +117,11 @@ function getEarliestDataYear() {
     return minYear;
 }
 
-function parseYearFromDate(value) {
-    if (!value || (typeof value !== 'string' && !(value instanceof Date))) {
-        return null;
-    }
-    if (value instanceof Date) {
-        return value.getUTCFullYear();
-    }
-    const match = String(value).match(/^\s*(\d{4})/);
-    if (!match) {
-        return null;
-    }
-    const year = Number.parseInt(match[1], 10);
-    return Number.isFinite(year) ? year : null;
-}
-
-function parseQuarterToken(token, fallbackYear) {
-    if (typeof token !== 'string') {
-        return null;
-    }
-    const explicit = token.match(/^\s*(\d{4})q([1-4])\s*$/i);
-    if (explicit) {
-        return {
-            year: Number.parseInt(explicit[1], 10),
-            quarter: Number.parseInt(explicit[2], 10),
-        };
-    }
-    const simple = token.match(/^\s*q([1-4])\s*$/i);
-    if (simple && Number.isFinite(fallbackYear)) {
-        return {
-            year: fallbackYear,
-            quarter: Number.parseInt(simple[1], 10),
-        };
-    }
-    return null;
-}
-
 function resolveQuarterRange(year, quarter, mode = 'full') {
     if (Number.isFinite(year)) {
         lastContextYear = year;
     }
-    const startDate = new Date(Date.UTC(year, (quarter - 1) * 3, 1));
-    const nextQuarter = new Date(Date.UTC(year, quarter * 3, 1));
-    const endDate = new Date(nextQuarter.getTime() - 24 * 60 * 60 * 1000);
-
-    const from = toIsoDate(startDate);
-    const to = toIsoDate(endDate);
-
-    if (mode === 'start') {
-        return { from, to: null };
-    }
-    if (mode === 'end') {
-        return { from: null, to };
-    }
-    return { from, to };
+    return computeQuarterRange(year, quarter, mode);
 }
 
 function formatCrosshairDateLabel(time) {
@@ -358,18 +311,6 @@ function resetAutocompleteState() {
     autocompleteState.prefix = '';
     autocompleteState.matches = [];
     autocompleteState.index = -1;
-}
-
-function normalizeDateOnly(input) {
-    if (!input) {
-        return null;
-    }
-    const date = input instanceof Date ? new Date(input) : new Date(input);
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-    date.setHours(0, 0, 0, 0);
-    return date;
 }
 
 function normalizeSeriesPoints(series, primaryDateKey, valueKey) {
