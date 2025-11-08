@@ -1,6 +1,7 @@
 exclude: |
     ^fund/|
     ^assets/vendor/|
+    ^js/vendor/|
     ^node_modules/|
     ^venv/|
     ^.mypy_cache/|
