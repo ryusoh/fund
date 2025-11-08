@@ -2932,6 +2932,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
         transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
             ? transactionState.performanceSeries
             : {};
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
 
     const { chartVisibility } = transactionState;
     stopContributionAnimation();
@@ -2963,10 +2964,24 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
         return {
             key,
             name: key,
-            data: points.map((point) => ({
-                date: point.date,
-                value: Number(point.value),
-            })),
+            data: points.map((point) => {
+                const numericValue = Number(point.value);
+                if (key !== '^LZ' || selectedCurrency === 'USD') {
+                    return {
+                        date: point.date,
+                        value: numericValue,
+                    };
+                }
+                const convertedValue = convertValueToCurrency(
+                    numericValue,
+                    point.date,
+                    selectedCurrency
+                );
+                return {
+                    date: point.date,
+                    value: convertedValue,
+                };
+            }),
         };
     });
 
