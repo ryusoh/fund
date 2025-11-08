@@ -7,7 +7,7 @@ import {
     setActiveChart,
     setHistoricalPrices,
 } from './state.js';
-import { formatCurrency } from './utils.js';
+import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import {
     hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
@@ -392,68 +392,6 @@ function computeSeriesSummary(series, dateRange, dateKey, valueKey) {
         startDate: new Date(startPoint.date),
         endDate: new Date(endPoint.date),
     };
-}
-
-function formatCurrencyChange(value) {
-    if (!Number.isFinite(value)) {
-        return 'n/a';
-    }
-    const formatted = formatCurrency(value);
-    if (value > 0) {
-        return `+${formatted}`;
-    }
-    return formatted;
-}
-
-function formatSummaryDateSuffix(actualDate, targetDateStr) {
-    if (!(actualDate instanceof Date)) {
-        return '';
-    }
-    const actual = actualDate.toISOString().split('T')[0];
-    if (!targetDateStr || actual === targetDateStr) {
-        return '';
-    }
-    return ` (${actual})`;
-}
-
-function formatSummaryBlock(label, summary, dateRange) {
-    if (!summary || !summary.hasData) {
-        return `  ${label}\n    (no data for selected range)`;
-    }
-    const startSuffix = formatSummaryDateSuffix(summary.startDate, dateRange?.from);
-    const endSuffix = formatSummaryDateSuffix(summary.endDate, dateRange?.to);
-    const startText = formatCurrency(summary.startValue);
-    const endText = formatCurrency(summary.endValue);
-    const changeText = formatCurrencyChange(summary.netChange);
-    return [
-        `  ${label}`,
-        `    Start: ${startText}${startSuffix}`,
-        `    End: ${endText}${endSuffix}`,
-        `    Change: ${changeText}`,
-    ].join('\n');
-}
-
-function formatAppreciationBlock(balanceSummary, contributionSummary) {
-    if (
-        !balanceSummary ||
-        !contributionSummary ||
-        !balanceSummary.hasData ||
-        !contributionSummary.hasData
-    ) {
-        return '';
-    }
-    const deltaContribution = contributionSummary.netChange;
-    const deltaBalance = balanceSummary.netChange;
-    const valueAdded = deltaBalance - deltaContribution;
-    if (!Number.isFinite(valueAdded)) {
-        return '';
-    }
-    const changeText = formatCurrencyChange(valueAdded);
-    return [
-        '  Appreciation',
-        `    Value: ${changeText}`,
-        '    (balance change minus contribution change)',
-    ].join('\n');
 }
 
 async function ensureHistoricalPricesAvailable(filtersActive) {

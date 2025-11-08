@@ -305,6 +305,70 @@ export function formatToTwoDecimals(num) {
     return num.toFixed(2);
 }
 
+export function formatCurrencyChange(value, formatter) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return 'n/a';
+    }
+    const formatFn = typeof formatter === 'function' ? formatter : (val) => String(val);
+    const formatted = formatFn(numeric);
+    if (numeric > 0) {
+        return formatted?.startsWith('+') ? formatted : `+${formatted}`;
+    }
+    return formatted;
+}
+
+export function formatSummaryDateSuffix(actualDate, targetDateStr) {
+    if (!(actualDate instanceof Date)) {
+        return '';
+    }
+    const actual = actualDate.toISOString().split('T')[0];
+    if (!targetDateStr || actual === targetDateStr) {
+        return '';
+    }
+    return ` (${actual})`;
+}
+
+export function formatSummaryBlock(label, summary, dateRange) {
+    if (!summary || !summary.hasData) {
+        return `  ${label}\n    (no data for selected range)`;
+    }
+    const startSuffix = formatSummaryDateSuffix(summary.startDate, dateRange?.from);
+    const endSuffix = formatSummaryDateSuffix(summary.endDate, dateRange?.to);
+    const startText = formatCurrency(summary.startValue);
+    const endText = formatCurrency(summary.endValue);
+    const changeText = formatCurrencyChange(summary.netChange, formatCurrency);
+    return [
+        `  ${label}`,
+        `    Start: ${startText}${startSuffix}`,
+        `    End: ${endText}${endSuffix}`,
+        `    Change: ${changeText}`,
+    ].join('\n');
+}
+
+export function formatAppreciationBlock(balanceSummary, contributionSummary) {
+    if (
+        !balanceSummary ||
+        !contributionSummary ||
+        !balanceSummary.hasData ||
+        !contributionSummary.hasData
+    ) {
+        return '';
+    }
+    const deltaContribution = contributionSummary.netChange;
+    const deltaBalance = balanceSummary.netChange;
+    const valueAdded = deltaBalance - deltaContribution;
+    if (!Number.isFinite(valueAdded)) {
+        return '';
+    }
+    const changeText = formatCurrencyChange(valueAdded, formatCurrency);
+    return [
+        '  Appreciation',
+        `    Value: ${changeText}`,
+        '    (balance change minus contribution change)',
+    ].join('\n');
+}
+
 /**
  * Formats a number to a percentage string.
  * @param {number} num The number to format.
