@@ -1,13 +1,3 @@
-/**
- * Human-friendly extraction of the `cp` background class that lives inside
- * `js/vendor/bundle.min.js`. The original code extends an internal base
- * (`uc`) and wires into GSAP/Three.js at runtime; this module mirrors the
- * behaviour with readable names so the logic can be studied or repurposed.
- *
- * The class below only depends on the local `three.module.js`. Swap the
- * import path if you keep the file elsewhere.
- */
-
 import {
     Clock,
     Mesh,
@@ -253,6 +243,19 @@ export const mountPerlinPlaneBackground = ({
         return null;
     }
 
+    // Check if on mobile device first using multiple indicators
+    const isMobile = () => {
+        return (
+            window.innerWidth <= 768 ||
+            (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+            navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i)
+        );
+    };
+
+    if (isMobile()) {
+        return null; // Don't initialize on mobile devices
+    }
+
     const motionQuery =
         respectReducedMotion && typeof window.matchMedia === 'function'
             ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -273,6 +276,7 @@ export const mountPerlinPlaneBackground = ({
         mixBlendMode: blendMode,
         opacity: opacity.toString(),
     });
+
     if (parent.firstChild) {
         parent.insertBefore(container, parent.firstChild);
     } else {
@@ -294,7 +298,13 @@ export const mountPerlinPlaneBackground = ({
     camera.position.z = 360;
 
     const baseSize = Math.min(window.innerWidth, window.innerHeight) * sizeFactor;
-    const plane = new PerlinNoisePlane({ size: baseSize, tint, speed, angle });
+    const plane = new PerlinNoisePlane({
+        size: baseSize,
+        textureUrl: POINT_SPRITE_URL,
+        tint,
+        speed,
+        angle,
+    });
     plane.userData.baseSize = baseSize;
     plane.overlay.visible = false;
     plane.material.uniforms.multiplier.value = 1.2;
@@ -304,12 +314,12 @@ export const mountPerlinPlaneBackground = ({
     scene.add(plane);
 
     const clock = new Clock();
-    let animationFrame;
+    let animationFrameId;
 
     const renderLoop = () => {
         plane.update(clock.getDelta());
         renderer.render(scene, camera);
-        animationFrame = window.requestAnimationFrame(renderLoop);
+        animationFrameId = requestAnimationFrame(renderLoop);
     };
     renderLoop();
 
@@ -345,8 +355,8 @@ export const mountPerlinPlaneBackground = ({
     const cleanup = () => {
         if (destroyed) return;
         destroyed = true;
-        if (animationFrame) {
-            cancelAnimationFrame(animationFrame);
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
         }
         window.removeEventListener('resize', onResize);
         renderer.dispose();
