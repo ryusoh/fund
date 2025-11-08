@@ -7,11 +7,6 @@
       "sha256": "c86957133e5dd5f1ccd99dd65b8f18e76619d8b0cd670c5382039d88a64e3e0e"
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm",
-      "file": "js/vendor/cal-heatmap-4.2.4.mjs",
-      "sha256": "d9d4c7b46dfebb1b7521ee6f4598cc4e0378f57e2e7a0ca1d7ce3ac467135ec0"
-    },
-    {
       "url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js",
       "file": "js/vendor/chart.umd.min.js",
       "sha256": "b38076762f7363bc9e912b68b8e034826798db5df26bb61f000ec2e7a3137bc7"

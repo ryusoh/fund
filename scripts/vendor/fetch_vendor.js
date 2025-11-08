@@ -17,10 +17,6 @@ const assets = [
         url: 'https://cdn.jsdelivr.net/npm/d3@7/+esm',
         out: path.join(vendorJsDir, 'd3.v7.mjs'),
     },
-    {
-        url: 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/+esm',
-        out: path.join(vendorJsDir, 'cal-heatmap-4.2.4.mjs'),
-    },
     // UMD scripts
     {
         url: 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',

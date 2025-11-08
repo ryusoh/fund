@@ -5,7 +5,6 @@ const crypto = require('crypto');
 const root = path.join(__dirname, '..', '..');
 const req = [
     'js/vendor/d3.v7.mjs',
-    'js/vendor/cal-heatmap-4.2.4.mjs',
     'js/vendor/chart.umd.min.js',
     'js/vendor/chartjs-plugin-datalabels.min.js',
     'assets/vendor/css/font-awesome-4.7.0.min.css',
