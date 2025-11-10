@@ -305,12 +305,25 @@ export function formatToTwoDecimals(num) {
     return num.toFixed(2);
 }
 
-export function formatCurrencyChange(value, formatter) {
+function defaultCurrencyFormatter(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '$0.00';
+    }
+    const sign = numeric < 0 ? '-' : '';
+    const formatted = Math.abs(numeric).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    return `${sign}$${formatted}`;
+}
+
+export function formatCurrencyChange(value, formatter = defaultCurrencyFormatter) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) {
         return 'n/a';
     }
-    const formatFn = typeof formatter === 'function' ? formatter : (val) => String(val);
+    const formatFn = typeof formatter === 'function' ? formatter : defaultCurrencyFormatter;
     const formatted = formatFn(numeric);
     if (numeric > 0) {
         return formatted?.startsWith('+') ? formatted : `+${formatted}`;
@@ -329,15 +342,17 @@ export function formatSummaryDateSuffix(actualDate, targetDateStr) {
     return ` (${actual})`;
 }
 
-export function formatSummaryBlock(label, summary, dateRange) {
+export function formatSummaryBlock(label, summary, dateRange, { formatValue } = {}) {
     if (!summary || !summary.hasData) {
         return `  ${label}\n    (no data for selected range)`;
     }
+    const formatValueFn =
+        typeof formatValue === 'function' ? formatValue : defaultCurrencyFormatter;
     const startSuffix = formatSummaryDateSuffix(summary.startDate, dateRange?.from);
     const endSuffix = formatSummaryDateSuffix(summary.endDate, dateRange?.to);
-    const startText = formatCurrency(summary.startValue);
-    const endText = formatCurrency(summary.endValue);
-    const changeText = formatCurrencyChange(summary.netChange, formatCurrency);
+    const startText = formatValueFn(summary.startValue);
+    const endText = formatValueFn(summary.endValue);
+    const changeText = formatCurrencyChange(summary.netChange, formatValueFn);
     return [
         `  ${label}`,
         `    Start: ${startText}${startSuffix}`,
@@ -346,7 +361,7 @@ export function formatSummaryBlock(label, summary, dateRange) {
     ].join('\n');
 }
 
-export function formatAppreciationBlock(balanceSummary, contributionSummary) {
+export function formatAppreciationBlock(balanceSummary, contributionSummary, { formatValue } = {}) {
     if (
         !balanceSummary ||
         !contributionSummary ||
@@ -355,13 +370,15 @@ export function formatAppreciationBlock(balanceSummary, contributionSummary) {
     ) {
         return '';
     }
+    const formatValueFn =
+        typeof formatValue === 'function' ? formatValue : defaultCurrencyFormatter;
     const deltaContribution = contributionSummary.netChange;
     const deltaBalance = balanceSummary.netChange;
     const valueAdded = deltaBalance - deltaContribution;
     if (!Number.isFinite(valueAdded)) {
         return '';
     }
-    const changeText = formatCurrencyChange(valueAdded, formatCurrency);
+    const changeText = formatCurrencyChange(valueAdded, formatValueFn);
     return [
         '  Appreciation',
         `    Value: ${changeText}`,

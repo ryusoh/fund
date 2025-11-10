@@ -27,6 +27,7 @@ import {
     resolveQuarterRange as computeQuarterRange,
     normalizeDateOnly,
 } from '@utils/date.js';
+import { formatCurrency as formatValueWithCurrency } from './utils.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -37,6 +38,10 @@ const crosshairDateFormatter =
         : null;
 
 let lastContextYear = null;
+
+function formatWithSelectedCurrency(value) {
+    return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
+}
 
 function updateContextYearFromRange(range) {
     if (!range) {
@@ -456,9 +461,15 @@ async function buildContributionChartSummary(dateRange = transactionState.chartD
 async function getContributionSummaryText(dateRange = transactionState.chartDateRange) {
     const { contributionSummary, balanceSummary } = await buildContributionChartSummary(dateRange);
     const blocks = [
-        formatSummaryBlock('Contribution', contributionSummary, dateRange),
-        formatSummaryBlock('Balance', balanceSummary, dateRange),
-        formatAppreciationBlock(balanceSummary, contributionSummary),
+        formatSummaryBlock('Contribution', contributionSummary, dateRange, {
+            formatValue: formatWithSelectedCurrency,
+        }),
+        formatSummaryBlock('Balance', balanceSummary, dateRange, {
+            formatValue: formatWithSelectedCurrency,
+        }),
+        formatAppreciationBlock(balanceSummary, contributionSummary, {
+            formatValue: formatWithSelectedCurrency,
+        }),
     ].filter(Boolean);
     if (blocks.length === 0) {
         return '';

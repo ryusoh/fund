@@ -431,6 +431,53 @@ describe('formatCurrency – warnings and fallbacks', () => {
     });
 });
 
+describe('formatSummaryBlock and formatAppreciationBlock', () => {
+    const summary = {
+        hasData: true,
+        startValue: 100,
+        endValue: 175,
+        netChange: 75,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+    };
+    const otherSummary = {
+        hasData: true,
+        startValue: 100,
+        endValue: 150,
+        netChange: 50,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+    };
+    const formatter = (value) => `¥${Number(value).toFixed(2)}`;
+
+    it('uses the provided formatter for summary blocks', () => {
+        const result = formatting.formatSummaryBlock(
+            'Contribution',
+            summary,
+            { from: '2024-01-01', to: '2024-12-31' },
+            { formatValue: formatter }
+        );
+        expect(result).toContain('Start: ¥100.00');
+        expect(result).toContain('End: ¥175.00');
+        expect(result).toContain('Change: +¥75.00');
+    });
+
+    it('formats appreciation text with the custom formatter', () => {
+        const result = formatting.formatAppreciationBlock(summary, otherSummary, {
+            formatValue: formatter,
+        });
+        expect(result).toContain('Value: +¥25.00');
+    });
+
+    it('returns placeholder text when there is no data', () => {
+        const noDataSummary = { hasData: false };
+        const result = formatting.formatSummaryBlock('Contribution', noDataSummary, null, {
+            formatValue: formatter,
+        });
+        expect(result).toContain('(no data for selected range)');
+    });
+});
+
 describe('formatNumber – NaN handling', () => {
     it('returns empty string for NaN', () => {
         expect(formatting.formatNumber(NaN, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
