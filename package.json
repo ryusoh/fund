@@ -81,7 +81,8 @@
             "^@plugins/(.*)$": "<rootDir>/js/plugins/$1",
             "^@ui/(.*)$": "<rootDir>/js/ui/$1",
             "^@utils/(.*)$": "<rootDir>/js/utils/$1",
-            "^@vendor/(.*)$": "<rootDir>/tests/js/__mocks__/vendor/$1"
+            "^@vendor/(.*)$": "<rootDir>/tests/js/__mocks__/vendor/$1",
+            "^\\.\\.\\/\\.\\.\\/vendor/perlin-plane\\.js$": "<rootDir>/tests/js/__mocks__/vendor/perlin-plane.js"
         }
     },
     "dependencies": {
