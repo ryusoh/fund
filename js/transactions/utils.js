@@ -152,6 +152,26 @@ export function formatCurrencyCompact(value, { currency } = {}) {
     const isCJKCurrency =
         selectedCurrency === 'CNY' || selectedCurrency === 'JPY' || selectedCurrency === 'KRW';
 
+    if (absolute >= 1_000_000_000) {
+        const billions = absolute / 1_000_000_000;
+        if (isCJKCurrency) {
+            if (billions >= 100) {
+                return `${sign}${symbol}${billions.toFixed(0)}B`;
+            }
+            if (billions >= 10) {
+                return `${sign}${symbol}${billions.toFixed(1)}B`;
+            }
+            return `${sign}${symbol}${billions.toFixed(2)}B`;
+        }
+        if (billions >= 100) {
+            return `${sign}${symbol}${billions.toFixed(0)}B`;
+        }
+        if (billions >= 10) {
+            return `${sign}${symbol}${billions.toFixed(1)}B`;
+        }
+        return `${sign}${symbol}${billions.toFixed(2)}B`;
+    }
+
     if (absolute >= 1_000_000) {
         const millions = absolute / 1_000_000;
         if (isCJKCurrency) {

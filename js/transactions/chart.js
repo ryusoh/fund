@@ -181,6 +181,9 @@ const formatCurrencyInline = (value) => {
     const absolute = Math.abs(value);
     const sign = value < 0 ? '-' : '';
     const symbol = transactionState.currencySymbol || '$';
+    if (absolute >= 1_000_000_000) {
+        return `${sign}${symbol}${(absolute / 1_000_000_000).toFixed(2)}B`;
+    }
     if (absolute >= 1_000_000) {
         return `${sign}${symbol}${(absolute / 1_000_000).toFixed(2)}M`;
     }
@@ -2322,22 +2325,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const animatedSeries = [];
     const filterStartTime = filterFrom ? filterFrom.getTime() : null;
 
-    const formatBalanceValue = (value) => {
-        const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
-        const absolute = Math.abs(amount);
-        const sign = amount < 0 ? '-' : '';
-        const symbol = transactionState.currencySymbol || '$';
-
-        if (absolute >= 1_000_000) {
-            const millions = absolute / 1_000_000;
-            return `${sign}${symbol}${millions.toFixed(2)}M`;
-        }
-        if (absolute >= 1_000) {
-            const thousands = absolute / 1_000;
-            return `${sign}${symbol}${thousands.toFixed(1)}k`;
-        }
-        return `${sign}${symbol}${amount.toFixed(0)}`;
-    };
+    const formatBalanceValue = (value) =>
+        formatCurrencyCompact(value, { currency: transactionState.selectedCurrency || 'USD' });
 
     const formatContributionAnnotationValue = (value) => {
         const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
