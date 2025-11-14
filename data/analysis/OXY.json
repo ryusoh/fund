@@ -1,0 +1,50 @@
+{
+    "symbol": "OXY",
+    "name": "Occidental Petroleum",
+    "shares": 1446.006,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.694168+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.12
+    },
+    "market": {
+        "forwardEps": 3.16,
+        "pe": 30.8971,
+        "forwardPe": 13.2975,
+        "beta": 0.392,
+        "marketCap": 41398542336,
+        "enterpriseValue": 70907543552.0,
+        "ebitda": 12693000192,
+        "dividendYield": 2.28,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 53.2,
+        "fiftyTwoWeekLow": 34.78,
+        "marketDataUpdatedAt": "2025-11-14T11:18:17.820898+00:00",
+        "evToEbitda": 5.5864,
+        "eps": 1.36,
+        "price": 42.22,
+        "volatility": 0.3634
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.35,
+            "epsCagr": 0.18,
+            "exitPe": 18
+        },
+        {
+            "name": "Base",
+            "prob": 0.4,
+            "epsCagr": 0.1,
+            "exitPe": 15
+        },
+        {
+            "name": "Bear",
+            "prob": 0.25,
+            "epsCagr": -0.02,
+            "exitPe": 10
+        }
+    ]
+}

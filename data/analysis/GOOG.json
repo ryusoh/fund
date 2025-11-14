@@ -1,0 +1,50 @@
+{
+    "symbol": "GOOG",
+    "name": "Alphabet",
+    "shares": 809.873,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.693963+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.11
+    },
+    "market": {
+        "forwardEps": 8.95,
+        "pe": 27.5538,
+        "forwardPe": 31.1866,
+        "beta": 1.082,
+        "marketCap": 3364477992960.0,
+        "enterpriseValue": 3313840160768.0,
+        "ebitda": 145174003712,
+        "dividendYield": 0.3,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 292.36,
+        "fiftyTwoWeekLow": 142.66,
+        "marketDataUpdatedAt": "2025-11-14T11:18:17.263992+00:00",
+        "evToEbitda": 22.8267,
+        "eps": 10.13,
+        "price": 278.5,
+        "volatility": 0.3247
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.35,
+            "epsCagr": 0.18,
+            "exitPe": 30
+        },
+        {
+            "name": "Base",
+            "prob": 0.45,
+            "epsCagr": 0.12,
+            "exitPe": 25
+        },
+        {
+            "name": "Bear",
+            "prob": 0.2,
+            "epsCagr": 0.04,
+            "exitPe": 18
+        }
+    ]
+}

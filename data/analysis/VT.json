@@ -1,0 +1,43 @@
+{
+    "symbol": "VT",
+    "name": "Vanguard Total World",
+    "shares": 2601.642,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.694629+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.1
+    },
+    "market": {
+        "pe": 22.3582,
+        "dividendYield": 1.69,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 142.21,
+        "fiftyTwoWeekLow": 100.89,
+        "marketDataUpdatedAt": "2025-11-14T11:18:18.938290+00:00",
+        "price": 139.3,
+        "volatility": 0.171,
+        "eps": 4.1
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.3,
+            "epsCagr": 0.1,
+            "exitPe": 20
+        },
+        {
+            "name": "Base",
+            "prob": 0.5,
+            "epsCagr": 0.06,
+            "exitPe": 18
+        },
+        {
+            "name": "Bear",
+            "prob": 0.2,
+            "epsCagr": 0.01,
+            "exitPe": 15
+        }
+    ]
+}

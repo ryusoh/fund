@@ -1,0 +1,49 @@
+{
+    "symbol": "GEO",
+    "name": "The GEO Group",
+    "shares": 664.834,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.693748+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.4,
+        "targetCagr": 0.15
+    },
+    "market": {
+        "forwardEps": 1.58,
+        "pe": 8.6272,
+        "forwardPe": 9.2278,
+        "beta": 0.696,
+        "marketCap": 2029495808,
+        "enterpriseValue": 3438222080.0,
+        "ebitda": 373307008,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 36.46,
+        "fiftyTwoWeekLow": 14.27,
+        "marketDataUpdatedAt": "2025-11-14T11:18:16.716234+00:00",
+        "evToEbitda": 9.2102,
+        "eps": 1.69,
+        "price": 14.87,
+        "volatility": 0.4942
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.3,
+            "epsCagr": 0.22,
+            "exitPe": 14
+        },
+        {
+            "name": "Base",
+            "prob": 0.45,
+            "epsCagr": 0.12,
+            "exitPe": 11
+        },
+        {
+            "name": "Bear",
+            "prob": 0.25,
+            "epsCagr": -0.01,
+            "exitPe": 8
+        }
+    ]
+}

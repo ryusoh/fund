@@ -1,0 +1,49 @@
+{
+    "symbol": "BRK-B",
+    "name": "Berkshire Hathaway",
+    "shares": 111.0,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.693427+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.1
+    },
+    "market": {
+        "forwardEps": 20.08,
+        "pe": 16.4195,
+        "forwardPe": 25.5533,
+        "beta": 0.709,
+        "marketCap": 1107222069248.0,
+        "enterpriseValue": -251406024704.0,
+        "ebitda": 103864000512,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 542.07,
+        "fiftyTwoWeekLow": 440.1,
+        "marketDataUpdatedAt": "2025-11-14T11:18:16.195837+00:00",
+        "evToEbitda": -2.4205,
+        "eps": 31.25,
+        "price": 512.58,
+        "volatility": 0.1868
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.3,
+            "epsCagr": 0.14,
+            "exitPe": 25
+        },
+        {
+            "name": "Base",
+            "prob": 0.5,
+            "epsCagr": 0.09,
+            "exitPe": 20
+        },
+        {
+            "name": "Bear",
+            "prob": 0.2,
+            "epsCagr": 0.03,
+            "exitPe": 17
+        }
+    ]
+}

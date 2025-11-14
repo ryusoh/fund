@@ -1,0 +1,49 @@
+{
+    "symbol": "PDD",
+    "name": "Pinduoduo",
+    "shares": 1200.597,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.694371+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.13
+    },
+    "market": {
+        "forwardEps": 14.09,
+        "pe": 14.4747,
+        "forwardPe": 9.5436,
+        "beta": 0.051,
+        "marketCap": 190899863552,
+        "enterpriseValue": 375223287808.0,
+        "ebitda": 92433162240,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 139.41,
+        "fiftyTwoWeekLow": 87.11,
+        "marketDataUpdatedAt": "2025-11-14T11:18:18.409223+00:00",
+        "evToEbitda": 4.0594,
+        "eps": 9.29,
+        "price": 132.6,
+        "volatility": 0.4302
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.4,
+            "epsCagr": 0.28,
+            "exitPe": 32
+        },
+        {
+            "name": "Base",
+            "prob": 0.4,
+            "epsCagr": 0.18,
+            "exitPe": 26
+        },
+        {
+            "name": "Bear",
+            "prob": 0.2,
+            "epsCagr": 0.05,
+            "exitPe": 18
+        }
+    ]
+}

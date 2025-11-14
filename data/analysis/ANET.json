@@ -1,0 +1,49 @@
+{
+    "symbol": "ANET",
+    "name": "Arista Networks",
+    "shares": 2413.5504,
+    "metricsUpdatedAt": "2025-11-14T11:20:37.692840+00:00",
+    "manual": {
+        "horizon": 5,
+        "benchmark": 0.065,
+        "kellyScale": 0.5,
+        "targetCagr": 0.12
+    },
+    "market": {
+        "forwardEps": 9.73,
+        "pe": 49.5437,
+        "forwardPe": 13.3916,
+        "beta": 1.392,
+        "marketCap": 164084858880,
+        "enterpriseValue": 153978650624.0,
+        "ebitda": 3671173888,
+        "currency": "USD",
+        "fiftyTwoWeekHigh": 164.94,
+        "fiftyTwoWeekLow": 59.43,
+        "marketDataUpdatedAt": "2025-11-14T11:18:15.651832+00:00",
+        "evToEbitda": 41.9426,
+        "eps": 2.63,
+        "price": 129.0,
+        "volatility": 0.5726
+    },
+    "scenarios": [
+        {
+            "name": "Bull",
+            "prob": 0.4,
+            "epsCagr": 0.22,
+            "exitPe": 32
+        },
+        {
+            "name": "Base",
+            "prob": 0.4,
+            "epsCagr": 0.15,
+            "exitPe": 28
+        },
+        {
+            "name": "Bear",
+            "prob": 0.2,
+            "epsCagr": 0.05,
+            "exitPe": 20
+        }
+    ]
+}

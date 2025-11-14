@@ -1,0 +1,39 @@
+{
+    "tickers": [
+        {
+            "symbol": "ANET",
+            "name": "Arista Networks",
+            "path": "../data/analysis/ANET.json"
+        },
+        {
+            "symbol": "BRK-B",
+            "name": "Berkshire Hathaway",
+            "path": "../data/analysis/BRK-B.json"
+        },
+        {
+            "symbol": "GEO",
+            "name": "The GEO Group",
+            "path": "../data/analysis/GEO.json"
+        },
+        {
+            "symbol": "GOOG",
+            "name": "Alphabet",
+            "path": "../data/analysis/GOOG.json"
+        },
+        {
+            "symbol": "OXY",
+            "name": "Occidental Petroleum",
+            "path": "../data/analysis/OXY.json"
+        },
+        {
+            "symbol": "PDD",
+            "name": "Pinduoduo",
+            "path": "../data/analysis/PDD.json"
+        },
+        {
+            "symbol": "VT",
+            "name": "Vanguard Total World",
+            "path": "../data/analysis/VT.json"
+        }
+    ]
+}

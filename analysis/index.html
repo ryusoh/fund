@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="dark" />
+        <title>Analysis Prototype</title>
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+        <link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />
+        <link rel="stylesheet" href="../css/analysis-proto.css" />
+    </head>
+    <body>
+        <main class="lab">
+            <section class="panel ticker-panel">
+                <div class="ticker-header">
+                    <p class="label">Holdings</p>
+                    <h2>Scenario Sets</h2>
+                </div>
+                <div class="ticker-list" id="tickerList"></div>
+            </section>
+
+            <section class="panel output-panel">
+                <div class="output-header">
+                    <div>
+                        <p class="label" id="selectedTickerLabel"></p>
+                        <h2 id="selectedTickerName"></h2>
+                    </div>
+                </div>
+                <div class="stat-grid" id="summaryStats"></div>
+
+                <div class="output-grid">
+                    <article class="scenario-block full-span">
+                        <div class="block-header">
+                            <h3>Scenario Outcomes</h3>
+                        </div>
+                        <div class="card-row" id="scenarioResults"></div>
+                    </article>
+
+                    <article class="value-card full-span half">
+                        <h3>Value Bands</h3>
+                        <dl id="valueBands"></dl>
+                    </article>
+
+                    <article class="kelly-card full-span half">
+                        <h3>Kelly Breakdown</h3>
+                        <dl>
+                            <div>
+                                <dt>Edge vs Benchmark</dt>
+                                <dd id="edge"></dd>
+                            </div>
+                            <div>
+                                <dt>Full Kelly Fraction</dt>
+                                <dd id="fullKelly"></dd>
+                            </div>
+                            <div>
+                                <dt>Scaled Kelly Fraction</dt>
+                                <dd id="scaledKelly"></dd>
+                            </div>
+                        </dl>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <script type="module" src="../js/pages/analysis/lab.js"></script>
+    </body>
+</html>
