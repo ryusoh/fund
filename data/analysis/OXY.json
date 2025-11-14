@@ -2,7 +2,7 @@
     "symbol": "OXY",
     "name": "Occidental Petroleum",
     "shares": 1446.006,
-    "metricsUpdatedAt": "2025-11-14T11:20:37.694168+00:00",
+    "metricsUpdatedAt": "2025-11-14T11:32:13.949520+00:00",
     "manual": {
         "horizon": 5,
         "benchmark": 0.065,
@@ -24,7 +24,7 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:17.820898+00:00",
         "evToEbitda": 5.5864,
         "eps": 1.36,
-        "price": 42.22,
+        "price": 42.54,
         "volatility": 0.3634
     },
     "scenarios": [

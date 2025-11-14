@@ -2,7 +2,7 @@
     "symbol": "BRK-B",
     "name": "Berkshire Hathaway",
     "shares": 111.0,
-    "metricsUpdatedAt": "2025-11-14T11:20:37.693427+00:00",
+    "metricsUpdatedAt": "2025-11-14T11:32:13.948679+00:00",
     "manual": {
         "horizon": 5,
         "benchmark": 0.065,
@@ -23,7 +23,7 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:16.195837+00:00",
         "evToEbitda": -2.4205,
         "eps": 31.25,
-        "price": 512.58,
+        "price": 513.83,
         "volatility": 0.1868
     },
     "scenarios": [

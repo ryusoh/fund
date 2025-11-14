@@ -2,7 +2,7 @@
     "symbol": "PDD",
     "name": "Pinduoduo",
     "shares": 1200.597,
-    "metricsUpdatedAt": "2025-11-14T11:20:37.694371+00:00",
+    "metricsUpdatedAt": "2025-11-14T11:32:13.949692+00:00",
     "manual": {
         "horizon": 5,
         "benchmark": 0.065,
@@ -23,7 +23,7 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:18.409223+00:00",
         "evToEbitda": 4.0594,
         "eps": 9.29,
-        "price": 132.6,
+        "price": 131.83,
         "volatility": 0.4302
     },
     "scenarios": [

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 try:
     import yfinance as yf
@@ -48,9 +48,9 @@ MANUAL_DEFAULTS = {
 }
 
 
-def load_json(path: Path) -> dict:
+def load_json(path: Path) -> Dict[str, Any]:
     with path.open('r', encoding='utf-8') as fh:
-        return json.load(fh)
+        return cast(Dict[str, Any], json.load(fh))
 
 
 def save_json(path: Path, payload: dict) -> None:
@@ -67,37 +67,58 @@ def maybe_round(value: Any) -> Any:
     return value
 
 
-def fetch_market_metadata(symbol: str) -> Dict[str, Any]:
+def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any-return]
     if yf is None:
         return {}
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info or {}
-        fast = getattr(ticker, 'fast_info', {}) or {}
+        # Explicitly cast to Dict[str, Any] to help mypy
+        info = cast(Dict[str, Any], ticker.info or {})
+        fast = cast(Dict[str, Any], getattr(ticker, 'fast_info', {}) or {})
     except Exception:
         return {}
 
-    metadata: Dict[str, Any] = {}
+    result_metadata: Dict[str, Any] = {}  # Changed variable name
     for target, source in MARKET_FIELD_MAP.items():
+        current_value: Any
         if target == 'price':
-            value = fast.get('last_price') or info.get(source)
+            current_value = fast.get('last_price')
+            if current_value is None:
+                current_value = info.get(source)
         else:
-            value = info.get(source)
-        if value not in (None, 'None'):
-            metadata[target] = value
+            current_value = info.get(source)
 
-    metadata['fiftyTwoWeekHigh'] = fast.get('year_high') or info.get('fiftyTwoWeekHigh')
-    metadata['fiftyTwoWeekLow'] = fast.get('year_low') or info.get('fiftyTwoWeekLow')
-    metadata['marketDataUpdatedAt'] = datetime.now(timezone.utc).isoformat()
+        if current_value not in (None, 'None'):
+            result_metadata[target] = current_value  # Assigned to new variable
+
+    # Handle fiftyTwoWeekHigh
+    fifty_two_week_high = fast.get('year_high')
+    if fifty_two_week_high is None:
+        fifty_two_week_high = info.get('fiftyTwoWeekHigh')
+    if fifty_two_week_high not in (None, 'None'):
+        result_metadata['fiftyTwoWeekHigh'] = fifty_two_week_high  # Assigned to new variable
+
+    # Handle fiftyTwoWeekLow
+    fifty_two_week_low = fast.get('year_low')
+    if fifty_two_week_low is None:
+        fifty_two_week_low = info.get('fiftyTwoWeekLow')
+    if fifty_two_week_low not in (None, 'None'):
+        result_metadata['fiftyTwoWeekLow'] = fifty_two_week_low  # Assigned to new variable
+
+    result_metadata['marketDataUpdatedAt'] = datetime.now(
+        timezone.utc
+    ).isoformat()  # Assigned to new variable
     if hasattr(ticker, "history"):
         try:
             history = ticker.history(period='1y', interval='1d')
             closes = history['Close'].pct_change().dropna()
             if not closes.empty:
-                metadata['volatility'] = float(closes.std() * (252**0.5))
+                result_metadata['volatility'] = float(
+                    closes.std() * (252**0.5)
+                )  # Assigned to new variable
         except Exception:
             pass
-    return metadata
+    return result_metadata  # Returned new variable
 
 
 def ensure_structure(symbol: str, config: dict) -> dict:

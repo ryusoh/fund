@@ -2,7 +2,7 @@
     "symbol": "GOOG",
     "name": "Alphabet",
     "shares": 809.873,
-    "metricsUpdatedAt": "2025-11-14T11:20:37.693963+00:00",
+    "metricsUpdatedAt": "2025-11-14T11:32:13.949047+00:00",
     "manual": {
         "horizon": 5,
         "benchmark": 0.065,
@@ -24,7 +24,7 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:17.263992+00:00",
         "evToEbitda": 22.8267,
         "eps": 10.13,
-        "price": 278.5,
+        "price": 276.21,
         "volatility": 0.3247
     },
     "scenarios": [

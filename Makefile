@@ -63,6 +63,7 @@ precommit: hooks fmt-check
 	fi
 
 precommit-fix: fmt lint-fix
+	$(MAKE) precommit
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all

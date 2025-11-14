@@ -2,7 +2,7 @@
     "symbol": "ANET",
     "name": "Arista Networks",
     "shares": 2413.5504,
-    "metricsUpdatedAt": "2025-11-14T11:20:37.692840+00:00",
+    "metricsUpdatedAt": "2025-11-14T11:32:13.947976+00:00",
     "manual": {
         "horizon": 5,
         "benchmark": 0.065,
@@ -23,7 +23,7 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:15.651832+00:00",
         "evToEbitda": 41.9426,
         "eps": 2.63,
-        "price": 129.0,
+        "price": 128.84,
         "volatility": 0.5726
     },
     "scenarios": [
