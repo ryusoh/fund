@@ -16,14 +16,14 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "custom"
+                "name": "SP500_total_return"
             },
             "kellyScale": 0.5,
-            "targetCagr": 0.1,
+            "targetCagr": 0.08,
             "overrides": {}
         }
     },
@@ -38,7 +38,7 @@
         "eps": 4.1
     },
     "risk": {
-        "volatility": 0.171,
+        "volatility": 0.13,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -57,44 +57,44 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.3,
+            "prob": 0.2,
             "growth": {
-                "epsCagr": 0.12,
+                "epsCagr": 0.08,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 22,
+                "exitPe": 25,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Global productivity super-cycle: strong real growth, healthy inflation, high margins, and supportive valuations."
         },
         {
             "id": "base",
             "name": "Base",
-            "prob": 0.5,
+            "prob": 0.6,
             "growth": {
-                "epsCagr": 0.08,
+                "epsCagr": 0.05,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 20,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Decent but not heroic global growth: mid-single-digit nominal EPS and modest valuation mean reversion."
         },
         {
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.04,
+                "epsCagr": 0.02,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 15,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Stagnation & de-rating: low nominal growth, margin pressure, and higher risk premiums compress multiples."
         }
     ],
     "derived": {

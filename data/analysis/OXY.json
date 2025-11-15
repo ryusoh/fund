@@ -19,11 +19,11 @@
             "horizon": 5,
             "benchmark": {
                 "type": "annualReturn",
-                "value": 0.065,
-                "name": "custom"
+                "value": 0.08,
+                "name": "SP500_nominal"
             },
             "kellyScale": 0.5,
-            "targetCagr": 0.12,
+            "targetCagr": 0.15,
             "overrides": {}
         }
     },
@@ -45,7 +45,7 @@
         "price": 42.54
     },
     "risk": {
-        "volatility": 0.3634,
+        "volatility": 0.28,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -64,44 +64,44 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.3,
+            "prob": 0.25,
             "growth": {
                 "epsCagr": 0.25,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 12,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Supercharged cash flows & carbon bonus: tight oil market, high leverage to >$90 WTI, and DAC scaling with premium contracts."
         },
         {
             "id": "base",
             "name": "Base",
-            "prob": 0.4,
+            "prob": 0.55,
             "growth": {
                 "epsCagr": 0.12,
-                "epsCagrSigma": null
-            },
-            "valuation": {
-                "exitPe": 15,
-                "exitPeSigma": null
-            },
-            "notes": null
-        },
-        {
-            "id": "bear",
-            "name": "Bear",
-            "prob": 0.3,
-            "growth": {
-                "epsCagr": -0.02,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 10,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Deleveraged cash cow: WTI ~$70–75, modest production growth, steady buybacks/dividends, DAC still early."
+        },
+        {
+            "id": "bear",
+            "name": "Bear",
+            "prob": 0.2,
+            "growth": {
+                "epsCagr": -0.05,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 8,
+                "exitPeSigma": null
+            },
+            "notes": "Structural headwinds & stagnation: WTI ~$50–55, volumes flat/down, DAC under-delivers, market assigns low multiple."
         }
     ],
     "derived": {

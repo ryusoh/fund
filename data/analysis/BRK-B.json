@@ -16,11 +16,11 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
-                "value": 0.065,
-                "name": "custom"
+                "value": 0.07,
+                "name": "SP500_nominal"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.1,
@@ -63,21 +63,21 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.3,
+            "prob": 0.2,
             "growth": {
-                "epsCagr": 0.14,
+                "epsCagr": 0.12,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 18,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Crisis opportunist: strong underwriting, successful cash deployment in downturns, Abel earns investor confidence."
         },
         {
             "id": "base",
             "name": "Base",
-            "prob": 0.5,
+            "prob": 0.6,
             "growth": {
                 "epsCagr": 0.09,
                 "epsCagrSigma": null
@@ -86,21 +86,21 @@
                 "exitPe": 15,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Slow, steady compounding: operating businesses grow mid-single digits, capital is deployed conservatively, and multiple stays mid-teens."
         },
         {
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.05,
+                "epsCagr": 0.02,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 10,
+                "exitPe": 12,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Buffett discount & drift: market never trusts succession, insurance faces pressure, and cash earns low returns."
         }
     ],
     "derived": {
