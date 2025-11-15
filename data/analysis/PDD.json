@@ -16,14 +16,14 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "custom"
+                "name": "SP500_expected"
             },
             "kellyScale": 0.5,
-            "targetCagr": 0.13,
+            "targetCagr": 0.12,
             "overrides": {}
         }
     },
@@ -63,44 +63,44 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.4,
-            "growth": {
-                "epsCagr": 0.28,
-                "epsCagrSigma": null
-            },
-            "valuation": {
-                "exitPe": 32,
-                "exitPeSigma": null
-            },
-            "notes": null
-        },
-        {
-            "id": "base",
-            "name": "Base",
-            "prob": 0.4,
+            "prob": 0.25,
             "growth": {
                 "epsCagr": 0.18,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 26,
+                "exitPe": 18,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Pinduoduo dominates domestic value e-commerce, monetization improves, and Temu becomes a profitable global platform."
+        },
+        {
+            "id": "base",
+            "name": "Base",
+            "prob": 0.5,
+            "growth": {
+                "epsCagr": 0.12,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 15,
+                "exitPeSigma": null
+            },
+            "notes": "Steady growth: Pinduoduo matures yet grows with China, Temu achieves mixed success and roughly breakeven economics."
         },
         {
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.08,
+                "epsCagr": 0.03,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 14,
+                "exitPe": 10,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Moat erosion: domestic growth stalls, Temu struggles to reach profitability, margins compress under subsidies and regulation."
         }
     ],
     "derived": {
