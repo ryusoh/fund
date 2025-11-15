@@ -594,7 +594,7 @@ function buildPortfolioConfig(configs) {
             benchmark: {
                 type: 'composite',
                 value: benchmarkValue,
-                name: 'Weighted Benchmark',
+                name: 'SP500',
             },
             kellyScale,
             targetCagr,
