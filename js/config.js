@@ -534,7 +534,7 @@ export const PIE_CHART_GLASS_EFFECT = {
 };
 
 export const PERLIN_BACKGROUND_SETTINGS = {
-    enabled: true,
+    enabled: false,
     blendMode: 'screen',
     opacity: 0.85,
     tint: [1, 1, 1],
