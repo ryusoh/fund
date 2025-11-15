@@ -1,13 +1,31 @@
 {
     "symbol": "BRK-B",
     "name": "Berkshire Hathaway",
-    "shares": 111.0,
-    "metricsUpdatedAt": "2025-11-14T11:32:13.948679+00:00",
-    "manual": {
-        "horizon": 5,
-        "benchmark": 0.065,
-        "kellyScale": 0.5,
-        "targetCagr": 0.1
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2025-11-14T11:32:13.948679+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "custom"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.1,
+            "overrides": {}
+        }
     },
     "market": {
         "forwardEps": 20.08,
@@ -23,27 +41,75 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:16.195837+00:00",
         "evToEbitda": -2.4205,
         "eps": 31.25,
-        "price": 513.83,
-        "volatility": 0.1868
+        "price": 513.83
+    },
+    "risk": {
+        "volatility": 0.1868,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 111.0,
+        "currentWeight": null,
+        "targetWeight": null,
+        "maxKellyWeight": null,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.3
+        }
     },
     "scenarios": [
         {
+            "id": "bull",
             "name": "Bull",
             "prob": 0.3,
-            "epsCagr": 0.14,
-            "exitPe": 25
+            "growth": {
+                "epsCagr": 0.14,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 25,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "base",
             "name": "Base",
             "prob": 0.5,
-            "epsCagr": 0.09,
-            "exitPe": 20
+            "growth": {
+                "epsCagr": 0.09,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 20,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "bear",
             "name": "Bear",
             "prob": 0.2,
-            "epsCagr": 0.03,
-            "exitPe": 17
+            "growth": {
+                "epsCagr": 0.03,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 17,
+                "exitPeSigma": null
+            },
+            "notes": null
         }
-    ]
+    ],
+    "derived": {
+        "expectedCagr": null,
+        "expectedMultiple": null,
+        "fairValueRange": null,
+        "kelly": {
+            "fullKelly": null,
+            "scaledKelly": null
+        }
+    }
 }

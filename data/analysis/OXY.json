@@ -1,13 +1,31 @@
 {
     "symbol": "OXY",
     "name": "Occidental Petroleum",
-    "shares": 1446.006,
-    "metricsUpdatedAt": "2025-11-14T11:32:13.949520+00:00",
-    "manual": {
-        "horizon": 5,
-        "benchmark": 0.065,
-        "kellyScale": 0.5,
-        "targetCagr": 0.12
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2025-11-14T11:32:13.949520+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "custom"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.12,
+            "overrides": {}
+        }
     },
     "market": {
         "forwardEps": 3.16,
@@ -24,27 +42,75 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:17.820898+00:00",
         "evToEbitda": 5.5864,
         "eps": 1.36,
-        "price": 42.54,
-        "volatility": 0.3634
+        "price": 42.54
+    },
+    "risk": {
+        "volatility": 0.3634,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 1446.006,
+        "currentWeight": null,
+        "targetWeight": null,
+        "maxKellyWeight": null,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.3
+        }
     },
     "scenarios": [
         {
+            "id": "bull",
             "name": "Bull",
             "prob": 0.35,
-            "epsCagr": 0.18,
-            "exitPe": 18
+            "growth": {
+                "epsCagr": 0.18,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 18,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "base",
             "name": "Base",
             "prob": 0.4,
-            "epsCagr": 0.1,
-            "exitPe": 15
+            "growth": {
+                "epsCagr": 0.1,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 15,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "bear",
             "name": "Bear",
             "prob": 0.25,
-            "epsCagr": -0.02,
-            "exitPe": 10
+            "growth": {
+                "epsCagr": -0.02,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 10,
+                "exitPeSigma": null
+            },
+            "notes": null
         }
-    ]
+    ],
+    "derived": {
+        "expectedCagr": null,
+        "expectedMultiple": null,
+        "fairValueRange": null,
+        "kelly": {
+            "fullKelly": null,
+            "scaledKelly": null
+        }
+    }
 }

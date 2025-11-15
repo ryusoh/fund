@@ -12,9 +12,12 @@ const state = {
     configs: [],
     activeSymbol: null,
 };
+const DATA_CACHE_BUST = Date.now().toString();
 
-async function fetchJson(path) {
-    const response = await fetch(path);
+export async function fetchJson(path) {
+    const url = new URL(path, window.location.href);
+    url.searchParams.set('v', DATA_CACHE_BUST);
+    const response = await fetch(url.toString(), { cache: 'no-store' });
     if (!response.ok) {
         throw new Error(`Failed to load ${path}`);
     }
@@ -49,6 +52,86 @@ function resolveNumeric(manualValue, marketValue, fallback = 0, treatZeroAsMissi
     return fallback;
 }
 
+function getPreferences(config) {
+    if (!config || typeof config !== 'object') {
+        return {};
+    }
+    const model = config.model;
+    if (!model || typeof model !== 'object') {
+        return {};
+    }
+    return model.preferences && typeof model.preferences === 'object' ? model.preferences : {};
+}
+
+function getOverrides(config) {
+    const preferences = getPreferences(config);
+    if (preferences.overrides && typeof preferences.overrides === 'object') {
+        return preferences.overrides;
+    }
+    return {};
+}
+
+function getBenchmarkDescriptor(preferences) {
+    const benchmark = preferences?.benchmark;
+    if (benchmark && typeof benchmark === 'object') {
+        return {
+            type: benchmark.type || 'annualReturn',
+            name: benchmark.name || 'Benchmark',
+            value: Number(benchmark.value ?? 0) || 0,
+        };
+    }
+    const value = Number(benchmark ?? 0) || 0;
+    return { type: 'annualReturn', name: 'Benchmark', value };
+}
+
+function getEffectivePrice(config) {
+    const overrides = getOverrides(config);
+    const market = config.market || {};
+    return resolveNumeric(overrides.price, market.price, 0, true);
+}
+
+function getEffectiveEps(config) {
+    const overrides = getOverrides(config);
+    const market = config.market || {};
+    return resolveNumeric(overrides.eps, market.eps, 0, true);
+}
+
+function getEffectiveVolatility(config) {
+    const overrides = getOverrides(config);
+    const market = config.market || {};
+    const risk = config.risk || {};
+    return resolveNumeric(overrides.volatility, risk.volatility ?? market.volatility, 0.35, true);
+}
+
+function normalizeScenario(scenario) {
+    const name = scenario.name || scenario.id || 'Scenario';
+    const growth = scenario.growth || {};
+    const valuation = scenario.valuation || {};
+    const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
+    const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
+    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
+    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
+    const epsSigmaRaw = Number(growth.epsCagrSigma ?? scenario.epsCagrSigma);
+    const epsSigma = Number.isFinite(epsSigmaRaw) ? epsSigmaRaw : null;
+    const exitSigmaRaw = Number(valuation.exitPeSigma ?? scenario.exitPeSigma);
+    const exitSigma = Number.isFinite(exitSigmaRaw) ? exitSigmaRaw : null;
+    const probRaw = Number(scenario.prob ?? 0);
+    return {
+        id: scenario.id || name.toLowerCase(),
+        name,
+        prob: Number.isFinite(probRaw) ? probRaw : 0,
+        growth: {
+            epsCagr,
+            epsCagrSigma: epsSigma,
+        },
+        valuation: {
+            exitPe,
+            exitPeSigma: exitSigma,
+        },
+        notes: scenario.notes ?? null,
+    };
+}
+
 function diffDescriptor(price, entry) {
     if (!Number.isFinite(entry) || entry <= 0) {
         return 'n/a';
@@ -59,24 +142,45 @@ function diffDescriptor(price, entry) {
 }
 
 function computeScenarioOutcome(scenario, { price, eps, horizon }) {
-    const terminalEps = eps * (1 + scenario.epsCagr) ** horizon;
-    const terminalPrice = terminalEps * scenario.exitPe;
+    const growth = scenario.growth || {};
+    const valuation = scenario.valuation || {};
+    const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
+    const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
+    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
+    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
+    const probRaw = Number(scenario.prob ?? 0);
+    const terminalEps = eps * (1 + epsCagr) ** horizon;
+    const terminalPrice = terminalEps * exitPe;
     const multiple = price > 0 ? terminalPrice / price : 0;
-    const scenarioCagr = multiple > 0 ? multiple ** (1 / horizon) - 1 : 0;
-    return { name: scenario.name, prob: scenario.prob, multiple, scenarioCagr };
+    const safeHorizon = horizon > 0 ? horizon : 1;
+    const scenarioCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
+    return {
+        id: scenario.id || scenario.name || 'scenario',
+        name: scenario.name || scenario.id || 'Scenario',
+        prob: Number.isFinite(probRaw) ? probRaw : 0,
+        multiple,
+        scenarioCagr,
+    };
 }
 
 function computeMetrics(config) {
-    const { manual = {}, market = {}, scenarios } = config;
-    const price = resolveNumeric(manual.price, market.price, 0, true);
-    const eps = resolveNumeric(manual.eps, market.eps, 0, true);
-    const volatility = resolveNumeric(manual.volatility, market.volatility, 0.35, true);
-    const horizon = Number(manual.horizon ?? 1);
-    const benchmark = Number(manual.benchmark ?? 0);
-    const kellyScale = Number(manual.kellyScale ?? 0.5);
-    const targetCagr = Number(manual.targetCagr ?? 0.1);
+    const preferences = getPreferences(config);
+    const market = config.market || {};
+    const scenarios = Array.isArray(config.scenarios) ? config.scenarios : [];
+    const price = getEffectivePrice(config);
+    const eps = getEffectiveEps(config);
+    const volatility = getEffectiveVolatility(config);
+    const horizonRaw = Number(preferences.horizon ?? 1);
+    const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
+    const benchmarkDescriptor = getBenchmarkDescriptor(preferences);
+    const benchmark = benchmarkDescriptor.value;
+    const kellyScaleRaw = Number(preferences.kellyScale ?? 0.5);
+    const kellyScale = Number.isFinite(kellyScaleRaw) ? kellyScaleRaw : 0.5;
+    const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
+    const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
 
-    const outcomes = scenarios.map((scenario) =>
+    const normalizedScenarios = scenarios.map((scenario) => normalizeScenario(scenario));
+    const outcomes = normalizedScenarios.map((scenario) =>
         computeScenarioOutcome(scenario, { price, eps, horizon })
     );
     const expectedMultiple = outcomes.reduce(
@@ -105,17 +209,23 @@ function computeMetrics(config) {
         eps,
         horizon,
         benchmark,
+        benchmarkDescriptor,
+        market,
         volatility,
         kellyScale,
         targetCagr,
     };
 }
 
-function renderSummary(metrics) {
+function renderSummary(config) {
+    const metrics = config.metrics;
+    const preferences = getPreferences(config);
+    const benchmarkDescriptor = metrics.benchmarkDescriptor || getBenchmarkDescriptor(preferences);
+    const edgeLabel = `Edge vs ${benchmarkDescriptor.name || 'Benchmark'}`;
     summaryStatsEl.innerHTML = '';
     [
         { label: 'Expected CAGR', value: formatPercent(metrics.expectedCagr) },
-        { label: 'Edge vs Benchmark', value: formatPercent(metrics.edge) },
+        { label: edgeLabel, value: formatPercent(metrics.edge) },
         { label: 'Full Kelly', value: formatPercent(metrics.fullKelly) },
         { label: 'Scaled Kelly', value: formatPercent(metrics.scaledKelly) },
         { label: 'Price', value: formatCurrency(metrics.price) },
@@ -143,12 +253,15 @@ function renderScenarioCards(outcomes) {
 }
 
 function renderValueBands(config) {
-    const { manual, metrics } = config;
+    const preferences = getPreferences(config);
+    const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
+    const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
+    const metrics = config.metrics;
     valueBandsEl.innerHTML = '';
     [
         { label: 'Expected Terminal Price', value: formatCurrency(metrics.expectedTerminalPrice) },
         {
-            label: `Price for ${(manual.targetCagr * 100).toFixed(1)}% CAGR`,
+            label: `Price for ${(targetCagr * 100).toFixed(1)}% CAGR`,
             value: formatCurrency(metrics.entryPriceForTarget),
         },
         {
@@ -196,7 +309,7 @@ function renderActiveTicker() {
     }
     selectedTickerLabel.textContent = `${config.symbol} · ${formatPercent(config.weight)}`;
     selectedTickerName.textContent = config.name;
-    renderSummary(config.metrics);
+    renderSummary(config);
     renderScenarioCards(config.metrics.outcomes);
     renderValueBands(config);
     edgeEl.textContent = formatPercent(config.metrics.edge);
@@ -226,56 +339,203 @@ function aggregateScenarios(configs, horizon) {
         const multiple = entry.multiple;
         const exitPe = multiple > 0 && horizon > 0 ? multiple / (1 + epsCagr) ** horizon : 1;
         return {
+            id: name.toLowerCase(),
             name,
             prob,
-            epsCagr,
-            exitPe,
+            growth: {
+                epsCagr,
+                epsCagrSigma: null,
+            },
+            valuation: {
+                exitPe,
+                exitPeSigma: null,
+            },
+            notes: `Aggregated scenario for ${name}`,
         };
     });
+}
+
+function normalizeConfig(raw, holdingDetails = {}) {
+    const legacyManual = raw.manual || {};
+    const config = {
+        symbol: raw.symbol || holdingDetails.symbol || '',
+        name: raw.name || raw.symbol || '',
+        meta: raw.meta || {},
+        model: raw.model ? { ...raw.model } : {},
+        market: raw.market ? { ...raw.market } : {},
+        risk: raw.risk ? { ...raw.risk } : {},
+        position: raw.position ? { ...raw.position } : {},
+        derived: raw.derived || {},
+        scenarios: Array.isArray(raw.scenarios)
+            ? raw.scenarios.map((scenario) => ({ ...scenario }))
+            : [],
+    };
+
+    config.market = config.market || {};
+    Object.keys(config.market).forEach((key) => {
+        const num = Number(config.market[key]);
+        if (Number.isFinite(num)) {
+            config.market[key] = num;
+        }
+    });
+
+    config.risk = config.risk || {};
+    if (config.risk.volatility !== undefined) {
+        const riskVol = Number(config.risk.volatility);
+        config.risk.volatility = Number.isFinite(riskVol) ? riskVol : undefined;
+    }
+
+    config.model = config.model || {};
+    config.model.version = config.model.version || '1.0.0';
+    config.model.engine = config.model.engine || {
+        type: 'fermat-pascal-kelly',
+        useMonteCarlo: false,
+        paths: 10000,
+        useBayesianUpdate: false,
+    };
+    config.model.preferences = config.model.preferences || {};
+    const preferences = config.model.preferences;
+    preferences.overrides = preferences.overrides ? { ...preferences.overrides } : {};
+    const overrides = preferences.overrides;
+
+    const normalizeNumber = (value, fallback) => {
+        const num = Number(value);
+        if (Number.isFinite(num)) {
+            return num;
+        }
+        return fallback;
+    };
+
+    preferences.horizon = normalizeNumber(preferences.horizon ?? legacyManual.horizon, 5);
+    preferences.kellyScale = normalizeNumber(
+        preferences.kellyScale ?? legacyManual.kellyScale,
+        0.5
+    );
+    preferences.targetCagr = normalizeNumber(
+        preferences.targetCagr ?? legacyManual.targetCagr,
+        0.1
+    );
+
+    const benchmarkSource =
+        preferences.benchmark !== undefined
+            ? { benchmark: preferences.benchmark }
+            : { benchmark: legacyManual.benchmark ?? 0 };
+    const benchmarkDescriptor = getBenchmarkDescriptor(benchmarkSource);
+    preferences.benchmark = benchmarkDescriptor;
+
+    ['price', 'eps', 'volatility'].forEach((key) => {
+        const value = overrides[key] !== undefined ? overrides[key] : legacyManual[key];
+        if (value !== undefined && value !== null) {
+            const num = Number(value);
+            if (Number.isFinite(num)) {
+                overrides[key] = num;
+            } else {
+                delete overrides[key];
+            }
+        }
+    });
+
+    config.position = config.position || {};
+    const holdingShares = holdingDetails?.shares ?? legacyManual.shares ?? raw.shares;
+    if (holdingShares !== undefined) {
+        const sharesNum = Number(holdingShares);
+        if (Number.isFinite(sharesNum)) {
+            config.position.shares = sharesNum;
+        }
+    }
+    config.position.constraints = config.position.constraints || { minWeight: 0, maxWeight: 0.3 };
+
+    config.scenarios = config.scenarios.map((scenario) => normalizeScenario(scenario));
+
+    const price = getEffectivePrice(config);
+    const shares = Number(config.position.shares) || 0;
+    config.marketValue = shares * price;
+    config.weight = 0;
+    return config;
 }
 
 function buildPortfolioConfig(configs) {
     if (!configs.length) {
         return null;
     }
-    const manual = {
-        price: configs.reduce(
-            (sum, cfg) =>
-                sum + resolveNumeric(cfg.manual.price, cfg.market.price, 0, true) * cfg.weight,
-            0
-        ),
-        eps: 1,
-        horizon: configs[0].manual.horizon,
-        benchmark: configs.reduce((sum, cfg) => sum + cfg.weight * cfg.manual.benchmark, 0),
-        volatility: Math.sqrt(
-            configs.reduce(
-                (sum, cfg) =>
-                    sum +
-                    Math.pow(cfg.weight, 2) *
-                        Math.pow(
-                            resolveNumeric(
-                                cfg.manual.volatility,
-                                cfg.market.volatility,
-                                0.35,
-                                true
-                            ),
-                            2
-                        ),
-                0
-            )
-        ),
-        kellyScale: configs.reduce((sum, cfg) => sum + cfg.weight * cfg.manual.kellyScale, 0),
-        targetCagr: configs.reduce((sum, cfg) => sum + cfg.weight * cfg.manual.targetCagr, 0),
+    const totalValue = configs.reduce((sum, cfg) => sum + cfg.marketValue, 0);
+    const weighted = (selector) =>
+        configs.reduce((sum, cfg) => sum + cfg.weight * selector(cfg), 0);
+    const basePreferences = getPreferences(configs[0]);
+    const horizonRaw = Number(basePreferences.horizon ?? 1);
+    const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
+    const price = weighted((cfg) => getEffectivePrice(cfg));
+    const eps = 1;
+    const benchmarkValue = weighted((cfg) => getBenchmarkDescriptor(getPreferences(cfg)).value);
+    const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
+    const targetCagr = weighted((cfg) => getPreferences(cfg).targetCagr ?? 0.1);
+    const volatility = Math.sqrt(
+        configs.reduce((sum, cfg) => {
+            const vol = getEffectiveVolatility(cfg);
+            return sum + Math.pow(cfg.weight, 2) * Math.pow(vol, 2);
+        }, 0)
+    );
+    const overrides = {
+        price,
+        eps,
+        volatility,
     };
-    const scenarios = aggregateScenarios(configs, manual.horizon);
+    const model = {
+        version: '1.0.0',
+        engine: {
+            type: 'fermat-pascal-kelly',
+            useMonteCarlo: false,
+            paths: 10000,
+            useBayesianUpdate: false,
+        },
+        preferences: {
+            horizon,
+            benchmark: {
+                type: 'composite',
+                value: benchmarkValue,
+                name: 'Weighted Benchmark',
+            },
+            kellyScale,
+            targetCagr,
+            overrides,
+        },
+    };
+    const scenarios = aggregateScenarios(configs, horizon);
     const portfolio = {
         symbol: 'PORT',
         name: 'Portfolio',
-        manual,
-        market: {},
+        meta: {
+            schemaVersion: '1.1.0',
+            asOf: new Date().toISOString(),
+            timezone: 'UTC',
+            source: 'analysis-lab',
+        },
+        model,
+        market: {
+            price,
+            eps,
+        },
+        risk: {
+            volatility,
+            estimateSource: 'weighted',
+            correlations: null,
+        },
+        position: {
+            shares: totalValue && price > 0 ? totalValue / price : totalValue,
+            currentWeight: 1,
+            targetWeight: null,
+            maxKellyWeight: null,
+            portfolioId: 'PORT',
+            constraints: { minWeight: 0, maxWeight: 1 },
+        },
+        derived: {
+            expectedCagr: null,
+            expectedMultiple: null,
+            fairValueRange: null,
+            kelly: { fullKelly: null, scaledKelly: null },
+        },
         scenarios,
-        shares: configs.reduce((sum, cfg) => sum + cfg.shares, 0),
-        marketValue: manual.price,
+        marketValue: totalValue,
         weight: 1,
     };
     portfolio.metrics = computeMetrics(portfolio);
@@ -292,39 +552,12 @@ async function buildConfigs() {
         (analysisIndex.tickers || []).map(async (entry) => {
             try {
                 const raw = await fetchJson(entry.path);
-                const manualSrc = raw.manual || {};
-                const manual = {
-                    horizon: Number(manualSrc.horizon ?? 1),
-                    benchmark: Number(manualSrc.benchmark ?? 0.065),
-                    kellyScale: Number(manualSrc.kellyScale ?? 0.5),
-                    targetCagr: Number(manualSrc.targetCagr ?? 0.1),
-                };
-                ['price', 'eps', 'volatility'].forEach((key) => {
-                    if (manualSrc[key] !== undefined && manualSrc[key] !== null) {
-                        const num = Number(manualSrc[key]);
-                        if (Number.isFinite(num)) {
-                            manual[key] = num;
-                        }
-                    }
-                });
-                const market = { ...(raw.market || {}) };
-                Object.keys(market).forEach((key) => {
-                    const num = Number(market[key]);
-                    if (Number.isFinite(num)) {
-                        market[key] = num;
-                    }
-                });
-                const shares = parseFloat(holdingsData[entry.symbol]?.shares ?? '0');
-                const effectivePrice = resolveNumeric(manual.price, market.price, 0, true);
-                const config = {
-                    symbol: entry.symbol,
-                    name: raw.name || entry.name || entry.symbol,
-                    manual,
-                    market,
-                    scenarios: raw.scenarios || [],
-                    shares,
-                    marketValue: shares * effectivePrice,
-                };
+                const config = normalizeConfig(
+                    { ...raw, symbol: raw.symbol || entry.symbol, name: raw.name || entry.name },
+                    holdingsData[entry.symbol] || {}
+                );
+                config.symbol = entry.symbol;
+                config.name = raw.name || entry.name || entry.symbol;
                 config.metrics = computeMetrics(config);
                 return config;
             } catch {
@@ -351,4 +584,6 @@ async function init() {
     renderActiveTicker();
 }
 
-init();
+if (typeof window !== 'undefined' && !window.__SKIP_ANALYSIS_AUTO_INIT__) {
+    init();
+}

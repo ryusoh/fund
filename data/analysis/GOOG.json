@@ -1,13 +1,31 @@
 {
     "symbol": "GOOG",
     "name": "Alphabet",
-    "shares": 809.873,
-    "metricsUpdatedAt": "2025-11-14T11:32:13.949047+00:00",
-    "manual": {
-        "horizon": 5,
-        "benchmark": 0.065,
-        "kellyScale": 0.5,
-        "targetCagr": 0.11
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2025-11-14T11:32:13.949047+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "custom"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.11,
+            "overrides": {}
+        }
     },
     "market": {
         "forwardEps": 8.95,
@@ -24,27 +42,75 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:17.263992+00:00",
         "evToEbitda": 22.8267,
         "eps": 10.13,
-        "price": 276.21,
-        "volatility": 0.3247
+        "price": 276.21
+    },
+    "risk": {
+        "volatility": 0.3247,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 809.873,
+        "currentWeight": null,
+        "targetWeight": null,
+        "maxKellyWeight": null,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.3
+        }
     },
     "scenarios": [
         {
+            "id": "bull",
             "name": "Bull",
             "prob": 0.35,
-            "epsCagr": 0.18,
-            "exitPe": 30
+            "growth": {
+                "epsCagr": 0.18,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 30,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "base",
             "name": "Base",
             "prob": 0.45,
-            "epsCagr": 0.12,
-            "exitPe": 25
+            "growth": {
+                "epsCagr": 0.12,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 25,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "bear",
             "name": "Bear",
             "prob": 0.2,
-            "epsCagr": 0.04,
-            "exitPe": 18
+            "growth": {
+                "epsCagr": 0.04,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 18,
+                "exitPeSigma": null
+            },
+            "notes": null
         }
-    ]
+    ],
+    "derived": {
+        "expectedCagr": null,
+        "expectedMultiple": null,
+        "fairValueRange": null,
+        "kelly": {
+            "fullKelly": null,
+            "scaledKelly": null
+        }
+    }
 }

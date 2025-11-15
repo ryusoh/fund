@@ -1,13 +1,31 @@
 {
     "symbol": "ANET",
     "name": "Arista Networks",
-    "shares": 2413.5504,
-    "metricsUpdatedAt": "2025-11-14T11:32:13.947976+00:00",
-    "manual": {
-        "horizon": 5,
-        "benchmark": 0.065,
-        "kellyScale": 0.5,
-        "targetCagr": 0.12
+    "meta": {
+        "schemaVersion": "1.1.0",
+        "asOf": "2025-11-14T11:32:13.947976+00:00",
+        "timezone": "UTC",
+        "source": "analysis-sync"
+    },
+    "model": {
+        "version": "1.0.0",
+        "engine": {
+            "type": "fermat-pascal-kelly",
+            "useMonteCarlo": false,
+            "paths": 10000,
+            "useBayesianUpdate": false
+        },
+        "preferences": {
+            "horizon": 5,
+            "benchmark": {
+                "type": "annualReturn",
+                "value": 0.065,
+                "name": "custom"
+            },
+            "kellyScale": 0.5,
+            "targetCagr": 0.12,
+            "overrides": {}
+        }
     },
     "market": {
         "forwardEps": 9.73,
@@ -23,27 +41,75 @@
         "marketDataUpdatedAt": "2025-11-14T11:18:15.651832+00:00",
         "evToEbitda": 41.9426,
         "eps": 2.63,
-        "price": 128.84,
-        "volatility": 0.5726
+        "price": 128.84
+    },
+    "risk": {
+        "volatility": 0.5726,
+        "estimateSource": "historical",
+        "correlations": null
+    },
+    "position": {
+        "shares": 2413.5504,
+        "currentWeight": null,
+        "targetWeight": null,
+        "maxKellyWeight": null,
+        "portfolioId": null,
+        "constraints": {
+            "minWeight": 0.0,
+            "maxWeight": 0.3
+        }
     },
     "scenarios": [
         {
+            "id": "bull",
             "name": "Bull",
-            "prob": 0.4,
-            "epsCagr": 0.22,
-            "exitPe": 32
+            "prob": 0.3,
+            "growth": {
+                "epsCagr": 0.22,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 32,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "base",
             "name": "Base",
-            "prob": 0.4,
-            "epsCagr": 0.15,
-            "exitPe": 28
+            "prob": 0.5,
+            "growth": {
+                "epsCagr": 0.16,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 28,
+                "exitPeSigma": null
+            },
+            "notes": null
         },
         {
+            "id": "bear",
             "name": "Bear",
             "prob": 0.2,
-            "epsCagr": 0.05,
-            "exitPe": 20
+            "growth": {
+                "epsCagr": 0.1,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 22,
+                "exitPeSigma": null
+            },
+            "notes": null
         }
-    ]
+    ],
+    "derived": {
+        "expectedCagr": null,
+        "expectedMultiple": null,
+        "fairValueRange": null,
+        "kelly": {
+            "fullKelly": null,
+            "scaledKelly": null
+        }
+    }
 }
