@@ -16,14 +16,14 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 3,
             "benchmark": {
                 "type": "annualReturn",
-                "value": 0.065,
-                "name": "custom"
+                "value": 0.09,
+                "name": "SP500"
             },
-            "kellyScale": 0.4,
-            "targetCagr": 0.15,
+            "kellyScale": 0.5,
+            "targetCagr": 0.3,
             "overrides": {}
         }
     },
@@ -56,60 +56,60 @@
         "portfolioId": null,
         "constraints": {
             "minWeight": 0.0,
-            "maxWeight": 0.3
+            "maxWeight": 0.05
         }
     },
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull",
-            "prob": 0.2,
+            "name": "Bull – Policy Tailwind + Full Utilization",
+            "prob": 0.3,
             "growth": {
-                "epsCagr": 0.3,
+                "epsCagr": 0.28,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 20,
+                "exitPe": 16,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Higher ICE detention and stable/expanding ATD; new contracts ramp; deleveraging + buybacks; modest multiple re-rate."
         },
         {
             "id": "base",
-            "name": "Base",
-            "prob": 0.6,
+            "name": "Base – Slow Grind, No Regime Change",
+            "prob": 0.5,
             "growth": {
-                "epsCagr": 0.1,
+                "epsCagr": 0.12,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 10,
+                "exitPe": 11,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Status quo policy; low-single-digit revenue growth; gradual deleveraging; modest buybacks; valuation stays slightly below market."
         },
         {
             "id": "bear",
-            "name": "Bear",
-            "prob": 0.22,
+            "name": "Bear – Policy Crackdown & Program Retrenchment",
+            "prob": 0.2,
             "growth": {
-                "epsCagr": 0,
+                "epsCagr": -0.03,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 8,
+                "exitPe": 7,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "ATD funding cuts and/or ISAP loss; lower utilization; margins compress; deleveraging stalls; equity valued as distressed option."
         }
     ],
     "derived": {
-        "expectedCagr": null,
-        "expectedMultiple": null,
+        "expectedCagr": 0.19,
+        "expectedMultiple": 11.7,
         "fairValueRange": null,
         "kelly": {
-            "fullKelly": null,
-            "scaledKelly": null
+            "fullKelly": 0.15,
+            "scaledKelly": 0.075
         }
     }
 }
