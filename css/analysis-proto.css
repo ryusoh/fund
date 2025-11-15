@@ -92,8 +92,7 @@ body {
 }
 
 .ticker-btn-port {
-    background: #111;
-    color: #fff;
+    font-weight: 900;
 }
 
 .ticker-divider {
