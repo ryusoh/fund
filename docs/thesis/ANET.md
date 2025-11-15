@@ -249,9 +249,11 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 - Company:
     - Upward revisions to AI revenue expectations.
     - High-share AI design wins and strong commentary in calls and investor days.
+    - Launch of R4 family (7020R4/7280R4/7700R4/7800R4) with Jericho 3-AI/3+ and HyperPort-capable 7800R4 modular chassis, explicitly targeting large AI clusters and scale-across DC/region networking (Arista press + The Next Platform coverage, Nov 2025).
 - Industry / macro:
     - DC/AI Ethernet TAM forecasts with strong growth.
     - Trend of AI clusters moving from InfiniBand toward Ethernet.
+    - Growing ecosystem focus on Ethernet-based “scale-up” and “scale-across” fabrics (e.g., large two-tier Clos topologies) for 50k–100k+ GPU/XPUs clusters and cross-datacenter AI complexes.
 - Links / files:
     - `docs/thesis/ANET/ANET-bull-evidence.md`
 
@@ -471,6 +473,25 @@ Detailed notes live under `docs/thesis/ANET/`.
 - Bear evidence file: `docs/thesis/ANET/ANET-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
+
+#### 2025-11-04 – Arista R4 family (7800R4 etc.) for AI-scale and scale-across networks
+
+- What happened:
+    - The Next Platform and Arista’s own news/blogs detailed the launch of the R4 family (7020R4/7280R4/7700R4/7800R4) using Broadcom Jericho 3-AI/3+ with deep buffers and 3.2 Tbps HyperPorts, aimed at building large two-tier Clos networks and scale-across interconnects for 50k–100k+ GPU/XPUs clusters and cross-datacenter AI fabrics.
+
+- Impact on scenarios:
+    - Bull: Qualitatively strengthens the “AI Ethernet champion” path; no explicit change to numeric probability yet.
+    - Base: Consistent with expectations for Arista to be a key AI Ethernet vendor; no change.
+    - Bear: Slightly weakens the argument that Ethernet cannot scale technically, but competitive and share risks remain.
+
+- Impact on assumptions:
+    - Confirms that current EPS CAGRs and exit P/Es in Bull/Base are technically plausible given Arista’s platform roadmap; no changes made.
+
+- Action:
+    - Hold; continue to monitor customer adoption (clouds, neoclouds, AI-specialist SPs) and commentary on AI-scale deployments.
+
+- TODO:
+    - Track follow-on customer announcements and deployments using 7800R4/HyperPorts; watch 2026–2027 commentary on Ethernet AI fabrics vs InfiniBand/NVSwitch/Spectrum-X.
 
 #### {{YYYY-MM-DD}} – {{Event title}}
 
