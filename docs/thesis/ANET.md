@@ -15,7 +15,7 @@
     - Current shares: 2413.55
     - Current portfolio weight: ~26%
     - Constraints: min 0%, max 30%
-    - Max Kelly weight (model): ~10–12% (scaled Kelly under current assumptions)
+    - Max Kelly weight (model): low single digits (~3–4% full Kelly; ~1.5–2% scaled under current assumptions)
 
 ---
 
@@ -58,7 +58,7 @@
 
 - Price: 128.84 USD
 - Trailing EPS / PE: 2.63 / 49.54
-- Forward EPS / forward PE: 9.73 / 13.39
+- Forward EPS / forward PE: ~3.16 / ~40.7
 - EV / EBITDA: 41.94
 - Market cap / EV: 164.1B / 154.0B
 - 52-week range: 59.43 – 164.94
@@ -360,13 +360,13 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ~5–7% (scenario-weighted)
-- Expected exit multiple: ~20x
+- Expected annualized return (CAGR): ~1–1.5% (scenario-weighted, from today’s ~40x forward P/E and the bull/base/bear set above)
+- Expected exit multiple: ~20x (probability-weighted across 28x / 20x / 14x)
 - Fair value range today: ~100–130 USD per share (base-case band; bull/bear much wider)
 
 - Kelly outputs:
-    - Full Kelly weight: low- to mid-teens % of portfolio.
-    - Scaled Kelly weight (× kellyScale = 0.5): ~5–8% as practical cap.
+    - Full Kelly weight: low single digits (~3–4% of portfolio).
+    - Scaled Kelly weight (× kellyScale = 0.5): ~1.5–2% as practical cap.
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
@@ -374,9 +374,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Scenario-weighted expected return beats the benchmark but may not clear the hurdle at current price.
-    - Upside depends on bull outcome (AI Ethernet champion) being underpriced.
-    - Downside is meaningful if bear unfolds (slower growth and multiple compression).
+    - Scenario-weighted expected return is roughly around or slightly above the 6.5% benchmark only if you put extra weight on the bull case; mechanically, using today’s ~40x forward P/E, the base/bear drag pulls the pure probability-weighted CAGR down to low single digits (~1–1.5%), well below the 12% hurdle.
+    - Upside still depends on some combination of: (a) the bull outcome (AI Ethernet champion) being more likely than the current 25% prior, and/or (b) the market sustaining a higher exit multiple than the conservative 28x/20x/14x set here.
+    - Downside remains meaningful if the bear unfolds (slower growth and multiple compression toward mid‑teens P/E), so position size should be set off scaled Kelly rather than headline conviction.
 
 ---
 
@@ -385,9 +385,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 6.1 Position policy
 
 - Target weight range:
-    - Normal target: 5–8% of portfolio.
-    - Max allowed (constraints): 15%.
-    - Model-justified max (scaled Kelly): ~8–10%.
+    - Normal target: 2–4% of portfolio (around the scaled Kelly range).
+    - Max allowed (constraints): 10–15% (discretionary risk cap, well above model).
+    - Model-justified max (scaled Kelly): ~1.5–2%.
 
 - Entry / add rules:
     - Add or overweight when:

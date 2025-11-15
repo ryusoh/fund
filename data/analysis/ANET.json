@@ -28,9 +28,9 @@
         }
     },
     "market": {
-        "forwardEps": 9.73,
+        "forwardEps": 3.16,
         "pe": 49.5437,
-        "forwardPe": 13.3916,
+        "forwardPe": 40.74,
         "beta": 1.392,
         "marketCap": 164084858880,
         "enterpriseValue": 153978650624.0,
@@ -62,45 +62,45 @@
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull",
-            "prob": 0.35,
+            "name": "Bull – AI Ethernet Champion",
+            "prob": 0.3,
             "growth": {
-                "epsCagr": 0.3,
+                "epsCagr": 0.27,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 40,
+                "exitPe": 36.0,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Ethernet becomes default AI fabric; Arista is leading AI Ethernet vendor with strong AI share, solid classic DC growth, and accelerating campus; margins stay best-in-class."
         },
         {
             "id": "base",
-            "name": "Base",
-            "prob": 0.5,
+            "name": "Base – Strong but Shared AI Winner",
+            "prob": 0.60,
             "growth": {
-                "epsCagr": 0.22,
+                "epsCagr": 0.16,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 36,
+                "exitPe": 28.0,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10–12%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
         },
         {
             "id": "bear",
-            "name": "Bear",
-            "prob": 0.15,
+            "name": "Bear – Capex Hangover & Competition Bite",
+            "prob": 0.1,
             "growth": {
-                "epsCagr": 0.13,
+                "epsCagr": 0.1,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 30,
+                "exitPe": 20.0,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Hyperscaler capex slows after AI boom; NVDA/white-box/in-house designs take share; campus penetration disappoints; Arista becomes a slow-growing cyclical with some margin compression."
         }
     ],
     "derived": {

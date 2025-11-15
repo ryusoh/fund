@@ -16,14 +16,14 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 5,
+            "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "custom"
+                "name": "SP500_expected"
             },
             "kellyScale": 0.5,
-            "targetCagr": 0.11,
+            "targetCagr": 0.12,
             "overrides": {}
         }
     },
@@ -64,44 +64,44 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.25,
+            "prob": 0.2,
             "growth": {
-                "epsCagr": 0.18,
-                "epsCagrSigma": null
-            },
-            "valuation": {
-                "exitPe": 30,
-                "exitPeSigma": null
-            },
-            "notes": null
-        },
-        {
-            "id": "base",
-            "name": "Base",
-            "prob": 0.55,
-            "growth": {
-                "epsCagr": 0.14,
+                "epsCagr": 0.15,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 25,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "AI powerhouse outcome: Search/YouTube monetization improves, Cloud exceeds 20%+ growth with ~30% margins, and optionality (Waymo/Other Bets) contributes meaningfully."
+        },
+        {
+            "id": "base",
+            "name": "Base",
+            "prob": 0.6,
+            "growth": {
+                "epsCagr": 0.1,
+                "epsCagrSigma": null
+            },
+            "valuation": {
+                "exitPe": 20,
+                "exitPeSigma": null
+            },
+            "notes": "Steady compounder: Search/YouTube remain dominant, Cloud grows mid-teens then slows, Other Bets roughly breakeven, EPS compounds ~10% with strong buybacks."
         },
         {
             "id": "bear",
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.07,
+                "epsCagr": 0.04,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 15,
                 "exitPeSigma": null
             },
-            "notes": null
+            "notes": "Moat pressure and stagnation: AI agents erode search, YouTube growth stalls, Cloud slows to high-single digits with margin pressure, and regulation adds cost."
         }
     ],
     "derived": {
