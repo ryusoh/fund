@@ -284,13 +284,15 @@
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
-- Benchmark return: S&P 500 forward expectation ≈ 6–7%/yr.
-- Target (hurdle) CAGR: 8%/yr.
+- Benchmark return: S&P 500 forward expectation ≈ 6–7%/yr (total return).
+- VT expected total return (scenarios + yield): ≈ 6%/yr in the current calibration, i.e. roughly in line with S&P with wide error bars.
+- Target (hurdle) CAGR: 8%/yr (portfolio-level ambition, not a forecast for VT or S&P).
 
 - Commentary:
-    - Expected VT CAGR (~5–6%) is below the 8% hurdle but broadly consistent with realistic global equity forecasts from today’s valuation starting point.
-    - VT may outperform S&P 500 if non-U.S. markets re-rate upward and/or USD weakens; may lag if U.S. dominance persists.
-    - Market seems roughly fair on a three-state view; VT is mainly a **beta + diversification** tool, not an alpha play.
+    - Expected VT CAGR (~5–6% in the scenarios, ~6% including dividends) is below the 8% hurdle but broadly consistent with realistic global equity forecasts from today’s valuation starting point.
+    - Relative to the S&P 500, my macro view is that VT’s long-run expected return is roughly similar, with a small chance of modest outperformance if non-U.S. markets and FX partially mean-revert, and a small chance of modest underperformance if U.S. dominance persists.
+    - Any small negative "Edge vs S&P 500" that appears in the JSON/config should be interpreted as a conservative modeling choice, not a strong conviction that the international/small-cap sleeve will structurally underperform U.S. large caps by 1–2%/yr.
+    - VT is mainly a beta + diversification tool; I am not relying on a large, persistent alpha vs S&P 500 in this thesis, only on global capitalism continuing to compound earnings over the next 10+ years.
 
 ---
 
