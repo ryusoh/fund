@@ -63,13 +63,13 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.3,
+            "prob": 0.35,
             "growth": {
-                "epsCagr": 0.22,
+                "epsCagr": 0.3,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 32,
+                "exitPe": 40,
                 "exitPeSigma": null
             },
             "notes": null
@@ -79,11 +79,11 @@
             "name": "Base",
             "prob": 0.5,
             "growth": {
-                "epsCagr": 0.16,
+                "epsCagr": 0.22,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 28,
+                "exitPe": 36,
                 "exitPeSigma": null
             },
             "notes": null
@@ -91,13 +91,13 @@
         {
             "id": "bear",
             "name": "Bear",
-            "prob": 0.2,
+            "prob": 0.15,
             "growth": {
-                "epsCagr": 0.1,
+                "epsCagr": 0.13,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 22,
+                "exitPe": 30,
                 "exitPeSigma": null
             },
             "notes": null

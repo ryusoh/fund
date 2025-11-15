@@ -93,11 +93,11 @@
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.05,
+                "epsCagr": 0.08,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 14,
                 "exitPeSigma": null
             },
             "notes": null

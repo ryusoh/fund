@@ -59,11 +59,11 @@
             "name": "Bull",
             "prob": 0.3,
             "growth": {
-                "epsCagr": 0.1,
+                "epsCagr": 0.12,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 20,
+                "exitPe": 22,
                 "exitPeSigma": null
             },
             "notes": null
@@ -73,11 +73,11 @@
             "name": "Base",
             "prob": 0.5,
             "growth": {
-                "epsCagr": 0.06,
+                "epsCagr": 0.08,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 20,
                 "exitPeSigma": null
             },
             "notes": null
@@ -87,7 +87,7 @@
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.01,
+                "epsCagr": 0.04,
                 "epsCagrSigma": null
             },
             "valuation": {

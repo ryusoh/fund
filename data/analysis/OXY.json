@@ -64,9 +64,9 @@
         {
             "id": "bull",
             "name": "Bull",
-            "prob": 0.35,
+            "prob": 0.3,
             "growth": {
-                "epsCagr": 0.18,
+                "epsCagr": 0.25,
                 "epsCagrSigma": null
             },
             "valuation": {
@@ -80,7 +80,7 @@
             "name": "Base",
             "prob": 0.4,
             "growth": {
-                "epsCagr": 0.1,
+                "epsCagr": 0.12,
                 "epsCagrSigma": null
             },
             "valuation": {
@@ -92,7 +92,7 @@
         {
             "id": "bear",
             "name": "Bear",
-            "prob": 0.25,
+            "prob": 0.3,
             "growth": {
                 "epsCagr": -0.02,
                 "epsCagrSigma": null

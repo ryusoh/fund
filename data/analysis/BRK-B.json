@@ -69,7 +69,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 25,
+                "exitPe": 18,
                 "exitPeSigma": null
             },
             "notes": null
@@ -83,7 +83,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 20,
+                "exitPe": 15,
                 "exitPeSigma": null
             },
             "notes": null
@@ -93,11 +93,11 @@
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": 0.03,
+                "epsCagr": 0.05,
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 17,
+                "exitPe": 10,
                 "exitPeSigma": null
             },
             "notes": null
