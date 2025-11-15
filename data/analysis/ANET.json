@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-14T11:32:13.947976+00:00",
+        "asOf": "2025-11-15T10:56:33.053516+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -20,7 +20,7 @@
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "custom"
+                "name": "SP500"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.12,
@@ -28,23 +28,23 @@
         }
     },
     "market": {
-        "forwardEps": 3.16,
-        "pe": 49.5437,
-        "forwardPe": 40.74,
+        "forwardEps": 9.73,
+        "pe": 49.9506,
+        "forwardPe": 13.5015,
         "beta": 1.392,
-        "marketCap": 164084858880,
-        "enterpriseValue": 153978650624.0,
+        "marketCap": 165432279040.0,
+        "enterpriseValue": 155326087168.0,
         "ebitda": 3671173888,
         "currency": "USD",
         "fiftyTwoWeekHigh": 164.94,
         "fiftyTwoWeekLow": 59.43,
-        "marketDataUpdatedAt": "2025-11-14T11:18:15.651832+00:00",
-        "evToEbitda": 41.9426,
+        "marketDataUpdatedAt": "2025-11-15T10:56:32.785607+00:00",
+        "evToEbitda": 42.3097,
         "eps": 2.63,
-        "price": 128.84
+        "price": 131.37
     },
     "risk": {
-        "volatility": 0.5726,
+        "volatility": 0.5717,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -62,7 +62,7 @@
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull \u2013 AI Ethernet Champion",
+            "name": "Bull – AI Ethernet Champion",
             "prob": 0.4,
             "growth": {
                 "epsCagr": 0.28,
@@ -76,7 +76,7 @@
         },
         {
             "id": "base",
-            "name": "Base \u2013 Strong but Shared AI Winner",
+            "name": "Base – Strong but Shared AI Winner",
             "prob": 0.5,
             "growth": {
                 "epsCagr": 0.18,
@@ -86,11 +86,11 @@
                 "exitPe": 28.0,
                 "exitPeSigma": null
             },
-            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10\u201312%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
+            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10–12%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
         },
         {
             "id": "bear",
-            "name": "Bear \u2013 Capex Hangover & Competition Bite",
+            "name": "Bear – Capex Hangover & Competition Bite",
             "prob": 0.1,
             "growth": {
                 "epsCagr": 0.08,
@@ -106,7 +106,10 @@
     "derived": {
         "expectedCagr": 0.0728,
         "expectedMultiple": 28.85,
-        "fairValueRange": [100.0, 130.0],
+        "fairValueRange": [
+            100.0,
+            130.0
+        ],
         "kelly": {
             "fullKelly": 0.06,
             "scaledKelly": 0.03

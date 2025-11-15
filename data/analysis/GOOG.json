@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-14T11:32:13.949047+00:00",
+        "asOf": "2025-11-15T10:56:34.621089+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -20,7 +20,7 @@
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "SP500_expected"
+                "name": "SP500"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.12,
@@ -29,23 +29,23 @@
     },
     "market": {
         "forwardEps": 8.95,
-        "pe": 27.5538,
-        "forwardPe": 31.1866,
+        "pe": 27.3156,
+        "forwardPe": 30.9475,
         "beta": 1.082,
-        "marketCap": 3364477992960.0,
-        "enterpriseValue": 3313840160768.0,
+        "marketCap": 3364478255104.0,
+        "enterpriseValue": 3288016617472.0,
         "ebitda": 145174003712,
         "dividendYield": 0.3,
         "currency": "USD",
         "fiftyTwoWeekHigh": 292.36,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2025-11-14T11:18:17.263992+00:00",
-        "evToEbitda": 22.8267,
-        "eps": 10.13,
-        "price": 276.21
+        "marketDataUpdatedAt": "2025-11-15T10:56:34.487232+00:00",
+        "evToEbitda": 22.6488,
+        "eps": 10.14,
+        "price": 276.98
     },
     "risk": {
-        "volatility": 0.3247,
+        "volatility": 0.3242,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,7 +70,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 25,
+                "exitPe": 25.0,
                 "exitPeSigma": null
             },
             "notes": "AI powerhouse outcome: Search/YouTube monetization improves, Cloud exceeds 20%+ growth with ~30% margins, and optionality (Waymo/Other Bets) contributes meaningfully."
@@ -84,7 +84,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 20,
+                "exitPe": 20.0,
                 "exitPeSigma": null
             },
             "notes": "Steady compounder: Search/YouTube remain dominant, Cloud grows mid-teens then slows, Other Bets roughly breakeven, EPS compounds ~10% with strong buybacks."
@@ -98,7 +98,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 15,
+                "exitPe": 15.0,
                 "exitPeSigma": null
             },
             "notes": "Moat pressure and stagnation: AI agents erode search, YouTube growth stalls, Cloud slows to high-single digits with margin pressure, and regulation adds cost."

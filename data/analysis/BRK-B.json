@@ -3,7 +3,7 @@
     "name": "Berkshire Hathaway",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-14T11:32:13.948679+00:00",
+        "asOf": "2025-11-15T10:56:33.547157+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -20,7 +20,7 @@
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.07,
-                "name": "SP500_nominal"
+                "name": "SP500"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.1,
@@ -29,22 +29,22 @@
     },
     "market": {
         "forwardEps": 20.08,
-        "pe": 16.4195,
-        "forwardPe": 25.5533,
+        "pe": 16.2861,
+        "forwardPe": 25.3456,
         "beta": 0.709,
-        "marketCap": 1107222069248.0,
-        "enterpriseValue": -251406024704.0,
+        "marketCap": 1107222200320.0,
+        "enterpriseValue": -251412021248.0,
         "ebitda": 103864000512,
         "currency": "USD",
         "fiftyTwoWeekHigh": 542.07,
         "fiftyTwoWeekLow": 440.1,
-        "marketDataUpdatedAt": "2025-11-14T11:18:16.195837+00:00",
-        "evToEbitda": -2.4205,
+        "marketDataUpdatedAt": "2025-11-15T10:56:33.413142+00:00",
+        "evToEbitda": -2.4206,
         "eps": 31.25,
-        "price": 513.83
+        "price": 508.94
     },
     "risk": {
-        "volatility": 0.1868,
+        "volatility": 0.1869,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -69,7 +69,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 18.0,
                 "exitPeSigma": null
             },
             "notes": "Crisis opportunist: strong underwriting, successful cash deployment in downturns, Abel earns investor confidence."
@@ -83,7 +83,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 15,
+                "exitPe": 15.0,
                 "exitPeSigma": null
             },
             "notes": "Slow, steady compounding: operating businesses grow mid-single digits, capital is deployed conservatively, and multiple stays mid-teens."
@@ -97,7 +97,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 12,
+                "exitPe": 12.0,
                 "exitPeSigma": null
             },
             "notes": "Buffett discount & drift: market never trusts succession, insurance faces pressure, and cash earns low returns."

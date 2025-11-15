@@ -3,7 +3,7 @@
     "name": "Occidental Petroleum",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-14T11:32:13.949520+00:00",
+        "asOf": "2025-11-15T10:56:35.218041+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -20,7 +20,7 @@
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.08,
-                "name": "SP500_nominal"
+                "name": "SP500"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.15,
@@ -29,23 +29,23 @@
     },
     "market": {
         "forwardEps": 3.16,
-        "pe": 13.462,
-        "forwardPe": 13.2975,
+        "pe": 31.4412,
+        "forwardPe": 13.5316,
         "beta": 0.392,
-        "marketCap": 41398542336,
-        "enterpriseValue": 70907543552.0,
+        "marketCap": 42127597568.0,
+        "enterpriseValue": 71636598784.0,
         "ebitda": 12693000192,
-        "dividendYield": 2.28,
+        "dividendYield": 2.25,
         "currency": "USD",
         "fiftyTwoWeekHigh": 53.2,
         "fiftyTwoWeekLow": 34.78,
-        "marketDataUpdatedAt": "2025-11-14T11:18:17.820898+00:00",
-        "evToEbitda": 5.5864,
-        "eps": 3.16,
-        "price": 42.54
+        "marketDataUpdatedAt": "2025-11-15T10:56:34.984681+00:00",
+        "evToEbitda": 5.6438,
+        "eps": 1.36,
+        "price": 42.76
     },
     "risk": {
-        "volatility": 0.28,
+        "volatility": 0.3636,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -70,7 +70,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 12,
+                "exitPe": 12.0,
                 "exitPeSigma": null
             },
             "notes": "Supercharged cash flows & carbon bonus: WTI averages ~$90–100, tight market, strong FCF leverage, and DAC scaling with premium contracts."
@@ -84,7 +84,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 10,
+                "exitPe": 10.0,
                 "exitPeSigma": null
             },
             "notes": "Deleveraged cash cow: WTI ~$70–75, modest production growth, steady buybacks/dividends, DAC still early."
@@ -98,7 +98,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 8,
+                "exitPe": 8.0,
                 "exitPeSigma": null
             },
             "notes": "Structural headwinds & stagnation: WTI ~$50–55, volumes flat/down, DAC under-delivers, market assigns low multiple."

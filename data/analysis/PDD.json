@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-14T11:32:13.949692+00:00",
+        "asOf": "2025-11-15T10:56:35.723416+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -20,7 +20,7 @@
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.065,
-                "name": "SP500_expected"
+                "name": "SP500"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.12,
@@ -29,22 +29,22 @@
     },
     "market": {
         "forwardEps": 14.09,
-        "pe": 14.4747,
-        "forwardPe": 9.5436,
+        "pe": 14.0806,
+        "forwardPe": 9.2938,
         "beta": 0.051,
-        "marketCap": 190899863552,
-        "enterpriseValue": 375223287808.0,
+        "marketCap": 190899847168.0,
+        "enterpriseValue": 355554263040.0,
         "ebitda": 92433162240,
         "currency": "USD",
         "fiftyTwoWeekHigh": 139.41,
         "fiftyTwoWeekLow": 87.11,
-        "marketDataUpdatedAt": "2025-11-14T11:18:18.409223+00:00",
-        "evToEbitda": 4.0594,
-        "eps": 9.29,
-        "price": 131.83
+        "marketDataUpdatedAt": "2025-11-15T10:56:35.582138+00:00",
+        "evToEbitda": 3.8466,
+        "eps": 9.3,
+        "price": 130.95
     },
     "risk": {
-        "volatility": 0.4302,
+        "volatility": 0.4308,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -69,7 +69,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 18,
+                "exitPe": 18.0,
                 "exitPeSigma": null
             },
             "notes": "Pinduoduo dominates domestic value e-commerce, monetization improves, and Temu becomes a profitable global platform."
@@ -83,7 +83,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 15,
+                "exitPe": 15.0,
                 "exitPeSigma": null
             },
             "notes": "Steady growth: Pinduoduo matures yet grows with China, Temu achieves mixed success and roughly breakeven economics."
@@ -97,7 +97,7 @@
                 "epsCagrSigma": null
             },
             "valuation": {
-                "exitPe": 10,
+                "exitPe": 10.0,
                 "exitPeSigma": null
             },
             "notes": "Moat erosion: domestic growth stalls, Temu struggles to reach profitability, margins compress under subsidies and regulation."
