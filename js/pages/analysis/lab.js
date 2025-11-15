@@ -349,39 +349,35 @@ function renderActiveTicker() {
 function aggregateScenarios(configs, horizon) {
     const scenarioMap = new Map();
     configs.forEach((cfg) => {
+        const holdingWeight = Number(cfg.weight ?? 0);
+        if (!(holdingWeight > 0)) {
+            return;
+        }
         cfg.metrics.outcomes.forEach((outcome) => {
-            const entry = scenarioMap.get(outcome.name) || {
-                prob: 0,
-                multiple: 0,
-                scenarioCagr: 0,
+            const id = outcome.id || outcome.name || 'scenario';
+            const entry = scenarioMap.get(id) || {
+                name: outcome.name || id,
+                weightedMultiple: 0,
+                weightedProb: 0,
             };
-            entry.prob += cfg.weight * outcome.prob;
-            entry.multiple += cfg.weight * outcome.multiple;
-            entry.scenarioCagr += cfg.weight * outcome.scenarioCagr;
-            scenarioMap.set(outcome.name, entry);
+            entry.weightedMultiple += holdingWeight * outcome.multiple;
+            entry.weightedProb += holdingWeight * outcome.prob;
+            scenarioMap.set(id, entry);
         });
     });
-    const totalProb = Array.from(scenarioMap.values()).reduce((sum, entry) => sum + entry.prob, 0);
-    return Array.from(scenarioMap.entries()).map(([name, entry]) => {
-        const prob = totalProb > 0 ? entry.prob / totalProb : 0;
-        const epsCagr = entry.scenarioCagr;
-        const multiple = entry.multiple;
-        const exitPe = multiple > 0 && horizon > 0 ? multiple / (1 + epsCagr) ** horizon : 1;
+
+    return Array.from(scenarioMap.entries()).map(([id, entry]) => {
+        const multiple = entry.weightedMultiple;
+        const scenarioCagr = multiple > 0 && horizon > 0 ? multiple ** (1 / horizon) - 1 : 0;
+        const normalizedProb = entry.weightedProb;
+        const displayName = id.charAt(0).toUpperCase() + id.slice(1);
         return {
-            id: name.toLowerCase(),
-            name,
-            prob,
-            growth: {
-                epsCagr,
-                epsCagrSigma: null,
-            },
-            valuation: {
-                exitPe,
-                exitPeSigma: null,
-            },
+            id,
+            name: displayName,
+            prob: normalizedProb,
             precomputedMultiple: multiple,
-            precomputedCagr: epsCagr,
-            notes: `Aggregated scenario for ${name}`,
+            precomputedCagr: scenarioCagr,
+            notes: `Weighted ${displayName} scenario`,
         };
     });
 }

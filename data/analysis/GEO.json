@@ -62,7 +62,7 @@
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull – Policy Tailwind + Full Utilization",
+            "name": "Bull \u2013 Policy Tailwind + Full Utilization",
             "prob": 0.3,
             "growth": {
                 "epsCagr": 0.28,
@@ -76,7 +76,7 @@
         },
         {
             "id": "base",
-            "name": "Base – Slow Grind, No Regime Change",
+            "name": "Base \u2013 Slow Grind, No Regime Change",
             "prob": 0.5,
             "growth": {
                 "epsCagr": 0.12,
@@ -90,7 +90,7 @@
         },
         {
             "id": "bear",
-            "name": "Bear – Policy Crackdown & Program Retrenchment",
+            "name": "Bear \u2013 Policy Crackdown & Program Retrenchment",
             "prob": 0.2,
             "growth": {
                 "epsCagr": -0.03,

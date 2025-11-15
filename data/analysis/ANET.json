@@ -62,7 +62,7 @@
     "scenarios": [
         {
             "id": "bull",
-            "name": "Bull – AI Ethernet Champion",
+            "name": "Bull \u2013 AI Ethernet Champion",
             "prob": 0.3,
             "growth": {
                 "epsCagr": 0.27,
@@ -76,8 +76,8 @@
         },
         {
             "id": "base",
-            "name": "Base – Strong but Shared AI Winner",
-            "prob": 0.60,
+            "name": "Base \u2013 Strong but Shared AI Winner",
+            "prob": 0.6,
             "growth": {
                 "epsCagr": 0.16,
                 "epsCagrSigma": null
@@ -86,11 +86,11 @@
                 "exitPe": 28.0,
                 "exitPeSigma": null
             },
-            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10–12%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
+            "notes": "AI networking is large but shared among ANET/NVDA/Cisco/ODMs; classic DC grows ~10\u201312%; campus grows mid-teens; margins normalize slightly below peak but remain strong."
         },
         {
             "id": "bear",
-            "name": "Bear – Capex Hangover & Competition Bite",
+            "name": "Bear \u2013 Capex Hangover & Competition Bite",
             "prob": 0.1,
             "growth": {
                 "epsCagr": 0.1,
