@@ -29,7 +29,7 @@
     },
     "market": {
         "forwardEps": 3.16,
-        "pe": 30.8971,
+        "pe": 13.462,
         "forwardPe": 13.2975,
         "beta": 0.392,
         "marketCap": 41398542336,
@@ -41,7 +41,7 @@
         "fiftyTwoWeekLow": 34.78,
         "marketDataUpdatedAt": "2025-11-14T11:18:17.820898+00:00",
         "evToEbitda": 5.5864,
-        "eps": 1.36,
+        "eps": 3.16,
         "price": 42.54
     },
     "risk": {
@@ -66,21 +66,21 @@
             "name": "Bull",
             "prob": 0.25,
             "growth": {
-                "epsCagr": 0.25,
+                "epsCagr": 0.28,
                 "epsCagrSigma": null
             },
             "valuation": {
                 "exitPe": 12,
                 "exitPeSigma": null
             },
-            "notes": "Supercharged cash flows & carbon bonus: tight oil market, high leverage to >$90 WTI, and DAC scaling with premium contracts."
+            "notes": "Supercharged cash flows & carbon bonus: WTI averages ~$90–100, tight market, strong FCF leverage, and DAC scaling with premium contracts."
         },
         {
             "id": "base",
             "name": "Base",
             "prob": 0.55,
             "growth": {
-                "epsCagr": 0.12,
+                "epsCagr": 0.18,
                 "epsCagrSigma": null
             },
             "valuation": {
@@ -94,7 +94,7 @@
             "name": "Bear",
             "prob": 0.2,
             "growth": {
-                "epsCagr": -0.05,
+                "epsCagr": -0.02,
                 "epsCagrSigma": null
             },
             "valuation": {

@@ -164,10 +164,8 @@
 
 This documents the mapping from qualitative thesis to `scenarios` JSON.
 
-### 4.1 Shared baseline assumptions
-
-- Starting EPS: ~\$1.3–1.4 (TTM)
-- Starting PE: ~30x (on depressed trailing earnings)
+- Starting EPS (TTM): ~$1.3–1.4; modeling uses normalized mid-cycle EPS ≈ $3.2
+- Starting PE (normalized): ~13–14× on current price (vs ~30× on depressed trailing EPS)
 - Time horizon: 5 years
 - Balance sheet / share count:
     - Net/principal debt starts around low \$20Bs and drops below \$15B with the OxyChem sale and ongoing FCF.
@@ -185,7 +183,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 
 - JSON mapping:
     - `prob`: 0.25
-    - `growth.epsCagr`: 0.25
+    - `growth.epsCagr`: 0.28
     - `valuation.exitPe`: 12
 
 #### 4.2.1 Narrative (world description)
@@ -213,10 +211,8 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - DAC generates hundreds of millions in EBITDA; market assigns explicit “climate-tech” value to the platform.
     - Possibility of SOTP thinking and/or spin-like narratives.
 
-#### 4.2.3 Why these numbers are reasonable
-
-- EPS CAGR rationale (25%):
-    - High oil prices + modest volume growth + interest savings + 15–20% share-count shrink can plausibly drive EPS from ~\$1.3 to \$9–10 in 5 years (~25% CAGR).
+- EPS CAGR rationale (28%):
+    - High oil prices (WTI averaging ~$90–100) + modest volume growth + interest savings + 15–20% share-count shrink can plausibly drive normalized EPS from ~ $3.2 to roughly $11 in 5 years (~28% CAGR).
 - Exit PE rationale (12x):
     - Slight premium to a pure E&P at the top of the cycle (which might trade 8–10x), justified by de-risked balance sheet and DAC optionality.
     - Still below market multiple, acknowledging cyclicality and oil exposure.
@@ -240,7 +236,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 
 - JSON mapping:
     - `prob`: 0.55
-    - `growth.epsCagr`: 0.12
+    - `growth.epsCagr`: 0.18
     - `valuation.exitPe`: 10
 
 #### 4.3.1 Narrative (world description)
@@ -264,10 +260,8 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Optionality:
     - DAC breaks even to modestly profitable; main benefit is ESG halo and long-term option value, not near-term earnings.
 
-#### 4.3.3 Why these numbers are reasonable
-
-- EPS CAGR rationale (12%):
-    - With mid-cycle oil, slight volume growth, shrinking interest, and a few percent share-count shrink, EPS can grow low double-digits without needing a super-cycle.
+- EPS CAGR rationale (18%):
+    - With mid-cycle oil (~$70–75 WTI), slight volume growth, shrinking interest, and a few percent share-count shrink, normalized EPS can grow high-teens annually without requiring a super-cycle; this reflects a combination of modest operating leverage and consistent capital returns.
 - Exit PE rationale (10x):
     - “Normal” through-the-cycle multiple for a de-levered, mid-cycle oil producer.
     - Slight discount to market P/E, reflecting commodity risk.
@@ -290,7 +284,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 
 - JSON mapping:
     - `prob`: 0.20
-    - `growth.epsCagr`: -0.05
+    - `growth.epsCagr`: -0.02
     - `valuation.exitPe`: 8
 
 #### 4.4.1 Narrative (world description)
@@ -314,10 +308,8 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Optionality:
     - DAC produces underwhelming returns or becomes a modest cash drain.
 
-#### 4.4.3 Why these numbers are reasonable
-
-- EPS CAGR rationale (-5%):
-    - Lower oil prices and flat volumes push EPS down; even with lower interest, net income trends sideways or declines.
+- EPS CAGR rationale (-2%):
+    - Lower oil prices and flat volumes push EPS down modestly; even with some interest relief, normalized EPS drifts slightly lower over time as weaker pricing and limited growth outweigh efficiency gains.
 - Exit PE rationale (8x):
     - Depressed-cycle multiple for a structurally challenged, low-growth commodity name.
     - Reflects market skepticism on long-term oil demand and OXY’s ability to pivot.
