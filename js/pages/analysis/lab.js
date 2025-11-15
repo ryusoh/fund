@@ -116,6 +116,12 @@ function normalizeScenario(scenario) {
     const exitSigmaRaw = Number(valuation.exitPeSigma ?? scenario.exitPeSigma);
     const exitSigma = Number.isFinite(exitSigmaRaw) ? exitSigmaRaw : null;
     const probRaw = Number(scenario.prob ?? 0);
+    const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
+    const precomputedMultiple = Number.isFinite(precomputedMultipleRaw)
+        ? precomputedMultipleRaw
+        : null;
+    const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
+    const precomputedCagr = Number.isFinite(precomputedCagrRaw) ? precomputedCagrRaw : null;
     return {
         id: scenario.id || name.toLowerCase(),
         name,
@@ -129,6 +135,8 @@ function normalizeScenario(scenario) {
             exitPeSigma: exitSigma,
         },
         notes: scenario.notes ?? null,
+        precomputedMultiple,
+        precomputedCagr,
     };
 }
 
@@ -142,25 +150,36 @@ function diffDescriptor(price, entry) {
 }
 
 function computeScenarioOutcome(scenario, { price, eps, horizon }) {
+    const safeHorizon = horizon > 0 ? horizon : 1;
+    const baseProbRaw = Number(scenario.prob ?? 0);
+    const base = {
+        id: scenario.id || scenario.name || 'scenario',
+        name: scenario.name || scenario.id || 'Scenario',
+        prob: Number.isFinite(baseProbRaw) ? baseProbRaw : 0,
+    };
+    const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
+    if (Number.isFinite(precomputedMultipleRaw) && precomputedMultipleRaw > 0) {
+        const multiple = precomputedMultipleRaw;
+        const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
+        const scenarioCagr = Number.isFinite(precomputedCagrRaw)
+            ? precomputedCagrRaw
+            : multiple > 0
+              ? multiple ** (1 / safeHorizon) - 1
+              : 0;
+        return { ...base, multiple, scenarioCagr };
+    }
+
     const growth = scenario.growth || {};
     const valuation = scenario.valuation || {};
     const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
     const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
     const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
     const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
-    const probRaw = Number(scenario.prob ?? 0);
     const terminalEps = eps * (1 + epsCagr) ** horizon;
     const terminalPrice = terminalEps * exitPe;
     const multiple = price > 0 ? terminalPrice / price : 0;
-    const safeHorizon = horizon > 0 ? horizon : 1;
     const scenarioCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
-    return {
-        id: scenario.id || scenario.name || 'scenario',
-        name: scenario.name || scenario.id || 'Scenario',
-        prob: Number.isFinite(probRaw) ? probRaw : 0,
-        multiple,
-        scenarioCagr,
-    };
+    return { ...base, multiple, scenarioCagr };
 }
 
 function computeMetrics(config) {
@@ -350,6 +369,8 @@ function aggregateScenarios(configs, horizon) {
                 exitPe,
                 exitPeSigma: null,
             },
+            precomputedMultiple: multiple,
+            precomputedCagr: epsCagr,
             notes: `Aggregated scenario for ${name}`,
         };
     });
@@ -459,12 +480,15 @@ function buildPortfolioConfig(configs) {
         return null;
     }
     const totalValue = configs.reduce((sum, cfg) => sum + cfg.marketValue, 0);
+    if (!(totalValue > 0)) {
+        return null;
+    }
     const weighted = (selector) =>
         configs.reduce((sum, cfg) => sum + cfg.weight * selector(cfg), 0);
     const basePreferences = getPreferences(configs[0]);
     const horizonRaw = Number(basePreferences.horizon ?? 1);
     const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
-    const price = weighted((cfg) => getEffectivePrice(cfg));
+    const price = totalValue;
     const eps = 1;
     const benchmarkValue = weighted((cfg) => getBenchmarkDescriptor(getPreferences(cfg)).value);
     const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
