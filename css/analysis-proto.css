@@ -17,9 +17,17 @@
 }
 
 @font-face {
-    font-family: 'PP Neue Machina';
-    src: url('../assets/fonts/webfonts/PPNeueMachina-InktrapRegular.woff2') format('woff2');
-    font-weight: 400;
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-Bold.woff2') format('woff2');
+    font-weight: 700;
     font-style: normal;
     font-display: swap;
 }
@@ -27,8 +35,11 @@
 body {
     margin: 0;
     background: var(--bg);
-    font-family: 'PP Neue Machina', 'JetBrains Mono', system-ui, sans-serif;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', 'IBM Plex Mono', Menlo, Consolas, monospace;
     color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .lab {
@@ -139,16 +150,6 @@ body {
 .output-header h2 {
     margin: 0.2rem 0 0;
     font-size: 1.6rem;
-}
-
-body {
-    margin: 0;
-    background: var(--bg);
-    font-family: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
 
 .stat-grid {
