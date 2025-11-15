@@ -15,7 +15,7 @@
     - Current shares: 2413.55
     - Current portfolio weight: ~26%
     - Constraints: min 0%, max 30%
-    - Max Kelly weight (model): low single digits (~3–4% full Kelly; ~1.5–2% scaled under current assumptions)
+    - Max Kelly weight (model): mid single digits (~5–7% full Kelly; ~2.5–3.5% scaled under current assumptions)
 
 ---
 
@@ -205,9 +205,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.2 Bull Case – “AI Ethernet Champion”
 
 - JSON mapping:
-    - `prob`: 0.25
+    - `prob`: 0.35
     - `growth.epsCagr`: 0.22
-    - `valuation.exitPe`: 28
+    - `valuation.exitPe`: 35
 
 #### 4.2.1 Narrative (world description)
 
@@ -260,9 +260,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.3 Base Case – “Strong but Shared AI Winner”
 
 - JSON mapping:
-    - `prob`: 0.50
+    - `prob`: 0.45
     - `growth.epsCagr`: 0.15
-    - `valuation.exitPe`: 20
+    - `valuation.exitPe`: 28
 
 #### 4.3.1 Narrative (world description)
 
@@ -310,9 +310,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 ### 4.4 Bear Case – “Capex Hangover & Competition Bite”
 
 - JSON mapping:
-    - `prob`: 0.25
+    - `prob`: 0.20
     - `growth.epsCagr`: 0.03
-    - `valuation.exitPe`: 14
+    - `valuation.exitPe`: 20
 
 #### 4.4.1 Narrative (world description)
 
@@ -360,13 +360,13 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 
 ## 5. Quantitative Summary & Model Check
 
-- Expected annualized return (CAGR): ~1–1.5% (scenario-weighted, from today’s ~40x forward P/E and the bull/base/bear set above)
-- Expected exit multiple: ~20x (probability-weighted across 28x / 20x / 14x)
-- Fair value range today: ~100–130 USD per share (base-case band; bull/bear much wider)
+- Expected annualized return (CAGR): ~7–7.5% (scenario-weighted, from today’s ~40x forward P/E and the updated bull/base/bear set above)
+- Expected exit multiple: ~28–29x (probability-weighted across 35x / 28x / 20x)
+- Fair value range today: ~100–130 USD per share (base-case band; bull/bear still much wider, but now with slightly better odds of upside vs downside)
 
 - Kelly outputs:
-    - Full Kelly weight: low single digits (~3–4% of portfolio).
-    - Scaled Kelly weight (× kellyScale = 0.5): ~1.5–2% as practical cap.
+    - Full Kelly weight: mid single digits (~5–7% of portfolio).
+    - Scaled Kelly weight (× kellyScale = 0.5): ~2.5–3.5% as practical cap.
 
 ### 5.1 Interpretation vs benchmark and hurdle
 
@@ -374,9 +374,9 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 - Target (hurdle) CAGR: 12%
 
 - Commentary:
-    - Scenario-weighted expected return is roughly around or slightly above the 6.5% benchmark only if you put extra weight on the bull case; mechanically, using today’s ~40x forward P/E, the base/bear drag pulls the pure probability-weighted CAGR down to low single digits (~1–1.5%), well below the 12% hurdle.
-    - Upside still depends on some combination of: (a) the bull outcome (AI Ethernet champion) being more likely than the current 25% prior, and/or (b) the market sustaining a higher exit multiple than the conservative 28x/20x/14x set here.
-    - Downside remains meaningful if the bear unfolds (slower growth and multiple compression toward mid‑teens P/E), so position size should be set off scaled Kelly rather than headline conviction.
+    - Scenario-weighted expected return with the updated assumptions is now in the ~7–7.5% CAGR range, modestly above the 6.5% benchmark but still below the 12% hurdle. This is consistent with “great business, pretty full price” from today’s ~40x forward P/E.
+    - Upside depends on some combination of: (a) the bull outcome (“AI Ethernet champion”) being realised or getting repriced sooner, and/or (b) the market sustaining a structurally higher exit multiple than the probability-weighted ~28–29x we are using here.
+    - Downside in the bear case remains meaningful (slower growth plus multiple compression toward ~20x), so the model still points to mid single‑digit full‑Kelly and low‑single‑digit scaled‑Kelly sizing; going materially above that is a discretionary conviction call rather than what the math alone would recommend.
 
 ---
 
