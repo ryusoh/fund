@@ -16,7 +16,7 @@
             "useBayesianUpdate": false
         },
         "preferences": {
-            "horizon": 10,
+            "horizon": 5,
             "benchmark": {
                 "type": "annualReturn",
                 "value": 0.07,

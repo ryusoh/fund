@@ -1,3 +1,5 @@
+import { compactNumber } from '../../utils/formatting.js';
+
 const tickerListEl = document.getElementById('tickerList');
 const summaryStatsEl = document.getElementById('summaryStats');
 const scenarioResultsEl = document.getElementById('scenarioResults');
@@ -38,6 +40,13 @@ function formatCurrency(value) {
         return 'n/a';
     }
     return `$${value.toFixed(2)}`;
+}
+
+function formatCompactCurrency(value) {
+    if (!Number.isFinite(value)) {
+        return 'n/a';
+    }
+    return `$${compactNumber(value)}`;
 }
 
 function resolveNumeric(manualValue, marketValue, fallback = 0, treatZeroAsMissing = false) {
@@ -103,6 +112,46 @@ function getEffectiveVolatility(config) {
     return resolveNumeric(overrides.volatility, risk.volatility ?? market.volatility, 0.35, true);
 }
 
+function getSharesOutstanding(config) {
+    const market = config.market || {};
+    const direct = Number(
+        market.sharesOutstanding ?? market.shares ?? market.basicShares ?? market.floatShares
+    );
+    if (Number.isFinite(direct) && direct > 0) {
+        return direct;
+    }
+    const price = Number(market.price);
+    const marketCap = Number(market.marketCap);
+    if (Number.isFinite(price) && price > 0 && Number.isFinite(marketCap) && marketCap > 0) {
+        const derived = marketCap / price;
+        if (Number.isFinite(derived) && derived > 0) {
+            return derived;
+        }
+    }
+    return null;
+}
+
+function getAsOfYear(config) {
+    const asOf = config?.meta?.asOf;
+    if (typeof asOf === 'string') {
+        const parsed = new Date(asOf);
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed.getUTCFullYear();
+        }
+    }
+    return new Date().getUTCFullYear();
+}
+
+function computeExitYear(config, horizon) {
+    const baseYear = getAsOfYear(config);
+    const numericHorizon = Number(horizon);
+    if (!Number.isFinite(numericHorizon)) {
+        return baseYear;
+    }
+    const roundedHorizon = Math.max(0, Math.round(numericHorizon));
+    return baseYear + roundedHorizon;
+}
+
 function normalizeScenario(scenario) {
     const name = scenario.name || scenario.id || 'Scenario';
     const growth = scenario.growth || {};
@@ -166,7 +215,9 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
             : multiple > 0
               ? multiple ** (1 / safeHorizon) - 1
               : 0;
-        return { ...base, multiple, scenarioCagr };
+        const impliedEpsRaw = Number(scenario.precomputedTerminalEps ?? scenario.terminalEps);
+        const terminalEps = Number.isFinite(impliedEpsRaw) ? impliedEpsRaw : null;
+        return { ...base, multiple, scenarioCagr, terminalEps };
     }
 
     const growth = scenario.growth || {};
@@ -179,7 +230,7 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
     const terminalPrice = terminalEps * exitPe;
     const multiple = price > 0 ? terminalPrice / price : 0;
     const scenarioCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
-    return { ...base, multiple, scenarioCagr };
+    return { ...base, multiple, scenarioCagr, terminalEps };
 }
 
 function computeMetrics(config) {
@@ -197,6 +248,8 @@ function computeMetrics(config) {
     const kellyScale = Number.isFinite(kellyScaleRaw) ? kellyScaleRaw : 0.5;
     const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
     const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
+    const exitYear = computeExitYear(config, horizon);
+    const sharesOutstanding = getSharesOutstanding(config);
 
     const normalizedScenarios = scenarios.map((scenario) => normalizeScenario(scenario));
     const outcomes = normalizedScenarios.map((scenario) =>
@@ -233,6 +286,8 @@ function computeMetrics(config) {
         volatility,
         kellyScale,
         targetCagr,
+        exitYear,
+        sharesOutstanding,
     };
 }
 
@@ -256,9 +311,22 @@ function renderSummary(config) {
     });
 }
 
-function renderScenarioCards(outcomes) {
+function renderScenarioCards(config) {
+    const outcomes = (config.metrics && config.metrics.outcomes) || [];
     scenarioResultsEl.innerHTML = '';
+    const exitYearValue =
+        config.metrics && Number.isFinite(config.metrics.exitYear) ? config.metrics.exitYear : null;
+    const sharesOutstanding =
+        config.metrics && Number.isFinite(config.metrics.sharesOutstanding)
+            ? config.metrics.sharesOutstanding
+            : null;
     outcomes.forEach((outcome) => {
+        const terminalEps =
+            outcome && Number.isFinite(outcome.terminalEps) ? outcome.terminalEps : null;
+        const totalEarnings =
+            terminalEps !== null && sharesOutstanding !== null
+                ? terminalEps * sharesOutstanding
+                : null;
         const card = document.createElement('div');
         card.className = 'result-card';
         card.innerHTML = `
@@ -266,6 +334,9 @@ function renderScenarioCards(outcomes) {
             <p>Prob: ${(outcome.prob * 100).toFixed(1)}%</p>
             <p>Multiple: ${outcome.multiple.toFixed(2)}x</p>
             <p>CAGR: ${formatPercent(outcome.scenarioCagr)}</p>
+            <p>Implied Annual EPS: ${formatCurrency(terminalEps)}</p>
+            <p>Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}</p>
+            <p>Exit Year: ${exitYearValue ?? 'n/a'}</p>
         `;
         scenarioResultsEl.appendChild(card);
     });
@@ -339,7 +410,7 @@ function renderActiveTicker() {
     selectedTickerLabel.textContent = `${config.symbol} · ${formatPercent(config.weight)}`;
     selectedTickerName.textContent = config.name;
     renderSummary(config);
-    renderScenarioCards(config.metrics.outcomes);
+    renderScenarioCards(config);
     renderValueBands(config);
     edgeEl.textContent = formatPercent(config.metrics.edge);
     fullKellyEl.textContent = formatPercent(config.metrics.fullKelly);
