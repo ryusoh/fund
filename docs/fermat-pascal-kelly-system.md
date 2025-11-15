@@ -33,19 +33,19 @@ Build a reusable analysis engine that:
 
 ### 1.2 Investment Horizon & Terminal Value
 
-- Fix a horizon \( T \) (e.g., 5 years).
+- Fix a horizon <em>T</em> (e.g., 5 years).
 - Scenario terminal price = terminal EPS × exit PE.
 - Scenario terminal multiple = terminal price ÷ current price.
 
 ### 1.3 Expected Return vs Benchmark
 
 - Expected multiple = Σ(probability × scenario multiple).
-- Expected CAGR = \( \text{expected multiple}^{1/T} - 1 \).
+- Expected CAGR = expected multiple<sup>1/T</sup> - 1.
 - Benchmark CAGR (e.g., 6.5%) defines a baseline; difference versus expected CAGR is the “edge”.
 
 ### 1.4 Kelly Criterion
 
-- Approximate full-Kelly fraction \( f\_{\text{full}} \approx \text{edge} / \text{variance} \).
+- Approximate full-Kelly fraction f<sub>full</sub> ≈ edge / variance.
 - Apply a risk-scaling factor (e.g., 0.5) for a practical allocation.
 
 ---
@@ -57,7 +57,7 @@ Build a reusable analysis engine that:
 #### Global Parameters
 
 - Current price & PE (or EPS).
-- Investment horizon \( T \).
+- Investment horizon <em>T</em>.
 - Benchmark annual return.
 - Annual volatility estimate.
 - Risk-scaling factor.
@@ -73,15 +73,15 @@ Build a reusable analysis engine that:
 
 For each scenario compute:
 
-1. **Terminal EPS:** initial EPS × \( (1 + \text{CAGR})^T \).
+1. **Terminal EPS:** initial EPS × (1 + CAGR)<sup>T</sup>.
 2. **Terminal price:** terminal EPS × exit PE.
 3. **Terminal multiple:** terminal price ÷ current price.
-4. **Scenario CAGR:** \( \text{multiple}^{1/T} - 1 \).
+4. **Scenario CAGR:** multiple<sup>1/T</sup> - 1.
 
 ### 2.3 Expected Return & Edge
 
 - Expected terminal multiple: Σ(probability × scenario multiple).
-- Expected CAGR: \( \text{expected multiple}^{1/T} - 1 \).
+- Expected CAGR: expected multiple<sup>1/T</sup> - 1.
 - Edge: expected CAGR − benchmark CAGR.
 
 ### 2.4 Kelly Position Sizing
@@ -93,7 +93,7 @@ For each scenario compute:
 
 - Scenario terminal prices don’t depend on entry price.
 - Expected terminal price = Σ(probability × scenario terminal price).
-- Required expected multiple for a target CAGR = \( (1 + \text{target})^T \).
+- Required expected multiple for a target CAGR = (1 + target)<sup>T</sup>.
 - Implied entry price = expected terminal price ÷ required multiple.
 - Use to mark “value bands” (e.g., price for 10% CAGR vs 12% CAGR).
 
@@ -109,13 +109,13 @@ For each scenario compute:
 ### 3.2 VaR & CVaR
 
 - Sort scenarios by total return.
-- VaR\(\_{20\%}\) = return threshold where 20% of mass lies below.
-- CVaR\(\_{20\%}\) = expected return conditioned on the worst 20%.
+- VaR<sub>20%</sub> = return threshold where 20% of mass lies below.
+- CVaR<sub>20%</sub> = expected return conditioned on the worst 20%.
 
 ### 3.3 Downside Ratios
 
 - **Sortino ratio:** (expected return − threshold) ÷ downside deviation.
-- **Omega ratio:** \( P(\text{return} > \text{threshold}) / P(\text{return} \le \text{threshold}) \).
+- **Omega ratio:** P(return > threshold) / P(return &le; threshold).
 
 ---
 
@@ -131,12 +131,12 @@ For each scenario compute:
 
 ### 4.3 Likelihood Model
 
-- Define \( P(\text{observation} \mid \text{scenario}) \).
+- Define P(observation | scenario).
 - Simple implementations: Gaussian around scenario expectations, piecewise likelihoods, etc.
 
 ### 4.4 Posterior Update
 
-- Posterior \( \propto \text{Likelihood} \times \text{Prior} \).
+- Posterior &propto; Likelihood × Prior.
 - Normalize across scenarios; feed updated probabilities back into the core model.
 
 ---
