@@ -150,7 +150,10 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
             }
         } else {
             // Immediate clear without animation (navigation)
-            d3.select(CALENDAR_SELECTORS.heatmap).selectAll('text.ch-subdomain-text').html('');
+            const textNodes = d3
+                .select(CALENDAR_SELECTORS.heatmap)
+                .selectAll('text.ch-subdomain-text');
+            textNodes.html('');
         }
         return;
     }
@@ -163,61 +166,62 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
             const parent = this.parentNode;
             const datum = parent ? d3.select(parent).datum() : null;
             if (!datum || !datum.t) {
-                el.html('');
+                el.selectAll('tspan').remove();
                 return;
             }
 
             const dt = new Date(datum.t);
             const dateStr = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
             const entry = byDate.get(dateStr);
-            /* istanbul ignore next: defensive DOM manipulation in render labels */
-            el.html('');
 
             const dateText = dt.getUTCDate();
             /* istanbul ignore next: defensive attribute fallback in render labels */
             const x = el.attr('x') || 0;
 
-            el.append('tspan')
-                .attr('class', 'subdomain-line0')
-                .attr('dy', '-1.0em')
-                .attr('x', x)
-                .text(dateText);
-
-            /* istanbul ignore next: defensive programming for missing entry data */
-            if (!entry || entry.dailyChange === 0) {
-                /* istanbul ignore next: defensive programming for missing entry data */
-                return;
+            let changeText = '';
+            let totalText = '';
+            let showDetails = false;
+            if (entry && entry.dailyChange !== 0) {
+                changeText = formatNumber(
+                    entry.dailyChange,
+                    currencySymbols,
+                    true,
+                    state.selectedCurrency,
+                    state.rates,
+                    entry, // Pass the historical data entry
+                    'dailyChange' // Specify we want daily change values
+                );
+                totalText = formatNumber(
+                    entry.total,
+                    currencySymbols,
+                    false,
+                    state.selectedCurrency,
+                    state.rates,
+                    entry, // Pass the historical data entry
+                    'total' // Specify we want total values
+                );
+                showDetails = true;
             }
 
-            const changeText = formatNumber(
-                entry.dailyChange,
-                currencySymbols,
-                true,
-                state.selectedCurrency,
-                state.rates,
-                entry, // Pass the historical data entry
-                'dailyChange' // Specify we want daily change values
-            );
-            const totalText = formatNumber(
-                entry.total,
-                currencySymbols,
-                false,
-                state.selectedCurrency,
-                state.rates,
-                entry, // Pass the historical data entry
-                'total' // Specify we want total values
-            );
+            const ensureLine = (cls, dy) => {
+                let line = el.select(`tspan.${cls}`);
+                if (line.empty()) {
+                    line = el.append('tspan').attr('class', cls).attr('dy', dy).attr('x', x);
+                } else {
+                    line.attr('x', x);
+                }
+                return line;
+            };
 
-            el.append('tspan')
-                .attr('class', 'subdomain-line1')
-                .attr('dy', '1.2em')
-                .attr('x', x)
-                .text(changeText);
-            el.append('tspan')
-                .attr('class', 'subdomain-line2')
-                .attr('dy', '1.2em')
-                .attr('x', x)
-                .text(totalText);
+            ensureLine('subdomain-line0', '-1.0em').text(dateText);
+
+            if (showDetails) {
+                ensureLine('subdomain-line1', '1.2em').text(changeText);
+                ensureLine('subdomain-line2', '1.2em').text(totalText);
+            } else {
+                el.select('tspan.subdomain-line1').remove();
+                el.select('tspan.subdomain-line2').remove();
+            }
         });
 
     // Handle animation vs immediate display

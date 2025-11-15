@@ -24,7 +24,13 @@ const createNode = (tag, datum = null) => ({
     tag,
     attributes: {},
     innerHTML: '',
-    textContent: '',
+    _textValue: '',
+    get textContent() {
+        return this._textValue;
+    },
+    set textContent(value) {
+        this._textValue = value;
+    },
     children: [],
     parentNode: null,
     style: {},
@@ -54,6 +60,39 @@ const createTransition = (selection) => {
 const createSelection = (nodes = [], options = {}) => {
     const selection = {
         _nodes: nodes,
+        select: jest.fn((selector) => {
+            if (!nodes[0]) {
+                return createSelection([]);
+            }
+            const matches = ensureArray(nodes[0].children || []).filter((child) => {
+                if (!selector) {
+                    return false;
+                }
+                if (selector.startsWith('.')) {
+                    const cls = selector.slice(1);
+                    return child.attributes?.class === cls;
+                }
+                if (selector.includes('.')) {
+                    const [tag, cls] = selector.split('.');
+                    return child.tag === tag && child.attributes?.class === cls;
+                }
+                return child.tag === selector;
+            });
+            const childSelection = createSelection(matches);
+            childSelection.remove = jest.fn(() => {
+                childSelection._nodes.forEach((node) => {
+                    if (node?.parentNode) {
+                        node.parentNode.children = (node.parentNode.children || []).filter(
+                            (child) => child !== node
+                        );
+                    }
+                });
+                childSelection._nodes = [];
+                return childSelection;
+            });
+            childSelection.empty = jest.fn(() => childSelection._nodes.length === 0);
+            return childSelection;
+        }),
         selectAll: jest.fn((selector) => {
             if (typeof options.selectAll === 'function') {
                 return options.selectAll(selector);
@@ -105,7 +144,7 @@ const createSelection = (nodes = [], options = {}) => {
         }),
         text: jest.fn((value) => {
             nodes.forEach((node) => {
-                node.textContent = value;
+                node._textValue = value;
             });
             return selection;
         }),

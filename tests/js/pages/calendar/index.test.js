@@ -590,6 +590,41 @@ describe('calendar page', () => {
         expect(first.children[2].attributes.class).toBe('subdomain-line2');
     });
 
+    it('keeps rendered label tspans intact across repeated renders', async () => {
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                value: 0.1,
+                valueUSD: 0.1,
+                total: 1000,
+                totalUSD: 1000,
+                dailyChange: 10,
+                dailyChangeUSD: 10,
+            },
+        ]);
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+        const byDate = new Map([
+            ['2025-01-01', { dailyChange: 10, total: 1000, valueUSD: 1000 }],
+            ['2025-01-02', { dailyChange: 2, total: 1010, valueUSD: 1010 }],
+        ]);
+        global.__mockCalendarDatums = Array.from(byDate.keys());
+        const state = { labelsVisible: true, selectedCurrency: 'USD', rates: { USD: 1 } };
+        const symbols = { USD: '$' };
+
+        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        const before = (global.__d3TextNodes || []).map((node) => node.children.length);
+
+        // Re-render with identical data; children should remain
+        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        const after = (global.__d3TextNodes || []).map((node) => node.children.length);
+
+        expect(after).toEqual(before);
+        const firstNode = global.__d3TextNodes?.[0];
+        expect(String(firstNode?.children?.[0]?.textContent)).toBe('1');
+        expect(String(firstNode?.children?.[1]?.textContent)).toMatch(/\$/);
+    });
+
     it('should handle edge cases in renderLabels with null/missing datum', () => {
         // This test will be covered by modifying the main D3 mock to include null datum scenarios
         // The lines 48-49 are covered when datum is null or missing 't' property
