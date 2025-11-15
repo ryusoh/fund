@@ -8,6 +8,42 @@
     --accent-light: #ffed4a;
 }
 
+html {
+    background-color: #000;
+}
+
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    width: 100%;
+    background: #000;
+    pointer-events: none;
+    z-index: -1;
+}
+
+body::before {
+    top: -120px;
+    height: 180px;
+}
+
+body::after {
+    bottom: -120px;
+    height: 180px;
+}
+
+@supports (top: env(safe-area-inset-top)) {
+    body::before {
+        top: calc(-1 * env(safe-area-inset-top) - 60px);
+        height: calc(env(safe-area-inset-top) + 120px);
+    }
+    body::after {
+        bottom: calc(-1 * env(safe-area-inset-bottom) - 60px);
+        height: calc(env(safe-area-inset-bottom) + 120px);
+    }
+}
+
 @font-face {
     font-family: 'JetBrains Mono';
     src: url('../assets/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2');
