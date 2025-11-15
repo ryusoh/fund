@@ -4,9 +4,6 @@ const tickerListEl = document.getElementById('tickerList');
 const summaryStatsEl = document.getElementById('summaryStats');
 const scenarioResultsEl = document.getElementById('scenarioResults');
 const valueBandsEl = document.getElementById('valueBands');
-const edgeEl = document.getElementById('edge');
-const fullKellyEl = document.getElementById('fullKelly');
-const scaledKellyEl = document.getElementById('scaledKelly');
 const selectedTickerLabel = document.getElementById('selectedTickerLabel');
 const selectedTickerName = document.getElementById('selectedTickerName');
 
@@ -412,9 +409,6 @@ function renderActiveTicker() {
     renderSummary(config);
     renderScenarioCards(config);
     renderValueBands(config);
-    edgeEl.textContent = formatPercent(config.metrics.edge);
-    fullKellyEl.textContent = formatPercent(config.metrics.fullKelly);
-    scaledKellyEl.textContent = formatPercent(config.metrics.scaledKelly);
 }
 
 function aggregateScenarios(configs, horizon) {
