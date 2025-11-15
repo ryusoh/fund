@@ -29,7 +29,7 @@
     - **Manufacturing, Services, Retail**: Wide collection of industrial, building products, aerospace, consumer, and retail businesses.
     - **Investment Portfolio**: Large, concentrated equity portfolio (Apple, Bank of America, American Express, Coca-Cola, etc.) plus fixed income and cash.
 
-- **Business model in one sentence**  
+- **Business model in one sentence**
   Use **insurance float + retained earnings** from a diversified set of high-quality operating businesses to compound capital over decades via disciplined investing, opportunistic acquisitions, and selective buybacks.
 
 ### 1.2 Why it’s in my universe
@@ -139,7 +139,7 @@
 
 ## 5. Scenario Framework (Fermat–Pascal)
 
-We model three discrete 10-year scenarios: **Bull**, **Base**, **Bear**.  
+We model three discrete 10-year scenarios: **Bull**, **Base**, **Bear**.
 All returns are from today’s price over 10 years.
 
 ### 5.1 Shared modeling assumptions
