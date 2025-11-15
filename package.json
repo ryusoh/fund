@@ -35,10 +35,11 @@
         "babel-jest": "^30.2.0",
         "eslint": "^9.39.1",
         "husky": "^9.1.6",
-        "lint-staged": "^16.2.6",
-        "prettier": "^3.3.3",
         "jest": "^30.2.0",
         "jest-environment-jsdom": "^30.2.0",
+        "js-yaml": "^4.1.1",
+        "lint-staged": "^16.2.6",
+        "prettier": "^3.3.3",
         "stylelint": "^16.25.0"
     },
     "lint-staged": {
@@ -87,5 +88,8 @@
     },
     "dependencies": {
         "canvas": "^3.2.0"
+    },
+    "overrides": {
+        "js-yaml": "^4.1.1"
     }
 }

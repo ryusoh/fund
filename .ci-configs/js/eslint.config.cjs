@@ -41,6 +41,7 @@ module.exports = [
                 MouseEvent: 'readonly',
                 TouchEvent: 'readonly',
                 process: 'readonly',
+                URL: 'readonly',
 
                 // App-provided globals from CDN
                 Chart: 'readonly',
