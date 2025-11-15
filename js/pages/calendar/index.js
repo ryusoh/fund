@@ -37,6 +37,18 @@ const appState = {
     isAnimating: false,
 };
 
+let viewportUpdateTimer = null;
+
+function scheduleViewportUpdate(delay = 100) {
+    if (viewportUpdateTimer) {
+        clearTimeout(viewportUpdateTimer);
+    }
+    viewportUpdateTimer = setTimeout(() => {
+        viewportUpdateTimer = null;
+        handleViewportChange();
+    }, delay);
+}
+
 function getLatestMonthlyKey(monthlyPnl) {
     if (!(monthlyPnl instanceof Map) || monthlyPnl.size === 0) {
         return null;
@@ -441,28 +453,20 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
     });
 
     // Responsive calendar handling - update range on viewport changes
-    let resizeTimeout;
     window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            logger.log('Window resize detected, checking viewport changes');
-            handleViewportChange();
-        }, 150); // Debounce resize events
+        logger.log('Window resize detected, scheduling viewport check');
+        scheduleViewportUpdate(150); // Debounce resize events
     });
 
     // Handle zoom state changes
     window.addEventListener('calendar-zoom-start', () => {
         // Small delay to ensure zoom class is applied
-        setTimeout(() => {
-            handleViewportChange();
-        }, 50);
+        scheduleViewportUpdate(120);
     });
 
     window.addEventListener('calendar-zoom-end', () => {
         // Small delay to ensure zoom class is removed
-        setTimeout(() => {
-            handleViewportChange();
-        }, 50);
+        scheduleViewportUpdate(120);
     });
 
     // Touch swipe navigation for mobile devices
