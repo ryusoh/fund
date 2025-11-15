@@ -19,8 +19,8 @@
             "horizon": 10,
             "benchmark": {
                 "type": "annualReturn",
-                "value": 0.065,
-                "name": "SP500_total_return"
+                "value": 0.05,
+                "name": "SP500_price_return"
             },
             "kellyScale": 0.5,
             "targetCagr": 0.08,
