@@ -298,27 +298,37 @@ function renderValueBands(config) {
 
 function renderTickerList() {
     tickerListEl.innerHTML = '';
-    const ordered = [...state.configs].sort((a, b) => {
-        if (a.symbol === 'PORT') {
-            return -1;
+    const portfolio = state.configs.find((cfg) => cfg.symbol === 'PORT');
+    const others = state.configs
+        .filter((cfg) => cfg.symbol !== 'PORT')
+        .sort((a, b) => b.weight - a.weight);
+
+    if (portfolio) {
+        appendTickerButton(portfolio, ' ticker-btn-port');
+        if (others.length) {
+            const divider = document.createElement('div');
+            divider.className = 'ticker-divider';
+            tickerListEl.appendChild(divider);
         }
-        if (b.symbol === 'PORT') {
-            return 1;
-        }
-        return b.weight - a.weight;
+    }
+
+    others.forEach((config) => {
+        appendTickerButton(config);
     });
-    ordered.forEach((config) => {
-        const button = document.createElement('button');
-        button.className = `ticker-btn${config.symbol === state.activeSymbol ? ' active' : ''}`;
-        button.textContent = config.symbol;
-        button.title = `${config.name} · ${formatPercent(config.weight)}`;
-        button.addEventListener('click', () => {
-            state.activeSymbol = config.symbol;
-            renderTickerList();
-            renderActiveTicker();
-        });
-        tickerListEl.appendChild(button);
+}
+
+function appendTickerButton(config, extraClass = '') {
+    const button = document.createElement('button');
+    const isActive = config.symbol === state.activeSymbol;
+    button.className = `ticker-btn${extraClass}${isActive ? ' active' : ''}`;
+    button.textContent = config.symbol;
+    button.title = `${config.name} · ${formatPercent(config.weight)}`;
+    button.addEventListener('click', () => {
+        state.activeSymbol = config.symbol;
+        renderTickerList();
+        renderActiveTicker();
     });
+    tickerListEl.appendChild(button);
 }
 
 function renderActiveTicker() {

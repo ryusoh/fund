@@ -24,11 +24,11 @@
 ### 1.1 What the company does
 
 - Core business / segments:
-    - **Google Services (Search, YouTube, Network, Android, Maps, Play, hardware, subscriptions)**  
+    - **Google Services (Search, YouTube, Network, Android, Maps, Play, hardware, subscriptions)**
       Global search and advertising, online video (YouTube), mobile/desktop platforms (Android, Chrome), app store (Play), subscriptions (YouTube Premium, YouTube TV, Google One, Workspace consumer tiers), and first-party hardware (Pixel, Nest).
-    - **Google Cloud (GCP + Workspace)**  
+    - **Google Cloud (GCP + Workspace)**
       Infrastructure and platform cloud services (compute, storage, networking, data/analytics, ML/AI), plus SaaS (Workspace).
-    - **Other Bets (Waymo, Verily, etc.)**  
+    - **Other Bets (Waymo, Verily, etc.)**
       Long-dated “moonshots” in autonomous driving, health/biology, logistics, and frontier tech.
 
 - Geography / customer concentration:

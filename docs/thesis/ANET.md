@@ -24,11 +24,11 @@
 ### 1.1 What the company does
 
 - Core business / segments:
-    - **Cloud / Data Center Switching (Classic Cloud)**  
+    - **Cloud / Data Center Switching (Classic Cloud)**
       High-performance Ethernet switches and routing platforms for hyperscale and large enterprise data centers (100G/200G/400G/800G).
-    - **AI Networking (Back-End Fabrics)**  
+    - **AI Networking (Back-End Fabrics)**
       Ultra-high-bandwidth Ethernet fabrics for GPU/accelerator clusters used in AI training and inference.
-    - **Campus & Enterprise Networking**  
+    - **Campus & Enterprise Networking**
       Campus/LAN switching, Wi-Fi, and CloudVision management for enterprises (“client-to-cloud” solutions).
 
 - Geography / customer concentration:
@@ -71,15 +71,15 @@
 ### 2.1 Moat / competitive advantage
 
 - Sources of moat:
-    - **EOS (Extensible Operating System)**  
+    - **EOS (Extensible Operating System)**
       Single, modular network OS across all platforms; reliable, programmable, loved by operators.
-    - **Cloud Titan relationships**  
+    - **Cloud Titan relationships**
       Deep co-design with hyperscalers on architectures, features, and roadmaps; design-in status on new fabrics.
-    - **High-end segment focus & first-mover on speeds**  
+    - **High-end segment focus & first-mover on speeds**
       Early on 100G/400G/800G+; large share of fast ports in DC → default choice for demanding workloads.
-    - **Merchant-silicon leverage**  
+    - **Merchant-silicon leverage**
       Broadcom alignment: fast time-to-market and scale while focusing differentiation on EOS and system design.
-    - **Operational excellence**  
+    - **Operational excellence**
       Lean org, high revenue and profit per employee, strong execution record.
 
 - Moat durability:
@@ -461,7 +461,7 @@ This section documents how the JSON `scenarios` block maps to the thesis and why
 
 ## 8. Evidence Log & Updates
 
-Append-only log of new information and how it affects Bull/Base/Bear.  
+Append-only log of new information and how it affects Bull/Base/Bear.
 Detailed notes live under `docs/thesis/ANET/`.
 
 ### 8.1 Log index

@@ -91,6 +91,20 @@ body {
         background 0.2s;
 }
 
+.ticker-btn-port {
+    background: #111;
+    color: #fff;
+}
+
+.ticker-divider {
+    width: 100%;
+    height: 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0.25rem 0;
+    grid-column: 1 / -1;
+}
+
 .ticker-btn.active {
     background: var(--accent-light);
 }
