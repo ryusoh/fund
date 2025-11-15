@@ -35,6 +35,7 @@ const appState = {
     monthlyPnl: new Map(),
     highlightMonthKey: null,
     isAnimating: false,
+    isCalendarTransition: false,
 };
 
 let viewportUpdateTimer = null;
@@ -59,18 +60,17 @@ function getLatestMonthlyKey(monthlyPnl) {
 
 let pendingPostPaintFrame = null;
 let latestPostPaintArgs = null;
+let pendingPostPaintAfterTransition = false;
 
-function schedulePostPaintUpdates(cal, byDate, state, currencySymbols) {
-    latestPostPaintArgs = { cal, byDate, state, currencySymbols };
+function queuePostPaintFrame() {
+    if (pendingPostPaintFrame !== null) {
+        return;
+    }
 
     const scheduler =
         typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
             ? window.requestAnimationFrame.bind(window)
             : (cb) => setTimeout(cb, 0);
-
-    if (pendingPostPaintFrame !== null) {
-        return;
-    }
 
     pendingPostPaintFrame = scheduler(() => {
         pendingPostPaintFrame = null;
@@ -81,6 +81,24 @@ function schedulePostPaintUpdates(cal, byDate, state, currencySymbols) {
         renderLabels(args.cal, args.byDate, args.state, args.currencySymbols);
         applyCurrencyColors(d3, args.state, args.byDate);
     });
+}
+
+function schedulePostPaintUpdates(cal, byDate, state, currencySymbols) {
+    latestPostPaintArgs = { cal, byDate, state, currencySymbols };
+
+    if (state?.isCalendarTransition) {
+        pendingPostPaintAfterTransition = true;
+        return;
+    }
+
+    queuePostPaintFrame();
+}
+
+function flushPostPaintAfterTransition() {
+    if (pendingPostPaintAfterTransition && latestPostPaintArgs) {
+        pendingPostPaintAfterTransition = false;
+        queuePostPaintFrame();
+    }
 }
 
 // --- CALENDAR RENDERING ---
@@ -243,7 +261,10 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
  */
 function setupEventListeners(cal, byDate, state, currencySymbols) {
     cal.on('fill', () => {
+        state.isCalendarTransition = false;
+        state.isAnimating = false;
         schedulePostPaintUpdates(cal, byDate, state, currencySymbols);
+        flushPostPaintAfterTransition();
         // Reset touch navigation state when calendar updates
         if (touchNavigationState.isNavigating) {
             setTimeout(() => {
@@ -269,6 +290,8 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         // Remove focus to prevent shimmer during subsequent swipes on mobile
         e.target.blur();
         /* istanbul ignore next: event handler execution in test environment */
+        state.isAnimating = true;
+        state.isCalendarTransition = true;
         cal.previous();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -288,6 +311,8 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         // Remove focus to prevent shimmer during subsequent swipes on mobile
         e.target.blur();
         /* istanbul ignore next: event handler execution in test environment */
+        state.isAnimating = true;
+        state.isCalendarTransition = true;
         cal.next();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -319,6 +344,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
                 touchNavigationState.isNavigating = true;
                 /* istanbul ignore next: event handler execution in test environment */
                 state.isAnimating = true;
+                state.isCalendarTransition = true;
                 state.labelsVisible = !state.labelsVisible;
                 /* istanbul ignore next: event handler execution in test environment */
                 cal.jumpTo(getNyDate());
@@ -470,7 +496,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
     });
 
     // Touch swipe navigation for mobile devices
-    setupTouchNavigation(cal);
+    setupTouchNavigation(cal, state);
 }
 
 // --- TOUCH NAVIGATION ---
@@ -479,7 +505,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
  * Sets up touch swipe navigation for the calendar on mobile devices
  * @param {CalHeatmap} cal The CalHeatmap instance
  */
-function setupTouchNavigation(cal) {
+function setupTouchNavigation(cal, state) {
     const calendarContainer = document.querySelector(CALENDAR_SELECTORS.container);
     if (!calendarContainer) {
         return;
@@ -619,6 +645,8 @@ function setupTouchNavigation(cal) {
                         /* istanbul ignore next: touch event handling in test environment */
                         logger.log('Touch swipe right detected - navigating to previous month');
                         /* istanbul ignore next: touch event handling in test environment */
+                        state.isCalendarTransition = true;
+                        state.isAnimating = true;
                         cal.previous();
                     } else {
                         /* istanbul ignore next: touch event handling in test environment */
@@ -629,6 +657,8 @@ function setupTouchNavigation(cal) {
                     /* istanbul ignore next: touch event handling in test environment */
                     logger.log('Touch swipe left detected - navigating to next month');
                     /* istanbul ignore next: touch event handling in test environment */
+                    state.isCalendarTransition = true;
+                    state.isAnimating = true;
                     cal.next();
                 } else {
                     /* istanbul ignore next: touch event handling in test environment */
@@ -685,6 +715,8 @@ function handleViewportChange() {
 
             // Update the stored config
             basePaintConfig.range = currentRange;
+            appState.isCalendarTransition = true;
+            appState.isAnimating = true;
 
             // Simply re-paint with the updated configuration
             // CalHeatmap should handle the range change gracefully
@@ -692,17 +724,21 @@ function handleViewportChange() {
                 .paint(basePaintConfig)
                 .then(() => {
                     logger.log('Calendar successfully repainted with new range');
+                    appState.isCalendarTransition = false;
+                    appState.isAnimating = false;
                     schedulePostPaintUpdates(
                         calendarInstance,
                         calendarByDate,
                         appState,
                         CURRENCY_SYMBOLS
                     );
+                    flushPostPaintAfterTransition();
                 })
                 .catch((error) => {
                     logger.error('Error repainting calendar:', error);
                     // If repaint fails, try a full refresh
                     logger.log('Attempting full calendar refresh...');
+                    appState.isAnimating = true;
                     try {
                         const calendarElement = document.querySelector(CALENDAR_SELECTORS.heatmap);
                         if (calendarElement) {
@@ -711,17 +747,24 @@ function handleViewportChange() {
                         calendarInstance
                             .paint(basePaintConfig)
                             .then(() => {
+                                appState.isCalendarTransition = false;
+                                appState.isAnimating = false;
                                 schedulePostPaintUpdates(
                                     calendarInstance,
                                     calendarByDate,
                                     appState,
                                     CURRENCY_SYMBOLS
                                 );
+                                flushPostPaintAfterTransition();
                             })
                             .catch((refreshError) => {
+                                appState.isAnimating = false;
+                                appState.isCalendarTransition = false;
                                 logger.error('Full calendar refresh also failed:', refreshError);
                             });
                     } catch (refreshError) {
+                        appState.isAnimating = false;
+                        appState.isCalendarTransition = false;
                         logger.error('Full calendar refresh also failed:', refreshError);
                     }
                 });
