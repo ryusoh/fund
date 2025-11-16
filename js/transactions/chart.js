@@ -55,6 +55,7 @@ const chartLayouts = {
     contribution: null,
     performance: null,
     composition: null,
+    fx: null,
 };
 
 let compositionDataCache = null;
@@ -69,6 +70,9 @@ const PERFORMANCE_SERIES_CURRENCY = {
     '^N225': 'JPY',
     '^SSEC': 'CNY',
 };
+
+const FX_CURRENCY_ORDER = ['USD', 'CNY', 'JPY', 'KRW'];
+const FX_LINE_COLORS = ['#FF8E53', '#4DD0E1', '#F5C04A', '#9B87FF'];
 
 const crosshairState = {
     active: false,
@@ -200,8 +204,78 @@ const formatPercentInline = (value) => {
     if (!Number.isFinite(value)) {
         return '0%';
     }
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+    return `${sign}${Math.abs(value).toFixed(2)}%`;
 };
+
+function formatFxValue(value) {
+    if (!Number.isFinite(value)) {
+        return '–';
+    }
+    const absValue = Math.abs(value);
+    if (absValue >= 100) {
+        return value.toFixed(1);
+    }
+    if (absValue >= 10) {
+        return value.toFixed(2);
+    }
+    if (absValue >= 1) {
+        return value.toFixed(3);
+    }
+    return value.toFixed(4);
+}
+
+function buildFxChartSeries(baseCurrency) {
+    const fxRates = transactionState.fxRatesByCurrency || {};
+    const normalizedBase = typeof baseCurrency === 'string' ? baseCurrency.toUpperCase() : 'USD';
+    const baseEntry = fxRates[normalizedBase];
+    const seriesList = [];
+
+    FX_CURRENCY_ORDER.filter((currency) => currency !== normalizedBase).forEach((currency) => {
+        const targetEntry = fxRates[currency];
+        if (!targetEntry && currency !== 'USD') {
+            return;
+        }
+        const dateSource =
+            (currency === 'USD'
+                ? baseEntry?.sorted
+                : targetEntry?.sorted || baseEntry?.sorted || []) || [];
+        if (dateSource.length === 0) {
+            return;
+        }
+        const points = dateSource
+            .map(({ date }) => {
+                const value = convertBetweenCurrencies(1, normalizedBase, date, currency);
+                if (!Number.isFinite(value)) {
+                    return null;
+                }
+                const parsedDate = new Date(date);
+                if (Number.isNaN(parsedDate.getTime())) {
+                    return null;
+                }
+                return { date: parsedDate, value };
+            })
+            .filter(Boolean);
+        if (!points.length) {
+            return;
+        }
+        const key = `FX_${normalizedBase}_${currency}`;
+        if (transactionState.chartVisibility[key] === undefined) {
+            transactionState.chartVisibility[key] = true;
+        }
+        const color = FX_LINE_COLORS[seriesList.length % FX_LINE_COLORS.length];
+        seriesList.push({
+            key,
+            base: normalizedBase,
+            quote: currency,
+            label: `${currency}`,
+            color,
+            data: points,
+        });
+    });
+
+    return seriesList;
+}
 
 function formatCrosshairDateLabel(time) {
     if (!Number.isFinite(time)) {
@@ -221,7 +295,12 @@ function formatCrosshairDateLabel(time) {
 
 function getActiveChartKey() {
     const active = transactionState.activeChart || 'contribution';
-    if (active === 'performance' || active === 'composition' || active === 'contribution') {
+    if (
+        active === 'performance' ||
+        active === 'composition' ||
+        active === 'contribution' ||
+        active === 'fx'
+    ) {
         return active;
     }
     return 'contribution';
@@ -281,8 +360,8 @@ function buildRangeSummary(layout, rawStart, rawEnd) {
             percent = (delta / Math.abs(startValue)) * 100;
         }
         const formattedDelta = series.formatDelta
-            ? series.formatDelta(delta, percent)
-            : layout.valueType === 'percent'
+            ? series.formatDelta(delta, percent, start, end)
+            : layout.valueType === 'percent' || layout.valueType === 'fx'
               ? formatPercentInline(delta)
               : formatCurrencyInline(delta);
         if (formattedDelta === null || formattedDelta === undefined) {
@@ -429,8 +508,8 @@ function drawCrosshairOverlay(ctx, layout) {
                 color: series.color || '#ffffff',
                 value,
                 formatted: series.formatValue
-                    ? series.formatValue(value)
-                    : layout.valueType === 'percent'
+                    ? series.formatValue(value, time)
+                    : layout.valueType === 'percent' || layout.valueType === 'fx'
                       ? formatPercentInline(value)
                       : formatCurrencyInline(value),
             });
@@ -537,8 +616,8 @@ function drawCrosshairOverlay(ctx, layout) {
                 ctx.restore();
             }
             const formatted = series.formatValue
-                ? series.formatValue(value)
-                : layout.valueType === 'percent'
+                ? series.formatValue(value, time)
+                : layout.valueType === 'percent' || layout.valueType === 'fx'
                   ? formatPercentInline(value)
                   : formatCurrencyInline(value);
             seriesSnapshot.push({
@@ -1658,43 +1737,53 @@ function drawStartValue(
     return textY;
 }
 
+function computePercentTickInfo(yMin, yMax) {
+    const safeMin = Number.isFinite(yMin) ? Number(yMin) : 0;
+    const safeMax = Number.isFinite(yMax) ? Number(yMax) : safeMin;
+    let minValue = Math.min(safeMin, safeMax);
+    let maxValue = Math.max(safeMin, safeMax);
+    if (!Number.isFinite(minValue)) {
+        minValue = 0;
+    }
+    if (!Number.isFinite(maxValue)) {
+        maxValue = minValue + 1;
+    }
+    if (maxValue - minValue < 1e-6) {
+        maxValue = minValue + 1;
+    }
+    const range = maxValue - minValue;
+
+    let tickSpacing;
+    if (range <= 20) {
+        tickSpacing = 5;
+    } else if (range <= 50) {
+        tickSpacing = 10;
+    } else if (range <= 100) {
+        tickSpacing = 20;
+    } else {
+        tickSpacing = 50;
+    }
+
+    const startTick = Math.floor(minValue / tickSpacing) * tickSpacing;
+    const endTick = Math.ceil(maxValue / tickSpacing) * tickSpacing;
+
+    const ticks = [];
+    for (let tick = startTick; tick <= endTick + tickSpacing * 0.5; tick += tickSpacing) {
+        ticks.push(tick);
+    }
+
+    return {
+        ticks,
+        tickSpacing,
+        startTick,
+        endTick,
+    };
+}
+
 function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD') {
     if (isPerformanceChart) {
-        // Performance chart: use percentage ticks with adaptive spacing
-        const ticks = [];
-        const range = yMax - yMin;
-
-        // Determine appropriate tick spacing based on data range
-        let tickSpacing, startTick, endTick;
-
-        if (range <= 20) {
-            // Very small range: 5% increments
-            tickSpacing = 5;
-            startTick = Math.floor(yMin / 5) * 5;
-            endTick = Math.ceil(yMax / 5) * 5;
-        } else if (range <= 50) {
-            // Small range: 10% increments
-            tickSpacing = 10;
-            startTick = Math.floor(yMin / 10) * 10;
-            endTick = Math.ceil(yMax / 10) * 10;
-        } else if (range <= 100) {
-            // Medium range: 20% increments
-            tickSpacing = 20;
-            startTick = Math.floor(yMin / 20) * 20;
-            endTick = Math.ceil(yMax / 20) * 20;
-        } else {
-            // Large range: 50% increments
-            tickSpacing = 50;
-            startTick = Math.floor(yMin / 50) * 50;
-            endTick = Math.ceil(yMax / 50) * 50;
-        }
-
-        // Generate ticks
-        for (let i = startTick; i <= endTick; i += tickSpacing) {
-            ticks.push(i);
-        }
-
-        return ticks.filter((tick) => tick >= yMin && tick <= yMax);
+        const percentTickInfo = computePercentTickInfo(yMin, yMax);
+        return percentTickInfo.ticks.filter((tick) => tick >= yMin && tick <= yMax);
     }
 
     const desiredTicks = 6;
@@ -1895,13 +1984,14 @@ function drawAxes(
     yLabelFormatter,
     isPerformanceChart = false,
     axisOptions = {},
-    currency = 'USD'
+    currency = 'USD',
+    forcePercent = false
 ) {
     const isMobile = window.innerWidth <= 768;
     const { drawXAxis = true, drawYAxis = true } = axisOptions;
 
     // Generate concrete tick values
-    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart, currency);
+    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency);
 
     // Y-axis grid lines and labels
     if (drawYAxis) {
@@ -3302,6 +3392,285 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
     }
 }
 
+function drawFxChart(ctx, chartManager) {
+    stopPerformanceAnimation();
+    stopContributionAnimation();
+    const canvas = ctx.canvas;
+    const emptyState = document.getElementById('runningAmountEmpty');
+    const baseCurrency = (transactionState.selectedCurrency || 'USD').toUpperCase();
+    const seriesData = buildFxChartSeries(baseCurrency);
+    const legendEntries = seriesData.map((series) => ({
+        key: series.key,
+        name: series.label,
+        color: series.color,
+    }));
+
+    if (!seriesData.length) {
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+        chartLayouts.fx = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    const filteredSeries = seriesData
+        .map((series) => {
+            const filtered = series.data.filter((point) => {
+                const date = point.date;
+                return (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo);
+            });
+            if (!filtered.length) {
+                return { ...series, data: [] };
+            }
+            // Normalize to percent change since first point
+            const baseValue = filtered[0].value;
+            const safeBase = Number.isFinite(baseValue) && baseValue !== 0 ? baseValue : 1;
+            const percentData = filtered.map((point) => ({
+                ...point,
+                percent: ((point.value - safeBase) / safeBase) * 100,
+                rawValue: point.value,
+            }));
+            return { ...series, data: percentData };
+        })
+        .filter((series) => series.data.length > 0);
+
+    if (!filteredSeries.length) {
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+        chartLayouts.fx = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile
+        ? { top: 15, right: 20, bottom: 35, left: 60 }
+        : { top: 20, right: 30, bottom: 48, left: 80 };
+    const plotWidth = canvas.offsetWidth - padding.left - padding.right;
+    const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    filteredSeries.forEach((series) => {
+        series.data.forEach((point) => {
+            const time = point.date.getTime();
+            if (Number.isFinite(time)) {
+                minTime = Math.min(minTime, time);
+                maxTime = Math.max(maxTime, time);
+            }
+            if (Number.isFinite(point.percent)) {
+                dataMin = Math.min(dataMin, point.percent);
+                dataMax = Math.max(dataMax, point.percent);
+            }
+        });
+    });
+
+    if (!Number.isFinite(minTime) || !Number.isFinite(maxTime) || minTime === maxTime) {
+        chartLayouts.fx = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+        chartLayouts.fx = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const paddingValue = Math.max((dataMax - dataMin) * 0.05, 0.05);
+    let yMin = dataMin - paddingValue;
+    let yMax = dataMax + paddingValue;
+
+    const percentTickInfo = computePercentTickInfo(yMin, yMax);
+    const displayRange = yMax - yMin;
+    if (
+        Number.isFinite(displayRange) &&
+        displayRange > 0 &&
+        percentTickInfo.tickSpacing > 0 &&
+        displayRange >= percentTickInfo.tickSpacing * 0.4
+    ) {
+        yMin = percentTickInfo.startTick;
+        yMax = percentTickInfo.endTick;
+    }
+
+    const xScale = (t) =>
+        padding.left +
+        (maxTime === minTime ? plotWidth / 2 : ((t - minTime) / (maxTime - minTime)) * plotWidth);
+    const yScale = (v) =>
+        padding.top +
+        plotHeight -
+        (yMax === yMin ? plotHeight / 2 : ((v - yMin) / (yMax - yMin)) * plotHeight);
+
+    drawAxes(
+        ctx,
+        padding,
+        plotWidth,
+        plotHeight,
+        minTime,
+        maxTime,
+        yMin,
+        yMax,
+        xScale,
+        yScale,
+        (v) => `${v.toFixed(0)}%`,
+        false,
+        { drawXAxis: true, drawYAxis: true },
+        transactionState.selectedCurrency || 'USD',
+        true
+    );
+
+    const renderedSeries = [];
+    filteredSeries.forEach((series) => {
+        const visibility = transactionState.chartVisibility[series.key];
+        if (visibility === false) {
+            return;
+        }
+
+        const smoothingConfig = getSmoothingConfig('performance');
+        const rawPoints = series.data.map((point) => ({
+            x: point.date.getTime(),
+            y: point.percent,
+            raw: point.rawValue,
+        }));
+        const smoothed = smoothingConfig
+            ? smoothFinancialData(rawPoints, smoothingConfig, true)
+            : rawPoints;
+
+        const coords = smoothed.map((point, index) => {
+            const source = rawPoints[index] || rawPoints[rawPoints.length - 1];
+            return {
+                x: xScale(point.x),
+                y: yScale(point.y),
+                time: point.x,
+                value: point.y,
+                rawValue: source?.raw ?? source?.y ?? point.y,
+            };
+        });
+        if (!coords.length) {
+            return;
+        }
+
+        ctx.beginPath();
+        coords.forEach((coord, index) => {
+            if (index === 0) {
+                ctx.moveTo(coord.x, coord.y);
+            } else {
+                ctx.lineTo(coord.x, coord.y);
+            }
+        });
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = series.color;
+        ctx.stroke();
+
+        drawEndValue(
+            ctx,
+            coords[coords.length - 1].x,
+            coords[coords.length - 1].y,
+            coords[coords.length - 1].value,
+            series.color,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatPercentInline,
+            false
+        );
+
+        renderedSeries.push({
+            key: series.key,
+            label: series.label,
+            color: series.color,
+            points: coords.map((coord) => ({ time: coord.time, value: coord.value })),
+            rawPoints: coords.map((coord) => ({ time: coord.time, value: coord.rawValue })),
+        });
+    });
+
+    if (!renderedSeries.length) {
+        chartLayouts.fx = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    chartLayouts.fx = {
+        key: 'fx',
+        minTime,
+        maxTime,
+        valueType: 'percent',
+        padding,
+        chartBounds: {
+            top: padding.top,
+            bottom: padding.top + plotHeight,
+            left: padding.left,
+            right: padding.left + plotWidth,
+        },
+        xScale,
+        yScale,
+        invertX: (pixelX) => {
+            if (!Number.isFinite(pixelX)) {
+                return minTime;
+            }
+            const clampedX = Math.max(padding.left, Math.min(padding.left + plotWidth, pixelX));
+            if (plotWidth <= 0 || maxTime === minTime) {
+                return minTime;
+            }
+            const ratio = (clampedX - padding.left) / plotWidth;
+            return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
+        },
+        series: renderedSeries.map((series) => {
+            const rawInterpolator = createTimeInterpolator(series.rawPoints || []);
+            return {
+                key: series.key,
+                label: series.label,
+                color: series.color,
+                getValueAtTime: createTimeInterpolator(series.points || []),
+                getRawValueAtTime: rawInterpolator,
+                formatValue: (value, time) => {
+                    const raw = rawInterpolator(time);
+                    const percentText = formatPercentInline(value);
+                    if (!Number.isFinite(raw)) {
+                        return percentText;
+                    }
+                    return `${formatFxValue(raw)} (${percentText})`;
+                },
+                formatDelta: (delta, percentChange, startTime, endTime) => {
+                    const startRaw = rawInterpolator(startTime);
+                    const endRaw = rawInterpolator(endTime);
+                    const rawDelta =
+                        Number.isFinite(startRaw) && Number.isFinite(endRaw)
+                            ? endRaw - startRaw
+                            : null;
+                    const percentText = Number.isFinite(percentChange)
+                        ? formatPercentInline(percentChange)
+                        : formatPercentInline(delta);
+                    if (Number.isFinite(rawDelta) && Math.abs(rawDelta) > 1e-6) {
+                        const rawText = `${rawDelta >= 0 ? '+' : '−'}${formatFxValue(
+                            Math.abs(rawDelta)
+                        )}`;
+                        return `${rawText} (${percentText})`;
+                    }
+                    return percentText;
+                },
+            };
+        }),
+    };
+
+    drawCrosshairOverlay(ctx, chartLayouts.fx);
+
+    updateLegend(legendEntries, chartManager);
+}
+
 function renderCompositionChart(ctx, chartManager, data) {
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
@@ -3668,6 +4037,8 @@ export function createChartManager(options = {}) {
             await drawPerformanceChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'fx') {
+            drawFxChart(ctx, chartManager);
         } else {
             await drawContributionChart(ctx, chartManager, timestamp);
         }

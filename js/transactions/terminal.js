@@ -296,7 +296,7 @@ const COMMAND_ALIASES = [
 
 const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
 
-const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition'];
+const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'fx'];
 
 const HELP_SUBCOMMANDS = ['filter'];
 
@@ -692,8 +692,8 @@ export function initTerminal({
                         '                       Examples: stats transactions, s cagr, stats ratio\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
-                        '                       Subcommands: balance, performance, composition\n' +
-                        '                       Examples: plot balance, p performance, plot composition 2023\n' +
+                        '                       Subcommands: balance, performance, composition, fx\n' +
+                        '                       Examples: plot balance, p performance, plot composition 2023, plot fx\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
@@ -827,7 +827,7 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        "Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot performance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot composition [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n\nExamples:\n       plot balance 2023     - Show data for entire year 2023\n       plot balance 2023q1   - Show data for Q1 of 2023 (Jan 1 - Mar 31)\n       plot balance q2       - Show the second quarter of the current range\n       plot balance from q1  - Show from the start of the current range's first quarter\n       plot balance q2 to q3 - Show Q2 through Q3 of the current range";
+                        'Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n  plot fx           - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot performance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot composition [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot fx [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n\nExamples:\n       plot balance 2023     - Show data for entire year 2023\n       plot performance q1   - Show performance chart for Q1 of current context\n       plot composition from 2022q3 - Show composition from Q3 2022 onward\n       plot fx               - Show FX chart for current currency toggle';
                 } else {
                     const subcommand = args[0].toLowerCase();
                     dateRange = parseDateRange(args.slice(1));
@@ -941,6 +941,37 @@ export function initTerminal({
                                 result = `Showing composition chart for ${formatDateRange(dateRange)}.`;
                             }
                             break;
+                        case 'fx':
+                            const fxSection = document.getElementById('runningAmountSection');
+                            const fxTableContainer = document.querySelector(
+                                '.table-responsive-container'
+                            );
+
+                            const isFxActive = transactionState.activeChart === 'fx';
+                            const isFxVisible =
+                                fxSection && !fxSection.classList.contains('is-hidden');
+
+                            if (isFxActive && isFxVisible) {
+                                setActiveChart(null);
+                                if (fxSection) {
+                                    fxSection.classList.add('is-hidden');
+                                }
+                                result = 'Hidden FX chart.';
+                            } else {
+                                setActiveChart('fx');
+                                if (fxSection) {
+                                    fxSection.classList.remove('is-hidden');
+                                    chartManager.update();
+                                }
+                                if (fxTableContainer) {
+                                    fxTableContainer.classList.add('is-hidden');
+                                }
+                                const baseCurrency = transactionState.selectedCurrency || 'USD';
+                                result = `Showing FX chart (base ${baseCurrency}) for ${formatDateRange(
+                                    dateRange
+                                )}.`;
+                            }
+                            break;
                         default:
                             result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
                             break;
@@ -953,7 +984,8 @@ export function initTerminal({
                     transactionState.activeChart &&
                     (transactionState.activeChart === 'contribution' ||
                         transactionState.activeChart === 'performance' ||
-                        transactionState.activeChart === 'composition')
+                        transactionState.activeChart === 'composition' ||
+                        transactionState.activeChart === 'fx')
                 ) {
                     const simplifiedDateRange = parseSimplifiedDateRange(command);
                     if (simplifiedDateRange.from || simplifiedDateRange.to) {
