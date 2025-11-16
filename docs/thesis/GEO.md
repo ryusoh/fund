@@ -246,7 +246,7 @@ This section documents how I choose the JSON `scenarios` block and why.
     - Market is pricing GEO closer to “stagnation” while recent actions (asset sales, contracts, buybacks) support a path to higher utilization and EPS growth
 
 - Links / files:
-    - notes/GEO/GEO-bull-evidence.md
+    - docs/thesis/GEO/GEO-bull-evidence.md
 
 ---
 
@@ -351,7 +351,7 @@ This section documents how I choose the JSON `scenarios` block and why.
     - While not my base view, policy knife cuts both ways; tail risk is real and needs explicit modeling
 
 - Links / files:
-    - notes/GEO/GEO-bear-evidence.md
+    - docs/thesis/GEO/GEO-bear-evidence.md
 
 #### 4.4.5 Tail risks beyond modeled Bear
 
@@ -462,13 +462,13 @@ This section documents how I choose the JSON `scenarios` block and why.
 ## 8. Evidence Log & Updates
 
 Append-only log of new information and how it affects Bull/Base/Bear.
-Detailed notes can live in separate files under `notes/GEO/`.
+Detailed notes can live in separate files under `docs/thesis/GEO/`.
 
 ### 8.1 Log index
 
-- Bull evidence file: `notes/GEO/GEO-bull-evidence.md`
-- Base evidence file: `notes/GEO/GEO-base-evidence.md`
-- Bear evidence file: `notes/GEO/GEO-bear-evidence.md`
+- Bull evidence file: `docs/thesis/GEO/GEO-bull-evidence.md`
+- Base evidence file: `docs/thesis/GEO/GEO-base-evidence.md`
+- Bear evidence file: `docs/thesis/GEO/GEO-bear-evidence.md`
 
 ### 8.2 High-level update entries (reverse chronological)
 
