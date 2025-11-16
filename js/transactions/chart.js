@@ -3457,6 +3457,12 @@ function drawFxChart(ctx, chartManager) {
         : { top: 20, right: 30, bottom: 48, left: 80 };
     const plotWidth = canvas.offsetWidth - padding.left - padding.right;
     const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+    const chartBounds = {
+        top: padding.top,
+        bottom: padding.top + plotHeight,
+        left: padding.left,
+        right: padding.left + plotWidth,
+    };
 
     let minTime = Infinity;
     let maxTime = -Infinity;
@@ -3562,6 +3568,16 @@ function drawFxChart(ctx, chartManager) {
             return;
         }
 
+        if (mountainFill.enabled) {
+            drawMountainFill(ctx, coords, yScale(0), {
+                color: series.color,
+                colorStops: [series.color, series.color],
+                opacityTop: 0.3,
+                opacityBottom: 0,
+                bounds: chartBounds,
+            });
+        }
+
         ctx.beginPath();
         coords.forEach((coord, index) => {
             if (index === 0) {
@@ -3609,12 +3625,7 @@ function drawFxChart(ctx, chartManager) {
         maxTime,
         valueType: 'percent',
         padding,
-        chartBounds: {
-            top: padding.top,
-            bottom: padding.top + plotHeight,
-            left: padding.left,
-            right: padding.left + plotWidth,
-        },
+        chartBounds,
         xScale,
         yScale,
         invertX: (pixelX) => {
