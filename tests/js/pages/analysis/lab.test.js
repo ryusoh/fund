@@ -78,4 +78,21 @@ describe('analysis lab data loading', () => {
         expect(baseScenario).toBeDefined();
         expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
     });
+
+    it('extracts scenario titles from thesis markdown headings', async () => {
+        global[FLAG] = true;
+        const module = await import('@pages/analysis/lab.js');
+        const { extractScenarioTitles } = module.__analysisLabTesting;
+        const markdown = `
+### 4.2 Bull Case – “Hypergrowth Bonus”
+### 4.3 Base Case – 'Steady State'
+### 4.4 Bear Case – Collapse
+`;
+        const titles = extractScenarioTitles(markdown);
+        expect(titles).toEqual({
+            bull: 'Hypergrowth Bonus',
+            base: 'Steady State',
+            bear: 'Collapse',
+        });
+    });
 });

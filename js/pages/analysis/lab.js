@@ -12,6 +12,7 @@ const state = {
     activeSymbol: null,
 };
 const DATA_CACHE_BUST = Date.now().toString();
+const thesisTitleCache = new Map();
 
 export async function fetchJson(path) {
     const url = new URL(path, window.location.href);
@@ -21,6 +22,16 @@ export async function fetchJson(path) {
         throw new Error(`Failed to load ${path}`);
     }
     return response.json();
+}
+
+export async function fetchText(path) {
+    const url = new URL(path, window.location.href);
+    url.searchParams.set('v', DATA_CACHE_BUST);
+    const response = await fetch(url.toString(), { cache: 'no-store' });
+    if (!response.ok) {
+        throw new Error(`Failed to load ${path}`);
+    }
+    return response.text();
 }
 
 function formatPercent(value) {
@@ -75,6 +86,84 @@ function getOverrides(config) {
         return preferences.overrides;
     }
     return {};
+}
+
+function stripWrappingQuotes(value) {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length < 2) {
+        return trimmed;
+    }
+    const start = trimmed[0];
+    const end = trimmed[trimmed.length - 1];
+    const quotePairs = [
+        ['"', '"'],
+        ["'", "'"],
+        ['“', '”'],
+        ['‘', '’'],
+    ];
+    const hasPair = quotePairs.some(([open, close]) => start === open && end === close);
+    return hasPair ? trimmed.slice(1, -1).trim() : trimmed;
+}
+
+export function extractScenarioTitles(markdown) {
+    if (typeof markdown !== 'string' || !markdown.length) {
+        return null;
+    }
+    const regex = /^###\s+(.+)$/gim;
+    const titles = {};
+    let match = regex.exec(markdown);
+    while (match) {
+        const heading = match[1]?.trim() || '';
+        const scenarioMatch = heading.match(/\b(Bull|Base|Bear)\b(?:\s+Case)?\s*(?:[-–]\s*(.+))?/i);
+        if (scenarioMatch) {
+            const key = scenarioMatch[1].toLowerCase();
+            const descriptor = stripWrappingQuotes(scenarioMatch[2] || '');
+            if (descriptor) {
+                titles[key] = descriptor;
+            }
+        }
+        match = regex.exec(markdown);
+    }
+    return Object.keys(titles).length ? titles : null;
+}
+
+async function fetchThesisScenarioTitles(symbol) {
+    if (!symbol) {
+        return null;
+    }
+    if (thesisTitleCache.has(symbol)) {
+        return thesisTitleCache.get(symbol);
+    }
+    try {
+        const markdown = await fetchText(`../docs/thesis/${symbol}.md`);
+        const titles = extractScenarioTitles(markdown);
+        thesisTitleCache.set(symbol, titles);
+        return titles;
+    } catch {
+        thesisTitleCache.set(symbol, null);
+        return null;
+    }
+}
+
+function applyThesisScenarioTitles(config, titles) {
+    if (!titles || !config?.scenarios?.length) {
+        return;
+    }
+    config.scenarios = config.scenarios.map((scenario) => {
+        const key = (scenario.id || scenario.name || '').toLowerCase();
+        const descriptor = titles[key];
+        if (!descriptor) {
+            return scenario;
+        }
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        return {
+            ...scenario,
+            name: `${label} – ${descriptor}`,
+        };
+    });
 }
 
 function getBenchmarkDescriptor(preferences) {
@@ -341,8 +430,6 @@ function renderSummary(config) {
 function renderScenarioCards(config) {
     const outcomes = (config.metrics && config.metrics.outcomes) || [];
     scenarioResultsEl.innerHTML = '';
-    const exitYearValue =
-        config.metrics && Number.isFinite(config.metrics.exitYear) ? config.metrics.exitYear : null;
     const sharesOutstanding =
         config.metrics && Number.isFinite(config.metrics.sharesOutstanding)
             ? config.metrics.sharesOutstanding
@@ -364,7 +451,6 @@ function renderScenarioCards(config) {
             <p>Earnings CAGR: ${formatPercent(outcome.earningsCagr)}</p>
             <p>Implied Annual EPS: ${formatCurrency(terminalEps)}</p>
             <p>Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}</p>
-            <p>Exit Year: ${exitYearValue ?? 'n/a'}</p>
         `;
         scenarioResultsEl.appendChild(card);
     });
@@ -375,6 +461,7 @@ function renderValueBands(config) {
     const targetCagrRaw = Number(preferences.targetCagr ?? 0.1);
     const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
     const metrics = config.metrics;
+    const exitYearValue = Number.isFinite(metrics.exitYear) ? metrics.exitYear : null;
     valueBandsEl.innerHTML = '';
     [
         { label: 'Expected Terminal Price', value: formatCurrency(metrics.expectedTerminalPrice) },
@@ -385,6 +472,10 @@ function renderValueBands(config) {
         {
             label: 'Current Price vs Value',
             value: diffDescriptor(metrics.price, metrics.entryPriceForTarget),
+        },
+        {
+            label: 'Exit Year',
+            value: exitYearValue ?? 'n/a',
         },
     ].forEach((band) => {
         const dt = document.createElement('dt');
@@ -686,13 +777,17 @@ async function buildConfigs() {
     const configs = await Promise.all(
         (analysisIndex.tickers || []).map(async (entry) => {
             try {
-                const raw = await fetchJson(entry.path);
+                const [raw, thesisTitles] = await Promise.all([
+                    fetchJson(entry.path),
+                    fetchThesisScenarioTitles(entry.symbol),
+                ]);
                 const config = normalizeConfig(
                     { ...raw, symbol: raw.symbol || entry.symbol, name: raw.name || entry.name },
                     holdingsData[entry.symbol] || {}
                 );
                 config.symbol = entry.symbol;
                 config.name = raw.name || entry.name || entry.symbol;
+                applyThesisScenarioTitles(config, thesisTitles);
                 config.metrics = computeMetrics(config);
                 return config;
             } catch {
@@ -727,4 +822,5 @@ export const __analysisLabTesting = {
     normalizeScenario,
     computeScenarioOutcome,
     aggregateScenarios,
+    extractScenarioTitles,
 };
