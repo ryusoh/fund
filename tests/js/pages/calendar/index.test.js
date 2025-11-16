@@ -41,9 +41,8 @@ const mockCalHeatmapInstance = {
     jumpTo: jest.fn(() => Promise.resolve()),
     on: jest.fn(),
 };
-
-global.CalHeatmap = jest.fn().mockImplementation(() => mockCalHeatmapInstance);
-
+const calHeatmapConstructor = jest.fn().mockImplementation(() => mockCalHeatmapInstance);
+global.CalHeatmap = calHeatmapConstructor;
 const createProcessedEntry = (overrides = {}) => ({
     date: '2025-01-01',
     value: 0,
@@ -77,7 +76,6 @@ const createCalendarData = (entries = [{}], extra = {}) => {
     };
 };
 
-// Capture class attribute values set during label rendering
 describe('calendar page', () => {
     let prevBtnRef, nextBtnRef, todayBtnRef, containerRef;
 
@@ -181,8 +179,7 @@ describe('calendar page', () => {
 
         await initCalendar();
 
-        const CalHeatmap = require('../../vendor/cal-heatmap.v4.min.js');
-        expect(CalHeatmap).toHaveBeenCalledTimes(1);
+        expect(global.CalHeatmap).toHaveBeenCalledTimes(1);
         expect(mockCalHeatmapInstance.paint).toHaveBeenCalledTimes(1);
 
         // Capture paint config to exercise its callbacks
@@ -623,6 +620,88 @@ describe('calendar page', () => {
         const firstNode = global.__d3TextNodes?.[0];
         expect(String(firstNode?.children?.[0]?.textContent)).toBe('1');
         expect(String(firstNode?.children?.[1]?.textContent)).toMatch(/\$/);
+    });
+
+    it('reuses cached data on date-change within loaded months', async () => {
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-05',
+                    value: 0.1,
+                    valueUSD: 0.1,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 100,
+                    dailyChangeUSD: 100,
+                },
+            ],
+            {
+                monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 100, percentChange: 0.1 }]]),
+            }
+        );
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+        const handler = mockCalHeatmapInstance.__dateChangeHandler;
+        expect(handler).toBeDefined();
+        getCalendarData.mockClear();
+        await handler({
+            domain: {
+                start: new Date('2025-01-01T00:00:00Z'),
+                end: new Date('2025-01-20T00:00:00Z'),
+            },
+        });
+        expect(getCalendarData).not.toHaveBeenCalled();
+    });
+
+    it('fetches new data when date-change exceeds cached months', async () => {
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2025-01-05',
+                    value: 0.1,
+                    valueUSD: 0.1,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 50,
+                    dailyChangeUSD: 50,
+                },
+            ],
+            {
+                monthlyPnl: new Map([['2025-01', { absoluteChangeUSD: 50, percentChange: 0.05 }]]),
+            }
+        );
+        getCalendarData.mockResolvedValue(mockData);
+        await initCalendar();
+        const handler = mockCalHeatmapInstance.__dateChangeHandler;
+        expect(handler).toBeDefined();
+        getCalendarData.mockClear();
+        const refreshedData = createCalendarData(
+            [
+                {
+                    date: '2024-12-15',
+                    value: 0.05,
+                    valueUSD: 0.05,
+                    total: 900,
+                    totalUSD: 900,
+                    dailyChange: 25,
+                    dailyChangeUSD: 25,
+                },
+            ],
+            {
+                monthlyPnl: new Map([
+                    ['2024-12', { absoluteChangeUSD: 25, percentChange: 0.028 }],
+                    ['2025-01', { absoluteChangeUSD: 50, percentChange: 0.05 }],
+                ]),
+            }
+        );
+        getCalendarData.mockResolvedValueOnce(refreshedData);
+        await handler({
+            domain: {
+                start: new Date('2024-12-01T00:00:00Z'),
+                end: new Date('2024-12-31T00:00:00Z'),
+            },
+        });
+        expect(getCalendarData).toHaveBeenCalledTimes(1);
     });
 
     it('should handle edge cases in renderLabels with null/missing datum', () => {

@@ -61,6 +61,9 @@ function getLatestMonthlyKey(monthlyPnl) {
 let pendingPostPaintFrame = null;
 let latestPostPaintArgs = null;
 let pendingPostPaintAfterTransition = false;
+let pendingDataRefresh = null;
+const fetchedMonthKeys = new Set();
+const cachedMonthRange = { min: null, max: null };
 
 function queuePostPaintFrame() {
     if (pendingPostPaintFrame !== null) {
@@ -99,6 +102,166 @@ function flushPostPaintAfterTransition() {
         pendingPostPaintAfterTransition = false;
         queuePostPaintFrame();
     }
+}
+
+function formatMonthKey(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return null;
+    }
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function monthKeyToIndex(key) {
+    if (typeof key !== 'string') {
+        return null;
+    }
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    if (!Number.isFinite(year) || !Number.isFinite(month)) {
+        return null;
+    }
+    return year * 12 + (month - 1);
+}
+
+function dateToMonthIndex(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return null;
+    }
+    return date.getUTCFullYear() * 12 + date.getUTCMonth();
+}
+
+function rebuildFetchedMonthIndex(byDate) {
+    fetchedMonthKeys.clear();
+    cachedMonthRange.min = null;
+    cachedMonthRange.max = null;
+    if (!byDate) {
+        return;
+    }
+    const addKey = (key) => {
+        if (typeof key !== 'string') {
+            return;
+        }
+        const monthKey = key.slice(0, 7);
+        fetchedMonthKeys.add(monthKey);
+        const index = monthKeyToIndex(monthKey);
+        if (index === null) {
+            return;
+        }
+        if (cachedMonthRange.min === null || index < cachedMonthRange.min) {
+            cachedMonthRange.min = index;
+        }
+        if (cachedMonthRange.max === null || index > cachedMonthRange.max) {
+            cachedMonthRange.max = index;
+        }
+    };
+    if (byDate instanceof Map) {
+        byDate.forEach((_value, key) => {
+            addKey(key);
+        });
+    } else if (Array.isArray(byDate)) {
+        byDate.forEach((entry) => {
+            if (entry?.date) {
+                addKey(entry.date);
+            }
+        });
+    }
+}
+
+function hasDataForDomain(startDate, endDate) {
+    const startIndex = dateToMonthIndex(startDate);
+    const endIndex = dateToMonthIndex(endDate);
+    let hasData = true;
+
+    if (startIndex === null || endIndex === null) {
+        hasData = true;
+    } else if (
+        cachedMonthRange.min === null ||
+        cachedMonthRange.max === null ||
+        startIndex < cachedMonthRange.min ||
+        endIndex > cachedMonthRange.max
+    ) {
+        hasData = false;
+    } else {
+        const iter = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
+        const last = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), 1));
+        while (iter <= last) {
+            const key = formatMonthKey(iter);
+            if (key && !fetchedMonthKeys.has(key)) {
+                hasData = false;
+                break;
+            }
+            iter.setUTCMonth(iter.getUTCMonth() + 1);
+        }
+    }
+
+    return hasData;
+}
+
+async function refreshCalendarData(domainStart) {
+    if (!calendarInstance || !basePaintConfig) {
+        return null;
+    }
+    if (pendingDataRefresh) {
+        return pendingDataRefresh;
+    }
+    pendingDataRefresh = getCalendarData(DATA_PATHS)
+        .then(async ({ processedData, byDate, rates, monthlyPnl }) => {
+            calendarByDate = byDate;
+            appState.rates = rates;
+            appState.monthlyPnl = monthlyPnl instanceof Map ? monthlyPnl : new Map();
+            precomputeDisplayCaches(calendarByDate, CURRENCY_SYMBOLS, appState.rates);
+            rebuildFetchedMonthIndex(calendarByDate);
+            basePaintConfig = {
+                ...basePaintConfig,
+                data: {
+                    ...basePaintConfig.data,
+                    source: processedData,
+                },
+            };
+            const domainStartDate =
+                domainStart instanceof Date && !Number.isNaN(domainStart.getTime())
+                    ? domainStart
+                    : basePaintConfig?.date?.start;
+            const repaintConfig = {
+                ...basePaintConfig,
+                date: {
+                    ...basePaintConfig.date,
+                    start: domainStartDate,
+                },
+            };
+            await calendarInstance.paint(repaintConfig);
+            schedulePostPaintUpdates(calendarInstance, calendarByDate, appState, CURRENCY_SYMBOLS);
+        })
+        .catch((err) => {
+            logger.error('Failed to refresh calendar data:', err);
+        })
+        .finally(() => {
+            pendingDataRefresh = null;
+        });
+    return pendingDataRefresh;
+}
+
+function attachDateChangeHandler(cal) {
+    const dateChangeHandler = async (context) => {
+        const domain = context?.domain || context || {};
+        const start =
+            domain.start instanceof Date
+                ? domain.start
+                : domain.start
+                  ? new Date(domain.start)
+                  : null;
+        const end =
+            domain.end instanceof Date ? domain.end : domain.end ? new Date(domain.end) : start;
+        if (hasDataForDomain(start, end)) {
+            schedulePostPaintUpdates(cal, calendarByDate, appState, CURRENCY_SYMBOLS);
+            return;
+        }
+        logger.log('Encountered domain outside cached range, refreshing calendar data');
+        await refreshCalendarData(start);
+    };
+    cal.__dateChangeHandler = dateChangeHandler;
+    cal.on('date-change', dateChangeHandler);
 }
 
 // --- CALENDAR RENDERING ---
@@ -249,6 +412,7 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
  * @param {object} currencySymbols The currency symbols object.
  */
 function setupEventListeners(cal, byDate, state, currencySymbols) {
+    attachDateChangeHandler(cal);
     cal.on('fill', () => {
         state.isCalendarTransition = false;
         state.isAnimating = false;
@@ -783,6 +947,7 @@ export async function initCalendar() {
         appState.rates = rates;
         appState.monthlyPnl = monthlyPnl instanceof Map ? monthlyPnl : new Map();
         precomputeDisplayCaches(byDate, CURRENCY_SYMBOLS, appState.rates);
+        rebuildFetchedMonthIndex(byDate);
         const latestMonthlyKey = getLatestMonthlyKey(appState.monthlyPnl);
         calendarByDate = byDate; // Store globally for resize handling
 
