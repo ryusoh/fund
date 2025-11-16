@@ -12,6 +12,7 @@ import {
     hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
+    buildFxChartSeries,
 } from './chart.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
@@ -127,6 +128,54 @@ function resolveQuarterRange(year, quarter, mode = 'full') {
         lastContextYear = year;
     }
     return computeQuarterRange(year, quarter, mode);
+}
+
+function formatFxInline(value) {
+    if (!Number.isFinite(value)) {
+        return '–';
+    }
+    const absValue = Math.abs(value);
+    if (absValue >= 100) {
+        return value.toFixed(1);
+    }
+    if (absValue >= 10) {
+        return value.toFixed(2);
+    }
+    if (absValue >= 1) {
+        return value.toFixed(3);
+    }
+    return value.toFixed(4);
+}
+
+function getFxSnapshotLine() {
+    if (transactionState.activeChart !== 'fx') {
+        return null;
+    }
+    const baseCurrency = (transactionState.selectedCurrency || 'USD').toUpperCase();
+    const seriesList = buildFxChartSeries(baseCurrency);
+    if (!Array.isArray(seriesList) || seriesList.length === 0) {
+        return null;
+    }
+    const visibility = transactionState.chartVisibility || {};
+    const snapshots = [];
+    seriesList.forEach((series) => {
+        if (visibility[series.key] === false) {
+            return;
+        }
+        const data = Array.isArray(series.data) ? series.data : [];
+        if (data.length === 0) {
+            return;
+        }
+        const latestPoint = data[data.length - 1];
+        if (!latestPoint || !Number.isFinite(latestPoint.value)) {
+            return;
+        }
+        snapshots.push(`${baseCurrency}/${series.quote} ${formatFxInline(latestPoint.value)}`);
+    });
+    if (!snapshots.length) {
+        return null;
+    }
+    return `FX (${baseCurrency} base): ${snapshots.join('   ')}`;
 }
 
 function formatCrosshairDateLabel(time) {
@@ -741,6 +790,10 @@ export function initTerminal({
                         result += `\n${summaryText}`;
                     }
                 }
+                const fxSnapshot = getFxSnapshotLine();
+                if (fxSnapshot) {
+                    result += `\n${fxSnapshot}`;
+                }
                 break;
             case 'reset':
                 closeAllFilterDropdowns();
@@ -970,6 +1023,10 @@ export function initTerminal({
                                 result = `Showing FX chart (base ${baseCurrency}) for ${formatDateRange(
                                     dateRange
                                 )}.`;
+                                const fxSnapshot = getFxSnapshotLine();
+                                if (fxSnapshot) {
+                                    result += `\n${fxSnapshot}`;
+                                }
                             }
                             break;
                         default:

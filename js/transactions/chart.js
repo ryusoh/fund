@@ -236,7 +236,7 @@ function formatFxValue(value) {
     return value.toFixed(4);
 }
 
-function buildFxChartSeries(baseCurrency) {
+export function buildFxChartSeries(baseCurrency) {
     const fxRates = transactionState.fxRatesByCurrency || {};
     const normalizedBase = typeof baseCurrency === 'string' ? baseCurrency.toUpperCase() : 'USD';
     const baseEntry = fxRates[normalizedBase];
