@@ -68,6 +68,11 @@
     - Long-standing CO₂ EOR expertise and CO₂ pipeline/injection infrastructure that competitors lack.
     - First mover in industrial-scale DAC and CO₂ sequestration with government backing and offtake contracts.
     - Proven asset enhancement capability: historical evidence from Elk Hills acquisition (1998) shows OXY's ability to dramatically increase production and reserves from mature assets through CO₂ EOR methods (production increased 68% from 54k to 91k BOE/d, with cumulative $3.5B FCF generated equal to acquisition cost within 6 years).
+    - Proven acquisition and enhancement playbook:
+        - Historical evidence from multiple successful acquisitions (Elk Hills, Altura) shows consistent delivery of 15%+ free-cash returns through the legacy asset enhancement strategy.
+        - Crown Rock acquisition ($12B, ~$1B immediate FCF accretion) demonstrates continued successful execution of the playbook.
+        - OXY's expertise includes drilling optimization (reducing wells per section from 6-7 to <5) and EOR application to reduce capital and operational expenditure.
+        - Deep subsurface knowledge provides upside potential through deeper reserves in Barnett and other formations.
     - Scale, relationships, and access to capital (including Berkshire) that smaller E&Ps cannot replicate.
 
 - Moat durability:
@@ -158,7 +163,7 @@
 - Explicit thesis-kill triggers:
     - Reversal of capital allocation discipline: meaningful re-levering to fund M&A or non-core growth.
     - Policy changes that remove or severely weaken carbon capture incentives without a compensating business pivot.
-    - Evidence that OXY’s structural cost position has degraded (persistent underperformance versus peers).
+    - Evidence that OXY's structural cost position has degraded (persistent underperformance versus peers).
     - Multi-year oil demand declines not driven by a transient recession, accompanied by weak pricing.
 
 ---
@@ -178,7 +183,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - No assumption of extreme super-cycle or Armageddon; those live in Bull/Bear.
 - Macro vs company layers:
     - Macro: oil price band, global demand path, OPEC discipline.
-    - Company: OXY’s execution, capex discipline, DAC ramp, capital return policy.
+    - Company: OXY's execution, capex discipline, DAC ramp, capital return policy.
 
 ---
 
@@ -194,7 +199,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Global oil demand remains strong; underinvestment leads to structural supply tightness.
 - WTI averages ~$90/bbl+, with frequent periods above \$100.
 - OPEC+ discipline holds; non-OPEC supply disappoints relative to demand growth.
-- OXY’s production grows ~3% per year on core assets with very strong margins.
+- OXY's production grows ~3% per year on core assets with very strong margins.
 - DAC and CO₂ sequestration scale: Stratos and follow-on plants operate at high utilization with attractive long-term contracts.
 - Market views OXY as both a premier low-cost oil producer and a credible carbon-removal platform.
 
@@ -211,7 +216,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - Aggressive buybacks retire 15–20% of shares.
     - Dividend grows to a 3–4% yield on a much higher stock price.
 - Optionality realized:
-    - DAC generates hundreds of millions in EBITDA; market assigns explicit “climate-tech” value to the platform.
+    - DAC generates hundreds of millions in EBITDA; market assigns explicit "climate-tech" value to the platform.
     - Possibility of SOTP thinking and/or spin-like narratives.
 
 - EPS CAGR rationale (28%):
@@ -220,6 +225,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - Slight premium to a pure E&P at the top of the cycle (which might trade 8–10x), justified by de-risked balance sheet and DAC optionality.
     - Still below market multiple, acknowledging cyclicality and oil exposure.
     - Historical precedent like Elk Hills demonstrates OXY's ability to unlock value from mature assets, supporting potential premium to pure E&P multiples.
+    - Additional precedent from Altura and Crown Rock acquisitions further validates OXY's value enhancement capabilities.
 
 #### 4.2.4 Evidence & supporting material (Bull)
 
@@ -229,7 +235,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Industry / macro:
     - Ongoing concerns about underinvestment in upstream supply and declining spare capacity.
 - My interpretation:
-    - Not the most likely path but a realistic upside branch given history of oil cycles and OXY’s asset quality.
+    - Not the most likely path but a realistic upside branch given history of oil cycles and OXY's asset quality.
 
 - Links / files:
     - `docs/thesis/OXY/OXY-bull-evidence.md`
@@ -245,10 +251,10 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 
 #### 4.3.1 Narrative (world description)
 
-- “Nothing heroic” world: oil markets roughly balanced; no structural shortage or glut.
+- "Nothing heroic" world: oil markets roughly balanced; no structural shortage or glut.
 - WTI averages ~$70–75/bbl over 5 years; volatility but no permanent shift.
 - OXY grows production modestly (~1–2% per year), focusing on high-return projects.
-- DAC ramps slower; it’s strategically important but only a small P&L contributor by year 5.
+- DAC ramps slower; it's strategically important but only a small P&L contributor by year 5.
 - OXY completes deleveraging, returns increasing FCF via dividends and buybacks, and becomes a predictable cash-return story.
 
 #### 4.3.2 Key assumptions
@@ -270,6 +276,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - "Normal" through-the-cycle multiple for a de-levered, mid-cycle oil producer.
     - Slight discount to market P/E, reflecting commodity risk.
     - Historical precedent like Elk Hills acquisition validates OXY's asset enhancement capabilities, supporting a potential premium to plain-vanilla E&P multiples.
+    - Additional evidence from Altura and Crown Rock acquisitions reinforces these capabilities.
 
 #### 4.3.4 Evidence & supporting material (Base)
 
@@ -299,7 +306,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - WTI averages ~$50–55/bbl for several years.
 - OXY cuts capex to preserve balance sheet; production stagnates or slowly declines.
 - DAC under-delivers: tech or policy setbacks limit economics and scale.
-- Market sees OXY as a “melting ice cube” oil producer with a carbon side-bet that hasn’t paid off.
+- Market sees OXY as a "melting ice cube" oil producer with a carbon side-bet that hasn't paid off.
 
 #### 4.4.2 Key assumptions
 
@@ -317,12 +324,12 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
     - Lower oil prices and flat volumes push EPS down modestly; even with some interest relief, normalized EPS drifts slightly lower over time as weaker pricing and limited growth outweigh efficiency gains.
 - Exit PE rationale (8x):
     - Depressed-cycle multiple for a structurally challenged, low-growth commodity name.
-    - Reflects market skepticism on long-term oil demand and OXY’s ability to pivot.
+    - Reflects market skepticism on long-term oil demand and OXY's ability to pivot.
 
 #### 4.4.4 Evidence & supporting material (Bear)
 
 - Company:
-    - History of 2020 shows OXY’s sensitivity to low prices, though leverage is now much lower.
+    - History of 2020 shows OXY's sensitivity to low prices, though leverage is now much lower.
 - Industry / macro:
     - IEA / policy scenarios increasingly emphasize accelerated transition risks.
 - My interpretation:
@@ -343,7 +350,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 
 ## 5. Quantitative Summary & Model Check
 
-(These are “good enough” hand estimates consistent with §4; actual engine may refine.)
+(These are "good enough" hand estimates consistent with §4; actual engine may refine.)
 
 - Expected annualized return (CAGR): ~14–16% (probability-weighted across the three scenarios).
 - Expected exit multiple: ~10–11× on mid-cycle earnings.
@@ -461,6 +468,16 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - TODO:
     - Populate detailed evidence files; track next earnings, OxyChem sale closure, and DAC milestones.
 
+- 2025-11-15 – Additional historical evidence review
+- What happened:
+    - Review of OXY's historical acquisition and value enhancement playbook, including Elk Hills, Altura, and Crown Rock acquisitions.
+- Impact on scenarios:
+    - Validates the bull case around continued successful execution of the EOR acquisition strategy.
+- Impact on assumptions:
+    - Strengthens confidence in OXY's ability to execute consistent value creation through legacy asset enhancement.
+- Action:
+    - Maintain conviction in thesis; consider adding to position on pullbacks if Crown Rock integration proceeds smoothly.
+
 (Extend this section with new entries over time.)
 
 ---
@@ -470,9 +487,9 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Unresolved uncertainties:
     - Long-term cost curve and competitive dynamics in DAC vs alternative CO₂ abatement solutions.
     - Realistic upper bound on 45Q and other policy support durability across U.S. political cycles.
-    - Sensitivity of OXY’s long-run value to different EV adoption and oil demand peak dates.
+    - Sensitivity of OXY's long-run value to different EV adoption and oil demand peak dates.
 
 - Planned research:
-    - Deep dive on OXY’s latest 10-K/10-Q and investor day materials, especially low-carbon disclosures.
+    - Deep dive on OXY's latest 10-K/10-Q and investor day materials, especially low-carbon disclosures.
     - External reports on global upstream capex needs vs demand scenarios.
-    - Track peer DAC / CCUS projects (Exxon, Shell, etc.) to benchmark OXY’s tech and cost position.
+    - Track peer DAC / CCUS projects (Exxon, Shell, etc.) to benchmark OXY's tech and cost position.
