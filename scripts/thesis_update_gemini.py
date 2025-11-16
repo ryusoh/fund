@@ -56,7 +56,7 @@ TICKER: {ticker}
 --- Evidence files ---
 {evidence_block}
 
---- New material (docs/thesis/{ticker}/{ticker}-input.md or inbox) ---
+--- New material (docs/thesis/{ticker}/{ticker}-inbox.md) ---
 {new_material_text}
 """
 
@@ -79,7 +79,6 @@ def resolve_new_material(ticker: str, override: Optional[str]) -> Path:
     if override:
         return REPO_ROOT / override
     candidates = [
-        REPO_ROOT / "docs" / "thesis" / ticker / f"{ticker}-input.md",
         REPO_ROOT / "docs" / "thesis" / ticker / f"{ticker}-inbox.md",
     ]
     for path in candidates:
@@ -87,7 +86,7 @@ def resolve_new_material(ticker: str, override: Optional[str]) -> Path:
             return path
     raise FileNotFoundError(
         "Could not find new material file. Provide one via --new-file or create "
-        "docs/thesis/{ticker}/{ticker}-input.md (or -inbox.md)."
+        "docs/thesis/{ticker}/{ticker}-inbox.md"
     )
 
 
@@ -123,7 +122,6 @@ def call_gemini(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
         ),
-        safety_settings=safety_settings,
     )
 
     texts: List[str] = []
