@@ -72,7 +72,18 @@ const PERFORMANCE_SERIES_CURRENCY = {
 };
 
 const FX_CURRENCY_ORDER = ['USD', 'CNY', 'JPY', 'KRW'];
-const FX_LINE_COLORS = ['#FF8E53', '#4DD0E1', '#F5C04A', '#9B87FF'];
+const FX_LINE_COLORS = {
+    USD: '#FF8E53',
+    CNY: '#ff4d4d',
+    JPY: '#64b5f6',
+    KRW: '#ffef2f',
+};
+const FX_GRADIENTS = {
+    USD: ['#CC4E1F', '#FF9A62'],
+    CNY: ['#7A0B0B', '#FF4D4D'],
+    JPY: ['#0d3b66', '#64b5f6'],
+    KRW: ['#fb8500', '#ffef2f'],
+};
 
 const crosshairState = {
     active: false,
@@ -263,7 +274,7 @@ function buildFxChartSeries(baseCurrency) {
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = true;
         }
-        const color = FX_LINE_COLORS[seriesList.length % FX_LINE_COLORS.length];
+        const color = FX_LINE_COLORS[currency] || '#FF8E53';
         seriesList.push({
             key,
             base: normalizedBase,
@@ -1318,6 +1329,86 @@ function colorWithAlpha(baseColor, alpha) {
     return baseColor;
 }
 
+function parseColorToRgb(baseColor) {
+    if (typeof baseColor !== 'string' || baseColor.length === 0) {
+        return null;
+    }
+
+    const hexMatch = baseColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+        let hex = hexMatch[1];
+        if (hex.length === 3) {
+            hex = hex
+                .split('')
+                .map((char) => char + char)
+                .join('');
+        }
+        const intVal = parseInt(hex, 16);
+        return {
+            r: (intVal >> 16) & 255,
+            g: (intVal >> 8) & 255,
+            b: intVal & 255,
+        };
+    }
+
+    const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
+    if (rgbMatch) {
+        const parts = rgbMatch[1].split(',');
+        if (parts.length >= 3) {
+            return {
+                r: componentFromChannel(parts[0]),
+                g: componentFromChannel(parts[1]),
+                b: componentFromChannel(parts[2]),
+            };
+        }
+    }
+
+    if (!COLOR_PARSER_CONTEXT) {
+        return null;
+    }
+
+    const ctx = COLOR_PARSER_CONTEXT;
+    ctx.save();
+    try {
+        ctx.fillStyle = baseColor;
+        const computed = ctx.fillStyle;
+        ctx.restore();
+        if (computed && computed !== baseColor) {
+            return parseColorToRgb(computed);
+        }
+    } catch {
+        ctx.restore();
+        return null;
+    }
+    return null;
+}
+
+function lightenColor(baseColor, amount = 0.3) {
+    const components = parseColorToRgb(baseColor);
+    if (!components) {
+        return baseColor;
+    }
+    const ratio = clamp01(amount);
+    const mixChannel = (value) => Math.round(value + (255 - value) * ratio);
+    const r = mixChannel(components.r);
+    const g = mixChannel(components.g);
+    const b = mixChannel(components.b);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function darkenColor(baseColor, amount = 0.3) {
+    const components = parseColorToRgb(baseColor);
+    if (!components) {
+        return baseColor;
+    }
+    const ratio = clamp01(amount);
+    const mixChannel = (value) => Math.round(value * (1 - ratio));
+    const r = mixChannel(components.r);
+    const g = mixChannel(components.g);
+    const b = mixChannel(components.b);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 function drawMountainFill(ctx, coords, baselineY, options) {
     if (!Array.isArray(coords) || coords.length === 0) {
         return;
@@ -1444,6 +1535,10 @@ function stopContributionAnimation() {
     glowAnimator.stop('contribution');
 }
 
+function stopFxAnimation() {
+    glowAnimator.stop('fx');
+}
+
 function schedulePerformanceAnimation(chartManager) {
     if (!isAnimationEnabled('performance')) {
         glowAnimator.stop('performance');
@@ -1464,6 +1559,16 @@ function scheduleContributionAnimation(chartManager) {
     });
 }
 
+function scheduleFxAnimation(chartManager) {
+    if (!isAnimationEnabled('fx')) {
+        glowAnimator.stop('fx');
+        return;
+    }
+    glowAnimator.schedule('fx', chartManager, {
+        isActive: () => transactionState.activeChart === 'fx',
+    });
+}
+
 function advancePerformanceAnimation(timestamp) {
     if (!isAnimationEnabled('performance')) {
         return 0;
@@ -1476,6 +1581,13 @@ function advanceContributionAnimation(timestamp) {
         return 0;
     }
     return glowAnimator.advance('contribution', timestamp);
+}
+
+function advanceFxAnimation(timestamp) {
+    if (!isAnimationEnabled('fx')) {
+        return 0;
+    }
+    return glowAnimator.advance('fx', timestamp);
 }
 
 function getChartColors(rootStyles) {
@@ -2100,6 +2212,7 @@ function drawAxes(
 
 async function drawContributionChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
+    stopFxAnimation();
 
     const runningAmountSeries = Array.isArray(transactionState.runningAmountSeries)
         ? transactionState.runningAmountSeries
@@ -3026,6 +3139,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const { chartVisibility } = transactionState;
     stopContributionAnimation();
+    stopFxAnimation();
     if (Object.keys(performanceSeries).length === 0) {
         stopPerformanceAnimation();
         chartLayouts.performance = null;
@@ -3392,18 +3506,16 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
     }
 }
 
-function drawFxChart(ctx, chartManager) {
+function drawFxChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
     stopContributionAnimation();
+    const fxAnimationEnabled = isAnimationEnabled('fx');
+    const animationPhase = fxAnimationEnabled ? advanceFxAnimation(timestamp) : 0;
+    let glowIndex = 0;
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
     const baseCurrency = (transactionState.selectedCurrency || 'USD').toUpperCase();
     const seriesData = buildFxChartSeries(baseCurrency);
-    const legendEntries = seriesData.map((series) => ({
-        key: series.key,
-        name: series.label,
-        color: series.color,
-    }));
 
     if (!seriesData.length) {
         if (emptyState) {
@@ -3411,6 +3523,7 @@ function drawFxChart(ctx, chartManager) {
         }
         chartLayouts.fx = null;
         updateCrosshairUI(null, null);
+        stopFxAnimation();
         return;
     }
     if (emptyState) {
@@ -3446,6 +3559,7 @@ function drawFxChart(ctx, chartManager) {
         if (emptyState) {
             emptyState.style.display = 'block';
         }
+        stopFxAnimation();
         chartLayouts.fx = null;
         updateCrosshairUI(null, null);
         return;
@@ -3486,12 +3600,14 @@ function drawFxChart(ctx, chartManager) {
     if (!Number.isFinite(minTime) || !Number.isFinite(maxTime) || minTime === maxTime) {
         chartLayouts.fx = null;
         updateCrosshairUI(null, null);
+        stopFxAnimation();
         return;
     }
 
     if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
         chartLayouts.fx = null;
         updateCrosshairUI(null, null);
+        stopFxAnimation();
         return;
     }
 
@@ -3568,10 +3684,24 @@ function drawFxChart(ctx, chartManager) {
             return;
         }
 
+        const baseColor = series.color;
+        const gradientStops = FX_GRADIENTS[series.quote] || FX_GRADIENTS[series.label] || null;
+        const darkColor = gradientStops ? gradientStops[0] : darkenColor(baseColor, 0.15);
+        const lightColor = gradientStops ? gradientStops[1] : lightenColor(baseColor, 0.2);
+        const resolvedColor = lightColor;
+        const strokeGradient = ctx.createLinearGradient(
+            padding.left,
+            0,
+            padding.left + plotWidth,
+            0
+        );
+        strokeGradient.addColorStop(0, darkColor);
+        strokeGradient.addColorStop(1, lightColor);
+
         if (mountainFill.enabled) {
             drawMountainFill(ctx, coords, yScale(0), {
-                color: series.color,
-                colorStops: [series.color, series.color],
+                color: baseColor,
+                colorStops: [darkColor, lightColor],
                 opacityTop: 0.3,
                 opacityBottom: 0,
                 bounds: chartBounds,
@@ -3587,7 +3717,7 @@ function drawFxChart(ctx, chartManager) {
             }
         });
         ctx.lineWidth = 2;
-        ctx.strokeStyle = series.color;
+        ctx.strokeStyle = strokeGradient;
         ctx.stroke();
 
         drawEndValue(
@@ -3595,7 +3725,7 @@ function drawFxChart(ctx, chartManager) {
             coords[coords.length - 1].x,
             coords[coords.length - 1].y,
             coords[coords.length - 1].value,
-            series.color,
+            resolvedColor,
             isMobile,
             padding,
             plotWidth,
@@ -3607,13 +3737,28 @@ function drawFxChart(ctx, chartManager) {
         renderedSeries.push({
             key: series.key,
             label: series.label,
-            color: series.color,
+            color: resolvedColor,
             points: coords.map((coord) => ({ time: coord.time, value: coord.value })),
             rawPoints: coords.map((coord) => ({ time: coord.time, value: coord.rawValue })),
         });
+
+        if (fxAnimationEnabled) {
+            glowAnimator.drawSeriesGlow(
+                ctx,
+                { coords, color: lightColor, lineWidth: 2 },
+                {
+                    basePhase: animationPhase,
+                    seriesIndex: glowIndex,
+                    isMobile,
+                    chartKey: 'fx',
+                }
+            );
+            glowIndex += 1;
+        }
     });
 
     if (!renderedSeries.length) {
+        stopFxAnimation();
         chartLayouts.fx = null;
         updateCrosshairUI(null, null);
         return;
@@ -3677,8 +3822,19 @@ function drawFxChart(ctx, chartManager) {
         }),
     };
 
+    if (fxAnimationEnabled && glowIndex > 0) {
+        scheduleFxAnimation(chartManager);
+    } else {
+        stopFxAnimation();
+    }
+
     drawCrosshairOverlay(ctx, chartLayouts.fx);
 
+    const legendEntries = renderedSeries.map((series) => ({
+        key: series.key,
+        name: series.label,
+        color: series.color,
+    }));
     updateLegend(legendEntries, chartManager);
 }
 
@@ -3958,6 +4114,7 @@ function renderCompositionChart(ctx, chartManager, data) {
 function drawCompositionChart(ctx, chartManager) {
     stopPerformanceAnimation();
     stopContributionAnimation();
+    stopFxAnimation();
     const emptyState = document.getElementById('runningAmountEmpty');
 
     if (!compositionDataCache && compositionDataLoading) {
@@ -4008,6 +4165,7 @@ export function createChartManager(options = {}) {
         if (!canvas) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            stopFxAnimation();
             updateCrosshairUI(null, null);
             return;
         }
@@ -4016,6 +4174,7 @@ export function createChartManager(options = {}) {
         if (!ctx) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            stopFxAnimation();
             updateCrosshairUI(null, null);
             return;
         }
@@ -4029,6 +4188,7 @@ export function createChartManager(options = {}) {
         if (displayWidth === 0 || displayHeight === 0) {
             stopPerformanceAnimation();
             stopContributionAnimation();
+            stopFxAnimation();
             updateCrosshairUI(null, null);
             return;
         }
@@ -4049,7 +4209,7 @@ export function createChartManager(options = {}) {
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'fx') {
-            drawFxChart(ctx, chartManager);
+            drawFxChart(ctx, chartManager, timestamp);
         } else {
             await drawContributionChart(ctx, chartManager, timestamp);
         }

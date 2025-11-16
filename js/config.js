@@ -70,6 +70,9 @@ export const ANIMATED_LINE_SETTINGS = {
         contribution: {
             enabled: true,
         },
+        fx: {
+            enabled: true,
+        },
     },
 };
 
