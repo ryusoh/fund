@@ -13,12 +13,12 @@ import {
     getCalendarRange,
 } from '@js/config.js';
 import { getNyDate } from '@utils/date.js';
-import { formatNumber } from '@utils/formatting.js';
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendarResponsiveHandlers } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
+import { ensureEntryDisplay, precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 import { PERLIN_BACKGROUND_SETTINGS } from '@js/config.js';
 
@@ -178,30 +178,15 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
             /* istanbul ignore next: defensive attribute fallback in render labels */
             const x = el.attr('x') || 0;
 
-            let changeText = '';
-            let totalText = '';
-            let showDetails = false;
-            if (entry && entry.dailyChange !== 0) {
-                changeText = formatNumber(
-                    entry.dailyChange,
-                    currencySymbols,
-                    true,
-                    state.selectedCurrency,
-                    state.rates,
-                    entry, // Pass the historical data entry
-                    'dailyChange' // Specify we want daily change values
-                );
-                totalText = formatNumber(
-                    entry.total,
-                    currencySymbols,
-                    false,
-                    state.selectedCurrency,
-                    state.rates,
-                    entry, // Pass the historical data entry
-                    'total' // Specify we want total values
-                );
-                showDetails = true;
-            }
+            const display = ensureEntryDisplay(
+                entry,
+                state.selectedCurrency,
+                state.rates,
+                currencySymbols
+            );
+            const changeText = display.changeText;
+            const totalText = display.totalText;
+            const showDetails = display.showDetails;
 
             const ensureLine = (cls, dy) => {
                 let line = el.select(`tspan.${cls}`);
@@ -797,6 +782,7 @@ export async function initCalendar() {
         const { processedData, byDate, rates, monthlyPnl } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
         appState.monthlyPnl = monthlyPnl instanceof Map ? monthlyPnl : new Map();
+        precomputeDisplayCaches(byDate, CURRENCY_SYMBOLS, appState.rates);
         const latestMonthlyKey = getLatestMonthlyKey(appState.monthlyPnl);
         calendarByDate = byDate; // Store globally for resize handling
 
