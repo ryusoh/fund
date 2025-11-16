@@ -7,7 +7,7 @@ When new source material arrives (e.g., an interview transcript or trade publica
 1. **Capture** – paste the raw article/notes into the correct evidence or inbox file.
 2. **Interpret** – ask the AI to classify (Bull/Base/Bear), summarize, and flag any scenario-number changes.
 3. **Patch** – ask the AI for precise patches to `docs/thesis/<TICKER>.md` and `data/analysis/<TICKER>.json`, anchored to sections.
-4. **Apply** – apply those patches (either let the AI edit or copy them manually) and clean up the temporary `<TICKER>-input.md`.
+4. **Apply** – apply those patches (either let the AI edit or copy them manually) and clean up the temporary `<TICKER>-inbox.md`.
 5. **Review** – run `git diff` on the thesis + JSON and skim the updated sections to ensure they match your intent.
 
 ## 1. File placement
@@ -25,7 +25,7 @@ Use a consistent prompt whenever you want the assistant to digest new material. 
 Input:
 • Thesis file: docs/thesis/<TICKER>.md
 • Evidence file: docs/thesis/<TICKER>/<TICKER>-<bull|base|bear>-evidence.md
-• New material: docs/thesis/<TICKER>/<TICKER>-input.md
+• New material: docs/thesis/<TICKER>/<TICKER>-inbox.md
 
 Task:
 1. Classify the new material: Bull / Base / Bear / Neutral.
@@ -43,7 +43,7 @@ Task:
 - Review the AI’s patch-style output.
 - Either instruct the assistant to edit the files directly (“please apply these changes”) or copy/paste the patch yourself.
 - Keep the evidence logs updated with any raw sources, and only promote concise takeaways into the main thesis file.
-- Once the new material has been summarized, delete or archive the temporary `<TICKER>-input.md` snippet so the inbox doesn’t accumulate stale content.
+- Once the new material has been summarized, delete or archive the temporary `<TICKER>-inbox.md` snippet so the inbox doesn’t accumulate stale content.
 
 **Key principle:** always request “patch-style output” from the AI, never a free-form essay. This keeps diffs explicit and easy to apply.
 
@@ -176,7 +176,7 @@ Files:
     - docs/thesis/<TICKER>/<TICKER>-bear-evidence.md
     - docs/thesis/<TICKER>/<TICKER>-inbox.md
 - New material:
-    - docs/thesis/<TICKER>/<TICKER>-input.md # or the specific evidence file containing the new text
+    - docs/thesis/<TICKER>/<TICKER>-inbox.md # or the specific evidence file containing the new text
 
 ### TASK
 
@@ -292,7 +292,7 @@ Respond in **five sections**:
 2. If the recommendations look reasonable:
     - Either instruct the assistant: “apply these patches to my files”, **or**
     - Copy the `diff` blocks into a patch / your editor and apply manually.
-3. After applying, clean up any temporary `<TICKER>-input.md` you used for the new material.
+3. After applying, clean up any temporary `<TICKER>-inbox.md` you used for the new material.
 
 ---
 

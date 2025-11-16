@@ -17,17 +17,17 @@
     - `docs/thesis/<TICKER>/<TICKER>-bear-evidence.md`
     - `docs/thesis/<TICKER>/<TICKER>-inbox.md`
 - New material (raw article / transcript / notes):
-    - `docs/thesis/<TICKER>/<TICKER>-input.md`
+    - `docs/thesis/<TICKER>/<TICKER>-inbox.md`
 
 ## Task
 
 Given the files above and the selected `mode`, do the following:
 
-1.  **Classification (always do this)**
+1. **Classification (always do this)**
     - Classify the new material as: Bull / Base / Bear / Neutral for `<TICKER>`.
     - If it mixes categories, explain briefly and pick the dominant one.
 
-2.  **Summarize incremental insight (always)**
+2. **Summarize incremental insight (always)**
     - Summarize ONLY the _investment-relevant_ content in 3–5 bullets.
     - Focus on:
         - moat / business quality
@@ -35,7 +35,7 @@ Given the files above and the selected `mode`, do the following:
         - risks / competitive dynamics
         - capital allocation / valuation
 
-3.  **Scenario impact (always)**
+3. **Scenario impact (always)**
     - State explicitly whether the new material affects:
         - Moat / business quality narrative
         - Scenario narratives (Bull/Base/Bear story text)
@@ -50,7 +50,7 @@ Given the files above and the selected `mode`, do the following:
         - 1-line rationale per change
     - If not, say “no numeric changes recommended”.
 
-4.  **Patch generation (only if `mode` is "patch" or "auto" with changes)**
+4. **Patch generation (only if `mode` is "patch" or "auto" with changes)**
     - If `mode == "interpret"`:
         - Stop after step 3. Do not generate patches.
     - If `mode == "patch"`:
@@ -61,7 +61,13 @@ Given the files above and the selected `mode`, do the following:
 
     When generating patches:
 
-    4a. **Thesis patch (`docs/thesis/<TICKER>.md`)** - Anchor edits to specific sections (e.g. 4.2.4, 8.2), not the whole file. - Only modify: - scenario descriptions / mapping blocks - quantitative summary sections - evidence / log sections (e.g. 4.2.4, 8.2) - Output as a fenced diff block:
+    4a. **Thesis patch (`docs/thesis/<TICKER>.md`)**
+    - Anchor edits to specific sections (e.g. 4.2.4, 8.2), not the whole file.
+    - Only modify:
+        - scenario descriptions / mapping blocks
+        - quantitative summary sections
+        - evidence / log sections (e.g. 4.2.4, 8.2)
+    - Output as a fenced diff block:
 
         ```diff
         --- a/docs/thesis/<TICKER>.md
@@ -71,7 +77,17 @@ Given the files above and the selected `mode`, do the following:
         +<new lines>
         ```
 
-    4b. **JSON patch (`data/analysis/<TICKER>.json`)** - Only touch the fields you recommended changing in step 3: - `scenarios[*].prob` - `scenarios[*].growth.epsCagr` - `scenarios[*].valuation.exitPe` - `derived.expectedCagr` - `derived.expectedMultiple` - `derived.kelly.fullKelly` - `derived.kelly.scaledKelly` - `position.maxKellyWeight` (if applicable) - Output as a fenced diff block:
+    4b. **JSON patch (`data/analysis/<TICKER>.json`)**
+    - Only touch the fields you recommended changing in step 3:
+        - `scenarios[*].prob`
+        - `scenarios[*].growth.epsCagr`
+        - `scenarios[*].valuation.exitPe`
+        - `derived.expectedCagr`
+        - `derived.expectedMultiple`
+        - `derived.kelly.fullKelly`
+        - `derived.kelly.scaledKelly`
+        - `position.maxKellyWeight` (if applicable)
+    - Output as a fenced diff block:
 
         ```diff
         --- a/data/analysis/<TICKER>.json

@@ -1,4 +1,4 @@
 Run Thesis Update Task for $TICKER (mode=auto) using @docs/thesis_update_prompt.md,
 thesis=docs/thesis/$TICKER.md,
 json=data/analysis/$TICKER.json,
-new=docs/thesis/$TICKER/$TICKER-input.md
+new=docs/thesis/$TICKER/$TICKER-inbox.md
