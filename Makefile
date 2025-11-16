@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -62,7 +62,7 @@ precommit: hooks fmt-check
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
 
-precommit-fix: fmt lint-fix
+precommit-fix: fmt lint-fix markdownlint-fix
 	$(MAKE) precommit
 
 perms:
@@ -115,6 +115,9 @@ lint-fix:
 	eslint . --ext .js --fix || true
 	@# Ensure stylistic plugin availability if needed
 	npx stylelint "**/*.css" --fix || true
+
+markdownlint-fix:
+	npx markdownlint --fix "**/*.md" --ignore-path .gitignore
 
 js-test:
 	npm test
