@@ -41,7 +41,7 @@
     - Cyclical / macro-levered value with turnaround elements and structural upside (carbon).
 
 - My edge / variant perception vs market:
-    - Market still anchors on “levered Anadarko bet / 2020 near-death experience” and treats OXY as a generic shale E&P, while I think:
+    - Market still anchors on "levered Anadarko bet / 2020 near-death experience" and treats OXY as a generic shale E&P, while I think:
         - The balance sheet is now structurally safer (debt trending below ~$15B, preferreds shrinking).
         - The upstream portfolio (Permian + Gulf) is better quality than the multiple implies.
         - The Low Carbon / DAC business is a real out-of-the-money call option that is mostly ignored in current pricing.
@@ -67,12 +67,15 @@
     - Low-cost resource base in the Permian and Gulf of Mexico (top-tier shale / deepwater barrels).
     - Long-standing CO₂ EOR expertise and CO₂ pipeline/injection infrastructure that competitors lack.
     - First mover in industrial-scale DAC and CO₂ sequestration with government backing and offtake contracts.
+    - Proven asset enhancement capability: historical evidence from Elk Hills acquisition (1998) shows OXY's ability to dramatically increase production and reserves from mature assets through CO₂ EOR methods (production increased 68% from 54k to 91k BOE/d, with cumulative $3.5B FCF generated equal to acquisition cost within 6 years).
     - Scale, relationships, and access to capital (including Berkshire) that smaller E&Ps cannot replicate.
 
 - Moat durability:
     - Geology and installed infrastructure provide durable low-cost advantage over 5–10 years.
-    - DAC and sequestration require complex permitting, tech, and capex; OXY’s head start and partnerships (Airbus, United, etc.) create path dependence and learning-curve advantage.
-    - Risks to moat: faster-than-expected demand decline for oil, DAC tech commoditization, or regulation shifting incentives away from OXY’s chosen pathways.
+    - EOR expertise and CO₂ infrastructure represent decades of accumulated knowledge and capital investment that create durable competitive advantages.
+    - DAC and sequestration require complex permitting, tech, and capex; OXY's head start and partnerships (Airbus, United, etc.) create path dependence and learning-curve advantage.
+    - Risks to moat: faster-than-expected demand decline for oil, DAC tech commoditization, or regulation shifting incentives away from OXY's chosen pathways.
+    - If EOR advantages erode, OXY would revert to a plain-vanilla E&P with less differentiated value proposition.
 
 ### 2.2 Unit economics & returns
 
@@ -216,6 +219,7 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - Exit PE rationale (12x):
     - Slight premium to a pure E&P at the top of the cycle (which might trade 8–10x), justified by de-risked balance sheet and DAC optionality.
     - Still below market multiple, acknowledging cyclicality and oil exposure.
+    - Historical precedent like Elk Hills demonstrates OXY's ability to unlock value from mature assets, supporting potential premium to pure E&P multiples.
 
 #### 4.2.4 Evidence & supporting material (Bull)
 
@@ -263,8 +267,9 @@ This documents the mapping from qualitative thesis to `scenarios` JSON.
 - EPS CAGR rationale (18%):
     - With mid-cycle oil (~$70–75 WTI), slight volume growth, shrinking interest, and a few percent share-count shrink, normalized EPS can grow high-teens annually without requiring a super-cycle; this reflects a combination of modest operating leverage and consistent capital returns.
 - Exit PE rationale (10x):
-    - “Normal” through-the-cycle multiple for a de-levered, mid-cycle oil producer.
+    - "Normal" through-the-cycle multiple for a de-levered, mid-cycle oil producer.
     - Slight discount to market P/E, reflecting commodity risk.
+    - Historical precedent like Elk Hills acquisition validates OXY's asset enhancement capabilities, supporting a potential premium to plain-vanilla E&P multiples.
 
 #### 4.3.4 Evidence & supporting material (Base)
 
