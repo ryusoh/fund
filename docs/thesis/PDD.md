@@ -1,4 +1,4 @@
-# PDD – Investment Thesis (Fermat–Pascal + Kelly System)
+# PDD – Investment Thesis
 
 - **Ticker / Name**: PDD – PDD Holdings Inc.
 - **Date**: 2025-11-15

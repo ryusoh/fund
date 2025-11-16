@@ -1,4 +1,4 @@
-# ANET – Investment Thesis (Fermat–Pascal + Kelly System)
+# ANET – Investment Thesis
 
 - **Ticker / Name**: ANET – Arista Networks
 - **Date**: 2025-11-14

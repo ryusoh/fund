@@ -1,4 +1,4 @@
-# VT – Investment Thesis (Fermat–Pascal + Kelly System)
+# VT – Investment Thesis
 
 - **Ticker / Name**: VT – Vanguard Total World Stock ETF
 - **Date**: 2025-11-15

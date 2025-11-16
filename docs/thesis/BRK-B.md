@@ -1,4 +1,4 @@
-# BRK.B – Investment Thesis (Fermat–Pascal + Kelly System)
+# BRK.B – Investment Thesis
 
 ## 0. Meta
 

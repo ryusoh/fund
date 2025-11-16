@@ -1,4 +1,4 @@
-# GEO – Investment Thesis (Fermat–Pascal + Kelly System)
+# GEO – Investment Thesis
 
 - **Ticker / Name**: GEO – The GEO Group, Inc.
 - **Date**: 2025-11-14

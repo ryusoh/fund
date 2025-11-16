@@ -1,4 +1,4 @@
-# OXY – Investment Thesis (Fermat–Pascal + Kelly System)
+# OXY – Investment Thesis
 
 - **Ticker / Name**: OXY – Occidental Petroleum Corporation
 - **Date**: 2025-11-15

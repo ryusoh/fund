@@ -1,4 +1,4 @@
-# GOOG – Investment Thesis (Fermat–Pascal + Kelly System)
+# GOOG – Investment Thesis
 
 - **Ticker / Name**: GOOG – Alphabet Inc.
 - **Date**: 2025-11-15
