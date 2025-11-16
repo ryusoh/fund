@@ -168,6 +168,10 @@ function normalizeScenario(scenario) {
         : null;
     const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
     const precomputedCagr = Number.isFinite(precomputedCagrRaw) ? precomputedCagrRaw : null;
+    const precomputedEarningsCagrRaw = Number(scenario.precomputedEarningsCagr);
+    const precomputedEarningsCagr = Number.isFinite(precomputedEarningsCagrRaw)
+        ? precomputedEarningsCagrRaw
+        : null;
     return {
         id: scenario.id || name.toLowerCase(),
         name,
@@ -183,6 +187,7 @@ function normalizeScenario(scenario) {
         notes: scenario.notes ?? null,
         precomputedMultiple,
         precomputedCagr,
+        precomputedEarningsCagr,
     };
 }
 
@@ -203,18 +208,42 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
         name: scenario.name || scenario.id || 'Scenario',
         prob: Number.isFinite(baseProbRaw) ? baseProbRaw : 0,
     };
+    const entryEps = Number.isFinite(eps) && eps > 0 ? eps : null;
+    const fallbackEpsCagr =
+        Number.isFinite(scenario?.growth?.epsCagr) && scenario.growth.epsCagr !== null
+            ? scenario.growth.epsCagr
+            : Number.isFinite(scenario?.epsCagr)
+              ? scenario.epsCagr
+              : null;
+    const deriveEarningsCagr = (terminalValue) => {
+        if (entryEps !== null && Number.isFinite(terminalValue) && terminalValue > 0) {
+            const ratio = terminalValue / entryEps;
+            if (ratio > 0) {
+                const derived = ratio ** (1 / safeHorizon) - 1;
+                if (Number.isFinite(derived)) {
+                    return derived;
+                }
+            }
+        }
+        return fallbackEpsCagr;
+    };
+
     const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
     if (Number.isFinite(precomputedMultipleRaw) && precomputedMultipleRaw > 0) {
         const multiple = precomputedMultipleRaw;
         const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
-        const scenarioCagr = Number.isFinite(precomputedCagrRaw)
+        const priceCagr = Number.isFinite(precomputedCagrRaw)
             ? precomputedCagrRaw
             : multiple > 0
               ? multiple ** (1 / safeHorizon) - 1
               : 0;
         const impliedEpsRaw = Number(scenario.precomputedTerminalEps ?? scenario.terminalEps);
         const terminalEps = Number.isFinite(impliedEpsRaw) ? impliedEpsRaw : null;
-        return { ...base, multiple, scenarioCagr, terminalEps };
+        const precomputedEarningsCagrRaw = Number(scenario.precomputedEarningsCagr);
+        const earningsCagr = Number.isFinite(precomputedEarningsCagrRaw)
+            ? precomputedEarningsCagrRaw
+            : deriveEarningsCagr(terminalEps);
+        return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
     }
 
     const growth = scenario.growth || {};
@@ -226,8 +255,9 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
     const terminalEps = eps * (1 + epsCagr) ** horizon;
     const terminalPrice = terminalEps * exitPe;
     const multiple = price > 0 ? terminalPrice / price : 0;
-    const scenarioCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
-    return { ...base, multiple, scenarioCagr, terminalEps };
+    const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
+    const earningsCagr = deriveEarningsCagr(terminalEps);
+    return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
 }
 
 function computeMetrics(config) {
@@ -330,7 +360,8 @@ function renderScenarioCards(config) {
             <h4>${outcome.name}</h4>
             <p>Prob: ${(outcome.prob * 100).toFixed(1)}%</p>
             <p>Multiple: ${outcome.multiple.toFixed(2)}x</p>
-            <p>CAGR: ${formatPercent(outcome.scenarioCagr)}</p>
+            <p>Price CAGR: ${formatPercent(outcome.priceCagr)}</p>
+            <p>Earnings CAGR: ${formatPercent(outcome.earningsCagr)}</p>
             <p>Implied Annual EPS: ${formatCurrency(terminalEps)}</p>
             <p>Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}</p>
             <p>Exit Year: ${exitYearValue ?? 'n/a'}</p>
@@ -424,24 +455,33 @@ function aggregateScenarios(configs, horizon) {
                 name: outcome.name || id,
                 weightedMultiple: 0,
                 weightedProb: 0,
+                weightedEarningsCagr: 0,
+                earningsWeight: 0,
             };
             entry.weightedMultiple += holdingWeight * outcome.multiple;
             entry.weightedProb += holdingWeight * outcome.prob;
+            if (Number.isFinite(outcome.earningsCagr)) {
+                entry.weightedEarningsCagr += holdingWeight * outcome.earningsCagr;
+                entry.earningsWeight += holdingWeight;
+            }
             scenarioMap.set(id, entry);
         });
     });
 
     return Array.from(scenarioMap.entries()).map(([id, entry]) => {
         const multiple = entry.weightedMultiple;
-        const scenarioCagr = multiple > 0 && horizon > 0 ? multiple ** (1 / horizon) - 1 : 0;
+        const priceCagr = multiple > 0 && horizon > 0 ? multiple ** (1 / horizon) - 1 : 0;
         const normalizedProb = entry.weightedProb;
+        const earningsCagr =
+            entry.earningsWeight > 0 ? entry.weightedEarningsCagr / entry.earningsWeight : null;
         const displayName = id.charAt(0).toUpperCase() + id.slice(1);
         return {
             id,
             name: displayName,
             prob: normalizedProb,
             precomputedMultiple: multiple,
-            precomputedCagr: scenarioCagr,
+            precomputedCagr: priceCagr,
+            precomputedEarningsCagr: earningsCagr,
             notes: `Weighted ${displayName} scenario`,
         };
     });
@@ -682,3 +722,9 @@ async function init() {
 if (typeof window !== 'undefined' && !window.__SKIP_ANALYSIS_AUTO_INIT__) {
     init();
 }
+
+export const __analysisLabTesting = {
+    normalizeScenario,
+    computeScenarioOutcome,
+    aggregateScenarios,
+};
