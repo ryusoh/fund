@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-15T10:56:34.621089+00:00",
+        "asOf": "2025-11-17T07:35:25.806275+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -39,7 +39,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 292.36,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2025-11-15T10:56:34.487232+00:00",
+        "marketDataUpdatedAt": "2025-11-17T07:35:25.540989+00:00",
         "evToEbitda": 22.6488,
         "eps": 10.14,
         "price": 276.98

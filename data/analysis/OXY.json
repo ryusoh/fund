@@ -3,7 +3,7 @@
     "name": "Occidental Petroleum",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-15T10:56:35.218041+00:00",
+        "asOf": "2025-11-17T07:35:26.509387+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -39,7 +39,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 53.2,
         "fiftyTwoWeekLow": 34.78,
-        "marketDataUpdatedAt": "2025-11-15T10:56:34.984681+00:00",
+        "marketDataUpdatedAt": "2025-11-17T07:35:26.157699+00:00",
         "evToEbitda": 5.6438,
         "eps": 1.36,
         "price": 42.76
