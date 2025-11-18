@@ -3,7 +3,7 @@
     "name": "The GEO Group",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-17T07:35:25.225559+00:00",
+        "asOf": "2025-11-18T07:35:32.960825+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,27 +29,27 @@
     },
     "market": {
         "forwardEps": 1.58,
-        "pe": 9.0059,
-        "forwardPe": 9.6329,
+        "pe": 8.6391,
+        "forwardPe": 9.2405,
         "beta": 0.696,
-        "marketCap": 2118582144.0,
-        "enterpriseValue": 3525724928.0,
+        "marketCap": 2066405504.0,
+        "enterpriseValue": 3440956416.0,
         "ebitda": 373307008,
         "currency": "USD",
         "fiftyTwoWeekHigh": 36.46,
         "fiftyTwoWeekLow": 14.27,
-        "marketDataUpdatedAt": "2025-11-17T07:35:24.942065+00:00",
-        "evToEbitda": 9.4446,
+        "marketDataUpdatedAt": "2025-11-18T07:35:32.859431+00:00",
+        "evToEbitda": 9.2175,
         "eps": 1.69,
-        "price": 15.22
+        "price": 14.6
     },
     "risk": {
-        "volatility": 0.4959,
+        "volatility": 0.4974,
         "estimateSource": "historical",
         "correlations": null
     },
     "position": {
-        "shares": 664.834,
+        "shares": 670.834,
         "currentWeight": null,
         "targetWeight": null,
         "maxKellyWeight": null,
