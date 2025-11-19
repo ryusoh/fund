@@ -1,1 +1,9 @@
-module.exports = require('./.ci-configs/js/.prettierrc.json');
+module.exports = {
+    tabWidth: 4,
+    singleQuote: true,
+    semi: true,
+    printWidth: 100,
+    trailingComma: 'es5',
+    arrowParens: 'always',
+    endOfLine: 'lf',
+};

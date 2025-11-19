@@ -21,7 +21,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 	 scripts/ratios/calculate_ratios.py \
 	 scripts/twrr/step07_plot_twrr.py
 
-PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | tr '\n' ' ')
+PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
 
 help:
 	@echo "Targets:"
@@ -75,29 +75,15 @@ lint: js-lint
 
 fmt:
 	black .
-	@# Prefer shared config if present
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		if [ -f .ci-configs/js/.prettierrc.json ]; then \
-			npx prettier --write $(PRETTIER_FILE_LIST) \
-			  --config .ci-configs/js/.prettierrc.json \
-			  --ignore-path .ci-configs/js/.prettierignore; \
-		else \
-			prettier --write $(PRETTIER_FILE_LIST); \
-		fi; \
+		npx prettier --write --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
 
 fmt-check:
-	@# Prefer shared config if present
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		if [ -f .ci-configs/js/.prettierrc.json ]; then \
-			npx prettier -c $(PRETTIER_FILE_LIST) \
-			  --config .ci-configs/js/.prettierrc.json \
-			  --ignore-path .ci-configs/js/.prettierignore; \
-		else \
-			prettier --check $(PRETTIER_FILE_LIST); \
-		fi; \
+		npx prettier --check --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi

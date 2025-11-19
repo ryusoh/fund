@@ -73,43 +73,37 @@ jobs:
                     echo "No Makefile found; skipping build"
                   fi
 
-            - name: ESLint (prefer .ci-configs)
+            - name: ESLint
               shell: bash
               run: |
-                  if [ -f .ci-configs/js/eslint.config.cjs ]; then
-                    npx --yes eslint . --config .ci-configs/js/eslint.config.cjs --max-warnings=0
-                  elif [ -n "${{ hashFiles('eslint.config.*') }}" ]; then
+                  if [ -n "${{ hashFiles('eslint.config.*') }}" ]; then
                     npx --yes eslint . --max-warnings=0
                   else
                     echo "No ESLint config found; skipping"
                   fi
 
-            - name: Stylelint (prefer .ci-configs)
+            - name: Stylelint
               shell: bash
               run: |
-                  if [ -f .ci-configs/js/.stylelintrc.cjs ]; then
+                  if [ -n "${{ hashFiles('.stylelintrc.*') }}" ]; then
                     IGNORE_ARG=""
-                    if [ -f .ci-configs/js/.stylelintignore ]; then
-                      IGNORE_ARG="--ignore-path .ci-configs/js/.stylelintignore"
+                    if [ -f .stylelintignore ]; then
+                      IGNORE_ARG="--ignore-path .stylelintignore"
                     fi
-                    npx --yes stylelint "**/*.css" --config .ci-configs/js/.stylelintrc.cjs $IGNORE_ARG --max-warnings=0 || true
-                  elif [ -n "${{ hashFiles('.stylelintrc.*') }}" ]; then
-                    npx --yes stylelint "**/*.css" --max-warnings=0 || true
+                    npx --yes stylelint "**/*.css" $IGNORE_ARG --max-warnings=0 || true
                   else
                     echo "No Stylelint config found; skipping"
                   fi
 
-            - name: Prettier check (prefer .ci-configs)
+            - name: Prettier check
               shell: bash
               run: |
-                  if [ -f .ci-configs/js/.prettierrc.json ]; then
+                  if [ -n "${{ hashFiles('.prettierrc*') }}" ]; then
                     IGNORE_ARG=""
-                    if [ -f .ci-configs/js/.prettierignore ]; then
-                      IGNORE_ARG="--ignore-path .ci-configs/js/.prettierignore"
+                    if [ -f .prettierignore ]; then
+                      IGNORE_ARG="--ignore-path .prettierignore"
                     fi
-                    npx --yes prettier -c . --config .ci-configs/js/.prettierrc.json $IGNORE_ARG
-                  elif [ -n "${{ hashFiles('.prettierrc*') }}" ]; then
-                    npx --yes prettier -c .
+                    npx --yes prettier -c . $IGNORE_ARG
                   else
                     echo "No Prettier config found; skipping"
                   fi

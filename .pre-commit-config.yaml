@@ -38,7 +38,7 @@ repos:
       hooks:
           - id: prettier
             name: prettier (staged files)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .ci-configs/js/.prettierignore --'
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .prettierignore --'
             language: system
             files: '\\.(js|css|json|yml|yaml|md|html)$'
             exclude: ^data/.*\.(html|json)$
@@ -48,7 +48,7 @@ repos:
       hooks:
           - id: eslint
             name: eslint (staged JS)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx eslint --config .ci-configs/js/eslint.config.cjs --max-warnings=0 --'
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx eslint --max-warnings=0 --'
             language: system
             types_or: [javascript]
             pass_filenames: true

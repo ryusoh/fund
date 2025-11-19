@@ -14,3 +14,4 @@ venv/
 .git/
 ai/status/
 js/vendor/
+**/*.min.js
