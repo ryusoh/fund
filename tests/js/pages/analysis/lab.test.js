@@ -6,6 +6,29 @@ describe('analysis lab data loading', () => {
         jest.resetModules();
         delete global[FLAG];
         global.fetch = ORIGINAL_FETCH;
+        global.Worker = class {
+            constructor(stringUrl) {
+                this.url = stringUrl;
+                this.onmessage = () => {};
+            }
+            postMessage() {}
+            terminate() {}
+        };
+
+        // Mock DOM elements required by lab.js
+        document.body.innerHTML = `
+            <div id="tickerList"></div>
+            <div id="summaryStats"></div>
+            <div id="scenarioResults"></div>
+            <div id="valueBands"></div>
+            <button id="btnBayesBull"></button>
+            <button id="btnBayesBear"></button>
+            <button id="btnBayesReset"></button>
+            <div id="bayesOutput"></div>
+            <button id="btnRunMonteCarlo"></button>
+            <canvas id="monteCarloCanvas"></canvas>
+            <div id="riskMetrics"></div>
+        `;
     });
 
     afterEach(() => {
@@ -13,6 +36,7 @@ describe('analysis lab data loading', () => {
         jest.resetModules();
         delete global[FLAG];
         global.fetch = ORIGINAL_FETCH;
+        delete global.Worker;
     });
 
     it('adds a cache-busting query param and disables caching for data fetches', async () => {

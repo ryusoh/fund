@@ -5,45 +5,118 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="dark" />
         <meta name="theme-color" content="#000000" />
-        <title>Analysis Prototype</title>
-        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+        <title>Lab</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+            rel="stylesheet"
+        />
         <link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />
         <link rel="stylesheet" href="../css/analysis-proto.css" />
     </head>
+
     <body>
-        <main class="lab">
-            <section class="panel ticker-panel">
-                <div class="ticker-header">
-                    <p class="label">Holdings</p>
-                </div>
-                <div class="ticker-list" id="tickerList"></div>
-            </section>
+        <canvas id="holo-bg"></canvas>
+        <canvas id="holo-bg"></canvas>
 
-            <section class="panel output-panel">
-                <div class="output-header">
-                    <div>
-                        <p class="label" id="selectedTickerLabel"></p>
-                        <h2 id="selectedTickerName"></h2>
-                    </div>
-                </div>
-                <div class="stat-grid" id="summaryStats"></div>
+        <nav class="top-nav">
+            <div class="ticker-list" id="tickerList"></div>
+            <div class="nav-divider"></div>
+            <div class="summary-stats" id="summaryStats"></div>
+        </nav>
 
-                <div class="output-grid">
-                    <article class="scenario-block">
-                        <div class="block-header">
-                            <h3>Scenario Outcomes</h3>
+        <main class="lab-container">
+            <!-- Analysis Stage -->
+            <section class="analysis-stage">
+                <section class="panel output-panel">
+                    <!-- The header and summary stats grid have been moved to the top-nav -->
+
+                    <div class="output-grid">
+                        <div class="left-col">
+                            <article class="scenario-block">
+                                <div class="block-header">
+                                    <h3>Scenario Outcomes</h3>
+                                </div>
+                                <div class="card-row" id="scenarioResults"></div>
+                            </article>
+
+                            <article class="value-card">
+                                <h3>Value Bands</h3>
+                                <dl id="valueBands"></dl>
+                            </article>
                         </div>
-                        <div class="card-row" id="scenarioResults"></div>
-                    </article>
 
-                    <article class="value-card">
-                        <h3>Value Bands</h3>
-                        <dl id="valueBands"></dl>
-                    </article>
-                </div>
+                        <div class="right-col">
+                            <article class="risk-sim">
+                                <div class="block-header">
+                                    <h3>Monte Carlo Risk Simulation</h3>
+                                </div>
+                                <div style="margin-bottom: 15px">
+                                    <button class="ticker-btn" id="btnRunMonteCarlo">
+                                        Run 10k Paths
+                                    </button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 20px">
+                                    <canvas
+                                        id="monteCarloCanvas"
+                                        width="600"
+                                        height="200"
+                                        style="width: 100%; border: var(--border-thin)"
+                                    ></canvas>
+                                    <div
+                                        id="riskMetrics"
+                                        style="
+                                            display: flex;
+                                            flex-direction: row;
+                                            gap: 15px;
+                                            flex-wrap: wrap;
+                                        "
+                                    >
+                                        <!-- Metrics populated by JS -->
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="bayes-lab">
+                                <div class="block-header">
+                                    <h3>Bayesian Lab</h3>
+                                </div>
+                                <div
+                                    style="
+                                        display: flex;
+                                        gap: 10px;
+                                        align-items: center;
+                                        margin-bottom: 15px;
+                                        flex-wrap: wrap;
+                                    "
+                                >
+                                    <button class="ticker-btn" id="btnBayesBull">
+                                        Bull Signal
+                                    </button>
+                                    <button class="ticker-btn" id="btnBayesBear">
+                                        Bear Signal
+                                    </button>
+                                    <button
+                                        class="ticker-btn"
+                                        id="btnBayesReset"
+                                        style="border-color: var(--accent)"
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
+                                <div
+                                    id="bayesOutput"
+                                    style="font-family: var(--font-mono); color: var(--ink)"
+                                ></div>
+                            </article>
+                        </div>
+                    </div>
+                </section>
             </section>
         </main>
 
+        <script type="module" src="../js/pages/analysis/visuals.js"></script>
         <script type="module" src="../js/pages/analysis/lab.js"></script>
     </body>
 </html>

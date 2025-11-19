@@ -1,15 +1,26 @@
+/* global Worker */
 import { compactNumber } from '../../utils/formatting.js';
+import { BayesianEngine } from './bayes.js';
 
 const tickerListEl = document.getElementById('tickerList');
 const summaryStatsEl = document.getElementById('summaryStats');
 const scenarioResultsEl = document.getElementById('scenarioResults');
 const valueBandsEl = document.getElementById('valueBands');
-const selectedTickerLabel = document.getElementById('selectedTickerLabel');
-const selectedTickerName = document.getElementById('selectedTickerName');
+
+// New Elements
+const btnBayesBull = document.getElementById('btnBayesBull');
+const btnBayesBear = document.getElementById('btnBayesBear');
+const btnBayesReset = document.getElementById('btnBayesReset');
+const bayesOutput = document.getElementById('bayesOutput');
+const btnRunMonteCarlo = document.getElementById('btnRunMonteCarlo');
+const monteCarloCanvas = document.getElementById('monteCarloCanvas');
+const riskMetricsEl = document.getElementById('riskMetrics');
 
 const state = {
     configs: [],
     activeSymbol: null,
+    bayesEngine: null,
+    monteCarloWorker: new Worker('../js/pages/analysis/monte_carlo.worker.js'),
 };
 const DATA_CACHE_BUST = Date.now().toString();
 const thesisTitleCache = new Map();
@@ -408,11 +419,22 @@ function computeMetrics(config) {
 }
 
 function renderSummary(config) {
+    if (!summaryStatsEl) {
+        return;
+    }
+    summaryStatsEl.innerHTML = '';
+
+    if (!config || !config.metrics) {
+        summaryStatsEl.innerHTML =
+            '<div style="color:var(--text-muted); padding:0 10px;">No metrics available</div>';
+        return;
+    }
+
     const metrics = config.metrics;
     const preferences = getPreferences(config);
     const benchmarkDescriptor = metrics.benchmarkDescriptor || getBenchmarkDescriptor(preferences);
     const edgeLabel = `Edge vs ${benchmarkDescriptor.name || 'Benchmark'}`;
-    summaryStatsEl.innerHTML = '';
+
     [
         { label: 'Expected CAGR', value: formatPercent(metrics.expectedCagr) },
         { label: edgeLabel, value: formatPercent(metrics.edge) },
@@ -487,7 +509,17 @@ function renderValueBands(config) {
 }
 
 function renderTickerList() {
+    if (!tickerListEl) {
+        return;
+    }
     tickerListEl.innerHTML = '';
+
+    if (!state.configs || !state.configs.length) {
+        tickerListEl.innerHTML =
+            '<span style="color:var(--text-muted); padding:0 10px;">No tickers loaded</span>';
+        return;
+    }
+
     const portfolio = state.configs.find((cfg) => cfg.symbol === 'PORT');
     const others = state.configs
         .filter((cfg) => cfg.symbol !== 'PORT')
@@ -526,11 +558,127 @@ function renderActiveTicker() {
     if (!config) {
         return;
     }
-    selectedTickerLabel.textContent = `${config.symbol} · ${formatPercent(config.weight)}`;
-    selectedTickerName.textContent = config.name;
+    // selectedTickerLabel and selectedTickerName elements were removed from HTML
+    // so we no longer update them here.
     renderSummary(config);
     renderScenarioCards(config);
     renderValueBands(config);
+
+    // Initialize Bayesian Engine
+    state.bayesEngine = new BayesianEngine(config.scenarios);
+    renderBayesOutput();
+
+    // Reset Risk UI
+    const ctx = monteCarloCanvas.getContext('2d');
+    ctx.clearRect(0, 0, monteCarloCanvas.width, monteCarloCanvas.height);
+    riskMetricsEl.innerHTML = '<p>Run simulation to see metrics.</p>';
+}
+
+// --- Bayesian Handlers ---
+
+function renderBayesOutput() {
+    if (!state.bayesEngine) {
+        return;
+    }
+    const priors = state.bayesEngine.priors;
+    bayesOutput.innerHTML = priors
+        .map(
+            (p) => `
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--ink); padding: 4px 0;">
+            <span>${p.name}</span>
+            <strong>${(p.prob * 100).toFixed(1)}%</strong>
+        </div>
+    `
+        )
+        .join('');
+}
+
+btnBayesBull.addEventListener('click', () => {
+    if (state.bayesEngine) {
+        state.bayesEngine.update('bullish', 0.6);
+        renderBayesOutput();
+    }
+});
+
+btnBayesBear.addEventListener('click', () => {
+    if (state.bayesEngine) {
+        state.bayesEngine.update('bearish', 0.6);
+        renderBayesOutput();
+    }
+});
+
+btnBayesReset.addEventListener('click', () => {
+    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    if (config && state.bayesEngine) {
+        state.bayesEngine.reset(config.scenarios);
+        renderBayesOutput();
+    }
+});
+
+// --- Monte Carlo Handlers ---
+
+btnRunMonteCarlo.addEventListener('click', () => {
+    const config = state.configs.find((cfg) => cfg.symbol === state.activeSymbol);
+    if (!config) {
+        return;
+    }
+
+    btnRunMonteCarlo.textContent = 'Running...';
+    btnRunMonteCarlo.disabled = true;
+
+    state.monteCarloWorker.postMessage({
+        type: 'RUN_SIMULATION',
+        payload: {
+            price: config.metrics.price,
+            eps: config.metrics.eps,
+            scenarios: config.scenarios,
+            volatility: config.metrics.volatility,
+            horizon: config.metrics.horizon,
+            paths: 10000,
+        },
+    });
+});
+
+state.monteCarloWorker.onmessage = function (e) {
+    const { type, result } = e.data;
+    if (type === 'SIMULATION_COMPLETE') {
+        renderMonteCarloResults(result);
+        btnRunMonteCarlo.textContent = 'Run 10k Paths';
+        btnRunMonteCarlo.disabled = false;
+    }
+};
+
+function renderMonteCarloResults(result) {
+    // Render Metrics
+    riskMetricsEl.innerHTML = `
+        <div class="stat-card" style="padding: 10px;">
+            <h3>Mean Terminal Price</h3>
+            <p>${formatCurrency(result.mean)}</p>
+        </div>
+        <div class="stat-card" style="padding: 10px;">
+            <h3>VaR (95%)</h3>
+            <p>${formatCurrency(result.VaR_95)}</p>
+        </div>
+        <div class="stat-card" style="padding: 10px;">
+            <h3>CVaR (95%)</h3>
+            <p>${formatCurrency(result.CVaR_95)}</p>
+        </div>
+    `;
+
+    // Render Histogram
+    const ctx = monteCarloCanvas.getContext('2d');
+    const { width, height } = monteCarloCanvas;
+    ctx.clearRect(0, 0, width, height);
+
+    const { counts } = result.histogram;
+    const maxCount = Math.max(...counts);
+    const barWidth = width / counts.length;
+
+    ctx.fillStyle = '#ff3300'; // Safety Orange
+    counts.forEach((count, i) => {
+        const barHeight = (count / maxCount) * (height - 20);
+        ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+    });
 }
 
 function aggregateScenarios(configs, horizon) {
@@ -809,9 +957,23 @@ async function buildConfigs() {
 }
 
 async function init() {
-    await buildConfigs();
-    renderTickerList();
-    renderActiveTicker();
+    try {
+        if (summaryStatsEl) {
+            summaryStatsEl.innerHTML = '<div style="color:white; padding:10px;">Loading...</div>';
+        }
+        await buildConfigs();
+        renderTickerList();
+        renderActiveTicker();
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(err);
+        if (summaryStatsEl) {
+            summaryStatsEl.innerHTML = `<div style="color:red; padding:10px;">Error: ${err.message}</div>`;
+        }
+
+        // eslint-disable-next-line no-undef
+        alert(`Analysis Init Error: ${err.message}`);
+    }
 }
 
 if (typeof window !== 'undefined' && !window.__SKIP_ANALYSIS_AUTO_INIT__) {
