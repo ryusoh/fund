@@ -1,0 +1,27 @@
+name: npm-audit
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+    schedule:
+        # Staggered to 03:15 UTC so it doesn't align with the 30-minute fund data updates.
+        - cron: '15 3 * * *'
+
+jobs:
+    audit:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Run npm audit
+              run: npm audit --audit-level=high
+            - name: Run tests
+              run: npm test

@@ -65,6 +65,9 @@
         "testMatch": [
             "<rootDir>/tests/js/**/*.test.js"
         ],
+        "modulePathIgnorePatterns": [
+            "<rootDir>/venv/"
+        ],
         "collectCoverageFrom": [
             "js/**/*.js",
             "!js/vendor/**"
