@@ -15,6 +15,48 @@ const HIDDEN_CURSOR_VALUE =
     'url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==") 0 0, none';
 const overriddenElements = new Set();
 let pointerListenersBound = false;
+const CURSOR_POSITION_STORAGE_KEY = 'customCursorLastPosition';
+
+const getSessionStorage = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        return window.sessionStorage;
+    } catch {
+        return null;
+    }
+};
+
+const readStoredCursorPosition = () => {
+    const storage = getSessionStorage();
+    if (!storage) return null;
+    try {
+        const raw = storage.getItem(CURSOR_POSITION_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+            return parsed;
+        }
+    } catch {
+        // ignore malformed data
+    }
+    return null;
+};
+
+const persistCursorPosition = (x, y) => {
+    const storage = getSessionStorage();
+    if (!storage) return;
+    try {
+        storage.setItem(
+            CURSOR_POSITION_STORAGE_KEY,
+            JSON.stringify({
+                x,
+                y,
+            })
+        );
+    } catch {
+        // ignore storage quota / access issues
+    }
+};
 
 const applyInlineCursorToElement = (element) => {
     if (
@@ -135,12 +177,16 @@ export class CustomCursor {
         this.core.style.transformOrigin = '50% 50%';
         this.element.appendChild(this.core);
 
+        const storedPosition = readStoredCursorPosition();
+        const initialX = storedPosition?.x ?? window.innerWidth / 2;
+        const initialY = storedPosition?.y ?? window.innerHeight / 2;
         this.coords = {
-            x: { current: window.innerWidth / 2, value: window.innerWidth / 2 },
-            y: { current: window.innerHeight / 2, value: window.innerHeight / 2 },
+            x: { current: initialX, value: initialX },
+            y: { current: initialY, value: initialY },
             opacity: { current: 1, value: 1 },
             scale: { current: 1, value: 1 },
         };
+        this.persistPositionFrame = null;
 
         root.appendChild(this.element);
         applyForceHideCursor();
@@ -150,6 +196,11 @@ export class CustomCursor {
         this.onMouseEnter = this.onMouseEnter.bind(this);
         this.onMouseLeave = this.onMouseLeave.bind(this);
         this.loop = this.loop.bind(this);
+        this.persistPosition = this.persistPosition.bind(this);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', this.persistPosition);
+            window.addEventListener('beforeunload', this.persistPosition);
+        }
 
         window.addEventListener('mousemove', this.onMouseMove);
         window.addEventListener('mouseout', this.onMouseOut);
@@ -173,6 +224,7 @@ export class CustomCursor {
         this.coords.x.current = event.clientX;
         this.coords.y.current = event.clientY;
         this.coords.opacity.current = 1;
+        this.schedulePersistPosition();
     }
 
     onMouseOut(event) {
@@ -218,9 +270,30 @@ export class CustomCursor {
         this.rafId = requestAnimationFrame(this.loop);
     }
 
+    schedulePersistPosition() {
+        if (this.persistPositionFrame) return;
+        this.persistPositionFrame = requestAnimationFrame(() => {
+            this.persistPositionFrame = null;
+            this.persistPosition();
+        });
+    }
+
+    persistPosition() {
+        persistCursorPosition(this.coords.x.current, this.coords.y.current);
+    }
+
     destroy() {
         if (this.disabled || !this.element) return;
         cancelAnimationFrame(this.rafId);
+        if (this.persistPositionFrame) {
+            cancelAnimationFrame(this.persistPositionFrame);
+            this.persistPositionFrame = null;
+        }
+        this.persistPosition();
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('pagehide', this.persistPosition);
+            window.removeEventListener('beforeunload', this.persistPosition);
+        }
         window.removeEventListener('mousemove', this.onMouseMove);
         window.removeEventListener('mouseout', this.onMouseOut);
 
