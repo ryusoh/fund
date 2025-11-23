@@ -129,6 +129,8 @@ describe('Contribution chart legend toggles', () => {
             roundRect: jest.fn(),
             fillRect: jest.fn(),
             strokeRect: jest.fn(),
+            rect: jest.fn(),
+            clip: jest.fn(),
         };
         ctxStub.canvas = canvas;
 
@@ -226,6 +228,8 @@ describe('Contribution chart legend toggles', () => {
             roundRect: jest.fn(),
             fillRect: jest.fn(),
             strokeRect: jest.fn(),
+            rect: jest.fn(),
+            clip: jest.fn(),
         };
         ctxStub.canvas = canvas;
 

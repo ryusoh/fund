@@ -1184,7 +1184,7 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
 // --- Helper Functions ---
 
-function injectSyntheticStartPoint(filteredData, fullSeries) {
+function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
     if (!Array.isArray(filteredData) || filteredData.length === 0) {
         return filteredData;
     }
@@ -1226,16 +1226,49 @@ function injectSyntheticStartPoint(filteredData, fullSeries) {
         return filteredData;
     }
 
+    // If we have a filterFrom date and the synthetic point is before it, clamp it to filterFrom
+    // This fixes the "left-edge overhang" where the line starts to the left of the Y-axis
+    if (filterFrom && prevDate < filterFrom) {
+        // Check if we already have a point at filterFrom to avoid duplicates
+        const firstFiltered = filteredData[0];
+        const firstTime =
+            firstFiltered && firstFiltered.date instanceof Date
+                ? firstFiltered.date.getTime()
+                : new Date(firstFiltered.date).getTime();
+
+        if (Math.abs(firstTime - filterFrom.getTime()) < 1000) {
+            return filteredData;
+        }
+
+        return [
+            {
+                ...previousPoint,
+                date: new Date(filterFrom),
+                synthetic: true,
+            },
+            ...filteredData,
+        ];
+    }
+
     const prevValue = Number(previousPoint.value);
     const epsilon = 1e-6;
     if (!Number.isFinite(prevValue) || Math.abs(prevValue) > epsilon) {
         return filteredData;
     }
 
+    // Don't add the synthetic point if it would be at the same position as the first filtered point
     if (
         filteredData[0].date instanceof Date &&
         filteredData[0].date.getTime() === prevDate.getTime()
     ) {
+        return filteredData;
+    }
+
+    // Only add synthetic point if it's within the filter range
+    // Note: The clamping logic above handles the case where prevDate < filterFrom
+    if (filterFrom && prevDate < filterFrom) {
+        // This block is now redundant due to the clamping above, but keeping for safety
+        // in case the logic flow changes.
         return filteredData;
     }
 
@@ -1246,6 +1279,41 @@ function injectSyntheticStartPoint(filteredData, fullSeries) {
     };
 
     return [syntheticPoint, ...filteredData];
+}
+
+function constrainSeriesToRange(series, rangeStart, rangeEnd) {
+    if (!Array.isArray(series) || (!rangeStart && !rangeEnd)) {
+        return series;
+    }
+
+    const startTime =
+        rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
+            ? rangeStart.getTime()
+            : null;
+    const endTime =
+        rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime()) ? rangeEnd.getTime() : null;
+
+    if (!Number.isFinite(startTime) && !Number.isFinite(endTime)) {
+        return series;
+    }
+
+    return series.filter((point) => {
+        if (!point) {
+            return false;
+        }
+        const pointDate = point.date instanceof Date ? point.date : new Date(point.date);
+        const time = pointDate.getTime();
+        if (Number.isNaN(time)) {
+            return false;
+        }
+        if (Number.isFinite(startTime) && time < startTime) {
+            return false;
+        }
+        if (Number.isFinite(endTime) && time > endTime) {
+            return false;
+        }
+        return true;
+    });
 }
 
 const COLOR_PARSER_CONTEXT = (() => {
@@ -2315,6 +2383,10 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const { chartDateRange } = transactionState;
     const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFromTime =
+        filterFrom && Number.isFinite(filterFrom.getTime()) ? filterFrom.getTime() : null;
+    const filterToTime =
+        filterTo && Number.isFinite(filterTo.getTime()) ? filterTo.getTime() : null;
 
     const filterDataByDateRange = (data) => {
         return data.filter((item) => {
@@ -2334,8 +2406,16 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
               .filter((item) => !Number.isNaN(item.date.getTime()))
         : [];
     const rawBalanceData = showBalance
-        ? injectSyntheticStartPoint(filterDataByDateRange(mappedBalanceSource), balanceSource)
+        ? injectSyntheticStartPoint(
+              filterDataByDateRange(mappedBalanceSource),
+              balanceSource,
+              filterFrom
+          )
         : [];
+    const balanceDataWithinRange =
+        (filterFrom || filterTo) && rawBalanceData.length > 0
+            ? constrainSeriesToRange(rawBalanceData, filterFrom, filterTo)
+            : rawBalanceData;
 
     // Apply smoothing to contribution and balance data
     const contributionSmoothingConfig = getSmoothingConfig('contribution');
@@ -2352,15 +2432,21 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
           ).map((p) => ({ date: new Date(p.x), amount: p.y }))
         : rawContributionData;
 
+    // Ensure data is sorted by date
+    contributionData.sort((a, b) => a.date.getTime() - b.date.getTime());
+
     const shouldSmoothBalance =
-        !filtersActive && rawBalanceData.length > 2 && balanceSmoothingConfig;
+        !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
     const balanceData = shouldSmoothBalance
         ? smoothFinancialData(
-              rawBalanceData.map((item) => ({ x: item.date.getTime(), y: item.value })),
+              balanceDataWithinRange.map((item) => ({ x: item.date.getTime(), y: item.value })),
               balanceSmoothingConfig,
               true // preserveEnd - keep the last point unchanged
           ).map((p) => ({ date: new Date(p.x), value: p.y }))
-        : rawBalanceData;
+        : balanceDataWithinRange;
+
+    // Ensure data is sorted by date
+    balanceData.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         stopContributionAnimation();
@@ -2410,6 +2496,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         ...balanceData.map((d) => d.date.getTime()),
     ];
 
+    // Calculate effective min times based on actual data within filter range
     const effectiveMinTimes = [];
     if (rawContributionData.length > 0) {
         const firstContributionPoint = filtersActive
@@ -2430,24 +2517,72 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const fallbackMinTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
     let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
 
-    if (filterFrom && Number.isFinite(filterFrom.getTime())) {
-        minTime = Math.max(minTime, filterFrom.getTime());
+    if (Number.isFinite(filterFromTime)) {
+        // Ensure minTime is at least the filter start time
+        minTime = Math.max(minTime, filterFromTime);
     }
-    // If we have a date range filter, use only the filtered data range
-    // Otherwise, extend to today for real-time data
-    const maxTime =
-        filterFrom || filterTo
-            ? Math.max(...allTimes)
-            : Math.max(new Date().setHours(0, 0, 0, 0), ...allTimes);
+    // Calculate maxTime based on actual data within the filter range
+    let maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now();
+    if (Number.isFinite(filterToTime)) {
+        maxTime = filterToTime;
+    }
 
-    if (showContribution && contributionData.length > 0) {
-        const lastDataPoint = contributionData[contributionData.length - 1];
-        if (lastDataPoint.date.getTime() < maxTime) {
-            contributionData.push({
-                ...lastDataPoint,
-                date: new Date(maxTime),
-            });
+    // Add extension points only if they're within a reasonable range to prevent spikes
+    if (Number.isFinite(filterToTime)) {
+        // Only extend if there's actual data near the filter end date
+        const lastContributionPoint = contributionData[contributionData.length - 1];
+        if (showContribution && contributionData.length > 0 && lastContributionPoint) {
+            // Only add extension point if the last data point is reasonably close to the filter end
+            // (e.g., within 3 months) to prevent dramatic stretching of the x-axis
+            const threeMonths = 90 * 24 * 60 * 60 * 1000; // 3 months in milliseconds
+            const timeToFilterEnd = filterToTime - lastContributionPoint.date.getTime();
+
+            if (
+                lastContributionPoint.date.getTime() < filterToTime &&
+                timeToFilterEnd <= threeMonths
+            ) {
+                // Fix right-edge spike: Ensure we strictly extend to filterToTime and not beyond
+                contributionData.push({
+                    ...lastContributionPoint,
+                    date: new Date(filterToTime),
+                });
+            }
         }
+
+        // Same logic for balance data
+        const lastBalancePoint = balanceData[balanceData.length - 1];
+        if (showBalance && balanceData.length > 0 && lastBalancePoint) {
+            const threeMonths = 90 * 24 * 60 * 60 * 1000;
+            const timeToFilterEnd = filterToTime - lastBalancePoint.date.getTime();
+
+            if (lastBalancePoint.date.getTime() < filterToTime && timeToFilterEnd <= threeMonths) {
+                // Fix right-edge spike: Ensure we strictly extend to filterToTime and not beyond
+                balanceData.push({
+                    ...lastBalancePoint,
+                    date: new Date(filterToTime),
+                });
+            }
+        }
+    }
+
+    // Recalculate maxTime to ensure it's based on the actual data range within filter bounds
+    const allContributionTimes = contributionData
+        .map((d) => d.date.getTime())
+        .filter((time) => Number.isFinite(time) && time <= filterToTime);
+    const allBalanceTimes = balanceData
+        .map((d) => d.date.getTime())
+        .filter((time) => Number.isFinite(time) && time <= filterToTime);
+    const allActualTimes = [...allContributionTimes, ...allBalanceTimes];
+
+    if (allActualTimes.length > 0) {
+        maxTime = Math.max(...allActualTimes);
+    } else if (Number.isFinite(filterToTime)) {
+        maxTime = filterToTime;
+    }
+
+    // Ensure maxTime is also capped at filterToTime
+    if (Number.isFinite(filterToTime)) {
+        maxTime = Math.min(maxTime, filterToTime);
     }
 
     const contributionValues = contributionData.map((item) => item.amount);
@@ -2526,7 +2661,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const animationPhase = advanceContributionAnimation(timestamp);
 
     const animatedSeries = [];
-    const filterStartTime = filterFrom ? filterFrom.getTime() : null;
+    const filterStartTime = Number.isFinite(filterFromTime) ? filterFromTime : null;
 
     const formatBalanceValue = (value) =>
         formatCurrencyCompact(value, { currency: transactionState.selectedCurrency || 'USD' });
@@ -2549,10 +2684,15 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             color: colors.contribution,
             lineWidth: 2,
             order: 1,
-            data: contributionData.map((item) => ({
-                time: item.date.getTime(),
-                value: item.amount,
-            })),
+            data: contributionData
+                .filter((item) => {
+                    const t = item.date.getTime();
+                    return t >= minTime && t <= maxTime;
+                })
+                .map((item) => ({
+                    time: item.date.getTime(),
+                    value: item.amount,
+                })),
         });
     }
 
@@ -2562,10 +2702,15 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             color: colors.portfolio,
             lineWidth: 2,
             order: 2,
-            data: balanceData.map((item) => ({
-                time: item.date.getTime(),
-                value: item.value,
-            })),
+            data: balanceData
+                .filter((item) => {
+                    const t = item.date.getTime();
+                    return t >= minTime && t <= maxTime;
+                })
+                .map((item) => ({
+                    time: item.date.getTime(),
+                    value: item.value,
+                })),
         });
     }
 
@@ -2723,6 +2868,20 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         );
     }
 
+    // Clip the drawing area to prevent overhangs and spikes for ALL chart elements
+    ctx.save();
+    ctx.beginPath();
+    // Include volume area in clipping if volume is shown
+    // clipTop must start at padding.top to include the main chart!
+    const clipTop = padding.top;
+    const clipHeight =
+        volumeHeight > 0
+            ? plotHeight + (volumeGap || 0) + volumeHeight + (volumePadding?.top || 0)
+            : plotHeight;
+
+    ctx.rect(padding.left, clipTop, plotWidth, clipHeight);
+    ctx.clip();
+
     if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
         volumeEntries.sort((a, b) => a.timestamp - b.timestamp);
         const barWidth = 8;
@@ -2833,6 +2992,11 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
 
     const areaBaselineY = chartBounds.bottom;
 
+    // Line chart clipping is now handled by the global clip above,
+    // but we might want to restrict it further to just the plot area (excluding volume)
+    // However, since volume is below, and line chart is above, they don't overlap much.
+    // But to be safe and consistent with previous logic:
+
     sortedSeries.forEach((series, index) => {
         const coords = series.coords || [];
         if (coords.length === 0) {
@@ -2893,6 +3057,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             hasAnimatedSeries = true;
         }
     });
+
+    // ctx.restore(); // Removed inner restore, will restore at the end
 
     if (contributionAnimationEnabled && hasAnimatedSeries) {
         scheduleContributionAnimation(chartManager);
@@ -3020,6 +3186,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             true
         );
     }
+
+    ctx.restore(); // Restore the global clip
 
     if (contributionLegendDirty) {
         // Use gradient end colors for legend
