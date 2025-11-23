@@ -2432,9 +2432,6 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
           ).map((p) => ({ date: new Date(p.x), amount: p.y }))
         : rawContributionData;
 
-    // Ensure data is sorted by date
-    contributionData.sort((a, b) => a.date.getTime() - b.date.getTime());
-
     const shouldSmoothBalance =
         !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
     const balanceData = shouldSmoothBalance
@@ -2444,9 +2441,6 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
               true // preserveEnd - keep the last point unchanged
           ).map((p) => ({ date: new Date(p.x), value: p.y }))
         : balanceDataWithinRange;
-
-    // Ensure data is sorted by date
-    balanceData.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     if (contributionData.length === 0 && balanceData.length === 0) {
         stopContributionAnimation();
