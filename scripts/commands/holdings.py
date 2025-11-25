@@ -78,7 +78,10 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         if FilesCompleter is not None:
             # Provide path completion for --file
             for act in parser._actions:
-                if any(opt in ("--file", "--transactions") for opt in getattr(act, "option_strings", [])):
+                if any(
+                    opt in ("--file", "--transactions")
+                    for opt in getattr(act, "option_strings", [])
+                ):
                     act.completer = FilesCompleter()
         # Attach dynamic completer for ticker positional
         for act in parser._actions:

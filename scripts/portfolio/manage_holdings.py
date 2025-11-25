@@ -60,7 +60,9 @@ def record_transaction(
         with filepath.open("a", encoding="utf-8", newline="") as csvfile:
             writer = csv.writer(csvfile)
             if write_header:
-                writer.writerow(["Trade Date", "Order Type", "Security", "Quantity", "Executed Price"])
+                writer.writerow(
+                    ["Trade Date", "Order Type", "Security", "Quantity", "Executed Price"]
+                )
             elif needs_leading_newline:
                 csvfile.write("\n")
             writer.writerow(
