@@ -10,6 +10,8 @@ def _run(args: argparse.Namespace) -> None:
     cmd_args = ["manage_holdings.py"]
     if getattr(args, "file", None):
         cmd_args.extend(["--file", args.file])
+    if getattr(args, "transactions", None):
+        cmd_args.extend(["--transactions", args.transactions])
     cmd_args.append(args.action)
 
     if args.action in {"buy", "sell"}:
@@ -36,6 +38,10 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--file",
         help="Path to holdings JSON file (default: data/holdings_details.json)",
+    )
+    parser.add_argument(
+        "--transactions",
+        help="Path to transactions CSV file (default: data/transactions.csv)",
     )
     parser.add_argument(
         "action",
@@ -72,7 +78,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         if FilesCompleter is not None:
             # Provide path completion for --file
             for act in parser._actions:
-                if any(opt == "--file" for opt in getattr(act, "option_strings", [])):
+                if any(opt in ("--file", "--transactions") for opt in getattr(act, "option_strings", [])):
                     act.completer = FilesCompleter()
         # Attach dynamic completer for ticker positional
         for act in parser._actions:

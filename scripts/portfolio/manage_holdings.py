@@ -1,17 +1,80 @@
 import argparse
+import csv
 import json
 import logging
+import os
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_HOLDINGS_FILE_NAME = "holdings_details.json"
 DEFAULT_HOLDINGS_FILE_PATH = BASE_DIR / "data" / DEFAULT_HOLDINGS_FILE_NAME
+DEFAULT_TRANSACTIONS_FILE_NAME = "transactions.csv"
+DEFAULT_TRANSACTIONS_FILE_PATH = BASE_DIR / "data" / DEFAULT_TRANSACTIONS_FILE_NAME
 
 HoldingsType = Dict[str, Dict[str, Decimal]]
+
+
+def _decimal_to_string(value: Decimal) -> str:
+    """
+    Format decimals without scientific notation so the CSV stays human readable.
+    """
+    normalized = value.normalize()
+    return format(normalized, "f")
+
+
+def _file_missing_trailing_newline(filepath: Path) -> bool:
+    """
+    Detect if the file lacks a trailing newline so new rows don't stick to the
+    previous line when we append.
+    """
+    try:
+        if not filepath.exists() or filepath.stat().st_size == 0:
+            return False
+        with filepath.open("rb") as f:
+            f.seek(-1, os.SEEK_END)
+            last_char = f.read(1)
+            return last_char not in b"\n"
+    except OSError:
+        return False
+
+
+def record_transaction(
+    order_type: str,
+    ticker: str,
+    shares: Decimal,
+    price: Decimal,
+    filepath: Path = DEFAULT_TRANSACTIONS_FILE_PATH,
+) -> None:
+    """
+    Append the executed order to the transactions CSV.
+    """
+    try:
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        write_header = not filepath.exists() or filepath.stat().st_size == 0
+        needs_leading_newline = not write_header and _file_missing_trailing_newline(filepath)
+        with filepath.open("a", encoding="utf-8", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            if write_header:
+                writer.writerow(["Trade Date", "Order Type", "Security", "Quantity", "Executed Price"])
+            elif needs_leading_newline:
+                csvfile.write("\n")
+            writer.writerow(
+                [
+                    datetime.now().strftime("%m/%d/%Y"),
+                    order_type,
+                    ticker,
+                    _decimal_to_string(shares),
+                    _decimal_to_string(price),
+                ]
+            )
+        logging.info(f"Recorded {order_type.lower()} transaction in {filepath}")
+    except OSError as exc:
+        logging.error(f"Unable to record transaction in {filepath}: {exc}")
 
 
 def load_holdings(filepath: Path) -> HoldingsType:
@@ -80,18 +143,18 @@ def save_holdings(filepath: Path, data: HoldingsType) -> None:
 
 def buy_shares(
     holdings: HoldingsType, ticker: str, shares_bought_str: str, purchase_price_str: str
-) -> None:
+) -> Optional[Tuple[str, Decimal, Decimal]]:
     ticker = ticker.upper()
     try:
         shares_bought = Decimal(shares_bought_str)
         purchase_price = Decimal(purchase_price_str)
     except InvalidOperation:
         logging.error("Shares and price must be valid numbers.")
-        return
+        return None
 
     if shares_bought <= 0 or purchase_price < 0:
         logging.error("Number of shares must be positive, and price must be non-negative.")
-        return
+        return None
 
     if ticker in holdings:
         current_shares = holdings[ticker]["shares"]
@@ -115,28 +178,29 @@ def buy_shares(
         logging.info(
             f"Added new ticker {ticker}: Bought {shares_bought} shares at ${purchase_price:.2f}."
         )
+    return (ticker, shares_bought, purchase_price)
 
 
 def sell_shares(
     holdings: HoldingsType, ticker: str, shares_sold_str: str, sell_price_str: str
-) -> None:
+) -> Optional[Tuple[str, Decimal, Decimal]]:
     ticker = ticker.upper()
     try:
         shares_sold = Decimal(shares_sold_str)
         sell_price = Decimal(sell_price_str)
     except InvalidOperation:
         logging.error("Shares and price must be valid numbers.")
-        return
+        return None
 
     if shares_sold <= 0 or sell_price < 0:
         logging.error(
             "Number of shares to sell must be positive, and sell price must be non-negative."
         )
-        return
+        return None
 
     if ticker not in holdings:
         logging.error(f"Ticker {ticker} not found in holdings.")
-        return
+        return None
 
     current_shares = holdings[ticker]["shares"]
     current_avg_price = holdings[ticker]["average_price"]
@@ -145,7 +209,7 @@ def sell_shares(
         logging.error(
             f"Cannot sell {shares_sold} shares of {ticker}. You only own {current_shares} shares."
         )
-        return
+        return None
 
     profit_loss_per_share = sell_price - current_avg_price
     total_profit_loss = profit_loss_per_share * shares_sold
@@ -162,6 +226,7 @@ def sell_shares(
         logging.info(
             f"Remaining holding for {ticker}: {remaining_shares} shares at average price ${current_avg_price:.2f}."
         )
+    return (ticker, shares_sold, sell_price)
 
 
 def list_holdings(holdings: HoldingsType) -> None:
@@ -197,6 +262,12 @@ def main() -> None:
         default=DEFAULT_HOLDINGS_FILE_PATH,
         help=f"Path to the holdings JSON file (default: {DEFAULT_HOLDINGS_FILE_PATH})",
     )
+    parser.add_argument(
+        "--transactions",
+        type=Path,
+        default=DEFAULT_TRANSACTIONS_FILE_PATH,
+        help=f"Path to the transactions CSV file (default: {DEFAULT_TRANSACTIONS_FILE_PATH})",
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True, help="buy|sell|list")
 
@@ -216,11 +287,17 @@ def main() -> None:
     holdings = load_holdings(args.file)
 
     if args.command == "buy":
-        buy_shares(holdings, args.ticker, args.shares, args.price)
-        save_holdings(args.file, holdings)
+        result = buy_shares(holdings, args.ticker, args.shares, args.price)
+        if result:
+            ticker, shares_bought, purchase_price = result
+            save_holdings(args.file, holdings)
+            record_transaction("Buy", ticker, shares_bought, purchase_price, args.transactions)
     elif args.command == "sell":
-        sell_shares(holdings, args.ticker, args.shares, args.price)
-        save_holdings(args.file, holdings)
+        result = sell_shares(holdings, args.ticker, args.shares, args.price)
+        if result:
+            ticker, shares_sold, sell_price = result
+            save_holdings(args.file, holdings)
+            record_transaction("Sell", ticker, shares_sold, sell_price, args.transactions)
     elif args.command == "list":
         list_holdings(holdings)
 
