@@ -2521,51 +2521,14 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         maxTime = filterToTime;
     }
 
-    // Add extension points only if they're within a reasonable range to prevent spikes
-    if (Number.isFinite(filterToTime)) {
-        // Only extend if there's actual data near the filter end date
-        const lastContributionPoint = contributionData[contributionData.length - 1];
-        if (showContribution && contributionData.length > 0 && lastContributionPoint) {
-            // Only add extension point if the last data point is reasonably close to the filter end
-            // (e.g., within 3 months) to prevent dramatic stretching of the x-axis
-            const threeMonths = 90 * 24 * 60 * 60 * 1000; // 3 months in milliseconds
-            const timeToFilterEnd = filterToTime - lastContributionPoint.date.getTime();
-
-            if (
-                lastContributionPoint.date.getTime() < filterToTime &&
-                timeToFilterEnd <= threeMonths
-            ) {
-                // Fix right-edge spike: Ensure we strictly extend to filterToTime and not beyond
-                contributionData.push({
-                    ...lastContributionPoint,
-                    date: new Date(filterToTime),
-                });
-            }
-        }
-
-        // Same logic for balance data
-        const lastBalancePoint = balanceData[balanceData.length - 1];
-        if (showBalance && balanceData.length > 0 && lastBalancePoint) {
-            const threeMonths = 90 * 24 * 60 * 60 * 1000;
-            const timeToFilterEnd = filterToTime - lastBalancePoint.date.getTime();
-
-            if (lastBalancePoint.date.getTime() < filterToTime && timeToFilterEnd <= threeMonths) {
-                // Fix right-edge spike: Ensure we strictly extend to filterToTime and not beyond
-                balanceData.push({
-                    ...lastBalancePoint,
-                    date: new Date(filterToTime),
-                });
-            }
-        }
-    }
-
     // Recalculate maxTime to ensure it's based on the actual data range within filter bounds
+    const isWithinFilterEnd = (time) => !Number.isFinite(filterToTime) || time <= filterToTime;
     const allContributionTimes = contributionData
         .map((d) => d.date.getTime())
-        .filter((time) => Number.isFinite(time) && time <= filterToTime);
+        .filter((time) => Number.isFinite(time) && isWithinFilterEnd(time));
     const allBalanceTimes = balanceData
         .map((d) => d.date.getTime())
-        .filter((time) => Number.isFinite(time) && time <= filterToTime);
+        .filter((time) => Number.isFinite(time) && isWithinFilterEnd(time));
     const allActualTimes = [...allContributionTimes, ...allBalanceTimes];
 
     if (allActualTimes.length > 0) {
