@@ -15,6 +15,13 @@ describe('TableGlassEffect', () => {
             top: 0,
             left: 0,
         }));
+        // Mock layout properties
+        Object.defineProperties(container, {
+            clientWidth: { value: 800, configurable: true },
+            clientHeight: { value: 400, configurable: true },
+            scrollWidth: { value: 800, configurable: true },
+        });
+
         document.body.appendChild(container);
 
         // Mock tbody and rows for hover effect
@@ -91,7 +98,8 @@ describe('TableGlassEffect', () => {
 
     it('should resize canvas on init', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
-        expect(effect.width).toBe(800);
+        // Logic: Math.max(container.clientWidth, contentWidth + 2) => Math.max(800, 800 + 2) = 802
+        expect(effect.width).toBe(802);
         expect(effect.height).toBe(400);
         effect.dispose();
     });
@@ -166,7 +174,7 @@ describe('TableGlassEffect', () => {
         // Note: The mock row top is relative to viewport (100).
         // Container top is 0. Canvas top is 0.
         // So row.top in logic should be 100.
-        expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 100, 800, 50);
+        expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 100, 802, 50);
 
         effect.dispose();
     });

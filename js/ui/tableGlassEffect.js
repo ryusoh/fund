@@ -68,10 +68,14 @@ export class TableGlassEffect {
 
         this.container.appendChild(this.canvas);
 
-        // Observe container size changes
+        // Find the table element to observe its full width
+        this.table = this.container.querySelector('table');
+        const target = this.table || this.container;
+
+        // Observe size changes on the table (content) instead of just the container
         // eslint-disable-next-line no-undef
         this.resizeObserver = new ResizeObserver(() => this.resize());
-        this.resizeObserver.observe(this.container);
+        this.resizeObserver.observe(target);
 
         this.initParticles();
         this.resize();
@@ -103,9 +107,15 @@ export class TableGlassEffect {
             this.canvas.style.height = `calc(100% - ${headerHeight}px)`;
         }
 
-        const rect = this.container.getBoundingClientRect();
-        this.width = this.canvas.clientWidth;
-        this.height = this.canvas.clientHeight;
+        // Use the table's full scroll width if available, otherwise container width
+        // This ensures the canvas extends to cover all scrollable content
+        const contentWidth = this.table ? this.table.scrollWidth : this.container.scrollWidth;
+        // Add a small buffer to prevent pixel-perfect clipping at the very edge
+        this.width = Math.max(this.container.clientWidth, contentWidth + 2);
+        this.height = this.container.clientHeight;
+
+        // Explicitly set style width to match the full content width
+        this.canvas.style.width = `${this.width}px`;
 
         // Handle high DPI displays
         const dpr = window.devicePixelRatio || 1;
@@ -122,6 +132,8 @@ export class TableGlassEffect {
                 const canvasTop = this.options.excludeHeader
                     ? parseFloat(this.canvas.style.top)
                     : 0;
+
+                const rect = this.container.getBoundingClientRect();
 
                 rows.forEach((row) => {
                     const rowRect = row.getBoundingClientRect();
