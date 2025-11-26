@@ -6,6 +6,7 @@ body.body-main {
     height: 100%;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: hidden;
     /* Hide scrollbar for Chrome, Safari and Opera */
     &::-webkit-scrollbar {
         display: none;
@@ -27,7 +28,16 @@ body.body-main {
     }
 
     .mobile-banner {
-        display: none;
+        display: block;
+        position: fixed;
+        bottom: 0px;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 200px;
+        width: auto;
+        z-index: 1000;
+        mix-blend-mode: difference;
+        opacity: 0.2;
     }
 }
 

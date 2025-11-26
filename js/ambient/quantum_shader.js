@@ -476,7 +476,7 @@ function bakeOfflineFallback(container) {
 function init() {
     const container = createContainer();
     const state = {
-        nx: 0,
+        nx: 1,
         ny: 0,
     };
 
