@@ -18,6 +18,7 @@ describe('Responsive Utilities', () => {
     beforeEach(() => {
         document.body.innerHTML = `
             <html style="overflow-y: scroll;"><body>
+                <div id="calendar-mobile-overlay"></div>
                 <div id="currencyToggleContainer"></div>
                 <div id="fundPieChartContainer" style="height: 100px; width: 100px;"></div>
                 <div id="calendar-container" style="height: 100px; width: 100px;">
@@ -240,8 +241,32 @@ describe('Responsive Utilities', () => {
             const dblclickEvent = new Event('dblclick');
             todayButton.dispatchEvent(dblclickEvent);
             expect(pageWrapper.classList.contains('zoomed')).toBe(true);
+            expect(document.body.classList.contains('calendar-zoomed')).toBe(true);
             todayButton.dispatchEvent(dblclickEvent);
             expect(pageWrapper.classList.contains('zoomed')).toBe(false);
+            expect(document.body.classList.contains('calendar-zoomed')).toBe(false);
+        });
+
+        it('should ignore zoom toggling on mobile viewports', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            responsive.initCalendarResponsiveHandlers();
+            const dblclickEvent = new Event('dblclick');
+            todayButton.dispatchEvent(dblclickEvent);
+            expect(pageWrapper.classList.contains('zoomed')).toBe(false);
+            expect(document.body.classList.contains('calendar-zoomed')).toBe(false);
+        });
+
+        it('keeps the mobile overlay element in place after zoom toggles', () => {
+            responsive.initCalendarResponsiveHandlers();
+            const overlay = document.getElementById('calendar-mobile-overlay');
+            expect(overlay).not.toBeNull();
+
+            const dblclickEvent = new Event('dblclick');
+            todayButton.dispatchEvent(dblclickEvent); // enter zoom
+            expect(document.body.contains(overlay)).toBe(true);
+
+            todayButton.dispatchEvent(dblclickEvent); // exit zoom
+            expect(document.body.contains(overlay)).toBe(true);
         });
 
         it('should dispatch calendar-zoom-end event on transition end', () => {

@@ -286,34 +286,47 @@ body.body-calendar {
     max-width: none;
 }
 
-/* Mobile: Enhanced visibility with dark background overlay */
+#calendar-mobile-overlay {
+    display: none;
+}
+
+/* Mobile: Enhanced visibility with full-page dark backdrop */
 @media (max-width: 768px) {
-    /* Add full-screen dark overlay behind everything */
-    body.body-calendar::before {
-        content: '';
+    #calendar-mobile-overlay {
+        display: block;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.4);
-        z-index: -1; /* Behind content but above page background */
-        pointer-events: none; /* Don't interfere with interactions */
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 50;
+        pointer-events: none;
+        transition: background 0.25s ease;
     }
 
-    .page-center-wrapper {
-        background-color: transparent !important; /* No additional background needed */
+    body.body-calendar.calendar-zoomed #calendar-mobile-overlay {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .body-calendar .page-center-wrapper {
+        background-color: transparent !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 20px !important; /* Internal padding for content */
-        /* Keep original positioning */
+        padding: 20px !important;
         position: relative !important;
         width: 100% !important;
+        overflow: visible !important;
+        z-index: 100;
     }
 
-    .page-center-wrapper .content-block {
-        background-color: transparent !important; /* Remove any existing background */
-        box-shadow: none !important; /* Remove any existing shadow */
+    .body-calendar .page-center-wrapper.zoomed {
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55) !important;
+        padding: 24px !important;
+    }
+
+    .body-calendar .page-center-wrapper .content-block {
+        background-color: transparent !important;
+        box-shadow: none !important;
     }
 }

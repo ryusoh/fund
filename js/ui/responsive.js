@@ -188,7 +188,14 @@ export function initCalendarResponsiveHandlers() {
     const pageWrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
     if (todayButton && pageWrapper) {
         todayButton.addEventListener('dblclick', () => {
-            pageWrapper.classList.toggle('zoomed');
+            if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
+                return;
+            }
+            const isZoomed = pageWrapper.classList.toggle('zoomed');
+            const body = document.body;
+            if (body && body.classList) {
+                body.classList.toggle('calendar-zoomed', isZoomed);
+            }
             pageWrapper.addEventListener(
                 'transitionend',
                 () => {
