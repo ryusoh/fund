@@ -383,7 +383,7 @@ export const CALENDAR_BACKGROUND_EFFECT = {
     // Colors for the chromatic aberration effect
     // Format: 'R, G, B' (without 'rgba' or parenthesis)
     colors: {
-        color1: '50, 255, 100', // Optical Green (Leading Edge)
+        color1: '50, 100, 255', // Optical Blue (Leading Edge)
         color2: '255, 50, 80', // Optical Red (Trailing Edge)
     },
 };
