@@ -112,10 +112,14 @@ export class TableGlassEffect {
         const contentWidth = this.table ? this.table.scrollWidth : this.container.scrollWidth;
         // Add a small buffer to prevent pixel-perfect clipping at the very edge
         this.width = Math.max(this.container.clientWidth, contentWidth + 2);
-        this.height = this.container.clientHeight;
 
         // Explicitly set style width to match the full content width
         this.canvas.style.width = `${this.width}px`;
+
+        // Calculate height from the actual computed style of the canvas
+        // This handles the case where excludeHeader reduces the canvas height via CSS
+        const rect = this.canvas.getBoundingClientRect();
+        this.height = rect.height;
 
         // Handle high DPI displays
         const dpr = window.devicePixelRatio || 1;
@@ -129,21 +133,20 @@ export class TableGlassEffect {
             const tbody = this.container.querySelector('tbody');
             if (tbody) {
                 const rows = tbody.querySelectorAll('tr');
-                const canvasTop = this.options.excludeHeader
-                    ? parseFloat(this.canvas.style.top)
-                    : 0;
 
-                const rect = this.container.getBoundingClientRect();
+                // We need the canvas position to calculate relative row offsets accurately
+                const canvasRect = this.canvas.getBoundingClientRect();
 
                 rows.forEach((row) => {
                     const rowRect = row.getBoundingClientRect();
-                    // Calculate relative position to the canvas
-                    // Canvas is at (rect.left, rect.top + canvasTop)
-                    // Row is at (rowRect.left, rowRect.top)
-                    // Relative Y = rowRect.top - (rect.top + canvasTop)
+
+                    // Calculate top relative to the canvas itself
+                    // This handles all offset/header/padding logic implicitly because
+                    // we simply ask "where is the row relative to the canvas?"
+                    const relativeTop = rowRect.top - canvasRect.top;
 
                     this.rows.push({
-                        top: rowRect.top - rect.top - canvasTop,
+                        top: relativeTop,
                         height: rowRect.height,
                         element: row,
                     });
@@ -151,7 +154,6 @@ export class TableGlassEffect {
             }
         }
     }
-
     handleMouseMove(e) {
         const rect = this.container.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
@@ -159,14 +161,25 @@ export class TableGlassEffect {
         this.state.pointer.x = x * 2; // -1 to 1
         this.state.pointer.y = y * 2; // -1 to 1
 
-        // Determine hovered row
-        if (this.options.rowHoverEffect?.enabled && this.rows) {
-            const canvasTop = this.options.excludeHeader ? parseFloat(this.canvas.style.top) : 0;
-            const mouseY = e.clientY - rect.top - canvasTop;
+        // Determine hovered row by finding actual element under cursor
+        if (this.options.rowHoverEffect?.enabled) {
+            // Find the actual row element under the mouse cursor
+            const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+            if (elementUnderMouse) {
+                // Find the closest table row
+                const rowElement = elementUnderMouse.closest('tr');
 
-            this.state.hoveredRowIndex = this.rows.findIndex(
-                (row) => mouseY >= row.top && mouseY <= row.top + row.height
-            );
+                if (rowElement && this.container.contains(rowElement)) {
+                    // Find the index of this row in our stored rows array
+                    this.state.hoveredRowIndex = this.rows.findIndex(
+                        (r) => r.element === rowElement
+                    );
+                } else {
+                    this.state.hoveredRowIndex = -1;
+                }
+            } else {
+                this.state.hoveredRowIndex = -1;
+            }
         }
     }
 
@@ -237,10 +250,21 @@ export class TableGlassEffect {
             return;
         }
 
+        // Get the position of the row relative to the canvas
+        // We use getBoundingClientRect for both to ensure 1:1 visual alignment
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const rowRect = row.element.getBoundingClientRect();
+
+        // Calculate Y relative to the canvas origin (0,0 of the drawing context)
+        const rowTopRelativeToCanvas = rowRect.top - canvasRect.top;
+        const actualHeight = row.element.offsetHeight;
+
         const settings = this.options.rowHoverEffect;
 
         this.ctx.save();
-        this.ctx.globalCompositeOperation = 'screen'; // Softer blending
+        // 'source-over' ensures the effect is drawn on top of the canvas content
+        // We use transparency in the gradients to let the underlying content show through
+        this.ctx.globalCompositeOperation = 'source-over';
 
         // Calculate mouse X relative to canvas
         // pointer.x is -1 to 1. Convert back to pixels.
@@ -251,10 +275,10 @@ export class TableGlassEffect {
         // Center the gradient on the mouse X, but vertically centered on the row
         const gradient = this.ctx.createRadialGradient(
             mouseX,
-            row.top + row.height / 2,
+            rowTopRelativeToCanvas + actualHeight / 2,
             0,
             mouseX,
-            row.top + row.height / 2,
+            rowTopRelativeToCanvas + actualHeight / 2,
             spotlightRadius
         );
 
@@ -262,17 +286,17 @@ export class TableGlassEffect {
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(0, row.top, this.width, row.height);
+        this.ctx.fillRect(0, rowTopRelativeToCanvas, this.width, actualHeight);
 
         // 2. Border Reveal (Masked by the same spotlight gradient)
         // We want the borders to be visible only near the mouse
 
         const borderGradient = this.ctx.createRadialGradient(
             mouseX,
-            row.top + row.height / 2,
+            rowTopRelativeToCanvas + actualHeight / 2,
             0,
             mouseX,
-            row.top + row.height / 2,
+            rowTopRelativeToCanvas + actualHeight / 2,
             spotlightRadius * 0.8
         );
         borderGradient.addColorStop(0, settings.borderColor || 'rgba(255, 255, 255, 0.2)');
@@ -283,14 +307,14 @@ export class TableGlassEffect {
 
         // Top border
         this.ctx.beginPath();
-        this.ctx.moveTo(0, row.top);
-        this.ctx.lineTo(this.width, row.top);
+        this.ctx.moveTo(0, rowTopRelativeToCanvas);
+        this.ctx.lineTo(this.width, rowTopRelativeToCanvas);
         this.ctx.stroke();
 
         // Bottom border
         this.ctx.beginPath();
-        this.ctx.moveTo(0, row.top + row.height);
-        this.ctx.lineTo(this.width, row.top + row.height);
+        this.ctx.moveTo(0, rowTopRelativeToCanvas + actualHeight);
+        this.ctx.lineTo(this.width, rowTopRelativeToCanvas + actualHeight);
         this.ctx.stroke();
 
         this.ctx.restore();

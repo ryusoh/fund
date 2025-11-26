@@ -27,9 +27,17 @@ describe('TableGlassEffect', () => {
         // Mock tbody and rows for hover effect
         const tbody = document.createElement('tbody');
         const row1 = document.createElement('tr');
+        // Mock getBoundingClientRect for row height calculation in tests
+        // Canvas top is at 0 (relative to container 0).
+        // Row top is at 100.
+        // relativeTop = 100 - 0 = 100.
         Object.defineProperty(row1, 'getBoundingClientRect', {
             value: () => ({ top: 100, height: 50, left: 0, width: 800 }),
         });
+        Object.defineProperty(row1, 'offsetHeight', {
+            value: 50,
+        });
+
         tbody.appendChild(row1);
         container.appendChild(tbody);
 
@@ -64,10 +72,17 @@ describe('TableGlassEffect', () => {
             configurable: true,
             value: 400,
         });
+        // Mock canvas getBoundingClientRect to allow relative calc
+        // eslint-disable-next-line no-undef
+        HTMLCanvasElement.prototype.getBoundingClientRect = jest.fn(() => ({
+            width: 800,
+            height: 400,
+            top: 0,
+            left: 0,
+        }));
 
         // eslint-disable-next-line no-undef
         HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
-
         // Mock RAF
         originalRequestAnimationFrame = window.requestAnimationFrame;
         originalCancelAnimationFrame = window.cancelAnimationFrame;
@@ -79,6 +94,9 @@ describe('TableGlassEffect', () => {
             observe() {}
             disconnect() {}
         };
+
+        // Mock elementFromPoint for hover detection
+        document.elementFromPoint = jest.fn(() => null);
     });
 
     afterEach(() => {
@@ -152,6 +170,14 @@ describe('TableGlassEffect', () => {
             addColorStop: jest.fn(),
         }));
         mockCtx.fillRect = jest.fn();
+
+        // Get the row element created in beforeEach
+        const row1 = container.querySelector('tr');
+
+        // Mock elementFromPoint to return this row when queried
+        document.elementFromPoint.mockReturnValue({
+            closest: jest.fn().mockReturnValue(row1),
+        });
 
         // Simulate hover over the first row (top: 100, height: 50)
         // Canvas top might be 0 or adjusted. Let's assume default (0).

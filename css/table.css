@@ -164,10 +164,9 @@ tbody tr:last-child {
 }
 
 tbody tr:hover {
-    background-color: rgba(60, 60, 63, 0.75);
-    /* Subtle hover, based on System Gray 4 */
+    /* Disable CSS hover to let the JS glass effect show through */
+    background-color: transparent;
     background-image: none;
-    /* Override any gradient on hover for a uniform background */
 }
 
 /* Hover effect for header cells */
