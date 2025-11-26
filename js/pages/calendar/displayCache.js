@@ -6,7 +6,8 @@ function computeEntryDisplay(entry, currency, rates, currencySymbols) {
     }
 
     const dailyChange = Number(entry.dailyChange);
-    if (!Number.isFinite(dailyChange) || dailyChange === 0) {
+    const isInitialDataPoint = Boolean(entry.isInitialDataPoint);
+    if (!Number.isFinite(dailyChange) || (dailyChange === 0 && !isInitialDataPoint)) {
         return { changeText: '', totalText: '', showDetails: false };
     }
 

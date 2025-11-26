@@ -1,4 +1,8 @@
-import { loadAndDisplayPortfolioData, getCalendarData } from '@services/dataService.js';
+import {
+    loadAndDisplayPortfolioData,
+    getCalendarData,
+    __testables,
+} from '@services/dataService.js';
 import * as chartManager from '@charts/allocationChartManager.js';
 global.d3 = {
     csv: jest.fn(),
@@ -1341,6 +1345,46 @@ describe('dataService', () => {
             });
 
             expect(result).toHaveProperty('monthlyPnl');
+        });
+
+        it('computes first available month PnL using the earliest data point when no prior month exists', () => {
+            const processedData = [
+                {
+                    date: '2024-03-15',
+                    total: 1000,
+                    totalCNY: 7000,
+                    totalJPY: 100000,
+                    totalKRW: 1200000,
+                },
+                {
+                    date: '2024-03-31',
+                    total: 1500,
+                    totalCNY: 7200,
+                    totalJPY: 130000,
+                    totalKRW: 1500000,
+                },
+            ];
+
+            const monthlyPnl = __testables.computeMonthlyPnl(processedData);
+            const marchInfo = monthlyPnl.get('2024-03');
+            expect(marchInfo).toBeTruthy();
+            expect(marchInfo.absoluteChangeUSD).toBeCloseTo(500);
+            expect(marchInfo.percentChangeUSD).toBeCloseTo(0.5);
+        });
+
+        it('falls back to the most recent data month when the immediate previous month has no entries', () => {
+            const processedData = [
+                { date: '2024-01-15', total: 900, totalCNY: 0, totalJPY: 0, totalKRW: 0 },
+                { date: '2024-01-31', total: 1000, totalCNY: 0, totalJPY: 0, totalKRW: 0 },
+                // February missing entirely
+                { date: '2024-03-01', total: 1100, totalCNY: 0, totalJPY: 0, totalKRW: 0 },
+                { date: '2024-03-31', total: 1500, totalCNY: 0, totalJPY: 0, totalKRW: 0 },
+            ];
+
+            const monthlyPnl = __testables.computeMonthlyPnl(processedData);
+            const marchInfo = monthlyPnl.get('2024-03');
+            expect(marchInfo).toBeTruthy();
+            expect(marchInfo.absoluteChangeUSD).toBeCloseTo(500);
         });
     });
 });

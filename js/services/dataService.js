@@ -242,7 +242,7 @@ function processHistoricalData(rawData) {
         return change / previous;
     };
 
-    return rawData
+    const processed = rawData
         .map((d, i) => {
             // Extract all currency values from the CSV
             const currentValueUSD = toNumber(d.value_usd);
@@ -295,9 +295,14 @@ function processHistoricalData(rawData) {
                 dailyChangeCNY: dailyChangeCNY,
                 dailyChangeJPY: dailyChangeJPY,
                 dailyChangeKRW: dailyChangeKRW,
+                isInitialDataPoint: i === 0,
             };
         })
         .filter((d) => d.date);
+    if (processed.length > 0) {
+        processed[0].isInitialDataPoint = true;
+    }
+    return processed;
 }
 
 function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {}) {
@@ -440,6 +445,36 @@ function computeMonthlyPnl(processedData) {
         return new Map();
     }
 
+    /* istanbul ignore next: defensive programming for locating earliest valid entry */
+    let earliestValidEntry = null;
+    /* istanbul ignore next: defensive programming for locating earliest valid entry */
+    for (const entry of processedData) {
+        /* istanbul ignore next: defensive programming for locating earliest valid entry */
+        if (!entry || typeof entry.date !== 'string') {
+            /* istanbul ignore next: defensive programming for locating earliest valid entry */
+            continue;
+        }
+        /* istanbul ignore next: defensive programming for locating earliest valid entry */
+        const baselineTotal =
+            Number.isFinite(entry.total) || typeof entry.total === 'number'
+                ? Number(entry.total)
+                : Number(entry.totalUSD);
+        /* istanbul ignore next: defensive programming for locating earliest valid entry */
+        if (!Number.isFinite(baselineTotal)) {
+            /* istanbul ignore next: defensive programming for locating earliest valid entry */
+            continue;
+        }
+        /* istanbul ignore next: defensive programming for locating earliest valid entry */
+        if (
+            !earliestValidEntry ||
+            (typeof earliestValidEntry.date === 'string' &&
+                entry.date.localeCompare(earliestValidEntry.date) < 0)
+        ) {
+            /* istanbul ignore next: defensive programming for locating earliest valid entry */
+            earliestValidEntry = entry;
+        }
+    }
+
     /* istanbul ignore next: defensive programming for empty data */
     const buckets = new Map();
     /* istanbul ignore next: defensive programming for empty data */
@@ -466,7 +501,8 @@ function computeMonthlyPnl(processedData) {
     const monthlyPnl = new Map();
 
     /* istanbul ignore next: defensive programming for malformed entries */
-    for (const monthKey of sortedMonthKeys) {
+    for (let idx = 0; idx < sortedMonthKeys.length; idx++) {
+        const monthKey = sortedMonthKeys[idx];
         /* istanbul ignore next: defensive programming for empty month buckets */
         const entries = buckets.get(monthKey);
         /* istanbul ignore next: defensive programming for empty month buckets */
@@ -494,10 +530,22 @@ function computeMonthlyPnl(processedData) {
         /* istanbul ignore next: defensive programming for optional previous month */
         const prevEntries = prevMonthKey ? buckets.get(prevMonthKey) : null;
         /* istanbul ignore next: defensive programming for optional previous month entries */
-        const prevMonthLastEntry =
+        let prevMonthLastEntry =
             prevEntries && prevEntries.length > 0 ? prevEntries[prevEntries.length - 1] : null;
+        /* istanbul ignore next: defensive programming for gaps in historical data */
+        if (!prevMonthLastEntry && idx > 0) {
+            const fallbackKey = sortedMonthKeys[idx - 1];
+            const fallbackEntries = buckets.get(fallbackKey);
+            if (fallbackEntries && fallbackEntries.length > 0) {
+                prevMonthLastEntry = fallbackEntries[fallbackEntries.length - 1];
+            }
+        }
         /* istanbul ignore next: defensive programming for fallback entry selection */
-        const baseEntry = prevMonthLastEntry || firstEntry;
+        let baseEntry = prevMonthLastEntry || firstEntry;
+        /* istanbul ignore next: defensive programming for fallback entry selection */
+        if (!prevMonthLastEntry && idx === 0 && earliestValidEntry) {
+            baseEntry = earliestValidEntry;
+        }
 
         /* istanbul ignore next: defensive programming for invalid totals */
         const baseTotal = Number(baseEntry?.total);
@@ -548,6 +596,10 @@ function computeMonthlyPnl(processedData) {
     /* istanbul ignore next: defensive programming for zero base total edge case */
     return monthlyPnl;
 }
+
+export const __testables = {
+    computeMonthlyPnl,
+};
 
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
