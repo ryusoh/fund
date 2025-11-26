@@ -131,8 +131,20 @@ describe('calendar page', () => {
             classList: {
                 add: jest.fn(),
                 remove: jest.fn(),
+                contains: jest.fn(() => false),
             },
+            style: {
+                setProperty: jest.fn(),
+            },
+            offsetWidth: 100, // For forcing reflow
             disabled: false,
+        };
+
+        // Mock MutationObserver
+        global.MutationObserver = class {
+            constructor() {}
+            disconnect() {}
+            observe() {}
         };
 
         document.getElementById = jest.fn().mockImplementation(() => mockElement);

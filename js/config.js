@@ -373,6 +373,21 @@ export const CALENDAR_CONFIG = {
     },
 };
 
+export const CALENDAR_BACKGROUND_EFFECT = {
+    enabled: true,
+    // Duration of the visible sweep effect in seconds
+    // Controls how fast the light moves across the screen
+    sweepDuration: 3,
+    // Time to wait after a sweep finishes before the next one starts
+    sweepPauseTime: 2,
+    // Colors for the chromatic aberration effect
+    // Format: 'R, G, B' (without 'rgba' or parenthesis)
+    colors: {
+        color1: '50, 255, 100', // Optical Green (Leading Edge)
+        color2: '255, 50, 80', // Optical Red (Trailing Edge)
+    },
+};
+
 export const CALENDAR_MONTH_LABEL_BACKGROUND = {
     paddingX: 10,
     paddingY: 5,

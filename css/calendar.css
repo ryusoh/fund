@@ -301,6 +301,66 @@ body.body-calendar {
     /* Override the margin for zoomed state */
 }
 
+/*
+ * Optical Aberration Sweep Effect
+ */
+.page-center-wrapper.zoomed::before {
+    content: '';
+    position: absolute;
+    inset: -1px; /* Slight bleed to cover edges perfectly */
+    z-index: -1; /* Sit between the background color and the content */
+    border-radius: inherit;
+
+    /*
+     * The Optical Beam:
+     * Constructed with specific color stops to mimic chromatic aberration (Red/Green split).
+     * - Green leading edge (shorter wavelength simulation)
+     * - Pure white core (intense specular reflection)
+     * - Red trailing edge (longer wavelength simulation)
+     */
+    background: linear-gradient(
+        115deg,
+        transparent 25%,
+        rgba(var(--optic-color-1, 50, 255, 100), 0.08) 40%,
+        /* Subtle Optical Green Fringe */ rgba(200, 255, 220, 0.15) 45%,
+        /* Transition Halo */ rgba(255, 255, 255, 0.4) 50%,
+        /* Specular Highlight Core */ rgba(255, 200, 200, 0.15) 55%,
+        /* Transition Halo */ rgba(var(--optic-color-2, 255, 50, 80), 0.08) 60%,
+        /* Subtle Optical Red Fringe */ transparent 75%
+    );
+
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+
+    /* Physics & Aesthetics */
+    mix-blend-mode: overlay; /* Essential for that "light" feel vs "paint" feel */
+    filter: blur(12px); /* Softens the bands into a premium glow */
+    pointer-events: none; /* Ensure it doesn't block interactions */
+    opacity: 0; /* Default hidden, animated by class */
+}
+
+.page-center-wrapper.zoomed.sweeping::before {
+    /* The Sweep Animation - Triggered by JS for precise interval control */
+    animation: optic-sweep var(--optic-sweep-duration, 5s) cubic-bezier(0.35, 0, 0.25, 1) forwards;
+}
+
+@keyframes optic-sweep {
+    0% {
+        background-position: 95% 0;
+        opacity: 0;
+    }
+    5% {
+        opacity: 1;
+    }
+    95% {
+        opacity: 1;
+    }
+    100% {
+        background-position: 5% 0;
+        opacity: 0;
+    }
+}
+
 .page-center-wrapper.zoomed .content-block {
     max-width: none;
 }

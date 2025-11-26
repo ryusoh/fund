@@ -20,13 +20,15 @@ import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
 import { ensureEntryDisplay, precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
-import { PERLIN_BACKGROUND_SETTINGS } from '@js/config.js';
+import { PERLIN_BACKGROUND_SETTINGS, CALENDAR_BACKGROUND_EFFECT } from '@js/config.js';
 
 // --- STATE ---
 let calendarInstance = null; // Store calendar instance for resize handling
 let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
 const touchNavigationState = { isNavigating: false }; // Shared touch navigation state
+let sweepNextTimer = null; // Timer for the next background sweep
+let sweepRemoveTimer = null; // Timer to remove the sweep class
 
 const appState = {
     selectedCurrency: 'USD',
@@ -1147,6 +1149,124 @@ export async function initCalendar() {
 // --- PERLIN BACKGROUND ---
 let perlinBackgroundHandle = null;
 
+// --- BACKGROUND EFFECT ---
+function stopBackgroundSweepEffect() {
+    if (sweepNextTimer) {
+        clearTimeout(sweepNextTimer);
+    }
+    if (sweepRemoveTimer) {
+        clearTimeout(sweepRemoveTimer);
+    }
+    sweepNextTimer = null;
+    sweepRemoveTimer = null;
+    const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+    if (wrapper) {
+        wrapper.classList.remove('sweeping');
+    }
+}
+
+function initBackgroundSweepEffect() {
+    stopBackgroundSweepEffect();
+
+    if (!CALENDAR_BACKGROUND_EFFECT?.enabled) {
+        return;
+    }
+
+    const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+    if (!wrapper) {
+        return;
+    }
+
+    const { sweepDuration, sweepPauseTime, colors } = CALENDAR_BACKGROUND_EFFECT;
+
+    // Set CSS variables for the animation
+    wrapper.style.setProperty('--optic-sweep-duration', `${sweepDuration}s`);
+    if (colors?.color1) {
+        wrapper.style.setProperty('--optic-color-1', colors.color1);
+    }
+    if (colors?.color2) {
+        wrapper.style.setProperty('--optic-color-2', colors.color2);
+    }
+
+    const runSweepSequence = () => {
+        // We only want to run the animation if the element is in the DOM
+        if (!document.body.contains(wrapper)) {
+            return;
+        }
+
+        // Always reset first to ensure animation restarts from 0%
+        wrapper.classList.remove('sweeping');
+
+        // Force reflow to ensure browser registers the removal
+        // This is critical for restarting the CSS animation immediately
+        void wrapper.offsetWidth;
+
+        wrapper.classList.add('sweeping');
+
+        if (sweepRemoveTimer) {
+            clearTimeout(sweepRemoveTimer);
+        }
+        if (sweepNextTimer) {
+            clearTimeout(sweepNextTimer);
+        }
+
+        // Schedule removal of the class after the animation completes
+        sweepRemoveTimer = setTimeout(() => {
+            wrapper.classList.remove('sweeping');
+            sweepRemoveTimer = null;
+
+            // Schedule next sweep after pause
+            sweepNextTimer = setTimeout(runSweepSequence, sweepPauseTime * 1000);
+        }, sweepDuration * 1000);
+    };
+
+    // Use MutationObserver to detect when the 'zoomed' class is added
+    // This ensures the sweep starts exactly when the visual state changes
+    const observer = new window.MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const oldClassList = mutation.oldValue || '';
+                const wasZoomed = oldClassList.includes('zoomed');
+                const isZoomed = wrapper.classList.contains('zoomed');
+
+                // Only react if the zoomed state actually changed
+                if (isZoomed !== wasZoomed) {
+                    if (isZoomed) {
+                        stopBackgroundSweepEffect(); // Reset state
+                        runSweepSequence(); // Start immediately
+                    } else {
+                        stopBackgroundSweepEffect(); // Stop if unzoomed
+                    }
+                }
+            }
+        });
+    });
+
+    observer.observe(wrapper, {
+        attributes: true,
+        attributeFilter: ['class'],
+        attributeOldValue: true,
+    });
+
+    // Store observer to disconnect later if needed (handled in module scope conceptually, but for now this is sufficient)
+    // Note: In a full component lifecycle, we'd want to disconnect this observer on unload.
+    // Adding it to the window unload handler logic below.
+    window.__calendarObserver = observer;
+
+    // Trigger sweep on nav button clicks
+    const navButtons = document.querySelectorAll('.cal-nav-btn');
+    navButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            // Only trigger if zoomed in
+            if (wrapper.classList.contains('zoomed')) {
+                // Restart sequence immediately on interaction
+                stopBackgroundSweepEffect();
+                runSweepSequence();
+            }
+        });
+    });
+}
+
 // --- START ---
 // Avoid auto-running during Jest tests to prevent async side-effects
 export function autoInitCalendar() {
@@ -1154,7 +1274,9 @@ export function autoInitCalendar() {
         if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
             perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
         }
-        initCalendar();
+        initCalendar().then(() => {
+            initBackgroundSweepEffect();
+        });
     }
 }
 
@@ -1164,4 +1286,9 @@ autoInitCalendar();
 window.addEventListener('beforeunload', () => {
     perlinBackgroundHandle?.dispose();
     perlinBackgroundHandle = null;
+    stopBackgroundSweepEffect();
+    if (window.__calendarObserver) {
+        window.__calendarObserver.disconnect();
+        window.__calendarObserver = null;
+    }
 });
