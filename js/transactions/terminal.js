@@ -872,8 +872,33 @@ export function initTerminal({
                 break;
             case 't':
             case 'transaction':
-                toggleTable();
-                result = 'Toggled transaction table visibility.';
+                if (args.length === 0) {
+                    toggleTable();
+                    result = 'Toggled transaction table visibility.';
+                } else {
+                    ensureTransactionTableVisible();
+                    const trailingInput = args.join(' ').trim();
+                    if (trailingInput) {
+                        const rangeCandidate = parseSimplifiedDateRange(trailingInput);
+                        if (rangeCandidate.from || rangeCandidate.to) {
+                            const dateResult = await applyDateFilterRange(rangeCandidate);
+                            if (dateResult) {
+                                result = dateResult;
+                            }
+                        } else {
+                            filterAndSort(trailingInput);
+                            const summary = await getContributionSummaryText(
+                                transactionState.chartDateRange
+                            );
+                            result = `Filtering transactions by: "${trailingInput}"...`;
+                            if (summary) {
+                                result += `\n${summary}`;
+                            }
+                        }
+                    } else {
+                        result = 'Showing transaction table.';
+                    }
+                }
                 break;
             case 'p':
             case 'plot':
@@ -1035,32 +1060,12 @@ export function initTerminal({
                     }
                 }
                 break;
-            default:
-                // Handle simplified date commands if a chart is active
-                if (
-                    transactionState.activeChart &&
-                    (transactionState.activeChart === 'contribution' ||
-                        transactionState.activeChart === 'performance' ||
-                        transactionState.activeChart === 'composition' ||
-                        transactionState.activeChart === 'fx')
-                ) {
-                    const simplifiedDateRange = parseSimplifiedDateRange(command);
-                    if (simplifiedDateRange.from || simplifiedDateRange.to) {
-                        setChartDateRange(simplifiedDateRange);
-                        updateContextYearFromRange(simplifiedDateRange);
-                        // Update the chart with filtered data
-                        chartManager.update();
-                        result = `Applied date filter ${formatDateRange(
-                            simplifiedDateRange
-                        )} to ${transactionState.activeChart} chart.`;
-                        if (transactionState.activeChart === 'contribution') {
-                            const summaryText = await getContributionSummaryText(
-                                transactionState.chartDateRange
-                            );
-                            if (summaryText) {
-                                result += `\n${summaryText}`;
-                            }
-                        }
+            default: {
+                const simplifiedDateRange = parseSimplifiedDateRange(command);
+                if (simplifiedDateRange.from || simplifiedDateRange.to) {
+                    const dateMessage = await applyDateFilterRange(simplifiedDateRange);
+                    if (dateMessage) {
+                        result = dateMessage;
                         break;
                     }
                 }
@@ -1073,6 +1078,7 @@ export function initTerminal({
                     result += `\n${summaryText}`;
                 }
                 break;
+            }
         }
 
         if (result) {
@@ -1163,6 +1169,60 @@ export function initTerminal({
             }
         }
         return { from: null, to: null };
+    }
+
+    function ensureTransactionTableVisible() {
+        const tableContainer = document.querySelector('.table-responsive-container');
+        if (tableContainer) {
+            tableContainer.classList.remove('is-hidden');
+        }
+        const plotSection = document.getElementById('runningAmountSection');
+        if (plotSection) {
+            plotSection.classList.add('is-hidden');
+        }
+    }
+
+    function isActiveChartVisible() {
+        const activeChart = transactionState.activeChart;
+        if (
+            !activeChart ||
+            !['contribution', 'performance', 'composition', 'fx'].includes(activeChart)
+        ) {
+            return false;
+        }
+        const plotSection = document.getElementById('runningAmountSection');
+        return plotSection && !plotSection.classList.contains('is-hidden');
+    }
+
+    async function applyDateFilterRange(range) {
+        if (!range || (!range.from && !range.to)) {
+            return null;
+        }
+        setChartDateRange(range);
+        updateContextYearFromRange(range);
+        const activeChartVisible = isActiveChartVisible();
+        const activeChart = transactionState.activeChart;
+        if (activeChartVisible) {
+            chartManager.update();
+            let message = `Applied date filter ${formatDateRange(range)} to ${activeChart} chart.`;
+            if (activeChart === 'contribution') {
+                const summaryText = await getContributionSummaryText(
+                    transactionState.chartDateRange
+                );
+                if (summaryText) {
+                    message += `\n${summaryText}`;
+                }
+            } else if (activeChart === 'fx') {
+                const fxSnapshot = getFxSnapshotLine();
+                if (fxSnapshot) {
+                    message += `\n${fxSnapshot}`;
+                }
+            }
+            return message;
+        }
+        ensureTransactionTableVisible();
+        filterAndSort(transactionState.activeFilterTerm || '');
+        return `Applied date filter ${formatDateRange(range)} to transactions table.`;
     }
 
     async function handleTerminalInput(e) {

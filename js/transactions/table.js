@@ -6,6 +6,7 @@ import {
 } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
+import { normalizeDateOnly } from '@utils/date.js';
 import { adjustMobilePanels } from './layout.js';
 
 function parseCommandPalette(value) {
@@ -119,6 +120,25 @@ function filterAndSort(searchTerm = '') {
 
     let filtered = [...transactionState.allTransactions];
     const currentCurrency = transactionState.selectedCurrency;
+    const range = transactionState.chartDateRange || { from: null, to: null };
+    const rangeStart = range.from ? Date.parse(range.from) : null;
+    const rangeEnd = range.to ? Date.parse(range.to) : null;
+    if (rangeStart !== null || rangeEnd !== null) {
+        filtered = filtered.filter((transaction) => {
+            const normalized = normalizeDateOnly(transaction.tradeDate);
+            const tradeTime = Date.parse(normalized || transaction.tradeDate);
+            if (!Number.isFinite(tradeTime)) {
+                return false;
+            }
+            if (rangeStart !== null && tradeTime < rangeStart) {
+                return false;
+            }
+            if (rangeEnd !== null && tradeTime > rangeEnd) {
+                return false;
+            }
+            return true;
+        });
+    }
 
     if (normalizedSearchTerm) {
         const { text, commands } = parseCommandPalette(normalizedSearchTerm);
