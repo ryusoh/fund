@@ -16,7 +16,8 @@ import {
     getActiveFilterTerm,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
-import { PERLIN_BACKGROUND_SETTINGS } from '../../config.js';
+import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT } from '../../config.js';
+import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 
 // Helper function to convert currency series
 function convertCurrencySeries(series, targetCurrency) {
@@ -258,6 +259,17 @@ function initialize() {
     if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
         perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
     }
+
+    // Initialize table glass effect for terminal pane
+    try {
+        new TableGlassEffect('.terminal', {
+            ...TABLE_GLASS_EFFECT,
+            excludeHeader: false, // Terminal pane doesn't have a header to exclude
+        });
+    } catch (e) {
+        logger.error('Failed to initialize table glass effect:', e);
+    }
+
     chartManager = createChartManager({
         crosshairCallbacks: {
             onUpdate: updateTerminalCrosshair,
