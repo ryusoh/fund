@@ -28,7 +28,8 @@ import { triggerCenterToggle } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
-import { PERLIN_BACKGROUND_SETTINGS } from '@js/config.js';
+import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT } from '@js/config.js';
+import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
@@ -123,6 +124,13 @@ async function startApp() {
         // Initialize perlin background
         if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
             perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+        }
+
+        // Initialize table glass effect
+        try {
+            new TableGlassEffect('.table-responsive-container', TABLE_GLASS_EFFECT);
+        } catch (e) {
+            logger.error('Failed to initialize table glass effect:', e);
         }
 
         // Wait for multiple animation frames to ensure proper layout in real browsers.

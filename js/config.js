@@ -537,6 +537,49 @@ export const PIE_CHART_GLASS_EFFECT = {
     },
 };
 
+export const TABLE_GLASS_EFFECT = {
+    enabled: true,
+    excludeHeader: true,
+    rowHoverEffect: {
+        enabled: true,
+        // Subtle spotlight effect
+        color: 'rgba(255, 255, 255, 0.03)', // Very faint white/blue tint
+        borderColor: 'rgba(255, 255, 255, 0.15)', // Subtle border reveal
+        spotlightRadius: 500, // Large soft radius
+    },
+    chromaticAberration: {
+        enabled: true, // Disabled for cleaner look
+        offset: 2,
+        opacity: 0.5,
+    },
+    // Override specific 3D settings for the table to be more subtle than the chart
+    threeD: {
+        ...PIE_CHART_GLASS_EFFECT.threeD,
+        electric: {
+            ...PIE_CHART_GLASS_EFFECT.threeD.electric,
+            enabled: false, // Configurable toggle
+            intensity: 0.1, // Reduced intensity
+            width: 0.1, // Thinner trails
+            arcThickness: 1, // Thinner lines
+            streakSpeedMultiplier: 1, // Slower, more elegant movement
+            colors: {
+                primary: 'rgba(255, 255, 255, 0.4)',
+                secondary: 'rgba(255, 255, 255, 0.2)',
+                tertiary: 'rgba(255, 255, 255, 0.05)',
+                quaternary: 'rgba(255, 255, 255, 0.0)',
+            },
+        },
+        reflection: {
+            enabled: true,
+            speed: 0.05,
+            intensity: 0.1, // Subtle
+            width: 0.5, // Wider, softer band
+            color: 'rgba(255, 255, 255, 1)',
+            fadeZone: 0.15, // Smooth fade at wrap point (0-1, higher = longer fade)
+        },
+    },
+};
+
 export const PERLIN_BACKGROUND_SETTINGS = {
     enabled: false,
     blendMode: 'screen',
