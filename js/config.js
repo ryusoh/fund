@@ -521,6 +521,7 @@ export const PIE_CHART_GLASS_EFFECT = {
             },
             arcCount: 3,
             arcThickness: 2.5,
+            particlesEnabled: false,
             particleColors: null,
             streakSpeedMultiplier: 2.5,
             particleSpeedMultiplier: 0.5,

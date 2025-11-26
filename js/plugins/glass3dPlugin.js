@@ -172,7 +172,10 @@ function ensureState(chart, options) {
         chart.glassPointerTarget = { x: 0, y: 0 };
     }
     chart.$glass3d.maxOffset = options.parallax?.maxOffsetPx ?? 8;
-    if (!chart.$glass3d.energyParticles || chart.$glass3d.energyParticles.length === 0) {
+    const particlesEnabled = options.electric?.particlesEnabled !== false;
+    if (!particlesEnabled) {
+        chart.$glass3d.energyParticles = [];
+    } else if (!chart.$glass3d.energyParticles || chart.$glass3d.energyParticles.length === 0) {
         initializeEnergyParticles(chart.$glass3d, options);
     }
     return chart.$glass3d;
@@ -481,7 +484,10 @@ function initializeEnergyParticles(state, options) {
 }
 
 function updateEnergyParticles(state, delta, options) {
-    if (!state.energyParticles) {
+    if (!state.energyParticles || options.electric?.particlesEnabled === false) {
+        if (options.electric?.particlesEnabled === false) {
+            state.energyParticles = [];
+        }
         return;
     }
     const baseSpeed =
@@ -556,7 +562,7 @@ function drawEnergyParticles(
     pointer,
     squash
 ) {
-    if (!state.energyParticles) {
+    if (!state.energyParticles || options.electric?.particlesEnabled === false) {
         return;
     }
     const colors =
@@ -721,17 +727,19 @@ export const glass3dPlugin = {
             pointer,
             options.squash ?? 1
         );
-        drawEnergyParticles(
-            ctx,
-            centerX,
-            centerY,
-            outerRadius,
-            innerRadius,
-            options,
-            state,
-            pointer,
-            options.squash ?? 1
-        );
+        if (options.electric?.particlesEnabled !== false) {
+            drawEnergyParticles(
+                ctx,
+                centerX,
+                centerY,
+                outerRadius,
+                innerRadius,
+                options,
+                state,
+                pointer,
+                options.squash ?? 1
+            );
+        }
         drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer);
         drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options, state);
     },
