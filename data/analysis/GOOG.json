@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-25T07:49:24.962178+00:00",
+        "asOf": "2025-11-26T07:49:43.113731+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,28 +29,28 @@
     },
     "market": {
         "forwardEps": 8.95,
-        "pe": 31.4383,
-        "forwardPe": 35.5832,
+        "pe": 31.9487,
+        "forwardPe": 36.1609,
         "beta": 1.082,
-        "marketCap": 3844516872192.0,
-        "enterpriseValue": 3788676530176.0,
+        "marketCap": 3906928377856.0,
+        "enterpriseValue": 3851062870016.0,
         "ebitda": 145174003712,
         "dividendYield": 0.26,
         "currency": "USD",
-        "fiftyTwoWeekHigh": 319.8,
+        "fiftyTwoWeekHigh": 328.67,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2025-11-25T07:49:24.847440+00:00",
-        "evToEbitda": 26.0975,
+        "marketDataUpdatedAt": "2025-11-26T07:49:43.029184+00:00",
+        "evToEbitda": 26.5272,
         "eps": 10.13,
-        "price": 318.47
+        "price": 323.64
     },
     "risk": {
-        "volatility": 0.3285,
+        "volatility": 0.3288,
         "estimateSource": "historical",
         "correlations": null
     },
     "position": {
-        "shares": 809.873,
+        "shares": 826.328,
         "currentWeight": null,
         "targetWeight": null,
         "maxKellyWeight": null,
