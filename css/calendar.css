@@ -3,8 +3,10 @@ body.body-calendar {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    align-items: center; /* Horizontally center */
-    padding: 0; /* Remove body padding to let the wrapper handle it */
+    align-items: center;
+    /* Horizontally center */
+    padding: 0;
+    /* Remove body padding to let the wrapper handle it */
 }
 
 /* Set a different background for the calendar page ONLY on desktop screens */
@@ -22,17 +24,21 @@ body.body-calendar {
 }
 
 .cal-heatmap-container {
-    display: flex; /* Helps in centering the calendar block */
-    justify-content: center; /* Horizontally center the calendar */
+    display: flex;
+    /* Helps in centering the calendar block */
+    justify-content: center;
+    /* Horizontally center the calendar */
     width: 100%;
-    overflow-x: auto; /* Allow horizontal scroll if needed */
+    overflow-x: auto;
+    /* Allow horizontal scroll if needed */
 }
 
 /* Calendar heatmap responsive sizing */
 #cal-heatmap {
     width: auto;
     max-width: 100%;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); /* Smooth resize transitions */
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    /* Smooth resize transitions */
 }
 
 /* Touch-friendly calendar interactions */
@@ -48,7 +54,8 @@ body.body-calendar {
     .cal-heatmap-container {
         margin-top: 70px;
         /* Allow horizontal swipe gestures for navigation */
-        touch-action: pan-y; /* Allow vertical scroll but capture horizontal swipes */
+        touch-action: pan-y;
+        /* Allow vertical scroll but capture horizontal swipes */
     }
 
     /* iOS web app safe area support for calendar container on mobile */
@@ -85,7 +92,8 @@ body.body-calendar {
 /* Desktop layout (769px and up) */
 @media (min-width: 769px) {
     .page-center-wrapper {
-        margin-top: 10vh; /* Adjust this value to position the calendar */
+        margin-top: 10vh;
+        /* Adjust this value to position the calendar */
     }
 
     .cal-heatmap-container {
@@ -110,13 +118,15 @@ body.body-calendar {
     display: flex;
     justify-content: center;
     gap: 20px;
-    margin-top: 20px; /* Add space above the detached buttons */
+    margin-top: 20px;
+    /* Add space above the detached buttons */
 }
 
 .cal-nav-btn {
     background: transparent;
     border: none;
-    outline: none; /* Remove ugly focus outline */
+    outline: none;
+    /* Remove ugly focus outline */
     color: rgba(85, 85, 85, 0.9);
     padding: 12px;
     cursor: pointer;
@@ -169,16 +179,18 @@ body.body-calendar {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
     border-radius: 6px !important;
     padding: 8px 12px !important;
-    font-family:
-        'JetBrains Mono', monospace !important; /* This is now controlled by the tooltip.text function */
+    font-family: 'JetBrains Mono', monospace !important;
+    /* This is now controlled by the tooltip.text function */
 }
 
 .ch-tooltip .pnl-positive {
-    color: #4caf50; /* Standard Green for positive P&L */
+    color: #4caf50;
+    /* Standard Green for positive P&L */
 }
 
 .ch-tooltip .pnl-negative {
-    color: #f44336; /* Standard Red for negative P&L */
+    color: #f44336;
+    /* Standard Red for negative P&L */
 }
 
 .ch-domain-label {
@@ -216,19 +228,23 @@ body.body-calendar {
         opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
         transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+
 .subdomain-line1 {
     font-weight: normal;
 }
+
 .pnl-positive {
     fill: #1b5e20;
 }
+
 .pnl-negative {
     fill: #b71c1c;
 }
 
 .ch-week-label {
     /* .ch-month-label is for horizontal calendars, .ch-domain-label is used for vertical */
-    font-size: 14px !important; /* Make month labels larger */
+    font-size: 14px !important;
+    /* Make month labels larger */
     fill: rgba(255, 255, 255, 0.4) !important;
 }
 
@@ -238,14 +254,16 @@ body.body-calendar {
 }
 
 .ch-subdomain[data-v] {
-    /* Add a subtle frosted glass effect */
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    /* Add a frosted glass effect similar to currency toggle */
+    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(10px) !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) !important;
 }
 
-/* Enhanced shadows for all calendar cells */
+/* Enhanced shadows and blur for all calendar cells */
 .ch-subdomain-bg {
+    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(10px) !important;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) !important;
 }
 
@@ -279,7 +297,8 @@ body.body-calendar {
     background-color: rgba(0, 0, 0, 0.4);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     border-radius: 8px;
-    margin-top: 0 !important; /* Override the margin for zoomed state */
+    margin-top: 0 !important;
+    /* Override the margin for zoomed state */
 }
 
 .page-center-wrapper.zoomed .content-block {
