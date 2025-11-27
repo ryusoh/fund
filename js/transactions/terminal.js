@@ -13,6 +13,7 @@ import {
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
     buildFxChartSeries,
+    PERFORMANCE_SERIES_CURRENCY,
 } from './chart.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
@@ -28,7 +29,11 @@ import {
     resolveQuarterRange as computeQuarterRange,
     normalizeDateOnly,
 } from '@utils/date.js';
-import { formatCurrency as formatValueWithCurrency } from './utils.js';
+import {
+    formatCurrency as formatValueWithCurrency,
+    convertBetweenCurrencies,
+    convertValueToCurrency,
+} from './utils.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -42,6 +47,39 @@ let lastContextYear = null;
 
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
+}
+
+function formatPercentInline(value) {
+    if (!Number.isFinite(value)) {
+        return '0%';
+    }
+    const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+    return `${sign}${Math.abs(value).toFixed(2)}%`;
+}
+
+let compositionSnapshotCache = null;
+let compositionSnapshotPromise = null;
+
+async function ensureCompositionSnapshotData() {
+    if (typeof fetch !== 'function') {
+        return null;
+    }
+    if (compositionSnapshotCache) {
+        return compositionSnapshotCache;
+    }
+    if (!compositionSnapshotPromise) {
+        compositionSnapshotPromise = fetch('../data/output/figures/composition.json')
+            .then((response) => (response.ok ? response.json() : null))
+            .catch(() => null)
+            .finally(() => {
+                compositionSnapshotPromise = null;
+            });
+    }
+    const data = await compositionSnapshotPromise;
+    if (data && typeof data === 'object') {
+        compositionSnapshotCache = data;
+    }
+    return compositionSnapshotCache;
 }
 
 function updateContextYearFromRange(range) {
@@ -176,6 +214,193 @@ function getFxSnapshotLine() {
         return null;
     }
     return `FX (${baseCurrency} base): ${snapshots.join('   ')}`;
+}
+
+function parseDateSafe(value) {
+    if (!value) {
+        return null;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
+    if (transactionState.activeChart !== 'performance') {
+        return null;
+    }
+    const performanceSeries = transactionState.performanceSeries || {};
+    const seriesKeys = Object.keys(performanceSeries);
+    if (seriesKeys.length === 0) {
+        return null;
+    }
+    const visibility = transactionState.chartVisibility || {};
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const orderedKeys = [...seriesKeys].sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+
+    const snapshots = [];
+    const filterApplied = Boolean(filterFrom || filterTo);
+    const showAllSeries = includeHidden || filterApplied;
+    orderedKeys.forEach((key) => {
+        if (!showAllSeries && visibility[key] === false) {
+            return;
+        }
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        if (rawPoints.length === 0) {
+            if (showAllSeries) {
+                snapshots.push(`${key} –`);
+            }
+            return;
+        }
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+        const normalizedPoints = rawPoints
+            .map((point) => {
+                const dateObj = parseDateSafe(point.date);
+                if (!dateObj) {
+                    return null;
+                }
+                const convertedValue = convertBetweenCurrencies(
+                    point.value,
+                    sourceCurrency,
+                    point.date,
+                    selectedCurrency
+                );
+                return {
+                    date: dateObj,
+                    value: Number.isFinite(convertedValue) ? convertedValue : null,
+                };
+            })
+            .filter(
+                (point) =>
+                    point &&
+                    Number.isFinite(point.value) &&
+                    (!filterFrom || point.date >= filterFrom) &&
+                    (!filterTo || point.date <= filterTo)
+            )
+            .sort((a, b) => a.date - b.date);
+
+        if (normalizedPoints.length === 0) {
+            if (showAllSeries) {
+                snapshots.push(`${key} –`);
+            }
+            return;
+        }
+        const startValue = normalizedPoints[0].value;
+        const endValue = normalizedPoints[normalizedPoints.length - 1].value;
+        if (
+            !Number.isFinite(startValue) ||
+            Math.abs(startValue) < 1e-9 ||
+            !Number.isFinite(endValue)
+        ) {
+            if (showAllSeries) {
+                snapshots.push(`${key} –`);
+            }
+            return;
+        }
+        const percentChange = (endValue / startValue - 1) * 100;
+        snapshots.push(`${key} ${formatPercentInline(percentChange)}`);
+    });
+
+    if (!snapshots.length) {
+        return null;
+    }
+    const header = `Performance (base ${selectedCurrency}):`;
+    return `${header}\n${snapshots.join('   ')}`;
+}
+
+async function getCompositionSnapshotLine() {
+    if (transactionState.activeChart !== 'composition') {
+        return null;
+    }
+    const data = await ensureCompositionSnapshotData();
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray(data.dates) ||
+        data.dates.length === 0
+    ) {
+        return null;
+    }
+
+    const dates = data.dates;
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    const filteredIndices = dates
+        .map((dateStr, index) => {
+            const date = parseDateSafe(dateStr);
+            return { index, date };
+        })
+        .filter(
+            ({ date }) =>
+                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
+        )
+        .map(({ index }) => index);
+
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
+    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+        targetIndex = dates.length - 1;
+    }
+
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const dateLabel = dates[targetIndex];
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const compositionSeries = data.composition || data.series || {};
+    const holdings = [];
+    Object.entries(compositionSeries).forEach(([ticker, values]) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percentage = Number(seriesValues[targetIndex] ?? 0);
+        if (!Number.isFinite(percentage) || percentage <= 0) {
+            return;
+        }
+        const baseValue = (totalValueRaw * percentage) / 100;
+        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
+        holdings.push({
+            ticker,
+            percent: percentage,
+            absolute: convertedValue,
+        });
+    });
+
+    if (!holdings.length) {
+        return null;
+    }
+
+    holdings.sort((a, b) => b.percent - a.percent);
+    const formatted = holdings
+        .filter((holding) => Number.isFinite(holding.percent) && holding.percent > 0.1)
+        .map((holding) => {
+            const label = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
+            const valueText = formatWithSelectedCurrency(holding.absolute);
+            const percentText = `${holding.percent.toFixed(2)}%`;
+            return `${label} ${valueText} (${percentText})`;
+        });
+
+    if (!formatted.length) {
+        return null;
+    }
+
+    const lines = [];
+    for (let i = 0; i < formatted.length; i += 4) {
+        lines.push(formatted.slice(i, i + 4).join('   '));
+    }
+
+    return `Composition (${dateLabel}):\n${lines.join('\n')}`;
 }
 
 function formatCrosshairDateLabel(time) {
@@ -789,6 +1014,16 @@ export function initTerminal({
                     if (summaryText) {
                         result += `\n${summaryText}`;
                     }
+                } else if (transactionState.activeChart === 'performance') {
+                    const performanceSnapshot = getPerformanceSnapshotLine({ includeHidden: true });
+                    if (performanceSnapshot) {
+                        result += `\n${performanceSnapshot}`;
+                    }
+                } else if (transactionState.activeChart === 'composition') {
+                    const compositionSnapshot = await getCompositionSnapshotLine();
+                    if (compositionSnapshot) {
+                        result += `\n${compositionSnapshot}`;
+                    }
                 }
                 const fxSnapshot = getFxSnapshotLine();
                 if (fxSnapshot) {
@@ -985,6 +1220,10 @@ export function initTerminal({
                                 result = `Showing performance chart for ${formatDateRange(
                                     dateRange
                                 )}.\n\n${TWRR_MESSAGE}`;
+                                const performanceSnapshot = getPerformanceSnapshotLine();
+                                if (performanceSnapshot) {
+                                    result += `\n\n${performanceSnapshot}`;
+                                }
                             }
                             break;
                         case 'composition':
@@ -1017,6 +1256,10 @@ export function initTerminal({
                                     compTableContainer.classList.add('is-hidden');
                                 }
                                 result = `Showing composition chart for ${formatDateRange(dateRange)}.`;
+                                const compositionSnapshot = await getCompositionSnapshotLine();
+                                if (compositionSnapshot) {
+                                    result += `\n${compositionSnapshot}`;
+                                }
                             }
                             break;
                         case 'fx':
@@ -1221,6 +1464,16 @@ export function initTerminal({
                 const fxSnapshot = getFxSnapshotLine();
                 if (fxSnapshot) {
                     message += `\n${fxSnapshot}`;
+                }
+            } else if (activeChart === 'performance') {
+                const performanceSnapshot = getPerformanceSnapshotLine();
+                if (performanceSnapshot) {
+                    message += `\n${performanceSnapshot}`;
+                }
+            } else if (activeChart === 'composition') {
+                const compositionSnapshot = await getCompositionSnapshotLine();
+                if (compositionSnapshot) {
+                    message += `\n${compositionSnapshot}`;
                 }
             }
             return message;

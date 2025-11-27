@@ -62,7 +62,7 @@ const chartLayouts = {
 let compositionDataCache = null;
 let compositionDataLoading = false;
 
-const PERFORMANCE_SERIES_CURRENCY = {
+export const PERFORMANCE_SERIES_CURRENCY = {
     '^LZ': 'USD',
     '^DJI': 'USD',
     '^GSPC': 'USD',
@@ -559,7 +559,7 @@ function drawCrosshairOverlay(ctx, layout) {
 
         // Filter out holdings that had 0% allocation at this time (were not held)
         // Only keep holdings that had actual positive allocation
-        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.01); // Using small threshold to account for floating point precision
+        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.1); // Using higher threshold to avoid noise
 
         // Sort by value (percentage) in descending order and take up to 7 (or fewer if less available)
         const topHoldings = nonZeroHoldings.sort((a, b) => b.value - a.value).slice(0, 7);
@@ -787,24 +787,19 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
 
     const label = holding.label || holding.key || '';
     const percentText = holding.formattedPercent || `${holding.percent?.toFixed?.(2) ?? 0}%`;
-    const labelLine = label;
 
     ctx.font = `${lineFontSize}px ${fontFamily}`;
-    const labelLineWidth = markerOffset + ctx.measureText(labelLine).width;
-    contentWidth = Math.max(contentWidth, labelLineWidth);
-
     let absoluteText = holding.formattedValue || null;
     if (!absoluteText || !absoluteText.trim()) {
         const rawValue = Number.isFinite(holding.absoluteValue) ? holding.absoluteValue : null;
         absoluteText = formatCurrencyInline(rawValue);
     }
-    const valueLineText = `${absoluteText} (${percentText})`;
-    const valueLineWidth = ctx.measureText(valueLineText).width;
-    contentWidth = Math.max(contentWidth, valueLineWidth);
+    const detailLine = `${label} ${absoluteText} (${percentText})`;
+    const detailLineWidth = markerOffset + ctx.measureText(detailLine).width;
+    contentWidth = Math.max(contentWidth, detailLineWidth);
 
     const boxWidth = paddingX * 2 + contentWidth;
-    const boxHeight =
-        paddingY * 2 + headerFontSize + lineGap + lineFontSize + lineGap + lineFontSize;
+    const boxHeight = paddingY * 2 + headerFontSize + lineGap + lineFontSize;
 
     const preferRight = crosshairX < bounds.left + (bounds.right - bounds.left) / 2;
     let boxX = preferRight ? crosshairX + 12 : crosshairX - boxWidth - 12;
@@ -851,10 +846,7 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
 
     ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
     const textX = dotX + dotRadius + dotGap;
-    ctx.fillText(labelLine, textX, lineY);
-
-    const valueY = lineY + lineFontSize / 2 + lineGap + lineFontSize / 2;
-    ctx.fillText(valueLineText, boxX + paddingX, valueY);
+    ctx.fillText(detailLine, textX, lineY);
 
     ctx.restore();
 }
