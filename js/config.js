@@ -207,6 +207,20 @@ export const COLOR_PALETTES = {
     ],
 };
 
+export const CROSSHAIR_SETTINGS = {
+    compositionHoverBackground: 'rgba(6, 9, 22, 0.72)',
+    compositionHoverBorder: 'rgba(255, 255, 255, 0.08)',
+    compositionHoverPadding: {
+        desktop: { x: 12, y: 10 },
+        mobile: { x: 10, y: 8 },
+    },
+    compositionHoverCornerRadius: 6,
+    compositionHoverLineGap: {
+        desktop: 6,
+        mobile: 4,
+    },
+};
+
 export const PLUGIN_CONFIGS = {
     // Configuration for waveAnimationPlugin
     WAVE_ANIMATION: {

@@ -49,6 +49,7 @@ import {
     CONTRIBUTION_CHART_SETTINGS,
     mountainFill,
     COLOR_PALETTES,
+    CROSSHAIR_SETTINGS,
 } from '../config.js';
 
 const chartLayouts = {
@@ -88,6 +89,7 @@ const FX_GRADIENTS = {
 const crosshairState = {
     active: false,
     hoverTime: null,
+    hoverY: null,
     dragging: false,
     rangeStart: null,
     rangeEnd: null,
@@ -601,7 +603,15 @@ function drawCrosshairOverlay(ctx, layout) {
         // 3. The crosshair dot for a component should appear at the TOP of that component's area.
         // 4. The dot color should match the component's color in the chart.
         const topHoldingsKeys = new Set(enhancedHoldings.map((h) => h.key));
+        const boundsHeight = layout.chartBounds
+            ? layout.chartBounds.bottom - layout.chartBounds.top
+            : 0;
+        const normalizedPointerPercent =
+            Number.isFinite(crosshairState.hoverY) && boundsHeight > 0
+                ? ((layout.chartBounds.bottom - crosshairState.hoverY) / boundsHeight) * 100
+                : null;
         let cumulativeValue = 0;
+        let pointerHolding = null;
 
         for (const series of layout.series) {
             const seriesData = valuesAtTimeMap.get(series.key);
@@ -628,7 +638,39 @@ function drawCrosshairOverlay(ctx, layout) {
                 }
             }
 
+            if (
+                pointerHolding === null &&
+                Number.isFinite(normalizedPointerPercent) &&
+                componentValue > 0
+            ) {
+                const clampedPercent = Math.max(0, Math.min(100, normalizedPointerPercent));
+                const lowerBound = cumulativeValue;
+                const upperBound = cumulativeValue + componentValue;
+                if (clampedPercent >= lowerBound - 1e-4 && clampedPercent <= upperBound + 1e-4) {
+                    const baseAbsoluteValue = (totalValueBase * componentValue) / 100;
+                    const absoluteValue = convertValueToCurrency(
+                        baseAbsoluteValue,
+                        crosshairDate,
+                        selectedCurrency
+                    );
+                    pointerHolding = {
+                        key: series.key,
+                        label: series.label || series.key,
+                        color: series.color || '#ffffff',
+                        percent: componentValue,
+                        absoluteValue,
+                        formattedPercent: `${componentValue.toFixed(2)}%`,
+                        formattedValue: formatCurrencyInline(absoluteValue),
+                        dotY: layout.yScale(cumulativeValue + componentValue),
+                    };
+                }
+            }
+
             cumulativeValue += componentValue;
+        }
+
+        if (pointerHolding) {
+            drawCompositionHoverPanel(ctx, layout, x, pointerHolding.dotY, time, pointerHolding);
         }
 
         // Add this item to the crosshair display (sorted by value at crosshair time)
@@ -713,6 +755,110 @@ function drawCrosshairOverlay(ctx, layout) {
     updateCrosshairUI(snapshot, rangeSummary);
 }
 
+function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, holding) {
+    if (!holding) {
+        return;
+    }
+    const dateLabel = formatCrosshairDateLabel(time);
+    const bounds = layout.chartBounds;
+    if (!bounds || !dateLabel) {
+        return;
+    }
+
+    const isMobile = window.innerWidth <= 768;
+    const headerFontSize = isMobile ? 11 : 12;
+    const lineFontSize = isMobile ? 10 : 11;
+    const fontFamily = 'var(--font-family-mono)';
+    const paddingConfig = CROSSHAIR_SETTINGS.compositionHoverPadding || {};
+    const paddingX = isMobile ? (paddingConfig.mobile?.x ?? 10) : (paddingConfig.desktop?.x ?? 12);
+    const paddingY = isMobile ? (paddingConfig.mobile?.y ?? 8) : (paddingConfig.desktop?.y ?? 10);
+    const lineGapConfig = CROSSHAIR_SETTINGS.compositionHoverLineGap || {};
+    const lineGap = isMobile ? (lineGapConfig.mobile ?? 4) : (lineGapConfig.desktop ?? 6);
+    const dotRadius = 4;
+    const dotGap = 6;
+    const markerOffset = dotRadius * 2 + dotGap;
+
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    ctx.font = `600 ${headerFontSize}px ${fontFamily}`;
+    let contentWidth = ctx.measureText(dateLabel).width;
+
+    const label = holding.label || holding.key || '';
+    const percentText = holding.formattedPercent || `${holding.percent?.toFixed?.(2) ?? 0}%`;
+    const labelLine = label;
+
+    ctx.font = `${lineFontSize}px ${fontFamily}`;
+    const labelLineWidth = markerOffset + ctx.measureText(labelLine).width;
+    contentWidth = Math.max(contentWidth, labelLineWidth);
+
+    let absoluteText = holding.formattedValue || null;
+    if (!absoluteText || !absoluteText.trim()) {
+        const rawValue = Number.isFinite(holding.absoluteValue) ? holding.absoluteValue : null;
+        absoluteText = formatCurrencyInline(rawValue);
+    }
+    const valueLineText = `${absoluteText} (${percentText})`;
+    const valueLineWidth = ctx.measureText(valueLineText).width;
+    contentWidth = Math.max(contentWidth, valueLineWidth);
+
+    const boxWidth = paddingX * 2 + contentWidth;
+    const boxHeight =
+        paddingY * 2 + headerFontSize + lineGap + lineFontSize + lineGap + lineFontSize;
+
+    const preferRight = crosshairX < bounds.left + (bounds.right - bounds.left) / 2;
+    let boxX = preferRight ? crosshairX + 12 : crosshairX - boxWidth - 12;
+    boxX = Math.max(bounds.left + 4, Math.min(boxX, bounds.right - boxWidth - 4));
+
+    let boxY = crosshairY - boxHeight / 2;
+    const minY = bounds.top + 6;
+    const maxY = bounds.bottom - boxHeight - 6;
+    boxY = Math.max(minY, Math.min(boxY, maxY));
+
+    const backgroundColor = CROSSHAIR_SETTINGS.compositionHoverBackground || 'rgba(6, 9, 22, 0.8)';
+    const borderColor = CROSSHAIR_SETTINGS.compositionHoverBorder || 'rgba(255,255,255,0.08)';
+    const cornerRadius = CROSSHAIR_SETTINGS.compositionHoverCornerRadius ?? 6;
+
+    ctx.fillStyle = backgroundColor;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, cornerRadius);
+        ctx.fill();
+        ctx.stroke();
+    } else {
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+    }
+
+    ctx.font = `600 ${headerFontSize}px ${fontFamily}`;
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
+    const headerY = boxY + paddingY + headerFontSize / 2;
+    ctx.fillText(dateLabel, boxX + paddingX, headerY);
+
+    ctx.font = `${lineFontSize}px ${fontFamily}`;
+    ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
+    const lineY = headerY + headerFontSize / 2 + lineGap + lineFontSize / 2;
+    const dotX = boxX + paddingX + dotRadius;
+    ctx.beginPath();
+    ctx.fillStyle = holding.color || '#ffffff';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.arc(dotX, lineY, dotRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
+    const textX = dotX + dotRadius + dotGap;
+    ctx.fillText(labelLine, textX, lineY);
+
+    const valueY = lineY + lineFontSize / 2 + lineGap + lineFontSize / 2;
+    ctx.fillText(valueLineText, boxX + paddingX, valueY);
+
+    ctx.restore();
+}
+
 function requestChartRedraw() {
     if (crosshairChartManager && typeof crosshairChartManager.redraw === 'function') {
         crosshairChartManager.redraw();
@@ -725,6 +871,7 @@ function handleContainerLeave() {
     }
     crosshairState.active = false;
     crosshairState.hoverTime = null;
+    crosshairState.hoverY = null;
     crosshairState.rangeStart = null;
     crosshairState.rangeEnd = null;
     requestChartRedraw();
@@ -764,6 +911,10 @@ function handlePointerMove(event) {
 
     crosshairState.active = true;
     crosshairState.hoverTime = time;
+    crosshairState.hoverY = Math.max(
+        layout.chartBounds.top,
+        Math.min(y, layout.chartBounds.bottom)
+    );
 
     // Skip range functionality for composition chart
     if (layout.key === 'composition') {
@@ -783,6 +934,7 @@ function handlePointerLeave() {
     }
     crosshairState.active = false;
     crosshairState.hoverTime = null;
+    crosshairState.hoverY = null;
     requestChartRedraw();
 }
 
@@ -815,6 +967,10 @@ function handlePointerDown(event) {
         crosshairState.pointerId = event.pointerId;
         crosshairState.active = true;
         crosshairState.hoverTime = time;
+        crosshairState.hoverY = Math.max(
+            layout.chartBounds.top,
+            Math.min(y, layout.chartBounds.bottom)
+        );
         crosshairState.rangeStart = null;
         crosshairState.rangeEnd = null;
         requestChartRedraw();
@@ -825,6 +981,10 @@ function handlePointerDown(event) {
     crosshairState.active = true;
     crosshairState.dragging = true;
     crosshairState.hoverTime = time;
+    crosshairState.hoverY = Math.max(
+        layout.chartBounds.top,
+        Math.min(y, layout.chartBounds.bottom)
+    );
     crosshairState.rangeStart = time;
     crosshairState.rangeEnd = time;
     requestChartRedraw();
@@ -842,10 +1002,15 @@ function handlePointerUp(event) {
     if (layout) {
         const rect = pointerCanvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
         const time = layout.invertX ? layout.invertX(x) : null;
         if (Number.isFinite(time)) {
             crosshairState.hoverTime = time;
         }
+        crosshairState.hoverY = Math.max(
+            layout.chartBounds.top,
+            Math.min(y, layout.chartBounds.bottom)
+        );
     }
 
     // Skip range functionality for composition chart
@@ -873,6 +1038,7 @@ function handleDoubleClick() {
     crosshairState.rangeStart = null;
     crosshairState.rangeEnd = null;
     crosshairState.hoverTime = null;
+    crosshairState.hoverY = null;
     crosshairState.active = false;
     crosshairState.dragging = false;
     updateCrosshairUI(null, null);
