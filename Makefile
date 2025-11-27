@@ -62,7 +62,7 @@ precommit: hooks fmt-check
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
 
-precommit-fix: fmt lint-fix markdownlint-fix
+precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(MAKE) precommit
 
 perms:
