@@ -559,6 +559,8 @@ let lastEmptyFilterTerm = null;
 const COMMAND_ALIASES = [
     'help',
     'h',
+    'label',
+    'l',
     'reset',
     'clear',
     'all',
@@ -987,7 +989,7 @@ export function initTerminal({
                     switch (subcommand) {
                         case 'filter':
                             result =
-                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nAny text not part of a command is used for a general text search.';
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  YYYYqN:YYYYqN       - Filter between two quarters (e.g., 2022q1:2023q2)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nChart label toggle:\n  label (l)           - Toggle chart labels (start/end annotations, FX/composition hover panels).\n                        Example: label\n\nAny text not part of a command is used for a general text search.';
                             break;
                         default:
                             result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;
@@ -1110,6 +1112,16 @@ export function initTerminal({
                     }
                 }
                 break;
+            case 'label':
+            case 'l': {
+                const nextState = !(transactionState.showChartLabels === false);
+                transactionState.showChartLabels = !nextState;
+                result = `Chart labels are now ${transactionState.showChartLabels ? 'visible' : 'hidden'}.`;
+                if (chartManager && typeof chartManager.redraw === 'function') {
+                    chartManager.redraw();
+                }
+                break;
+            }
             case 't':
             case 'transaction':
                 if (args.length === 0) {

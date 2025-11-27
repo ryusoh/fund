@@ -32,6 +32,7 @@ import {
     setChartVisibility,
     setHistoricalPrices,
     setRunningAmountSeries,
+    getShowChartLabels,
 } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
 import {
@@ -479,6 +480,7 @@ function drawCrosshairOverlay(ctx, layout) {
         return;
     }
 
+    const showChartLabels = getShowChartLabels();
     const hasHover = crosshairState.active && Number.isFinite(crosshairState.hoverTime);
     const hasRange =
         Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
@@ -684,7 +686,7 @@ function drawCrosshairOverlay(ctx, layout) {
             cumulativeValue += componentValue;
         }
 
-        if (pointerHolding) {
+        if (showChartLabels && pointerHolding) {
             drawCompositionHoverPanel(ctx, layout, x, pointerHolding.dotY, time, pointerHolding);
         }
 
@@ -2902,6 +2904,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         return formatCurrencyCompact(amount, { currency });
     };
 
+    const showChartLabels = getShowChartLabels();
     let firstContributionLabelY = null;
     let contributionEndLabelY = null;
 
@@ -3298,7 +3301,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     }
 
     // Draw start and end values using raw data to ensure accuracy
-    if (showContribution && rawContributionData.length > 0) {
+    if (showChartLabels && showContribution && rawContributionData.length > 0) {
         const contributionGradient = BALANCE_GRADIENTS['contribution'];
         const contributionStartColor = contributionGradient
             ? contributionGradient[0]
@@ -3352,7 +3355,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         );
     }
 
-    if (showBalance && rawBalanceData.length > 0) {
+    if (showChartLabels && showBalance && rawBalanceData.length > 0) {
         const balanceGradient = BALANCE_GRADIENTS['balance'];
         const balanceStartColor = balanceGradient ? balanceGradient[0] : colors.portfolio;
         const balanceEndColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
@@ -3843,23 +3846,27 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const formatValue = (value) => `${value.toFixed(1)}%`;
 
-    renderedSeries.forEach((series) => {
-        const { x, y, color, value } = series;
+    const showChartLabels = getShowChartLabels();
 
-        drawEndValue(
-            ctx,
-            x,
-            y,
-            value,
-            color,
-            isMobile,
-            padding,
-            plotWidth,
-            plotHeight,
-            formatValue,
-            true
-        );
-    });
+    if (showChartLabels) {
+        renderedSeries.forEach((series) => {
+            const { x, y, color, value } = series;
+
+            drawEndValue(
+                ctx,
+                x,
+                y,
+                value,
+                color,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                formatValue,
+                true
+            );
+        });
+    }
 
     chartLayouts.performance = {
         key: 'performance',
@@ -4052,6 +4059,7 @@ function drawFxChart(ctx, chartManager, timestamp) {
         true
     );
 
+    const showChartLabels = getShowChartLabels();
     const renderedSeries = [];
     filteredSeries.forEach((series) => {
         const visibility = transactionState.chartVisibility[series.key];
@@ -4119,19 +4127,22 @@ function drawFxChart(ctx, chartManager, timestamp) {
         ctx.strokeStyle = strokeGradient;
         ctx.stroke();
 
-        drawEndValue(
-            ctx,
-            coords[coords.length - 1].x,
-            coords[coords.length - 1].y,
-            coords[coords.length - 1].value,
-            resolvedColor,
-            isMobile,
-            padding,
-            plotWidth,
-            plotHeight,
-            formatPercentInline,
-            true
-        );
+        if (showChartLabels) {
+            const lastCoord = coords[coords.length - 1];
+            drawEndValue(
+                ctx,
+                lastCoord.x,
+                lastCoord.y,
+                lastCoord.value,
+                resolvedColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                formatPercentInline,
+                true
+            );
+        }
 
         renderedSeries.push({
             key: series.key,

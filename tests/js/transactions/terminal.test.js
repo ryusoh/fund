@@ -44,6 +44,7 @@ function resetTransactionState() {
     transactionState.currencySymbol = '$';
     transactionState.fxRatesByCurrency = {};
     transactionState.historicalPrices = {};
+    transactionState.showChartLabels = true;
 }
 
 function setupDom({ tableVisible = false } = {}) {
@@ -64,15 +65,25 @@ function setupDom({ tableVisible = false } = {}) {
     `;
 }
 
-async function runCommand(command, { tableVisible = false } = {}) {
+async function runCommand(
+    command,
+    { tableVisible = false, chartManager: providedChartManager = null, setupState } = {}
+) {
     const filterAndSort = jest.fn();
     const toggleTable = jest.fn();
     const closeAllFilterDropdowns = jest.fn();
     const resetSortState = jest.fn();
-    const chartManager = { update: jest.fn() };
 
     setupDom({ tableVisible });
     resetTransactionState();
+    if (typeof setupState === 'function') {
+        setupState(transactionState);
+    }
+
+    const chartManager = providedChartManager || {
+        update: jest.fn(),
+        redraw: jest.fn(),
+    };
 
     if (!global.requestAnimationFrame) {
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
@@ -90,7 +101,7 @@ async function runCommand(command, { tableVisible = false } = {}) {
     input.value = command;
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 0));
-    return { filterAndSort };
+    return { filterAndSort, chartManager, toggleTable, closeAllFilterDropdowns, resetSortState };
 }
 
 function getLastTerminalMessage() {
@@ -120,5 +131,30 @@ describe('terminal date filters respect table visibility', () => {
         expect(getLastTerminalMessage()).toContain(
             'Applied date filter 2025 to transactions table.'
         );
+    });
+});
+
+describe('label command', () => {
+    test('turns chart labels off and requests redraw', async () => {
+        const chartManager = { update: jest.fn(), redraw: jest.fn() };
+        await runCommand('label', { chartManager });
+
+        expect(transactionState.showChartLabels).toBe(false);
+        expect(chartManager.redraw).toHaveBeenCalledTimes(1);
+        expect(getLastTerminalMessage()).toContain('Chart labels are now hidden.');
+    });
+
+    test('turns chart labels back on when already hidden', async () => {
+        const chartManager = { update: jest.fn(), redraw: jest.fn() };
+        await runCommand('label', {
+            chartManager,
+            setupState: (state) => {
+                state.showChartLabels = false;
+            },
+        });
+
+        expect(transactionState.showChartLabels).toBe(true);
+        expect(chartManager.redraw).toHaveBeenCalledTimes(1);
+        expect(getLastTerminalMessage()).toContain('Chart labels are now visible.');
     });
 });

@@ -21,6 +21,7 @@ export const transactionState = {
         buy: true,
         sell: true,
     },
+    showChartLabels: true,
     sortState,
     commandHistory: [],
     historyIndex: -1,
@@ -89,6 +90,14 @@ export function setChartVisibility(key, visible) {
 
 export function getChartVisibility() {
     return { ...transactionState.chartVisibility };
+}
+
+export function setShowChartLabels(enabled) {
+    transactionState.showChartLabels = enabled !== false;
+}
+
+export function getShowChartLabels() {
+    return transactionState.showChartLabels !== false;
 }
 
 export function pushCommandHistory(command) {
