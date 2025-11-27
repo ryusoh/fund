@@ -841,12 +841,12 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     }
 
     ctx.font = `${lineFontSize}px ${fontFamily}`;
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.85)';
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.78)';
     const headerY = boxY + paddingY + lineFontSize / 2;
     ctx.fillText(dateLabel, boxX + paddingX, headerY);
 
     ctx.font = `${lineFontSize}px ${fontFamily}`;
-    ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
+    ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
     const lineY = headerY + lineFontSize / 2 + lineGap + lineFontSize / 2;
     const dotX = boxX + paddingX + dotRadius;
     ctx.beginPath();
@@ -857,7 +857,7 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
+    ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
     const textX = dotX + dotRadius + dotGap;
     ctx.fillText(detailLine, textX, lineY);
 
