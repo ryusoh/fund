@@ -3680,7 +3680,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
             plotWidth,
             plotHeight,
             formatValue,
-            false
+            true
         );
     });
 
@@ -3953,7 +3953,7 @@ function drawFxChart(ctx, chartManager, timestamp) {
             plotWidth,
             plotHeight,
             formatPercentInline,
-            false
+            true
         );
 
         renderedSeries.push({
