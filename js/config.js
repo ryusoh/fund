@@ -110,13 +110,19 @@ export const CHART_SMOOTHING = {
             passes: 1,
             description: 'Automatically adjusts based on data volatility',
         },
+        none: {
+            method: 'none',
+            params: {},
+            passes: 0,
+            description: 'No smoothing (use raw values)',
+        },
     },
     // Chart-specific smoothing configurations
     charts: {
-        balance: 'balanced', // EMA smoothing for balance series
-        contribution: 'aggressive', // Stronger smoothing to soften contribution steps
-        performance: 'balanced', // EMA smoothing for performance charts
-        composition: 'conservative', // EMA smoothing with minimal impact for composition charts
+        balance: 'none', // EMA smoothing for balance series
+        contribution: 'none', // Stronger smoothing to soften contribution steps
+        performance: 'none', // EMA smoothing for performance charts
+        composition: 'none', // EMA smoothing with minimal impact for composition charts
     },
 };
 
@@ -219,6 +225,14 @@ export const CROSSHAIR_SETTINGS = {
         desktop: 6,
         mobile: 4,
     },
+};
+
+export const CHART_LINE_WIDTHS = {
+    contribution: 1,
+    balance: 1,
+    performance: 1,
+    fx: 1,
+    crosshairMarker: 1,
 };
 
 export const PLUGIN_CONFIGS = {

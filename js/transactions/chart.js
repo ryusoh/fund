@@ -50,6 +50,7 @@ import {
     mountainFill,
     COLOR_PALETTES,
     CROSSHAIR_SETTINGS,
+    CHART_LINE_WIDTHS,
 } from '../config.js';
 
 const chartLayouts = {
@@ -532,7 +533,7 @@ function drawCrosshairOverlay(ctx, layout) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
     ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1;
+    ctx.lineWidth = CHART_LINE_WIDTHS.crosshairMarker ?? 1;
     ctx.beginPath();
     ctx.moveTo(x, layout.chartBounds.top);
     ctx.lineTo(x, layout.chartBounds.bottom);
@@ -643,7 +644,7 @@ function drawCrosshairOverlay(ctx, layout) {
                     ctx.save();
                     ctx.fillStyle = series.color || '#ffffff';
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = CHART_LINE_WIDTHS.crosshairMarker ?? 2;
                     ctx.beginPath();
                     ctx.arc(x, y, 4, 0, Math.PI * 2);
                     ctx.fill();
@@ -1796,7 +1797,11 @@ function getSmoothingConfig(chartType) {
     }
 
     const methodName = CHART_SMOOTHING.charts[chartType] || 'balanced';
-    return CHART_SMOOTHING.methods[methodName] || CHART_SMOOTHING.methods.balanced;
+    const methodConfig = CHART_SMOOTHING.methods[methodName] || CHART_SMOOTHING.methods.balanced;
+    if (!methodConfig || methodConfig.method === 'none') {
+        return null;
+    }
+    return methodConfig;
 }
 
 const glowAnimator = createGlowTrailAnimator(ANIMATED_LINE_SETTINGS);
@@ -2904,7 +2909,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         animatedSeries.push({
             key: 'contribution',
             color: colors.contribution,
-            lineWidth: 2,
+            lineWidth: CHART_LINE_WIDTHS.contribution ?? 2,
             order: 1,
             data: contributionData
                 .filter((item) => {
@@ -2922,7 +2927,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         animatedSeries.push({
             key: 'balance',
             color: colors.portfolio,
-            lineWidth: 2,
+            lineWidth: CHART_LINE_WIDTHS.balance ?? 2,
             order: 2,
             data: balanceData
                 .filter((item) => {
@@ -3722,7 +3727,7 @@ async function drawPerformanceChart(ctx, chartManager, timestamp) {
         return 0;
     });
 
-    const lineThickness = 2;
+    const lineThickness = CHART_LINE_WIDTHS.performance ?? 2;
     const renderedSeries = [];
     let glowIndex = 0;
 
@@ -4110,7 +4115,7 @@ function drawFxChart(ctx, chartManager, timestamp) {
                 ctx.lineTo(coord.x, coord.y);
             }
         });
-        ctx.lineWidth = 2;
+        ctx.lineWidth = CHART_LINE_WIDTHS.fx ?? 2;
         ctx.strokeStyle = strokeGradient;
         ctx.stroke();
 
