@@ -76,6 +76,7 @@
         opacity 120ms ease,
         visibility 120ms ease;
     background: rgba(7, 9, 15, 0.12);
+    z-index: 25;
 }
 
 .terminal-crosshair-overlay.terminal-crosshair-active {

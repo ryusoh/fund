@@ -242,6 +242,20 @@ const formatCurrencyInline = (value) => {
     return `${sign}${symbol}${absolute.toFixed(2)}`;
 };
 
+const DEFAULT_MONO_FONT = "'JetBrains Mono','IBM Plex Mono','Menlo',monospace";
+
+function getMonoFontFamily() {
+    if (typeof window !== 'undefined' && window.getComputedStyle) {
+        const value = window
+            .getComputedStyle(document.documentElement)
+            .getPropertyValue('--font-family-mono');
+        if (value && value.trim()) {
+            return value.trim();
+        }
+    }
+    return DEFAULT_MONO_FONT;
+}
+
 const formatPercentInline = (value) => {
     if (!Number.isFinite(value)) {
         return '0%';
@@ -766,9 +780,8 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     }
 
     const isMobile = window.innerWidth <= 768;
-    const headerFontSize = isMobile ? 11 : 12;
+    const fontFamily = getMonoFontFamily();
     const lineFontSize = isMobile ? 10 : 11;
-    const fontFamily = 'var(--font-family-mono)';
     const paddingConfig = CROSSHAIR_SETTINGS.compositionHoverPadding || {};
     const paddingX = isMobile ? (paddingConfig.mobile?.x ?? 10) : (paddingConfig.desktop?.x ?? 12);
     const paddingY = isMobile ? (paddingConfig.mobile?.y ?? 8) : (paddingConfig.desktop?.y ?? 10);
@@ -782,7 +795,7 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
-    ctx.font = `600 ${headerFontSize}px ${fontFamily}`;
+    ctx.font = `${lineFontSize}px ${fontFamily}`;
     let contentWidth = ctx.measureText(dateLabel).width;
 
     const label = holding.label || holding.key || '';
@@ -799,7 +812,7 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     contentWidth = Math.max(contentWidth, detailLineWidth);
 
     const boxWidth = paddingX * 2 + contentWidth;
-    const boxHeight = paddingY * 2 + headerFontSize + lineGap + lineFontSize;
+    const boxHeight = paddingY * 2 + lineFontSize * 2 + lineGap;
 
     const preferRight = crosshairX < bounds.left + (bounds.right - bounds.left) / 2;
     let boxX = preferRight ? crosshairX + 12 : crosshairX - boxWidth - 12;
@@ -827,14 +840,14 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
         ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
     }
 
-    ctx.font = `600 ${headerFontSize}px ${fontFamily}`;
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
-    const headerY = boxY + paddingY + headerFontSize / 2;
+    ctx.font = `${lineFontSize}px ${fontFamily}`;
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.85)';
+    const headerY = boxY + paddingY + lineFontSize / 2;
     ctx.fillText(dateLabel, boxX + paddingX, headerY);
 
     ctx.font = `${lineFontSize}px ${fontFamily}`;
     ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
-    const lineY = headerY + headerFontSize / 2 + lineGap + lineFontSize / 2;
+    const lineY = headerY + lineFontSize / 2 + lineGap + lineFontSize / 2;
     const dotX = boxX + paddingX + dotRadius;
     ctx.beginPath();
     ctx.fillStyle = holding.color || '#ffffff';
@@ -1978,7 +1991,7 @@ function drawEndValue(
 ) {
     const text = formatValue(value);
     const fontSize = isMobile ? 9 : 11;
-    const fontFamily = 'var(--font-family-mono)';
+    const fontFamily = getMonoFontFamily();
 
     context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = 'left';
@@ -2077,7 +2090,7 @@ function drawStartValue(
 ) {
     const text = formatValue(value);
     const fontSize = isMobile ? 9 : 11;
-    const fontFamily = 'var(--font-family-mono)';
+    const fontFamily = getMonoFontFamily();
 
     context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = 'left';
@@ -2366,6 +2379,7 @@ function drawAxes(
     forcePercent = false
 ) {
     const isMobile = window.innerWidth <= 768;
+    const monoFont = getMonoFontFamily();
     const { drawXAxis = true, drawYAxis = true } = axisOptions;
 
     // Generate concrete tick values
@@ -2381,7 +2395,7 @@ function drawAxes(
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
             ctx.stroke();
             ctx.fillStyle = '#8b949e';
-            ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
+            ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
             ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
@@ -2404,7 +2418,7 @@ function drawAxes(
     if (drawXAxis) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.font = isMobile ? '10px var(--font-family-mono)' : '12px var(--font-family-mono)';
+        ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
     }
 
     yearTicks.forEach((tick, index) => {
