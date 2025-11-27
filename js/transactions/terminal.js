@@ -316,7 +316,11 @@ function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
         return null;
     }
     const header = `Performance (base ${selectedCurrency}):`;
-    return `${header}\n${snapshots.join('   ')}`;
+    const lines = [];
+    for (let i = 0; i < snapshots.length; i += 4) {
+        lines.push(snapshots.slice(i, i + 4).join('   '));
+    }
+    return `${header}\n${lines.join('\n')}`;
 }
 
 async function getCompositionSnapshotLine() {
@@ -396,8 +400,8 @@ async function getCompositionSnapshotLine() {
     }
 
     const lines = [];
-    for (let i = 0; i < formatted.length; i += 4) {
-        lines.push(formatted.slice(i, i + 4).join('   '));
+    for (let i = 0; i < formatted.length; i += 3) {
+        lines.push(formatted.slice(i, i + 3).join('   '));
     }
 
     return `Composition (${dateLabel}):\n${lines.join('\n')}`;
@@ -1221,7 +1225,9 @@ export function initTerminal({
                                 result = `Showing performance chart for ${formatDateRange(
                                     dateRange
                                 )}.\n\n${TWRR_MESSAGE}`;
-                                const performanceSnapshot = getPerformanceSnapshotLine();
+                                const performanceSnapshot = getPerformanceSnapshotLine({
+                                    includeHidden: true,
+                                });
                                 if (performanceSnapshot) {
                                     result += `\n\n${performanceSnapshot}`;
                                 }
@@ -1471,7 +1477,7 @@ export function initTerminal({
                     message += `\n${fxSnapshot}`;
                 }
             } else if (activeChart === 'performance') {
-                const performanceSnapshot = getPerformanceSnapshotLine();
+                const performanceSnapshot = getPerformanceSnapshotLine({ includeHidden: true });
                 if (performanceSnapshot) {
                     message += `\n${performanceSnapshot}`;
                 }
