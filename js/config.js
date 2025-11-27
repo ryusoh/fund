@@ -402,6 +402,16 @@ export const CALENDAR_BACKGROUND_EFFECT = {
     },
 };
 
+export const TERMINAL_BACKGROUND_EFFECT = {
+    enabled: false,
+    sweepDuration: 2,
+    sweepPauseTime: 0,
+    colors: {
+        color1: '60, 120, 255',
+        color2: '255, 80, 160',
+    },
+};
+
 export const CALENDAR_MONTH_LABEL_BACKGROUND = {
     paddingX: 10,
     paddingY: 5,

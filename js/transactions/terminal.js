@@ -757,6 +757,7 @@ export function initTerminal({
     closeAllFilterDropdowns,
     resetSortState,
     chartManager,
+    onCommandExecuted,
 }) {
     const terminalInput = document.getElementById('terminalInput');
     const terminal = document.getElementById('terminal');
@@ -1331,6 +1332,10 @@ export function initTerminal({
         }
         outputContainer.scrollTop = outputContainer.scrollHeight;
         requestFadeUpdate();
+
+        if (typeof onCommandExecuted === 'function') {
+            onCommandExecuted();
+        }
     }
 
     function parseSimplifiedDateRange(command) {

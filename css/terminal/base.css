@@ -109,6 +109,57 @@ body {
     box-sizing: border-box;
 }
 
+#terminalSweepOverlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    background: linear-gradient(
+        115deg,
+        transparent 25%,
+        rgba(var(--optic-color-1, 60, 120, 255), 0.08) 40%,
+        rgba(200, 220, 255, 0.18) 45%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 200, 220, 0.18) 55%,
+        rgba(var(--optic-color-2, 255, 80, 160), 0.08) 60%,
+        transparent 75%
+    );
+    background-size: 300% 100%;
+    filter: blur(12px);
+    mix-blend-mode: screen;
+}
+
+#terminalSweepOverlay.sweeping {
+    animation: terminal-optic-sweep var(--optic-sweep-duration, 3s) cubic-bezier(0.35, 0, 0.25, 1)
+        forwards;
+}
+
+@keyframes terminal-optic-sweep {
+    0% {
+        background-position: 95% 0;
+        opacity: 0;
+    }
+    5% {
+        opacity: 1;
+    }
+    95% {
+        opacity: 1;
+    }
+    100% {
+        background-position: 5% 0;
+        opacity: 0;
+    }
+}
+
+#terminalOutput,
+.transaction-container,
+.chart-card,
+.table-responsive-container {
+    position: relative;
+    z-index: 1;
+}
+
 ::-webkit-scrollbar-corner {
     background: transparent;
 }

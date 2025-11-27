@@ -16,8 +16,13 @@ import {
     getActiveFilterTerm,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
-import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT } from '../../config.js';
+import {
+    PERLIN_BACKGROUND_SETTINGS,
+    TABLE_GLASS_EFFECT,
+    TERMINAL_BACKGROUND_EFFECT,
+} from '../../config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
+import { initBackgroundSweepEffect } from '@ui/backgroundSweep.js';
 
 // Helper function to convert currency series
 function convertCurrencySeries(series, targetCurrency) {
@@ -72,6 +77,7 @@ import { initCurrencyToggle, cycleCurrency, getStoredCurrency } from '@ui/curren
 let chartManager;
 let tableController;
 let uiController;
+let triggerTerminalSweep = null;
 
 // ---------------------------------------------------------------------------
 // Perlin background helpers
@@ -275,6 +281,15 @@ function initialize() {
             onUpdate: updateTerminalCrosshair,
         },
     });
+
+    const sweepController = initBackgroundSweepEffect({
+        selector: '#terminalSweepOverlay',
+        effectConfig: {
+            ...TERMINAL_BACKGROUND_EFFECT,
+            targetElement: '#terminalSweepOverlay',
+        },
+    });
+    triggerTerminalSweep = sweepController.triggerSweep;
     tableController = initTable({
         onFilterChange: () => {
             if (chartManager && typeof chartManager.update === 'function') {
@@ -293,6 +308,11 @@ function initialize() {
         closeAllFilterDropdowns: tableController.closeAllFilterDropdowns,
         resetSortState,
         chartManager,
+        onCommandExecuted: () => {
+            if (typeof triggerTerminalSweep === 'function') {
+                triggerTerminalSweep();
+            }
+        },
     });
 
     loadTransactions();
