@@ -134,6 +134,35 @@ function getCrosshairElements() {
     return crosshairElementsCache;
 }
 
+function parseLocalDate(value) {
+    if (value instanceof Date) {
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+    if (typeof value === 'number') {
+        const temp = new Date(value);
+        if (!Number.isNaN(temp.getTime())) {
+            return new Date(temp.getFullYear(), temp.getMonth(), temp.getDate());
+        }
+        return null;
+    }
+    if (typeof value === 'string') {
+        const parts = value.split('-');
+        if (parts.length >= 3) {
+            const year = Number(parts[0]);
+            const month = Number(parts[1]) - 1;
+            const day = Number(parts[2]);
+            if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+                return new Date(year, month, day);
+            }
+        }
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) {
+            return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+        }
+    }
+    return null;
+}
+
 function clampTime(value, min, max) {
     if (!Number.isFinite(value)) {
         return min;
@@ -884,7 +913,10 @@ export function hasActiveTransactionFilters() {
     );
 }
 
-function getContributionSeriesForTransactions(transactions, includeSyntheticStart = false) {
+function getContributionSeriesForTransactions(
+    transactions,
+    { includeSyntheticStart = false, padToDate = null } = {}
+) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }
@@ -895,16 +927,19 @@ function getContributionSeriesForTransactions(transactions, includeSyntheticStar
         cached &&
         cached.splitHistory === splitHistoryRef &&
         cached.includeSyntheticStart === includeSyntheticStart &&
+        cached.padToDate === padToDate &&
         cached.currency === currentCurrency
     ) {
         return cached.series;
     }
     const series = buildContributionSeriesFromTransactions(transactions, {
         includeSyntheticStart,
+        padToDate,
     });
     contributionSeriesCache.set(transactions, {
         splitHistory: splitHistoryRef,
         includeSyntheticStart,
+        padToDate,
         currency: currentCurrency,
         series,
     });
@@ -913,7 +948,7 @@ function getContributionSeriesForTransactions(transactions, includeSyntheticStar
 
 export function buildContributionSeriesFromTransactions(
     transactions,
-    { includeSyntheticStart = false } = {}
+    { includeSyntheticStart = false, padToDate = null } = {}
 ) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
@@ -962,11 +997,16 @@ export function buildContributionSeriesFromTransactions(
     const lastPoint = series[series.length - 1];
     if (lastPoint) {
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const targetDateRaw = padToDate ? new Date(padToDate) : today;
+        const targetDate = Number.isNaN(targetDateRaw.getTime()) ? today : targetDateRaw;
+        targetDate.setHours(0, 0, 0, 0);
+        const clampedTarget = targetDate > today ? today : targetDate;
         const lastTransactionDate = new Date(lastPoint.tradeDate);
 
-        if (today > lastTransactionDate) {
+        if (clampedTarget > lastTransactionDate) {
             series.push({
-                tradeDate: today.toISOString().split('T')[0],
+                tradeDate: clampedTarget.toISOString().split('T')[0],
                 amount: lastPoint.amount,
                 orderType: 'padding',
                 netAmount: 0,
@@ -2302,7 +2342,22 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     let contributionFromTransactions = false;
 
     if (contributionTransactions.length > 0) {
-        contributionSource = getContributionSeriesForTransactions(contributionTransactions, true);
+        const today = parseLocalDate(new Date());
+        const rangeTo = transactionState.chartDateRange?.to
+            ? parseLocalDate(transactionState.chartDateRange.to)
+            : null;
+        let padToDate;
+        if (rangeTo && today) {
+            padToDate = Math.min(rangeTo.getTime(), today.getTime());
+        } else if (today) {
+            padToDate = today.getTime();
+        } else {
+            padToDate = rangeTo?.getTime() ?? Date.now();
+        }
+        contributionSource = getContributionSeriesForTransactions(contributionTransactions, {
+            includeSyntheticStart: true,
+            padToDate,
+        });
         contributionFromTransactions =
             filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
         if (!filtersActive && contributionSource !== runningAmountSeries) {
@@ -2381,8 +2436,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     const emptyState = document.getElementById('runningAmountEmpty');
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
     const filterFromTime =
         filterFrom && Number.isFinite(filterFrom.getTime()) ? filterFrom.getTime() : null;
     const filterToTime =
@@ -2390,20 +2445,43 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
 
     const filterDataByDateRange = (data) => {
         return data.filter((item) => {
-            const itemDate = new Date(item.date);
-            return (!filterFrom || itemDate >= filterFrom) && (!filterTo || itemDate <= filterTo);
+            const itemDate = parseLocalDate(item.date);
+            if (!itemDate) {
+                return false;
+            }
+
+            // Normalize dates to date-only strings for comparison (YYYY-MM-DD)
+            const itemDateStr = itemDate.toISOString().split('T')[0];
+            const filterFromStr = filterFrom ? filterFrom.toISOString().split('T')[0] : null;
+            const filterToStr = filterTo ? filterTo.toISOString().split('T')[0] : null;
+
+            // Check if item is within the filter range
+            const withinStart = !filterFromStr || itemDateStr >= filterFromStr;
+            const withinEnd = !filterToStr || itemDateStr <= filterToStr;
+
+            // Preserve padding points that extend the series to the filter endpoint
+            const isPadding = item.orderType && item.orderType.toLowerCase() === 'padding';
+            if (isPadding && filterToStr) {
+                // If it's a padding point, allow it if it matches the filter end
+                // or if it's within the valid range (which is covered by withinStart && withinEnd)
+                if (itemDateStr === filterToStr) {
+                    return withinStart;
+                }
+            }
+
+            return withinStart && withinEnd;
         });
     };
 
     const rawContributionData = filterDataByDateRange(
         (contributionSource || [])
-            .map((item) => ({ ...item, date: new Date(item.tradeDate || item.date) }))
-            .filter((item) => !Number.isNaN(item.date.getTime()))
+            .map((item) => ({ ...item, date: parseLocalDate(item.tradeDate || item.date) }))
+            .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
     );
     const mappedBalanceSource = showBalance
         ? (balanceSource || [])
-              .map((item) => ({ ...item, date: new Date(item.date) }))
-              .filter((item) => !Number.isNaN(item.date.getTime()))
+              .map((item) => ({ ...item, date: parseLocalDate(item.date) }))
+              .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
         : [];
     const rawBalanceData = showBalance
         ? injectSyntheticStartPoint(
@@ -2420,7 +2498,9 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     // Apply smoothing to contribution and balance data
     const contributionSmoothingConfig = getSmoothingConfig('contribution');
     const balanceSmoothingConfig = getSmoothingConfig('balance') || contributionSmoothingConfig;
+    const rangeActive = Boolean(filterFrom || filterTo);
     const shouldSmoothContribution =
+        !rangeActive &&
         !contributionFromTransactions &&
         rawContributionData.length > 2 &&
         contributionSmoothingConfig;
@@ -2515,31 +2595,44 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         // Ensure minTime is at least the filter start time
         minTime = Math.max(minTime, filterFromTime);
     }
-    // Calculate maxTime based on actual data within the filter range
-    let maxTime = allTimes.length > 0 ? Math.max(...allTimes) : Date.now();
+    // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
+    let maxTime;
     if (Number.isFinite(filterToTime)) {
-        maxTime = filterToTime;
+        // When filter is active, extend to min(filterEnd, today)
+        // This handles both past periods (stops at filter end) and current periods (stops at today)
+        maxTime = Math.min(filterToTime, Date.now());
+    } else if (allTimes.length > 0) {
+        // No filter: use the maximum time from the data (including padding points)
+        maxTime = Math.max(...allTimes);
+    } else {
+        maxTime = Date.now();
     }
 
-    // Recalculate maxTime to ensure it's based on the actual data range within filter bounds
-    const isWithinFilterEnd = (time) => !Number.isFinite(filterToTime) || time <= filterToTime;
-    const allContributionTimes = contributionData
-        .map((d) => d.date.getTime())
-        .filter((time) => Number.isFinite(time) && isWithinFilterEnd(time));
-    const allBalanceTimes = balanceData
-        .map((d) => d.date.getTime())
-        .filter((time) => Number.isFinite(time) && isWithinFilterEnd(time));
-    const allActualTimes = [...allContributionTimes, ...allBalanceTimes];
-
-    if (allActualTimes.length > 0) {
-        maxTime = Math.max(...allActualTimes);
-    } else if (Number.isFinite(filterToTime)) {
-        maxTime = filterToTime;
+    // Force-extend series to maxTime to ensure the line reaches the right edge of the chart
+    // This fixes issues where the line stops at the last transaction date instead of the filter end/today
+    if (contributionData.length > 0) {
+        const lastPoint = contributionData[contributionData.length - 1];
+        if (lastPoint.date.getTime() < maxTime) {
+            contributionData.push({
+                date: new Date(maxTime),
+                amount: lastPoint.amount,
+            });
+        }
     }
 
-    // Ensure maxTime is also capped at filterToTime
-    if (Number.isFinite(filterToTime)) {
-        maxTime = Math.min(maxTime, filterToTime);
+    if (balanceData.length > 0) {
+        const lastPoint = balanceData[balanceData.length - 1];
+        if (lastPoint.date.getTime() < maxTime) {
+            balanceData.push({
+                date: new Date(maxTime),
+                value: lastPoint.value,
+            });
+        }
+    }
+
+    // Remove debug object
+    if (window.DEBUG_CHART) {
+        delete window.DEBUG_CHART;
     }
 
     const contributionValues = contributionData.map((item) => item.amount);
@@ -2747,6 +2840,10 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         normalizedDate.setHours(0, 0, 0, 0);
         const timestamp = normalizedDate.getTime();
         if (!Number.isFinite(timestamp)) {
+            return;
+        }
+        // Ensure volume bars are strictly within the visible chart range
+        if (timestamp < minTime || timestamp > maxTime) {
             return;
         }
         const netAmount = Math.abs(Number(item.netAmount) || 0);

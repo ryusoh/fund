@@ -292,3 +292,118 @@ describe('Regression: Chart Date Range Fixes', () => {
         });
     });
 });
+
+describe('Chart Debug: Date Range Extension', () => {
+    // Mock parseLocalDate
+    const parseLocalDate = (value) => {
+        if (value instanceof Date) {
+            return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+        }
+        if (typeof value === 'string') {
+            const parts = value.split('-');
+            if (parts.length >= 3) {
+                const year = Number(parts[0]);
+                const month = Number(parts[1]) - 1;
+                const day = Number(parts[2]);
+                return new Date(year, month, day);
+            }
+        }
+        return new Date(value);
+    };
+
+    // Mock Date.now to return 2025-11-26
+    const MOCK_TODAY = new Date(2025, 10, 26).getTime(); // Nov 26, 2025
+
+    let dateSpy;
+
+    beforeAll(() => {
+        dateSpy = jest.spyOn(Date, 'now').mockImplementation(() => MOCK_TODAY);
+    });
+
+    afterAll(() => {
+        if (dateSpy) {
+            dateSpy.mockRestore();
+        }
+    });
+
+    const testScenario = (name, filterFromStr, filterToStr, paddingDateStr, expectedMaxTimeStr) => {
+        test(name, () => {
+            const filterFrom = filterFromStr ? parseLocalDate(filterFromStr) : null;
+            const filterTo = filterToStr ? parseLocalDate(filterToStr) : null;
+            const filterToTime = filterTo ? filterTo.getTime() : null;
+
+            const contributionSource = [
+                { tradeDate: '2025-01-15', amount: 100, orderType: 'buy' },
+                { tradeDate: paddingDateStr, amount: 100, orderType: 'padding' },
+            ];
+
+            // Exact logic from chart.js
+            const filterDataByDateRange = (data) => {
+                return data.filter((item) => {
+                    const itemDate = parseLocalDate(item.date);
+                    if (!itemDate) {
+                        return false;
+                    }
+
+                    // Normalize dates to date-only strings for comparison (YYYY-MM-DD)
+                    const itemDateStr = itemDate.toISOString().split('T')[0];
+                    const filterFromStrLocal = filterFrom
+                        ? filterFrom.toISOString().split('T')[0]
+                        : null;
+                    const filterToStrLocal = filterTo ? filterTo.toISOString().split('T')[0] : null;
+
+                    // Check if item is within the filter range
+                    const withinStart = !filterFromStrLocal || itemDateStr >= filterFromStrLocal;
+                    const withinEnd = !filterToStrLocal || itemDateStr <= filterToStrLocal;
+
+                    // Preserve padding points that extend the series to the filter endpoint
+                    const isPadding = item.orderType && item.orderType.toLowerCase() === 'padding';
+                    if (isPadding && filterToStrLocal) {
+                        if (itemDateStr === filterToStrLocal) {
+                            return withinStart;
+                        }
+                    }
+
+                    return withinStart && withinEnd;
+                });
+            };
+
+            const rawContributionData = filterDataByDateRange(
+                (contributionSource || [])
+                    .map((item) => ({ ...item, date: parseLocalDate(item.tradeDate || item.date) }))
+                    .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
+            );
+
+            // Calculate maxTime
+            let maxTime;
+            if (Number.isFinite(filterToTime)) {
+                maxTime = Math.min(filterToTime, Date.now());
+            } else {
+                maxTime = Date.now();
+            }
+
+            // Assertions
+            // 1. Padding point should be preserved
+            expect(rawContributionData.length).toBeGreaterThan(0);
+            const lastPoint = rawContributionData[rawContributionData.length - 1];
+            const lastPointDateStr = lastPoint.date.toISOString().split('T')[0];
+            expect(lastPointDateStr).toBe(paddingDateStr);
+
+            // 2. MaxTime should match expected
+            const maxTimeStr = new Date(maxTime).toISOString().split('T')[0];
+            expect(maxTimeStr).toBe(expectedMaxTimeStr);
+        });
+    };
+
+    // Scenario 1: 2025q2 (Past)
+    // Filter: Apr 1 - Jun 30. Today: Nov 26.
+    // Padding: Jun 30.
+    // Expected MaxTime: Jun 30.
+    testScenario('2025q2 (Past)', '2025-04-01', '2025-06-30', '2025-06-30', '2025-06-30');
+
+    // Scenario 2: 2025q4 (Current)
+    // Filter: Oct 1 - Dec 31. Today: Nov 26.
+    // Padding: Nov 26.
+    // Expected MaxTime: Nov 26.
+    testScenario('2025q4 (Current)', '2025-10-01', '2025-12-31', '2025-11-26', '2025-11-26');
+});
