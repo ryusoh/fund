@@ -72,14 +72,14 @@ describe('Contribution chart legend toggles', () => {
     });
 
     test('legend clicks toggle contribution visibility', async () => {
-        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('../../js/config.js');
+        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('@js/config.js');
         ANIMATED_LINE_SETTINGS.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.contribution.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.performance.enabled = false;
         mountainFill.enabled = false;
 
-        const { transactionState } = require('../../js/transactions/state.js');
-        const { createChartManager } = require('../../js/transactions/chart.js');
+        const { transactionState } = require('@js/transactions/state.js');
+        const { createChartManager } = require('@js/transactions/chart.js');
 
         transactionState.activeChart = 'contribution';
         transactionState.chartVisibility = {
@@ -171,14 +171,14 @@ describe('Contribution chart legend toggles', () => {
     });
 
     test('balance legend remains present when toggled off and on', async () => {
-        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('../../js/config.js');
+        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('@js/config.js');
         ANIMATED_LINE_SETTINGS.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.contribution.enabled = false;
         ANIMATED_LINE_SETTINGS.charts.performance.enabled = false;
         mountainFill.enabled = false;
 
-        const { transactionState } = require('../../js/transactions/state.js');
-        const { createChartManager } = require('../../js/transactions/chart.js');
+        const { transactionState } = require('@js/transactions/state.js');
+        const { createChartManager } = require('@js/transactions/chart.js');
 
         transactionState.activeChart = 'contribution';
         transactionState.chartVisibility = {
