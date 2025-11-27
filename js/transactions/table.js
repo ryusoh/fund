@@ -9,6 +9,14 @@ import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
 import { normalizeDateOnly } from '@utils/date.js';
 import { adjustMobilePanels } from './layout.js';
 
+function isTransactionTableVisible() {
+    if (typeof document === 'undefined') {
+        return true;
+    }
+    const tableContainer = document.querySelector('.table-responsive-container');
+    return Boolean(tableContainer && !tableContainer.classList.contains('is-hidden'));
+}
+
 function parseCommandPalette(value) {
     const tokens = value.split(/\s+/).filter(Boolean);
     const textTokens = [];
@@ -123,7 +131,8 @@ function filterAndSort(searchTerm = '') {
     const range = transactionState.chartDateRange || { from: null, to: null };
     const rangeStart = range.from ? Date.parse(range.from) : null;
     const rangeEnd = range.to ? Date.parse(range.to) : null;
-    if (rangeStart !== null || rangeEnd !== null) {
+    const shouldApplyDateRange = isTransactionTableVisible();
+    if (shouldApplyDateRange && (rangeStart !== null || rangeEnd !== null)) {
         filtered = filtered.filter((transaction) => {
             const normalized = normalizeDateOnly(transaction.tradeDate);
             const tradeTime = Date.parse(normalized || transaction.tradeDate);

@@ -1182,6 +1182,11 @@ export function initTerminal({
         }
     }
 
+    function isTransactionTableVisible() {
+        const tableContainer = document.querySelector('.table-responsive-container');
+        return Boolean(tableContainer && !tableContainer.classList.contains('is-hidden'));
+    }
+
     function isActiveChartVisible() {
         const activeChart = transactionState.activeChart;
         if (
@@ -1198,11 +1203,11 @@ export function initTerminal({
         if (!range || (!range.from && !range.to)) {
             return null;
         }
-        setChartDateRange(range);
-        updateContextYearFromRange(range);
         const activeChartVisible = isActiveChartVisible();
         const activeChart = transactionState.activeChart;
         if (activeChartVisible) {
+            setChartDateRange(range);
+            updateContextYearFromRange(range);
             chartManager.update();
             let message = `Applied date filter ${formatDateRange(range)} to ${activeChart} chart.`;
             if (activeChart === 'contribution') {
@@ -1220,7 +1225,11 @@ export function initTerminal({
             }
             return message;
         }
-        ensureTransactionTableVisible();
+        if (!isTransactionTableVisible()) {
+            return 'Transaction table is hidden. Use the "transaction" command to show it before applying date filters.';
+        }
+        setChartDateRange(range);
+        updateContextYearFromRange(range);
         filterAndSort(transactionState.activeFilterTerm || '');
         return `Applied date filter ${formatDateRange(range)} to transactions table.`;
     }
