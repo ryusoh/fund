@@ -3,7 +3,7 @@
     "name": "Berkshire Hathaway",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-27T07:49:41.013477+00:00",
+        "asOf": "2025-11-28T07:49:41.727522+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,7 +38,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 542.07,
         "fiftyTwoWeekLow": 440.1,
-        "marketDataUpdatedAt": "2025-11-27T07:49:40.918827+00:00",
+        "marketDataUpdatedAt": "2025-11-28T07:49:41.643608+00:00",
         "evToEbitda": -2.4206,
         "eps": 31.29,
         "price": 511.23

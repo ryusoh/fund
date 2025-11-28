@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-11-27T07:49:42.171903+00:00",
+        "asOf": "2025-11-28T07:49:42.843682+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,7 +38,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 139.41,
         "fiftyTwoWeekLow": 87.11,
-        "marketDataUpdatedAt": "2025-11-27T07:49:42.075424+00:00",
+        "marketDataUpdatedAt": "2025-11-28T07:49:42.758449+00:00",
         "evToEbitda": 2.5236,
         "eps": 9.7,
         "price": 115.8
