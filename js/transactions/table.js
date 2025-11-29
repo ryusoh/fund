@@ -23,7 +23,14 @@ function isTransactionTableVisible() {
 function parseCommandPalette(value) {
     const tokens = value.split(/\s+/).filter(Boolean);
     const textTokens = [];
-    const commands = { type: null, security: null, min: null, max: null, assetClass: null };
+    const commands = {
+        type: null,
+        security: null,
+        min: null,
+        max: null,
+        assetClass: null,
+        tickers: [],
+    };
 
     tokens.forEach((token) => {
         const [key, ...valParts] = token.split(':');
@@ -32,6 +39,11 @@ function parseCommandPalette(value) {
             const normalizedKey = key.toLowerCase();
             if (normalizedKey === 'etf' || normalizedKey === 'stock') {
                 commands.assetClass = normalizedKey;
+                return;
+            }
+            const normalizedTicker = normalizeTickerToken(key);
+            if (normalizedTicker) {
+                commands.tickers.push(normalizedTicker);
                 return;
             }
             textTokens.push(key);
@@ -56,9 +68,15 @@ function parseCommandPalette(value) {
             case 'class':
                 commands.assetClass = val.toLowerCase();
                 break;
-            default:
-                textTokens.push(token);
+            default: {
+                const normalizedTicker = normalizeTickerToken(token);
+                if (normalizedTicker) {
+                    commands.tickers.push(normalizedTicker);
+                } else {
+                    textTokens.push(token);
+                }
                 break;
+            }
         }
     });
 
@@ -220,14 +238,29 @@ function filterAndSort(searchTerm = '') {
     if (normalizedSearchTerm) {
         const parsed = parseCommandPalette(normalizedSearchTerm);
         parsedCommands = parsed.commands;
-        const compositionFilters = deriveCompositionTickerFilters(parsed.text, parsed.commands);
+        const compositionFilters = parsed.commands.tickers.length
+            ? parsed.commands.tickers
+            : deriveCompositionTickerFilters(parsed.text, parsed.commands);
         setCompositionFilterTickers(compositionFilters);
         const term = parsed.text.toLowerCase();
 
-        if (parsed.commands.security) {
-            filtered = filtered.filter(
-                (t) => t.security.toLowerCase() === parsed.commands.security.toLowerCase()
-            );
+        const upcaseSecurity = parsed.commands.security
+            ? parsed.commands.security.toUpperCase()
+            : null;
+        const multiTickerSet =
+            parsed.commands.tickers.length > 0 ? new Set(parsed.commands.tickers) : null;
+
+        if (upcaseSecurity || multiTickerSet) {
+            filtered = filtered.filter((t) => {
+                const ticker = t.security.toUpperCase();
+                if (upcaseSecurity && ticker === upcaseSecurity) {
+                    return true;
+                }
+                if (multiTickerSet && multiTickerSet.has(ticker)) {
+                    return true;
+                }
+                return false;
+            });
         }
         if (parsed.commands.type) {
             filtered = filtered.filter(
