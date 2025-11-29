@@ -33,6 +33,7 @@ import {
     setHistoricalPrices,
     setRunningAmountSeries,
     getShowChartLabels,
+    getCompositionFilterTickers,
 } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
 import {
@@ -4248,6 +4249,49 @@ function drawFxChart(ctx, chartManager, timestamp) {
     updateLegend(legendEntries, chartManager);
 }
 
+function aggregateCompositionSeries(tickers, chartData, seriesLength) {
+    if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
+        return null;
+    }
+    const aggregated = Array.from({ length: seriesLength }, () => 0);
+    tickers.forEach((ticker) => {
+        const values = chartData[ticker] || [];
+        for (let i = 0; i < seriesLength; i += 1) {
+            const value = Number(values[i] ?? 0);
+            if (Number.isFinite(value)) {
+                aggregated[i] += value;
+            }
+        }
+    });
+    return aggregated;
+}
+
+function buildCompositionDisplayOrder(baseOrder, chartData, filterTickers, seriesLength) {
+    if (!Array.isArray(baseOrder) || baseOrder.length === 0) {
+        return { order: [], filteredOthers: null };
+    }
+    const normalizedFilter = Array.isArray(filterTickers)
+        ? filterTickers.map((ticker) => ticker.toUpperCase()).filter(Boolean)
+        : [];
+    if (normalizedFilter.length === 0) {
+        return { order: [...baseOrder], filteredOthers: null };
+    }
+
+    const filterSet = new Set(normalizedFilter);
+    const selectedOrder = baseOrder.filter((ticker) => filterSet.has(ticker.toUpperCase()));
+    if (selectedOrder.length === 0) {
+        return { order: [...baseOrder], filteredOthers: null };
+    }
+
+    const remainder = baseOrder.filter((ticker) => !filterSet.has(ticker.toUpperCase()));
+    const includeFilteredOthers = remainder.length > 0 && !filterSet.has('OTHERS');
+    const filteredOthers = includeFilteredOthers
+        ? aggregateCompositionSeries(remainder, chartData, seriesLength)
+        : null;
+    const order = filteredOthers ? [...selectedOrder, 'Others'] : selectedOrder;
+    return { order, filteredOthers };
+}
+
 function renderCompositionChart(ctx, chartManager, data) {
     const canvas = ctx.canvas;
     const emptyState = document.getElementById('runningAmountEmpty');
@@ -4323,13 +4367,22 @@ function renderCompositionChart(ctx, chartManager, data) {
         chartData[ticker] = mappedValues;
     });
 
-    const topTickers = Object.keys(chartData).sort((a, b) => {
+    const baseTickerOrder = Object.keys(chartData).sort((a, b) => {
         const arrA = chartData[a] || [];
         const arrB = chartData[b] || [];
         const lastA = arrA[arrA.length - 1] ?? 0;
         const lastB = arrB[arrB.length - 1] ?? 0;
         return lastB - lastA;
     });
+
+    const { order: filteredOrder, filteredOthers } = buildCompositionDisplayOrder(
+        baseTickerOrder,
+        chartData,
+        getCompositionFilterTickers(),
+        dates.length
+    );
+    const activeTickerOrder = filteredOrder.length > 0 ? filteredOrder : baseTickerOrder;
+    const usingFilteredOthers = Boolean(filteredOthers);
 
     const canvasWidth = canvas.offsetWidth;
     const canvasHeight = canvas.offsetHeight;
@@ -4346,6 +4399,16 @@ function renderCompositionChart(ctx, chartManager, data) {
     }
 
     const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
+    const resolveTickerColor = (ticker) => {
+        let colorIndex = baseTickerOrder.indexOf(ticker);
+        if (colorIndex === -1 && ticker === 'Others') {
+            colorIndex = baseTickerOrder.indexOf('Others');
+        }
+        if (colorIndex === -1) {
+            colorIndex = baseTickerOrder.length;
+        }
+        return colors[colorIndex % colors.length];
+    };
 
     const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
     const minTime = Math.min(...dateTimes);
@@ -4381,12 +4444,13 @@ function renderCompositionChart(ctx, chartManager, data) {
 
     let cumulativeValues = new Array(dates.length).fill(0);
 
-    topTickers.forEach((ticker, tickerIndex) => {
-        const values = chartData[ticker] || [];
+    activeTickerOrder.forEach((ticker, tickerIndex) => {
+        const values =
+            ticker === 'Others' && usingFilteredOthers ? filteredOthers : chartData[ticker] || [];
         if (!Array.isArray(values) || values.length !== dates.length) {
             return;
         }
-        const color = colors[tickerIndex % colors.length];
+        const color = resolveTickerColor(ticker) || colors[tickerIndex % colors.length];
         ctx.beginPath();
         ctx.fillStyle = `${color}80`;
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
@@ -4416,9 +4480,9 @@ function renderCompositionChart(ctx, chartManager, data) {
 
     const latestIndex = dates.length - 1;
     const othersPercentage = chartData.Others ? (chartData.Others[latestIndex] ?? 0) : 0;
-    const shouldIncludeOthers = othersPercentage > 50;
+    const shouldIncludeOthers = othersPercentage > 50 || usingFilteredOthers;
 
-    const latestHoldings = topTickers
+    const latestHoldings = activeTickerOrder
         .filter((ticker) => shouldIncludeOthers || ticker !== 'Others')
         .map((ticker) => ({
             ticker,
@@ -4431,7 +4495,7 @@ function renderCompositionChart(ctx, chartManager, data) {
     const holdingsForLegend =
         latestHoldings.length > 0
             ? latestHoldings
-            : topTickers
+            : activeTickerOrder
                   .filter((ticker) => shouldIncludeOthers || ticker !== 'Others')
                   .map((ticker) => ({
                       ticker,
@@ -4441,22 +4505,21 @@ function renderCompositionChart(ctx, chartManager, data) {
                   .slice(0, 6);
 
     const legendSeries = holdingsForLegend.map((holding) => {
-        const tickerIndex = topTickers.indexOf(holding.ticker);
         const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
         return {
             key: holding.ticker,
             name: displayName,
-            color: colors[tickerIndex % colors.length],
+            color: resolveTickerColor(holding.ticker),
         };
     });
 
     // Create series for crosshair that will show top 7 holdings at crosshair position
     const seriesForCrosshair = [];
 
-    // Include ALL tickers to ensure historical holdings are available for crosshair
-    // For each crosshair position, we'll dynamically determine the top holdings
-    Object.keys(chartData).forEach((ticker) => {
-        const values = chartData[ticker];
+    // Include all displayed tickers (post-filter) for crosshair calculations
+    activeTickerOrder.forEach((ticker) => {
+        const values =
+            ticker === 'Others' && usingFilteredOthers ? filteredOthers : chartData[ticker];
         if (!Array.isArray(values) || values.length !== dates.length) {
             return;
         }
@@ -4465,8 +4528,7 @@ function renderCompositionChart(ctx, chartManager, data) {
             value: values[idx],
         }));
         const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
-        const tickerIndex = topTickers.indexOf(ticker);
-        const color = colors[tickerIndex % colors.length];
+        const color = resolveTickerColor(ticker);
         seriesForCrosshair.push({
             key: ticker,
             label,
@@ -4474,13 +4536,13 @@ function renderCompositionChart(ctx, chartManager, data) {
             getValueAtTime: createTimeInterpolator(points),
             formatValue: (value) => `${value.toFixed(2)}%`,
             formatDelta: (delta) => formatPercentInline(delta),
-            originalIndex: tickerIndex,
+            originalIndex: activeTickerOrder.indexOf(ticker),
         });
     });
 
     const sortedSeriesForCrosshair = seriesForCrosshair.sort((a, b) => {
-        const indexA = topTickers.indexOf(a.key);
-        const indexB = topTickers.indexOf(b.key);
+        const indexA = activeTickerOrder.indexOf(a.key);
+        const indexB = activeTickerOrder.indexOf(b.key);
         return indexA - indexB;
     });
 
@@ -4642,3 +4704,8 @@ export function createChartManager(options = {}) {
 
     return chartManager;
 }
+
+export const __chartTestables = {
+    buildCompositionDisplayOrder,
+    aggregateCompositionSeries,
+};

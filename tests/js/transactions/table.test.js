@@ -137,3 +137,66 @@ describe('transaction date filtering visibility guard', () => {
         expect(securityCell.textContent.trim()).toBe('BBB');
     });
 });
+
+describe('composition ticker filters derived from table search', () => {
+    let initTable;
+    let setAllTransactions;
+    let transactionState;
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+        });
+
+        setAllTransactions([
+            {
+                transactionId: 1,
+                tradeDate: '2024-01-04',
+                orderType: 'Buy',
+                security: 'AAA',
+                quantity: '1',
+                price: '50',
+                netAmount: '50',
+            },
+        ]);
+    });
+
+    it('captures plain-text ticker filters', () => {
+        const controller = initTable();
+        controller.filterAndSort('anet goog');
+        expect(transactionState.compositionFilterTickers).toEqual(['ANET', 'GOOG']);
+    });
+
+    it('captures explicit security filters', () => {
+        const controller = initTable();
+        controller.filterAndSort('security:brk-b');
+        expect(transactionState.compositionFilterTickers).toEqual(['BRKB']);
+    });
+
+    it('maps BRK aliases to BRKB', () => {
+        const controller = initTable();
+        controller.filterAndSort('brk');
+        expect(transactionState.compositionFilterTickers).toEqual(['BRKB']);
+        controller.filterAndSort('brk.b');
+        expect(transactionState.compositionFilterTickers).toEqual(['BRKB']);
+    });
+
+    it('clears ticker filters when search empties', () => {
+        const controller = initTable();
+        controller.filterAndSort('anet');
+        expect(transactionState.compositionFilterTickers).toEqual(['ANET']);
+        controller.filterAndSort('');
+        expect(transactionState.compositionFilterTickers).toEqual([]);
+    });
+});

@@ -30,6 +30,7 @@ export const transactionState = {
     runningAmountSeriesByCurrency: {},
     portfolioSeriesByCurrency: {},
     fxRatesByCurrency: {},
+    compositionFilterTickers: [],
 };
 
 export function setActiveFilterTerm(term) {
@@ -139,4 +140,29 @@ export function getSelectedCurrency() {
 
 export function setFxRatesByCurrency(fxMap) {
     transactionState.fxRatesByCurrency = fxMap && typeof fxMap === 'object' ? fxMap : {};
+}
+
+export function setCompositionFilterTickers(tickers) {
+    if (!Array.isArray(tickers) || tickers.length === 0) {
+        transactionState.compositionFilterTickers = [];
+        return;
+    }
+    const normalized = [];
+    const seen = new Set();
+    tickers.forEach((ticker) => {
+        if (typeof ticker !== 'string') {
+            return;
+        }
+        const cleaned = ticker.trim().toUpperCase();
+        if (!cleaned || seen.has(cleaned)) {
+            return;
+        }
+        seen.add(cleaned);
+        normalized.push(cleaned);
+    });
+    transactionState.compositionFilterTickers = normalized;
+}
+
+export function getCompositionFilterTickers() {
+    return transactionState.compositionFilterTickers || [];
 }

@@ -3,6 +3,7 @@ import {
     setFilteredTransactions,
     setActiveFilterTerm,
     getActiveFilterTerm,
+    setCompositionFilterTickers,
 } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
@@ -51,6 +52,45 @@ function parseCommandPalette(value) {
     });
 
     return { text: textTokens.join(' '), commands };
+}
+
+const TICKER_ALIAS_MAP = {
+    BRK: 'BRKB',
+    'BRK-B': 'BRKB',
+    BRKB: 'BRKB',
+};
+
+function normalizeTickerToken(token) {
+    if (typeof token !== 'string') {
+        return null;
+    }
+    const cleaned = token.replace(/[^0-9a-zA-Z-]/g, '').toUpperCase();
+    if (!cleaned || !/[A-Z]/.test(cleaned)) {
+        return null;
+    }
+    if (TICKER_ALIAS_MAP[cleaned]) {
+        return TICKER_ALIAS_MAP[cleaned];
+    }
+    return cleaned;
+}
+
+function deriveCompositionTickerFilters(textPart, commands) {
+    const results = [];
+    const seen = new Set();
+    const addTicker = (ticker) => {
+        const normalized = normalizeTickerToken(ticker);
+        if (normalized && !seen.has(normalized)) {
+            seen.add(normalized);
+            results.push(normalized);
+        }
+    };
+    if (commands?.security) {
+        addTicker(commands.security);
+    }
+    if (typeof textPart === 'string' && textPart.trim()) {
+        textPart.split(/\s+/).filter(Boolean).forEach(addTicker);
+    }
+    return results;
 }
 
 function displayTransactions(transactions) {
@@ -151,6 +191,8 @@ function filterAndSort(searchTerm = '') {
 
     if (normalizedSearchTerm) {
         const { text, commands } = parseCommandPalette(normalizedSearchTerm);
+        const compositionFilters = deriveCompositionTickerFilters(text, commands);
+        setCompositionFilterTickers(compositionFilters);
         const term = text.toLowerCase();
 
         if (commands.security) {
@@ -185,6 +227,8 @@ function filterAndSort(searchTerm = '') {
                     t.tradeDate.includes(term)
             );
         }
+    } else {
+        setCompositionFilterTickers([]);
     }
 
     const runningTotalsMap = computeRunningTotals(filtered, transactionState.splitHistory);

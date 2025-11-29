@@ -293,6 +293,38 @@ describe('Regression: Chart Date Range Fixes', () => {
     });
 });
 
+describe('composition ticker filtering helper', () => {
+    let buildCompositionDisplayOrder;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const chartModule = require('@js/transactions/chart.js');
+            ({ buildCompositionDisplayOrder } = chartModule.__chartTestables);
+        });
+    });
+
+    it('falls back to base order when no filters are supplied', () => {
+        const chartData = { ANET: [50], GOOG: [30], Others: [20] };
+        const baseOrder = ['ANET', 'GOOG', 'Others'];
+        const result = buildCompositionDisplayOrder(baseOrder, chartData, [], 1);
+        expect(result.order).toEqual(baseOrder);
+        expect(result.filteredOthers).toBeNull();
+    });
+
+    it('aggregates remainder into Others when only subset is requested', () => {
+        const chartData = {
+            ANET: [60, 55],
+            GOOG: [30, 25],
+            Others: [10, 20],
+        };
+        const baseOrder = ['ANET', 'GOOG', 'Others'];
+        const result = buildCompositionDisplayOrder(baseOrder, chartData, ['ANET'], 2);
+        expect(result.order).toEqual(['ANET', 'Others']);
+        expect(result.filteredOthers).toEqual([40, 45]);
+    });
+});
+
 describe('Chart Debug: Date Range Extension', () => {
     // Mock parseLocalDate
     const parseLocalDate = (value) => {
