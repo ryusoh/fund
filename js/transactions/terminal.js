@@ -912,9 +912,14 @@ export function initTerminal({
                 return;
             }
 
-            const center = Math.max(0, Math.min(relativeTop + child.offsetHeight / 2, threshold));
-            const ratio = center / threshold;
-            const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * ratio;
+            const visibleTop = Math.max(relativeTop, 0);
+            const visibleBottom = Math.min(relativeBottom, threshold);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            const coverage = Math.min(
+                1,
+                visibleHeight / Math.max(1, Math.min(child.offsetHeight, threshold))
+            );
+            const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * coverage;
             child.style.opacity = opacity.toFixed(2);
         });
     }
