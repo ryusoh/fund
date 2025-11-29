@@ -80,7 +80,7 @@ export function isLikelyFundTicker(ticker) {
         return true;
     }
     // Many US mutual funds end with X (e.g., VTSAX, FNSFX, VGSNX)
-    if (normalized.length >= 3 && normalized.endsWith('X')) {
+    if (normalized.length >= 4 && normalized.endsWith('X')) {
         return true;
     }
     return false;

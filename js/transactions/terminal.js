@@ -326,8 +326,11 @@ function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
     return `${header}\n${lines.join('\n')}`;
 }
 
-async function getCompositionSnapshotLine() {
-    if (transactionState.activeChart !== 'composition') {
+async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) {
+    if (
+        transactionState.activeChart !== 'composition' &&
+        transactionState.activeChart !== 'compositionAbs'
+    ) {
         return null;
     }
     const data = await ensureCompositionSnapshotData();
@@ -461,13 +464,16 @@ async function getCompositionSnapshotLine() {
         lines.push(formatted.slice(i, i + 3).join('   '));
     }
 
-    return `Composition (${dateLabel}):\n${lines.join('\n')}`;
+    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}`;
 }
 
 async function getActiveChartSummaryText() {
     const activeChart = transactionState.activeChart;
     if (activeChart === 'composition') {
         return await getCompositionSnapshotLine();
+    }
+    if (activeChart === 'compositionAbs') {
+        return await getCompositionSnapshotLine({ labelPrefix: 'Composition Abs' });
     }
     if (activeChart === 'performance') {
         return getPerformanceSnapshotLine({ includeHidden: true });
@@ -650,7 +656,7 @@ const COMMAND_ALIASES = [
 
 const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
 
-const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'fx'];
+const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'composition-abs', 'fx'];
 
 const HELP_SUBCOMMANDS = ['filter'];
 
@@ -950,9 +956,10 @@ export function initTerminal({
                     ? STATS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
                     : STATS_SUBCOMMANDS;
             } else if (parts.length >= 2 && (parts[0] === 'plot' || parts[0] === 'p')) {
-                const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
-                matches = subPrefix
-                    ? PLOT_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
+                const subPrefixRaw = parts.slice(1).join(' ').toLowerCase();
+                const normalizedSubPrefix = subPrefixRaw.replace(/\s+/g, '-');
+                matches = normalizedSubPrefix
+                    ? PLOT_SUBCOMMANDS.filter((cmd) => cmd.startsWith(normalizedSubPrefix))
                     : PLOT_SUBCOMMANDS;
             } else if (parts.length >= 2 && (parts[0] === 'help' || parts[0] === 'h')) {
                 const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
@@ -1047,8 +1054,9 @@ export function initTerminal({
                         '                       Examples: stats transactions, s cagr, stats ratio\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
-                        '                       Subcommands: balance, performance, composition, fx\n' +
-                        '                       Examples: plot balance, p performance, plot composition 2023, plot fx\n' +
+                        '                       Subcommands: balance, performance, composition, composition-abs, fx\n' +
+                        '                       Examples: plot balance, p performance, plot composition 2023,\n' +
+                        '                                 plot composition abs 2023, plot fx\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
@@ -1217,15 +1225,20 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        'Plot commands:\n  plot balance      - Show contribution/balance chart\n  plot performance  - Show TWRR performance chart\n  plot composition  - Show portfolio composition chart\n  plot fx           - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n       plot balance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot performance [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot composition [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n       plot fx [year|quarter|qN] | [from <year|quarter|qN>] | [<year|quarter|qN> to <year|quarter|qN>]\n\nExamples:\n       plot balance 2023     - Show data for entire year 2023\n       plot performance q1   - Show performance chart for Q1 of current context\n       plot composition from 2022q3 - Show composition from Q3 2022 onward\n       plot fx               - Show FX chart for current currency toggle';
+                        'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
                 } else {
                     const subcommand = args[0].toLowerCase();
-                    dateRange = parseDateRange(args.slice(1));
-                    setChartDateRange(dateRange);
-                    updateContextYearFromRange(dateRange);
+                    const rawArgs = args.slice(1);
+                    const applyDateArgs = (tokens) => {
+                        const range = parseDateRange(tokens);
+                        setChartDateRange(range);
+                        updateContextYearFromRange(range);
+                        return range;
+                    };
 
                     switch (subcommand) {
                         case 'balance':
+                            dateRange = applyDateArgs(rawArgs);
                             const contributionSection =
                                 document.getElementById('runningAmountSection');
                             const contributionTableContainer = document.querySelector(
@@ -1266,6 +1279,7 @@ export function initTerminal({
                             }
                             break;
                         case 'performance':
+                            dateRange = applyDateArgs(rawArgs);
                             const perfSection = document.getElementById('runningAmountSection');
                             const perfTableContainer = document.querySelector(
                                 '.table-responsive-container'
@@ -1306,14 +1320,28 @@ export function initTerminal({
                             }
                             break;
                         case 'composition':
+                        case 'composition-abs':
+                        case 'compositionabs':
+                        case 'compositionabsolute': {
+                            let useAbsolute = subcommand !== 'composition';
+                            let rangeTokens = [...rawArgs];
+                            if (!useAbsolute && rangeTokens.length > 0) {
+                                const maybeMode = rangeTokens[0].toLowerCase();
+                                if (maybeMode === 'abs' || maybeMode === 'absolute') {
+                                    useAbsolute = true;
+                                    rangeTokens = rangeTokens.slice(1);
+                                }
+                            }
+                            dateRange = applyDateArgs(rangeTokens);
                             const compSection = document.getElementById('runningAmountSection');
                             const compTableContainer = document.querySelector(
                                 '.table-responsive-container'
                             );
 
                             // Check if composition chart is already active and visible
+                            const targetChart = useAbsolute ? 'compositionAbs' : 'composition';
                             const isCompositionActive =
-                                transactionState.activeChart === 'composition';
+                                transactionState.activeChart === targetChart;
                             const isCompChartVisible =
                                 compSection && !compSection.classList.contains('is-hidden');
 
@@ -1326,7 +1354,7 @@ export function initTerminal({
                                 result = 'Hidden composition chart.';
                             } else {
                                 // Show composition chart
-                                setActiveChart('composition');
+                                setActiveChart(targetChart);
                                 if (compSection) {
                                     compSection.classList.remove('is-hidden');
                                     chartManager.update();
@@ -1334,14 +1362,20 @@ export function initTerminal({
                                 if (compTableContainer) {
                                     compTableContainer.classList.add('is-hidden');
                                 }
-                                result = `Showing composition chart for ${formatDateRange(dateRange)}.`;
-                                const compositionSnapshot = await getCompositionSnapshotLine();
+                                result = `Showing composition${
+                                    useAbsolute ? ' (absolute)' : ''
+                                } chart for ${formatDateRange(dateRange)}.`;
+                                const compositionSnapshot = await getCompositionSnapshotLine({
+                                    labelPrefix: useAbsolute ? 'Composition Abs' : 'Composition',
+                                });
                                 if (compositionSnapshot) {
                                     result += `\n${compositionSnapshot}`;
                                 }
                             }
                             break;
+                        }
                         case 'fx':
+                            dateRange = applyDateArgs(rawArgs);
                             const fxSection = document.getElementById('runningAmountSection');
                             const fxTableContainer = document.querySelector(
                                 '.table-responsive-container'
@@ -1515,7 +1549,9 @@ export function initTerminal({
         const activeChart = transactionState.activeChart;
         if (
             !activeChart ||
-            !['contribution', 'performance', 'composition', 'fx'].includes(activeChart)
+            !['contribution', 'performance', 'composition', 'compositionAbs', 'fx'].includes(
+                activeChart
+            )
         ) {
             return false;
         }
