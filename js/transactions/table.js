@@ -4,11 +4,13 @@ import {
     setActiveFilterTerm,
     getActiveFilterTerm,
     setCompositionFilterTickers,
+    setCompositionAssetClassFilter,
 } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
 import { normalizeDateOnly } from '@utils/date.js';
 import { adjustMobilePanels } from './layout.js';
+import { getHoldingAssetClass } from '@js/config.js';
 
 function isTransactionTableVisible() {
     if (typeof document === 'undefined') {
@@ -21,12 +23,17 @@ function isTransactionTableVisible() {
 function parseCommandPalette(value) {
     const tokens = value.split(/\s+/).filter(Boolean);
     const textTokens = [];
-    const commands = { type: null, security: null, min: null, max: null };
+    const commands = { type: null, security: null, min: null, max: null, assetClass: null };
 
     tokens.forEach((token) => {
         const [key, ...valParts] = token.split(':');
         const val = valParts.join(':');
         if (!val) {
+            const normalizedKey = key.toLowerCase();
+            if (normalizedKey === 'etf' || normalizedKey === 'stock') {
+                commands.assetClass = normalizedKey;
+                return;
+            }
             textTokens.push(key);
             return;
         }
@@ -44,6 +51,10 @@ function parseCommandPalette(value) {
                 break;
             case 'max':
                 commands.max = parseFloat(val);
+                break;
+            case 'asset':
+            case 'class':
+                commands.assetClass = val.toLowerCase();
                 break;
             default:
                 textTokens.push(token);
@@ -91,6 +102,21 @@ function deriveCompositionTickerFilters(textPart, commands) {
         textPart.split(/\s+/).filter(Boolean).forEach(addTicker);
     }
     return results;
+}
+
+function matchesAssetClass(security, desiredClass) {
+    if (!desiredClass || typeof security !== 'string') {
+        return true;
+    }
+    const normalized = desiredClass.toLowerCase();
+    const holdingClass = getHoldingAssetClass(security);
+    if (normalized === 'etf') {
+        return holdingClass === 'etf';
+    }
+    if (normalized === 'stock') {
+        return holdingClass !== 'etf';
+    }
+    return true;
 }
 
 function displayTransactions(transactions) {
@@ -189,34 +215,42 @@ function filterAndSort(searchTerm = '') {
         });
     }
 
-    if (normalizedSearchTerm) {
-        const { text, commands } = parseCommandPalette(normalizedSearchTerm);
-        const compositionFilters = deriveCompositionTickerFilters(text, commands);
-        setCompositionFilterTickers(compositionFilters);
-        const term = text.toLowerCase();
+    let parsedCommands = { assetClass: null };
 
-        if (commands.security) {
+    if (normalizedSearchTerm) {
+        const parsed = parseCommandPalette(normalizedSearchTerm);
+        parsedCommands = parsed.commands;
+        const compositionFilters = deriveCompositionTickerFilters(parsed.text, parsed.commands);
+        setCompositionFilterTickers(compositionFilters);
+        const term = parsed.text.toLowerCase();
+
+        if (parsed.commands.security) {
             filtered = filtered.filter(
-                (t) => t.security.toLowerCase() === commands.security.toLowerCase()
+                (t) => t.security.toLowerCase() === parsed.commands.security.toLowerCase()
             );
         }
-        if (commands.type) {
+        if (parsed.commands.type) {
             filtered = filtered.filter(
-                (t) => t.orderType.toLowerCase() === commands.type.toLowerCase()
+                (t) => t.orderType.toLowerCase() === parsed.commands.type.toLowerCase()
             );
         }
-        if (commands.min !== null && !Number.isNaN(commands.min)) {
+        if (parsed.commands.min !== null && !Number.isNaN(parsed.commands.min)) {
             filtered = filtered.filter(
                 (t) =>
                     Math.abs(convertValueToCurrency(t.netAmount, t.tradeDate, currentCurrency)) >=
-                    commands.min
+                    parsed.commands.min
             );
         }
-        if (commands.max !== null && !Number.isNaN(commands.max)) {
+        if (parsed.commands.max !== null && !Number.isNaN(parsed.commands.max)) {
             filtered = filtered.filter(
                 (t) =>
                     Math.abs(convertValueToCurrency(t.netAmount, t.tradeDate, currentCurrency)) <=
-                    commands.max
+                    parsed.commands.max
+            );
+        }
+        if (parsed.commands.assetClass) {
+            filtered = filtered.filter((t) =>
+                matchesAssetClass(t.security, parsed.commands.assetClass)
             );
         }
         if (term) {
@@ -229,7 +263,10 @@ function filterAndSort(searchTerm = '') {
         }
     } else {
         setCompositionFilterTickers([]);
+        setCompositionAssetClassFilter(null);
     }
+
+    setCompositionAssetClassFilter(parsedCommands.assetClass || null);
 
     const runningTotalsMap = computeRunningTotals(filtered, transactionState.splitHistory);
     const compareValues = (valueA, valueB, order) => {

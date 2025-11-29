@@ -31,6 +31,7 @@ export const transactionState = {
     portfolioSeriesByCurrency: {},
     fxRatesByCurrency: {},
     compositionFilterTickers: [],
+    compositionAssetClassFilter: null,
 };
 
 export function setActiveFilterTerm(term) {
@@ -165,4 +166,16 @@ export function setCompositionFilterTickers(tickers) {
 
 export function getCompositionFilterTickers() {
     return transactionState.compositionFilterTickers || [];
+}
+
+export function setCompositionAssetClassFilter(filter) {
+    if (filter === 'etf' || filter === 'stock') {
+        transactionState.compositionAssetClassFilter = filter;
+    } else {
+        transactionState.compositionAssetClassFilter = null;
+    }
+}
+
+export function getCompositionAssetClassFilter() {
+    return transactionState.compositionAssetClassFilter || null;
 }

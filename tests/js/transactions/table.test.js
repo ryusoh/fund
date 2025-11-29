@@ -200,3 +200,86 @@ describe('composition ticker filters derived from table search', () => {
         expect(transactionState.compositionFilterTickers).toEqual([]);
     });
 });
+
+describe('asset class filters', () => {
+    let initTable;
+    let setAllTransactions;
+    let transactionState;
+
+    const sampleTransactions = [
+        {
+            transactionId: 1,
+            tradeDate: '2024-01-04',
+            orderType: 'Buy',
+            security: 'VT',
+            quantity: '1',
+            price: '100',
+            netAmount: '100',
+        },
+        {
+            transactionId: 2,
+            tradeDate: '2024-01-05',
+            orderType: 'Buy',
+            security: 'AAA',
+            quantity: '1',
+            price: '50',
+            netAmount: '50',
+        },
+        {
+            transactionId: 3,
+            tradeDate: '2024-01-06',
+            orderType: 'Buy',
+            security: 'FNSFX',
+            quantity: '10',
+            price: '12',
+            netAmount: '120',
+        },
+    ];
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+        });
+
+        setAllTransactions(sampleTransactions);
+        transactionState.chartDateRange = { from: null, to: null };
+    });
+
+    function getRenderedSecurities() {
+        return Array.from(document.querySelectorAll('#transactionBody tr')).map((row) =>
+            row.querySelectorAll('td')[2].textContent.trim()
+        );
+    }
+
+    it('filters ETFs when using bare etf command', () => {
+        const controller = initTable();
+        controller.filterAndSort('etf');
+        expect(getRenderedSecurities().sort()).toEqual(['FNSFX', 'VT']);
+        expect(transactionState.compositionAssetClassFilter).toBe('etf');
+    });
+
+    it('filters stocks when using bare stock command', () => {
+        const controller = initTable();
+        controller.filterAndSort('stock');
+        expect(getRenderedSecurities()).toEqual(['AAA']);
+        expect(transactionState.compositionAssetClassFilter).toBe('stock');
+    });
+
+    it('supports explicit class:etf syntax', () => {
+        const controller = initTable();
+        controller.filterAndSort('class:etf');
+        expect(getRenderedSecurities().sort()).toEqual(['FNSFX', 'VT']);
+        expect(transactionState.compositionAssetClassFilter).toBe('etf');
+    });
+});

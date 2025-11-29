@@ -7,6 +7,7 @@ import {
     setActiveChart,
     setHistoricalPrices,
     getCompositionFilterTickers,
+    getCompositionAssetClassFilter,
 } from './state.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import {
@@ -35,6 +36,7 @@ import {
     convertBetweenCurrencies,
     convertValueToCurrency,
 } from './utils.js';
+import { getHoldingAssetClass } from '@js/config.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -409,6 +411,35 @@ async function getCompositionSnapshotLine() {
                 });
             }
             displayHoldings = selected;
+        }
+    } else {
+        const assetClassFilter = getCompositionAssetClassFilter();
+        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
+            const shouldMatchEtf = assetClassFilter === 'etf';
+            const selected = holdings.filter((holding) => {
+                if (holding.ticker && holding.ticker.toUpperCase() === 'OTHERS') {
+                    return false;
+                }
+                const assetClass = getHoldingAssetClass(holding.ticker);
+                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
+            });
+            if (selected.length > 0) {
+                const remainder = holdings.filter((holding) =>
+                    shouldMatchEtf
+                        ? getHoldingAssetClass(holding.ticker) !== 'etf'
+                        : getHoldingAssetClass(holding.ticker) === 'etf'
+                );
+                if (remainder.length > 0) {
+                    const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
+                    const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
+                    selected.push({
+                        ticker: 'Others',
+                        percent: totalPercent,
+                        absolute: totalAbsolute,
+                    });
+                }
+                displayHoldings = selected;
+            }
         }
     }
 
@@ -1032,7 +1063,7 @@ export function initTerminal({
                     switch (subcommand) {
                         case 'filter':
                             result =
-                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  YYYYqN:YYYYqN       - Filter between two quarters (e.g., 2022q1:2023q2)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nChart label toggle:\n  label (l)           - Toggle chart labels (start/end annotations, FX/composition hover panels).\n                        Example: label\n\nAny text not part of a command is used for a general text search.';
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n  stock    - Show individual stock positions (excludes ETFs/funds).\n             Example: stock\n  etf      - Show ETF/mutual fund positions (excludes individual stocks).\n             Example: etf\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  YYYYqN:YYYYqN       - Filter between two quarters (e.g., 2022q1:2023q2)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nChart label toggle:\n  label (l)           - Toggle chart labels (start/end annotations, FX/composition hover panels).\n                        Example: label\n\nAny text not part of a command is used for a general text search.';
                             break;
                         default:
                             result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;

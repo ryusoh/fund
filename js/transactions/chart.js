@@ -34,6 +34,7 @@ import {
     setRunningAmountSeries,
     getShowChartLabels,
     getCompositionFilterTickers,
+    getCompositionAssetClassFilter,
 } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
 import {
@@ -53,6 +54,7 @@ import {
     COLOR_PALETTES,
     CROSSHAIR_SETTINGS,
     CHART_LINE_WIDTHS,
+    getHoldingAssetClass,
 } from '../config.js';
 
 const chartLayouts = {
@@ -4375,10 +4377,26 @@ function renderCompositionChart(ctx, chartManager, data) {
         return lastB - lastA;
     });
 
+    const explicitTickerFilters = getCompositionFilterTickers();
+    let derivedTickerFilters = explicitTickerFilters;
+    if (!derivedTickerFilters.length) {
+        const assetClassFilter = getCompositionAssetClassFilter();
+        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
+            const shouldMatchEtf = assetClassFilter === 'etf';
+            derivedTickerFilters = baseTickerOrder.filter((ticker) => {
+                if (typeof ticker === 'string' && ticker.toUpperCase() === 'OTHERS') {
+                    return false;
+                }
+                const assetClass = getHoldingAssetClass(ticker);
+                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
+            });
+        }
+    }
+
     const { order: filteredOrder, filteredOthers } = buildCompositionDisplayOrder(
         baseTickerOrder,
         chartData,
-        getCompositionFilterTickers(),
+        derivedTickerFilters,
         dates.length
     );
     const activeTickerOrder = filteredOrder.length > 0 ? filteredOrder : baseTickerOrder;

@@ -1,4 +1,5 @@
 import { isLocalhost } from './utils/host.js';
+import { ASSET_CLASS_OVERRIDES, isLikelyFundTicker } from './config/assetClasses.js';
 
 const FUND_BASE_PATH = '/fund';
 
@@ -158,6 +159,24 @@ export const CURRENCY_SYMBOLS = {
     JPY: '¥',
     KRW: '₩',
 };
+
+export function getHoldingAssetClass(ticker) {
+    if (typeof ticker !== 'string') {
+        return 'stock';
+    }
+    const normalized = ticker.trim().toUpperCase();
+    if (!normalized) {
+        return 'stock';
+    }
+    const override = ASSET_CLASS_OVERRIDES[normalized];
+    if (override) {
+        return override;
+    }
+    if (isLikelyFundTicker(normalized)) {
+        return 'etf';
+    }
+    return 'stock';
+}
 
 export const COLOR_PALETTES = {
     // Palette for pie chart slices
