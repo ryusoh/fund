@@ -656,6 +656,8 @@ const COMMAND_ALIASES = [
     'percentage',
     'percent',
     'per',
+    'stock',
+    'etf',
     'from', // For simplified commands
     'to', // For simplified commands
 ];
