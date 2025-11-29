@@ -650,6 +650,9 @@ const COMMAND_ALIASES = [
     't',
     'plot',
     'p',
+    'abs',
+    'absolute',
+    'a',
     'from', // For simplified commands
     'to', // For simplified commands
 ];
@@ -1416,6 +1419,40 @@ export function initTerminal({
                     }
                 }
                 break;
+            case 'abs':
+            case 'absolute':
+            case 'a': {
+                const compSection = document.getElementById('runningAmountSection');
+                const isCompChartVisible =
+                    compSection && !compSection.classList.contains('is-hidden');
+                const activeChart = transactionState.activeChart;
+                if (
+                    !isCompChartVisible ||
+                    (activeChart !== 'composition' && activeChart !== 'compositionAbs')
+                ) {
+                    result =
+                        'Composition chart must be active to switch views. Use `plot composition` first.';
+                    break;
+                }
+                if (activeChart === 'compositionAbs') {
+                    result = 'Composition chart is already showing absolute values.';
+                    break;
+                }
+                setActiveChart('compositionAbs');
+                if (chartManager && typeof chartManager.update === 'function') {
+                    chartManager.update();
+                }
+                result = 'Switched composition chart to absolute view.';
+                {
+                    const summary = await getCompositionSnapshotLine({
+                        labelPrefix: 'Composition Abs',
+                    });
+                    if (summary) {
+                        result += `\n${summary}`;
+                    }
+                }
+                break;
+            }
             default: {
                 const simplifiedDateRange = parseSimplifiedDateRange(command);
                 if (simplifiedDateRange.from || simplifiedDateRange.to) {
