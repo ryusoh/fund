@@ -6,6 +6,7 @@ import {
     setChartDateRange,
     setActiveChart,
     setHistoricalPrices,
+    getCompositionFilterTickers,
 } from './state.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import {
@@ -386,7 +387,32 @@ async function getCompositionSnapshotLine() {
     }
 
     holdings.sort((a, b) => b.percent - a.percent);
-    const formatted = holdings
+
+    let displayHoldings = holdings;
+    const filterTickers = getCompositionFilterTickers();
+    if (Array.isArray(filterTickers) && filterTickers.length > 0) {
+        const normalized = new Set(
+            filterTickers.map((ticker) => (typeof ticker === 'string' ? ticker.toUpperCase() : ''))
+        );
+        const selected = holdings.filter((holding) => normalized.has(holding.ticker.toUpperCase()));
+        if (selected.length > 0) {
+            const remainder = holdings.filter(
+                (holding) => !normalized.has(holding.ticker.toUpperCase())
+            );
+            if (remainder.length > 0) {
+                const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
+                const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
+                selected.push({
+                    ticker: 'Others',
+                    percent: totalPercent,
+                    absolute: totalAbsolute,
+                });
+            }
+            displayHoldings = selected;
+        }
+    }
+
+    const formatted = displayHoldings
         .filter((holding) => Number.isFinite(holding.percent) && holding.percent > 0.1)
         .map((holding) => {
             const label = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
@@ -405,6 +431,23 @@ async function getCompositionSnapshotLine() {
     }
 
     return `Composition (${dateLabel}):\n${lines.join('\n')}`;
+}
+
+async function getActiveChartSummaryText() {
+    const activeChart = transactionState.activeChart;
+    if (activeChart === 'composition') {
+        return await getCompositionSnapshotLine();
+    }
+    if (activeChart === 'performance') {
+        return getPerformanceSnapshotLine({ includeHidden: true });
+    }
+    if (activeChart === 'fx') {
+        return getFxSnapshotLine();
+    }
+    if (activeChart === 'contribution') {
+        return await getContributionSummaryText(transactionState.chartDateRange);
+    }
+    return null;
 }
 
 function formatCrosshairDateLabel(time) {
@@ -1014,22 +1057,10 @@ export function initTerminal({
                 }
 
                 result = 'Showing all data (filters and date ranges cleared).';
-                if (transactionState.activeChart === 'contribution') {
-                    const summaryText = await getContributionSummaryText(
-                        transactionState.chartDateRange
-                    );
+                {
+                    const summaryText = await getActiveChartSummaryText();
                     if (summaryText) {
                         result += `\n${summaryText}`;
-                    }
-                } else if (transactionState.activeChart === 'performance') {
-                    const performanceSnapshot = getPerformanceSnapshotLine({ includeHidden: true });
-                    if (performanceSnapshot) {
-                        result += `\n${performanceSnapshot}`;
-                    }
-                } else if (transactionState.activeChart === 'composition') {
-                    const compositionSnapshot = await getCompositionSnapshotLine();
-                    if (compositionSnapshot) {
-                        result += `\n${compositionSnapshot}`;
                     }
                 }
                 const fxSnapshot = getFxSnapshotLine();
@@ -1139,9 +1170,7 @@ export function initTerminal({
                             }
                         } else {
                             filterAndSort(trailingInput);
-                            const summary = await getContributionSummaryText(
-                                transactionState.chartDateRange
-                            );
+                            const summary = await getActiveChartSummaryText();
                             result = `Filtering transactions by: "${trailingInput}"...`;
                             if (summary) {
                                 result += `\n${summary}`;
@@ -1332,9 +1361,7 @@ export function initTerminal({
                     }
                 }
                 filterAndSort(command);
-                const summaryText = await getContributionSummaryText(
-                    transactionState.chartDateRange
-                );
+                const summaryText = await getActiveChartSummaryText();
                 result = `Filtering transactions by: "${command}"...`;
                 if (summaryText) {
                     result += `\n${summaryText}`;
@@ -1476,28 +1503,9 @@ export function initTerminal({
             updateContextYearFromRange(range);
             chartManager.update();
             let message = `Applied date filter ${formatDateRange(range)} to ${activeChart} chart.`;
-            if (activeChart === 'contribution') {
-                const summaryText = await getContributionSummaryText(
-                    transactionState.chartDateRange
-                );
-                if (summaryText) {
-                    message += `\n${summaryText}`;
-                }
-            } else if (activeChart === 'fx') {
-                const fxSnapshot = getFxSnapshotLine();
-                if (fxSnapshot) {
-                    message += `\n${fxSnapshot}`;
-                }
-            } else if (activeChart === 'performance') {
-                const performanceSnapshot = getPerformanceSnapshotLine({ includeHidden: true });
-                if (performanceSnapshot) {
-                    message += `\n${performanceSnapshot}`;
-                }
-            } else if (activeChart === 'composition') {
-                const compositionSnapshot = await getCompositionSnapshotLine();
-                if (compositionSnapshot) {
-                    message += `\n${compositionSnapshot}`;
-                }
+            const summary = await getActiveChartSummaryText();
+            if (summary) {
+                message += `\n${summary}`;
             }
             return message;
         }
