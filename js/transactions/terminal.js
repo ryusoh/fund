@@ -653,6 +653,9 @@ const COMMAND_ALIASES = [
     'abs',
     'absolute',
     'a',
+    'percentage',
+    'percent',
+    'per',
     'from', // For simplified commands
     'to', // For simplified commands
 ];
@@ -1446,6 +1449,40 @@ export function initTerminal({
                 {
                     const summary = await getCompositionSnapshotLine({
                         labelPrefix: 'Composition Abs',
+                    });
+                    if (summary) {
+                        result += `\n${summary}`;
+                    }
+                }
+                break;
+            }
+            case 'percentage':
+            case 'percent':
+            case 'per': {
+                const compSection = document.getElementById('runningAmountSection');
+                const isCompChartVisible =
+                    compSection && !compSection.classList.contains('is-hidden');
+                const activeChart = transactionState.activeChart;
+                if (
+                    !isCompChartVisible ||
+                    (activeChart !== 'composition' && activeChart !== 'compositionAbs')
+                ) {
+                    result =
+                        'Composition chart must be active to switch views. Use `plot composition` first.';
+                    break;
+                }
+                if (activeChart === 'composition') {
+                    result = 'Composition chart is already showing percentages.';
+                    break;
+                }
+                setActiveChart('composition');
+                if (chartManager && typeof chartManager.update === 'function') {
+                    chartManager.update();
+                }
+                result = 'Switched composition chart to percentage view.';
+                {
+                    const summary = await getCompositionSnapshotLine({
+                        labelPrefix: 'Composition',
                     });
                     if (summary) {
                         result += `\n${summary}`;
