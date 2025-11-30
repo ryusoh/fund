@@ -1127,9 +1127,7 @@ export function initTerminal({
             case 'alltime': {
                 setChartDateRange({ from: null, to: null });
                 updateContextYearFromRange({ from: null, to: null });
-                if (isTransactionTableVisible()) {
-                    filterAndSort(transactionState.activeFilterTerm || '');
-                }
+                filterAndSort(transactionState.activeFilterTerm || '');
                 if (
                     isActiveChartVisible() &&
                     chartManager &&
@@ -1147,13 +1145,33 @@ export function initTerminal({
                 break;
             }
             case 'allstock': {
-                const hadTickerFilters =
-                    (transactionState.compositionFilterTickers || []).length > 0 ||
-                    Boolean(transactionState.compositionAssetClassFilter);
+                const currentTerm = transactionState.activeFilterTerm || '';
+                const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const activeTickers = transactionState.compositionFilterTickers || [];
+                let cleanedTerm = currentTerm
+                    .replace(/^\s*(stock|etf)\s*:?/gi, ' ')
+                    .replace(/\b(stock|etf)\b/gi, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                activeTickers.forEach((ticker) => {
+                    const escaped = escapeRegExp(ticker);
+                    const tickerRegex = new RegExp(`\\b${escaped}\\b`, 'gi');
+                    const securityRegex = new RegExp(`\\bsecurity:${escaped}\\b`, 'gi');
+                    const shorthandRegex = new RegExp(`\\bs:${escaped}\\b`, 'gi');
+                    cleanedTerm = cleanedTerm
+                        .replace(tickerRegex, ' ')
+                        .replace(securityRegex, ' ')
+                        .replace(shorthandRegex, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                });
+                if (terminalInput) {
+                    terminalInput.value = cleanedTerm;
+                }
                 setCompositionFilterTickers([]);
                 setCompositionAssetClassFilter(null);
+                filterAndSort(cleanedTerm);
                 if (
-                    hadTickerFilters &&
                     isActiveChartVisible() &&
                     chartManager &&
                     typeof chartManager.update === 'function'
@@ -1161,19 +1179,9 @@ export function initTerminal({
                     chartManager.update();
                 }
                 result = 'Cleared composition ticker filters.';
-                if (
-                    transactionState.activeChart === 'composition' ||
-                    transactionState.activeChart === 'compositionAbs'
-                ) {
-                    const summary = await getCompositionSnapshotLine({
-                        labelPrefix:
-                            transactionState.activeChart === 'compositionAbs'
-                                ? 'Composition Abs'
-                                : 'Composition',
-                    });
-                    if (summary) {
-                        result += `\n${summary}`;
-                    }
+                const summary = await getActiveChartSummaryText();
+                if (summary) {
+                    result += `\n${summary}`;
                 }
                 break;
             }

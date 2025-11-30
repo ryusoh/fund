@@ -158,3 +158,62 @@ describe('label command', () => {
         expect(getLastTerminalMessage()).toContain('Chart labels are now visible.');
     });
 });
+
+describe('allstock command clears ticker filters', () => {
+    let initTerminal, transactionState, filterAndSortMock, chartManagerMock;
+
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = `
+            <div id="terminal">
+                <div id="terminalOutput"></div>
+                <div class="terminal-prompt">
+                    <input type="text" id="terminalInput" />
+                </div>
+            </div>
+            <section id="runningAmountSection"></section>
+            <div class="table-responsive-container">
+                <table>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTerminal } = require('@js/transactions/terminal.js'));
+            ({ transactionState } = require('@js/transactions/state.js'));
+        });
+
+        transactionState.activeFilterTerm = 'anet goog stock';
+        transactionState.compositionFilterTickers = ['ANET', 'GOOG'];
+        transactionState.compositionAssetClassFilter = 'stock';
+        transactionState.filteredTransactions = [
+            { transactionId: 1, tradeDate: '2024-01-01', orderType: 'Buy', security: 'ANET' },
+        ];
+        filterAndSortMock = jest.fn();
+        chartManagerMock = { update: jest.fn(), redraw: jest.fn() };
+    });
+
+    it('removes ticker filters and refreshes chart', async () => {
+        initTerminal({
+            filterAndSort: filterAndSortMock,
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: chartManagerMock,
+        });
+
+        await initTerminal({
+            filterAndSort: filterAndSortMock,
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: chartManagerMock,
+        }).processCommand('allstock');
+
+        expect(filterAndSortMock).toHaveBeenCalledWith('');
+        expect(chartManagerMock.update).toHaveBeenCalled();
+        expect(transactionState.compositionFilterTickers).toEqual([]);
+        expect(transactionState.compositionAssetClassFilter).toBeNull();
+    });
+});
