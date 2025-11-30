@@ -8,6 +8,8 @@ import {
     setHistoricalPrices,
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
+    setCompositionFilterTickers,
+    setCompositionAssetClassFilter,
 } from './state.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import {
@@ -644,6 +646,8 @@ const COMMAND_ALIASES = [
     'reset',
     'clear',
     'all',
+    'alltime',
+    'allstock',
     'stats',
     's',
     'transaction',
@@ -1084,7 +1088,7 @@ export function initTerminal({
                     switch (subcommand) {
                         case 'filter':
                             result =
-                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n  stock    - Show individual stock positions (excludes ETFs/funds).\n             Example: stock\n  etf      - Show ETF/mutual fund positions (excludes individual stocks).\n             Example: etf\n  abs/a    - When composition chart is open, switch to absolute view.\n             Example: abs\n  per      - When absolute view is open, switch back to percentage view.\n             Example: per\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY             - Filter to year (e.g., to:2023)\n  YYYY:YYYY           - Filter year range (e.g., 2022:2023)\n  YYYYqN              - Filter by quarter (e.g., 2023q1)\n  YYYYqN:YYYYqN       - Filter between two quarters (e.g., 2022q1:2023q2)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                  - Quarter of the current range (e.g., q2)\n  from:qN or f:qN     - From the start of that quarter (e.g., f:q3)\n  to:qN               - To the end of that quarter (e.g., to:q4)\n\nChart label toggle:\n  label (l)           - Toggle chart labels (start/end annotations, FX/composition hover panels).\n                        Example: label\n\nAny text not part of a command is used for a general text search.';
+                                'Usage: <filter>:<value>\n\nAvailable filters:\n  type     - Filter by order type (buy or sell).\n             Example: type:buy\n  security - Filter by security ticker.\n             Example: security:NVDA or s:NVDA\n  min      - Show transactions with a net amount greater than value.\n             Example: min:1000\n  max      - Show transactions with a net amount less than value.\n             Example: max:5000\n  stock    - Show individual stock positions (excludes ETFs/funds).\n             Example: stock\n  etf      - Show ETF/mutual fund positions (excludes individual stocks).\n             Example: etf\n  abs/a    - When composition chart is open, switch to absolute view.\n             Example: abs\n  per      - When absolute view is open, switch back to percentage view.\n             Example: per\n  alltime  - Clear chart date filters without touching other filters.\n             Example: alltime\n  allstock - Clear composition ticker filters (show all holdings).\n             Example: allstock\n\nDate filters (when chart is active):\n  from:YYYY or f:YYYY     - Filter from year (e.g., from:2022 or f:2022)\n  to:YYYY                 - Filter to year (e.g., to:2023)\n  YYYY:YYYY               - Filter year range (e.g., 2022:2023)\n  YYYYqN                  - Filter by quarter (e.g., 2023q1)\n  YYYYqN:YYYYqN           - Filter between two quarters (e.g., 2022q1:2023q2)\n  from:YYYYqN or f:YYYYqN - Filter from quarter (e.g., from:2022q3)\n  qN                      - Quarter of the current range (e.g., q2)\n  from:qN or f:qN         - From the start of that quarter (e.g., f:q3)\n  to:qN                   - To the end of that quarter (e.g., to:q4)\n\nChart label toggle:\n  label (l)               - Toggle chart labels (start/end annotations, FX/composition hover panels).\n                            Example: label\n\nAny text not part of a command is used for a general text search.';
                             break;
                         default:
                             result = `Unknown help subcommand: ${subcommand}\nAvailable: ${HELP_SUBCOMMANDS.join(', ')}`;
@@ -1120,6 +1124,59 @@ export function initTerminal({
                     result += `\n${fxSnapshot}`;
                 }
                 break;
+            case 'alltime': {
+                setChartDateRange({ from: null, to: null });
+                updateContextYearFromRange({ from: null, to: null });
+                if (isTransactionTableVisible()) {
+                    filterAndSort(transactionState.activeFilterTerm || '');
+                }
+                if (
+                    isActiveChartVisible() &&
+                    chartManager &&
+                    typeof chartManager.update === 'function'
+                ) {
+                    chartManager.update();
+                }
+                result = 'Cleared chart date filters.';
+                {
+                    const summaryText = await getActiveChartSummaryText();
+                    if (summaryText) {
+                        result += `\n${summaryText}`;
+                    }
+                }
+                break;
+            }
+            case 'allstock': {
+                const hadTickerFilters =
+                    (transactionState.compositionFilterTickers || []).length > 0 ||
+                    Boolean(transactionState.compositionAssetClassFilter);
+                setCompositionFilterTickers([]);
+                setCompositionAssetClassFilter(null);
+                if (
+                    hadTickerFilters &&
+                    isActiveChartVisible() &&
+                    chartManager &&
+                    typeof chartManager.update === 'function'
+                ) {
+                    chartManager.update();
+                }
+                result = 'Cleared composition ticker filters.';
+                if (
+                    transactionState.activeChart === 'composition' ||
+                    transactionState.activeChart === 'compositionAbs'
+                ) {
+                    const summary = await getCompositionSnapshotLine({
+                        labelPrefix:
+                            transactionState.activeChart === 'compositionAbs'
+                                ? 'Composition Abs'
+                                : 'Composition',
+                    });
+                    if (summary) {
+                        result += `\n${summary}`;
+                    }
+                }
+                break;
+            }
             case 'reset':
                 closeAllFilterDropdowns();
                 resetSortState();
