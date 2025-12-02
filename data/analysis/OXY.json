@@ -3,7 +3,7 @@
     "name": "Occidental Petroleum",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-01T07:50:14.495013+00:00",
+        "asOf": "2025-12-02T07:50:10.326807+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,23 +29,23 @@
     },
     "market": {
         "forwardEps": 3.16,
-        "pe": 30.8824,
-        "forwardPe": 13.2911,
+        "pe": 31.1324,
+        "forwardPe": 13.3987,
         "beta": 0.392,
-        "marketCap": 41378836480.0,
-        "enterpriseValue": 70887841792.0,
+        "marketCap": 41713811456.0,
+        "enterpriseValue": 71222812672.0,
         "ebitda": 12693000192,
-        "dividendYield": 2.29,
+        "dividendYield": 2.27,
         "currency": "USD",
         "fiftyTwoWeekHigh": 53.2,
         "fiftyTwoWeekLow": 34.78,
-        "marketDataUpdatedAt": "2025-12-01T07:50:14.291459+00:00",
-        "evToEbitda": 5.5848,
+        "marketDataUpdatedAt": "2025-12-02T07:50:10.070625+00:00",
+        "evToEbitda": 5.6112,
         "eps": 1.36,
-        "price": 42.0
+        "price": 42.34
     },
     "risk": {
-        "volatility": 0.3638,
+        "volatility": 0.3639,
         "estimateSource": "historical",
         "correlations": null
     },
