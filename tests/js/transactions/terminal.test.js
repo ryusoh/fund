@@ -65,10 +65,11 @@ function setupDom({ tableVisible = false } = {}) {
     `;
 }
 
-async function runCommand(
-    command,
-    { tableVisible = false, chartManager: providedChartManager = null, setupState } = {}
-) {
+function initTerminalSession({
+    tableVisible = false,
+    chartManager: providedChartManager = null,
+    setupState,
+} = {}) {
     const filterAndSort = jest.fn();
     const toggleTable = jest.fn();
     const closeAllFilterDropdowns = jest.fn();
@@ -97,11 +98,40 @@ async function runCommand(
         chartManager,
     });
 
-    const input = document.getElementById('terminalInput');
-    input.value = command;
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    return { filterAndSort, chartManager, toggleTable, closeAllFilterDropdowns, resetSortState };
+    const submitCommand = async (command) => {
+        const input = document.getElementById('terminalInput');
+        input.value = command;
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    };
+
+    return {
+        submitCommand,
+        filterAndSort,
+        chartManager,
+        toggleTable,
+        closeAllFilterDropdowns,
+        resetSortState,
+    };
+}
+
+async function runCommand(
+    command,
+    { tableVisible = false, chartManager: providedChartManager = null, setupState } = {}
+) {
+    const session = initTerminalSession({
+        tableVisible,
+        chartManager: providedChartManager,
+        setupState,
+    });
+    await session.submitCommand(command);
+    return {
+        filterAndSort: session.filterAndSort,
+        chartManager: session.chartManager,
+        toggleTable: session.toggleTable,
+        closeAllFilterDropdowns: session.closeAllFilterDropdowns,
+        resetSortState: session.resetSortState,
+    };
 }
 
 function getLastTerminalMessage() {
@@ -131,6 +161,60 @@ describe('terminal date filters respect table visibility', () => {
         expect(getLastTerminalMessage()).toContain(
             'Applied date filter 2025 to transactions table.'
         );
+    });
+});
+
+describe('plot command date range handling', () => {
+    test('retains active date filter across chart toggles', async () => {
+        const session = initTerminalSession();
+
+        await session.submitCommand('plot balance 2025');
+        expect(transactionState.chartDateRange).toEqual({
+            from: '2025-01-01',
+            to: '2025-12-31',
+        });
+
+        await session.submitCommand('plot composition');
+        expect(transactionState.chartDateRange).toEqual({
+            from: '2025-01-01',
+            to: '2025-12-31',
+        });
+
+        await session.submitCommand('plot performance');
+        expect(transactionState.chartDateRange).toEqual({
+            from: '2025-01-01',
+            to: '2025-12-31',
+        });
+
+        await session.submitCommand('plot fx');
+        expect(transactionState.chartDateRange).toEqual({
+            from: '2025-01-01',
+            to: '2025-12-31',
+        });
+        expect(getLastTerminalMessage()).toContain('Showing FX chart (base USD) for 2025.');
+    });
+
+    test('allows explicit reset via special tokens', async () => {
+        const session = initTerminalSession();
+
+        await session.submitCommand('plot balance 2025');
+        expect(transactionState.chartDateRange.from).toBe('2025-01-01');
+
+        await session.submitCommand('plot composition all');
+        expect(transactionState.chartDateRange).toEqual({ from: null, to: null });
+        expect(getLastTerminalMessage()).toContain('Showing composition chart for all time.');
+    });
+
+    test('ignores unrecognized date tokens and keeps existing range', async () => {
+        const session = initTerminalSession();
+        await session.submitCommand('plot balance 2025');
+
+        await session.submitCommand('plot composition someday');
+        expect(transactionState.chartDateRange).toEqual({
+            from: '2025-01-01',
+            to: '2025-12-31',
+        });
+        expect(getLastTerminalMessage()).toContain('Showing composition chart for 2025.');
     });
 });
 

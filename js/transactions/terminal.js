@@ -1307,8 +1307,38 @@ export function initTerminal({
                 } else {
                     const subcommand = args[0].toLowerCase();
                     const rawArgs = args.slice(1);
+                    const getExistingChartRange = () => {
+                        const current = transactionState.chartDateRange || {};
+                        return {
+                            from: current.from || null,
+                            to: current.to || null,
+                        };
+                    };
                     const applyDateArgs = (tokens) => {
-                        const range = parseDateRange(tokens);
+                        const normalizedTokens = tokens
+                            .map((token) => (typeof token === 'string' ? token.trim() : ''))
+                            .filter((token) => token.length > 0);
+
+                        if (normalizedTokens.length === 0) {
+                            // Keep current range if one is already applied when simply switching charts.
+                            const existing = getExistingChartRange();
+                            return existing;
+                        }
+
+                        if (normalizedTokens.length === 1) {
+                            const token = normalizedTokens[0].toLowerCase();
+                            if (token === 'all' || token === 'reset' || token === 'clear') {
+                                const clearedRange = { from: null, to: null };
+                                setChartDateRange(clearedRange);
+                                updateContextYearFromRange(clearedRange);
+                                return clearedRange;
+                            }
+                        }
+
+                        const range = parseDateRange(normalizedTokens);
+                        if (!range.from && !range.to) {
+                            return getExistingChartRange();
+                        }
                         setChartDateRange(range);
                         updateContextYearFromRange(range);
                         return range;
