@@ -9,11 +9,11 @@
     },
     "GOOG": {
         "shares": "826.152",
-        "average_price": "179.46"
+        "average_price": "179.460000"
     },
     "PDD": {
-        "shares": "1219.597",
-        "average_price": "108.789988"
+        "shares": "1232.597",
+        "average_price": "108.858279"
     },
     "BRK-B": {
         "shares": "111",
@@ -24,7 +24,7 @@
         "average_price": "48.559154"
     },
     "GEO": {
-        "shares": "672.834",
-        "average_price": "18.720213"
+        "shares": "678.834",
+        "average_price": "18.706732"
     }
 }
