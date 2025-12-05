@@ -19,6 +19,7 @@ import {
     buildFxChartSeries,
     PERFORMANCE_SERIES_CURRENCY,
 } from './chart.js';
+import { loadCompositionSnapshotData } from './dataLoader.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
     getStatsText,
@@ -64,31 +65,6 @@ function formatPercentInline(value) {
     }
     const sign = value > 0 ? '+' : value < 0 ? '−' : '';
     return `${sign}${Math.abs(value).toFixed(2)}%`;
-}
-
-let compositionSnapshotCache = null;
-let compositionSnapshotPromise = null;
-
-async function ensureCompositionSnapshotData() {
-    if (typeof fetch !== 'function') {
-        return null;
-    }
-    if (compositionSnapshotCache) {
-        return compositionSnapshotCache;
-    }
-    if (!compositionSnapshotPromise) {
-        compositionSnapshotPromise = fetch('../data/output/figures/composition.json')
-            .then((response) => (response.ok ? response.json() : null))
-            .catch(() => null)
-            .finally(() => {
-                compositionSnapshotPromise = null;
-            });
-    }
-    const data = await compositionSnapshotPromise;
-    if (data && typeof data === 'object') {
-        compositionSnapshotCache = data;
-    }
-    return compositionSnapshotCache;
 }
 
 function updateContextYearFromRange(range) {
@@ -339,7 +315,7 @@ async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) 
     ) {
         return null;
     }
-    const data = await ensureCompositionSnapshotData();
+    const data = await loadCompositionSnapshotData();
     if (
         !data ||
         typeof data !== 'object' ||

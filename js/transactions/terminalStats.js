@@ -1,11 +1,10 @@
 import { formatCurrency } from './utils.js';
 import { transactionState } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
+import { loadCompositionSnapshotData } from './dataLoader.js';
 
 let statsDataCache = null;
 let holdingsDataCache = null;
-let compositionStatsCache = null;
-let compositionStatsPromise = null;
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -834,29 +833,6 @@ async function getLatestCompositionSnapshot() {
         dateLabel: data.dates[targetIndex],
         holdings,
     };
-}
-
-async function loadCompositionSnapshotData() {
-    if (compositionStatsCache) {
-        return compositionStatsCache;
-    }
-    if (compositionStatsPromise) {
-        return compositionStatsPromise;
-    }
-    if (typeof fetch !== 'function') {
-        return null;
-    }
-    compositionStatsPromise = fetch('../data/output/figures/composition.json')
-        .then((response) => (response.ok ? response.json() : null))
-        .catch(() => null)
-        .finally(() => {
-            compositionStatsPromise = null;
-        });
-    const data = await compositionStatsPromise;
-    if (data && typeof data === 'object') {
-        compositionStatsCache = data;
-    }
-    return compositionStatsCache;
 }
 
 function buildLotSnapshots() {

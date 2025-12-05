@@ -51,9 +51,18 @@ export async function loadTransactionData() {
     return parseCSV(csvText);
 }
 
+import { fetchRealTimeData } from './realtimeData.js';
+
 export async function loadPortfolioSeries() {
     try {
-        const response = await fetch('../data/output/balance_series.json');
+        const [response, realtime] = await Promise.all([
+            fetch('../data/output/balance_series.json'),
+            fetchRealTimeData().catch((err) => {
+                logger.warn('Real-time data fetch failed:', err);
+                return null;
+            }),
+        ]);
+
         if (!response.ok) {
             logger.warn('balance_series.json not found; portfolio balance line disabled');
             return [];
@@ -67,18 +76,54 @@ export async function loadPortfolioSeries() {
                 }))
                 .filter((entry) => typeof entry.date === 'string' && Number.isFinite(entry.value));
 
-        if (Array.isArray(payload)) {
-            return { USD: normalizeSeries(payload) };
-        }
+        let result = { USD: [] };
 
-        if (payload && typeof payload === 'object') {
-            const result = {};
+        if (Array.isArray(payload)) {
+            result = { USD: normalizeSeries(payload) };
+        } else if (payload && typeof payload === 'object') {
+            result = {};
             Object.entries(payload).forEach(([currency, entries]) => {
                 result[currency] = normalizeSeries(entries);
             });
-            return result;
         }
-        return { USD: [] };
+
+        // Merge real-time data
+        if (realtime && realtime.balance > 0) {
+            const date = realtime.date;
+            const usdBalance = realtime.balance;
+
+            // Ensure USD exists
+            if (!result.USD) {
+                result.USD = [];
+            }
+
+            // Helper to append or update
+            const mergePoint = (series, val) => {
+                const last = series[series.length - 1];
+                if (last && last.date === date) {
+                    last.value = val;
+                } else {
+                    series.push({ date, value: val });
+                }
+            };
+
+            mergePoint(result.USD, usdBalance);
+
+            // Update other currencies
+            if (realtime.fxRates) {
+                Object.entries(realtime.fxRates).forEach(([code, rate]) => {
+                    if (code === 'USD') {
+                        return;
+                    }
+                    if (!result[code]) {
+                        result[code] = [];
+                    }
+                    mergePoint(result[code], usdBalance * rate);
+                });
+            }
+        }
+
+        return result;
     } catch (error) {
         logger.warn('Failed to load balance series:', error);
         return { USD: [] };
@@ -128,7 +173,11 @@ export async function loadContributionSeries() {
 
 export async function loadPerformanceSeries() {
     try {
-        const response = await fetch('../data/output/performance_series.json');
+        const [response, realtime] = await Promise.all([
+            fetch('../data/output/performance_series.json'),
+            fetchRealTimeData().catch(() => null),
+        ]);
+
         if (!response.ok) {
             logger.warn('performance_series.json not found; performance chart disabled');
             return {};
@@ -160,6 +209,46 @@ export async function loadPerformanceSeries() {
             seriesMap[key] = normalizedPoints;
         });
 
+        // Estimate real-time performance for LZ fund
+        // Logic: (TodayBalance / LastBalance) - 1 + LastTWRR?
+        // Or rather: NewTWRR = LastTWRR * (CurrentBalance / PreviousBalance) (assuming no flows)
+        if (realtime && seriesMap['^LZ'] && seriesMap['^LZ'].length > 0) {
+            // We need the previous balance value to calculate return
+            // We can re-fetch balance series or assume we can get it.
+            // Getting it from loadPortfolioSeries is circular or messy.
+            // Simplified approach: fetch balance series here locally just to find the last point.
+            try {
+                const balResponse = await fetch('../data/output/balance_series.json');
+                const balPayload = await balResponse.json();
+                const usdOpen = Array.isArray(balPayload)
+                    ? balPayload[balPayload.length - 1]
+                    : balPayload.USD
+                      ? balPayload.USD[balPayload.USD.length - 1]
+                      : null;
+
+                if (usdOpen && usdOpen.value > 0) {
+                    const lastTwrrPoint = seriesMap['^LZ'][seriesMap['^LZ'].length - 1];
+                    const dailyReturn = realtime.balance / usdOpen.value; // e.g. 1.01
+
+                    // If dates match, update the last point
+                    if (lastTwrrPoint.date === realtime.date) {
+                        // This implies the series already has today's data (maybe from batch job).
+                        // We probably shouldn't overwrite it with a simple estimate unless we are sure.
+                        // But for "live" feel, maybe we do?
+                        // Let's only append if date is new.
+                    } else {
+                        const newTwrrValue = lastTwrrPoint.value * dailyReturn;
+                        seriesMap['^LZ'].push({
+                            date: realtime.date,
+                            value: newTwrrValue,
+                        });
+                    }
+                }
+            } catch {
+                // Ignore complexity if balance fetch fails
+            }
+        }
+
         return seriesMap;
     } catch (error) {
         logger.warn('Failed to load performance series:', error);
@@ -181,6 +270,67 @@ export async function loadFxDailyRates() {
         return payload;
     } catch (error) {
         logger.warn('Failed to load FX daily rates:', error);
+        return null;
+    }
+}
+
+export async function loadCompositionSnapshotData() {
+    try {
+        const [response, realtime] = await Promise.all([
+            fetch('../data/output/composition_snapshot.json'),
+            fetchRealTimeData().catch(() => null),
+        ]);
+
+        if (!response.ok) {
+            logger.warn('composition_snapshot.json not found');
+            return null;
+        }
+
+        const data = await response.json();
+
+        // Merge real-time composition
+        if (realtime && realtime.composition && realtime.date) {
+            // Append date
+            if (data.dates) {
+                const lastDate = data.dates[data.dates.length - 1];
+                if (lastDate !== realtime.date) {
+                    data.dates.push(realtime.date);
+
+                    // Merge composition values
+                    const composition = data.composition || data.series; // Support flexibility
+                    if (composition) {
+                        // For each ticker in historical composition, create a new point
+                        Object.keys(composition).forEach((ticker) => {
+                            if (!Array.isArray(composition[ticker])) {
+                                return;
+                            }
+                            // Find real-time percent for this ticker
+                            const rtItem = realtime.composition.find((i) => i.ticker === ticker);
+                            const rtPercent = rtItem ? rtItem.percent : 0;
+                            composition[ticker].push(rtPercent);
+                        });
+
+                        // Add new tickers found in real-time but not history
+                        realtime.composition.forEach((rtItem) => {
+                            if (Math.abs(rtItem.percent) > 0.001) {
+                                // Only if significant
+                                if (!composition[rtItem.ticker]) {
+                                    // Backfill with 0s
+                                    composition[rtItem.ticker] = new Array(
+                                        data.dates.length - 1
+                                    ).fill(0);
+                                    composition[rtItem.ticker].push(rtItem.percent);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        return data;
+    } catch (error) {
+        logger.warn('Failed to load composition snapshot:', error);
         return null;
     }
 }
