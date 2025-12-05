@@ -1081,7 +1081,8 @@ export function initTerminal({
                         'Available commands:\n' +
                         '  stats (s)          - Statistics commands\n' +
                         '                       Use "stats" or "s" for subcommands\n' +
-                        '                       Subcommands: transactions, holdings, duration, lifespan, concentration, cagr, return, ratio\n' +
+                        '                       Subcommands: transactions, holdings, duration, lifespan, concentration, cagr,\n' +
+                        '                                    return, ratio\n' +
                         '                       Examples: stats lifespan, s cagr, stats concentration\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
