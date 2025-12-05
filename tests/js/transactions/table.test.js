@@ -283,3 +283,55 @@ describe('asset class filters', () => {
         expect(transactionState.compositionAssetClassFilter).toBe('etf');
     });
 });
+
+describe('ticker alias filtering', () => {
+    let initTable;
+    let setAllTransactions;
+    let transactionState;
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+        });
+    });
+
+    it('matches BRK-B transactions when filtering by "brk"', () => {
+        const brkTransaction = {
+            transactionId: 1,
+            tradeDate: '2024-01-04',
+            orderType: 'Buy',
+            security: 'BRK-B',
+            quantity: '10',
+            price: '300',
+            netAmount: '3000',
+        };
+        const otherTransaction = {
+            transactionId: 2,
+            tradeDate: '2024-01-05',
+            orderType: 'Buy',
+            security: 'AAPL',
+            quantity: '1',
+            price: '150',
+            netAmount: '150',
+        };
+
+        setAllTransactions([brkTransaction, otherTransaction]);
+
+        const controller = initTable();
+        controller.filterAndSort('brk');
+
+        expect(transactionState.filteredTransactions).toHaveLength(1);
+        expect(transactionState.filteredTransactions[0].security).toBe('BRK-B');
+    });
+});

@@ -245,14 +245,17 @@ function filterAndSort(searchTerm = '') {
         const term = parsed.text.toLowerCase();
 
         const upcaseSecurity = parsed.commands.security
-            ? parsed.commands.security.toUpperCase()
+            ? normalizeTickerToken(parsed.commands.security) ||
+              parsed.commands.security.toUpperCase()
             : null;
         const multiTickerSet =
             parsed.commands.tickers.length > 0 ? new Set(parsed.commands.tickers) : null;
 
         if (upcaseSecurity || multiTickerSet) {
             filtered = filtered.filter((t) => {
-                const ticker = t.security.toUpperCase();
+                const normalizedParams = normalizeTickerToken(t.security);
+                const ticker = normalizedParams || t.security.toUpperCase();
+
                 if (upcaseSecurity && ticker === upcaseSecurity) {
                     return true;
                 }
