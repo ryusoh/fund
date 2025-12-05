@@ -42,11 +42,6 @@ def calculate_daily_composition(holdings_df, prices_data):
         for ticker in holdings_df.columns:
             shares = holdings_df.loc[date, ticker]
 
-            # If shares is essentially zero (floating point error), use previous day's holdings
-            if abs(shares) < 0.01 and i > 0:
-                prev_date = dates[i - 1]
-                shares = holdings_df.loc[prev_date, ticker]
-
             if shares > 0:
                 price_ticker = map_ticker(ticker)
                 if price_ticker in prices_data:
@@ -68,6 +63,8 @@ def calculate_daily_composition(holdings_df, prices_data):
         for ticker, value in ticker_values.items():
             if daily_composition['total_value'] > 0:
                 percentage = (value / daily_composition['total_value']) * 100
+                if percentage < 1e-6:
+                    continue
                 daily_composition[ticker] = percentage
                 total_percentage += percentage
 

@@ -91,12 +91,6 @@ def clean_transactions(df: pd.DataFrame) -> pd.DataFrame:
         print(zero_rows[['trade_date', 'security', 'quantity', 'executed_price']])
 
     df = df.sort_values('trade_date').reset_index(drop=True)
-    before_rows = len(df)
-    df = df.drop_duplicates(keep='first')
-    duplicates_removed = before_rows - len(df)
-    if duplicates_removed:
-        print(f'Removed {duplicates_removed} exact duplicate rows.')
-
     return df
 
 

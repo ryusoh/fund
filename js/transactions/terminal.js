@@ -23,9 +23,13 @@ import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
     getStatsText,
     getHoldingsText,
+    getHoldingsDebugText,
     getCagrText,
     getAnnualReturnText,
     getRatioText,
+    getDurationStatsText,
+    getLifespanStatsText,
+    getConcentrationText,
 } from './terminalStats.js';
 import {
     parseYearFromDate,
@@ -666,7 +670,17 @@ const COMMAND_ALIASES = [
     'to', // For simplified commands
 ];
 
-const STATS_SUBCOMMANDS = ['transactions', 'holdings', 'cagr', 'return', 'ratio'];
+const STATS_SUBCOMMANDS = [
+    'transactions',
+    'holdings',
+    'holdings-debug',
+    'duration',
+    'lifespan',
+    'concentration',
+    'cagr',
+    'return',
+    'ratio',
+];
 
 const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'composition-abs', 'fx'];
 
@@ -1067,8 +1081,8 @@ export function initTerminal({
                         'Available commands:\n' +
                         '  stats (s)          - Statistics commands\n' +
                         '                       Use "stats" or "s" for subcommands\n' +
-                        '                       Subcommands: transactions, holdings, cagr, return, ratio\n' +
-                        '                       Examples: stats transactions, s cagr, stats ratio\n' +
+                        '                       Subcommands: transactions, holdings, duration, lifespan, concentration, cagr, return, ratio\n' +
+                        '                       Examples: stats lifespan, s cagr, stats concentration\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
                         '                       Subcommands: balance, performance, composition, composition-abs, fx\n' +
@@ -1233,7 +1247,16 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show stats help
                     result =
-                        'Stats commands:\n  stats transactions - Show transaction statistics\n  stats holdings     - Show current holdings\n  stats cagr         - Show CAGR based on TWRR series\n  stats return       - Show annual returns for portfolio and benchmarks\n  stats ratio        - Show Sharpe and Sortino ratios\n\nUsage: stats <subcommand> or s <subcommand>';
+                        'Stats commands:\n' +
+                        '  stats transactions - Show transaction statistics\n' +
+                        '  stats holdings     - Show current holdings\n' +
+                        '  stats duration     - Show value-weighted holding ages\n' +
+                        '  stats lifespan     - Show holding lifespans for open and closed tickers\n' +
+                        '  stats concentration - Show Herfindahl concentration & effective holdings\n' +
+                        '  stats cagr         - Show CAGR based on TWRR series\n' +
+                        '  stats return       - Show annual returns for portfolio and benchmarks\n' +
+                        '  stats ratio        - Show Sharpe and Sortino ratios\n' +
+                        '\nUsage: stats <subcommand> or s <subcommand>';
                 } else {
                     const subcommand = args[0].toLowerCase();
                     switch (subcommand) {
@@ -1245,6 +1268,9 @@ export function initTerminal({
                                 transactionState.selectedCurrency || 'USD'
                             );
                             break;
+                        case 'holdings-debug':
+                            result = await getHoldingsDebugText();
+                            break;
                         case 'cagr':
                             result = await getCagrText();
                             break;
@@ -1253,6 +1279,15 @@ export function initTerminal({
                             break;
                         case 'ratio':
                             result = await getRatioText();
+                            break;
+                        case 'duration':
+                            result = await getDurationStatsText();
+                            break;
+                        case 'lifespan':
+                            result = await getLifespanStatsText();
+                            break;
+                        case 'concentration':
+                            result = await getConcentrationText();
                             break;
                         default:
                             result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;
