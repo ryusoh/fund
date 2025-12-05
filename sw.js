@@ -1,6 +1,6 @@
 /* Simple service worker for Fund */
 /* eslint-env serviceworker */
-const CACHE_NAME = 'fund-cache-v2';
+const CACHE_NAME = 'fund-cache-v3';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -46,7 +46,18 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Cache-first for static assets; network-first for others
+// Helper to check if a response is a valid clean response we want to cache
+const isValidResponse = (res, req) => {
+    return (
+        res &&
+        res.ok &&
+        res.status === 200 &&
+        res.type === 'basic' &&
+        !req.headers.has('range') &&
+        !res.headers.get('Content-Range')
+    );
+};
+
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
@@ -56,61 +67,48 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    const isStatic =
-        req.destination === 'style' ||
-        req.destination === 'script' ||
+    // Determine strategy based on file type
+    // Images & Fonts: Cache First (Immutable-ish, speed priority)
+    // HTML, JS, CSS: Network First (Mutable, freshness priority)
+    const isImmutable =
         req.destination === 'image' ||
-        req.destination === 'font';
+        req.destination === 'font' ||
+        url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.jpg') ||
+        url.pathname.endsWith('.woff2');
 
-    if (isStatic) {
+    if (isImmutable) {
+        // --- CACHE FIRST ---
         event.respondWith(
-            caches.match(req).then(
-                (cached) =>
-                    cached ||
-                    fetch(req).then((res) => {
-                        // Only cache complete, successful responses (avoid 206 Partial Content)
-                        if (
-                            req.method === 'GET' &&
-                            res &&
-                            res.ok &&
-                            res.status === 200 &&
-                            res.type === 'basic' &&
-                            !req.headers.has('range') &&
-                            !res.headers.get('Content-Range')
-                        ) {
-                            const resClone = res.clone();
-                            caches
-                                .open(CACHE_NAME)
-                                .then((cache) => cache.put(req, resClone))
-                                .catch(() => {});
-                        }
-                        return res;
-                    })
-            )
+            caches.match(req).then((cached) => {
+                if (cached) {
+                    return cached;
+                }
+                return fetch(req).then((res) => {
+                    if (isValidResponse(res, req)) {
+                        const resClone = res.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+                    }
+                    return res;
+                });
+            })
         );
     } else {
+        // --- NETWORK FIRST ---
+        // (Includes style, script, document, and everything else)
         event.respondWith(
             fetch(req)
                 .then((res) => {
-                    // Network-first: cache only full 200 OK basic responses (skip range/partial)
-                    if (
-                        req.method === 'GET' &&
-                        res &&
-                        res.ok &&
-                        res.status === 200 &&
-                        res.type === 'basic' &&
-                        !req.headers.has('range') &&
-                        !res.headers.get('Content-Range')
-                    ) {
+                    if (isValidResponse(res, req)) {
                         const resClone = res.clone();
-                        caches
-                            .open(CACHE_NAME)
-                            .then((cache) => cache.put(req, resClone))
-                            .catch(() => {});
+                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
                     }
                     return res;
                 })
-                .catch(() => caches.match(req))
+                .catch(() => {
+                    // Network failed, try cache
+                    return caches.match(req);
+                })
         );
     }
 });
