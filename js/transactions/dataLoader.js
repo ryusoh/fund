@@ -277,12 +277,12 @@ export async function loadFxDailyRates() {
 export async function loadCompositionSnapshotData() {
     try {
         const [response, realtime] = await Promise.all([
-            fetch('../data/output/composition_snapshot.json'),
+            fetch('../data/output/figures/composition.json'),
             fetchRealTimeData().catch(() => null),
         ]);
 
         if (!response.ok) {
-            logger.warn('composition_snapshot.json not found');
+            logger.warn('figures/composition.json not found');
             return null;
         }
 

@@ -198,15 +198,36 @@ describe('dataLoader real-time integration', () => {
         });
 
         it('should handle missing composition snapshot gracefully', async () => {
-            mockFetch.mockResolvedValueOnce({
-                ok: false,
-                status: 404,
-            });
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 404,
+                })
+                .mockRejectedValueOnce(new Error('Network error')); // For realtime fetch
 
             await loadModule();
             const result = await loadCompositionSnapshotData();
 
             expect(result).toBeNull();
+        });
+
+        it('should fetch from correct path: figures/composition.json', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        dates: ['2024-12-04'],
+                        composition: { VT: [100] },
+                    })
+                )
+                .mockRejectedValueOnce(new Error('Network error')); // For realtime fetch
+
+            await loadModule();
+            await loadCompositionSnapshotData();
+
+            // Verify the first fetch call uses the correct path
+            const firstCall = mockFetch.mock.calls[0];
+            expect(firstCall[0]).toContain('figures/composition.json');
+            expect(firstCall[0]).not.toContain('composition_snapshot.json');
         });
     });
 });
