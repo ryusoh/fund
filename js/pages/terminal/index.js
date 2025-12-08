@@ -14,12 +14,14 @@ import {
     setSelectedCurrency,
     setFxRatesByCurrency,
     getActiveFilterTerm,
+    setChartDateRange,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
 import {
     PERLIN_BACKGROUND_SETTINGS,
     TABLE_GLASS_EFFECT,
     TERMINAL_BACKGROUND_EFFECT,
+    INITIAL_CHART_DATE_RANGE,
 } from '../../config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 import { initBackgroundSweepEffect } from '@ui/backgroundSweep.js';
@@ -314,6 +316,12 @@ function initialize() {
             }
         },
     });
+
+    // Set default date filter from config (e.g., 'from Q4 2023')
+    // Users can clear this with 'alltime' or 'all' commands
+    if (INITIAL_CHART_DATE_RANGE) {
+        setChartDateRange(INITIAL_CHART_DATE_RANGE);
+    }
 
     loadTransactions();
     adjustMobilePanels();

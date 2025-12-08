@@ -14,6 +14,7 @@ import {
     DATA_PATHS,
     CALENDAR_SELECTORS,
     CALENDAR_CONFIG,
+    INITIAL_CHART_DATE_RANGE,
 } from '@js/config.js';
 import { isLocalhost } from '@utils/host';
 
@@ -116,6 +117,28 @@ describe('Configuration', () => {
                 const { CALENDAR_CONFIG } = require('@js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(3);
             });
+        });
+    });
+
+    // Test INITIAL_CHART_DATE_RANGE
+    describe('INITIAL_CHART_DATE_RANGE', () => {
+        it('should be defined with from and to properties', () => {
+            expect(INITIAL_CHART_DATE_RANGE).toBeDefined();
+            expect(INITIAL_CHART_DATE_RANGE).toHaveProperty('from');
+            expect(INITIAL_CHART_DATE_RANGE).toHaveProperty('to');
+        });
+
+        it('should default to from Q4 2023', () => {
+            // Default filter starts from Q4 2023 (October 1, 2023)
+            expect(INITIAL_CHART_DATE_RANGE.from).toBe('2023-10-01');
+            expect(INITIAL_CHART_DATE_RANGE.to).toBeNull();
+        });
+
+        it('should have valid date format for from value when set', () => {
+            if (INITIAL_CHART_DATE_RANGE.from !== null) {
+                // Verify YYYY-MM-DD format
+                expect(INITIAL_CHART_DATE_RANGE.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+            }
         });
     });
 });

@@ -149,6 +149,14 @@ export const APP_SETTINGS = {
     DATA_REFRESH_INTERVAL: 300000, // ms (5 minutes)
 };
 
+// Default chart date range on initial load
+// Set both to null for all-time view
+// Users can clear this with 'alltime' or 'all' commands
+export const INITIAL_CHART_DATE_RANGE = {
+    from: '2023-10-01', // From Q4 2023 (equivalent to 'f:2023q4')
+    to: null, // null means up to present
+};
+
 export const UI_BREAKPOINTS = {
     MOBILE: 768, // px
 };
