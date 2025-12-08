@@ -296,6 +296,11 @@ export async function loadCompositionSnapshotData() {
                 if (lastDate !== realtime.date) {
                     data.dates.push(realtime.date);
 
+                    // Append total balance for real-time date
+                    if (Array.isArray(data.total_values) && Number.isFinite(realtime.balance)) {
+                        data.total_values.push(realtime.balance);
+                    }
+
                     // Merge composition values
                     const composition = data.composition || data.series; // Support flexibility
                     if (composition) {

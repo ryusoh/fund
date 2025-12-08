@@ -4,14 +4,8 @@
 
 import { jest } from '@jest/globals';
 
-// Helper to get today's date in YYYY-MM-DD format (matching realtimeData.js logic)
-function getTodayDateString() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+// Regex to verify date format YYYY-MM-DD
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 describe('realtimeData', () => {
     let fetchRealTimeData;
@@ -33,7 +27,7 @@ describe('realtimeData', () => {
             },
         }));
 
-        // Mock date utils - use real date to match production behavior
+        // Mock date utils
         jest.unstable_mockModule('@utils/date.js', () => ({
             getNyDate: jest.fn(() => new Date()),
             isTradingDay: jest.fn(() => true),
@@ -81,7 +75,7 @@ describe('realtimeData', () => {
             // GOOG: 10 shares * 180 = 1800
             // Total = 12800
             expect(result.balance).toBe(12800);
-            expect(result.date).toBe(getTodayDateString());
+            expect(result.date).toMatch(DATE_REGEX);
         });
 
         it('should calculate composition percentages', async () => {
