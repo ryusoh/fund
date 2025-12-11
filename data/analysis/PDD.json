@@ -3,7 +3,7 @@
     "name": "Pinduoduo",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-10T07:51:16.105414+00:00",
+        "asOf": "2025-12-11T07:50:05.936616+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,23 +28,23 @@
         }
     },
     "market": {
-        "forwardEps": 14.09,
-        "pe": 12.0144,
-        "forwardPe": 8.3137,
+        "forwardEps": 12.346,
+        "pe": 11.8236,
+        "forwardPe": 9.3375,
         "beta": 0.066,
-        "marketCap": 166297387008.0,
-        "enterpriseValue": 245249835008.0,
+        "marketCap": 163656843264.0,
+        "enterpriseValue": 232152334336.0,
         "ebitda": 93147258880.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 139.41,
         "fiftyTwoWeekLow": 87.11,
-        "marketDataUpdatedAt": "2025-12-10T07:51:15.922292+00:00",
-        "evToEbitda": 2.6329,
+        "marketDataUpdatedAt": "2025-12-11T07:50:05.848448+00:00",
+        "evToEbitda": 2.4923,
         "eps": 9.75,
-        "price": 117.14
+        "price": 115.28
     },
     "risk": {
-        "volatility": 0.406,
+        "volatility": 0.4062,
         "estimateSource": "historical",
         "correlations": null
     },
