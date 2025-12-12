@@ -5,6 +5,11 @@
 
 const MIN_FADE_OPACITY = 0.2;
 let fadeUpdateScheduled = false;
+let preserveSecondLast = false;
+
+export function setFadePreserveSecondLast(preserve) {
+    preserveSecondLast = preserve;
+}
 
 function updateOutputFade(outputContainer) {
     if (!outputContainer) {
@@ -30,6 +35,8 @@ function updateOutputFade(outputContainer) {
     const viewTop = outputContainer.scrollTop;
 
     const lastChild = outputContainer.lastElementChild;
+    const secondLastChild = lastChild ? lastChild.previousElementSibling : null;
+    const thirdLastChild = secondLastChild ? secondLastChild.previousElementSibling : null;
 
     Array.from(outputContainer.children).forEach((child) => {
         if (!child || child.nodeType !== 1) {
@@ -38,6 +45,13 @@ function updateOutputFade(outputContainer) {
 
         // Constraint: Never fade the most recent output
         if (child === lastChild) {
+            child.style.opacity = '1';
+            return;
+        }
+
+        // Constraint: If preserved, keep context (last 3 items) opaque
+        // This covers: Zoom Prompt (2nd last) and Previous Output (3rd last)
+        if (preserveSecondLast && (child === secondLastChild || child === thirdLastChild)) {
             child.style.opacity = '1';
             return;
         }

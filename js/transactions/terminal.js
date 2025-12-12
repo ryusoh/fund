@@ -45,7 +45,7 @@ import {
 } from './utils.js';
 import { getHoldingAssetClass } from '@js/config.js';
 import { toggleZoom, getZoomState } from './zoom.js';
-import { initFade, requestFadeUpdate } from './fade.js';
+import { initFade, requestFadeUpdate, setFadePreserveSecondLast } from './fade.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -981,6 +981,8 @@ export function initTerminal({
         let dateRange = { from: null, to: null };
         let result = '';
 
+        setFadePreserveSecondLast(false);
+
         switch (cmd.toLowerCase()) {
             case 'h':
             case 'help':
@@ -1155,6 +1157,7 @@ export function initTerminal({
                 break;
             case 'zoom':
             case 'z': {
+                setFadePreserveSecondLast(true);
                 const zoomResult = await toggleZoom();
                 result = zoomResult.message;
                 break;

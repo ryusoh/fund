@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { requestFadeUpdate } from '@js/transactions/fade.js';
+import { requestFadeUpdate, setFadePreserveSecondLast } from '@js/transactions/fade.js';
 
 describe('Fade Effect Logic', () => {
     let outputContainer;
@@ -75,5 +75,52 @@ describe('Fade Effect Logic', () => {
         requestFadeUpdate(outputContainer);
 
         expect(child1.style.opacity).toBe('1');
+    });
+
+    test('requestFadeUpdate respects setFadePreserveSecondLast(true) for context', () => {
+        // Create 3 items to simulate: PreviousOutput, ZoomPrompt, ZoomOutput
+        // Threshold = 125px
+
+        // Child 0: Previous Output. Top 0.
+        const child0 = document.createElement('div');
+        Object.defineProperty(child0, 'offsetTop', { value: 0, writable: true });
+        Object.defineProperty(child0, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child0);
+
+        // Child 1: Zoom Prompt. Top 50.
+        const child1 = document.createElement('div');
+        Object.defineProperty(child1, 'offsetTop', { value: 50, writable: true });
+        Object.defineProperty(child1, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child1);
+
+        // Child 2: Zoom Output (Last). Top 100.
+        const child2 = document.createElement('div');
+        Object.defineProperty(child2, 'offsetTop', { value: 100, writable: true });
+        Object.defineProperty(child2, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child2);
+
+        // Scroll so Child 0 is partially offscreen (scrolled UP)
+        // scrollTop = 25.
+        // Child 0 relativeTop = -25. relativeBottom = 25. Coverage = 0.5. Should fade by default.
+        Object.defineProperty(outputContainer, 'scrollTop', { value: 25, writable: true });
+
+        // Enable exception
+        setFadePreserveSecondLast(true);
+        requestFadeUpdate(outputContainer);
+
+        // Child 0 (3rd last) should NOT be faded
+        expect(child0.style.opacity).toBe('1');
+        // Child 1 (2nd last) should NOT be faded
+        expect(child1.style.opacity).toBe('1');
+        // Child 2 (Last) always 1
+        expect(child2.style.opacity).toBe('1');
+
+        // Disable exception
+        setFadePreserveSecondLast(false);
+        requestFadeUpdate(outputContainer);
+
+        // Child 0 should be faded now
+        expect(child0.style.opacity).not.toBe('1');
+        expect(parseFloat(child0.style.opacity)).toBeLessThan(1);
     });
 });
