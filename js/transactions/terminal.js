@@ -448,7 +448,14 @@ async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) 
         lines.push(formatted.slice(i, i + 3).join('   '));
     }
 
-    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}`;
+    let hint = '';
+    if (labelPrefix === 'Composition') {
+        hint = "\n(Hint: use 'abs' for absolute values)";
+    } else if (labelPrefix === 'Composition Abs') {
+        hint = "\n(Hint: use 'per' for percentages)";
+    }
+
+    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
 async function getActiveChartSummaryText() {
