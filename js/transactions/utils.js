@@ -163,6 +163,13 @@ export function formatCurrencyCompact(value, { currency } = {}) {
             }
             return `${sign}${symbol}${billions.toFixed(2)}B`;
         }
+
+        // Non-CJK: check if it's effectively an integer
+        const rounded = Math.round(billions);
+        if (Math.abs(billions - rounded) < 0.1) {
+            return `${sign}${symbol}${rounded}B`;
+        }
+
         if (billions >= 100) {
             return `${sign}${symbol}${billions.toFixed(0)}B`;
         }
@@ -174,13 +181,20 @@ export function formatCurrencyCompact(value, { currency } = {}) {
 
     if (absolute >= 1_000_000) {
         const millions = absolute / 1_000_000;
+        const rounded = Math.round(millions);
+
         if (isCJKCurrency) {
-            const rounded = Math.round(millions);
             if (Math.abs(millions - rounded) > 0.1) {
                 return `${sign}${symbol}${millions.toFixed(1)}M`;
             }
             return `${sign}${symbol}${rounded}M`;
         }
+
+        // Non-CJK: check if it's effectively an integer
+        if (Math.abs(millions - rounded) < 0.1) {
+            return `${sign}${symbol}${rounded}M`;
+        }
+
         if (millions >= 100) {
             return `${sign}${symbol}${millions.toFixed(0)}M`;
         }
@@ -192,13 +206,21 @@ export function formatCurrencyCompact(value, { currency } = {}) {
 
     if (absolute >= 1_000) {
         const thousands = absolute / 1_000;
+        const rounded = Math.round(thousands);
+
         if (isCJKCurrency) {
-            const rounded = Math.round(thousands);
             if (Math.abs(thousands - rounded) > 0.1) {
                 return `${sign}${symbol}${thousands.toFixed(1)}k`;
             }
             return `${sign}${symbol}${Math.max(1, rounded)}k`;
         }
+
+        // Non-CJK: check if it's effectively an integer
+        if (Math.abs(thousands - rounded) < 0.05) {
+            // tighter tolerance for k
+            return `${sign}${symbol}${rounded}k`;
+        }
+
         if (thousands >= 100) {
             return `${sign}${symbol}${thousands.toFixed(0)}k`;
         }
@@ -212,11 +234,19 @@ export function formatCurrencyCompact(value, { currency } = {}) {
         if (isCJKCurrency) {
             return `${sign}${symbol}${Math.round(absolute)}`;
         }
+        // Check for integer
+        if (Math.abs(absolute - Math.round(absolute)) < 0.01) {
+            return `${sign}${symbol}${Math.round(absolute)}`;
+        }
         return `${sign}${symbol}${absolute.toFixed(0)}`;
     }
 
     if (isCJKCurrency) {
         return `${sign}${symbol}${Math.round(absolute)}`;
+    }
+
+    if (absolute < 0.005) {
+        return `${sign}${symbol}0`;
     }
 
     return `${sign}${symbol}${absolute.toFixed(2)}`;
