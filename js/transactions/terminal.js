@@ -45,6 +45,7 @@ import {
 } from './utils.js';
 import { getHoldingAssetClass } from '@js/config.js';
 import { toggleZoom, getZoomState } from './zoom.js';
+import { initFade, requestFadeUpdate } from './fade.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -665,7 +666,6 @@ const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'composition-
 
 const HELP_SUBCOMMANDS = ['filter'];
 
-const MIN_FADE_OPACITY = 0.1;
 const TWRR_MESSAGE =
     'TWRR (Time-Weighted Rate of Return) describes how efficiently the portfolio has grown regardless of when money moved in or out. It focuses purely on investment performance, so the result is not distorted by the size or timing of deposits and withdrawals.\n' +
     '\n' +
@@ -853,7 +853,6 @@ export function initTerminal({
     const terminalInput = document.getElementById('terminalInput');
     const terminal = document.getElementById('terminal');
     const outputContainer = document.getElementById('terminalOutput');
-    let fadeUpdateScheduled = false;
 
     function appendMessage(message) {
         if (!outputContainer) {
@@ -863,85 +862,8 @@ export function initTerminal({
         pre.textContent = message;
         outputContainer.appendChild(pre);
         outputContainer.scrollTop = outputContainer.scrollHeight;
-        requestFadeUpdate();
+        requestFadeUpdate(outputContainer);
     }
-
-    function updateOutputFade() {
-        if (!outputContainer) {
-            return;
-        }
-
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            Array.from(outputContainer.children).forEach((child) => {
-                if (child && child.nodeType === 1) {
-                    child.style.opacity = '1';
-                }
-            });
-            return;
-        }
-
-        const viewHeight = outputContainer.clientHeight;
-        if (viewHeight <= 0) {
-            return;
-        }
-
-        const threshold = viewHeight * 0.25;
-        const viewTop = outputContainer.scrollTop;
-
-        const lastChild = outputContainer.lastElementChild;
-
-        Array.from(outputContainer.children).forEach((child) => {
-            if (!child || child.nodeType !== 1) {
-                return;
-            }
-
-            // Constraint: Never fade the most recent output
-            if (child === lastChild) {
-                child.style.opacity = '1';
-                return;
-            }
-
-            if (!child.style.transition) {
-                child.style.transition = 'opacity 0.18s ease-out';
-            }
-
-            const relativeTop = child.offsetTop - viewTop;
-            const relativeBottom = relativeTop + child.offsetHeight;
-
-            if (relativeBottom <= 0) {
-                child.style.opacity = '0';
-                return;
-            }
-
-            if (relativeTop >= threshold) {
-                child.style.opacity = '';
-                return;
-            }
-
-            const visibleTop = Math.max(relativeTop, 0);
-            const visibleBottom = Math.min(relativeBottom, threshold);
-            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-            const coverage = Math.min(
-                1,
-                visibleHeight / Math.max(1, Math.min(child.offsetHeight, threshold))
-            );
-            const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * coverage;
-            child.style.opacity = opacity.toFixed(2);
-        });
-    }
-
-    function requestFadeUpdate() {
-        if (fadeUpdateScheduled) {
-            return;
-        }
-        fadeUpdateScheduled = true;
-        requestAnimationFrame(() => {
-            fadeUpdateScheduled = false;
-            updateOutputFade();
-        });
-    }
-
     function autocompleteCommand(input) {
         if (!input) {
             return;
@@ -1912,12 +1834,12 @@ export function initTerminal({
             lastEmptyFilterTerm = null;
         }
         outputContainer.scrollTop = outputContainer.scrollHeight;
-        requestFadeUpdate();
+        requestFadeUpdate(outputContainer);
     });
 
     if (outputContainer) {
-        outputContainer.addEventListener('scroll', requestFadeUpdate, { passive: true });
-        requestFadeUpdate();
+        // Initialize scroll fading
+        initFade(outputContainer);
     }
 
     return {
