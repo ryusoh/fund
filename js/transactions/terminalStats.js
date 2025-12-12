@@ -475,7 +475,7 @@ export async function getLifespanStatsText() {
         .slice(0, Math.min(openEntries.length, 8))
         .map((entry) => [
             entry.ticker,
-            formatShareValue(entry.openShares),
+            formatShareValueShort(entry.openShares),
             Math.round(entry.spanDays).toLocaleString(),
             formatYearsValue(entry.spanDays),
         ]);
@@ -509,7 +509,7 @@ export async function getLifespanStatsText() {
         .slice(0, Math.min(closedEntries.length, 8))
         .map((entry) => [
             entry.ticker,
-            formatShareValue(entry.shares),
+            formatShareValueShort(entry.shares),
             Math.round(entry.spanDays).toLocaleString(),
             formatYearsValue(entry.spanDays),
         ]);
@@ -697,6 +697,13 @@ function formatShareValue(value) {
         return '0.000000';
     }
     return value.toFixed(6);
+}
+
+function formatShareValueShort(value) {
+    if (!Number.isFinite(value)) {
+        return '0.00';
+    }
+    return value.toFixed(2);
 }
 
 function formatResidualValue(value) {
