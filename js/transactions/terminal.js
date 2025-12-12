@@ -889,8 +889,16 @@ export function initTerminal({
         const threshold = viewHeight * 0.25;
         const viewTop = outputContainer.scrollTop;
 
+        const lastChild = outputContainer.lastElementChild;
+
         Array.from(outputContainer.children).forEach((child) => {
             if (!child || child.nodeType !== 1) {
+                return;
+            }
+
+            // Constraint: Never fade the most recent output
+            if (child === lastChild) {
+                child.style.opacity = '1';
                 return;
             }
 
