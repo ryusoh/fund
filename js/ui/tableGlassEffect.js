@@ -6,6 +6,8 @@ export class TableGlassEffect {
         if (!this.container) {
             throw new Error(`Container not found: ${containerSelector}`);
         }
+        // Expose instance for external control (e.g. zoom animations)
+        this.container.glassEffect = this;
 
         // Merge defaults with provided options
         // If options has threeD, it overrides PIE_CHART_GLASS_EFFECT.threeD
@@ -34,8 +36,18 @@ export class TableGlassEffect {
             pointer: { x: 0, y: 0 },
             pointerSmoothed: { x: 0, y: 0 },
         };
+        this.resizePaused = false;
 
         this.init();
+    }
+
+    pauseResize() {
+        this.resizePaused = true;
+    }
+
+    resumeResize() {
+        this.resizePaused = false;
+        this.resize();
     }
 
     init() {
@@ -99,6 +111,10 @@ export class TableGlassEffect {
     }
 
     resize() {
+        if (this.resizePaused) {
+            return;
+        }
+
         // Re-check header height on resize if needed
         if (this.options.excludeHeader) {
             const thead = this.container.querySelector('thead');

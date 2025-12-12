@@ -14,6 +14,10 @@
     background-clip: padding-box;
 }
 
+.terminal.terminal-zoomed {
+    z-index: 10;
+}
+
 .terminal-output {
     height: 270px;
     overflow-y: auto;

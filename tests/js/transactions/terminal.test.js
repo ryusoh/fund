@@ -1,7 +1,15 @@
 /* global KeyboardEvent */
 import { jest } from '@jest/globals';
+
+// Mock zoom module functions since they are imported by terminal.js
+jest.mock('@js/transactions/zoom.js', () => ({
+    toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
+    getZoomState: jest.fn(),
+}));
+
 import { initTerminal } from '@js/transactions/terminal.js';
 import { transactionState } from '@js/transactions/state.js';
+import { toggleZoom, getZoomState } from '@js/transactions/zoom.js';
 
 function resetTransactionState() {
     transactionState.commandHistory = [];
@@ -299,5 +307,80 @@ describe('allstock command clears ticker filters', () => {
         expect(chartManagerMock.update).toHaveBeenCalled();
         expect(transactionState.compositionFilterTickers).toEqual([]);
         expect(transactionState.compositionAssetClassFilter).toBeNull();
+    });
+});
+
+describe('terminal plot command integration', () => {
+    let terminalInput;
+
+    beforeEach(() => {
+        // Reset mocks
+        toggleZoom.mockClear();
+        getZoomState.mockReset();
+        getZoomState.mockReturnValue(false);
+
+        // Setup DOM
+        document.body.innerHTML = `
+            <div id="terminalOutput"></div>
+            <input id="terminalInput" type="text" />
+            <div class="table-responsive-container"></div>
+            <div id="runningAmountSection" class="chart-card is-hidden"></div>
+            <div id="performanceSection" class="chart-card is-hidden"></div>
+        `;
+        terminalInput = document.getElementById('terminalInput');
+
+        // Initialize terminal
+        initTerminal({
+            filterAndSort: jest.fn(),
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: { update: jest.fn() },
+            onCommandExecuted: jest.fn(),
+        });
+    });
+
+    test('plot command triggers un-zoom if terminal is currently zoomed', async () => {
+        // Simulate zoomed state
+        getZoomState.mockReturnValue(true);
+
+        // Execute plot command
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        terminalInput.value = 'plot balance';
+        terminalInput.dispatchEvent(enterEvent);
+
+        // Wait a bit for async processing
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(toggleZoom).toHaveBeenCalled();
+    });
+
+    test('plot command does not trigger un-zoom if terminal is not zoomed', async () => {
+        // Simulate not zoomed state
+        getZoomState.mockReturnValue(false);
+
+        // Execute plot command
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        terminalInput.value = 'plot balance';
+        terminalInput.dispatchEvent(enterEvent);
+
+        // Wait a bit for async processing
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(toggleZoom).not.toHaveBeenCalled();
+    });
+    test('transaction command triggers un-zoom if terminal is currently zoomed', async () => {
+        // Simulate zoomed state
+        getZoomState.mockReturnValue(true);
+
+        // Execute transaction command
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        terminalInput.value = 'transaction';
+        terminalInput.dispatchEvent(enterEvent);
+
+        // Wait a bit for async processing
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(toggleZoom).toHaveBeenCalled();
     });
 });

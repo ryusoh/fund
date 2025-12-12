@@ -32,6 +32,7 @@ export const transactionState = {
     fxRatesByCurrency: {},
     compositionFilterTickers: [],
     compositionAssetClassFilter: null,
+    isZoomed: false,
 };
 
 export function setActiveFilterTerm(term) {
@@ -178,4 +179,12 @@ export function setCompositionAssetClassFilter(filter) {
 
 export function getCompositionAssetClassFilter() {
     return transactionState.compositionAssetClassFilter || null;
+}
+
+export function setZoomed(value) {
+    transactionState.isZoomed = Boolean(value);
+}
+
+export function isZoomed() {
+    return transactionState.isZoomed === true;
 }

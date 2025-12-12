@@ -44,6 +44,7 @@ import {
     convertValueToCurrency,
 } from './utils.js';
 import { getHoldingAssetClass } from '@js/config.js';
+import { toggleZoom, getZoomState } from './zoom.js';
 
 let crosshairOverlay = null;
 let crosshairDetails = null;
@@ -644,6 +645,8 @@ const COMMAND_ALIASES = [
     'etf',
     'from', // For simplified commands
     'to', // For simplified commands
+    'zoom',
+    'z',
 ];
 
 const STATS_SUBCOMMANDS = [
@@ -1066,6 +1069,7 @@ export function initTerminal({
                         '                       Examples: plot balance, p performance, plot composition 2023,\n' +
                         '                                 plot composition abs 2023, plot fx\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
+                        '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
                         '  clear              - Clear the terminal screen\n' +
@@ -1219,6 +1223,12 @@ export function initTerminal({
                     .forEach((el) => el.classList.add('is-hidden'));
                 requestFadeUpdate();
                 break;
+            case 'zoom':
+            case 'z': {
+                const zoomResult = await toggleZoom();
+                result = zoomResult.message;
+                break;
+            }
             case 'stats':
             case 's':
                 if (args.length === 0) {
@@ -1284,6 +1294,11 @@ export function initTerminal({
             }
             case 't':
             case 'transaction':
+                // Auto-unzoom if zoomed
+                if (getZoomState()) {
+                    await toggleZoom();
+                }
+
                 if (args.length === 0) {
                     toggleTable();
                     result = 'Toggled transaction table visibility.';
@@ -1317,6 +1332,11 @@ export function initTerminal({
                     result =
                         'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
                 } else {
+                    // Auto-unzoom if zoomed
+                    if (getZoomState()) {
+                        await toggleZoom();
+                    }
+
                     const subcommand = args[0].toLowerCase();
                     const rawArgs = args.slice(1);
                     const getExistingChartRange = () => {
