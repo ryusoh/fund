@@ -1175,14 +1175,14 @@ export function initTerminal({
                     // Show stats help
                     result =
                         'Stats commands:\n' +
-                        '  stats transactions - Show transaction statistics\n' +
-                        '  stats holdings     - Show current holdings\n' +
-                        '  stats duration     - Show value-weighted holding ages\n' +
-                        '  stats lifespan     - Show holding lifespans for open and closed tickers\n' +
+                        '  stats transactions  - Show transaction statistics\n' +
+                        '  stats holdings      - Show current holdings\n' +
+                        '  stats duration      - Show value-weighted holding ages\n' +
+                        '  stats lifespan      - Show holding lifespans for open and closed tickers\n' +
                         '  stats concentration - Show Herfindahl concentration & effective holdings\n' +
-                        '  stats cagr         - Show CAGR based on TWRR series\n' +
-                        '  stats return       - Show annual returns for portfolio and benchmarks\n' +
-                        '  stats ratio        - Show Sharpe and Sortino ratios\n' +
+                        '  stats cagr          - Show CAGR based on TWRR series\n' +
+                        '  stats return        - Show annual returns for portfolio and benchmarks\n' +
+                        '  stats ratio         - Show Sharpe and Sortino ratios\n' +
                         '\nUsage: stats <subcommand> or s <subcommand>';
                 } else {
                     const subcommand = args[0].toLowerCase();
