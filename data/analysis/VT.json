@@ -3,7 +3,7 @@
     "name": "Vanguard Total World Index Fund",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-15T07:50:52.378140+00:00",
+        "asOf": "2025-12-16T07:50:34.454133+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -33,7 +33,7 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 142.66,
         "fiftyTwoWeekLow": 100.89,
-        "marketDataUpdatedAt": "2025-12-15T07:50:52.218216+00:00",
+        "marketDataUpdatedAt": "2025-12-16T07:50:34.327687+00:00",
         "price": 141.22,
         "eps": 6.22
     },
