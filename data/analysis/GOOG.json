@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-16T07:50:33.626414+00:00",
+        "asOf": "2025-12-17T07:50:35.003293+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,21 +28,21 @@
         }
     },
     "market": {
-        "forwardEps": 11.1796,
-        "pe": 30.5955,
-        "forwardPe": 27.6683,
+        "forwardEps": 11.18,
+        "pe": 30.4081,
+        "forwardPe": 27.5251,
         "beta": 1.07,
-        "marketCap": 3734059614208.0,
-        "enterpriseValue": 3678263312384.0,
+        "marketCap": 3714865430528.0,
+        "enterpriseValue": 3659076993024.0,
         "ebitda": 145174003712,
         "dividendYield": 0.27,
         "currency": "USD",
         "fiftyTwoWeekHigh": 328.67,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2025-12-16T07:50:33.543099+00:00",
-        "evToEbitda": 25.3369,
-        "eps": 10.11,
-        "price": 309.32
+        "marketDataUpdatedAt": "2025-12-17T07:50:34.899718+00:00",
+        "evToEbitda": 25.2048,
+        "eps": 10.12,
+        "price": 307.73
     },
     "risk": {
         "volatility": 0.3207,
