@@ -3146,7 +3146,6 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
         volumeEntries.sort((a, b) => a.timestamp - b.timestamp);
         const barWidth = 8;
-        const barGap = 3;
         const baselineY = volumePadding.top + volumeHeight;
 
         const allVolumeRects = [];
@@ -3158,6 +3157,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             const bars = [];
             if (totalBuyVolume > 0) {
                 bars.push({
+                    type: 'buy',
                     volume: totalBuyVolume,
                     fill: 'rgba(76, 175, 80, 0.6)',
                     stroke: 'rgba(76, 175, 80, 0.8)',
@@ -3165,6 +3165,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             }
             if (totalSellVolume > 0) {
                 bars.push({
+                    type: 'sell',
                     volume: totalSellVolume,
                     fill: 'rgba(244, 67, 54, 0.6)',
                     stroke: 'rgba(244, 67, 54, 0.8)',
@@ -3174,25 +3175,48 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
                 return;
             }
 
-            const totalBarWidth = bars.length * barWidth + (bars.length - 1) * barGap;
-            let currentX = x - totalBarWidth / 2;
+            // Determine max volume for this day to identify which bar should be narrower
+            const dayMaxVolume = Math.max(totalBuyVolume, totalSellVolume);
 
-            bars.forEach((bar, index) => {
+            bars.forEach((bar) => {
                 const topY = volumeYScale(bar.volume);
                 const height = baselineY - topY;
+
+                // Nested Widths Pattern:
+                // If this bar is smaller than the day's max (or equal but we want one to be inner),
+                // we adjust width. If both are equal, we can arbitrarily shrink one,
+                // or keep both full width (which blends colors).
+                // Better UX: If volumes are distinct, shrink the smaller one.
+                // If volumes are exactly equal, shrink 'sell' to make it look like a "core" inside "buy"?
+                // Or just keep them same size.
+                // Let's go with: strictly smaller volume gets smaller width.
+
+                let actualWidth = barWidth;
+                if (bar.volume < dayMaxVolume) {
+                    actualWidth = barWidth * 0.5; // 4px if base is 8px
+                } else if (
+                    bars.length === 2 &&
+                    totalBuyVolume === totalSellVolume &&
+                    bar.type === 'sell'
+                ) {
+                    // Tie-breaker: if equal, make sell bar narrower so both are seen
+                    actualWidth = barWidth * 0.5;
+                }
+
+                const currentX = x - actualWidth / 2;
+
                 if (height > 0) {
                     allVolumeRects.push({
                         timestamp,
                         x: currentX,
-                        width: barWidth,
+                        width: actualWidth,
                         topY,
                         height,
                         fill: bar.fill,
                         stroke: bar.stroke,
-                        order: index,
+                        order: actualWidth < barWidth ? 1 : 0, // Draw narrower bars (1) after wider bars (0)
                     });
                 }
-                currentX += barWidth + barGap;
             });
         });
 
