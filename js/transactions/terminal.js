@@ -31,6 +31,7 @@ import {
     getDurationStatsText,
     getLifespanStatsText,
     getConcentrationText,
+    getFinancialStatsText,
 } from './terminalStats.js';
 import {
     parseYearFromDate,
@@ -661,6 +662,7 @@ const STATS_SUBCOMMANDS = [
     'transactions',
     'holdings',
     'holdings-debug',
+    'financial',
     'duration',
     'lifespan',
     'concentration',
@@ -999,8 +1001,8 @@ export function initTerminal({
                         'Available commands:\n' +
                         '  stats (s)          - Statistics commands\n' +
                         '                       Use "stats" or "s" for subcommands\n' +
-                        '                       Subcommands: transactions, holdings, duration, lifespan, concentration, cagr,\n' +
-                        '                                    return, ratio\n' +
+                        '                       Subcommands: transactions, holdings, financial, duration, lifespan,\n' +
+                        '                                    concentration, cagr, return, ratio\n' +
                         '                       Examples: stats lifespan, s cagr, stats concentration\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
@@ -1177,6 +1179,7 @@ export function initTerminal({
                         'Stats commands:\n' +
                         '  stats transactions  - Show transaction statistics\n' +
                         '  stats holdings      - Show current holdings\n' +
+                        '  stats financial     - Show market data for current holdings\n' +
                         '  stats duration      - Show value-weighted holding ages\n' +
                         '  stats lifespan      - Show holding lifespans for open and closed tickers\n' +
                         '  stats concentration - Show Herfindahl concentration & effective holdings\n' +
@@ -1197,6 +1200,9 @@ export function initTerminal({
                             break;
                         case 'holdings-debug':
                             result = await getHoldingsDebugText();
+                            break;
+                        case 'financial':
+                            result = await getFinancialStatsText();
                             break;
                         case 'cagr':
                             result = await getCagrText();

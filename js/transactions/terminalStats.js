@@ -1,10 +1,12 @@
-import { formatCurrency } from './utils.js';
+import { formatCurrency, formatCurrencyCompact } from './utils.js';
 import { transactionState } from './state.js';
 import { getSplitAdjustment } from './calculations.js';
 import { loadCompositionSnapshotData } from './dataLoader.js';
 
 let statsDataCache = null;
 let holdingsDataCache = null;
+let analysisIndexCache = null;
+const analysisDetailCache = new Map();
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -191,6 +193,170 @@ export async function getHoldingsText(currency = 'USD') {
         return await response.text();
     } catch {
         return 'Error loading holdings data.';
+    }
+}
+
+function formatNumeric(value, digits = 2) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+        return '–';
+    }
+    return number.toFixed(digits);
+}
+
+function formatNumericPair(primaryValue, forwardValue, digits = 2) {
+    const primary = formatNumeric(primaryValue, digits);
+    const forward = formatNumeric(forwardValue, digits);
+    if (primary === '–' && forward === '–') {
+        return '–';
+    }
+    if (forward === '–') {
+        return primary;
+    }
+    if (primary === '–') {
+        return forward;
+    }
+    return `${primary} / ${forward}`;
+}
+
+function formatPrice(value, currency = 'USD') {
+    const numericPrice = Number(value);
+    if (!Number.isFinite(numericPrice)) {
+        return '–';
+    }
+    return formatCurrency(numericPrice, { currency });
+}
+
+function formatMarketCap(value, currency = 'USD') {
+    const cap = Number(value);
+    if (!Number.isFinite(cap)) {
+        return '–';
+    }
+    return formatCurrencyCompact(cap, { currency });
+}
+
+function format52WeekRange(low, high, currency = 'USD') {
+    const lowValue = Number(low);
+    const highValue = Number(high);
+    const hasLow = Number.isFinite(lowValue);
+    const hasHigh = Number.isFinite(highValue);
+    if (!hasLow && !hasHigh) {
+        return '–';
+    }
+    if (hasLow && hasHigh) {
+        return `${formatCurrency(lowValue, { currency })} – ${formatCurrency(highValue, { currency })}`;
+    }
+    if (hasLow) {
+        return formatCurrency(lowValue, { currency });
+    }
+    return formatCurrency(highValue, { currency });
+}
+
+function resolveEvToEbitda(market = {}) {
+    const directValue = Number(market.evToEbitda);
+    if (Number.isFinite(directValue)) {
+        return formatNumeric(directValue, 2);
+    }
+    const enterpriseValue = Number(market.enterpriseValue);
+    const ebitda = Number(market.ebitda);
+    if (Number.isFinite(enterpriseValue) && Number.isFinite(ebitda) && ebitda !== 0) {
+        return formatNumeric(enterpriseValue / ebitda, 2);
+    }
+    return '–';
+}
+
+async function loadAnalysisIndex() {
+    if (analysisIndexCache) {
+        return analysisIndexCache;
+    }
+    const response = await fetch('../data/analysis/index.json');
+    if (!response.ok) {
+        throw new Error('Failed to load analysis index');
+    }
+    analysisIndexCache = await response.json();
+    return analysisIndexCache;
+}
+
+async function loadAnalysisDetails(path) {
+    if (!path) {
+        return null;
+    }
+    if (analysisDetailCache.has(path)) {
+        return analysisDetailCache.get(path);
+    }
+    const response = await fetch(path);
+    if (!response.ok) {
+        throw new Error(`Failed to load analysis details for ${path}`);
+    }
+    const payload = await response.json();
+    analysisDetailCache.set(path, payload);
+    return payload;
+}
+
+export async function getFinancialStatsText() {
+    try {
+        const indexData = await loadAnalysisIndex();
+        const tickers = Array.isArray(indexData?.tickers) ? indexData.tickers : [];
+        if (!tickers.length) {
+            return 'No financial data available for holdings.';
+        }
+
+        const rows = await Promise.all(
+            tickers.map(async (entry) => {
+                try {
+                    const { symbol: entrySymbol, path } = entry || {};
+                    const detail = await loadAnalysisDetails(path);
+                    if (!detail || !detail.market) {
+                        return null;
+                    }
+                    const market = detail.market;
+                    const currency =
+                        typeof market.currency === 'string' && market.currency.trim()
+                            ? market.currency.trim().toUpperCase()
+                            : 'USD';
+
+                    return [
+                        detail.symbol || entrySymbol || '—',
+                        formatPrice(market.price, currency),
+                        formatNumericPair(market.eps, market.forwardEps, 2),
+                        formatNumericPair(market.pe, market.forwardPe, 2),
+                        resolveEvToEbitda(market),
+                        formatMarketCap(market.marketCap, currency),
+                        format52WeekRange(
+                            market.fiftyTwoWeekLow,
+                            market.fiftyTwoWeekHigh,
+                            currency
+                        ),
+                    ];
+                } catch {
+                    return null;
+                }
+            })
+        );
+
+        const normalizedRows = rows.filter((row) => Array.isArray(row));
+        if (!normalizedRows.length) {
+            return 'No financial data available for holdings.';
+        }
+
+        const table = renderAsciiTable({
+            title: 'FINANCIAL SNAPSHOT',
+            headers: [
+                'Ticker',
+                'Price',
+                'EPS (Fwd)',
+                'P/E (Fwd)',
+                'EV/EBITDA',
+                'Market Cap',
+                '52W Range',
+            ],
+            rows: normalizedRows,
+            alignments: ['left', 'right', 'right', 'right', 'right', 'right', 'right'],
+        });
+
+        return `\n${table}\n`;
+    } catch {
+        return 'Error loading financial analysis data.';
     }
 }
 
