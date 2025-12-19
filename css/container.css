@@ -1,101 +1,192 @@
+/* =========================================
+   The Obsidian Monolith
+   Modern Floating Glass Dock for Terminal Interface
+   ========================================= */
+
+/* Reset & Base */
 .container,
 .nav-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 110;
+    z-index: 1000;
     margin: 0;
-    padding: 11px 17px 13px 17px;
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 0 0 14px 0;
-    background: rgba(20, 20, 20, 0.9);
-    color: #fff;
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
-    opacity: 0.9;
-    -webkit-backdrop-filter: blur(15px);
-    backdrop-filter: blur(15px);
-    box-shadow:
-        inset 0 4px 8px rgba(0, 0, 0, 0.65),
-        inset 0 -1px 1px rgba(255, 255, 255, 0.35);
+    line-height: 1;
+    box-sizing: border-box;
 }
 
 .container ul,
 .nav-container ul {
     list-style: none;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
     padding: 0;
     margin: 0;
+    gap: 0;
 }
 
 .container li,
 .nav-container li {
     margin: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .container a,
 .nav-container a {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    color: #fff;
-    font-size: 1rem;
-    opacity: 0.75;
-    padding: 5px;
-    border-radius: 8px;
     position: relative;
-    box-sizing: border-box;
+    /* Match Currency Toggle Transition */
     transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
+        background-color 0.3s ease-in-out,
+        border-radius 0.3s ease-in-out,
+        box-shadow 0.3s ease-in-out,
+        color 0.2s ease;
+    outline: none;
 }
 
-.container a:hover,
-.nav-container a:hover {
-    opacity: 1;
+/* =========================================
+   Desktop Styles (Min-Width: 769px)
+   The Floating Vertical Glass Dock
+   ========================================= */
+@media (min-width: 769px) {
+    .container,
+    .nav-container {
+        /* Position: Top-Right, aligned with currency toggle */
+        top: 15px;
+        right: 15px; /* Match currency toggle left margin */
+        transform: none;
+
+        /* Shape: Compact Vertical Bar */
+        width: auto;
+        padding: 3px; /* Match currency toggle padding */
+        border-radius: 6px; /* Match currency toggle radius */
+
+        /* Material: Half-transparent Glass (Matches Currency Toggle) */
+        background: rgba(50, 50, 50, 0.4);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+
+        /* Border: Subtle rim lighting */
+        border: none; /* Currency toggle has no border usually, or handled by shadow */
+
+        /* Depth */
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    @supports (top: env(safe-area-inset-top)) {
+        .container,
+        .nav-container {
+            top: calc(15px + env(safe-area-inset-top));
+        }
+    }
+
+    /* Adjust for Calendar page background brightness to match perceived transparency */
+    .body-calendar .container,
+    .body-calendar .nav-container {
+        background: rgba(40, 40, 40, 0.6);
+    }
+
+    .container ul,
+    .nav-container ul {
+        flex-direction: row; /* Standard order for inner items */
+        width: auto;
+        gap: 0; /* No large gaps, just padding */
+    }
+
+    /* Move the Chevron (first item) to the visual end */
+    .container ul li:first-child,
+    .nav-container ul li:first-child {
+        order: 1;
+    }
+
+    .container li,
+    .nav-container li {
+        width: 100%;
+        height: auto;
+    }
+
+    .container a,
+    .nav-container a {
+        color: rgba(200, 200, 200, 0.85); /* Match currency toggle text color */
+        font-size: 12px; /* Match currency toggle font size */
+        padding: 0; /* Remove padding to enforce fixed square size */
+        width: 30px; /* Fixed width for square */
+        height: 30px; /* Fixed height for square */
+        display: flex; /* Ensure centering */
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px; /* Slight rounding for hover state */
+    }
+
+    /* Hover Interaction */
+    .container a:hover,
+    .nav-container a:hover {
+        color: rgba(200, 200, 200, 0.85);
+        transform: none; /* Remove scale */
+        text-shadow: none;
+        background-color: transparent; /* Toggle buttons don't have hover bg unless active usually? Toggle css says: background-color: transparent default. Hover not explicit in toggle.css shared. */
+        /* Wait, toggle.css doesn't have a specific :hover rule for .currency-toggle that changes bg, only .active does.
+           If I want EXACT behavior, I should remove the hover BG unless the user wants hover feedback.
+           But usually buttons have hover.
+           Let's look at toggle.css again.
+           .currency-toggle { transition... }
+           It relies on :hover from browser defaults or maybe it's missing?
+           Actually, the toggle logic might just be active/inactive.
+           I'll keep a very subtle hover or remove it to match 'exact' behavior if toggle has none.
+           The user said "when selected... same effect".
+           Let's fix the ACTIVE state first.
+        */
+    }
+
+    /* Active State: Pure White */
+    .container li.is-current-page a,
+    .nav-container li.is-current-page a {
+        background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
+        color: #fff !important; /* Force fully opaque white */
+        text-shadow: none;
+        border-radius: 4px; /* Ensure radius matches */
+
+        cursor: pointer;
+        pointer-events: auto;
+
+        opacity: 1 !important; /* Force full opacity */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Slightly stronger shadow */
+    }
+    /* Active Indicator: Removed per user request */
+    .container li.is-current-page::before,
+    .nav-container li.is-current-page::before {
+        display: none;
+    }
 }
 
-.container li.is-current-page,
-.nav-container li.is-current-page {
-    position: relative;
-}
-
-.container li.is-current-page a,
-.nav-container li.is-current-page a {
-    background-color: transparent;
-    box-shadow: none;
-}
-
-.container li.is-current-page a::after,
-.nav-container li.is-current-page a::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -5px;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 60%;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.65);
-}
-
+/* =========================================
+   Mobile Styles (Max-Width: 768px)
+   Original Top-Attached Design
+   ========================================= */
 @media (max-width: 768px) {
     .container,
     .nav-container {
         top: 0;
         left: 50%;
         right: auto;
+        bottom: auto; /* Reset bottom from previous overwrite */
         transform: translateX(-50%);
+
         border: none;
         padding: 5px 11px;
+        width: auto;
+        min-width: 0;
         border-radius: 0 0 12px 12px;
+
         background: rgba(50, 50, 50, 0.7);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         overflow: hidden;
+        color: #fff;
     }
 
     .container ul,
@@ -106,12 +197,21 @@
         gap: 12px;
     }
 
+    .container li,
+    .nav-container li {
+        width: auto;
+        height: auto;
+    }
+
     .container a,
     .nav-container a {
         color: rgba(200, 200, 200, 0.85);
         opacity: 1;
         padding: 7px 13px 13px;
         border-radius: 6px;
+        font-size: 1rem;
+        width: auto;
+        height: auto;
         transition:
             color 0.3s ease,
             transform 0.2s ease;
@@ -120,6 +220,9 @@
     .container a:hover,
     .nav-container a:hover {
         opacity: 1;
+        color: #fff;
+        transform: none; /* No scale on mobile */
+        text-shadow: none;
     }
 
     .container .fa-chevron-right::before,
@@ -127,64 +230,65 @@
         content: '\f053';
     }
 
+    /* Active indicator for mobile */
     .container li.is-current-page a::after,
     .nav-container li.is-current-page a::after {
-        top: auto;
+        content: '';
+        position: absolute;
         bottom: 2px;
         left: 50%;
-        right: auto;
+        transform: translateX(-50%);
         width: 60%;
         height: 2px;
-        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.65);
     }
 
+    /* Reset Desktop Specific Styles for Mobile */
     .container li.is-current-page a,
     .nav-container li.is-current-page a {
-        background-color: transparent;
-        box-shadow: none;
+        color: rgba(200, 200, 200, 0.85); /* Reset from gold */
+        text-shadow: none;
+        cursor: default;
+    }
+
+    .container li.is-current-page::before,
+    .nav-container li.is-current-page::before {
+        display: none; /* Hide desktop orb */
+    }
+
+    /* Mobile Safe Area */
+    @supports (padding-top: env(safe-area-inset-top)) {
+        .container,
+        .nav-container {
+            top: env(safe-area-inset-top);
+        }
     }
 
     body,
     body.body-main {
         padding-top: 64px !important;
     }
-}
 
-@media (min-width: 769px) {
-    .container,
-    .nav-container {
-        left: auto;
-        right: 0;
-        border-radius: 0 0 0 14px;
-    }
-
-    .container ul,
-    .nav-container ul {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 12px;
+    .hide-on-mobile {
+        display: none !important;
     }
 }
 
-@supports (padding-top: env(safe-area-inset-top)) {
-    @media (max-width: 768px) {
-        .container,
-        .nav-container {
-            top: env(safe-area-inset-top);
-        }
-
-        body,
-        body.body-main {
-            padding-top: calc(64px + env(safe-area-inset-top)) !important;
-        }
+/* =========================================
+   Animations
+   ========================================= */
+@keyframes pulseOrb {
+    0% {
+        transform: scale(1);
+        opacity: 1;
     }
-
-    @media (min-width: 769px) {
-        .container,
-        .nav-container {
-            padding-top: calc(12px + env(safe-area-inset-top));
-            padding-left: 18px;
-            padding-right: calc(18px + env(safe-area-inset-right));
-        }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
     }
 }

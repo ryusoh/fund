@@ -23,9 +23,15 @@
 }
 
 .currency-toggle {
-    padding: 6px 10px; /* Adjusted padding to make it more square-like */
-    min-width: 10px; /* Ensure a minimum width for square appearance */
-    text-align: center; /* Center the symbol within the square */
+    /* Fixed square size to match Nav Bar */
+    width: 30px;
+    height: 30px;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     border: none;
     background-color: transparent; /* Buttons are transparent by default */
     color: rgba(200, 200, 200, 0.85); /* Adjusted to match body text for consistency */
@@ -41,10 +47,10 @@
 }
 
 .currency-toggle.active {
-    background-color: rgba(0, 0, 0, 0.4);
-    color: rgba(200, 200, 200, 0.85); /* Changed from white to match other text */
+    background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
+    color: #fff; /* Pure white active text */
     border-radius: 4px; /* Slightly rounded corners for the active button */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Slightly adjusted shadow for active button */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Stronger shadow */
 }
 
 /* For mobile devices - adjust breakpoint as needed */
