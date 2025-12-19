@@ -72,13 +72,11 @@ Subcommands are auto-discovered from `scripts/commands`.
     import argparse
     def _run(args: argparse.Namespace) -> None:
         print("ran example", args)
+    def add_parser(subparsers: argparse._SubParsersAction) -> None:
+        p = subparsers.add_parser("example", help="Example command")
+        p.add_argument("name")
+        p.set_defaults(func=_run)
     ```
-
-def add_parser(subparsers: argparse.\_SubParsersAction) -> None:
-p = subparsers.add_parser("example", help="Example command")
-p.add_argument("name")
-p.set_defaults(func=\_run)
-```
 
 ## Project Structure
 
