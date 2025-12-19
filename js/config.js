@@ -283,6 +283,12 @@ export const LOGO_SIZE = {
     minPx: 14, // minimum rendered height in pixels for legibility
 };
 
+// Default margins (as a fraction of band thickness) reserved between logos and slice edges
+export const LOGO_MARGIN_DEFAULT = {
+    max: 0.06,
+    min: 0.02,
+};
+
 // macOS-style drop shadow configuration for chart logos
 export const LOGO_SHADOW = {
     enabled: true,
@@ -341,7 +347,6 @@ export const TICKER_TO_LOGO_MAP = {
         rotation: 'radial-in',
         renderAsWhite: renderAsWhite,
         opacity: opacity,
-        radialMargin: 1.2,
     },
     VT: {
         src: '/assets/logos/vt.png',

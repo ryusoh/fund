@@ -30,6 +30,10 @@ MARKET_FIELD_MAP = {
     "ebitda": "ebitda",
     "dividendYield": "dividendYield",
     "currency": "currency",
+    "fiftyDayAverage": "fiftyDayAverage",
+    "twoHundredDayAverage": "twoHundredDayAverage",
+    "averageVolume": "averageVolume",
+    "averageDailyVolume10Day": "averageDailyVolume10Day",
 }
 
 MARKET_EXTRA_KEYS = ["fiftyTwoWeekHigh", "fiftyTwoWeekLow", "marketDataUpdatedAt", "evToEbitda"]

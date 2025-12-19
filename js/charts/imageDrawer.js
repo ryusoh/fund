@@ -1,4 +1,4 @@
-import { LOGO_SIZE, LOGO_SHADOW } from '@js/config.js';
+import { LOGO_SIZE, LOGO_SHADOW, LOGO_MARGIN_DEFAULT } from '@js/config.js';
 
 export function drawImage(ctx, arc, img, logoInfo) {
     // Skip very small slices to avoid clutter (about 10 degrees)
@@ -20,7 +20,45 @@ export function drawImage(ctx, arc, img, logoInfo) {
     //  - base height scales with chart radius but is clamped by the band thickness
     //  - margins ensure a bit of breathing room inside the slice
     const sliceFactor = Math.min(sliceAngle / (Math.PI / 2), 1);
-    let margin = 0.06 - 0.04 * sliceFactor; // 0.06..0.02
+    const marginConfig = logoInfo.margin;
+    const defaultMax =
+        LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.max === 'number'
+            ? LOGO_MARGIN_DEFAULT.max
+            : 0.06;
+    const defaultMin =
+        LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.min === 'number'
+            ? LOGO_MARGIN_DEFAULT.min
+            : 0.02;
+
+    const clampMargin = (value, fallback) => {
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+        return Math.max(0, Math.min(0.25, value));
+    };
+
+    let maxMargin = defaultMax;
+    let minMargin = defaultMin;
+    if (typeof marginConfig === 'number') {
+        const clamped = clampMargin(marginConfig, defaultMax);
+        maxMargin = clamped;
+        minMargin = clamped;
+    } else if (marginConfig && typeof marginConfig === 'object') {
+        if (Object.prototype.hasOwnProperty.call(marginConfig, 'max')) {
+            maxMargin = clampMargin(marginConfig.max, defaultMax);
+        }
+        if (Object.prototype.hasOwnProperty.call(marginConfig, 'min')) {
+            minMargin = clampMargin(marginConfig.min, defaultMin);
+        }
+    }
+    if (minMargin > maxMargin) {
+        const temp = maxMargin;
+        maxMargin = minMargin;
+        minMargin = temp;
+    }
+    const marginRange = Math.max(0, maxMargin - minMargin);
+    let margin = maxMargin - marginRange * sliceFactor;
+    margin = Math.max(minMargin, Math.min(maxMargin, margin));
 
     // Allow a per-logo tighter/looser fit to inner/outer arcs (radial margin)
     const radialMargin =

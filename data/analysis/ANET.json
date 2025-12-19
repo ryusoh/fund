@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-18T07:50:20.324921+00:00",
+        "asOf": "2025-12-19T01:35:46.574514+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,23 +28,27 @@
         }
     },
     "market": {
-        "forwardEps": 3.3607,
-        "pe": 46.5247,
-        "forwardPe": 36.4096,
+        "forwardEps": 3.3633,
+        "pe": 47.384,
+        "forwardPe": 37.0525,
         "beta": 1.411,
-        "marketCap": 154086129664.0,
-        "enterpriseValue": 143979921408.0,
+        "marketCap": 156932112384.0,
+        "enterpriseValue": 146813304832.0,
         "ebitda": 3671173888,
         "currency": "USD",
         "fiftyTwoWeekHigh": 164.94,
         "fiftyTwoWeekLow": 59.43,
-        "marketDataUpdatedAt": "2025-12-18T07:50:20.219405+00:00",
-        "evToEbitda": 39.219,
+        "marketDataUpdatedAt": "2025-12-19T01:35:46.453552+00:00",
+        "evToEbitda": 39.9908,
         "eps": 2.63,
-        "price": 122.36
+        "price": 124.62,
+        "fiftyDayAverage": 137.9642,
+        "twoHundredDayAverage": 114.0206,
+        "averageVolume": 8175642.0,
+        "averageDailyVolume10Day": 6537740.0
     },
     "risk": {
-        "volatility": 0.5725,
+        "volatility": 0.5728,
         "estimateSource": "historical",
         "correlations": null
     },

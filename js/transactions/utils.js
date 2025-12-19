@@ -152,6 +152,32 @@ export function formatCurrencyCompact(value, { currency } = {}) {
     const isCJKCurrency =
         selectedCurrency === 'CNY' || selectedCurrency === 'JPY' || selectedCurrency === 'KRW';
 
+    if (absolute >= 1_000_000_000_000) {
+        const trillions = absolute / 1_000_000_000_000;
+        if (isCJKCurrency) {
+            if (trillions >= 100) {
+                return `${sign}${symbol}${trillions.toFixed(0)}T`;
+            }
+            if (trillions >= 10) {
+                return `${sign}${symbol}${trillions.toFixed(1)}T`;
+            }
+            return `${sign}${symbol}${trillions.toFixed(2)}T`;
+        }
+
+        const rounded = Math.round(trillions);
+        if (Math.abs(trillions - rounded) < 0.1) {
+            return `${sign}${symbol}${rounded}T`;
+        }
+
+        if (trillions >= 100) {
+            return `${sign}${symbol}${trillions.toFixed(0)}T`;
+        }
+        if (trillions >= 10) {
+            return `${sign}${symbol}${trillions.toFixed(1)}T`;
+        }
+        return `${sign}${symbol}${trillions.toFixed(2)}T`;
+    }
+
     if (absolute >= 1_000_000_000) {
         const billions = absolute / 1_000_000_000;
         if (isCJKCurrency) {

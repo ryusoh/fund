@@ -35,6 +35,12 @@ describe('formatCurrencyCompact', () => {
         expect(formatCurrencyCompact(1_000_000_000, { currency: 'USD' })).toBe('$1B');
     });
 
+    test('formats trillions with T suffix in USD and CJK currencies', () => {
+        expect(formatCurrencyCompact(3_500_000_000_000, { currency: 'USD' })).toBe('$3.50T');
+        expect(formatCurrencyCompact(1_000_000_000_000, { currency: 'USD' })).toBe('$1T');
+        expect(formatCurrencyCompact(2_345_000_000_000, { currency: 'JPY' })).toBe('¥2.35T');
+    });
+
     test('formats zero as integer in USD', () => {
         expect(formatCurrencyCompact(0, { currency: 'USD' })).toBe('$0');
         expect(formatCurrencyCompact(0.004, { currency: 'USD' })).toBe('$0');
