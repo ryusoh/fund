@@ -57,7 +57,7 @@ export function applyTransactionFIFO(lots, transaction, splitHistory) {
 export function computeRunningTotals(transactions, splitHistory) {
     const securityStates = new Map();
     const runningTotalsById = new Map();
-    let portfolioRunningCost = 0;
+    let cumulativeNetAmount = 0;
 
     const chronologicalTransactions = [...transactions].sort(
         (a, b) => new Date(a.tradeDate) - new Date(b.tradeDate) || a.transactionId - b.transactionId
@@ -66,18 +66,12 @@ export function computeRunningTotals(transactions, splitHistory) {
     chronologicalTransactions.forEach((transaction) => {
         const security = transaction.security;
         const currentState = securityStates.get(security) || { lots: [], totalRealizedGain: 0 };
-        const oldCostBasis = currentState.lots.reduce((sum, lot) => sum + lot.qty * lot.price, 0);
 
         const { lots: newLots, realizedGainDelta } = applyTransactionFIFO(
             currentState.lots,
             transaction,
             splitHistory
         );
-
-        const newCostBasis = newLots.reduce((sum, lot) => sum + lot.qty * lot.price, 0);
-        const costBasisDelta = newCostBasis - oldCostBasis;
-
-        portfolioRunningCost += costBasisDelta;
 
         const newState = {
             lots: newLots,
@@ -86,11 +80,14 @@ export function computeRunningTotals(transactions, splitHistory) {
         securityStates.set(security, newState);
 
         const totalShares = newState.lots.reduce((sum, lot) => sum + lot.qty, 0);
+        const netAmount = Number.parseFloat(transaction.netAmount);
+        const normalizedNetAmount = Number.isFinite(netAmount) ? netAmount : 0;
+        cumulativeNetAmount += normalizedNetAmount;
 
         runningTotalsById.set(transaction.transactionId, {
             shares: totalShares,
-            amount: portfolioRunningCost,
-            portfolio: portfolioRunningCost,
+            amount: cumulativeNetAmount,
+            portfolio: cumulativeNetAmount,
         });
     });
 

@@ -304,7 +304,6 @@ function filterAndSort(searchTerm = '') {
 
     setCompositionAssetClassFilter(parsedCommands.assetClass || null);
 
-    const runningTotalsMap = computeRunningTotals(filtered, transactionState.splitHistory);
     const compareValues = (valueA, valueB, order) => {
         if (valueA < valueB) {
             return order === 'asc' ? -1 : 1;
@@ -358,29 +357,8 @@ function filterAndSort(searchTerm = '') {
                 if (dateComparison !== 0) {
                     return dateComparison;
                 }
-                const totalA =
-                    runningTotalsMap.get(a.transactionId)?.portfolio ??
-                    runningTotalsMap.get(a.transactionId)?.amount ??
-                    0;
-                const totalB =
-                    runningTotalsMap.get(b.transactionId)?.portfolio ??
-                    runningTotalsMap.get(b.transactionId)?.amount ??
-                    0;
-                const convertedTotalA = convertValueToCurrency(
-                    totalA,
-                    a.tradeDate,
-                    currentCurrency
-                );
-                const convertedTotalB = convertValueToCurrency(
-                    totalB,
-                    b.tradeDate,
-                    currentCurrency
-                );
-                const totalComparison = compareValues(convertedTotalA, convertedTotalB, 'desc');
-                if (totalComparison !== 0) {
-                    return totalComparison;
-                }
-                return compareValues(a.transactionId, b.transactionId, 'desc');
+                const idOrder = order === 'asc' ? 'asc' : 'desc';
+                return compareValues(a.transactionId, b.transactionId, idOrder);
             }
         }
     });

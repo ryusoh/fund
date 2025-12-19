@@ -66,6 +66,93 @@ describe('transactions table sorting', () => {
         const securities = rows.map((row) => row.querySelectorAll('td')[2].textContent.trim());
         expect(securities).toEqual(['BBB', 'AAA', 'CCC']);
     });
+
+    it('shows running totals that reflect each transaction net amount', () => {
+        const sampleTransactions = [
+            {
+                transactionId: 1,
+                tradeDate: '2024-01-01',
+                orderType: 'Buy',
+                security: 'AAA',
+                quantity: '1',
+                price: '100',
+                netAmount: '100',
+            },
+            {
+                transactionId: 2,
+                tradeDate: '2024-01-02',
+                orderType: 'Buy',
+                security: 'BBB',
+                quantity: '1',
+                price: '200',
+                netAmount: '200',
+            },
+            {
+                transactionId: 3,
+                tradeDate: '2024-01-03',
+                orderType: 'Sell',
+                security: 'CCC',
+                quantity: '1',
+                price: '50',
+                netAmount: '-50',
+            },
+        ];
+
+        setAllTransactions(sampleTransactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        const totals = Array.from(document.querySelectorAll('#transactionBody tr')).map((row) =>
+            row.querySelectorAll('td')[6].textContent.trim()
+        );
+        expect(totals).toEqual(['$250.00', '$300.00', '$100.00']);
+    });
+
+    it('keeps same-day sells ordered by recency so totals match their net amounts', () => {
+        const sampleTransactions = [
+            {
+                transactionId: 10,
+                tradeDate: '2024-01-02',
+                orderType: 'Sell',
+                security: 'AAA',
+                quantity: '1',
+                price: '100',
+                netAmount: '-100',
+            },
+            {
+                transactionId: 11,
+                tradeDate: '2024-01-02',
+                orderType: 'Sell',
+                security: 'BBB',
+                quantity: '1',
+                price: '200',
+                netAmount: '-200',
+            },
+        ];
+
+        setAllTransactions(sampleTransactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        const parseCurrencyText = (value) => Number(value.replace(/[^0-9.-]/g, ''));
+        const rows = Array.from(document.querySelectorAll('#transactionBody tr'));
+        const securities = rows.map((row) => row.querySelectorAll('td')[2].textContent.trim());
+        expect(securities).toEqual(['BBB', 'AAA']);
+
+        const totals = rows.map((row) =>
+            parseCurrencyText(row.querySelectorAll('td')[6].textContent.trim())
+        );
+        const netValues = rows.map((row) =>
+            parseCurrencyText(row.querySelectorAll('td')[5].textContent.trim())
+        );
+
+        expect(totals[0]).toBeCloseTo(-300, 5);
+        expect(totals[1]).toBeCloseTo(-100, 5);
+        expect(netValues[0]).toBeCloseTo(-200, 5);
+        expect(totals[0] - totals[1]).toBeCloseTo(netValues[0], 5);
+    });
 });
 
 describe('transaction date filtering visibility guard', () => {
