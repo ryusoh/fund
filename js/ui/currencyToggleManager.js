@@ -1,10 +1,17 @@
 const STORAGE_KEY = 'fund.selectedCurrency';
+const CURRENCY_ICON_MAP = Object.freeze({
+    USD: ['fa-dollar-sign', 'fa-usd'],
+    CNY: ['fa-yen-sign', 'fa-cny', 'fa-jpy'],
+    JPY: ['fa-yen-sign', 'fa-jpy'],
+    KRW: ['fa-won-sign', 'fa-krw'],
+});
 
 let toggleContainerRef = null;
 let currencyButtons = [];
 let currentCurrency = null;
 let isDispatching = false;
 let globalListenerAttached = false;
+let iconsDecorated = false;
 
 function normalizeCurrency(value) {
     return typeof value === 'string' && value.trim() ? value.trim().toUpperCase() : null;
@@ -38,8 +45,38 @@ function ensureToggleElements() {
         currencyButtons = toggleContainerRef
             ? Array.from(toggleContainerRef.querySelectorAll('.currency-toggle'))
             : [];
+        iconsDecorated = false;
+    }
+    if (!iconsDecorated && Array.isArray(currencyButtons) && currencyButtons.length) {
+        applyCurrencyIcons();
+        iconsDecorated = true;
     }
     return toggleContainerRef;
+}
+
+function applyCurrencyIcons() {
+    currencyButtons.forEach((button) => {
+        const currency = normalizeCurrency(button.dataset.currency);
+        const iconClasses = currency && CURRENCY_ICON_MAP[currency];
+        if (!iconClasses || !iconClasses.length) {
+            return;
+        }
+
+        const existingIcon = button.querySelector('i.currency-icon');
+        if (existingIcon && existingIcon.dataset.iconCurrency === currency) {
+            return;
+        }
+
+        const iconElement = document.createElement('i');
+        const resolvedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+        iconElement.className = ['fa', 'currency-icon', ...resolvedClasses].join(' ');
+        iconElement.setAttribute('aria-hidden', 'true');
+        iconElement.dataset.iconCurrency = currency;
+
+        button.textContent = '';
+        button.appendChild(iconElement);
+        button.setAttribute('aria-label', `${currency} currency`);
+    });
 }
 
 function activateCurrency(currency, { emit = true, persist = true } = {}) {

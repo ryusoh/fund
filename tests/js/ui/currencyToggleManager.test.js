@@ -26,6 +26,7 @@ describe('currencyToggleManager', () => {
             `
             <div id="currencyToggleContainer">
                 <button class="currency-toggle active" data-currency="USD">$</button>
+                <button class="currency-toggle" data-currency="CNY">¥</button>
                 <button class="currency-toggle" data-currency="JPY">¥</button>
                 <button class="currency-toggle" data-currency="KRW">₩</button>
             </div>
@@ -91,11 +92,29 @@ describe('currencyToggleManager', () => {
         document.dispatchEvent.mockClear();
         cycleCurrency(1);
         expect(document.dispatchEvent).toHaveBeenCalledTimes(1);
-        expect(document.dispatchEvent.mock.calls[0][0].detail.currency).toBe('JPY');
+        expect(document.dispatchEvent.mock.calls[0][0].detail.currency).toBe('CNY');
 
         cycleCurrency(-1);
         expect(document.dispatchEvent).toHaveBeenCalledTimes(2);
         expect(document.dispatchEvent.mock.calls[1][0].detail.currency).toBe('USD');
+    });
+
+    it('renders Font Awesome icons for all supported currencies', () => {
+        initCurrencyToggle();
+        const expectations = {
+            USD: 'fa-dollar-sign',
+            CNY: 'fa-yen-sign',
+            JPY: 'fa-yen-sign',
+            KRW: 'fa-won-sign',
+        };
+
+        Object.entries(expectations).forEach(([currency, className]) => {
+            const button = document.querySelector(`[data-currency="${currency}"]`);
+            const icon = button.querySelector('i.currency-icon');
+            expect(icon).not.toBeNull();
+            expect(icon.classList.contains(className)).toBe(true);
+            expect(button.getAttribute('aria-label')).toBe(`${currency} currency`);
+        });
     });
 
     it('allows programmatic selection without emitting events', () => {
