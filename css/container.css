@@ -145,7 +145,7 @@
     .container li.is-current-page a,
     .nav-container li.is-current-page a {
         background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
-        color: #fff !important; /* Force fully opaque white */
+        color: rgba(255, 255, 255, 0.85) !important; /* 80% white active text */
         text-shadow: none;
         border-radius: 4px; /* Ensure radius matches */
 

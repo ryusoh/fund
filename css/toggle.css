@@ -48,7 +48,7 @@
 
 .currency-toggle.active {
     background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
-    color: #fff; /* Pure white active text */
+    color: rgba(255, 255, 255, 0.85); /* 80% white active text */
     border-radius: 4px; /* Slightly rounded corners for the active button */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Stronger shadow */
 }

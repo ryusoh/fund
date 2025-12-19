@@ -32,7 +32,7 @@
                 (normalizedCurrent === '/index.html' && normalizedLink === '/')
             ) {
                 // Disable the link
-                link.style.opacity = '0.3';
+                // link.style.opacity = '0.3'; // Handled by CSS
                 link.style.pointerEvents = 'none';
                 link.style.cursor = 'default';
                 link.removeAttribute('href');
