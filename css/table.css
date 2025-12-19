@@ -6,11 +6,19 @@
     /* Enable horizontal scroll if content overflows */
     -webkit-overflow-scrolling: touch;
     /* Smooth scrolling on iOS for better UX */
-    padding: 0;
-    /* Padding will be handled by table/cells if needed, or keep minimal for container */
     /* Rounded corners for the top part of the content-block */
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+}
+
+@media (min-width: 1024px) {
+    .table-responsive-container {
+        overflow-x: visible;
+    }
+    .table-responsive-container table {
+        width: auto;
+        min-width: 100%;
+    }
 }
 
 table {
@@ -90,46 +98,51 @@ table {
 th:nth-child(1) {
     width: 5%;
 }
+/* Holding */
 
-/* Ticker */
 th:nth-child(2) {
     width: 5%;
 }
+/* Exposure */
 
-/* Allocation */
 th:nth-child(3) {
     width: 5%;
 }
-
 /* Price */
+
 th:nth-child(4) {
     width: 5%;
 }
+/* PER */
 
-/* Cost */
 th:nth-child(5) {
     width: 5%;
 }
+/* Cost */
 
-/* Shares */
 th:nth-child(6) {
     width: 5%;
 }
+/* Shares */
 
-/* Value */
 th:nth-child(7) {
     width: 5%;
 }
+/* Value */
 
-/* PnL */
 th:nth-child(8) {
     width: 5%;
 }
+/* PnL */
 
+th:nth-child(9) {
+    width: 5%;
+}
 /* PnL (%) */
 
 /* Prevent wrapping in data cells for a more compact look */
 td.price,
+td.per,
 td.cost,
 td.shares,
 td.pnl,

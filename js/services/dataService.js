@@ -15,6 +15,9 @@ import {
 } from '@js/config.js';
 import { logger } from '@utils/logger.js';
 
+const ANALYSIS_INDEX_URL = '../data/analysis/index.json';
+let analysisTickerPathCache = null;
+
 function lightenHexToRgba(hex, lightenFactor, alpha) {
     /* istanbul ignore next: defensive parameter validation */
     if (typeof hex !== 'string' || !/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(hex)) {
@@ -49,6 +52,74 @@ async function fetchPortfolioData() {
     const holdingsDetails = await fetchJSON(HOLDINGS_DETAILS_URL);
     const prices = await fetchJSON(FUND_DATA_URL);
     return { holdingsDetails, prices };
+}
+
+function normalizeTickerSymbol(value) {
+    return typeof value === 'string' ? value.trim().toUpperCase() : null;
+}
+
+async function loadAnalysisTickerPaths() {
+    if (analysisTickerPathCache) {
+        return analysisTickerPathCache;
+    }
+    const indexPayload = await fetchJSON(ANALYSIS_INDEX_URL);
+    const entries = Array.isArray(indexPayload?.tickers) ? indexPayload.tickers : [];
+    const tickerPathMap = new Map();
+    entries.forEach((entry) => {
+        const normalized = normalizeTickerSymbol(entry?.symbol);
+        if (normalized && typeof entry?.path === 'string' && entry.path.trim().length > 0) {
+            tickerPathMap.set(normalized, entry.path);
+        }
+    });
+    analysisTickerPathCache = tickerPathMap;
+    return analysisTickerPathCache;
+}
+
+async function fetchMarketRatiosForTickers(tickers = []) {
+    if (!Array.isArray(tickers) || tickers.length === 0) {
+        return new Map();
+    }
+    try {
+        const uniqueSymbols = [
+            ...new Set(
+                tickers
+                    .map((ticker) => normalizeTickerSymbol(ticker))
+                    .filter((symbol) => Boolean(symbol))
+            ),
+        ];
+        if (uniqueSymbols.length === 0) {
+            return new Map();
+        }
+
+        const tickerPaths = await loadAnalysisTickerPaths();
+        const ratiosByTicker = new Map();
+
+        await Promise.all(
+            uniqueSymbols.map(async (symbol) => {
+                const analysisPath = tickerPaths.get(symbol);
+                if (!analysisPath) {
+                    return;
+                }
+                try {
+                    const detail = await fetchJSON(analysisPath);
+                    const market = detail?.market || {};
+                    const trailingPe = Number(market.pe);
+                    const forwardPe = Number(market.forwardPe);
+                    ratiosByTicker.set(symbol, {
+                        pe: Number.isFinite(trailingPe) ? trailingPe : null,
+                        forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
+                    });
+                } catch (error) {
+                    logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
+                }
+            })
+        );
+
+        return ratiosByTicker;
+    } catch (error) {
+        logger.warn('Unable to load analysis index for PER column:', error);
+        return new Map();
+    }
 }
 
 function processAndEnrichHoldings(holdingsDetails, prices) {
@@ -95,23 +166,52 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
+function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map()) {
+    const normalizedTicker = normalizeTickerSymbol(ticker);
+    if (!normalizedTicker || !(marketRatiosByTicker instanceof Map)) {
+        return '—';
+    }
+    const ratioSnapshot = marketRatiosByTicker.get(normalizedTicker);
+    if (!ratioSnapshot) {
+        return '—';
+    }
+    const formatValue = (value) => (Number.isFinite(value) ? Number(value).toFixed(2) : '—');
+    const trailing = formatValue(ratioSnapshot.pe);
+    const forward = formatValue(ratioSnapshot.forwardPe);
+    const hasTrailing = trailing !== '—';
+    const hasForward = forward !== '—';
+    if (hasTrailing && hasForward) {
+        return `${trailing}/${forward}`;
+    }
+    if (hasTrailing) {
+        return trailing;
+    }
+    if (hasForward) {
+        return forward;
+    }
+    return '—';
+}
+
 function createHoldingRow(
     holding,
     totalPortfolioValueUSD,
     currentCurrency,
     exchangeRates,
-    currencySymbols
+    currencySymbols,
+    marketRatiosByTicker = new Map()
 ) {
     const row = document.createElement('tr');
     row.dataset.ticker = holding.ticker;
 
     const allocationPercentage =
         totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
+    const perDisplayValue = formatPerDisplayForTicker(holding.ticker, marketRatiosByTicker);
 
     row.innerHTML = `
         <td>${holding.name}</td>
         <td class="allocation">${allocationPercentage.toFixed(2)}%</td>
         <td class="price">${formatCurrency(holding.currentPrice, currentCurrency, exchangeRates, currencySymbols)}</td>
+        <td class="per">${perDisplayValue}</td>
         <td class="cost">${formatCurrency(holding.cost, currentCurrency, exchangeRates, currencySymbols)}</td>
         <td class="shares">${holding.shares.toFixed(2)}</td>
         <td class="value">${formatCurrency(holding.currentValue, currentCurrency, exchangeRates, currencySymbols)}</td>
@@ -160,7 +260,8 @@ function updateTableAndPrepareChartData(
     totalPortfolioValueUSD,
     currentCurrency,
     exchangeRates,
-    currencySymbols
+    currencySymbols,
+    marketRatiosByTicker = new Map()
 ) {
     const tbody = document.querySelector('table tbody');
     tbody.innerHTML = '';
@@ -186,7 +287,8 @@ function updateTableAndPrepareChartData(
             totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
-            currencySymbols
+            currencySymbols,
+            marketRatiosByTicker
         );
         tbody.appendChild(row);
 
@@ -599,6 +701,9 @@ function computeMonthlyPnl(processedData) {
 
 export const __testables = {
     computeMonthlyPnl,
+    resetAnalysisTickerCache: () => {
+        analysisTickerPathCache = null;
+    },
 };
 
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
@@ -623,12 +728,15 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             totalPortfolioValue: totalPortfolioValueUSD,
             totalPnl: totalPnlUSD,
         } = processAndEnrichHoldings(holdingsDetails, prices);
+        const tickerSymbols = sortedHoldings.map((holding) => holding.ticker);
+        const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);
         const chartData = updateTableAndPrepareChartData(
             sortedHoldings,
             totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
-            currencySymbols
+            currencySymbols,
+            marketRatiosByTicker
         );
 
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(

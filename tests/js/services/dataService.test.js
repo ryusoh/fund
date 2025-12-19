@@ -55,6 +55,9 @@ describe('dataService', () => {
                 <span class="total-pnl"></span>
             </div>
         `;
+        if (typeof __testables.resetAnalysisTickerCache === 'function') {
+            __testables.resetAnalysisTickerCache();
+        }
 
         // Clear all mocks
         fetch.mockClear();
@@ -93,6 +96,16 @@ describe('dataService', () => {
                 AAPL: '160.00',
                 GOOG: '2600.00',
             };
+            const mockAnalysisIndex = {
+                tickers: [
+                    { symbol: 'AAPL', path: '../data/analysis/AAPL.json' },
+                    { symbol: 'GOOG', path: '../data/analysis/GOOG.json' },
+                ],
+            };
+            const analysisDetails = {
+                AAPL: { market: { pe: 15, forwardPe: 12 } },
+                GOOG: { market: { pe: 25, forwardPe: 22 } },
+            };
 
             fetch.mockImplementation((url) => {
                 if (url.includes('holdings_details.json')) {
@@ -107,6 +120,24 @@ describe('dataService', () => {
                         json: () => Promise.resolve(mockPrices),
                     });
                 }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/AAPL')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(analysisDetails.AAPL),
+                    });
+                }
+                if (url.includes('analysis/GOOG')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(analysisDetails.GOOG),
+                    });
+                }
                 return Promise.reject(new Error('Unexpected URL'));
             });
 
@@ -114,7 +145,6 @@ describe('dataService', () => {
             await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
 
             // Assert
-            expect(fetch).toHaveBeenCalledTimes(2);
             expect(chartManager.updatePieChart).toHaveBeenCalled();
 
             const totalValueElement = document.getElementById('total-portfolio-value-in-table');
@@ -123,6 +153,89 @@ describe('dataService', () => {
             // Check table was populated
             const tableRows = document.querySelectorAll('tbody tr');
             expect(tableRows).toHaveLength(2);
+            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe(
+                '15.00/12.00'
+            );
+            expect(document.querySelector('tr[data-ticker="GOOG"] td.per').textContent).toBe(
+                '25.00/22.00'
+            );
+        });
+
+        it('should display placeholder PER values when analysis data is unavailable', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockHoldings),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockPrices),
+                    });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ tickers: [] }),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe('—');
+        });
+
+        it('should render single PER value when only trailing multiple is available', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'AAPL', path: '../data/analysis/AAPL.json' }],
+            };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockHoldings),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockPrices),
+                    });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/AAPL')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ market: { pe: 22.37 } }),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe(
+                '22.37'
+            );
         });
 
         it('should handle fetch error with proper error message', async () => {
