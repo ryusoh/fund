@@ -132,6 +132,8 @@ a.nav-back {
     }
     .content-block {
         width: 95%; /* Wider for mobile */
+        display: block; /* Reset from table to block for mobile scrolling */
+        max-width: none; /* Reset max-width */
         margin: 8px auto 10px auto; /* Reduced top margin keeps content near chart */
     }
     #fundPieChartContainer {
