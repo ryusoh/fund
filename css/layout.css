@@ -1,6 +1,7 @@
 /* New wrapper for combined table and footer */
 .content-block {
-    width: 85%; /* Adjust width for desktop */
+    width: fit-content; /* Allow growing with content */
+    display: table; /* Force container to expand to fit table content */
     max-width: 900px; /* Max width for larger screens */
     margin: 30px auto 20px auto; /* Centered, combined vertical spacing */
     background-color: rgba(44, 44, 46, 0.9); /* Unified background */

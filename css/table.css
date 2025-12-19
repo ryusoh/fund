@@ -95,50 +95,7 @@ table {
     /* This is default, but good to be explicit. Browser adjusts to content. */
 }
 
-th:nth-child(1) {
-    width: 5%;
-}
-/* Holding */
-
-th:nth-child(2) {
-    width: 5%;
-}
-/* Exposure */
-
-th:nth-child(3) {
-    width: 5%;
-}
-/* Price */
-
-th:nth-child(4) {
-    width: 5%;
-}
-/* PER */
-
-th:nth-child(5) {
-    width: 5%;
-}
-/* Cost */
-
-th:nth-child(6) {
-    width: 5%;
-}
-/* Shares */
-
-th:nth-child(7) {
-    width: 5%;
-}
-/* Value */
-
-th:nth-child(8) {
-    width: 5%;
-}
-/* PnL */
-
-th:nth-child(9) {
-    width: 5%;
-}
-/* PnL (%) */
+/* Holding, Exposure, Price, PER, Cost, Shares, Value, PnL, PnL (%) width optimizations handled by table layout */
 
 /* Prevent wrapping in data cells for a more compact look */
 td.price,
