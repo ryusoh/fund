@@ -6,6 +6,20 @@ const SERIES_SYMBOL_ALIASES = {
     '^SSE': '^SSEC',
 };
 
+const TICKER_ALIAS_MAP = {
+    BRK: 'BRKB',
+    'BRK-B': 'BRKB',
+    BRKB: 'BRKB',
+};
+
+function normalizeTicker(ticker) {
+    if (typeof ticker !== 'string') {
+        return ticker;
+    }
+    const cleaned = ticker.trim().toUpperCase();
+    return TICKER_ALIAS_MAP[cleaned] || cleaned;
+}
+
 function normalizeSeriesKey(name, fallback) {
     const trimmed = typeof name === 'string' ? name.trim() : '';
     if (!trimmed) {
@@ -310,21 +324,24 @@ export async function loadCompositionSnapshotData() {
                                 return;
                             }
                             // Find real-time percent for this ticker
-                            const rtItem = realtime.composition.find((i) => i.ticker === ticker);
+                            const rtItem = realtime.composition.find(
+                                (i) => normalizeTicker(i.ticker) === ticker
+                            );
                             const rtPercent = rtItem ? rtItem.percent : 0;
                             composition[ticker].push(rtPercent);
                         });
 
                         // Add new tickers found in real-time but not history
                         realtime.composition.forEach((rtItem) => {
+                            const normalizedTicker = normalizeTicker(rtItem.ticker);
                             if (Math.abs(rtItem.percent) > 0.001) {
                                 // Only if significant
-                                if (!composition[rtItem.ticker]) {
+                                if (!composition[normalizedTicker]) {
                                     // Backfill with 0s
-                                    composition[rtItem.ticker] = new Array(
+                                    composition[normalizedTicker] = new Array(
                                         data.dates.length - 1
                                     ).fill(0);
-                                    composition[rtItem.ticker].push(rtItem.percent);
+                                    composition[normalizedTicker].push(rtItem.percent);
                                 }
                             }
                         });

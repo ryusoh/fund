@@ -271,5 +271,51 @@ describe('dataLoader real-time integration', () => {
             expect(result.total_values).toHaveLength(3);
             expect(result.total_values[2]).toBe(11000);
         });
+
+        it('should correctly merge aliased tickers (BRKB vs BRK-B) in composition data', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        dates: ['2024-12-03', '2024-12-04'],
+                        composition: {
+                            BRKB: [50, 50],
+                            VT: [50, 50],
+                        },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        'BRK-B': { shares: '10', average_price: '200' }, // Real-time alias
+                        VT: { shares: '100', average_price: '100' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        'BRK-B': 200, // 10 * 200 = 2000
+                        VT: 80, // 100 * 80 = 8000
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        rates: { USD: 1.0 },
+                    })
+                );
+
+            await loadModule();
+            const result = await loadCompositionSnapshotData();
+
+            // Total balance = 2000 + 8000 = 10000
+            // BRK-B (aliased to BRKB): 2000 / 10000 = 20%
+            // VT: 8000 / 10000 = 80%
+
+            expect(result.dates).toHaveLength(3);
+
+            // Verify merged ticker (BRKB should receive real-time data from BRK-B)
+            expect(result.composition.BRKB).toHaveLength(3);
+            expect(result.composition.BRKB[2]).toBeCloseTo(20.0, 1);
+
+            // Verify no separate entry for BRK-B
+            expect(result.composition['BRK-B']).toBeUndefined();
+        });
     });
 });
