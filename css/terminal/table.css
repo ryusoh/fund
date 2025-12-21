@@ -10,8 +10,8 @@
     background: rgba(17, 17, 17, 0.48);
     width: 100%;
     padding: 0;
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(36px);
+    backdrop-filter: blur(36px);
     background-clip: padding-box;
     box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
 }
