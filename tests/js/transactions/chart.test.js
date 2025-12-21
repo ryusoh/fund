@@ -439,3 +439,44 @@ describe('Chart Debug: Date Range Extension', () => {
     // Expected MaxTime: Nov 26.
     testScenario('2025q4 (Current)', '2025-10-01', '2025-12-31', '2025-11-26', '2025-11-26');
 });
+
+describe('Minimum Tick Count Verification', () => {
+    let generateConcreteTicks;
+    let computePercentTickInfo;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const chartModule = require('@js/transactions/chart.js');
+            ({ generateConcreteTicks, computePercentTickInfo } = chartModule.__chartTestables);
+        });
+    });
+
+    test('generateConcreteTicks should return at least 5 ticks for small ranges', () => {
+        const ticks = generateConcreteTicks(100, 101, false, 'USD');
+        expect(ticks.length).toBeGreaterThanOrEqual(5);
+    });
+
+    test('generateConcreteTicks should return at least 5 ticks for flat line (zero range)', () => {
+        const ticks = generateConcreteTicks(100, 100, false, 'USD');
+        expect(ticks.length).toBeGreaterThanOrEqual(5);
+        // Should span around 100
+        expect(ticks).toContain(100);
+    });
+
+    test('computePercentTickInfo should return at least 5 ticks for small percentage range', () => {
+        const info = computePercentTickInfo(0, 2); // 0% to 2%
+        // Filter logic mimics buildFilteredBalanceSeries or chart rendering uses
+        const margin = info.tickSpacing * 0.25;
+        const visibleTicks = info.ticks.filter((t) => t >= 0 - margin && t <= 2 + margin);
+
+        expect(visibleTicks.length).toBeGreaterThanOrEqual(5);
+    });
+
+    test('computePercentTickInfo should return at least 5 ticks for flat percentage', () => {
+        const info = computePercentTickInfo(10, 10); // 10% flat
+        // In flat case, min/max are artificially expanded
+        // We just check if the raw ticks count is sufficient and covers the value
+        expect(info.ticks.length).toBeGreaterThanOrEqual(5);
+    });
+});

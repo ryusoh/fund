@@ -2178,43 +2178,95 @@ function computePercentTickInfo(yMin, yMax) {
     }
     const range = maxValue - minValue;
 
-    let tickSpacing;
-    if (range <= 20) {
-        tickSpacing = 5;
-    } else if (range <= 50) {
-        tickSpacing = 10;
-    } else if (range <= 100) {
-        tickSpacing = 20;
-    } else {
-        tickSpacing = 50;
+    // Use dynamic spacing instead of hardcoded thresholds
+    const desiredTicks = 6;
+    const targetSegments = Math.max(1, desiredTicks - 1);
+
+    const niceRange = niceNumber(range, false);
+    let tickSpacing = Math.abs(niceNumber(niceRange / targetSegments, true));
+
+    if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
+        tickSpacing = Math.abs(niceNumber(range / targetSegments, true));
     }
+    if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
+        tickSpacing = range / targetSegments;
+    }
+    // Ensure we don't get microscopic spacing for percentages (e.g. 0.0001%)
+    // But allowing down to 0.01 or 0.1 is fine for small ranges.
+    tickSpacing = Math.max(tickSpacing, 1e-2);
 
-    const startTick = Math.floor(minValue / tickSpacing) * tickSpacing;
-    const endTick = Math.ceil(maxValue / tickSpacing) * tickSpacing;
+    const minRequiredTicks = 5;
+    const maxRetries = 6;
+    let finalTicks = [];
+    let finalStartTick = 0;
+    let finalEndTick = 0;
 
-    const ticks = [];
-    for (let tick = startTick; tick <= endTick + tickSpacing * 0.5; tick += tickSpacing) {
-        ticks.push(tick);
+    for (let retry = 0; retry < maxRetries; retry++) {
+        const startTick = Math.floor(minValue / tickSpacing) * tickSpacing;
+        const endTick = Math.ceil(maxValue / tickSpacing) * tickSpacing;
+
+        const ticks = [];
+        for (let tick = startTick; tick <= endTick + tickSpacing * 0.001; tick += tickSpacing) {
+            const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
+            ticks.push(rounded);
+        }
+
+        const viewTicks = ticks.filter(
+            (t) => t >= minValue - tickSpacing * 0.25 && t <= maxValue + tickSpacing * 0.25
+        );
+
+        if (viewTicks.length >= minRequiredTicks) {
+            finalTicks = ticks;
+            finalStartTick = startTick;
+            finalEndTick = endTick;
+            break;
+        }
+
+        tickSpacing /= 2;
+        if (tickSpacing < 1e-2) {
+            finalTicks = ticks;
+            finalStartTick = startTick;
+            finalEndTick = endTick;
+            break;
+        }
+
+        if (retry === maxRetries - 1) {
+            finalTicks = ticks;
+            finalStartTick = startTick;
+            finalEndTick = endTick;
+        }
     }
 
     return {
-        ticks,
+        ticks: finalTicks,
         tickSpacing,
-        startTick,
-        endTick,
+        startTick: finalStartTick,
+        endTick: finalEndTick,
     };
 }
 
 function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD') {
     if (isPerformanceChart) {
         const percentTickInfo = computePercentTickInfo(yMin, yMax);
-        return percentTickInfo.ticks.filter((tick) => tick >= yMin && tick <= yMax);
+        const margin = percentTickInfo.tickSpacing * 0.25;
+        return percentTickInfo.ticks.filter(
+            (tick) => tick >= yMin - margin && tick <= yMax + margin
+        );
     }
 
     const desiredTicks = 6;
-    const range = yMax - yMin;
-    if (!Number.isFinite(range) || range <= 0) {
-        return [yMin];
+    let range = yMax - yMin;
+
+    // Handle flat-line constant value case
+    if (!Number.isFinite(range) || range <= 1e-9) {
+        const base = Math.abs(yMin) < 1e-9 ? 100 : Math.abs(yMin);
+        const margin = base * 0.05; // +/- 5% margin
+        const safeMargin = margin < 1e-9 ? 1 : margin;
+
+        // Create artificial range
+        yMin = yMin - safeMargin;
+        yMax = yMax + safeMargin;
+        range = yMax - yMin;
     }
 
     const niceRange = niceNumber(range, false);
@@ -2226,37 +2278,53 @@ function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD')
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
         tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
     }
-    tickSpacing = Math.max(tickSpacing, 1);
+    tickSpacing = Math.max(tickSpacing, 1e-6); // Avoid zero spacing
 
-    const clampToZero = currency !== 'USD' || yMin >= 0;
-    let niceMin = clampToZero
-        ? Math.max(0, Math.floor(yMin / tickSpacing) * tickSpacing)
-        : Math.floor(yMin / tickSpacing) * tickSpacing;
-    let niceMax = Math.ceil(yMax / tickSpacing) * tickSpacing;
+    // Retry loop to ensure at least 4 ticks
+    let finalTicks = [];
+    const minRequiredTicks = 5;
+    const maxRetries = 6;
 
-    let tickCount = Math.round((niceMax - niceMin) / tickSpacing);
-    while (tickCount < targetSegments) {
-        tickSpacing /= 2;
-        if (!Number.isFinite(tickSpacing) || tickSpacing <= 0) {
-            tickSpacing = 1;
-            break;
-        }
-        niceMin = clampToZero
+    for (let retry = 0; retry < maxRetries; retry++) {
+        const clampToZero = currency !== 'USD' || yMin >= 0;
+        const niceMin = clampToZero
             ? Math.max(0, Math.floor(yMin / tickSpacing) * tickSpacing)
             : Math.floor(yMin / tickSpacing) * tickSpacing;
-        niceMax = Math.ceil(yMax / tickSpacing) * tickSpacing;
-        tickCount = Math.round((niceMax - niceMin) / tickSpacing);
+        const niceMax = Math.ceil(yMax / tickSpacing) * tickSpacing;
+
+        // Safety break if tickSpacing became dangerously small
+        if (tickSpacing <= 1e-9) {
+            break;
+        }
+
+        const ticks = [];
+        // Add a small buffer to loop limit to avoid floating point issues excluding the last tick
+        for (let tick = niceMin; tick <= niceMax + tickSpacing * 0.001; tick += tickSpacing) {
+            // Precision rounding to avoid 0.30000000004
+            const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
+            ticks.push(rounded);
+        }
+
+        // Filter to view range with slight buffer
+        const viewTicks = ticks.filter(
+            (tick) => tick >= yMin - tickSpacing * 0.25 && tick <= yMax + tickSpacing * 0.25
+        );
+
+        if (viewTicks.length >= minRequiredTicks) {
+            finalTicks = viewTicks;
+            break;
+        }
+
+        // If we didn't get enough ticks, halve the spacing and try again
+        tickSpacing /= 2;
+
+        // If this was the last retry and we still don't have enough, just use what we have (best effort)
+        if (retry === maxRetries - 1) {
+            finalTicks = viewTicks;
+        }
     }
 
-    const ticks = [];
-    for (let tick = niceMin; tick <= niceMax + tickSpacing * 0.5; tick += tickSpacing) {
-        const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
-        ticks.push(rounded);
-    }
-
-    return ticks.filter(
-        (tick) => tick >= yMin - tickSpacing * 0.25 && tick <= yMax + tickSpacing * 0.25
-    );
+    return finalTicks;
 }
 
 function generateYearBasedTicks(minTime, maxTime) {
@@ -4879,4 +4947,6 @@ export function createChartManager(options = {}) {
 export const __chartTestables = {
     buildCompositionDisplayOrder,
     aggregateCompositionSeries,
+    generateConcreteTicks,
+    computePercentTickInfo,
 };
