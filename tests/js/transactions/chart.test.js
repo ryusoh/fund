@@ -480,3 +480,106 @@ describe('Minimum Tick Count Verification', () => {
         expect(info.ticks.length).toBeGreaterThanOrEqual(5);
     });
 });
+
+describe('Filtered Balance Series Fallback Price Mechanism', () => {
+    let buildFilteredBalanceSeries;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const chartModule = require('@js/transactions/chart.js');
+            ({ buildFilteredBalanceSeries } = chartModule.__chartTestables);
+        });
+    });
+
+    test('should use transaction price as fallback when historical prices unavailable', () => {
+        const transactions = [
+            {
+                tradeDate: '2024-01-15',
+                security: 'ANET',
+                quantity: 10,
+                price: 100,
+                orderType: 'buy',
+                transactionId: 1,
+            },
+        ];
+        const historicalPrices = {}; // No historical prices available
+        const splitHistory = [];
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+        // Should have balance values using the transaction price as fallback
+        expect(series.length).toBeGreaterThan(0);
+
+        // Find non-zero values - they should exist because of fallback
+        const nonZeroPoints = series.filter((p) => p.value > 0);
+        expect(nonZeroPoints.length).toBeGreaterThan(0);
+
+        // Value should be approximately 10 shares * $100 = $1000
+        const lastPoint = series[series.length - 1];
+        expect(lastPoint.value).toBeCloseTo(1000, 0);
+    });
+
+    test('should prefer historical prices over transaction prices when available', () => {
+        const transactions = [
+            {
+                tradeDate: '2024-01-15',
+                security: 'ANET',
+                quantity: 10,
+                price: 100,
+                orderType: 'buy',
+                transactionId: 1,
+            },
+        ];
+        const historicalPrices = {
+            ANET: {
+                '2024-01-15': 150, // Historical price is different from transaction price
+                '2024-01-16': 155,
+            },
+        };
+        const splitHistory = [];
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+        // Find the point for 2024-01-16
+        const jan16Point = series.find((p) => p.date === '2024-01-16');
+        expect(jan16Point).toBeDefined();
+        // Should use historical price: 10 * 155 = 1550
+        expect(jan16Point.value).toBeCloseTo(1550, 0);
+    });
+
+    test('should handle multiple transactions and use latest price as fallback', () => {
+        const transactions = [
+            {
+                tradeDate: '2024-01-10',
+                security: 'GOOG',
+                quantity: 5,
+                price: 200,
+                orderType: 'buy',
+                transactionId: 1,
+            },
+            {
+                tradeDate: '2024-01-20',
+                security: 'GOOG',
+                quantity: 3,
+                price: 220,
+                orderType: 'buy',
+                transactionId: 2,
+            },
+        ];
+        const historicalPrices = {}; // No historical prices
+        const splitHistory = [];
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+        // After first buy: 5 shares at $200 fallback = $1000
+        // After second buy: 8 shares, fallback price updated to $220 = $1760
+        const lastPoint = series[series.length - 1];
+        expect(lastPoint.value).toBeCloseTo(1760, 0);
+    });
+
+    test('should return empty array when no transactions provided', () => {
+        const series = buildFilteredBalanceSeries([], {}, []);
+        expect(series).toEqual([]);
+    });
+});

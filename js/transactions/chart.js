@@ -1343,6 +1343,7 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     });
 
     const holdings = new Map();
+    const lastKnownPrices = new Map(); // Track last known price from transactions
     const series = [];
     const iterationStart = new Date(firstDate);
     iterationStart.setDate(iterationStart.getDate() - 1);
@@ -1362,6 +1363,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
                 if (currentQty !== undefined) {
                     holdings.set(symbol, currentQty * multiplier);
                 }
+                // Adjust last known price for split
+                const lastPrice = lastKnownPrices.get(symbol);
+                if (lastPrice !== undefined && multiplier > 0) {
+                    lastKnownPrices.set(symbol, lastPrice / multiplier);
+                }
             });
         }
 
@@ -1369,8 +1375,13 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         todaysTransactions.forEach((txn) => {
             const normalizedSymbol = normalizeSymbolForPricing(txn.security);
             const quantity = parseFloat(txn.quantity) || 0;
+            const txnPrice = parseFloat(txn.price);
             if (!Number.isFinite(quantity) || quantity === 0) {
                 return;
+            }
+            // Update last known price from this transaction
+            if (Number.isFinite(txnPrice) && txnPrice > 0) {
+                lastKnownPrices.set(normalizedSymbol, txnPrice);
             }
             const isBuy = String(txn.orderType).toLowerCase() === 'buy';
             const currentQty = holdings.get(normalizedSymbol) || 0;
@@ -1387,7 +1398,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
             if (!Number.isFinite(qty) || Math.abs(qty) < 1e-8) {
                 return;
             }
-            const price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
+            let price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
+            // Fallback to last known transaction price if historical price unavailable
+            if (price === null) {
+                price = lastKnownPrices.get(symbol) ?? null;
+            }
             if (price === null) {
                 return;
             }
@@ -4949,4 +4964,5 @@ export const __chartTestables = {
     aggregateCompositionSeries,
     generateConcreteTicks,
     computePercentTickInfo,
+    buildFilteredBalanceSeries,
 };

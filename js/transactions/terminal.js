@@ -819,6 +819,14 @@ async function buildContributionChartSummary(dateRange = transactionState.chartD
             historicalPrices,
             transactionState.splitHistory || []
         );
+        // Apply currency conversion if not USD
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
+        if (selectedCurrency !== 'USD' && Array.isArray(balanceSource)) {
+            balanceSource = balanceSource.map((entry) => ({
+                ...entry,
+                value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+            }));
+        }
     } else if (Array.isArray(transactionState.portfolioSeries)) {
         balanceSource = transactionState.portfolioSeries;
     }
