@@ -3,7 +3,7 @@
     "name": "Berkshire Hathaway",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-23T07:50:41.366430+00:00",
+        "asOf": "2025-12-24T07:50:50.997454+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,26 +29,26 @@
     },
     "market": {
         "forwardEps": 24.1908,
-        "pe": 15.9728,
-        "forwardPe": 20.6669,
+        "pe": 16.001,
+        "forwardPe": 20.6901,
         "beta": 0.703,
-        "marketCap": 1078559571968.0,
-        "enterpriseValue": -251424964608.0,
+        "marketCap": 1079767662592.0,
+        "enterpriseValue": -251424145408.0,
         "ebitda": 103864000512,
         "currency": "USD",
         "fiftyTwoWeekHigh": 542.07,
         "fiftyTwoWeekLow": 440.1,
-        "marketDataUpdatedAt": "2025-12-23T07:50:41.256101+00:00",
+        "marketDataUpdatedAt": "2025-12-24T07:50:50.816613+00:00",
         "evToEbitda": -2.4207,
-        "eps": 31.3,
-        "price": 499.95,
-        "fiftyDayAverage": 496.859,
-        "twoHundredDayAverage": 498.1424,
-        "averageVolume": 4797635.0,
-        "averageDailyVolume10Day": 5674600.0
+        "eps": 31.28,
+        "price": 500.51,
+        "fiftyDayAverage": 497.0754,
+        "twoHundredDayAverage": 498.164,
+        "averageVolume": 4818011.0,
+        "averageDailyVolume10Day": 5378860.0
     },
     "risk": {
-        "volatility": 0.1878,
+        "volatility": 0.1876,
         "estimateSource": "historical",
         "correlations": null
     },
