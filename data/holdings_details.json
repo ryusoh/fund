@@ -12,19 +12,19 @@
         "average_price": "179.460000"
     },
     "PDD": {
-        "shares": "1374.597",
-        "average_price": "108.528849"
+        "shares": "1404.597",
+        "average_price": "108.606191"
     },
     "BRK-B": {
         "shares": "100",
-        "average_price": "333.01"
+        "average_price": "333.010000"
     },
     "OXY": {
         "shares": "1265.006",
-        "average_price": "47.29"
+        "average_price": "47.290000"
     },
     "GEO": {
-        "shares": "706.763",
-        "average_price": "18.628784"
+        "shares": "709.763",
+        "average_price": "18.618418"
     }
 }
