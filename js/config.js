@@ -153,7 +153,7 @@ export const APP_SETTINGS = {
 // Set both to null for all-time view
 // Users can clear this with 'alltime' or 'all' commands
 export const INITIAL_CHART_DATE_RANGE = {
-    from: '2023-10-01', // From Q4 2023 (equivalent to 'f:2023q4')
+    from: '2024-01-01', // From start of 2024 (equivalent to 'f:2024')
     to: null, // null means up to present
 };
 

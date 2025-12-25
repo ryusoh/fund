@@ -128,9 +128,9 @@ describe('Configuration', () => {
             expect(INITIAL_CHART_DATE_RANGE).toHaveProperty('to');
         });
 
-        it('should default to from Q4 2023', () => {
-            // Default filter starts from Q4 2023 (October 1, 2023)
-            expect(INITIAL_CHART_DATE_RANGE.from).toBe('2023-10-01');
+        it('should default to from start of 2024', () => {
+            // Default filter starts from start of 2024
+            expect(INITIAL_CHART_DATE_RANGE.from).toBe('2024-01-01');
             expect(INITIAL_CHART_DATE_RANGE.to).toBeNull();
         });
 
