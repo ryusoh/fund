@@ -3,7 +3,7 @@
     "name": "The GEO Group",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-24T07:50:51.267161+00:00",
+        "asOf": "2025-12-25T07:50:16.338953+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,31 +29,31 @@
     },
     "market": {
         "forwardEps": 1.3275,
-        "pe": 9.5917,
-        "forwardPe": 12.2109,
+        "pe": 9.7811,
+        "forwardPe": 12.452,
         "beta": 0.705,
-        "marketCap": 2294276096.0,
-        "enterpriseValue": 3661080832.0,
+        "marketCap": 2339567360.0,
+        "enterpriseValue": 3704832256.0,
         "ebitda": 410907008.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 36.46,
         "fiftyTwoWeekLow": 14.27,
-        "marketDataUpdatedAt": "2025-12-24T07:50:51.173791+00:00",
-        "evToEbitda": 8.9098,
+        "marketDataUpdatedAt": "2025-12-25T07:50:16.235452+00:00",
+        "evToEbitda": 9.0162,
         "eps": 1.69,
-        "price": 16.21,
-        "fiftyDayAverage": 16.2936,
-        "twoHundredDayAverage": 22.8225,
-        "averageVolume": 2084591.0,
-        "averageDailyVolume10Day": 2109400.0
+        "price": 16.53,
+        "fiftyDayAverage": 16.2712,
+        "twoHundredDayAverage": 22.789,
+        "averageVolume": 2070800.0,
+        "averageDailyVolume10Day": 2123090.0
     },
     "risk": {
-        "volatility": 0.4809,
+        "volatility": 0.4814,
         "estimateSource": "historical",
         "correlations": null
     },
     "position": {
-        "shares": 706.763,
+        "shares": 709.763,
         "currentWeight": null,
         "targetWeight": null,
         "maxKellyWeight": null,
