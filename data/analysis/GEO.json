@@ -3,7 +3,7 @@
     "name": "The GEO Group",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-25T07:50:16.338953+00:00",
+        "asOf": "2025-12-26T07:49:44.819225+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -38,14 +38,14 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 36.46,
         "fiftyTwoWeekLow": 14.27,
-        "marketDataUpdatedAt": "2025-12-25T07:50:16.235452+00:00",
+        "marketDataUpdatedAt": "2025-12-26T07:49:44.713613+00:00",
         "evToEbitda": 9.0162,
         "eps": 1.69,
         "price": 16.53,
-        "fiftyDayAverage": 16.2712,
-        "twoHundredDayAverage": 22.789,
-        "averageVolume": 2070800.0,
-        "averageDailyVolume10Day": 2123090.0
+        "fiftyDayAverage": 16.2528,
+        "twoHundredDayAverage": 22.7536,
+        "averageVolume": 2055635.0,
+        "averageDailyVolume10Day": 1989190.0
     },
     "risk": {
         "volatility": 0.4814,
