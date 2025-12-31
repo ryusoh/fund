@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2025-12-30T07:50:38.429807+00:00",
+        "asOf": "2025-12-31T07:50:35.618009+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,28 +28,28 @@
         }
     },
     "market": {
-        "forwardEps": 11.2035,
-        "pe": 31.0662,
-        "forwardPe": 28.0618,
+        "forwardEps": 11.1955,
+        "pe": 31.0513,
+        "forwardPe": 28.096,
         "beta": 1.07,
-        "marketCap": 3795263946752.0,
-        "enterpriseValue": 3739443003392.0,
+        "marketCap": 3797195161600.0,
+        "enterpriseValue": 3741373956096.0,
         "ebitda": 145174003712,
         "dividendYield": 0.27,
         "currency": "USD",
         "fiftyTwoWeekHigh": 328.67,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2025-12-30T07:50:38.351284+00:00",
-        "evToEbitda": 25.7584,
-        "eps": 10.12,
-        "price": 314.39,
-        "fiftyDayAverage": 293.7268,
-        "twoHundredDayAverage": 216.1729,
-        "averageVolume": 23201718.0,
-        "averageDailyVolume10Day": 20087950.0
+        "marketDataUpdatedAt": "2025-12-31T07:50:35.534097+00:00",
+        "evToEbitda": 25.7717,
+        "eps": 10.13,
+        "price": 314.55,
+        "fiftyDayAverage": 294.977,
+        "twoHundredDayAverage": 216.9212,
+        "averageVolume": 23026437.0,
+        "averageDailyVolume10Day": 19194900.0
     },
     "risk": {
-        "volatility": 0.32,
+        "volatility": 0.3197,
         "estimateSource": "historical",
         "correlations": null
     },
