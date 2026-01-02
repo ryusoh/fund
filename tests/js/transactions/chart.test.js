@@ -583,3 +583,106 @@ describe('Filtered Balance Series Fallback Price Mechanism', () => {
         expect(series).toEqual([]);
     });
 });
+
+describe('buildContributionSeriesFromTransactions Currency Handling', () => {
+    let buildContributionSeriesFromTransactions;
+    let mockConvertValueToCurrency;
+    let transactionState;
+
+    beforeEach(() => {
+        jest.resetModules();
+
+        // Setup mocks for this suite
+        mockConvertValueToCurrency = jest.fn((val, date, currency) => {
+            // Simple mock logic: if currency is 'CNY', multiply by 7
+            if (currency === 'CNY') {
+                return Number(val) * 7;
+            }
+            return Number(val);
+        });
+
+        jest.doMock('@js/transactions/utils.js', () => ({
+            convertValueToCurrency: mockConvertValueToCurrency,
+            formatCurrencyCompact: jest.fn(),
+            formatCurrencyInlineValue: jest.fn(),
+            formatCurrencyInline: jest.fn(),
+            convertBetweenCurrencies: jest.fn(),
+        }));
+
+        transactionState = { selectedCurrency: 'USD', splitHistory: [] };
+        jest.doMock('@js/transactions/state.js', () => ({
+            transactionState,
+            setChartVisibility: jest.fn(),
+            setHistoricalPrices: jest.fn(),
+            setRunningAmountSeries: jest.fn(),
+            getShowChartLabels: jest.fn(),
+            getCompositionFilterTickers: jest.fn(),
+            getCompositionAssetClassFilter: jest.fn(),
+        }));
+
+        jest.doMock('@js/config.js', () => ({
+            ANIMATED_LINE_SETTINGS: {},
+            CHART_SMOOTHING: {},
+            CHART_MARKERS: {},
+            CONTRIBUTION_CHART_SETTINGS: {},
+            mountainFill: {},
+            COLOR_PALETTES: {},
+            CROSSHAIR_SETTINGS: {},
+            CHART_LINE_WIDTHS: {},
+            getHoldingAssetClass: jest.fn(),
+        }));
+
+        jest.doMock('@js/plugins/glowTrailAnimator.js', () => ({
+            createGlowTrailAnimator: jest.fn(() => ({
+                isEnabledFor: jest.fn(),
+                stop: jest.fn(),
+                schedule: jest.fn(),
+                advance: jest.fn(),
+                drawSeriesGlow: jest.fn(),
+            })),
+        }));
+
+        jest.doMock('@js/utils/smoothing.js', () => ({
+            smoothFinancialData: jest.fn(),
+        }));
+
+        // Load module
+        const chartModule = require('@js/transactions/chart.js');
+        buildContributionSeriesFromTransactions =
+            chartModule.buildContributionSeriesFromTransactions;
+    });
+
+    it('should use transactionState.selectedCurrency by default', () => {
+        transactionState.selectedCurrency = 'CNY';
+        const transactions = [{ tradeDate: '2023-01-01', netAmount: 100, orderType: 'buy' }];
+
+        const series = buildContributionSeriesFromTransactions(transactions);
+
+        expect(series[0].amount).toBe(700);
+        expect(mockConvertValueToCurrency).toHaveBeenCalledWith(100, expect.anything(), 'CNY');
+    });
+
+    it('should use provided currency option over transactionState.selectedCurrency', () => {
+        transactionState.selectedCurrency = 'CNY'; // Global is CNY
+        const transactions = [{ tradeDate: '2023-01-01', netAmount: 100, orderType: 'buy' }];
+
+        // Request USD explicitly
+        const series = buildContributionSeriesFromTransactions(transactions, { currency: 'USD' });
+
+        // Should be 100 (USD) because convertValueToCurrency mock returns val if not CNY
+        // In the function: if (selectedCurrency === 'USD') return series; (skips conversion)
+
+        expect(series[0].amount).toBe(100);
+    });
+
+    it('should correctly convert if currency option is provided as non-USD', () => {
+        transactionState.selectedCurrency = 'USD'; // Global is USD
+        const transactions = [{ tradeDate: '2023-01-01', netAmount: 100, orderType: 'buy' }];
+
+        // Request CNY explicitly
+        const series = buildContributionSeriesFromTransactions(transactions, { currency: 'CNY' });
+
+        expect(series[0].amount).toBe(700);
+        expect(mockConvertValueToCurrency).toHaveBeenCalledWith(100, expect.anything(), 'CNY');
+    });
+});

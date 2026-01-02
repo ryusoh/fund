@@ -143,6 +143,28 @@ export function formatCurrencyInlineValue(value, { digits = 0, currency } = {}) 
     return `${sign}${symbol}${formatted}`;
 }
 
+export function formatCurrencyInline(value) {
+    if (!Number.isFinite(value)) {
+        return formatCurrencyInlineValue(0);
+    }
+    const absolute = Math.abs(value);
+    const sign = value < 0 ? '-' : '';
+    const symbol = getSymbolForCurrency(transactionState.selectedCurrency);
+    if (absolute >= 1_000_000_000) {
+        return `${sign}${symbol}${(absolute / 1_000_000_000).toFixed(2)}B`;
+    }
+    if (absolute >= 1_000_000) {
+        return `${sign}${symbol}${(absolute / 1_000_000).toFixed(2)}M`;
+    }
+    if (absolute >= 1_000) {
+        return `${sign}${symbol}${(absolute / 1_000).toFixed(1)}k`;
+    }
+    if (absolute >= 1) {
+        return `${sign}${symbol}${absolute.toFixed(0)}`;
+    }
+    return `${sign}${symbol}${absolute.toFixed(2)}`;
+}
+
 export function formatCurrencyCompact(value, { currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);

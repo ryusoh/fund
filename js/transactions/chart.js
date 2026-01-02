@@ -40,6 +40,7 @@ import { getSplitAdjustment } from './calculations.js';
 import {
     formatCurrencyCompact,
     formatCurrencyInlineValue,
+    formatCurrencyInline,
     convertValueToCurrency,
     convertBetweenCurrencies,
 } from './utils.js';
@@ -64,6 +65,7 @@ const chartLayouts = {
     compositionAbs: null,
     fx: null,
     drawdown: null,
+    drawdownAbs: null,
 };
 
 let compositionDataCache = null;
@@ -227,28 +229,6 @@ function createTimeInterpolator(points) {
     };
 }
 
-const formatCurrencyInline = (value) => {
-    if (!Number.isFinite(value)) {
-        return formatCurrencyInlineValue(0);
-    }
-    const absolute = Math.abs(value);
-    const sign = value < 0 ? '-' : '';
-    const symbol = transactionState.currencySymbol || '$';
-    if (absolute >= 1_000_000_000) {
-        return `${sign}${symbol}${(absolute / 1_000_000_000).toFixed(2)}B`;
-    }
-    if (absolute >= 1_000_000) {
-        return `${sign}${symbol}${(absolute / 1_000_000).toFixed(2)}M`;
-    }
-    if (absolute >= 1_000) {
-        return `${sign}${symbol}${(absolute / 1_000).toFixed(1)}k`;
-    }
-    if (absolute >= 1) {
-        return `${sign}${symbol}${absolute.toFixed(0)}`;
-    }
-    return `${sign}${symbol}${absolute.toFixed(2)}`;
-};
-
 const DEFAULT_MONO_FONT = "'JetBrains Mono','IBM Plex Mono','Menlo',monospace";
 
 function getMonoFontFamily() {
@@ -364,7 +344,8 @@ function getActiveChartKey() {
         active === 'compositionAbs' ||
         active === 'contribution' ||
         active === 'fx' ||
-        active === 'drawdown'
+        active === 'drawdown' ||
+        active === 'drawdownAbs'
     ) {
         return active;
     }
@@ -1118,32 +1099,33 @@ export function hasActiveTransactionFilters() {
 
 function getContributionSeriesForTransactions(
     transactions,
-    { includeSyntheticStart = false, padToDate = null } = {}
+    { includeSyntheticStart = false, padToDate = null, currency = null } = {}
 ) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
     }
     const splitHistoryRef = transactionState.splitHistory;
     const cached = contributionSeriesCache.get(transactions);
-    const currentCurrency = transactionState.selectedCurrency || 'USD';
+    const targetCurrency = currency || transactionState.selectedCurrency || 'USD';
     if (
         cached &&
         cached.splitHistory === splitHistoryRef &&
         cached.includeSyntheticStart === includeSyntheticStart &&
         cached.padToDate === padToDate &&
-        cached.currency === currentCurrency
+        cached.currency === targetCurrency
     ) {
         return cached.series;
     }
     const series = buildContributionSeriesFromTransactions(transactions, {
         includeSyntheticStart,
         padToDate,
+        currency: targetCurrency,
     });
     contributionSeriesCache.set(transactions, {
         splitHistory: splitHistoryRef,
         includeSyntheticStart,
         padToDate,
-        currency: currentCurrency,
+        currency: targetCurrency,
         series,
     });
     return series;
@@ -1151,7 +1133,7 @@ function getContributionSeriesForTransactions(
 
 export function buildContributionSeriesFromTransactions(
     transactions,
-    { includeSyntheticStart = false, padToDate = null } = {}
+    { includeSyntheticStart = false, padToDate = null, currency = null } = {}
 ) {
     if (!Array.isArray(transactions) || transactions.length === 0) {
         return [];
@@ -1241,7 +1223,7 @@ export function buildContributionSeriesFromTransactions(
         }
     }
 
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    const selectedCurrency = currency || transactionState.selectedCurrency || 'USD';
     if (selectedCurrency === 'USD') {
         return series;
     }
@@ -2313,7 +2295,7 @@ function computePercentTickInfo(yMin, yMax) {
     };
 }
 
-function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD') {
+function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
     if (isPerformanceChart) {
         const percentTickInfo = computePercentTickInfo(yMin, yMax);
         const margin = percentTickInfo.tickSpacing * 0.25;
@@ -2354,7 +2336,8 @@ function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency = 'USD')
     const maxRetries = 6;
 
     for (let retry = 0; retry < maxRetries; retry++) {
-        const clampToZero = currency !== 'USD' || yMin >= 0;
+        // Do not clamp to zero if we have negative values (e.g. drawdown or PnL)
+        const clampToZero = yMin >= 0;
         const niceMin = clampToZero
             ? Math.max(0, Math.floor(yMin / tickSpacing) * tickSpacing)
             : Math.floor(yMin / tickSpacing) * tickSpacing;
@@ -2660,7 +2643,8 @@ function drawAxes(
 
 // --- Chart Drawing Functions ---
 
-async function drawContributionChart(ctx, chartManager, timestamp) {
+async function drawContributionChart(ctx, chartManager, timestamp, options = {}) {
+    const { drawdownMode = false } = options;
     stopPerformanceAnimation();
     stopFxAnimation();
 
@@ -2677,8 +2661,12 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         ? transactionState.allTransactions
         : [];
 
-    const filtersActive = hasActiveTransactionFilters();
+    const filtersActive =
+        hasActiveTransactionFilters() &&
+        transactionState.activeFilterTerm &&
+        transactionState.activeFilterTerm.trim().length > 0;
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
     const contributionTransactions = filtersActive ? filteredTransactions : allTransactions;
     let contributionSource = [];
     let contributionFromTransactions = false;
@@ -2699,6 +2687,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         contributionSource = getContributionSeriesForTransactions(contributionTransactions, {
             includeSyntheticStart: true,
             padToDate,
+            currency: drawdownMode ? 'USD' : null,
         });
         contributionFromTransactions =
             filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
@@ -2708,11 +2697,18 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     } else {
         const mappedSeries =
             transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
-        if (mappedSeries && mappedSeries === runningAmountSeries) {
+        const usdSeries = transactionState.runningAmountSeriesByCurrency?.['USD'] || null;
+
+        if (drawdownMode && usdSeries) {
+            contributionSource = usdSeries;
+        } else if (!drawdownMode && mappedSeries && mappedSeries === runningAmountSeries) {
             contributionSource = runningAmountSeries;
         } else {
             contributionSource = runningAmountSeries.map((entry) => {
                 const tradeDate = entry.tradeDate || entry.date;
+                if (drawdownMode) {
+                    return { ...entry };
+                }
                 return {
                     ...entry,
                     amount: convertValueToCurrency(entry.amount, tradeDate, selectedCurrency),
@@ -2726,13 +2722,20 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         (!Array.isArray(contributionSource) || contributionSource.length === 0) &&
         runningAmountSeries.length > 0
     ) {
-        const mappedSeries =
-            transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
-        if (mappedSeries) {
-            contributionSource = mappedSeries;
-        } else {
-            contributionSource = runningAmountSeries;
-        }
+        // Force dynamic conversion to ensure accuracy and avoid stale cache
+        contributionSource = runningAmountSeries.map((item) => {
+            if (drawdownMode) {
+                return { ...item };
+            }
+            return {
+                ...item,
+                amount: convertValueToCurrency(
+                    item.amount,
+                    item.tradeDate || item.date,
+                    selectedCurrency
+                ),
+            };
+        });
     }
 
     let historicalPrices = transactionState.historicalPrices;
@@ -2758,12 +2761,22 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
               historicalPrices,
               transactionState.splitHistory
           )
-        : portfolioSeries;
-    if (filtersActive && selectedCurrency !== 'USD' && Array.isArray(balanceSource)) {
-        balanceSource = balanceSource.map((entry) => ({
-            ...entry,
-            value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
-        }));
+        : drawdownMode && transactionState.portfolioSeriesByCurrency?.['USD']
+          ? transactionState.portfolioSeriesByCurrency['USD']
+          : portfolioSeries;
+
+    if (
+        !drawdownMode &&
+        selectedCurrency !== 'USD' &&
+        Array.isArray(balanceSource) &&
+        filtersActive
+    ) {
+        balanceSource = [...balanceSource]
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .map((entry) => ({
+                ...entry,
+                value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+            }));
     }
     const hasBalanceSeries = Array.isArray(balanceSource) && balanceSource.length > 0;
 
@@ -2871,6 +2884,51 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         }
         return;
     }
+
+    // Apply drawdown transformation if in drawdown mode
+    let finalContributionData = contributionData;
+    let finalBalanceData = balanceData;
+
+    if (drawdownMode) {
+        // Helper to apply HWM drawdown to a series
+        const applyDrawdown = (data, valueKey) => {
+            if (data.length === 0) {
+                return [];
+            }
+            // Sort by date first
+            const sorted = [...data].sort((a, b) => a.date - b.date);
+            let runningPeak = -Infinity;
+            return sorted.map((p) => {
+                const val = p[valueKey];
+                if (val > runningPeak) {
+                    runningPeak = val;
+                }
+                return {
+                    ...p,
+                    [valueKey]: val - runningPeak, // <= 0
+                };
+            });
+        };
+
+        // If we are in drawdown mode, we calculated drawdown in USD (if balanceSource was USD).
+        // Now convert the drawdown values to the selected currency.
+        const convertDrawdown = (data, valueKey) => {
+            if (selectedCurrency === 'USD') {
+                return data;
+            }
+            return data.map((p) => ({
+                ...p,
+                [valueKey]: convertValueToCurrency(p[valueKey], p.date, selectedCurrency),
+            }));
+        };
+
+        finalContributionData = convertDrawdown(
+            applyDrawdown(contributionData, 'amount'),
+            'amount'
+        );
+        finalBalanceData = convertDrawdown(applyDrawdown(balanceData, 'value'), 'value');
+    }
+
     if (emptyState) {
         emptyState.style.display = 'none';
     }
@@ -2977,8 +3035,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         delete window.DEBUG_CHART;
     }
 
-    const contributionValues = contributionData.map((item) => item.amount);
-    const balanceValues = balanceData.map((item) => item.value);
+    const contributionValues = finalContributionData.map((item) => item.amount);
+    const balanceValues = finalBalanceData.map((item) => item.value);
     const combinedValues = [...contributionValues, ...balanceValues].filter((value) =>
         Number.isFinite(value)
     );
@@ -3002,9 +3060,18 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     let yMin = startYAxisAtZero ? Math.min(0, rawMin) : rawMin;
     let yMax = startYAxisAtZero ? Math.max(rawMax, 0) : rawMax;
 
+    // In drawdown mode, force yMax to 0 and yMin to include all negative values
+    if (drawdownMode) {
+        yMax = 0;
+        yMin = Math.min(rawMin, 0);
+    }
+
     if (!hasValues) {
-        yMin = startYAxisAtZero ? 0 : 0;
-        yMax = 1;
+        yMin = startYAxisAtZero || drawdownMode ? 0 : 0;
+        yMax = drawdownMode ? 0 : 1;
+        if (drawdownMode) {
+            yMin = -1;
+        }
     }
 
     const range = yMax - yMin;
@@ -3071,13 +3138,13 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
     let firstContributionLabelY = null;
     let contributionEndLabelY = null;
 
-    if (showContribution && contributionData.length > 0) {
+    if (showContribution && finalContributionData.length > 0) {
         animatedSeries.push({
             key: 'contribution',
             color: colors.contribution,
             lineWidth: CHART_LINE_WIDTHS.contribution ?? 2,
             order: 1,
-            data: contributionData
+            data: finalContributionData
                 .filter((item) => {
                     const t = item.date.getTime();
                     return t >= minTime && t <= maxTime;
@@ -3089,13 +3156,13 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         });
     }
 
-    if (showBalance && balanceData.length > 0) {
+    if (showBalance && finalBalanceData.length > 0) {
         animatedSeries.push({
             key: 'balance',
             color: colors.portfolio,
             lineWidth: CHART_LINE_WIDTHS.balance ?? 2,
             order: 2,
-            data: balanceData
+            data: finalBalanceData
                 .filter((item) => {
                     const t = item.date.getTime();
                     return t >= minTime && t <= maxTime;
@@ -3411,7 +3478,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
 
     let hasAnimatedSeries = false;
 
-    const areaBaselineY = chartBounds.bottom;
+    const areaBaselineY = drawdownMode ? yScale(0) : chartBounds.bottom;
 
     // Line chart clipping is now handled by the global clip above,
     // but we might want to restrict it further to just the plot area (excluding volume)
@@ -3445,8 +3512,8 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             drawMountainFill(ctx, coords, areaBaselineY, {
                 color: series.color,
                 colorStops,
-                opacityTop: 0.35,
-                opacityBottom: 0,
+                opacityTop: drawdownMode ? 0 : 0.35,
+                opacityBottom: drawdownMode ? 0.35 : 0,
                 bounds: chartBounds,
             });
         }
@@ -3487,8 +3554,9 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         stopContributionAnimation();
     }
 
-    // Draw start and end values using raw data to ensure accuracy
-    if (showChartLabels && showContribution && rawContributionData.length > 0) {
+    // Draw start and end values using raw data to ensure accuracy (or transformed data for drawdown)
+    const labelContributionData = drawdownMode ? finalContributionData : rawContributionData;
+    if (showChartLabels && showContribution && labelContributionData.length > 0) {
         const contributionGradient = BALANCE_GRADIENTS['contribution'];
         const contributionStartColor = contributionGradient
             ? contributionGradient[0]
@@ -3498,17 +3566,19 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             : colors.contribution;
 
         const firstContribution =
-            rawContributionData.find((item) => item.synthetic) ||
-            rawContributionData.find((item) => {
+            labelContributionData.find((item) => item.synthetic) ||
+            labelContributionData.find((item) => {
                 if (typeof item.orderType !== 'string') {
                     return true;
                 }
                 return item.orderType.toLowerCase() !== 'padding';
             }) ||
-            rawContributionData[0];
+            labelContributionData[0];
         if (firstContribution) {
             const firstContributionX = xScale(firstContribution.date.getTime());
-            const firstContributionY = yScale(firstContribution.amount);
+            const firstContributionY = yScale(
+                drawdownMode ? firstContribution.amount : firstContribution.amount
+            );
             firstContributionLabelY = drawStartValue(
                 ctx,
                 firstContributionX,
@@ -3524,7 +3594,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             );
         }
 
-        const lastContribution = rawContributionData[rawContributionData.length - 1];
+        const lastContribution = labelContributionData[labelContributionData.length - 1];
         const lastContributionX = xScale(lastContribution.date.getTime());
         const lastContributionY = yScale(lastContribution.amount);
         contributionEndLabelY = drawEndValue(
@@ -3542,12 +3612,13 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         );
     }
 
-    if (showChartLabels && showBalance && rawBalanceData.length > 0) {
+    const labelBalanceData = drawdownMode ? finalBalanceData : rawBalanceData;
+    if (showChartLabels && showBalance && labelBalanceData.length > 0) {
         const balanceGradient = BALANCE_GRADIENTS['balance'];
         const balanceStartColor = balanceGradient ? balanceGradient[0] : colors.portfolio;
         const balanceEndColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
 
-        const firstBalance = rawBalanceData[0];
+        const firstBalance = labelBalanceData[0];
         const firstBalanceX = xScale(firstBalance.date.getTime());
         let firstBalanceY = yScale(firstBalance.value);
         if (firstContributionLabelY !== null) {
@@ -3577,7 +3648,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
             true
         );
 
-        const lastBalance = rawBalanceData[rawBalanceData.length - 1];
+        const lastBalance = labelBalanceData[labelBalanceData.length - 1];
         const lastBalanceX = xScale(lastBalance.date.getTime());
         let lastBalanceY = yScale(lastBalance.value);
         if (contributionEndLabelY !== null) {
@@ -3687,8 +3758,9 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         drawMarker: false,
     });
 
-    chartLayouts.contribution = {
-        key: 'contribution',
+    const layoutKey = drawdownMode ? 'drawdownAbs' : 'contribution';
+    chartLayouts[layoutKey] = {
+        key: layoutKey,
         minTime,
         maxTime,
         valueType: 'currency',
@@ -3710,7 +3782,7 @@ async function drawContributionChart(ctx, chartManager, timestamp) {
         series: [...baseSeries, ...volumeSeries],
     };
 
-    drawCrosshairOverlay(ctx, chartLayouts.contribution);
+    drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
 
     if (contributionAnimationEnabled && hasAnimatedSeries) {
         scheduleContributionAnimation(chartManager);
@@ -4436,16 +4508,35 @@ function drawFxChart(ctx, chartManager, timestamp) {
 }
 
 async function drawDrawdownChart(ctx, chartManager, timestamp) {
-    const performanceSeries =
-        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
-            ? transactionState.performanceSeries
-            : {};
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    // Percentage Drawdown Chart (Benchmarks)
+    // Absolute drawdown is now handled by drawContributionChart with drawdownMode=true
 
     stopContributionAnimation();
     stopFxAnimation();
 
-    // Check if we have any data
+    const canvas = ctx.canvas;
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile
+        ? { top: 15, right: 20, bottom: 35, left: 50 }
+        : { top: 20, right: 30, bottom: 48, left: 70 };
+    const plotWidth = canvas.offsetWidth - padding.left - padding.right;
+    const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    let seriesToDraw = [];
+    let orderedKeys = [];
+
+    // ========== PERCENTAGE MODE ==========
+    // Use performanceSeries (benchmark data) and calculate percentage drawdown
+    const performanceSeries =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+
     if (Object.keys(performanceSeries).length === 0) {
         stopPerformanceAnimation();
         chartLayouts.drawdown = null;
@@ -4454,8 +4545,7 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
     }
 
     const { chartVisibility } = transactionState;
-    // Ensure visibility defaults are set
-    const orderedKeys = Object.keys(performanceSeries).sort((a, b) => {
+    orderedKeys = Object.keys(performanceSeries).sort((a, b) => {
         if (a === '^LZ') {
             return -1;
         }
@@ -4471,12 +4561,10 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
         }
     });
 
-    // Prepare series data (convert currency first, then calc drawdown)
     const allExpectedSeries = orderedKeys.map((key) => {
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
-        // Convert to selected currency
         const convertedPoints = points.map((point) => ({
             date: point.date,
             value: convertBetweenCurrencies(
@@ -4487,7 +4575,6 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
             ),
         }));
 
-        // Calculate Drawdown
         const drawdownPoints = buildDrawdownSeries(convertedPoints);
 
         return {
@@ -4497,7 +4584,7 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
         };
     });
 
-    const seriesToDraw = allExpectedSeries.filter((s) => chartVisibility[s.key] !== false);
+    seriesToDraw = allExpectedSeries.filter((s) => chartVisibility[s.key] !== false);
 
     if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
@@ -4506,20 +4593,8 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const canvas = ctx.canvas;
-    const isMobile = window.innerWidth <= 768;
-    const padding = isMobile
-        ? { top: 15, right: 20, bottom: 35, left: 50 }
-        : { top: 20, right: 30, bottom: 48, left: 70 };
-    const plotWidth = canvas.offsetWidth - padding.left - padding.right;
-    const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
-
-    const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
-
     // Filter by date range
-    const normalizedSeriesToDraw = seriesToDraw
+    seriesToDraw = seriesToDraw
         .map((series) => {
             const filteredData = series.data.filter((d) => {
                 const pointDate = d.date;
@@ -4531,40 +4606,36 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
         })
         .filter((s) => s.data.length > 0);
 
-    if (normalizedSeriesToDraw.length === 0) {
+    if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
-        return; // Or show empty state
+        return;
     }
 
-    const allPoints = normalizedSeriesToDraw.flatMap((s) => s.data);
+    // ========== COMMON RENDERING LOGIC ==========
+    const allPoints = seriesToDraw.flatMap((s) => s.data);
     const allTimes = allPoints.map((p) => new Date(p.date).getTime());
     const minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
-    // Drawdown is typically 0 to negative.
-    const allValues = allPoints.map((p) => p.value); // These are already percentages (e.g. 0, -5, -10)
+    const allValues = allPoints.map((p) => p.value);
     const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues); // Should be <= 0 usually
+    // dataMax not needed since yMax is fixed at 0
 
-    // Always include 0 in the range for drawdown charts
-    let yMax = Math.max(0, dataMax);
+    // Y-axis: 0 at top, most negative at bottom
+    const yMax = 0; // Hard ceiling at 0
     let yMin = dataMin;
 
-    // Add some padding
-    const range = yMax - yMin;
-    const paddingVal = Math.max(range * 0.05, 1); // at least 1% padding
+    // Add padding to bottom
+    const range = Math.abs(yMax - yMin);
+    const paddingVal = Math.max(range * 0.05, 1);
     yMin -= paddingVal;
-    // Don't pad top above 0 if max is 0, just keep 0 at top?
-    // Usually nice to have 0 line distinct.
-    yMax = Math.min(0, yMax) + (yMax === 0 ? 0 : paddingVal);
-    // Actually, usually 0 is the hard ceiling. Let's force yMax to be at least 0.
-    if (yMax < 0) {
-        yMax = 0;
-    }
 
     const xScale = (t) =>
         padding.left +
         (maxTime === minTime ? plotWidth / 2 : ((t - minTime) / (maxTime - minTime)) * plotWidth);
     const yScale = (v) => padding.top + plotHeight - ((v - yMin) / (yMax - yMin)) * plotHeight;
+
+    // Format Y-axis labels
+    const yLabelFormatter = (v) => `${v.toFixed(0)}%`;
 
     drawAxes(
         ctx,
@@ -4577,23 +4648,24 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
         yMax,
         xScale,
         yScale,
-        (v) => `${v.toFixed(0)}%`,
-        true
+        yLabelFormatter,
+        true // isPerformanceChart style for percentage mode
     );
 
-    const performanceAnimationEnabled = isAnimationEnabled('performance'); // Reuse performance animation?
-    const animationPhase = advancePerformanceAnimation(timestamp); // Reuse performance animation state
+    const performanceAnimationEnabled = isAnimationEnabled('performance');
+    const animationPhase = advancePerformanceAnimation(timestamp);
 
     const rootStyles = window.getComputedStyle(document.documentElement);
     const colors = getChartColors(rootStyles);
     const colorMap = {
-        '^LZ': BENCHMARK_GRADIENTS['^LZ'][1],
-        '^GSPC': BENCHMARK_GRADIENTS['^GSPC'][1],
-        '^IXIC': BENCHMARK_GRADIENTS['^IXIC'][1],
-        '^DJI': BENCHMARK_GRADIENTS['^DJI'][1],
-        '^SSEC': BENCHMARK_GRADIENTS['^SSEC'][1],
-        '^HSI': BENCHMARK_GRADIENTS['^HSI'][1],
-        '^N225': BENCHMARK_GRADIENTS['^N225'][1],
+        // Benchmark colors for percentage mode
+        '^LZ': BENCHMARK_GRADIENTS['^LZ']?.[1] || colors.portfolio,
+        '^GSPC': BENCHMARK_GRADIENTS['^GSPC']?.[1] || '#4caf50',
+        '^IXIC': BENCHMARK_GRADIENTS['^IXIC']?.[1] || '#ff9800',
+        '^DJI': BENCHMARK_GRADIENTS['^DJI']?.[1] || '#2196f3',
+        '^SSEC': BENCHMARK_GRADIENTS['^SSEC']?.[1] || '#e91e63',
+        '^HSI': BENCHMARK_GRADIENTS['^HSI']?.[1] || '#9c27b0',
+        '^N225': BENCHMARK_GRADIENTS['^N225']?.[1] || '#00bcd4',
     };
 
     const lineThickness = CHART_LINE_WIDTHS.performance ?? 2;
@@ -4609,9 +4681,9 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
     const zeroLineY = yScale(0);
 
-    normalizedSeriesToDraw.forEach((series) => {
+    seriesToDraw.forEach((series) => {
         const resolvedColor = colorMap[series.key] || colors.contribution;
-        const gradientStops = BENCHMARK_GRADIENTS[series.key]; // Reuse benchmark colors
+        const gradientStops = BENCHMARK_GRADIENTS[series.key];
 
         if (gradientStops) {
             const gradient = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
@@ -4632,13 +4704,13 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
             };
         });
 
-        // "Underwater" fill: fill area between line and 0 (zeroLineY)
+        // "Underwater" fill: fill area between line and 0
         if (mountainFill.enabled) {
             drawMountainFill(ctx, coords, zeroLineY, {
                 color: resolvedColor,
                 colorStops: gradientStops || [resolvedColor, resolvedColor],
-                opacityTop: 0.05, // Lighter near 0
-                opacityBottom: 0.35, // Darker deep down
+                opacityTop: 0.05,
+                opacityBottom: 0.35,
                 bounds: chartBounds,
             });
         }
@@ -4669,7 +4741,7 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
                     basePhase: animationPhase,
                     seriesIndex: glowIndex,
                     isMobile,
-                    chartKey: 'performance', // Reuse performance key for animation state
+                    chartKey: 'performance',
                 }
             );
             glowIndex++;
@@ -4689,7 +4761,7 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
     const showChartLabels = getShowChartLabels();
     if (showChartLabels) {
-        normalizedSeriesToDraw.forEach((series) => {
+        seriesToDraw.forEach((series) => {
             const lastData = series.data[series.data.length - 1];
             if (!lastData) {
                 return;
@@ -4697,6 +4769,8 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
             const x = xScale(new Date(lastData.date).getTime());
             const y = yScale(lastData.value);
             const resolvedColor = colorMap[series.key] || colors.contribution;
+
+            const formatter = (v) => `${v.toFixed(2)}%`;
 
             drawEndValue(
                 ctx,
@@ -4708,14 +4782,19 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
                 padding,
                 plotWidth,
                 plotHeight,
-                (v) => `${v.toFixed(2)}%`,
+                formatter,
                 true
             );
         });
     }
 
-    chartLayouts.drawdown = {
-        key: 'drawdown',
+    // Store layout for crosshair
+    const layoutKey = 'drawdown';
+    const valueFormatter = (value) => `${value.toFixed(2)}%`;
+    const deltaFormatter = (delta) => `${delta > 0 ? '+' : ''}${delta.toFixed(2)}%`;
+
+    chartLayouts[layoutKey] = {
+        key: layoutKey,
         minTime,
         maxTime,
         valueType: 'percent',
@@ -4739,17 +4818,17 @@ async function drawDrawdownChart(ctx, chartManager, timestamp) {
             label: s.name,
             color: s.color,
             getValueAtTime: createTimeInterpolator(s.points || []),
-            formatValue: (value) => `${value.toFixed(2)}%`,
-            formatDelta: (delta) => `${delta > 0 ? '+' : ''}${delta.toFixed(2)}%`,
+            formatValue: valueFormatter,
+            formatDelta: deltaFormatter,
         })),
     };
 
-    drawCrosshairOverlay(ctx, chartLayouts.drawdown);
+    drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
 
     if (performanceLegendDirty) {
         const legendSeries = orderedKeys.map((key) => ({
             key,
-            name: key, // Or mapped name
+            name: key,
             color: colorMap[key] || colors.contribution,
         }));
         updateLegend(legendSeries, chartManager);
@@ -5306,7 +5385,11 @@ export function createChartManager(options = {}) {
         if (transactionState.activeChart === 'performance') {
             await drawPerformanceChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'drawdown') {
+            // Percentage drawdown (benchmarks)
             await drawDrawdownChart(ctx, chartManager, timestamp);
+        } else if (transactionState.activeChart === 'drawdownAbs') {
+            // Absolute drawdown - use contribution chart with drawdown transformation
+            await drawContributionChart(ctx, chartManager, timestamp, { drawdownMode: true });
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'compositionAbs') {

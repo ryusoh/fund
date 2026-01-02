@@ -45,6 +45,7 @@ import {
     formatCurrency as formatValueWithCurrency,
     convertBetweenCurrencies,
     convertValueToCurrency,
+    formatCurrencyInline,
 } from './utils.js';
 import { getHoldingAssetClass } from '@js/config.js';
 import { toggleZoom, getZoomState } from './zoom.js';
@@ -206,20 +207,129 @@ function getFxSnapshotLine() {
     return `FX (${baseCurrency} base): ${snapshots.join('   ')}`;
 }
 
-function getDrawdownSnapshotLine({ includeHidden = false } = {}) {
-    if (transactionState.activeChart !== 'drawdown') {
+function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } = {}) {
+    const activeChart = transactionState.activeChart;
+    // Allow when explicitly requested as absolute OR when chart is drawdownAbs
+    const isAbsoluteMode = isAbsolute || activeChart === 'drawdownAbs';
+
+    if (activeChart !== 'drawdown' && activeChart !== 'drawdownAbs') {
         return null;
     }
+
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    if (isAbsoluteMode) {
+        // ABSOLUTE MODE: Use portfolioSeries (balance data)
+
+        // --- DYNAMIC DRAWDOWN CALCULATION ---
+
+        // 1. Balance (Portfolio Series)
+        // Use USD series if available to ensure we calculate drawdown on base currency
+        const portfolioSeriesUSD =
+            transactionState.portfolioSeriesByCurrency?.['USD'] ||
+            transactionState.portfolioSeries ||
+            [];
+
+        if (portfolioSeriesUSD.length === 0) {
+            return null;
+        }
+
+        let runningPeak = -Infinity;
+        // Calculate drawdown in base currency (USD) first
+        const balanceDrawdownDataUSD = portfolioSeriesUSD.map((p) => {
+            const val = p.value;
+            if (val > runningPeak) {
+                runningPeak = val;
+            }
+            return { date: new Date(p.date), value: val - runningPeak };
+        });
+
+        const balanceDrawdownData = balanceDrawdownDataUSD.map((p) => ({
+            date: p.date,
+            value: convertValueToCurrency(p.value, p.date, selectedCurrency),
+        }));
+
+        // 2. Contribution (Running Amount Series)
+        // Use USD series if available
+        const runningAmountSeriesUSD =
+            transactionState.runningAmountSeriesByCurrency?.['USD'] ||
+            transactionState.runningAmountSeries ||
+            [];
+
+        let contribPeak = -Infinity;
+        // Calculate drawdown in base currency (USD) first
+        const contributionDrawdownDataUSD = runningAmountSeriesUSD
+            .map((p) => ({
+                date: new Date(p.tradeDate || p.date),
+                amount: Number(p.amount),
+            }))
+            .sort((a, b) => a.date - b.date)
+            .map((p) => {
+                const val = p.amount;
+                if (val > contribPeak) {
+                    contribPeak = val;
+                }
+                return { date: p.date, value: val - contribPeak };
+            });
+
+        const contributionDrawdownData = contributionDrawdownDataUSD.map((p) => ({
+            date: p.date,
+            value: convertValueToCurrency(p.value, p.date, selectedCurrency),
+        }));
+
+        // Filter by date range
+        const relevantBalance = balanceDrawdownData.filter(
+            (p) => (!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)
+        );
+        const relevantContribution = contributionDrawdownData.filter(
+            (p) => (!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)
+        );
+
+        if (relevantBalance.length === 0 && relevantContribution.length === 0) {
+            return null;
+        }
+
+        const getStats = (points) => {
+            if (points.length === 0) {
+                return { current: 0, max: 0 };
+            }
+            const current = points[points.length - 1].value;
+            let min = 0;
+            for (const p of points) {
+                if (p.value < min) {
+                    min = p.value;
+                }
+            }
+            return { current, max: min };
+        };
+
+        const balanceStats = getStats(relevantBalance);
+        const contribStats = getStats(relevantContribution);
+
+        const balCur = formatCurrencyInline(balanceStats.current);
+        const balMax = formatCurrencyInline(balanceStats.max);
+        const conCur = formatCurrencyInline(contribStats.current);
+        const conMax = formatCurrencyInline(contribStats.max);
+
+        const header = `Absolute Drawdown (base ${selectedCurrency}):`;
+        const hint = "(Hint: use 'per' for percentages)";
+
+        const balanceLine = `Balance      ${balCur} (Max: ${balMax})`;
+        const contribLine = `Contribution ${conCur} (Max: ${conMax})`;
+
+        return `${header}\n${balanceLine}\n${contribLine}\n${hint}`;
+    }
+
+    // PERCENTAGE MODE: Use performanceSeries
     const performanceSeries = transactionState.performanceSeries || {};
     const seriesKeys = Object.keys(performanceSeries);
     if (seriesKeys.length === 0) {
         return null;
     }
     const visibility = transactionState.chartVisibility || {};
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
 
     const orderedKeys = [...seriesKeys].sort((a, b) => {
         if (a === '^LZ') {
@@ -232,7 +342,7 @@ function getDrawdownSnapshotLine({ includeHidden = false } = {}) {
     });
 
     const snapshots = [];
-    OrderedKeysLoop: for (const key of orderedKeys) {
+    for (const key of orderedKeys) {
         if (!includeHidden && visibility[key] === false) {
             continue;
         }
@@ -296,7 +406,8 @@ function getDrawdownSnapshotLine({ includeHidden = false } = {}) {
     for (let i = 0; i < snapshots.length; i += 2) {
         lines.push(snapshots.slice(i, i + 2).join('   '));
     }
-    return `${header}\n${lines.join('\n')}`;
+    const hint = "\n(Hint: use 'abs' for absolute values)";
+    return `${header}\n${lines.join('\n')}${hint}`;
 }
 
 function parseDateSafe(value) {
@@ -573,6 +684,9 @@ async function getActiveChartSummaryText() {
     }
     if (activeChart === 'drawdown') {
         return getDrawdownSnapshotLine({ includeHidden: true });
+    }
+    if (activeChart === 'drawdownAbs') {
+        return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true });
     }
     return null;
 }
@@ -1394,7 +1508,7 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot drawdown        - Show underwater drawdown chart\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  drawdown     [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot drawdown                - Show drawdown chart\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
+                        'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot drawdown        - Show underwater drawdown chart (percentage)\n  plot drawdown abs    - Show drawdown chart with absolute values\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  drawdown     [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot drawdown abs            - Show absolute drawdown chart\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
                 } else {
                     // Auto-unzoom if zoomed
                     if (getZoomState()) {
@@ -1614,25 +1728,44 @@ export function initTerminal({
                                 }
                             }
                             break;
-                        case 'drawdown':
-                            dateRange = applyDateArgs(rawArgs);
+                        case 'drawdown': {
+                            // Check for abs argument
+                            const useAbsolute = rawArgs.some(
+                                (arg) =>
+                                    arg.toLowerCase() === 'abs' || arg.toLowerCase() === 'absolute'
+                            );
+                            const filteredArgs = rawArgs.filter(
+                                (arg) =>
+                                    arg.toLowerCase() !== 'abs' && arg.toLowerCase() !== 'absolute'
+                            );
+                            dateRange = applyDateArgs(filteredArgs);
+
                             const drawdownSection = document.getElementById('runningAmountSection');
                             const drawdownTableContainer = document.querySelector(
                                 '.table-responsive-container'
                             );
 
-                            const isDrawdownActive = transactionState.activeChart === 'drawdown';
+                            const targetChart = useAbsolute ? 'drawdownAbs' : 'drawdown';
+                            const isDrawdownActive =
+                                transactionState.activeChart === 'drawdown' ||
+                                transactionState.activeChart === 'drawdownAbs';
                             const isDrawdownVisible =
                                 drawdownSection && !drawdownSection.classList.contains('is-hidden');
 
-                            if (isDrawdownActive && isDrawdownVisible) {
+                            if (
+                                isDrawdownActive &&
+                                isDrawdownVisible &&
+                                !useAbsolute &&
+                                transactionState.activeChart === 'drawdown'
+                            ) {
+                                // Toggle off only if same mode
                                 setActiveChart(null);
                                 if (drawdownSection) {
                                     drawdownSection.classList.add('is-hidden');
                                 }
                                 result = 'Hidden drawdown chart.';
                             } else {
-                                setActiveChart('drawdown');
+                                setActiveChart(targetChart);
                                 if (drawdownSection) {
                                     drawdownSection.classList.remove('is-hidden');
                                     chartManager.update();
@@ -1640,15 +1773,18 @@ export function initTerminal({
                                 if (drawdownTableContainer) {
                                     drawdownTableContainer.classList.add('is-hidden');
                                 }
-                                result = `Showing drawdown chart for ${formatDateRange(dateRange)}.`;
+                                const modeLabel = useAbsolute ? ' (absolute)' : '';
+                                result = `Showing drawdown${modeLabel} chart for ${formatDateRange(dateRange)}.`;
                                 const drawdownSnapshot = getDrawdownSnapshotLine({
                                     includeHidden: true,
+                                    isAbsolute: useAbsolute,
                                 });
                                 if (drawdownSnapshot) {
                                     result += `\n${drawdownSnapshot}`;
                                 }
                             }
                             break;
+                        }
                         default:
                             result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
                             break;
@@ -1658,69 +1794,133 @@ export function initTerminal({
             case 'abs':
             case 'absolute':
             case 'a': {
-                const compSection = document.getElementById('runningAmountSection');
-                const isCompChartVisible =
-                    compSection && !compSection.classList.contains('is-hidden');
+                const chartSection = document.getElementById('runningAmountSection');
+                const isChartVisible =
+                    chartSection && !chartSection.classList.contains('is-hidden');
                 const activeChart = transactionState.activeChart;
-                if (
-                    !isCompChartVisible ||
-                    (activeChart !== 'composition' && activeChart !== 'compositionAbs')
-                ) {
-                    result =
-                        'Composition chart must be active to switch views. Use `plot composition` first.';
-                    break;
-                }
-                if (activeChart === 'compositionAbs') {
-                    result = 'Composition chart is already showing absolute values.';
-                    break;
-                }
-                setActiveChart('compositionAbs');
-                if (chartManager && typeof chartManager.update === 'function') {
-                    chartManager.update();
-                }
-                result = 'Switched composition chart to absolute view.';
-                {
-                    const summary = await getCompositionSnapshotLine({
-                        labelPrefix: 'Composition Abs',
-                    });
-                    if (summary) {
-                        result += `\n${summary}`;
+
+                // Check if it's a composition chart
+                if (activeChart === 'composition' || activeChart === 'compositionAbs') {
+                    if (!isChartVisible) {
+                        result = 'Composition chart must be active. Use `plot composition` first.';
+                        break;
                     }
+                    if (activeChart === 'compositionAbs') {
+                        result = 'Composition chart is already showing absolute values.';
+                        break;
+                    }
+                    setActiveChart('compositionAbs');
+                    if (chartManager && typeof chartManager.update === 'function') {
+                        chartManager.update();
+                    }
+                    result = 'Switched composition chart to absolute view.';
+                    {
+                        const summary = await getCompositionSnapshotLine({
+                            labelPrefix: 'Composition Abs',
+                        });
+                        if (summary) {
+                            result += `\n${summary}`;
+                        }
+                    }
+                    break;
                 }
+
+                // Check if it's a drawdown chart
+                if (activeChart === 'drawdown' || activeChart === 'drawdownAbs') {
+                    if (!isChartVisible) {
+                        result = 'Drawdown chart must be active. Use `plot drawdown` first.';
+                        break;
+                    }
+                    if (activeChart === 'drawdownAbs') {
+                        result = 'Drawdown chart is already showing absolute values.';
+                        break;
+                    }
+                    setActiveChart('drawdownAbs');
+                    if (chartManager && typeof chartManager.update === 'function') {
+                        chartManager.update();
+                    }
+                    result = 'Switched drawdown chart to absolute view.';
+                    {
+                        const summary = getDrawdownSnapshotLine({
+                            includeHidden: true,
+                            isAbsolute: true,
+                        });
+                        if (summary) {
+                            result += `\n${summary}`;
+                        }
+                    }
+                    break;
+                }
+
+                // No matching chart active
+                result =
+                    'Composition or Drawdown chart must be active to switch views. Use `plot composition` or `plot drawdown` first.';
                 break;
             }
             case 'percentage':
             case 'percent':
             case 'per': {
-                const compSection = document.getElementById('runningAmountSection');
-                const isCompChartVisible =
-                    compSection && !compSection.classList.contains('is-hidden');
+                const chartSection = document.getElementById('runningAmountSection');
+                const isChartVisible =
+                    chartSection && !chartSection.classList.contains('is-hidden');
                 const activeChart = transactionState.activeChart;
-                if (
-                    !isCompChartVisible ||
-                    (activeChart !== 'composition' && activeChart !== 'compositionAbs')
-                ) {
-                    result =
-                        'Composition chart must be active to switch views. Use `plot composition` first.';
-                    break;
-                }
-                if (activeChart === 'composition') {
-                    result = 'Composition chart is already showing percentages.';
-                    break;
-                }
-                setActiveChart('composition');
-                if (chartManager && typeof chartManager.update === 'function') {
-                    chartManager.update();
-                }
-                result = 'Switched composition chart to percentage view.';
-                {
-                    const summary = await getCompositionSnapshotLine({
-                        labelPrefix: 'Composition',
-                    });
-                    if (summary) {
-                        result += `\n${summary}`;
+
+                // Check if it's a composition chart
+                if (activeChart === 'composition' || activeChart === 'compositionAbs') {
+                    if (!isChartVisible) {
+                        result = 'Composition chart must be active. Use `plot composition` first.';
+                        break;
                     }
+                    if (activeChart === 'composition') {
+                        result = 'Composition chart is already showing percentages.';
+                        break;
+                    }
+                    setActiveChart('composition');
+                    if (chartManager && typeof chartManager.update === 'function') {
+                        chartManager.update();
+                    }
+                    result = 'Switched composition chart to percentage view.';
+                    {
+                        const summary = await getCompositionSnapshotLine({
+                            labelPrefix: 'Composition',
+                        });
+                        if (summary) {
+                            result += `\n${summary}`;
+                        }
+                    }
+                    break;
                 }
+
+                // Check if it's a drawdown chart
+                if (activeChart === 'drawdown' || activeChart === 'drawdownAbs') {
+                    if (!isChartVisible) {
+                        result = 'Drawdown chart must be active. Use `plot drawdown` first.';
+                        break;
+                    }
+                    if (activeChart === 'drawdown') {
+                        result = 'Drawdown chart is already showing percentages.';
+                        break;
+                    }
+                    setActiveChart('drawdown');
+                    if (chartManager && typeof chartManager.update === 'function') {
+                        chartManager.update();
+                    }
+                    result = 'Switched drawdown chart to percentage view.';
+                    {
+                        const summary = getDrawdownSnapshotLine({
+                            includeHidden: true,
+                            isAbsolute: false,
+                        });
+                        if (summary) {
+                            result += `\n${summary}`;
+                        }
+                    }
+                    break;
+                }
+
+                // No matching chart active
+                result =
+                    'Composition or Drawdown chart must be active to switch views. Use `plot composition` or `plot drawdown` first.';
                 break;
             }
             default: {
@@ -1863,6 +2063,7 @@ export function initTerminal({
                 'compositionAbs',
                 'fx',
                 'drawdown',
+                'drawdownAbs',
             ].includes(activeChart)
         ) {
             return false;
