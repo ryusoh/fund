@@ -363,7 +363,8 @@ function getActiveChartKey() {
         active === 'composition' ||
         active === 'compositionAbs' ||
         active === 'contribution' ||
-        active === 'fx'
+        active === 'fx' ||
+        active === 'drawdown'
     ) {
         return active;
     }
