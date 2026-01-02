@@ -18,6 +18,7 @@ import {
     buildFilteredBalanceSeries,
     buildFxChartSeries,
     PERFORMANCE_SERIES_CURRENCY,
+    buildDrawdownSeries,
 } from './chart.js';
 import { loadCompositionSnapshotData } from './dataLoader.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
@@ -203,6 +204,99 @@ function getFxSnapshotLine() {
         return null;
     }
     return `FX (${baseCurrency} base): ${snapshots.join('   ')}`;
+}
+
+function getDrawdownSnapshotLine({ includeHidden = false } = {}) {
+    if (transactionState.activeChart !== 'drawdown') {
+        return null;
+    }
+    const performanceSeries = transactionState.performanceSeries || {};
+    const seriesKeys = Object.keys(performanceSeries);
+    if (seriesKeys.length === 0) {
+        return null;
+    }
+    const visibility = transactionState.chartVisibility || {};
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const orderedKeys = [...seriesKeys].sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+
+    const snapshots = [];
+    OrderedKeysLoop: for (const key of orderedKeys) {
+        if (!includeHidden && visibility[key] === false) {
+            continue;
+        }
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        if (rawPoints.length === 0) {
+            continue;
+        }
+
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+        const convertedPoints = [];
+        for (const point of rawPoints) {
+            const dateObj = parseDateSafe(point.date);
+            if (!dateObj) {
+                continue;
+            }
+            const convertedValue = convertBetweenCurrencies(
+                point.value,
+                sourceCurrency,
+                point.date,
+                selectedCurrency
+            );
+            if (Number.isFinite(convertedValue)) {
+                convertedPoints.push({ date: dateObj, value: convertedValue });
+            }
+        }
+
+        if (convertedPoints.length === 0) {
+            continue;
+        }
+
+        const drawdownSeries = buildDrawdownSeries(convertedPoints);
+        const relevantPoints = [];
+        for (const p of drawdownSeries) {
+            if ((!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)) {
+                relevantPoints.push(p);
+            }
+        }
+
+        if (relevantPoints.length === 0) {
+            continue;
+        }
+
+        const currentDrawdown = relevantPoints[relevantPoints.length - 1].value;
+        let minDrawdown = 0;
+        for (const p of relevantPoints) {
+            if (p.value < minDrawdown) {
+                minDrawdown = p.value;
+            }
+        }
+
+        const currentFormatted = `${currentDrawdown.toFixed(2)}%`;
+        const maxFormatted = `${minDrawdown.toFixed(2)}%`;
+        snapshots.push(`${key} ${currentFormatted} (Max: ${maxFormatted})`);
+    }
+
+    if (!snapshots.length) {
+        return null;
+    }
+    const header = `Drawdown (base ${selectedCurrency}):`;
+    const lines = [];
+    for (let i = 0; i < snapshots.length; i += 2) {
+        lines.push(snapshots.slice(i, i + 2).join('   '));
+    }
+    return `${header}\n${lines.join('\n')}`;
 }
 
 function parseDateSafe(value) {
@@ -477,6 +571,9 @@ async function getActiveChartSummaryText() {
     if (activeChart === 'contribution') {
         return await getContributionSummaryText(transactionState.chartDateRange);
     }
+    if (activeChart === 'drawdown') {
+        return getDrawdownSnapshotLine({ includeHidden: true });
+    }
     return null;
 }
 
@@ -673,7 +770,14 @@ const STATS_SUBCOMMANDS = [
     'ratio',
 ];
 
-const PLOT_SUBCOMMANDS = ['balance', 'performance', 'composition', 'composition-abs', 'fx'];
+const PLOT_SUBCOMMANDS = [
+    'balance',
+    'performance',
+    'composition',
+    'composition-abs',
+    'fx',
+    'drawdown',
+];
 
 const HELP_SUBCOMMANDS = ['filter'];
 
@@ -1016,8 +1120,8 @@ export function initTerminal({
                         '                       Examples: stats lifespan, s cagr, stats concentration\n' +
                         '  plot (p)           - Chart commands\n' +
                         '                       Use "plot" or "p" for subcommands\n' +
-                        '                       Subcommands: balance, performance, composition, composition-abs, fx\n' +
-                        '                       Examples: plot balance, p performance, plot composition 2023,\n' +
+                        '                       Subcommands: balance, performance, drawdown, composition, composition-abs, fx\n' +
+                        '                       Examples: plot balance, p performance, plot drawdown, plot composition 2023,\n' +
                         '                                 plot composition abs 2023, plot fx\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
@@ -1290,7 +1394,7 @@ export function initTerminal({
                 if (args.length === 0) {
                     // Show plot help
                     result =
-                        'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
+                        'Plot commands:\n  plot balance         - Show contribution/balance chart\n  plot performance     - Show TWRR performance chart\n  plot drawdown        - Show underwater drawdown chart\n  plot composition     - Show portfolio composition chart (percent view)\n  plot composition abs - Show composition chart with absolute values\n  plot fx              - Show FX rate chart for the selected base currency\n\nUsage: plot <subcommand> or p <subcommand>\n  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  drawdown     [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]\n\nExamples:\n       plot balance 2023            - Show data for entire year 2023\n       plot performance q1          - Show performance chart for Q1 of current context\n       plot drawdown                - Show drawdown chart\n       plot composition from 2022q3 - Percent composition from Q3 2022 onward\n       plot composition abs 2023    - Absolute composition for 2023\n       plot fx                      - Show FX chart for current currency toggle';
                 } else {
                     // Auto-unzoom if zoomed
                     if (getZoomState()) {
@@ -1510,6 +1614,41 @@ export function initTerminal({
                                 }
                             }
                             break;
+                        case 'drawdown':
+                            dateRange = applyDateArgs(rawArgs);
+                            const drawdownSection = document.getElementById('runningAmountSection');
+                            const drawdownTableContainer = document.querySelector(
+                                '.table-responsive-container'
+                            );
+
+                            const isDrawdownActive = transactionState.activeChart === 'drawdown';
+                            const isDrawdownVisible =
+                                drawdownSection && !drawdownSection.classList.contains('is-hidden');
+
+                            if (isDrawdownActive && isDrawdownVisible) {
+                                setActiveChart(null);
+                                if (drawdownSection) {
+                                    drawdownSection.classList.add('is-hidden');
+                                }
+                                result = 'Hidden drawdown chart.';
+                            } else {
+                                setActiveChart('drawdown');
+                                if (drawdownSection) {
+                                    drawdownSection.classList.remove('is-hidden');
+                                    chartManager.update();
+                                }
+                                if (drawdownTableContainer) {
+                                    drawdownTableContainer.classList.add('is-hidden');
+                                }
+                                result = `Showing drawdown chart for ${formatDateRange(dateRange)}.`;
+                                const drawdownSnapshot = getDrawdownSnapshotLine({
+                                    includeHidden: true,
+                                });
+                                if (drawdownSnapshot) {
+                                    result += `\n${drawdownSnapshot}`;
+                                }
+                            }
+                            break;
                         default:
                             result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
                             break;
@@ -1717,9 +1856,14 @@ export function initTerminal({
         const activeChart = transactionState.activeChart;
         if (
             !activeChart ||
-            !['contribution', 'performance', 'composition', 'compositionAbs', 'fx'].includes(
-                activeChart
-            )
+            ![
+                'contribution',
+                'performance',
+                'composition',
+                'compositionAbs',
+                'fx',
+                'drawdown',
+            ].includes(activeChart)
         ) {
             return false;
         }

@@ -63,6 +63,7 @@ const chartLayouts = {
     composition: null,
     compositionAbs: null,
     fx: null,
+    drawdown: null,
 };
 
 let compositionDataCache = null;
@@ -1440,7 +1441,55 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
 // --- Helper Functions ---
 
-function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
+// --- Drawdown Calculation Helper ---
+
+export function buildDrawdownSeries(series) {
+    if (!Array.isArray(series) || series.length === 0) {
+        return [];
+    }
+
+    // Sort by date/transactionId to ensure correct order
+    const sortedSeries = [...series].sort((a, b) => {
+        const timeA = new Date(a.date || a.tradeDate).getTime();
+        const timeB = new Date(b.date || b.tradeDate).getTime();
+        if (timeA !== timeB) {
+            return timeA - timeB;
+        }
+        return (a.transactionId ?? 0) - (b.transactionId ?? 0);
+    });
+
+    const drawdownSeries = [];
+    let highWaterMark = -Infinity;
+
+    for (const point of sortedSeries) {
+        const value = Number(point.value ?? point.amount); // Handle both value and amount keys
+        if (!Number.isFinite(value)) {
+            continue;
+        }
+
+        if (value > highWaterMark) {
+            highWaterMark = value;
+        }
+
+        const date = point.date || point.tradeDate;
+        // Avoid division by zero or negative high water marks (logic assumes value >= 0 generally)
+        // If highWaterMark is <= 0 (e.g. only losses or shorts?), logic assumes long-only portfolio for standard HWM.
+        // Standard drawdown formula: (Value - Peak) / Peak
+        const safePeak = highWaterMark > 0 ? highWaterMark : 1;
+        const drawdown = ((value - highWaterMark) / safePeak) * 100;
+
+        drawdownSeries.push({
+            date: new Date(date),
+            value: drawdown,
+            rawValue: value,
+            peak: highWaterMark,
+        });
+    }
+
+    return drawdownSeries;
+}
+
+export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
     if (!Array.isArray(filteredData) || filteredData.length === 0) {
         return filteredData;
     }
@@ -1963,7 +2012,10 @@ function updateLegend(series, chartManager) {
         // Skip click events for composition chart (non-interactive legend)
         if (transactionState.activeChart !== 'composition') {
             item.addEventListener('click', () => {
-                if (transactionState.activeChart === 'performance') {
+                if (
+                    transactionState.activeChart === 'performance' ||
+                    transactionState.activeChart === 'drawdown'
+                ) {
                     // Special handling for performance chart
                     if (s.key === '^LZ') {
                         return; // Portfolio line ('^LZ') is not toggleable
@@ -4382,6 +4434,328 @@ function drawFxChart(ctx, chartManager, timestamp) {
     updateLegend(legendEntries, chartManager);
 }
 
+async function drawDrawdownChart(ctx, chartManager, timestamp) {
+    const performanceSeries =
+        transactionState.performanceSeries && typeof transactionState.performanceSeries === 'object'
+            ? transactionState.performanceSeries
+            : {};
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    stopContributionAnimation();
+    stopFxAnimation();
+
+    // Check if we have any data
+    if (Object.keys(performanceSeries).length === 0) {
+        stopPerformanceAnimation();
+        chartLayouts.drawdown = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const { chartVisibility } = transactionState;
+    // Ensure visibility defaults are set
+    const orderedKeys = Object.keys(performanceSeries).sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+
+    orderedKeys.forEach((key) => {
+        if (transactionState.chartVisibility[key] === undefined) {
+            transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
+        }
+    });
+
+    // Prepare series data (convert currency first, then calc drawdown)
+    const allExpectedSeries = orderedKeys.map((key) => {
+        const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+
+        // Convert to selected currency
+        const convertedPoints = points.map((point) => ({
+            date: point.date,
+            value: convertBetweenCurrencies(
+                Number(point.value),
+                sourceCurrency,
+                point.date,
+                selectedCurrency
+            ),
+        }));
+
+        // Calculate Drawdown
+        const drawdownPoints = buildDrawdownSeries(convertedPoints);
+
+        return {
+            key,
+            name: key,
+            data: drawdownPoints,
+        };
+    });
+
+    const seriesToDraw = allExpectedSeries.filter((s) => chartVisibility[s.key] !== false);
+
+    if (seriesToDraw.length === 0) {
+        stopPerformanceAnimation();
+        chartLayouts.drawdown = null;
+        updateCrosshairUI(null, null);
+        return;
+    }
+
+    const canvas = ctx.canvas;
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile
+        ? { top: 15, right: 20, bottom: 35, left: 50 }
+        : { top: 20, right: 30, bottom: 48, left: 70 };
+    const plotWidth = canvas.offsetWidth - padding.left - padding.right;
+    const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+
+    // Filter by date range
+    const normalizedSeriesToDraw = seriesToDraw
+        .map((series) => {
+            const filteredData = series.data.filter((d) => {
+                const pointDate = d.date;
+                return (
+                    (!filterFrom || pointDate >= filterFrom) && (!filterTo || pointDate <= filterTo)
+                );
+            });
+            return { ...series, data: filteredData };
+        })
+        .filter((s) => s.data.length > 0);
+
+    if (normalizedSeriesToDraw.length === 0) {
+        stopPerformanceAnimation();
+        return; // Or show empty state
+    }
+
+    const allPoints = normalizedSeriesToDraw.flatMap((s) => s.data);
+    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const minTime = Math.min(...allTimes);
+    const maxTime = Math.max(...allTimes);
+    // Drawdown is typically 0 to negative.
+    const allValues = allPoints.map((p) => p.value); // These are already percentages (e.g. 0, -5, -10)
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues); // Should be <= 0 usually
+
+    // Always include 0 in the range for drawdown charts
+    let yMax = Math.max(0, dataMax);
+    let yMin = dataMin;
+
+    // Add some padding
+    const range = yMax - yMin;
+    const paddingVal = Math.max(range * 0.05, 1); // at least 1% padding
+    yMin -= paddingVal;
+    // Don't pad top above 0 if max is 0, just keep 0 at top?
+    // Usually nice to have 0 line distinct.
+    yMax = Math.min(0, yMax) + (yMax === 0 ? 0 : paddingVal);
+    // Actually, usually 0 is the hard ceiling. Let's force yMax to be at least 0.
+    if (yMax < 0) {
+        yMax = 0;
+    }
+
+    const xScale = (t) =>
+        padding.left +
+        (maxTime === minTime ? plotWidth / 2 : ((t - minTime) / (maxTime - minTime)) * plotWidth);
+    const yScale = (v) => padding.top + plotHeight - ((v - yMin) / (yMax - yMin)) * plotHeight;
+
+    drawAxes(
+        ctx,
+        padding,
+        plotWidth,
+        plotHeight,
+        minTime,
+        maxTime,
+        yMin,
+        yMax,
+        xScale,
+        yScale,
+        (v) => `${v.toFixed(0)}%`,
+        true
+    );
+
+    const performanceAnimationEnabled = isAnimationEnabled('performance'); // Reuse performance animation?
+    const animationPhase = advancePerformanceAnimation(timestamp); // Reuse performance animation state
+
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const colors = getChartColors(rootStyles);
+    const colorMap = {
+        '^LZ': BENCHMARK_GRADIENTS['^LZ'][1],
+        '^GSPC': BENCHMARK_GRADIENTS['^GSPC'][1],
+        '^IXIC': BENCHMARK_GRADIENTS['^IXIC'][1],
+        '^DJI': BENCHMARK_GRADIENTS['^DJI'][1],
+        '^SSEC': BENCHMARK_GRADIENTS['^SSEC'][1],
+        '^HSI': BENCHMARK_GRADIENTS['^HSI'][1],
+        '^N225': BENCHMARK_GRADIENTS['^N225'][1],
+    };
+
+    const lineThickness = CHART_LINE_WIDTHS.performance ?? 2;
+    const renderedSeries = [];
+    let glowIndex = 0;
+
+    const chartBounds = {
+        top: padding.top,
+        bottom: padding.top + plotHeight,
+        left: padding.left,
+        right: padding.left + plotWidth,
+    };
+
+    const zeroLineY = yScale(0);
+
+    normalizedSeriesToDraw.forEach((series) => {
+        const resolvedColor = colorMap[series.key] || colors.contribution;
+        const gradientStops = BENCHMARK_GRADIENTS[series.key]; // Reuse benchmark colors
+
+        if (gradientStops) {
+            const gradient = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
+            gradient.addColorStop(0, gradientStops[0]);
+            gradient.addColorStop(1, gradientStops[1]);
+            ctx.strokeStyle = gradient;
+        } else {
+            ctx.strokeStyle = resolvedColor;
+        }
+
+        const coords = series.data.map((point) => {
+            const time = new Date(point.date).getTime();
+            return {
+                x: xScale(time),
+                y: yScale(point.value),
+                time,
+                value: point.value,
+            };
+        });
+
+        // "Underwater" fill: fill area between line and 0 (zeroLineY)
+        if (mountainFill.enabled) {
+            drawMountainFill(ctx, coords, zeroLineY, {
+                color: resolvedColor,
+                colorStops: gradientStops || [resolvedColor, resolvedColor],
+                opacityTop: 0.05, // Lighter near 0
+                opacityBottom: 0.35, // Darker deep down
+                bounds: chartBounds,
+            });
+        }
+
+        ctx.beginPath();
+        coords.forEach((coord, index) => {
+            if (index === 0) {
+                ctx.moveTo(coord.x, coord.y);
+            } else {
+                ctx.lineTo(coord.x, coord.y);
+            }
+        });
+        ctx.lineWidth = lineThickness;
+        ctx.stroke();
+
+        renderedSeries.push({
+            key: series.key,
+            name: series.name,
+            color: resolvedColor,
+            points: coords.map((c) => ({ time: c.time, value: c.value })),
+        });
+
+        if (performanceAnimationEnabled) {
+            glowAnimator.drawSeriesGlow(
+                ctx,
+                { coords, color: resolvedColor, lineWidth: lineThickness },
+                {
+                    basePhase: animationPhase,
+                    seriesIndex: glowIndex,
+                    isMobile,
+                    chartKey: 'performance', // Reuse performance key for animation state
+                }
+            );
+            glowIndex++;
+        }
+    });
+
+    if (renderedSeries.length === 0) {
+        stopPerformanceAnimation();
+        return;
+    }
+
+    if (performanceAnimationEnabled && glowIndex > 0) {
+        schedulePerformanceAnimation(chartManager);
+    } else if (!performanceAnimationEnabled) {
+        stopPerformanceAnimation();
+    }
+
+    const showChartLabels = getShowChartLabels();
+    if (showChartLabels) {
+        normalizedSeriesToDraw.forEach((series) => {
+            const lastData = series.data[series.data.length - 1];
+            if (!lastData) {
+                return;
+            }
+            const x = xScale(new Date(lastData.date).getTime());
+            const y = yScale(lastData.value);
+            const resolvedColor = colorMap[series.key] || colors.contribution;
+
+            drawEndValue(
+                ctx,
+                x,
+                y,
+                lastData.value,
+                resolvedColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                (v) => `${v.toFixed(2)}%`,
+                true
+            );
+        });
+    }
+
+    chartLayouts.drawdown = {
+        key: 'drawdown',
+        minTime,
+        maxTime,
+        valueType: 'percent',
+        padding,
+        chartBounds,
+        xScale,
+        yScale,
+        invertX: (pixelX) => {
+            if (!Number.isFinite(pixelX)) {
+                return minTime;
+            }
+            const clampedX = Math.max(padding.left, Math.min(padding.left + plotWidth, pixelX));
+            if (plotWidth <= 0 || maxTime === minTime) {
+                return minTime;
+            }
+            const ratio = (clampedX - padding.left) / plotWidth;
+            return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
+        },
+        series: renderedSeries.map((s) => ({
+            key: s.key,
+            label: s.name,
+            color: s.color,
+            getValueAtTime: createTimeInterpolator(s.points || []),
+            formatValue: (value) => `${value.toFixed(2)}%`,
+            formatDelta: (delta) => `${delta > 0 ? '+' : ''}${delta.toFixed(2)}%`,
+        })),
+    };
+
+    drawCrosshairOverlay(ctx, chartLayouts.drawdown);
+
+    if (performanceLegendDirty) {
+        const legendSeries = orderedKeys.map((key) => ({
+            key,
+            name: key, // Or mapped name
+            color: colorMap[key] || colors.contribution,
+        }));
+        updateLegend(legendSeries, chartManager);
+        performanceLegendDirty = false;
+    }
+}
+
 function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
         return null;
@@ -4930,6 +5304,8 @@ export function createChartManager(options = {}) {
 
         if (transactionState.activeChart === 'performance') {
             await drawPerformanceChart(ctx, chartManager, timestamp);
+        } else if (transactionState.activeChart === 'drawdown') {
+            await drawDrawdownChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'composition') {
             drawCompositionChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'compositionAbs') {
@@ -4965,4 +5341,5 @@ export const __chartTestables = {
     generateConcreteTicks,
     computePercentTickInfo,
     buildFilteredBalanceSeries,
+    buildDrawdownSeries,
 };
