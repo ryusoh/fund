@@ -868,6 +868,7 @@ const COMMAND_ALIASES = [
     'to', // For simplified commands
     'zoom',
     'z',
+    'summary',
 ];
 
 const STATS_SUBCOMMANDS = [
@@ -1239,6 +1240,7 @@ export function initTerminal({
                         '                                 plot composition abs 2023, plot fx\n' +
                         '  transaction (t)    - Toggle the transaction table visibility\n' +
                         '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
+                        '  summary            - Show summary of the currently active chart\n' +
                         '  all                - Show all data (remove filters and date ranges)\n' +
                         '  reset              - Restore full transaction list and show table/chart\n' +
                         '  clear              - Clear the terminal screen\n' +
@@ -1923,6 +1925,16 @@ export function initTerminal({
                     'Composition or Drawdown chart must be active to switch views. Use `plot composition` or `plot drawdown` first.';
                 break;
             }
+            case 'summary':
+                {
+                    const summaryText = await getActiveChartSummaryText();
+                    if (summaryText) {
+                        result = summaryText;
+                    } else {
+                        result = 'No active chart or summary available.';
+                    }
+                }
+                break;
             default: {
                 const simplifiedDateRange = parseSimplifiedDateRange(command);
                 if (simplifiedDateRange.from || simplifiedDateRange.to) {
