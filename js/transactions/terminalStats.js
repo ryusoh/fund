@@ -127,7 +127,7 @@ export async function getDynamicStatsText(currency = 'USD') {
 
     const table = renderAsciiTable({
         title: 'FILTERED STATS',
-        headers: ['Metric', 'Value'],
+        headers: [],
         rows,
         alignments: ['left', 'right'],
     });
@@ -741,7 +741,7 @@ export async function getDurationStatsText() {
 
     const summaryTable = renderAsciiTable({
         title: 'HOLDING DURATION',
-        headers: ['Metric', 'Value'],
+        headers: [],
         rows: summaryRows,
         alignments: ['left', 'right'],
     });
@@ -930,7 +930,7 @@ export async function getLifespanStatsText() {
 
     const summaryTable = renderAsciiTable({
         title: 'HOLDING LIFESPAN',
-        headers: ['Metric', 'Value'],
+        headers: [],
         rows: summaryRows,
         alignments: ['left', 'right'],
     });
@@ -1005,7 +1005,7 @@ export async function getConcentrationText() {
 
     const summaryTable = renderAsciiTable({
         title: 'PORTFOLIO CONCENTRATION',
-        headers: ['Metric', 'Value'],
+        headers: [],
         rows: summaryRows,
         alignments: ['left', 'right'],
     });
