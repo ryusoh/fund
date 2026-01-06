@@ -12,13 +12,14 @@ jest.mock('@js/transactions/terminalStats.js', () => {
     return {
         ...original,
         getStatsText: jest.fn(),
+        getDynamicStatsText: jest.fn(),
     };
 });
 
 import { initTerminal } from '@js/transactions/terminal.js';
 import { transactionState } from '@js/transactions/state.js';
 import { toggleZoom, getZoomState } from '@js/transactions/zoom.js';
-import { getStatsText } from '@js/transactions/terminalStats.js';
+import { getDynamicStatsText } from '@js/transactions/terminalStats.js';
 
 function resetTransactionState() {
     transactionState.commandHistory = [];
@@ -394,8 +395,8 @@ describe('terminal plot command integration', () => {
     });
 
     test('transaction command shows stats summary', async () => {
-        // Mock getStatsText response
-        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 123)');
+        // Mock getDynamicStatsText response
+        getDynamicStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 123)');
 
         // Re-initialize terminal to use the mocked fetch
         initTerminal({
@@ -423,8 +424,8 @@ describe('terminal plot command integration', () => {
     });
 
     test('summary command shows transaction stats when table is visible', async () => {
-        // Mock getStatsText
-        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 999)');
+        // Mock getDynamicStatsText
+        getDynamicStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 999)');
 
         initTerminal({
             filterAndSort: jest.fn(),
@@ -456,8 +457,8 @@ describe('terminal plot command integration', () => {
     });
 
     test('filter command (e.g., "all") shows transaction stats when table is visible', async () => {
-        // Mock getStatsText
-        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 50)');
+        // Mock getDynamicStatsText
+        getDynamicStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 50)');
 
         initTerminal({
             filterAndSort: jest.fn(),

@@ -90,6 +90,51 @@ export function renderAsciiTable({ title = null, headers = [], rows = [], alignm
     return lines.join('\n');
 }
 
+export async function getDynamicStatsText(currency = 'USD') {
+    const transactions = transactionState.filteredTransactions || [];
+    if (transactions.length === 0) {
+        return '';
+    }
+
+    const normalizedCurrency =
+        typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
+
+    let totalBuy = 0;
+    let totalSell = 0;
+    let count = 0;
+
+    for (const t of transactions) {
+        count++;
+        // Use netAmount if available (parsed from CSV)
+        const rawAmt = parseFloat(t.netAmount);
+        if (Number.isFinite(rawAmt)) {
+            if (t.orderType && t.orderType.toLowerCase() === 'sell') {
+                totalSell += Math.abs(rawAmt);
+            } else {
+                totalBuy += Math.abs(rawAmt);
+            }
+        }
+    }
+
+    const netInvested = totalBuy - totalSell; // Cost - Proceeds. Positive = Net Invested (Cash Out). Negative = Net Divested (Cash In).
+
+    const rows = [
+        ['Transactions', count.toLocaleString()],
+        ['Total Buy', formatCurrency(totalBuy, { currency: normalizedCurrency })],
+        ['Total Sell', formatCurrency(totalSell, { currency: normalizedCurrency })],
+        ['Net Invested', formatCurrency(netInvested, { currency: normalizedCurrency })],
+    ];
+
+    const table = renderAsciiTable({
+        title: 'FILTERED STATS',
+        headers: ['Metric', 'Value'],
+        rows,
+        alignments: ['left', 'right'],
+    });
+
+    return `\n${table}\n`;
+}
+
 export async function getStatsText(currency = 'USD') {
     const normalizedCurrency =
         typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';

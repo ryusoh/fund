@@ -24,6 +24,7 @@ import { loadCompositionSnapshotData } from './dataLoader.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
     getStatsText,
+    getDynamicStatsText,
     getHoldingsText,
     getHoldingsDebugText,
     getCagrText,
@@ -1281,7 +1282,7 @@ export function initTerminal({
                 result = 'Showing all data (filters and date ranges cleared).';
 
                 if (isTransactionTableVisible()) {
-                    const statsText = await getStatsText(
+                    const statsText = await getDynamicStatsText(
                         transactionState.selectedCurrency || 'USD'
                     );
                     if (statsText) {
@@ -1313,7 +1314,7 @@ export function initTerminal({
                 result = 'Cleared chart date filters.';
 
                 if (isTransactionTableVisible()) {
-                    const statsText = await getStatsText(
+                    const statsText = await getDynamicStatsText(
                         transactionState.selectedCurrency || 'USD'
                     );
                     if (statsText) {
@@ -1364,7 +1365,7 @@ export function initTerminal({
                 result = 'Cleared composition ticker filters.';
 
                 if (isTransactionTableVisible()) {
-                    const statsText = await getStatsText(
+                    const statsText = await getDynamicStatsText(
                         transactionState.selectedCurrency || 'USD'
                     );
                     if (statsText) {
@@ -1533,7 +1534,7 @@ export function initTerminal({
                 }
 
                 if (isTransactionTableVisible() && result) {
-                    const statsText = await getStatsText(
+                    const statsText = await getDynamicStatsText(
                         transactionState.selectedCurrency || 'USD'
                     );
                     if (statsText) {
@@ -1967,7 +1968,7 @@ export function initTerminal({
                     let resultText = '';
 
                     if (isTransactionTableVisible()) {
-                        const statsText = await getStatsText(
+                        const statsText = await getDynamicStatsText(
                             transactionState.selectedCurrency || 'USD'
                         );
                         if (statsText) {
@@ -1993,12 +1994,26 @@ export function initTerminal({
                     const dateMessage = await applyDateFilterRange(simplifiedDateRange);
                     if (dateMessage) {
                         result = dateMessage;
+                        if (isTransactionTableVisible()) {
+                            const statsText = await getDynamicStatsText(
+                                transactionState.selectedCurrency || 'USD'
+                            );
+                            if (statsText) {
+                                result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
+                            }
+                        } else {
+                            // If table not visible, show chart summary (fallback)
+                            const summaryText = await getActiveChartSummaryText();
+                            if (summaryText) {
+                                result += `\n${summaryText}`;
+                            }
+                        }
                         break;
                     }
                 }
                 filterAndSort(command);
                 if (isTransactionTableVisible()) {
-                    const statsText = await getStatsText(
+                    const statsText = await getDynamicStatsText(
                         transactionState.selectedCurrency || 'USD'
                     );
                     if (statsText) {
