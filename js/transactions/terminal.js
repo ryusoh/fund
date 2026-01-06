@@ -1279,12 +1279,21 @@ export function initTerminal({
                 }
 
                 result = 'Showing all data (filters and date ranges cleared).';
-                {
+
+                if (isTransactionTableVisible()) {
+                    const statsText = await getStatsText(
+                        transactionState.selectedCurrency || 'USD'
+                    );
+                    if (statsText) {
+                        result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
+                    }
+                } else {
                     const summaryText = await getActiveChartSummaryText();
                     if (summaryText) {
                         result += `\n${summaryText}`;
                     }
                 }
+
                 const fxSnapshot = getFxSnapshotLine();
                 if (fxSnapshot) {
                     result += `\n${fxSnapshot}`;
@@ -1302,7 +1311,15 @@ export function initTerminal({
                     chartManager.update();
                 }
                 result = 'Cleared chart date filters.';
-                {
+
+                if (isTransactionTableVisible()) {
+                    const statsText = await getStatsText(
+                        transactionState.selectedCurrency || 'USD'
+                    );
+                    if (statsText) {
+                        result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
+                    }
+                } else {
                     const summaryText = await getActiveChartSummaryText();
                     if (summaryText) {
                         result += `\n${summaryText}`;
@@ -1345,9 +1362,19 @@ export function initTerminal({
                     chartManager.update();
                 }
                 result = 'Cleared composition ticker filters.';
-                const summary = await getActiveChartSummaryText();
-                if (summary) {
-                    result += `\n${summary}`;
+
+                if (isTransactionTableVisible()) {
+                    const statsText = await getStatsText(
+                        transactionState.selectedCurrency || 'USD'
+                    );
+                    if (statsText) {
+                        result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
+                    }
+                } else {
+                    const summary = await getActiveChartSummaryText();
+                    if (summary) {
+                        result += `\n${summary}`;
+                    }
                 }
                 break;
             }
@@ -1502,6 +1529,16 @@ export function initTerminal({
                         }
                     } else {
                         result = 'Showing transaction table.';
+                    }
+                }
+
+                if (isTransactionTableVisible() && result) {
+                    const statsText = await getStatsText(
+                        transactionState.selectedCurrency || 'USD'
+                    );
+                    if (statsText) {
+                        // Ensure readable separation
+                        result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
                     }
                 }
                 break;
@@ -1927,9 +1964,24 @@ export function initTerminal({
             }
             case 'summary':
                 {
-                    const summaryText = await getActiveChartSummaryText();
-                    if (summaryText) {
-                        result = summaryText;
+                    let resultText = '';
+
+                    if (isTransactionTableVisible()) {
+                        const statsText = await getStatsText(
+                            transactionState.selectedCurrency || 'USD'
+                        );
+                        if (statsText) {
+                            resultText = statsText;
+                        }
+                    } else {
+                        const chartSummary = await getActiveChartSummaryText();
+                        if (chartSummary) {
+                            resultText = chartSummary;
+                        }
+                    }
+
+                    if (resultText) {
+                        result = resultText;
                     } else {
                         result = 'No active chart or summary available.';
                     }
@@ -1945,10 +1997,18 @@ export function initTerminal({
                     }
                 }
                 filterAndSort(command);
-                const summaryText = await getActiveChartSummaryText();
-                result = `Filtering transactions by: "${command}"...`;
-                if (summaryText) {
-                    result += `\n${summaryText}`;
+                if (isTransactionTableVisible()) {
+                    const statsText = await getStatsText(
+                        transactionState.selectedCurrency || 'USD'
+                    );
+                    if (statsText) {
+                        result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
+                    }
+                } else {
+                    const summaryText = await getActiveChartSummaryText();
+                    if (summaryText) {
+                        result += `\n${summaryText}`;
+                    }
                 }
                 break;
             }

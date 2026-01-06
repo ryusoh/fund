@@ -7,9 +7,18 @@ jest.mock('@js/transactions/zoom.js', () => ({
     getZoomState: jest.fn(),
 }));
 
+jest.mock('@js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('@js/transactions/terminalStats.js');
+    return {
+        ...original,
+        getStatsText: jest.fn(),
+    };
+});
+
 import { initTerminal } from '@js/transactions/terminal.js';
 import { transactionState } from '@js/transactions/state.js';
 import { toggleZoom, getZoomState } from '@js/transactions/zoom.js';
+import { getStatsText } from '@js/transactions/terminalStats.js';
 
 function resetTransactionState() {
     transactionState.commandHistory = [];
@@ -382,5 +391,101 @@ describe('terminal plot command integration', () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(toggleZoom).toHaveBeenCalled();
+    });
+
+    test('transaction command shows stats summary', async () => {
+        // Mock getStatsText response
+        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 123)');
+
+        // Re-initialize terminal to use the mocked fetch
+        initTerminal({
+            filterAndSort: jest.fn(),
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: { update: jest.fn() },
+            onCommandExecuted: jest.fn(),
+        });
+
+        const terminalInput = document.getElementById('terminalInput');
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        terminalInput.value = 'transaction';
+        terminalInput.dispatchEvent(enterEvent);
+
+        // Wait for async command processing
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        const output = getLastTerminalMessage();
+        // Checks that we get some table visibility message and the stats
+        expect(output).toMatch(/(Showing|Toggled) transaction table/);
+        expect(output).toContain('TRANSACTION STATS');
+        expect(output).toContain('(Mocked: 123)');
+    });
+
+    test('summary command shows transaction stats when table is visible', async () => {
+        // Mock getStatsText
+        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 999)');
+
+        initTerminal({
+            filterAndSort: jest.fn(),
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: {
+                update: jest.fn(),
+                getSummary: jest.fn().mockReturnValue('Unwanted Chart Summary'),
+            },
+            onCommandExecuted: jest.fn(),
+        });
+
+        // Show the table first
+        const terminalInput = document.getElementById('terminalInput');
+        terminalInput.value = 'transaction';
+        terminalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // Now run summary
+        terminalInput.value = 'summary';
+        terminalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        const output = getLastTerminalMessage();
+        expect(output).toContain('TRANSACTION STATS');
+        expect(output).toContain('(Mocked: 999)');
+        expect(output).not.toContain('Unwanted Chart Summary');
+    });
+
+    test('filter command (e.g., "all") shows transaction stats when table is visible', async () => {
+        // Mock getStatsText
+        getStatsText.mockResolvedValue('\nTRANSACTION STATS\n(Mocked: 50)');
+
+        initTerminal({
+            filterAndSort: jest.fn(),
+            toggleTable: jest.fn(),
+            closeAllFilterDropdowns: jest.fn(),
+            resetSortState: jest.fn(),
+            chartManager: {
+                update: jest.fn(),
+                getSummary: jest.fn().mockReturnValue('Unwanted Chart Summary'),
+            },
+            onCommandExecuted: jest.fn(),
+        });
+
+        // Ensure table is visible first
+        const terminalInput = document.getElementById('terminalInput');
+        terminalInput.value = 'transaction';
+        terminalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // Submit filter command "all"
+        terminalInput.value = 'all';
+        terminalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        const output = getLastTerminalMessage();
+        expect(output).toContain('Showing all data');
+        expect(output).toContain('TRANSACTION STATS');
+        expect(output).toContain('(Mocked: 50)');
+        expect(output).not.toContain('Unwanted Chart Summary');
     });
 });
