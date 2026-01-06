@@ -317,5 +317,55 @@ describe('dataLoader real-time integration', () => {
             // Verify no separate entry for BRK-B
             expect(result.composition['BRK-B']).toBeUndefined();
         });
+
+        it('should update existing composition point if real-time date matches last historical date', async () => {
+            // Use NY date to match what realtimeData.js likely returns (bypassing potentially failing mock)
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        dates: ['2024-12-03', todayStr],
+                        composition: {
+                            VT: [80, 80], // Stale data for today
+                            GOOG: [20, 20], // Stale data for today
+                        },
+                        total_values: [10000, 10000],
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        VT: { shares: '100', average_price: '120' }, // Price increased
+                        GOOG: { shares: '10', average_price: '150' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        VT: 120, // 100 * 120 = 12000
+                        GOOG: 100, // 10 * 100 = 1000
+                    })
+                    // Total = 13000. VT% = 12/13 ~ 92.3%. GOOG% = 1/13 ~ 7.7%
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        rates: { USD: 1.0 },
+                    })
+                );
+
+            await loadModule();
+            const result = await loadCompositionSnapshotData();
+
+            // Should NOT append a new date, but keep length at 2
+            expect(result.dates).toHaveLength(2);
+            expect(result.dates[1]).toBe(todayStr);
+
+            // Verify total value updated
+            expect(result.total_values[1]).toBe(13000);
+
+            // Verify composition percentages updated
+            expect(result.composition.VT[1]).toBeCloseTo(92.3, 1);
+            expect(result.composition.GOOG[1]).toBeCloseTo(7.7, 1);
+        });
     });
 });
