@@ -307,18 +307,28 @@ export async function loadCompositionSnapshotData() {
             // Append date
             if (data.dates) {
                 const lastDate = data.dates[data.dates.length - 1];
-                if (lastDate !== realtime.date) {
-                    data.dates.push(realtime.date);
+                // Update if dates match (intraday) or append if new date
+                if (lastDate === realtime.date || lastDate < realtime.date) {
+                    // If dates match, remove the stale point first so we can append the fresh one
+                    // OR overwrite. Appending logic is simpler if we just pop the key arrays.
+                    // But data.composition is object of arrays.
+                    // Let's use an overwrite index strategy.
+                    let targetIndex = data.dates.length;
+                    if (lastDate === realtime.date) {
+                        targetIndex = data.dates.length - 1;
+                    } else {
+                        data.dates.push(realtime.date);
+                    }
 
-                    // Append total balance for real-time date
+                    // Update/Append total balance
                     if (Array.isArray(data.total_values) && Number.isFinite(realtime.balance)) {
-                        data.total_values.push(realtime.balance);
+                        data.total_values[targetIndex] = realtime.balance;
                     }
 
                     // Merge composition values
                     const composition = data.composition || data.series; // Support flexibility
                     if (composition) {
-                        // For each ticker in historical composition, create a new point
+                        // For each ticker in historical composition, update/add point
                         Object.keys(composition).forEach((ticker) => {
                             if (!Array.isArray(composition[ticker])) {
                                 return;
@@ -328,7 +338,7 @@ export async function loadCompositionSnapshotData() {
                                 (i) => normalizeTicker(i.ticker) === ticker
                             );
                             const rtPercent = rtItem ? rtItem.percent : 0;
-                            composition[ticker].push(rtPercent);
+                            composition[ticker][targetIndex] = rtPercent;
                         });
 
                         // Add new tickers found in real-time but not history
@@ -337,11 +347,17 @@ export async function loadCompositionSnapshotData() {
                             if (Math.abs(rtItem.percent) > 0.001) {
                                 // Only if significant
                                 if (!composition[normalizedTicker]) {
-                                    // Backfill with 0s
-                                    composition[normalizedTicker] = new Array(
-                                        data.dates.length - 1
-                                    ).fill(0);
-                                    composition[normalizedTicker].push(rtItem.percent);
+                                    // Backfill with 0s up to targetIndex
+                                    composition[normalizedTicker] = new Array(targetIndex).fill(0);
+                                    composition[normalizedTicker][targetIndex] = rtItem.percent;
+                                } else {
+                                    // Ensure it has value at targetIndex (handled in loop above if key existed)
+                                    // If key didn't exist in composition before loop, it enters this block.
+                                    // If it partially existed but loop missed it? No, Object.keys covers existing.
+                                    // So this block is strictly for NEW keys.
+                                    // Wait, if I added it in the loop above? No, I iterate Object.keys(composition).
+                                    // So new keys are not in the loop.
+                                    composition[normalizedTicker][targetIndex] = rtItem.percent;
                                 }
                             }
                         });

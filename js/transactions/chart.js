@@ -46,6 +46,7 @@ import {
 } from './utils.js';
 import { smoothFinancialData } from '../utils/smoothing.js';
 import { createGlowTrailAnimator } from '../plugins/glowTrailAnimator.js';
+import { loadCompositionSnapshotData } from './dataLoader.js';
 import {
     ANIMATED_LINE_SETTINGS,
     CHART_SMOOTHING,
@@ -5366,9 +5367,12 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
     }
 
     compositionDataLoading = true;
-    fetch('../data/output/figures/composition.json')
-        .then((response) => response.json())
+    compositionDataLoading = true;
+    loadCompositionSnapshotData()
         .then((data) => {
+            if (!data) {
+                throw new Error('Failed to load composition data');
+            }
             compositionDataCache = data;
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
