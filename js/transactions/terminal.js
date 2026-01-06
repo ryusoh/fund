@@ -19,6 +19,7 @@ import {
     buildFxChartSeries,
     PERFORMANCE_SERIES_CURRENCY,
     buildDrawdownSeries,
+    getContributionSeriesForTransactions,
 } from './chart.js';
 import { loadCompositionSnapshotData } from './dataLoader.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
@@ -227,6 +228,31 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
 
         // --- DYNAMIC DRAWDOWN CALCULATION ---
 
+        // Helper to consolidate data to end-of-day values and sort
+        const consolidateAndSort = (data, dateKey, valueKey) => {
+            const sorted = [...data].sort((a, b) => {
+                const da = new Date(a[dateKey] || a.date);
+                const db = new Date(b[dateKey] || b.date);
+                return da - db;
+            });
+
+            // Consolidate by day (keep last value)
+            const dailyMap = new Map();
+            sorted.forEach((item) => {
+                const d = new Date(item[dateKey] || item.date);
+                if (Number.isNaN(d.getTime())) {
+                    return;
+                }
+                const dayStr = d.toISOString().split('T')[0];
+                dailyMap.set(dayStr, item);
+            });
+
+            return Array.from(dailyMap.values()).map((item) => ({
+                date: new Date(item[dateKey] || item.date),
+                value: Number(item[valueKey] || item.value),
+            }));
+        };
+
         // 1. Balance (Portfolio Series)
         // Use USD series if available to ensure we calculate drawdown on base currency
         const portfolioSeriesUSD =
@@ -238,14 +264,17 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
             return null;
         }
 
+        // Ensure balance data is sorted and strictly daily (taking last value of day)
+        const consolidatedBalance = consolidateAndSort(portfolioSeriesUSD, 'date', 'value');
+
         let runningPeak = -Infinity;
         // Calculate drawdown in base currency (USD) first
-        const balanceDrawdownDataUSD = portfolioSeriesUSD.map((p) => {
+        const balanceDrawdownDataUSD = consolidatedBalance.map((p) => {
             const val = p.value;
             if (val > runningPeak) {
                 runningPeak = val;
             }
-            return { date: new Date(p.date), value: val - runningPeak };
+            return { date: p.date, value: val - runningPeak };
         });
 
         const balanceDrawdownData = balanceDrawdownDataUSD.map((p) => ({
@@ -254,27 +283,43 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
         }));
 
         // 2. Contribution (Running Amount Series)
-        // Use USD series if available
-        const runningAmountSeriesUSD =
-            transactionState.runningAmountSeriesByCurrency?.['USD'] ||
-            transactionState.runningAmountSeries ||
-            [];
+        // Re-calculate using the chart's logic to ensure consistency and proper daily consolidation
+        const filtersActive =
+            hasActiveTransactionFilters() &&
+            transactionState.activeFilterTerm &&
+            transactionState.activeFilterTerm.trim().length > 0;
+        const contributionTransactions = filtersActive
+            ? transactionState.filteredTransactions
+            : transactionState.allTransactions;
+
+        // Use the chart's generator which handles daily consolidation and currency conversion (if needed)
+        // We request 'USD' to calculate drawdown in base currency
+        const calculatedContributionSeries = getContributionSeriesForTransactions(
+            contributionTransactions,
+            {
+                includeSyntheticStart: true,
+                padToDate: Date.now(), // Pad to now for consistent end
+                currency: 'USD',
+            }
+        );
+
+        // The series returned by chart.js is already daily consolidated.
+        // We just need to ensure it's sorted by date for the drawdown calc.
+        const consolidatedContribution = consolidateAndSort(
+            calculatedContributionSeries,
+            'tradeDate', // buildContributionSeriesFromTransactions returns 'tradeDate' property
+            'amount' // and 'amount' property
+        );
 
         let contribPeak = -Infinity;
         // Calculate drawdown in base currency (USD) first
-        const contributionDrawdownDataUSD = runningAmountSeriesUSD
-            .map((p) => ({
-                date: new Date(p.tradeDate || p.date),
-                amount: Number(p.amount),
-            }))
-            .sort((a, b) => a.date - b.date)
-            .map((p) => {
-                const val = p.amount;
-                if (val > contribPeak) {
-                    contribPeak = val;
-                }
-                return { date: p.date, value: val - contribPeak };
-            });
+        const contributionDrawdownDataUSD = consolidatedContribution.map((p) => {
+            const val = p.value; // value is amount from consolidateAndSort
+            if (val > contribPeak) {
+                contribPeak = val;
+            }
+            return { date: p.date, value: val - contribPeak };
+        });
 
         const contributionDrawdownData = contributionDrawdownDataUSD.map((p) => ({
             date: p.date,

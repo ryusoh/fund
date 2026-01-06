@@ -1097,7 +1097,7 @@ export function hasActiveTransactionFilters() {
     );
 }
 
-function getContributionSeriesForTransactions(
+export function getContributionSeriesForTransactions(
     transactions,
     { includeSyntheticStart = false, padToDate = null, currency = null } = {}
 ) {
