@@ -2001,13 +2001,8 @@ export function initTerminal({
                             if (statsText) {
                                 result += statsText.startsWith('\n') ? statsText : `\n${statsText}`;
                             }
-                        } else {
-                            // If table not visible, show chart summary (fallback)
-                            const summaryText = await getActiveChartSummaryText();
-                            if (summaryText) {
-                                result += `\n${summaryText}`;
-                            }
                         }
+                        // applyDateFilterRange already appends chart summary if chart is visible, so we don't need to do it here.
                         break;
                     }
                 }

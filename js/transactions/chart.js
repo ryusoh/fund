@@ -1145,37 +1145,85 @@ export function buildContributionSeriesFromTransactions(
             (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
 
+    // Consolidate transactions by date
+    const dailyMap = new Map();
+    sortedTransactions.forEach((t) => {
+        const dateStr = t.tradeDate;
+        if (!dailyMap.has(dateStr)) {
+            dailyMap.set(dateStr, {
+                netAmount: 0,
+                orderTypes: new Set(),
+                buyVolume: 0,
+                sellVolume: 0,
+            });
+        }
+        const entry = dailyMap.get(dateStr);
+        const amount = Number.parseFloat(t.netAmount) || 0;
+        entry.netAmount += amount;
+        entry.orderTypes.add(t.orderType);
+
+        const type = String(t.orderType).toLowerCase();
+        if (type === 'buy') {
+            entry.buyVolume += Math.abs(amount);
+        } else if (type === 'sell') {
+            entry.sellVolume += Math.abs(amount);
+        }
+    });
+
+    const uniqueDates = Array.from(dailyMap.keys()).sort((a, b) => new Date(a) - new Date(b));
     const series = [];
     let cumulativeAmount = 0;
 
-    sortedTransactions.forEach((t, index) => {
-        const netDelta = Number.parseFloat(t.netAmount) || 0;
+    uniqueDates.forEach((dateStr, index) => {
+        const entry = dailyMap.get(dateStr);
+        const netDelta = entry.netAmount;
 
         if (index > 0) {
-            const prevTransaction = sortedTransactions[index - 1];
-            const prevDate = new Date(prevTransaction.tradeDate);
-            const currentDate = new Date(t.tradeDate);
+            const prevDateStr = uniqueDates[index - 1];
+            const prevDate = new Date(prevDateStr);
+            const currentDate = new Date(dateStr);
 
             if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
                 const intermediateDate = new Date(currentDate);
                 intermediateDate.setDate(intermediateDate.getDate() - 1);
 
-                series.push({
-                    tradeDate: intermediateDate.toISOString().split('T')[0],
-                    amount: cumulativeAmount,
-                    orderType: 'padding',
-                    netAmount: 0,
-                });
+                // Only add padding if there is actually a gap > 1 day
+                const prevPlusOne = new Date(prevDate);
+                prevPlusOne.setDate(prevPlusOne.getDate() + 1);
+
+                if (intermediateDate > prevDate) {
+                    series.push({
+                        tradeDate: intermediateDate.toISOString().split('T')[0],
+                        amount: cumulativeAmount,
+                        orderType: 'padding',
+                        netAmount: 0,
+                    });
+                }
             }
         }
 
         cumulativeAmount += netDelta;
 
+        // Determine a representative order type for the consolidated point
+        let orderType = 'mixed';
+        if (entry.orderTypes.size === 1) {
+            orderType = entry.orderTypes.values().next().value;
+        } else if (entry.orderTypes.size > 0) {
+            const types = Array.from(entry.orderTypes).map((t) => String(t).toLowerCase());
+            if (types.every((t) => t === 'buy')) {
+                orderType = 'buy';
+            } else if (types.every((t) => t === 'sell')) {
+                orderType = 'sell';
+            }
+        }
+
         series.push({
-            tradeDate: t.tradeDate,
+            tradeDate: dateStr,
             amount: cumulativeAmount,
-            orderType: t.orderType,
+            orderType: orderType,
             netAmount: netDelta,
+            buyVolume: entry.buyVolume,
+            sellVolume: entry.sellVolume,
         });
     });
 
@@ -3243,7 +3291,11 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
             return;
         }
         const type = item.orderType.toLowerCase();
-        if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
+
+        // If we have explicit volume data, we can process even if type is 'mixed'
+        const hasExplicitVolume = Number(item.buyVolume) > 0 || Number(item.sellVolume) > 0;
+
+        if (!hasExplicitVolume && !((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
             return;
         }
         const normalizedDate = new Date(item.date.getTime());
@@ -3257,7 +3309,7 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
             return;
         }
         const netAmount = Math.abs(Number(item.netAmount) || 0);
-        if (netAmount <= 0) {
+        if (!hasExplicitVolume && netAmount <= 0) {
             return;
         }
 
@@ -3265,7 +3317,17 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
             volumeGroups.set(timestamp, { totalBuy: 0, totalSell: 0 });
         }
         const totals = volumeGroups.get(timestamp);
-        if (type === 'buy') {
+
+        // Use pre-consolidated volumes if available
+        if (Number.isFinite(item.buyVolume) || Number.isFinite(item.sellVolume)) {
+            if (showBuy) {
+                totals.totalBuy += Number(item.buyVolume) || 0;
+            }
+            if (showSell) {
+                totals.totalSell += Number(item.sellVolume) || 0;
+            }
+        } else if (type === 'buy') {
+            // Fallback for non-consolidated items
             totals.totalBuy += netAmount;
         } else {
             totals.totalSell += netAmount;
