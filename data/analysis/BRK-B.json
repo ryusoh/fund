@@ -3,7 +3,7 @@
     "name": "Berkshire Hathaway",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-01-06T07:51:01.453342+00:00",
+        "asOf": "2026-01-07T07:51:36.557560+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,23 +29,23 @@
     },
     "market": {
         "forwardEps": 24.1908,
-        "pe": 15.9475,
-        "forwardPe": 20.6078,
+        "pe": 15.9492,
+        "forwardPe": 20.6297,
         "beta": 0.71,
-        "marketCap": 1075474530304.0,
-        "enterpriseValue": -251427012608.0,
+        "marketCap": 1076617871360.0,
+        "enterpriseValue": -251426258944.0,
         "ebitda": 103864000512,
         "currency": "USD",
         "fiftyTwoWeekHigh": 542.07,
         "fiftyTwoWeekLow": 440.1,
-        "marketDataUpdatedAt": "2026-01-06T07:51:01.365964+00:00",
+        "marketDataUpdatedAt": "2026-01-07T07:51:36.465619+00:00",
         "evToEbitda": -2.4207,
-        "eps": 31.26,
-        "price": 498.52,
-        "fiftyDayAverage": 498.1458,
-        "twoHundredDayAverage": 497.9146,
-        "averageVolume": 4731760.0,
-        "averageDailyVolume10Day": 4523010.0
+        "eps": 31.29,
+        "price": 499.05,
+        "fiftyDayAverage": 498.28,
+        "twoHundredDayAverage": 497.7808,
+        "averageVolume": 4766039.0,
+        "averageDailyVolume10Day": 4673180.0
     },
     "risk": {
         "volatility": 0.1877,
