@@ -3,7 +3,7 @@
     "name": "The GEO Group",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-01-07T07:51:36.814533+00:00",
+        "asOf": "2026-01-08T07:50:42.765836+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,26 +29,26 @@
     },
     "market": {
         "forwardEps": 1.3275,
-        "pe": 9.5385,
-        "forwardPe": 12.1431,
+        "pe": 9.5799,
+        "forwardPe": 12.1959,
         "beta": 0.727,
-        "marketCap": 2281538304.0,
-        "enterpriseValue": 3648775680.0,
+        "marketCap": 2291445760.0,
+        "enterpriseValue": 3658346496.0,
         "ebitda": 410907008.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 36.46,
         "fiftyTwoWeekLow": 14.27,
-        "marketDataUpdatedAt": "2026-01-07T07:51:36.686729+00:00",
-        "evToEbitda": 8.8798,
+        "marketDataUpdatedAt": "2026-01-08T07:50:42.593212+00:00",
+        "evToEbitda": 8.9031,
         "eps": 1.69,
-        "price": 16.12,
-        "fiftyDayAverage": 16.1504,
-        "twoHundredDayAverage": 22.4461,
-        "averageVolume": 1930204.0,
-        "averageDailyVolume10Day": 1675900.0
+        "price": 16.19,
+        "fiftyDayAverage": 16.126,
+        "twoHundredDayAverage": 22.3814,
+        "averageVolume": 1924716.0,
+        "averageDailyVolume10Day": 1391220.0
     },
     "risk": {
-        "volatility": 0.4826,
+        "volatility": 0.475,
         "estimateSource": "historical",
         "correlations": null
     },
