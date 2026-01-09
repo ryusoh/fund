@@ -3,7 +3,7 @@
     "name": "Occidental Petroleum",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-01-08T07:50:43.582958+00:00",
+        "asOf": "2026-01-09T07:51:11.977632+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,28 +28,28 @@
         }
     },
     "market": {
-        "forwardEps": 1.533,
-        "pe": 30.1397,
-        "forwardPe": 26.7393,
+        "forwardEps": 1.513,
+        "pe": 31.7868,
+        "forwardPe": 28.5733,
         "beta": 0.38,
-        "marketCap": 40383778816.0,
-        "enterpriseValue": 69892775936.0,
+        "marketCap": 42590646272.0,
+        "enterpriseValue": 72099643392.0,
         "ebitda": 12693000192,
-        "dividendYield": 2.34,
+        "dividendYield": 2.22,
         "currency": "USD",
         "fiftyTwoWeekHigh": 53.2,
         "fiftyTwoWeekLow": 34.78,
-        "marketDataUpdatedAt": "2026-01-08T07:50:43.314272+00:00",
-        "evToEbitda": 5.5064,
+        "marketDataUpdatedAt": "2026-01-09T07:51:11.644080+00:00",
+        "evToEbitda": 5.6803,
         "eps": 1.36,
-        "price": 40.99,
-        "fiftyDayAverage": 41.2384,
-        "twoHundredDayAverage": 43.1086,
-        "averageVolume": 9686537.0,
-        "averageDailyVolume10Day": 10190690.0
+        "price": 43.23,
+        "fiftyDayAverage": 41.2068,
+        "twoHundredDayAverage": 43.0739,
+        "averageVolume": 9660916.0,
+        "averageDailyVolume10Day": 10243570.0
     },
     "risk": {
-        "volatility": 0.3674,
+        "volatility": 0.3716,
         "estimateSource": "historical",
         "correlations": null
     },
