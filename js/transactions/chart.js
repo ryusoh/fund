@@ -2463,11 +2463,12 @@ function generateYearBasedTicks(minTime, maxTime) {
             year = startDate.getFullYear();
         }
         const formattedYear = formatYear(year);
+        // User request: Jan -> Year, Others -> Month only
         const quarters = [
-            { month: 0, label: `Jan ${formattedYear}`, isYearStart: true },
-            { month: 3, label: `Apr ${formattedYear}`, isYearStart: false },
-            { month: 6, label: `Jul ${formattedYear}`, isYearStart: false },
-            { month: 9, label: `Oct ${formattedYear}`, isYearStart: false },
+            { month: 0, label: `${formattedYear}`, isYearStart: true },
+            { month: 3, label: 'Apr', isYearStart: false },
+            { month: 6, label: 'Jul', isYearStart: false },
+            { month: 9, label: 'Oct', isYearStart: false },
         ];
 
         quarters.forEach((q) => {
@@ -2491,7 +2492,7 @@ function generateYearBasedTicks(minTime, maxTime) {
             if (jan1 >= minTime && jan1 <= maxTime) {
                 ticks.push({
                     time: jan1,
-                    label: `Jan ${formatYear(year)}`,
+                    label: `${formatYear(year)}`,
                     isYearStart: true,
                 });
             }
@@ -2501,17 +2502,18 @@ function generateYearBasedTicks(minTime, maxTime) {
     // Add end date
     const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
     const endYear = endDate.getFullYear();
+    const endLabel = endMonth === 'Jan' ? `${formatYear(endYear)}` : endMonth;
     ticks.push({
         time: maxTime,
-        label: `${endMonth} ${formatYear(endYear)}`,
-        isYearStart: false,
+        label: endLabel,
+        isYearStart: endMonth === 'Jan',
     });
 
     // Add beginning month tick for desktop only
     if (!isMobile) {
         const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
         const startYear = startDate.getFullYear();
-        const startLabel = `${startMonth} ${formatYear(startYear)}`;
+        const startLabel = startMonth === 'Jan' ? `${formatYear(startYear)}` : startMonth;
 
         // Check if we already have a tick for the start date
         const hasStartTick = ticks.some((tick) => tick.time === minTime);
@@ -2519,7 +2521,7 @@ function generateYearBasedTicks(minTime, maxTime) {
             ticks.push({
                 time: minTime,
                 label: startLabel,
-                isYearStart: false,
+                isYearStart: startMonth === 'Jan',
             });
         }
     }
