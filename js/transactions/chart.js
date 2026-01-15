@@ -2502,11 +2502,25 @@ function generateYearBasedTicks(minTime, maxTime) {
     // Add end date
     const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
     const endYear = endDate.getFullYear();
-    const endLabel = endMonth === 'Jan' ? `${formatYear(endYear)}` : endMonth;
+
+    // Check if we already have a start-of-year tick for this year
+    // This helps us decide if we should label the end tick as "Jan" (if we already have "2026")
+    // or "2026" (if this is the only tick for the year)
+    const hasYearTick = ticks.some(
+        (t) => t.isYearStart && new Date(t.time).getFullYear() === endYear
+    );
+
+    let endLabel;
+    if (endMonth === 'Jan' && hasYearTick) {
+        endLabel = 'Jan';
+    } else {
+        endLabel = endMonth === 'Jan' ? `${formatYear(endYear)}` : endMonth;
+    }
+
     ticks.push({
         time: maxTime,
         label: endLabel,
-        isYearStart: endMonth === 'Jan',
+        isYearStart: endMonth === 'Jan' && !hasYearTick, // Only treat as year start if it's the primary label for the year
     });
 
     // Add beginning month tick for desktop only
@@ -2529,6 +2543,18 @@ function generateYearBasedTicks(minTime, maxTime) {
     // Sort ticks by time
     ticks.sort((a, b) => a.time - b.time);
 
+    // Calculate dynamic proximity threshold
+    // For very short ranges (e.g. 1 month), 10 days is too aggressive.
+    // We scale it: Max of (Range / 20) or (1 day), capped at 10 days.
+    const rangeDuration = maxTime - minTime;
+    const minConflictTime = Math.max(
+        24 * 60 * 60 * 1000, // Min 1 day
+        Math.min(
+            10 * 24 * 60 * 60 * 1000, // Max 10 days
+            rangeDuration / 15 // ~1/15th of the chart width
+        )
+    );
+
     // Deduplicate ticks by label + Remove duplicate ticks that are too close together
     const filteredTicks = [];
     const seenLabels = new Set();
@@ -2547,8 +2573,7 @@ function generateYearBasedTicks(minTime, maxTime) {
         }
 
         const isTooClose = filteredTicks.some(
-            (existingTick) =>
-                Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000 // 10 days in milliseconds
+            (existingTick) => Math.abs(currentTick.time - existingTick.time) < minConflictTime
         );
 
         if (!isTooClose) {
@@ -2557,8 +2582,7 @@ function generateYearBasedTicks(minTime, maxTime) {
         } else {
             // If too close, prefer year boundaries (isYearStart: true) over start/end dates
             const existingIndex = filteredTicks.findIndex(
-                (existingTick) =>
-                    Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000
+                (existingTick) => Math.abs(currentTick.time - existingTick.time) < minConflictTime
             );
 
             if (existingIndex !== -1) {
