@@ -1,6 +1,7 @@
 ---
-render_with_liquid: false
 ---
+
+{% raw %}
 
 # {{TICKER}} – Investment Thesis (Fermat–Pascal + Kelly System)
 
@@ -365,3 +366,5 @@ Detailed notes can live in separate files under `docs/thesis/{{TICKER}}/`.
 
 - Planned research:
     - {{Filings to read, calls to listen to, external reports, academic papers, people to talk to, experiments to run}}
+
+{% endraw %}

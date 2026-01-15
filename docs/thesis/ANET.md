@@ -1,6 +1,7 @@
 ---
-render_with_liquid: false
 ---
+
+{% raw %}
 
 # ANET – Investment Thesis
 
@@ -529,3 +530,5 @@ Detailed notes live under `docs/thesis/ANET/`.
     - Dell’Oro / IDC on DC/AI Ethernet and NVDA/ODM share.
     - Hyperscaler earnings calls on networking choices.
     - Technical deep-dive on NVDA Spectrum-X and alternative fabrics.
+
+{% endraw %}

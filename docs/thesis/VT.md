@@ -1,6 +1,7 @@
 ---
-render_with_liquid: false
 ---
+
+{% raw %}
 
 # VT – Investment Thesis
 
@@ -411,3 +412,5 @@ render_with_liquid: false
     - Study historical U.S. vs ex-U.S. relative return cycles and valuation gaps.
     - Follow EM reform trajectories (India, Indonesia, Brazil, etc.).
     - Read deeper work on global diversification vs home bias over multi-decade horizons.
+
+{% endraw %}

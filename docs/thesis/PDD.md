@@ -1,6 +1,7 @@
 ---
-render_with_liquid: false
 ---
+
+{% raw %}
 
 # PDD – Investment Thesis
 
@@ -466,3 +467,5 @@ Detailed notes can live in separate files under `docs/thesis/PDD/`.
     - Track third-party Temu metrics (downloads, engagement, shipping times) by region.
     - Follow trade policy news related to de minimis, tariffs, and Chinese apps in the US/EU.
     - Periodically re-run the three-state model with updated inputs and adjust probabilities based on new evidence.
+
+{% endraw %}

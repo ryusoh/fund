@@ -1,6 +1,7 @@
 ---
-render_with_liquid: false
 ---
+
+{% raw %}
 
 # GOOG – Investment Thesis
 
@@ -516,3 +517,5 @@ Detailed notes can live in separate files under `docs/thesis/GOOG/`.
     - Track ad and cloud market reports from independent sources.
     - Follow technical analysis of AI model progress vs. peers.
     - Re-run the 10-year DCF + three-state model annually with updated inputs and probabilities.
+
+{% endraw %}
