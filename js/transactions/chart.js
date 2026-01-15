@@ -2529,10 +2529,23 @@ function generateYearBasedTicks(minTime, maxTime) {
     // Sort ticks by time
     ticks.sort((a, b) => a.time - b.time);
 
-    // Remove duplicate ticks that are too close together (within 10 days)
+    // Deduplicate ticks by label + Remove duplicate ticks that are too close together
     const filteredTicks = [];
+    const seenLabels = new Set();
+
     for (let i = 0; i < ticks.length; i++) {
         const currentTick = ticks[i];
+
+        // 1. Deduplicate by label (keep the version that is a year start if available, or just the first one)
+        // If we have "2026" already, we usually want to keep the "Jan 1" version (which is year start)
+        // rather than a later date labeled "2026".
+        if (seenLabels.has(currentTick.label)) {
+            // Check if we should replace the existing one?
+            // Usually the first one is sorted by time, so it's the earlier date.
+            // For "2026" (Jan 1) vs "2026" (Jan 15), we want Jan 1. So skipping duplicates is correct.
+            continue;
+        }
+
         const isTooClose = filteredTicks.some(
             (existingTick) =>
                 Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000 // 10 days in milliseconds
@@ -2540,23 +2553,24 @@ function generateYearBasedTicks(minTime, maxTime) {
 
         if (!isTooClose) {
             filteredTicks.push(currentTick);
+            seenLabels.add(currentTick.label);
         } else {
             // If too close, prefer year boundaries (isYearStart: true) over start/end dates
-            const isYearBoundary = currentTick.isYearStart;
-            const existingIsYearBoundary = filteredTicks.some(
+            const existingIndex = filteredTicks.findIndex(
                 (existingTick) =>
-                    Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000 &&
-                    existingTick.isYearStart
+                    Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000
             );
 
-            if (isYearBoundary && !existingIsYearBoundary) {
-                // Replace the existing tick with the year boundary
-                const index = filteredTicks.findIndex(
-                    (existingTick) =>
-                        Math.abs(currentTick.time - existingTick.time) < 10 * 24 * 60 * 60 * 1000
-                );
-                if (index !== -1) {
-                    filteredTicks[index] = currentTick;
+            if (existingIndex !== -1) {
+                const existingTick = filteredTicks[existingIndex];
+                if (currentTick.isYearStart && !existingTick.isYearStart) {
+                    // Replace existing with current because current is a year boundary
+                    // But wait, existing label might be different?
+                    // If labels are different but times are close, we still might want to replace.
+                    // E.g. Dec 31 "Dec" vs Jan 1 "2026". We prefer "2026".
+                    seenLabels.delete(existingTick.label);
+                    filteredTicks[existingIndex] = currentTick;
+                    seenLabels.add(currentTick.label);
                 }
             }
         }
@@ -2629,11 +2643,18 @@ function drawAxes(
         const x = xScale(tick.time);
 
         if (drawXAxis) {
-            // Prevent label collision on mobile by hiding the last tick if it's too close to the previous one
-            if (isMobile && index === yearTicks.length - 1 && index > 0) {
+            // Prevent label collision (Desktop & Mobile)
+            if (index > 0) {
                 const prevTickX = xScale(yearTicks[index - 1].time);
-                if (x - prevTickX < 40) {
-                    return; // Skip the last tick
+                // Minimum spacing threshold (pixels)
+                const minSpacing = isMobile ? 30 : 40;
+
+                if (x - prevTickX < minSpacing) {
+                    // If specifically the last tick (end date) is colliding, we might want to keep it and hide the previous one?
+                    // But usually hiding the current one is safer/easier.
+                    // For the "Feb overlaps 2026" case: 2026 is at index i-1, Feb is at i.
+                    // 2026 is year start (important). Feb is month. We skip Feb. Correct.
+                    return;
                 }
             }
 
