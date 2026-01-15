@@ -254,33 +254,27 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
         };
 
         // 1. Balance (Portfolio Series)
-        // Use USD series if available to ensure we calculate drawdown on base currency
-        const portfolioSeriesUSD =
-            transactionState.portfolioSeriesByCurrency?.['USD'] ||
+        // Use portfolio series in selected currency directly
+        const portfolioSeries =
+            transactionState.portfolioSeriesByCurrency?.[selectedCurrency] ||
             transactionState.portfolioSeries ||
             [];
 
-        if (portfolioSeriesUSD.length === 0) {
+        if (portfolioSeries.length === 0) {
             return null;
         }
 
         // Ensure balance data is sorted and strictly daily (taking last value of day)
-        const consolidatedBalance = consolidateAndSort(portfolioSeriesUSD, 'date', 'value');
+        const consolidatedBalance = consolidateAndSort(portfolioSeries, 'date', 'value');
 
         let runningPeak = -Infinity;
-        // Calculate drawdown in base currency (USD) first
-        const balanceDrawdownDataUSD = consolidatedBalance.map((p) => {
+        const balanceDrawdownData = consolidatedBalance.map((p) => {
             const val = p.value;
             if (val > runningPeak) {
                 runningPeak = val;
             }
             return { date: p.date, value: val - runningPeak };
         });
-
-        const balanceDrawdownData = balanceDrawdownDataUSD.map((p) => ({
-            date: p.date,
-            value: convertValueToCurrency(p.value, p.date, selectedCurrency),
-        }));
 
         // 2. Contribution (Running Amount Series)
         // Re-calculate using the chart's logic to ensure consistency and proper daily consolidation
@@ -292,14 +286,14 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
             ? transactionState.filteredTransactions
             : transactionState.allTransactions;
 
-        // Use the chart's generator which handles daily consolidation and currency conversion (if needed)
-        // We request 'USD' to calculate drawdown in base currency
+        // Use the chart's generator which handles daily consolidation and currency conversion
+        // We request the selected currency to ensure we calculate based on real value in that currency
         const calculatedContributionSeries = getContributionSeriesForTransactions(
             contributionTransactions,
             {
                 includeSyntheticStart: true,
                 padToDate: Date.now(), // Pad to now for consistent end
-                currency: 'USD',
+                currency: selectedCurrency,
             }
         );
 
@@ -312,19 +306,13 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
         );
 
         let contribPeak = -Infinity;
-        // Calculate drawdown in base currency (USD) first
-        const contributionDrawdownDataUSD = consolidatedContribution.map((p) => {
+        const contributionDrawdownData = consolidatedContribution.map((p) => {
             const val = p.value; // value is amount from consolidateAndSort
             if (val > contribPeak) {
                 contribPeak = val;
             }
             return { date: p.date, value: val - contribPeak };
         });
-
-        const contributionDrawdownData = contributionDrawdownDataUSD.map((p) => ({
-            date: p.date,
-            value: convertValueToCurrency(p.value, p.date, selectedCurrency),
-        }));
 
         // Filter by date range
         const relevantBalance = balanceDrawdownData.filter(

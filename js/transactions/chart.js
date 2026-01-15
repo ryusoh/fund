@@ -2736,7 +2736,7 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
         contributionSource = getContributionSeriesForTransactions(contributionTransactions, {
             includeSyntheticStart: true,
             padToDate,
-            currency: drawdownMode ? 'USD' : null,
+            currency: null,
         });
         contributionFromTransactions =
             filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
@@ -2746,18 +2746,14 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
     } else {
         const mappedSeries =
             transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
-        const usdSeries = transactionState.runningAmountSeriesByCurrency?.['USD'] || null;
 
-        if (drawdownMode && usdSeries) {
-            contributionSource = usdSeries;
-        } else if (!drawdownMode && mappedSeries && mappedSeries === runningAmountSeries) {
+        if (mappedSeries && mappedSeries === runningAmountSeries) {
             contributionSource = runningAmountSeries;
         } else {
             contributionSource = runningAmountSeries.map((entry) => {
                 const tradeDate = entry.tradeDate || entry.date;
-                if (drawdownMode) {
-                    return { ...entry };
-                }
+                // Removed drawdownMode check to allow currency conversion
+
                 return {
                     ...entry,
                     amount: convertValueToCurrency(entry.amount, tradeDate, selectedCurrency),
@@ -2773,9 +2769,8 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
     ) {
         // Force dynamic conversion to ensure accuracy and avoid stale cache
         contributionSource = runningAmountSeries.map((item) => {
-            if (drawdownMode) {
-                return { ...item };
-            }
+            // Removed drawdownMode check to allow currency conversion
+
             return {
                 ...item,
                 amount: convertValueToCurrency(
@@ -2810,9 +2805,7 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
               historicalPrices,
               transactionState.splitHistory
           )
-        : drawdownMode && transactionState.portfolioSeriesByCurrency?.['USD']
-          ? transactionState.portfolioSeriesByCurrency['USD']
-          : portfolioSeries;
+        : portfolioSeries;
 
     if (
         !drawdownMode &&
@@ -2959,23 +2952,8 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
             });
         };
 
-        // If we are in drawdown mode, we calculated drawdown in USD (if balanceSource was USD).
-        // Now convert the drawdown values to the selected currency.
-        const convertDrawdown = (data, valueKey) => {
-            if (selectedCurrency === 'USD') {
-                return data;
-            }
-            return data.map((p) => ({
-                ...p,
-                [valueKey]: convertValueToCurrency(p[valueKey], p.date, selectedCurrency),
-            }));
-        };
-
-        finalContributionData = convertDrawdown(
-            applyDrawdown(contributionData, 'amount'),
-            'amount'
-        );
-        finalBalanceData = convertDrawdown(applyDrawdown(balanceData, 'value'), 'value');
+        finalContributionData = applyDrawdown(contributionData, 'amount');
+        finalBalanceData = applyDrawdown(balanceData, 'value');
     }
 
     if (emptyState) {
