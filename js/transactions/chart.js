@@ -5517,4 +5517,5 @@ export const __chartTestables = {
     computePercentTickInfo,
     buildFilteredBalanceSeries,
     buildDrawdownSeries,
+    generateYearBasedTicks,
 };
