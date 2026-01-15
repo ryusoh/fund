@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # GOOG Inbox
 
 - _Use for rough clippings, quotes, and raw links before they are vetted._

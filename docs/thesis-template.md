@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # {{TICKER}} – Investment Thesis (Fermat–Pascal + Kelly System)
 
 - **Ticker / Name**: {{TICKER}} – {{COMPANY_NAME}}

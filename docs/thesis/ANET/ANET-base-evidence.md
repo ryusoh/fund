@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # ANET Base Evidence Log
 
 - _Collect balanced, consensus-supporting datapoints here._

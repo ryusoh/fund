@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # PDD – Investment Thesis
 
 - **Ticker / Name**: PDD – PDD Holdings Inc.

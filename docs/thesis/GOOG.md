@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # GOOG – Investment Thesis
 
 - **Ticker / Name**: GOOG – Alphabet Inc.

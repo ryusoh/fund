@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # VT – Investment Thesis
 
 - **Ticker / Name**: VT – Vanguard Total World Stock ETF

@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # ANET Bear Evidence Log
 
 - _Store red-team findings, variant risks, and disconfirming evidence here._

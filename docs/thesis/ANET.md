@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # ANET – Investment Thesis
 
 - **Ticker / Name**: ANET – Arista Networks

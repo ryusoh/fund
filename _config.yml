@@ -1,9 +1,0 @@
-defaults:
-    - scope:
-          path: 'docs/thesis-template.md'
-      values:
-          render_with_liquid: false
-    - scope:
-          path: 'docs/thesis'
-      values:
-          render_with_liquid: false
