@@ -372,3 +372,135 @@ export function getSmoothingConfig(chartType) {
     }
     return methodConfig;
 }
+
+export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
+    if (!Array.isArray(filteredData) || filteredData.length === 0) {
+        return filteredData;
+    }
+    if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
+        return filteredData;
+    }
+
+    const firstFiltered = filteredData[0];
+    const firstTime =
+        firstFiltered && firstFiltered.date instanceof Date
+            ? firstFiltered.date.getTime()
+            : new Date(firstFiltered.date).getTime();
+    if (!Number.isFinite(firstTime)) {
+        return filteredData;
+    }
+
+    const matchingIndex = fullSeries.findIndex((item) => {
+        if (!item) {
+            return false;
+        }
+        const itemDate = new Date(item.date);
+        if (Number.isNaN(itemDate.getTime())) {
+            return false;
+        }
+        return itemDate.getTime() === firstTime;
+    });
+
+    if (matchingIndex <= 0) {
+        return filteredData;
+    }
+
+    const previousPoint = fullSeries[matchingIndex - 1];
+    if (!previousPoint || !previousPoint.synthetic) {
+        return filteredData;
+    }
+
+    const prevDate = new Date(previousPoint.date);
+    if (Number.isNaN(prevDate.getTime())) {
+        return filteredData;
+    }
+
+    // If we have a filterFrom date and the synthetic point is before it, clamp it to filterFrom
+    // This fixes the "left-edge overhang" where the line starts to the left of the Y-axis
+    if (filterFrom && prevDate < filterFrom) {
+        // Check if we already have a point at filterFrom to avoid duplicates
+        const firstFiltered = filteredData[0];
+        const firstTime =
+            firstFiltered && firstFiltered.date instanceof Date
+                ? firstFiltered.date.getTime()
+                : new Date(firstFiltered.date).getTime();
+
+        if (Math.abs(firstTime - filterFrom.getTime()) < 1000) {
+            return filteredData;
+        }
+
+        return [
+            {
+                ...previousPoint,
+                date: new Date(filterFrom),
+                synthetic: true,
+            },
+            ...filteredData,
+        ];
+    }
+
+    const prevValue = Number(previousPoint.value);
+    const epsilon = 1e-6;
+    if (!Number.isFinite(prevValue) || Math.abs(prevValue) > epsilon) {
+        return filteredData;
+    }
+
+    // Don't add the synthetic point if it would be at the same position as the first filtered point
+    if (
+        filteredData[0].date instanceof Date &&
+        filteredData[0].date.getTime() === prevDate.getTime()
+    ) {
+        return filteredData;
+    }
+
+    // Only add synthetic point if it's within the filter range
+    // Note: The clamping logic above handles the case where prevDate < filterFrom
+    if (filterFrom && prevDate < filterFrom) {
+        // This block is now redundant due to the clamping above, but keeping for safety
+        // in case the logic flow changes.
+        return filteredData;
+    }
+
+    const syntheticPoint = {
+        date: prevDate,
+        value: Number.isFinite(prevValue) ? prevValue : 0,
+        synthetic: true,
+    };
+
+    return [syntheticPoint, ...filteredData];
+}
+
+export function constrainSeriesToRange(series, rangeStart, rangeEnd) {
+    if (!Array.isArray(series) || (!rangeStart && !rangeEnd)) {
+        return series;
+    }
+
+    const startTime =
+        rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
+            ? rangeStart.getTime()
+            : null;
+    const endTime =
+        rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime()) ? rangeEnd.getTime() : null;
+
+    if (!Number.isFinite(startTime) && !Number.isFinite(endTime)) {
+        return series;
+    }
+
+    return series.filter((point) => {
+        if (!point) {
+            return false;
+        }
+        const pointDate = point.date instanceof Date ? point.date : new Date(point.date);
+        const time = pointDate.getTime();
+        if (Number.isNaN(time)) {
+            return false;
+        }
+        if (Number.isFinite(startTime) && time < startTime) {
+            return false;
+        }
+        if (Number.isFinite(endTime) && time > endTime) {
+            return false;
+        }
+        return true;
+    });
+}

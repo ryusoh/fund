@@ -188,3 +188,14 @@ export function setZoomed(value) {
 export function isZoomed() {
     return transactionState.isZoomed === true;
 }
+
+export function hasActiveTransactionFilters() {
+    const allTransactions = transactionState.allTransactions || [];
+    const filteredTransactions = transactionState.filteredTransactions || [];
+    if (!allTransactions.length) {
+        return false;
+    }
+    return (
+        filteredTransactions.length > 0 && filteredTransactions.length !== allTransactions.length
+    );
+}
