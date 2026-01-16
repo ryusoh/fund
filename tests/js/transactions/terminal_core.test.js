@@ -255,3 +255,77 @@ describe('allstock command clears ticker filters', () => {
         expect(transactionState.compositionAssetClassFilter).toBeNull();
     });
 });
+
+describe('Regression: DrawdownAbs Filter Commands', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        jest.resetModules();
+    });
+
+    test('filter command in drawdownAbs mode should process and clear input', async () => {
+        // This test verifies that commands are processed correctly in drawdownAbs mode
+        // Previously, a require() error would cause commands to stick in the input
+        const chartManagerMock = { update: jest.fn(), redraw: jest.fn() };
+
+        initTerminalSession({
+            tableVisible: true,
+            chartManager: chartManagerMock,
+            setupState: (state) => {
+                state.activeChart = 'drawdownAbs';
+                state.selectedCurrency = 'CNY'; // Non-USD to trigger the fixed code path
+                state.portfolioSeriesByCurrency = {
+                    CNY: [
+                        { date: '2024-01-01', value: 7000 },
+                        { date: '2024-02-01', value: 7700 },
+                    ],
+                };
+            },
+        });
+
+        document.getElementById('runningAmountSection').classList.remove('is-hidden');
+
+        // Submit a filter command - should process without error
+        const input = document.getElementById('terminalInput');
+        input.value = 'AAA';
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // Key assertion: input should be cleared if command processed successfully
+        // If require() error occurred, input would still contain 'AAA'
+        expect(input.value).toBe('');
+    });
+
+    test('sequential filter commands should all process in drawdownAbs mode', async () => {
+        const chartManagerMock = { update: jest.fn(), redraw: jest.fn() };
+
+        initTerminalSession({
+            tableVisible: true,
+            chartManager: chartManagerMock,
+            setupState: (state) => {
+                state.activeChart = 'drawdownAbs';
+                state.selectedCurrency = 'CNY';
+                state.portfolioSeriesByCurrency = {
+                    CNY: [
+                        { date: '2024-01-01', value: 7000 },
+                        { date: '2024-02-01', value: 7700 },
+                    ],
+                };
+            },
+        });
+
+        document.getElementById('runningAmountSection').classList.remove('is-hidden');
+        const input = document.getElementById('terminalInput');
+
+        // First command
+        input.value = 'AAA';
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(input.value).toBe('');
+
+        // Second command (this was failing before the fix)
+        input.value = '2025';
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(input.value).toBe('');
+    });
+});

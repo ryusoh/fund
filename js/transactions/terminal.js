@@ -253,12 +253,39 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
             }));
         };
 
+        // Check if filters are active
+        const filtersActive =
+            hasActiveTransactionFilters() &&
+            transactionState.activeFilterTerm &&
+            transactionState.activeFilterTerm.trim().length > 0;
+
         // 1. Balance (Portfolio Series)
-        // Use portfolio series in selected currency directly
-        const portfolioSeries =
-            transactionState.portfolioSeriesByCurrency?.[selectedCurrency] ||
-            transactionState.portfolioSeries ||
-            [];
+        // Use filtered balance when filters active, otherwise use currency-specific portfolio series
+        let portfolioSeries;
+        if (filtersActive) {
+            // Build filtered balance series from filtered transactions
+            const historicalPrices = transactionState.historicalPrices || {};
+            const rawBalanceSeries = buildFilteredBalanceSeries(
+                transactionState.filteredTransactions || [],
+                historicalPrices,
+                transactionState.splitHistory
+            );
+            // Convert to selected currency if needed
+            if (selectedCurrency !== 'USD' && rawBalanceSeries.length > 0) {
+                // convertValueToCurrency is already imported at top of file
+                portfolioSeries = rawBalanceSeries.map((entry) => ({
+                    ...entry,
+                    value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+                }));
+            } else {
+                portfolioSeries = rawBalanceSeries;
+            }
+        } else {
+            portfolioSeries =
+                transactionState.portfolioSeriesByCurrency?.[selectedCurrency] ||
+                transactionState.portfolioSeries ||
+                [];
+        }
 
         if (portfolioSeries.length === 0) {
             return null;
@@ -278,10 +305,7 @@ function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } =
 
         // 2. Contribution (Running Amount Series)
         // Re-calculate using the chart's logic to ensure consistency and proper daily consolidation
-        const filtersActive =
-            hasActiveTransactionFilters() &&
-            transactionState.activeFilterTerm &&
-            transactionState.activeFilterTerm.trim().length > 0;
+        // (filtersActive was already defined above for balance series calculation)
         const contributionTransactions = filtersActive
             ? transactionState.filteredTransactions
             : transactionState.allTransactions;
