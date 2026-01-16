@@ -2643,3 +2643,5 @@ Trade Date,Order Type,Security,Quantity,Executed Price
 01/14/2026,Sell,GEO,71,17.07
 01/14/2026,Buy,PDD,67,108.25
 01/15/2026,Buy,PDD,1,107.695
+01/16/2026,Buy,PDD,2,108.29
+01/16/2026,Buy,PDD,0.745,106.839
