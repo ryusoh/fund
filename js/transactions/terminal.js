@@ -17,10 +17,10 @@ import {
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
     buildFxChartSeries,
-    PERFORMANCE_SERIES_CURRENCY,
     buildDrawdownSeries,
     getContributionSeriesForTransactions,
 } from './chart.js';
+import { PERFORMANCE_SERIES_CURRENCY } from './chart/config.js';
 import { loadCompositionSnapshotData } from './dataLoader.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 import {
