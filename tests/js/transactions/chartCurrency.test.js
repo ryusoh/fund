@@ -119,6 +119,8 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
                     restore: jest.fn(),
                     measureText: jest.fn(() => ({ width: 10 })),
                     fillText: jest.fn(),
+                    fillRect: jest.fn(),
+                    strokeRect: jest.fn(),
                     createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
                     canvas: { offsetWidth: 100, offsetHeight: 100 },
                 };
@@ -237,5 +239,94 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         const conversionCalls = calls.filter((call) => call[0] === 150 && call[2] === 'CNY');
 
         expect(conversionCalls.length).toBeGreaterThan(0);
+    });
+
+    test('should convert buyVolume and sellVolume when currency is not USD', async () => {
+        // Setup state:
+        transactionState.activeFilterTerm = '';
+        transactionState.selectedCurrency = 'CNY';
+
+        // Mock data with explicit volume
+        const volumeData = [
+            {
+                tradeDate: '2024-01-01',
+                amount: 1000,
+                netAmount: 1000,
+                buyVolume: 500, // Should be converted to 3500 (500 * 7)
+                sellVolume: 200, // Should be converted to 1400 (200 * 7)
+            },
+        ];
+
+        transactionState.runningAmountSeries = volumeData;
+
+        // Ensure runningAmountSeriesByCurrency is empty to force re-evaluation/mapping
+        transactionState.runningAmountSeriesByCurrency = {};
+
+        // Clear transactions to prevent chart from regenerating data from transactions
+        // and force it to use our injected runningAmountSeries
+        transactionState.allTransactions = [];
+        transactionState.filteredTransactions = [];
+
+        const chartManager = createChartManager();
+        await chartManager.update();
+
+        // access the converted data from the last call to mocked drawContributionChart (if it was mocked)
+        // Since we can't easily inspect internal variables, we rely on mockConvertValueToCurrency calls
+
+        const calls = mockConvertValueToCurrency.mock.calls;
+
+        // Check for buyVolume conversion (500 -> 3500)
+        const buyVolumeCalls = calls.filter((call) => call[0] === 500 && call[2] === 'CNY');
+        expect(buyVolumeCalls.length).toBeGreaterThan(0);
+
+        // Check for sellVolume conversion (200 -> 1400)
+        const sellVolumeCalls = calls.filter((call) => call[0] === 200 && call[2] === 'CNY');
+        expect(sellVolumeCalls.length).toBeGreaterThan(0);
+    });
+
+    test('should convert buyVolume and sellVolume when sourcing from transactions', async () => {
+        // Setup state:
+        transactionState.activeFilterTerm = '';
+        transactionState.selectedCurrency = 'CNY';
+        // Clear runningAmountSeries to ensure we don't pick it up
+        transactionState.runningAmountSeries = [];
+        transactionState.runningAmountSeriesByCurrency = {};
+
+        // Mock transactions with netAmount so volume is calculated
+        transactionState.allTransactions = [
+            {
+                tradeDate: '2024-01-01',
+                security: 'AAPL',
+                quantity: 1,
+                price: 100,
+                netAmount: 100, // Explicit netAmount
+                orderType: 'buy',
+            },
+            {
+                tradeDate: '2024-01-02',
+                security: 'MSFT',
+                quantity: 1,
+                price: 200,
+                netAmount: -200, // Explicit netAmount
+                orderType: 'sell',
+            },
+        ];
+
+        const chartManager = createChartManager();
+        await chartManager.update();
+
+        const calls = mockConvertValueToCurrency.mock.calls;
+
+        // Check for buyVolume conversion.
+        // Transaction 1: buy 100. Volume = 100. Expected call: convert(100, ..., 'CNY')
+        const buyVolumeCalls = calls.filter((call) => call[0] === 100 && call[2] === 'CNY');
+        expect(buyVolumeCalls.length).toBeGreaterThan(0);
+
+        // Check for sellVolume conversion.
+        // Transaction 2: sell 200. Volume = 200. Expected call: convert(200, ..., 'CNY')
+        const sellVolumeCalls = calls.filter((call) => call[0] === 200 && call[2] === 'CNY');
+        // Note: we might have 2 calls for 200 if converting netAmount (abs) and volume?
+        // Actually netAmount is -200. So converting 200 specifically likely comes from volume or abs(netAmount).
+        expect(sellVolumeCalls.length).toBeGreaterThan(0);
     });
 });

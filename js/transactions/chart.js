@@ -1286,6 +1286,12 @@ export function buildContributionSeriesFromTransactions(
             ...point,
             netAmount: convertedNet,
             amount: cumulative,
+            buyVolume: point.buyVolume
+                ? convertValueToCurrency(point.buyVolume, dateRef, selectedCurrency)
+                : point.buyVolume,
+            sellVolume: point.sellVolume
+                ? convertValueToCurrency(point.sellVolume, dateRef, selectedCurrency)
+                : point.sellVolume,
         };
     });
 }
@@ -2805,6 +2811,12 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
                     ...entry,
                     amount: convertValueToCurrency(entry.amount, tradeDate, selectedCurrency),
                     netAmount: convertValueToCurrency(entry.netAmount, tradeDate, selectedCurrency),
+                    buyVolume: entry.buyVolume
+                        ? convertValueToCurrency(entry.buyVolume, tradeDate, selectedCurrency)
+                        : entry.buyVolume,
+                    sellVolume: entry.sellVolume
+                        ? convertValueToCurrency(entry.sellVolume, tradeDate, selectedCurrency)
+                        : entry.sellVolume,
                 };
             });
         }
@@ -2825,6 +2837,25 @@ async function drawContributionChart(ctx, chartManager, timestamp, options = {})
                     item.tradeDate || item.date,
                     selectedCurrency
                 ),
+                netAmount: convertValueToCurrency(
+                    item.netAmount,
+                    item.tradeDate || item.date,
+                    selectedCurrency
+                ),
+                buyVolume: item.buyVolume
+                    ? convertValueToCurrency(
+                          item.buyVolume,
+                          item.tradeDate || item.date,
+                          selectedCurrency
+                      )
+                    : item.buyVolume,
+                sellVolume: item.sellVolume
+                    ? convertValueToCurrency(
+                          item.sellVolume,
+                          item.tradeDate || item.date,
+                          selectedCurrency
+                      )
+                    : item.sellVolume,
             };
         });
     }
