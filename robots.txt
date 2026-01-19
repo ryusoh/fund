@@ -1,0 +1,6 @@
+# robots.txt for fund portfolio tracker
+# Block all crawlers and search engines from indexing this site
+# https://www.robotstxt.org/
+
+User-agent: *
+Disallow: /
