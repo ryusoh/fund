@@ -840,7 +840,7 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
     requestAnimationFrame(() => overlay.classList.add('terminal-crosshair-active'));
 
     if (details.date) {
-        details.date.textContent = snapshot.label || '';
+        details.date.textContent = snapshot.dateLabel || '';
     }
 
     if (details.list) {

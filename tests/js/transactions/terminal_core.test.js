@@ -329,3 +329,75 @@ describe('Regression: DrawdownAbs Filter Commands', () => {
         expect(input.value).toBe('');
     });
 });
+
+describe('updateTerminalCrosshair displays dateLabel correctly', () => {
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = `
+            <div id="terminal"></div>
+        `;
+    });
+
+    test('uses snapshot.dateLabel for the date display, not snapshot.label', () => {
+        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+
+        // Call with a snapshot that has dateLabel (the correct property)
+        const snapshot = {
+            time: Date.parse('2024-06-15'),
+            dateLabel: '2024-06-15',
+            series: [{ key: 'balance', label: 'Balance', color: '#4caf50', formatted: '$10,000' }],
+            chartKey: 'contribution',
+        };
+
+        updateTerminalCrosshair(snapshot, null);
+
+        // The overlay should now exist and show the date
+        const dateElement = document.getElementById('terminalCrosshairDate');
+        expect(dateElement).not.toBeNull();
+        expect(dateElement.textContent).toBe('2024-06-15');
+    });
+
+    test('handles missing dateLabel gracefully', () => {
+        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+
+        const snapshot = {
+            time: Date.parse('2024-06-15'),
+            // dateLabel is missing
+            series: [{ key: 'balance', label: 'Balance', color: '#4caf50', formatted: '$10,000' }],
+            chartKey: 'contribution',
+        };
+
+        updateTerminalCrosshair(snapshot, null);
+
+        const dateElement = document.getElementById('terminalCrosshairDate');
+        expect(dateElement).not.toBeNull();
+        expect(dateElement.textContent).toBe('');
+    });
+
+    test('hides overlay when snapshot is null', async () => {
+        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+
+        // First show the overlay
+        updateTerminalCrosshair(
+            {
+                time: Date.parse('2024-06-15'),
+                dateLabel: '2024-06-15',
+                series: [],
+                chartKey: 'contribution',
+            },
+            null
+        );
+
+        // Wait for requestAnimationFrame to add the active class
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const overlay = document.getElementById('terminalCrosshairOverlay');
+        expect(overlay).not.toBeNull();
+        expect(overlay.classList.contains('terminal-crosshair-active')).toBe(true);
+
+        // Now hide it
+        updateTerminalCrosshair(null, null);
+
+        expect(overlay.classList.contains('terminal-crosshair-active')).toBe(false);
+    });
+});
