@@ -1353,7 +1353,7 @@ export function initTerminal({
                 }
 
                 const fxSnapshot = getFxSnapshotLine();
-                if (fxSnapshot) {
+                if (fxSnapshot && transactionState.activeChart !== 'fx') {
                     result += `\n${fxSnapshot}`;
                 }
                 break;
