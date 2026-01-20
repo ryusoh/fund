@@ -382,3 +382,22 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
     return series;
 }
+
+export function applyDrawdownToSeries(data, valueKey) {
+    if (!Array.isArray(data) || data.length === 0) {
+        return [];
+    }
+    // Sort by date first
+    const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let runningPeak = -Infinity;
+    return sorted.map((p) => {
+        const val = p[valueKey];
+        if (val > runningPeak) {
+            runningPeak = val;
+        }
+        return {
+            ...p,
+            [valueKey]: val - runningPeak, // <= 0
+        };
+    });
+}

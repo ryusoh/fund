@@ -12,7 +12,7 @@ import {
     CHART_LINE_WIDTHS,
 } from '../../../config.js';
 import { BALANCE_GRADIENTS } from '../config.js';
-import { drawAxes, drawStartValue, drawEndValue, drawMarker, drawMountainFill } from '../core.js';
+import { drawAxes, drawStartValue, drawEndValue, drawMountainFill } from '../core.js';
 import {
     drawSeriesGlow,
     scheduleContributionAnimation,
@@ -27,7 +27,9 @@ import { chartLayouts } from '../state.js';
 import {
     getContributionSeriesForTransactions,
     buildFilteredBalanceSeries,
+    applyDrawdownToSeries,
 } from '../data/contribution.js';
+import { drawVolumeChart, drawContributionMarkers } from './contributionComponents.js';
 import {
     parseLocalDate,
     clampTime,
@@ -259,28 +261,8 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     let finalBalanceData = balanceData;
 
     if (drawdownMode) {
-        // Helper to apply HWM drawdown to a series
-        const applyDrawdown = (data, valueKey) => {
-            if (data.length === 0) {
-                return [];
-            }
-            // Sort by date first
-            const sorted = [...data].sort((a, b) => a.date - b.date);
-            let runningPeak = -Infinity;
-            return sorted.map((p) => {
-                const val = p[valueKey];
-                if (val > runningPeak) {
-                    runningPeak = val;
-                }
-                return {
-                    ...p,
-                    [valueKey]: val - runningPeak, // <= 0
-                };
-            });
-        };
-
-        finalContributionData = applyDrawdown(contributionData, 'amount');
-        finalBalanceData = applyDrawdown(balanceData, 'value');
+        finalContributionData = applyDrawdownToSeries(contributionData, 'amount');
+        finalBalanceData = applyDrawdownToSeries(balanceData, 'value');
     }
 
     if (emptyState) {
@@ -552,262 +534,20 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         series.coords = coords;
     });
 
-    // --- Draw Markers ---
-    // Use raw data for markers since smoothed data doesn't have orderType
-    const showMarkersConfig = CHART_MARKERS?.showContributionMarkers !== false;
-    const markerGroups = new Map();
-
-    if (showMarkersConfig) {
-        rawContributionData.forEach((item) => {
-            if (typeof item.orderType !== 'string') {
-                return;
-            }
-            const type = item.orderType.toLowerCase();
-            if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
-                return;
-            }
-            const timestamp = item.date.getTime();
-            if (!Number.isFinite(timestamp)) {
-                return;
-            }
-
-            if (!markerGroups.has(timestamp)) {
-                markerGroups.set(timestamp, { buys: [], sells: [] });
-            }
-            const group = markerGroups.get(timestamp);
-            const netAmount = Number(item.netAmount) || 0;
-            const amount = Number(item.amount) || 0;
-            const radius = Math.min(8, Math.max(2, Math.abs(netAmount) / 500));
-            if (type === 'buy') {
-                group.buys.push({ radius, amount, netAmount });
-            } else {
-                group.sells.push({ radius, amount, netAmount });
-            }
-        });
-    }
-
-    const volumeEntries = [];
-    let maxVolume = 0;
-    const volumeGroups = new Map();
-
-    rawContributionData.forEach((item) => {
-        if (typeof item.orderType !== 'string') {
-            return;
-        }
-        const type = item.orderType.toLowerCase();
-
-        // If we have explicit volume data, we can process even if type is 'mixed'
-        const hasExplicitVolume = Number(item.buyVolume) > 0 || Number(item.sellVolume) > 0;
-
-        if (!hasExplicitVolume && !((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
-            return;
-        }
-        const normalizedDate = new Date(item.date.getTime());
-        normalizedDate.setHours(0, 0, 0, 0);
-        const timestamp = normalizedDate.getTime();
-        if (!Number.isFinite(timestamp)) {
-            return;
-        }
-        // Ensure volume bars are strictly within the visible chart range
-        if (timestamp < minTime || timestamp > maxTime) {
-            return;
-        }
-        const netAmount = Math.abs(Number(item.netAmount) || 0);
-        if (!hasExplicitVolume && netAmount <= 0) {
-            return;
-        }
-
-        if (!volumeGroups.has(timestamp)) {
-            volumeGroups.set(timestamp, { totalBuy: 0, totalSell: 0 });
-        }
-        const totals = volumeGroups.get(timestamp);
-
-        // Use pre-consolidated volumes if available
-        if (Number.isFinite(item.buyVolume) || Number.isFinite(item.sellVolume)) {
-            if (showBuy) {
-                totals.totalBuy += Number(item.buyVolume) || 0;
-            }
-            if (showSell) {
-                totals.totalSell += Number(item.sellVolume) || 0;
-            }
-        } else if (type === 'buy') {
-            // Fallback for non-consolidated items
-            totals.totalBuy += netAmount;
-        } else {
-            totals.totalSell += netAmount;
-        }
+    const { buyVolumeMap, sellVolumeMap } = drawVolumeChart(ctx, rawContributionData, {
+        showBuy,
+        showSell,
+        minTime,
+        maxTime,
+        volumeHeight,
+        volumeTop,
+        padding,
+        plotWidth,
+        xScale,
+        formatCurrencyCompact,
+        selectedCurrency: transactionState.selectedCurrency || 'USD',
+        volumeGap,
     });
-
-    volumeGroups.forEach((totals, timestamp) => {
-        const { totalBuy, totalSell } = totals;
-        const totalBuyVolume = totalBuy;
-        const totalSellVolume = totalSell;
-        if (totalBuyVolume === 0 && totalSellVolume === 0) {
-            return;
-        }
-
-        maxVolume = Math.max(maxVolume, totalBuyVolume, totalSellVolume);
-        volumeEntries.push({
-            timestamp,
-            totalBuyVolume,
-            totalSellVolume,
-        });
-    });
-
-    const buyVolumeMap = new Map();
-    const sellVolumeMap = new Map();
-    volumeEntries.forEach(({ timestamp, totalBuyVolume, totalSellVolume }) => {
-        if (totalBuyVolume > 0) {
-            buyVolumeMap.set(timestamp, totalBuyVolume);
-        }
-        if (totalSellVolume > 0) {
-            sellVolumeMap.set(timestamp, totalSellVolume);
-        }
-    });
-
-    const volumePadding = {
-        top: volumeTop,
-        right: padding.right,
-        bottom: padding.bottom,
-        left: padding.left,
-    };
-
-    let volumeYScale;
-    if (volumeHeight > 0) {
-        const volumeYMin = 0;
-        const volumeYMax = maxVolume > 0 ? maxVolume * 1.1 : 1;
-        const volumeRange = volumeYMax - volumeYMin || 1;
-        volumeYScale = (value) =>
-            volumePadding.top + volumeHeight - ((value - volumeYMin) / volumeRange) * volumeHeight;
-
-        drawAxes(
-            ctx,
-            volumePadding,
-            plotWidth,
-            volumeHeight,
-            minTime,
-            maxTime,
-            volumeYMin,
-            volumeYMax,
-            xScale,
-            volumeYScale,
-            formatCurrencyCompact,
-            false,
-            { drawYAxis: maxVolume > 0 },
-            transactionState.selectedCurrency || 'USD'
-        );
-    }
-
-    // Clip the drawing area to prevent overhangs and spikes for ALL chart elements
-    ctx.save();
-    ctx.beginPath();
-    // Include volume area in clipping if volume is shown
-    // clipTop must start at padding.top to include the main chart!
-    const clipTop = padding.top;
-    const clipHeight =
-        volumeHeight > 0
-            ? plotHeight + (volumeGap || 0) + volumeHeight + (volumePadding?.top || 0)
-            : plotHeight;
-
-    ctx.rect(padding.left, clipTop, plotWidth, clipHeight);
-    ctx.clip();
-
-    if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
-        volumeEntries.sort((a, b) => a.timestamp - b.timestamp);
-        const barWidth = 8;
-        const baselineY = volumePadding.top + volumeHeight;
-
-        const allVolumeRects = [];
-
-        volumeEntries.forEach((entry) => {
-            const { timestamp, totalBuyVolume, totalSellVolume } = entry;
-            const x = xScale(timestamp);
-
-            const bars = [];
-            if (totalBuyVolume > 0) {
-                bars.push({
-                    type: 'buy',
-                    volume: totalBuyVolume,
-                    fill: 'rgba(76, 175, 80, 0.6)',
-                    stroke: 'rgba(76, 175, 80, 0.8)',
-                });
-            }
-            if (totalSellVolume > 0) {
-                bars.push({
-                    type: 'sell',
-                    volume: totalSellVolume,
-                    fill: 'rgba(244, 67, 54, 0.6)',
-                    stroke: 'rgba(244, 67, 54, 0.8)',
-                });
-            }
-            if (bars.length === 0) {
-                return;
-            }
-
-            // Determine max volume for this day to identify which bar should be narrower
-            const dayMaxVolume = Math.max(totalBuyVolume, totalSellVolume);
-
-            bars.forEach((bar) => {
-                const topY = volumeYScale(bar.volume);
-                const height = baselineY - topY;
-
-                // Nested Widths Pattern:
-                // If this bar is smaller than the day's max (or equal but we want one to be inner),
-                // we adjust width. If both are equal, we can arbitrarily shrink one,
-                // or keep both full width (which blends colors).
-                // Better UX: If volumes are distinct, shrink the smaller one.
-                // If volumes are exactly equal, shrink 'sell' to make it look like a "core" inside "buy"?
-                // Or just keep them same size.
-                // Let's go with: strictly smaller volume gets smaller width.
-
-                let actualWidth = barWidth;
-                if (bar.volume < dayMaxVolume) {
-                    actualWidth = barWidth * 0.5; // 4px if base is 8px
-                } else if (
-                    bars.length === 2 &&
-                    totalBuyVolume === totalSellVolume &&
-                    bar.type === 'sell'
-                ) {
-                    // Tie-breaker: if equal, make sell bar narrower so both are seen
-                    actualWidth = barWidth * 0.5;
-                }
-
-                const currentX = x - actualWidth / 2;
-
-                if (height > 0) {
-                    allVolumeRects.push({
-                        timestamp,
-                        x: currentX,
-                        width: actualWidth,
-                        topY,
-                        height,
-                        fill: bar.fill,
-                        stroke: bar.stroke,
-                        order: actualWidth < barWidth ? 1 : 0, // Draw narrower bars (1) after wider bars (0)
-                    });
-                }
-            });
-        });
-
-        allVolumeRects
-            .sort((a, b) => {
-                if (a.height !== b.height) {
-                    return b.height - a.height; // draw taller bars first so shorter remain visible
-                }
-                if (a.timestamp !== b.timestamp) {
-                    return a.timestamp - b.timestamp;
-                }
-                return a.order - b.order;
-            })
-            .forEach((rect) => {
-                ctx.fillStyle = rect.fill;
-                ctx.fillRect(rect.x, rect.topY, rect.width, rect.height);
-
-                ctx.strokeStyle = rect.stroke;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(rect.x, rect.topY, rect.width, rect.height);
-            });
-    }
 
     const chartBounds = {
         top: padding.top,
@@ -816,27 +556,17 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         right: padding.left + plotWidth,
     };
 
-    if (showMarkersConfig && markerGroups.size > 0) {
-        markerGroups.forEach((group, timestamp) => {
-            const x = xScale(timestamp);
-
-            const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
-            let buyOffset = 8;
-            sortedBuys.forEach((marker) => {
-                const y = yScale(marker.amount) - buyOffset - marker.radius;
-                drawMarker(ctx, x, y, marker.radius, true, colors, chartBounds);
-                buyOffset += marker.radius * 2 + 4;
-            });
-
-            const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
-            let sellOffset = 8;
-            sortedSells.forEach((marker) => {
-                const y = yScale(marker.amount) + sellOffset + marker.radius;
-                drawMarker(ctx, x, y, marker.radius, false, colors, chartBounds);
-                sellOffset += marker.radius * 2 + 4;
-            });
-        });
-    }
+    drawContributionMarkers(ctx, rawContributionData, {
+        showMarkersConfig: CHART_MARKERS?.showContributionMarkers !== false,
+        showBuy,
+        showSell,
+        minTime,
+        maxTime,
+        xScale,
+        yScale,
+        bounds: chartBounds,
+        colors,
+    });
 
     const sortedSeries = animatedSeries
         .map((series) => ({ ...series }))
