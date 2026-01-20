@@ -470,6 +470,75 @@ export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom =
     return [syntheticPoint, ...filteredData];
 }
 
+/**
+ * Injects a carry-forward point at the filter start date for cumulative series like contribution.
+ * If the filter starts after the first data point and there's history before the filter,
+ * this will inject a point at filterFrom with the last value before the filter range.
+ */
+export function injectCarryForwardStartPoint(
+    filteredData,
+    fullSeries,
+    filterFrom,
+    valueKey = 'value'
+) {
+    if (!filterFrom || !Array.isArray(filteredData) || filteredData.length === 0) {
+        return filteredData;
+    }
+    if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
+        return filteredData;
+    }
+
+    const filterFromTime = filterFrom.getTime();
+    if (!Number.isFinite(filterFromTime)) {
+        return filteredData;
+    }
+
+    // Find the last point in fullSeries that is before filterFrom
+    let lastPointBeforeFilter = null;
+    for (let i = fullSeries.length - 1; i >= 0; i--) {
+        const item = fullSeries[i];
+        if (!item) {
+            continue;
+        }
+        const itemDate = new Date(item.date);
+        if (Number.isNaN(itemDate.getTime())) {
+            continue;
+        }
+        if (itemDate.getTime() < filterFromTime) {
+            lastPointBeforeFilter = item;
+            break;
+        }
+    }
+
+    if (!lastPointBeforeFilter) {
+        return filteredData;
+    }
+
+    // Check if first filtered point is at or before filterFrom (no need to inject)
+    const firstFiltered = filteredData[0];
+    const firstFilteredDate =
+        firstFiltered.date instanceof Date ? firstFiltered.date : new Date(firstFiltered.date);
+    if (firstFilteredDate.getTime() <= filterFromTime) {
+        return filteredData;
+    }
+
+    // Inject a carry-forward point at filterFrom with the last value before filter
+    const carryForwardValue = Number(lastPointBeforeFilter[valueKey]);
+    if (!Number.isFinite(carryForwardValue)) {
+        return filteredData;
+    }
+
+    const carryForwardPoint = {
+        ...lastPointBeforeFilter,
+        date: new Date(filterFrom),
+        [valueKey]: carryForwardValue,
+        synthetic: true,
+        carryForward: true,
+    };
+
+    return [carryForwardPoint, ...filteredData];
+}
+
 export function constrainSeriesToRange(series, rangeStart, rangeEnd) {
     if (!Array.isArray(series) || (!rangeStart && !rangeEnd)) {
         return series;

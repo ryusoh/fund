@@ -383,13 +383,13 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     return series;
 }
 
-export function applyDrawdownToSeries(data, valueKey) {
+export function applyDrawdownToSeries(data, valueKey, initialPeak = -Infinity) {
     if (!Array.isArray(data) || data.length === 0) {
         return [];
     }
     // Sort by date first
     const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
-    let runningPeak = -Infinity;
+    let runningPeak = initialPeak;
     return sorted.map((p) => {
         const val = p[valueKey];
         if (val > runningPeak) {

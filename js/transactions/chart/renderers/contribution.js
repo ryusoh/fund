@@ -42,7 +42,11 @@ import {
     formatCurrencyInline,
     convertValueToCurrency,
 } from '../../utils.js';
-import { injectSyntheticStartPoint, constrainSeriesToRange } from '../helpers.js';
+import {
+    injectSyntheticStartPoint,
+    injectCarryForwardStartPoint,
+    constrainSeriesToRange,
+} from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
 
 export async function drawContributionChart(ctx, chartManager, timestamp, options = {}) {
@@ -199,16 +203,12 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         });
     };
 
-    const rawContributionData = filterDataByDateRange(
-        (contributionSource || [])
-            .map((item) => ({ ...item, date: parseLocalDate(item.tradeDate || item.date) }))
-            .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
-    );
     const mappedBalanceSource = showBalance
         ? (balanceSource || [])
               .map((item) => ({ ...item, date: parseLocalDate(item.date) }))
               .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
         : [];
+
     const rawBalanceData = showBalance
         ? injectSyntheticStartPoint(
               filterDataByDateRange(mappedBalanceSource),
@@ -216,6 +216,23 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
               filterFrom
           )
         : [];
+
+    // Map contribution data to use 'value' key for compatibility with helper functions
+    const mappedContributionSource = (contributionSource || []).map((item) => ({
+        ...item,
+        date: item.tradeDate || item.date,
+        value: item.amount,
+    }));
+
+    // Use injectCarryForwardStartPoint to carry forward cumulative contribution value at filter start
+    const filteredContributionData = filterDataByDateRange(mappedContributionSource);
+    const rawContributionData = injectCarryForwardStartPoint(
+        filteredContributionData,
+        mappedContributionSource,
+        filterFrom,
+        'value'
+    ).map((item) => ({ ...item, date: parseLocalDate(item.date), amount: item.value }));
+
     const balanceDataWithinRange =
         (filterFrom || filterTo) && rawBalanceData.length > 0
             ? constrainSeriesToRange(rawBalanceData, filterFrom, filterTo)
@@ -261,8 +278,34 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     let finalBalanceData = balanceData;
 
     if (drawdownMode) {
-        finalContributionData = applyDrawdownToSeries(contributionData, 'amount');
-        finalBalanceData = applyDrawdownToSeries(balanceData, 'value');
+        // Calculate historical peak from full series (before filter) for accurate drawdown
+        let contributionHistoricalPeak = -Infinity;
+        let balanceHistoricalPeak = -Infinity;
+
+        if (filterFrom) {
+            const filterFromTime = filterFrom.getTime();
+            // Find peak in contribution data before filter start
+            (mappedContributionSource || []).forEach((item) => {
+                const itemDate = new Date(item.date);
+                if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
+                    contributionHistoricalPeak = Math.max(contributionHistoricalPeak, item.value);
+                }
+            });
+            // Find peak in balance data before filter start
+            (mappedBalanceSource || []).forEach((item) => {
+                const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
+                if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
+                    balanceHistoricalPeak = Math.max(balanceHistoricalPeak, item.value);
+                }
+            });
+        }
+
+        finalContributionData = applyDrawdownToSeries(
+            contributionData,
+            'amount',
+            contributionHistoricalPeak
+        );
+        finalBalanceData = applyDrawdownToSeries(balanceData, 'value', balanceHistoricalPeak);
     }
 
     if (emptyState) {
@@ -309,17 +352,10 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     // Calculate effective min times based on actual data within filter range
     const effectiveMinTimes = [];
     if (rawContributionData.length > 0) {
-        const firstContributionPoint = filtersActive
-            ? rawContributionData.find(
-                  (item) =>
-                      typeof item.orderType !== 'string' ||
-                      item.orderType.toLowerCase() !== 'padding'
-              )
-            : rawContributionData[0];
-        if (firstContributionPoint) {
-            effectiveMinTimes.push(firstContributionPoint.date.getTime());
-        }
+        // Use the first point (including synthetic start point) for consistency with balance data
+        effectiveMinTimes.push(rawContributionData[0].date.getTime());
     }
+
     if (showBalance && rawBalanceData.length > 0) {
         effectiveMinTimes.push(rawBalanceData[0].date.getTime());
     }
@@ -328,7 +364,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
 
     if (Number.isFinite(filterFromTime)) {
-        // Ensure minTime is at least the filter start time
+        // Ensure minTime is at least the filter start time, but don't extend before actual data
         minTime = Math.max(minTime, filterFromTime);
     }
     // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
