@@ -5,11 +5,9 @@ import {
     setHistoryIndex,
 } from './state.js';
 
-import {
-    executeCommand,
-    autocompleteCommand,
-    resetAutocompleteState,
-} from './terminal/commands.js';
+import { executeCommand } from './terminal/commands.js';
+import { autocompleteCommand, resetAutocompleteState } from './terminal/autocomplete.js';
+
 import { initFade, requestFadeUpdate } from './fade.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
 

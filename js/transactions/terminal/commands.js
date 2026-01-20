@@ -41,18 +41,6 @@ let lastContextYear = null;
 const noopDebug = () => {};
 const debugContext = noopDebug;
 
-export const autocompleteState = {
-    prefix: '',
-    matches: [],
-    index: -1,
-};
-
-export function resetAutocompleteState() {
-    autocompleteState.prefix = '';
-    autocompleteState.matches = [];
-    autocompleteState.index = -1;
-}
-
 export const COMMAND_ALIASES = [
     'help',
     'h',
@@ -1376,102 +1364,6 @@ export async function executeCommand(command, context) {
 
 export function autocompleteCommand(input) {
     if (!input) {
-        return;
     }
-    const rawValue = input.value;
-    const trimmedValue = rawValue.trim();
-    let searchPrefix = trimmedValue;
-
-    if (autocompleteState.matches.length > 0) {
-        const currentMatch = autocompleteState.matches[autocompleteState.index];
-        if (trimmedValue === currentMatch) {
-            searchPrefix = autocompleteState.prefix;
-        }
-    }
-
-    if (searchPrefix.includes(':')) {
-        resetAutocompleteState();
-        return;
-    }
-
-    const lowerPrefix = searchPrefix.toLowerCase();
-    let matches = [];
-
-    // Handle subcommands
-    if (searchPrefix.includes(' ')) {
-        const parts = searchPrefix.split(' ');
-        if (parts.length >= 2 && (parts[0] === 'stats' || parts[0] === 's')) {
-            const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
-            matches = subPrefix
-                ? STATS_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
-                : STATS_SUBCOMMANDS;
-        } else if (parts.length >= 2 && (parts[0] === 'plot' || parts[0] === 'p')) {
-            const subPrefixRaw = parts.slice(1).join(' ').toLowerCase();
-            const normalizedSubPrefix = subPrefixRaw.replace(/\s+/g, '-');
-            matches = normalizedSubPrefix
-                ? PLOT_SUBCOMMANDS.filter((cmd) => cmd.startsWith(normalizedSubPrefix))
-                : PLOT_SUBCOMMANDS;
-        } else if (parts.length >= 2 && (parts[0] === 'help' || parts[0] === 'h')) {
-            const subPrefix = parts[1] ? parts[1].toLowerCase() : '';
-            matches = subPrefix
-                ? HELP_SUBCOMMANDS.filter((cmd) => cmd.startsWith(subPrefix))
-                : HELP_SUBCOMMANDS;
-        } else {
-            resetAutocompleteState();
-            return;
-        }
-    } else {
-        // Handle main commands
-        matches = (
-            lowerPrefix
-                ? COMMAND_ALIASES.filter((cmd) => cmd.startsWith(lowerPrefix))
-                : COMMAND_ALIASES
-        ).filter((cmd, index, arr) => arr.indexOf(cmd) === index);
-    }
-
-    if (matches.length === 0) {
-        resetAutocompleteState();
-        return;
-    }
-
-    if (
-        autocompleteState.prefix === lowerPrefix &&
-        autocompleteState.matches.length > 0 &&
-        trimmedValue === autocompleteState.matches[autocompleteState.index]
-    ) {
-        autocompleteState.index = (autocompleteState.index + 1) % autocompleteState.matches.length;
-    } else {
-        autocompleteState.prefix = lowerPrefix;
-        autocompleteState.matches = matches;
-        autocompleteState.index = 0;
-    }
-
-    const completed = autocompleteState.matches[autocompleteState.index];
-    const shouldAppendSpace = matches.length === 1;
-
-    // Handle subcommand completion
-    if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'stats') {
-        const baseCommand = 'stats ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 's') {
-        const baseCommand = 's ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'plot') {
-        const baseCommand = 'plot ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'p') {
-        const baseCommand = 'p ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'help') {
-        const baseCommand = 'help ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else if (searchPrefix.includes(' ') && searchPrefix.split(' ')[0] === 'h') {
-        const baseCommand = 'h ';
-        input.value = baseCommand + completed + (shouldAppendSpace ? ' ' : '');
-    } else {
-        input.value = completed + (shouldAppendSpace ? ' ' : '');
-    }
-
-    const newLength = input.value.length;
-    input.setSelectionRange(newLength, newLength);
+    // Logic moved to autocomplete.js
 }
