@@ -3,7 +3,7 @@ import {
     STATS_SUBCOMMANDS,
     PLOT_SUBCOMMANDS,
     HELP_SUBCOMMANDS,
-} from './commands.js';
+} from './constants.js';
 
 export const autocompleteState = {
     prefix: '',

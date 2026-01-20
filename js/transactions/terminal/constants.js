@@ -1,0 +1,55 @@
+export const COMMAND_ALIASES = [
+    'help',
+    'h',
+    'label',
+    'l',
+    'reset',
+    'clear',
+    'all',
+    'alltime',
+    'allstock',
+    'stats',
+    's',
+    'transaction',
+    't',
+    'plot',
+    'p',
+    'abs',
+    'absolute',
+    'a',
+    'percentage',
+    'percent',
+    'per',
+    'stock',
+    'etf',
+    'from',
+    'to',
+    'zoom',
+    'z',
+    'summary',
+];
+
+export const STATS_SUBCOMMANDS = [
+    'transactions',
+    'holdings',
+    'holdings-debug',
+    'financial',
+    'technical',
+    'duration',
+    'lifespan',
+    'concentration',
+    'cagr',
+    'return',
+    'ratio',
+];
+
+export const PLOT_SUBCOMMANDS = [
+    'balance',
+    'performance',
+    'composition',
+    'composition-abs',
+    'fx',
+    'drawdown',
+];
+
+export const HELP_SUBCOMMANDS = ['filter'];
