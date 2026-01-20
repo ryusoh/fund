@@ -11,7 +11,7 @@ import {
     getContributionSeriesForTransactions,
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
-} from './chart/renderers/contribution.js';
+} from './chart/data/contribution.js';
 
 export {
     getContributionSeriesForTransactions,
