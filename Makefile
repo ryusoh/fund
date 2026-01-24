@@ -76,14 +76,15 @@ lint: js-lint
 fmt:
 	black .
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --write --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
 
 fmt-check:
+	@echo "Checking formatting..."
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --check --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
