@@ -4,7 +4,7 @@ import { mountainFill, CHART_LINE_WIDTHS } from '../../../config.js';
 import { BENCHMARK_GRADIENTS, PERFORMANCE_SERIES_CURRENCY } from '../config.js';
 import { convertBetweenCurrencies } from '../../utils.js';
 import { drawAxes, drawMountainFill, drawEndValue } from '../core.js';
-import { getChartColors, createTimeInterpolator, clampTime } from '../helpers.js';
+import { getChartColors, createTimeInterpolator, clampTime, parseLocalDate } from '../helpers.js';
 import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import {
     stopContributionAnimation,
@@ -79,8 +79,8 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
     let seriesToDraw = [];
     let orderedKeys = [];
@@ -169,8 +169,14 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     // ========== COMMON RENDERING LOGIC ==========
     const allPoints = seriesToDraw.flatMap((s) => s.data);
     const allTimes = allPoints.map((p) => new Date(p.date).getTime());
-    const minTime = Math.min(...allTimes);
+    let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
+
+    // Ensure minTime aligns with filter start for correct x-axis labels
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
+    }
     const allValues = allPoints.map((p) => p.value);
     const dataMin = Math.min(...allValues);
     // dataMax not needed since yMax is fixed at 0

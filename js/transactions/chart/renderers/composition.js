@@ -12,7 +12,12 @@ import {
 } from '../animation.js';
 import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import { drawAxes } from '../core.js';
-import { createTimeInterpolator, clampTime, formatPercentInline } from '../helpers.js';
+import {
+    createTimeInterpolator,
+    clampTime,
+    formatPercentInline,
+    parseLocalDate,
+} from '../helpers.js';
 import {
     formatCurrencyInlineValue,
     formatCurrencyCompact,
@@ -107,8 +112,8 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
     const filteredIndices = rawDates
         .map((dateStr, index) => {
@@ -256,8 +261,14 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     };
 
     const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
-    const minTime = Math.min(...dateTimes);
+    let minTime = Math.min(...dateTimes);
     const maxTime = Math.max(...dateTimes);
+
+    // Ensure minTime aligns with filter start for correct x-axis labels
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
+    }
 
     const xScale = (time) =>
         padding.left +

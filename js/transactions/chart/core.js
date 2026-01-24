@@ -262,19 +262,40 @@ export function generateYearBasedTicks(minTime, maxTime) {
         isYearStart: endMonth === 'Jan' && !hasYearTick, // Only treat as year start if it's the primary label for the year
     });
 
-    // Add beginning month tick for desktop only
-    if (!isMobile) {
-        const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
-        const startYear = startDate.getFullYear();
-        const startLabel = startMonth === 'Jan' ? `${formatYear(startYear)}` : startMonth;
+    // Add beginning tick - for single-year mode, always add year label at start
+    // For multi-year mode, only add start tick on desktop
+    const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
+    const startYear = startDate.getFullYear();
 
+    // In single-year mode, show the year as the first label (industry standard)
+    // This matches financial charting conventions (Bloomberg, TradingView, etc.)
+    let startLabel;
+    let shouldAddStartTick = false;
+
+    if (isSingleYear) {
+        // For single-year filtered data, always show the year as the first label
+        const displayYear =
+            startDate.getFullYear() === endDate.getFullYear()
+                ? startDate.getFullYear()
+                : startDate.getMonth() >= 6
+                  ? endDate.getFullYear()
+                  : startDate.getFullYear();
+        startLabel = `${formatYear(displayYear)}`;
+        shouldAddStartTick = true; // Always add for single-year mode (mobile and desktop)
+    } else if (!isMobile) {
+        // Multi-year: only add start tick on desktop
+        startLabel = startMonth === 'Jan' ? `${formatYear(startYear)}` : startMonth;
+        shouldAddStartTick = true;
+    }
+
+    if (shouldAddStartTick) {
         // Check if we already have a tick for the start date
         const hasStartTick = ticks.some((tick) => tick.time === minTime);
         if (!hasStartTick) {
             ticks.push({
                 time: minTime,
                 label: startLabel,
-                isYearStart: startMonth === 'Jan',
+                isYearStart: isSingleYear || startMonth === 'Jan',
             });
         }
     }

@@ -158,4 +158,80 @@ describe('Chart data helpers', () => {
             expect(result[2].value).toBe(-30000);
         });
     });
+
+    describe('parseLocalDate timezone handling', () => {
+        let parseLocalDate;
+
+        beforeEach(async () => {
+            jest.resetModules();
+            const helpers = await import('@js/transactions/chart/helpers.js');
+            parseLocalDate = helpers.parseLocalDate;
+        });
+
+        test('parses YYYY-MM-DD string as local date, not UTC', () => {
+            // This is the critical test that would have caught the timezone bug
+            // When using new Date('2024-01-01'), JavaScript parses it as UTC midnight
+            // which in PST (UTC-8) becomes Dec 31, 2023 at 4:00 PM local time
+            const result = parseLocalDate('2024-01-01');
+
+            expect(result).toBeInstanceOf(Date);
+            // Should be January 1st, 2024 in LOCAL time
+            expect(result.getFullYear()).toBe(2024);
+            expect(result.getMonth()).toBe(0); // January = 0
+            expect(result.getDate()).toBe(1);
+        });
+
+        test('parses start-of-year filter correctly for x-axis labels', () => {
+            // Simulates the default filter f:2024 which sets from: '2024-01-01'
+            const filterDate = parseLocalDate('2024-01-01');
+
+            // The month should be January (0), not December (11)
+            // This is what caused the "Dec" label to appear on charts
+            expect(filterDate.getMonth()).not.toBe(11); // NOT December
+            expect(filterDate.getMonth()).toBe(0); // January
+
+            // Verify the year is correct
+            expect(filterDate.getFullYear()).toBe(2024);
+        });
+
+        test('handles Date object input correctly', () => {
+            const inputDate = new Date(2024, 5, 15); // June 15, 2024 local time
+            const result = parseLocalDate(inputDate);
+
+            expect(result.getFullYear()).toBe(2024);
+            expect(result.getMonth()).toBe(5); // June
+            expect(result.getDate()).toBe(15);
+        });
+
+        test('handles timestamp input correctly', () => {
+            const timestamp = new Date(2024, 2, 20).getTime(); // March 20, 2024 local time
+            const result = parseLocalDate(timestamp);
+
+            expect(result.getFullYear()).toBe(2024);
+            expect(result.getMonth()).toBe(2); // March
+            expect(result.getDate()).toBe(20);
+        });
+
+        test('returns null for invalid input', () => {
+            expect(parseLocalDate(null)).toBeNull();
+            expect(parseLocalDate(undefined)).toBeNull();
+            expect(parseLocalDate('invalid')).toBeNull();
+        });
+
+        test('filter date comparison works correctly with data dates', () => {
+            // This simulates the chart filtering logic
+            const filterFrom = parseLocalDate('2024-01-01');
+            const dataPointDate = new Date('2023-12-31T23:00:00Z'); // Dec 31, 2023 in UTC
+
+            // The filter should correctly identify this as being BEFORE Jan 1, 2024 local time
+            // This test ensures the filter logic works correctly with local dates
+            // In most timezones, Dec 31 2023 23:00 UTC would be before Jan 1 2024 00:00 local
+            expect(dataPointDate.getTime()).toBeLessThan(filterFrom.getTime());
+
+            // The key point is that parseLocalDate creates a LOCAL midnight timestamp
+            expect(filterFrom.getHours()).toBe(0);
+            expect(filterFrom.getMinutes()).toBe(0);
+            expect(filterFrom.getSeconds()).toBe(0);
+        });
+    });
 });

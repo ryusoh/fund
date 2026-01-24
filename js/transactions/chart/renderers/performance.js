@@ -23,6 +23,7 @@ import {
     createTimeInterpolator,
     formatPercentInline,
     clampTime,
+    parseLocalDate,
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
 import { chartLayouts } from '../state.js';
@@ -108,8 +109,8 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     const plotHeight = canvas.offsetHeight - padding.top - padding.bottom;
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
     const cloneSeries = (series) => ({
         ...series,
@@ -169,8 +170,14 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     }
 
     const allTimes = allPoints.map((p) => new Date(p.date).getTime());
-    const minTime = Math.min(...allTimes);
+    let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
+
+    // Ensure minTime aligns with filter start for correct x-axis labels
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
+    }
     const allValues = allPoints.map((p) => p.value);
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);

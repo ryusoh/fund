@@ -21,6 +21,7 @@ import {
     clampTime,
     lightenColor,
     darkenColor,
+    parseLocalDate,
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
 import { chartLayouts } from '../state.js';
@@ -102,8 +103,8 @@ export function drawFxChart(ctx, chartManager, timestamp) {
     }
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? new Date(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? new Date(chartDateRange.to) : null;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
     const filteredSeries = seriesData
         .map((series) => {
@@ -173,6 +174,12 @@ export function drawFxChart(ctx, chartManager, timestamp) {
         updateCrosshairUI(null, null);
         stopFxAnimation();
         return;
+    }
+
+    // Ensure minTime aligns with filter start for correct x-axis labels
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
     }
 
     if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
