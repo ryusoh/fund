@@ -459,7 +459,8 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
         );
         expect(result).toContain('Start: ¥100.00');
         expect(result).toContain('End: ¥175.00');
-        expect(result).toContain('Change: +¥75.00');
+        // Change percentage = 75 / 100 (start value) = 75%
+        expect(result).toContain('Change: +¥75.00 (+75.00%)');
     });
 
     it('formats appreciation text with the custom formatter', () => {
@@ -552,6 +553,64 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             formatValue: formatter,
         });
         expect(result).toContain('(no data for selected range)');
+    });
+
+    it('calculates change percentage relative to start value in summary blocks', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 500000,
+            endValue: 600000,
+            netChange: 100000,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatSummaryBlock(
+            'Balance',
+            balanceSummary,
+            { from: '2024-01-01', to: '2024-12-31' },
+            { formatValue: formatter }
+        );
+        // Change percentage = 100000 / 500000 = 20%
+        expect(result).toContain('Change: +¥100000.00 (+20.00%)');
+    });
+
+    it('handles negative change percentage in summary blocks', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 1000,
+            endValue: 800,
+            netChange: -200,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatSummaryBlock(
+            'Balance',
+            balanceSummary,
+            { from: '2024-01-01', to: '2024-12-31' },
+            { formatValue: formatter }
+        );
+        // Change percentage = -200 / 1000 = -20%
+        expect(result).toContain('Change: ¥-200.00 (-20.00%)');
+    });
+
+    it('omits change percentage when start value is zero', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 0,
+            endValue: 1000,
+            netChange: 1000,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatSummaryBlock(
+            'Balance',
+            balanceSummary,
+            { from: '2024-01-01', to: '2024-12-31' },
+            { formatValue: formatter }
+        );
+        // Should not include percentage when start value is 0
+        expect(result).toContain('Change: +¥1000.00');
+        expect(result).not.toMatch(/Change:.*\(\+?\-?\d+\.\d+%\)/);
     });
 });
 

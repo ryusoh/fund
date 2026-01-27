@@ -353,11 +353,20 @@ export function formatSummaryBlock(label, summary, dateRange, { formatValue } = 
     const startText = formatValueFn(summary.startValue);
     const endText = formatValueFn(summary.endValue);
     const changeText = formatCurrencyChange(summary.netChange, formatValueFn);
+
+    // Calculate change percentage relative to start value
+    let percentageText = '';
+    if (Number.isFinite(summary.startValue) && summary.startValue !== 0) {
+        const percentage = (summary.netChange / summary.startValue) * 100;
+        const sign = percentage > 0 ? '+' : '';
+        percentageText = ` (${sign}${percentage.toFixed(2)}%)`;
+    }
+
     return [
         `  ${label}`,
         `    Start: ${startText}${startSuffix}`,
         `    End: ${endText}${endSuffix}`,
-        `    Change: ${changeText}`,
+        `    Change: ${changeText}${percentageText}`,
     ].join('\n');
 }
 
