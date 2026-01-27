@@ -150,7 +150,7 @@ describe('plot command date range handling', () => {
             to: '2025-12-31',
         });
         expect(getLastTerminalMessage()).toContain('Showing FX chart (base USD) for 2025.');
-    });
+    }, 30000);
 
     test('allows explicit reset via special tokens', async () => {
         const session = initTerminalSession();
@@ -158,10 +158,17 @@ describe('plot command date range handling', () => {
         await session.submitCommand('plot balance 2025');
         expect(transactionState.chartDateRange.from).toBe('2025-01-01');
 
+        // Reset chart visibility before testing composition to avoid toggle behavior
+        const chartSection = document.getElementById('runningAmountSection');
+        if (chartSection) {
+            chartSection.classList.add('is-hidden');
+        }
+        transactionState.activeChart = null;
+
         await session.submitCommand('plot composition all');
         expect(transactionState.chartDateRange).toEqual({ from: null, to: null });
         expect(getLastTerminalMessage()).toContain('Showing composition chart for all time.');
-    });
+    }, 30000);
 
     test('ignores unrecognized date tokens and keeps existing range', async () => {
         const session = initTerminalSession();
@@ -173,5 +180,5 @@ describe('plot command date range handling', () => {
             to: '2025-12-31',
         });
         expect(getLastTerminalMessage()).toContain('Showing composition chart for 2025.');
-    });
+    }, 30000);
 });

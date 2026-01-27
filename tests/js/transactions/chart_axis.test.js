@@ -103,4 +103,30 @@ describe('generateYearBasedTicks Label Logic', () => {
         const distinctLabels = new Set(ticks.map((t) => t.label));
         expect(distinctLabels.size).toBe(ticks.length);
     });
+
+    // Regression test: Year label should appear at Jan 1, not at current date
+    // https://github.com/user/repo/issues/XXX
+    test('Single-year spanning into new year: year label at Jan 1, not end date', () => {
+        // Data from March 2025 to Jan 26, 2026 - this triggers single-year mode (<=15 months)
+        // but spans two different years
+        const minTime = new Date(2025, 2, 15).getTime(); // March 15, 2025
+        const maxTime = new Date(2026, 0, 26).getTime(); // Jan 26, 2026
+
+        const ticks = generateYearBasedTicks(minTime, maxTime);
+
+        // Find the 2026 tick - it should be at Jan 1, 2026, not at maxTime
+        const tick2026 = ticks.find((t) => t.label === '2026' || t.label === "'26");
+        expect(tick2026).toBeDefined();
+
+        // The 2026 label should be at Jan 1, 2026 (approximately - within a day)
+        const jan1_2026 = new Date(2026, 0, 1).getTime();
+        expect(tick2026.time).toBeCloseTo(jan1_2026, -4); // within ~10 seconds
+        expect(tick2026.isYearStart).toBe(true);
+
+        // The end tick should NOT have the 2026 label
+        const endTick = ticks.find((t) => t.time === maxTime);
+        expect(endTick).toBeDefined();
+        expect(endTick.label).toBe('Jan'); // Should be "Jan", not "2026"
+        expect(endTick.isYearStart).toBe(false);
+    });
 });

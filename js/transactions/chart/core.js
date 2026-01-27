@@ -224,6 +224,19 @@ export function generateYearBasedTicks(minTime, maxTime) {
                 });
             }
         });
+
+        // If data spans into a new year and primary year is the start year,
+        // add a tick at Jan 1 of the new year so the year label appears at the year boundary
+        if (startDate.getFullYear() !== endDate.getFullYear() && year === startDate.getFullYear()) {
+            const newYearJan1 = new Date(endDate.getFullYear(), 0, 1).getTime();
+            if (newYearJan1 >= minTime && newYearJan1 <= maxTime) {
+                ticks.push({
+                    time: newYearJan1,
+                    label: `${formatYear(endDate.getFullYear())}`,
+                    isYearStart: true,
+                });
+            }
+        }
     } else {
         // Multi-year: show Jan for each year
         for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
@@ -369,18 +382,19 @@ export function drawAxes(
     yearTicks.forEach((tick, index) => {
         const x = xScale(tick.time);
 
-        if (drawXAxis) {
-            // Prevent label collision (Desktop & Mobile)
-            if (index > 0) {
-                const prevTickX = xScale(yearTicks[index - 1].time);
-                // Minimum spacing threshold (pixels)
-                const minSpacing = isMobile ? 30 : 40;
+        // Check for label collision (Desktop & Mobile)
+        let shouldDrawLabel = true;
+        if (index > 0) {
+            const prevTickX = xScale(yearTicks[index - 1].time);
+            // Minimum spacing threshold (pixels)
+            const minSpacing = isMobile ? 30 : 40;
 
-                if (x - prevTickX < minSpacing) {
-                    return;
-                }
+            if (x - prevTickX < minSpacing) {
+                shouldDrawLabel = false;
             }
+        }
 
+        if (drawXAxis && shouldDrawLabel) {
             // Set text alignment based on tick position and layout
             if (isMobile) {
                 // Mobile: center-align first tick, right-align last tick, center-align others
@@ -407,6 +421,7 @@ export function drawAxes(
         }
 
         // Draw vertical dashed line for year/quarter boundaries (but not at chart boundaries)
+        // Note: This is drawn even if the label was skipped due to collision
         if (tick.isYearStart && x > padding.left + 5 && x < padding.left + plotWidth - 5) {
             ctx.beginPath();
             ctx.setLineDash([3, 3]); // Dashed line

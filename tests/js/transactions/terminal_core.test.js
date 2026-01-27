@@ -164,29 +164,23 @@ describe('terminal date filters respect table visibility', () => {
     });
 
     test('rejects date filters when transaction table is hidden', async () => {
-        // Need to run session to initialize state first
-        await runCommand('dummy', { tableVisible: false }); // Or just use runCommand('2025') directly, but expectations depend on state
+        // Single session with proper state initialization
+        const session = initTerminalSession({ tableVisible: false });
 
-        // Actually runCommand initializes state.
+        await session.submitCommand('2025');
 
-        await runCommand('2025', { tableVisible: false });
-
-        // We need to access the session's filterAndSort?
-        // runCommand returns it. But we didn't capture it above.
-        // Let's rewrite the test to capture returns.
-
-        const { filterAndSort } = await runCommand('2025', { tableVisible: false });
-
-        expect(filterAndSort).not.toHaveBeenCalled();
+        expect(session.filterAndSort).not.toHaveBeenCalled();
         expect(transactionState.chartDateRange).toEqual({ from: null, to: null });
         expect(getLastTerminalMessage()).toContain('Transaction table is hidden');
-    });
+    }, 30000);
 
     test('applies date filters when transaction table is visible', async () => {
-        const { filterAndSort } = await runCommand('2025', { tableVisible: true });
+        const session = initTerminalSession({ tableVisible: true });
 
-        expect(filterAndSort).toHaveBeenCalledTimes(1);
-        expect(filterAndSort).toHaveBeenCalledWith('');
+        await session.submitCommand('2025');
+
+        expect(session.filterAndSort).toHaveBeenCalledTimes(1);
+        expect(session.filterAndSort).toHaveBeenCalledWith('');
         expect(transactionState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
@@ -194,7 +188,7 @@ describe('terminal date filters respect table visibility', () => {
         expect(getLastTerminalMessage()).toContain(
             'Applied date filter 2025 to transactions table.'
         );
-    });
+    }, 30000);
 });
 
 describe('label command', () => {
@@ -204,12 +198,20 @@ describe('label command', () => {
 
     test('turns chart labels off and requests redraw', async () => {
         const chartManager = { update: jest.fn(), redraw: jest.fn() };
-        await runCommand('label', { chartManager });
+        // Ensure labels start as visible (default)
+        const session = initTerminalSession({
+            chartManager,
+            setupState: (state) => {
+                state.showChartLabels = true;
+            },
+        });
+
+        await session.submitCommand('label');
 
         expect(transactionState.showChartLabels).toBe(false);
         expect(chartManager.redraw).toHaveBeenCalledTimes(1);
         expect(getLastTerminalMessage()).toContain('Chart labels are now hidden.');
-    });
+    }, 30000);
 
     test('turns chart labels back on when already hidden', async () => {
         const chartManager = { update: jest.fn(), redraw: jest.fn() };

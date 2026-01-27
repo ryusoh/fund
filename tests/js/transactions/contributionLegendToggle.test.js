@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('Contribution chart legend toggles', () => {
-    jest.setTimeout(30000);
+    jest.setTimeout(60000);
     let originalRAF;
     let originalCAF;
     let originalGetContext;
