@@ -15,7 +15,7 @@
         <meta name="twitter:image" content="./assets/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
 
-        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+        <!-- Preconnect removed: using local assets only -->
         <link rel="shortcut icon" href="./assets/icons/icon-180.png" type="image/png" />
         <link rel="icon" href="./assets/icons/icon-180.png" type="image/png" />
         <link rel="apple-touch-icon" href="./assets/icons/icon-180.png" />
@@ -51,6 +51,7 @@
         <link rel="stylesheet" href="./css/perf.css" />
         <link rel="stylesheet" href="./css/cursor.css" />
     </head>
+
     <body class="body-main no-pull-to-refresh">
         <div class="container">
             <ul>
@@ -85,7 +86,8 @@
         <img
             class="mobile-banner"
             alt="Banner"
-            loading="lazy"
+            src="./assets/banners/banner.png"
+            fetchpriority="high"
             data-fallbacks='[
                 "./assets/banners/banner.png"
             ]'
