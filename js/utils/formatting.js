@@ -379,9 +379,19 @@ export function formatAppreciationBlock(balanceSummary, contributionSummary, { f
         return '';
     }
     const changeText = formatCurrencyChange(valueAdded, formatValueFn);
+
+    // Calculate appreciation percentage relative to contribution end value
+    const contributionEndValue = contributionSummary.endValue;
+    let percentageText = '';
+    if (Number.isFinite(contributionEndValue) && contributionEndValue !== 0) {
+        const percentage = (valueAdded / contributionEndValue) * 100;
+        const sign = percentage > 0 ? '+' : '';
+        percentageText = ` (${sign}${percentage.toFixed(2)}%)`;
+    }
+
     return [
         '  Appreciation',
-        `    Value: ${changeText}`,
+        `    Value: ${changeText}${percentageText}`,
         '    (balance change minus contribution change)',
     ].join('\n');
 }

@@ -466,7 +466,84 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
         const result = formatting.formatAppreciationBlock(summary, otherSummary, {
             formatValue: formatter,
         });
-        expect(result).toContain('Value: +¥25.00');
+        // Appreciation = balance netChange (75) - contribution netChange (50) = 25
+        // Percentage = 25 / contribution endValue (150) = 16.67%
+        expect(result).toContain('Value: +¥25.00 (+16.67%)');
+    });
+
+    it('calculates appreciation percentage relative to contribution end value', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 500000,
+            endValue: 1200000,
+            netChange: 700000,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const contributionSummary = {
+            hasData: true,
+            startValue: 400000,
+            endValue: 800000,
+            netChange: 400000,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
+            formatValue: formatter,
+        });
+        // Appreciation = 700000 - 400000 = 300000
+        // Percentage = 300000 / 800000 = 37.5%
+        expect(result).toContain('Value: +¥300000.00 (+37.50%)');
+    });
+
+    it('handles negative appreciation percentage', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 100,
+            endValue: 120,
+            netChange: 20,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const contributionSummary = {
+            hasData: true,
+            startValue: 100,
+            endValue: 150,
+            netChange: 50,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
+            formatValue: formatter,
+        });
+        // Appreciation = 20 - 50 = -30
+        // Percentage = -30 / 150 = -20%
+        expect(result).toContain('Value: ¥-30.00 (-20.00%)');
+    });
+
+    it('omits percentage when contribution end value is zero', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 0,
+            endValue: 100,
+            netChange: 100,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const contributionSummary = {
+            hasData: true,
+            startValue: 0,
+            endValue: 0,
+            netChange: 0,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31'),
+        };
+        const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
+            formatValue: formatter,
+        });
+        // Should not include percentage when contribution end value is 0
+        expect(result).toContain('Value: +¥100.00');
+        expect(result).not.toMatch(/\(\+?\-?\d+\.\d+%\)/);
     });
 
     it('returns placeholder text when there is no data', () => {
