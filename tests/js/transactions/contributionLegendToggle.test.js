@@ -265,4 +265,92 @@ describe('Contribution chart legend toggles', () => {
         expect(balanceLegend.classList.contains('legend-disabled')).toBe(false);
         expect(transactionState.chartVisibility.balance).toBe(true);
     });
+
+    test('draws divider line between line chart and volume chart', async () => {
+        const { ANIMATED_LINE_SETTINGS, mountainFill } = require('@js/config.js');
+        ANIMATED_LINE_SETTINGS.enabled = false;
+        ANIMATED_LINE_SETTINGS.charts.contribution.enabled = false;
+        ANIMATED_LINE_SETTINGS.charts.performance.enabled = false;
+        mountainFill.enabled = false;
+
+        const { transactionState } = require('@js/transactions/state.js');
+        const { createChartManager } = require('@js/transactions/chart.js');
+
+        transactionState.activeChart = 'contribution';
+        transactionState.chartVisibility = {
+            contribution: true,
+            balance: true,
+            buy: true,
+            sell: true,
+        };
+        transactionState.chartDateRange = { from: null, to: null };
+        transactionState.runningAmountSeries = [
+            { tradeDate: '2024-01-01', amount: 100, orderType: 'Buy', netAmount: 100 },
+            { tradeDate: '2024-01-02', amount: 120, orderType: 'Sell', netAmount: -20 },
+        ];
+        transactionState.portfolioSeries = [
+            { date: '2024-01-01', value: 200 },
+            { date: '2024-01-02', value: 210 },
+        ];
+
+        document.body.innerHTML = `
+            <div id="runningAmountSection"></div>
+            <div id="runningAmountEmpty"></div>
+            <div class="chart-legend"></div>
+            <canvas id="runningAmountCanvas" width="600" height="400"></canvas>
+        `;
+
+        const canvas = document.getElementById('runningAmountCanvas');
+        Object.defineProperty(canvas, 'offsetWidth', { value: 600, configurable: true });
+        Object.defineProperty(canvas, 'offsetHeight', { value: 400, configurable: true });
+
+        const gradientStub = { addColorStop: jest.fn() };
+
+        // Track stroke calls with their strokeStyle to find the divider line
+        const strokeCalls = [];
+        const ctxStub = {
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(() => {
+                strokeCalls.push({
+                    strokeStyle: ctxStub.strokeStyle,
+                    lineWidth: ctxStub.lineWidth,
+                });
+            }),
+            fill: jest.fn(),
+            arc: jest.fn(),
+            clearRect: jest.fn(),
+            scale: jest.fn(),
+            setTransform: jest.fn(),
+            save: jest.fn(),
+            restore: jest.fn(),
+            setLineDash: jest.fn(),
+            createLinearGradient: jest.fn(() => gradientStub),
+            createRadialGradient: jest.fn(() => gradientStub),
+            fillText: jest.fn(),
+            measureText: jest.fn(() => ({ width: 10 })),
+            roundRect: jest.fn(),
+            fillRect: jest.fn(),
+            strokeRect: jest.fn(),
+            rect: jest.fn(),
+            clip: jest.fn(),
+            strokeStyle: '',
+            lineWidth: 1,
+        };
+        ctxStub.canvas = canvas;
+
+        global.HTMLCanvasElement.prototype.getContext = jest.fn(() => ctxStub);
+
+        const chartManager = createChartManager();
+        chartManager.redraw();
+        await flushPromises();
+        await flushPromises();
+
+        // Verify that a stroke was made with the divider line's style
+        const dividerLines = strokeCalls.filter(
+            (call) => call.strokeStyle === 'rgba(255, 255, 255, 0.2)' && call.lineWidth === 1
+        );
+        expect(dividerLines.length).toBeGreaterThan(0);
+    });
 });

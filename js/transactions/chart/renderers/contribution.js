@@ -570,6 +570,19 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         series.coords = coords;
     });
 
+    // Draw divider line between line chart and volume chart
+    if (volumeHeight > 0) {
+        const dividerY = padding.top + plotHeight + volumeGap / 2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(padding.left, dividerY);
+        ctx.lineTo(padding.left + plotWidth, dividerY);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+    }
+
     const { buyVolumeMap, sellVolumeMap } = drawVolumeChart(ctx, rawContributionData, {
         showBuy,
         showSell,
