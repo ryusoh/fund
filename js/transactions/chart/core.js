@@ -345,6 +345,8 @@ export function drawAxes(
 
     // Y-axis grid lines and labels
     if (drawYAxis) {
+        const fontSize = isMobile ? 9 : 11;
+        const halfTextHeight = fontSize / 2;
         ticks.forEach((value) => {
             const y = yScale(value);
             ctx.beginPath();
@@ -353,9 +355,11 @@ export function drawAxes(
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
             ctx.stroke();
             ctx.fillStyle = '#8b949e';
-            ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
+            ctx.font = `${fontSize}px ${monoFont}`;
             ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
+            // Use 'top' baseline only when label would be clipped at canvas top
+            const wouldClipTop = y - halfTextHeight < 2;
+            ctx.textBaseline = wouldClipTop ? 'top' : 'middle';
             ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
         });
     }
