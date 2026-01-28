@@ -458,7 +458,7 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             { formatValue: formatter }
         );
         expect(result).toContain('Start: ¥100.00');
-        expect(result).toContain('End: ¥175.00');
+        expect(result).toContain('End: ¥175.00 (2024-12-31)');
         // Change percentage = 75 / 100 (start value) = 75%
         expect(result).toContain('Change: +¥75.00 (+75.00%)');
     });
