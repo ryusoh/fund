@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-01-28T07:51:52.642563+00:00",
+        "asOf": "2026-01-29T07:57:52.532225+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,24 +29,24 @@
     },
     "market": {
         "forwardEps": 11.2541,
-        "pe": 33.1028,
-        "forwardPe": 29.7669,
+        "pe": 33.2292,
+        "forwardPe": 29.8807,
         "beta": 1.086,
-        "marketCap": 4044064292864.0,
-        "enterpriseValue": 3988143996928.0,
+        "marketCap": 4059516108800.0,
+        "enterpriseValue": 4003589783552.0,
         "ebitda": 145174003712,
         "dividendYield": 0.25,
         "currency": "USD",
         "fiftyTwoWeekHigh": 341.2,
         "fiftyTwoWeekLow": 142.66,
-        "marketDataUpdatedAt": "2026-01-28T07:51:52.486649+00:00",
-        "evToEbitda": 27.4715,
+        "marketDataUpdatedAt": "2026-01-29T07:57:52.352225+00:00",
+        "evToEbitda": 27.5779,
         "eps": 10.12,
-        "price": 335.0,
-        "fiftyDayAverage": 314.2774,
-        "twoHundredDayAverage": 231.7757,
-        "averageVolume": 23592898.0,
-        "averageDailyVolume10Day": 21212010.0
+        "price": 336.28,
+        "fiftyDayAverage": 315.2288,
+        "twoHundredDayAverage": 232.6454,
+        "averageVolume": 23422781.0,
+        "averageDailyVolume10Day": 20430720.0
     },
     "risk": {
         "volatility": 0.3158,
@@ -54,7 +54,7 @@
         "correlations": null
     },
     "position": {
-        "shares": 856.679,
+        "shares": 856.811,
         "currentWeight": null,
         "targetWeight": null,
         "maxKellyWeight": null,
