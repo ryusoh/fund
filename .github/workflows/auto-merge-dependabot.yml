@@ -6,6 +6,10 @@ on:
     schedule:
         - cron: '*/30 * * * *'
 
+concurrency:
+    group: ${{ github.workflow }}
+    cancel-in-progress: true
+
 jobs:
     ensure-and-merge:
         permissions:
