@@ -28,8 +28,8 @@
         "fund:update-all": "python3 -m scripts.cli update-all"
     },
     "devDependencies": {
-        "@babel/core": "^7.28.6",
-        "@babel/preset-env": "^7.28.6",
+        "@babel/core": "^7.29.0",
+        "@babel/preset-env": "^7.29.0",
         "@stylistic/stylelint-plugin": "^4.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "babel-jest": "^30.2.0",
