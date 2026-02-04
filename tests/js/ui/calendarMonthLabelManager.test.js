@@ -612,4 +612,68 @@ describe('calendarMonthLabelManager', () => {
         // Clean up
         svg.remove();
     });
+
+    it('parses abbreviated month names correctly for narrow month display', () => {
+        // Test all abbreviated month names to ensure space-saving short format works
+        const abbreviatedMonths = [
+            { abbr: 'Jan', monthKey: '2026-01' },
+            { abbr: 'Feb', monthKey: '2026-02' },
+            { abbr: 'Mar', monthKey: '2026-03' },
+            { abbr: 'Apr', monthKey: '2026-04' },
+            { abbr: 'May', monthKey: '2026-05' },
+            { abbr: 'Jun', monthKey: '2026-06' },
+            { abbr: 'Jul', monthKey: '2026-07' },
+            { abbr: 'Aug', monthKey: '2026-08' },
+            { abbr: 'Sep', monthKey: '2026-09' },
+            { abbr: 'Oct', monthKey: '2026-10' },
+            { abbr: 'Nov', monthKey: '2026-11' },
+            { abbr: 'Dec', monthKey: '2026-12' },
+        ];
+
+        // Create monthly PnL data for all months
+        const monthlyPnl = new Map(
+            abbreviatedMonths.map(({ monthKey }) => [
+                monthKey,
+                { absoluteChangeUSD: 1234.56, percentChangeUSD: 0.0523 },
+            ])
+        );
+
+        const state = {
+            selectedCurrency: 'USD',
+            labelsVisible: true,
+            rates: { USD: 1 },
+            monthlyPnl,
+        };
+
+        // Test each abbreviated month
+        abbreviatedMonths.forEach(({ abbr }, index) => {
+            // Clean up previous test elements
+            document.querySelectorAll('svg[id^="abbr-test-"]').forEach((el) => el.remove());
+
+            const svg = document.createElementNS(SVG_NS, 'svg');
+            svg.id = `abbr-test-${index}`;
+            const g = document.createElementNS(SVG_NS, 'g');
+            const text = document.createElementNS(SVG_NS, 'text');
+            text.classList.add('ch-domain-text');
+            text.textContent = `${abbr} 2026`; // e.g., "Feb 2026"
+            text.getBBox = () => ({ x: 10, y: 5, width: 100, height: 20 });
+
+            g.appendChild(text);
+            svg.appendChild(g);
+            document.getElementById('cal-heatmap').appendChild(svg);
+
+            updateMonthLabels(d3Stub, state, CURRENCY_SYMBOLS);
+
+            // Verify the label was parsed correctly and PnL spans were added
+            const percentSpan = text.querySelector('.domain-label-percent');
+            const changeSpan = text.querySelector('.domain-label-pnl');
+
+            expect(percentSpan).not.toBeNull();
+            expect(changeSpan).not.toBeNull();
+            expect(changeSpan.textContent).toBe('+$1,234.56');
+        });
+
+        // Clean up
+        document.querySelectorAll('svg[id^="abbr-test-"]').forEach((el) => el.remove());
+    });
 });

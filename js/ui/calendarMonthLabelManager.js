@@ -22,6 +22,19 @@ const MONTH_NAME_TO_INDEX = {
     october: 10,
     november: 11,
     december: 12,
+    // Abbreviated month names
+    jan: 1,
+    feb: 2,
+    mar: 3,
+    apr: 4,
+    // may is already the same abbreviated and full
+    jun: 6,
+    jul: 7,
+    aug: 8,
+    sep: 9,
+    oct: 10,
+    nov: 11,
+    dec: 12,
 };
 
 function lightenHexToRgba(hex, lightenFactor, alpha) {

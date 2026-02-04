@@ -420,7 +420,7 @@ export const CALENDAR_CONFIG = {
     domain: {
         type: 'month',
         padding: [10, 10, 10, 10],
-        label: { text: 'MMMM YYYY', textAlign: 'center', position: 'top' },
+        label: { text: 'MMM YYYY', textAlign: 'center', position: 'top' },
     },
     subDomain: {
         type: 'day',
