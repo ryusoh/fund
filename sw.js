@@ -1,5 +1,4 @@
 /* Simple service worker for Fund */
-/* eslint-env serviceworker */
 const CACHE_NAME = 'fund-cache-v3';
 const CORE_ASSETS = [
     './',

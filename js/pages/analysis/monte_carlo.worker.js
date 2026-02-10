@@ -3,7 +3,6 @@
  *
  * Runs geometric brownian motion paths to estimate risk metrics.
  */
-/* eslint-env worker */
 /* global self */
 
 self.onmessage = function (e) {
