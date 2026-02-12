@@ -1,4 +1,3 @@
-
 import { drawContributionChart } from '../../../js/transactions/chart/renderers/contribution.js';
 import { updateLegend, legendState } from '../../../js/transactions/chart/interaction.js';
 import { computeAppreciationSeries } from '../../../js/transactions/chart/data/contribution.js';
@@ -11,7 +10,7 @@ jest.mock('../../../js/transactions/state.js', () => ({
     transactionState: {
         portfolioSeries: [
             { date: '2023-01-01', value: 1000 },
-            { date: '2023-01-02', value: 1100 }
+            { date: '2023-01-02', value: 1100 },
         ],
         runningAmountSeries: [],
         filteredTransactions: [],
@@ -21,20 +20,20 @@ jest.mock('../../../js/transactions/state.js', () => ({
         historicalPrices: {},
         chartVisibility: { balance: true, appreciation: true },
         splitHistory: {},
-        chartDateRange: {}
+        chartDateRange: {},
     },
     getShowChartLabels: jest.fn(() => false),
     setRunningAmountSeries: jest.fn(),
     setHistoricalPrices: jest.fn(),
     hasActiveTransactionFilters: jest.fn(() => false),
-    chartLayouts: {}
+    chartLayouts: {},
 }));
 
 // mock chart/interaction.js
 jest.mock('../../../js/transactions/chart/interaction.js', () => ({
     updateLegend: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
-    legendState: { contributionDirty: true }
+    legendState: { contributionDirty: true },
 }));
 
 // mock chart/config.js
@@ -42,7 +41,7 @@ jest.mock('../../../js/transactions/chart/config.js', () => ({
     CONTRIBUTION_CHART_SETTINGS: {},
     CHART_MARKERS: {},
     mountainFill: { enabled: false },
-    CHART_LINE_WIDTHS: {}
+    CHART_LINE_WIDTHS: {},
 }));
 
 // mock config.js (root)
@@ -50,7 +49,7 @@ jest.mock('../../../js/config.js', () => ({
     CONTRIBUTION_CHART_SETTINGS: {},
     CHART_MARKERS: {},
     mountainFill: { enabled: false },
-    CHART_LINE_WIDTHS: {}
+    CHART_LINE_WIDTHS: {},
 }));
 
 // mock chart/renderers/config.js (gradients)
@@ -58,8 +57,8 @@ jest.mock('../../../js/transactions/chart/config.js', () => ({
     BALANCE_GRADIENTS: {
         appreciation: ['red', 'blue'],
         balance: ['green', 'lime'],
-        contribution: ['gray', 'white']
-    }
+        contribution: ['gray', 'white'],
+    },
 }));
 
 // mock chart/core.js
@@ -67,7 +66,7 @@ jest.mock('../../../js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawStartValue: jest.fn(),
     drawEndValue: jest.fn(),
-    drawMountainFill: jest.fn()
+    drawMountainFill: jest.fn(),
 }));
 
 // mock chart/animation.js
@@ -78,7 +77,7 @@ jest.mock('../../../js/transactions/chart/animation.js', () => ({
     isAnimationEnabled: jest.fn(() => false),
     advanceContributionAnimation: jest.fn(),
     drawSeriesGlow: jest.fn(),
-    scheduleContributionAnimation: jest.fn()
+    scheduleContributionAnimation: jest.fn(),
 }));
 
 // mock chart/helpers.js
@@ -90,19 +89,19 @@ jest.mock('../../../js/transactions/chart/helpers.js', () => ({
     getChartColors: () => ({ contribution: 'gray', portfolio: 'green', buy: 'blue', sell: 'red' }),
     injectSyntheticStartPoint: (d) => d,
     injectCarryForwardStartPoint: (d) => d,
-    constrainSeriesToRange: (d) => d
+    constrainSeriesToRange: (d) => d,
 }));
 
 // mock utils/smoothing.js
 jest.mock('../../../js/utils/smoothing.js', () => ({
-    smoothFinancialData: (d) => d
+    smoothFinancialData: (d) => d,
 }));
 
 // mock utils.js
 jest.mock('../../../js/transactions/utils.js', () => ({
     formatCurrencyCompact: () => '$100',
     formatCurrencyInline: () => '$100',
-    convertValueToCurrency: (v) => v
+    convertValueToCurrency: (v) => v,
 }));
 
 // mock data/contribution.js
@@ -110,13 +109,13 @@ jest.mock('../../../js/transactions/chart/data/contribution.js', () => ({
     getContributionSeriesForTransactions: jest.fn(() => []),
     buildFilteredBalanceSeries: jest.fn(() => []),
     applyDrawdownToSeries: jest.fn((data) => data),
-    computeAppreciationSeries: jest.fn(() => [])
+    computeAppreciationSeries: jest.fn(() => []),
 }));
 
 // mock contributionComponents.js
 jest.mock('../../../js/transactions/chart/renderers/contributionComponents.js', () => ({
     drawVolumeChart: jest.fn(() => ({ buyVolumeMap: new Map(), sellVolumeMap: new Map() })),
-    drawContributionMarkers: jest.fn()
+    drawContributionMarkers: jest.fn(),
 }));
 
 describe('drawContributionChart Legend Logic', () => {
@@ -132,7 +131,7 @@ describe('drawContributionChart Legend Logic', () => {
             lineTo: jest.fn(),
             stroke: jest.fn(),
             createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
-            canvas: { offsetWidth: 800, offsetHeight: 400 }
+            canvas: { offsetWidth: 800, offsetHeight: 400 },
         };
         chartManager = {};
         jest.clearAllMocks();
@@ -148,7 +147,7 @@ describe('drawContributionChart Legend Logic', () => {
 
         expect(updateLegend).toHaveBeenCalled();
         const callArgs = updateLegend.mock.calls[0][0];
-        const keys = callArgs.map(i => i.key);
+        const keys = callArgs.map((i) => i.key);
         expect(keys).toContain('appreciation');
     });
 
@@ -157,7 +156,7 @@ describe('drawContributionChart Legend Logic', () => {
 
         expect(updateLegend).toHaveBeenCalled();
         const callArgs = updateLegend.mock.calls[0][0];
-        const keys = callArgs.map(i => i.key);
+        const keys = callArgs.map((i) => i.key);
         expect(keys).not.toContain('appreciation');
         expect(keys).toContain('contribution');
         expect(keys).toContain('balance');
