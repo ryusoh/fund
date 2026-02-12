@@ -202,7 +202,7 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
 
     if (volumeHeight > 0 && volumeEntries.length > 0 && typeof volumeYScale === 'function') {
         volumeEntries.sort((a, b) => a.timestamp - b.timestamp);
-        const barWidth = 8;
+        const barWidth = 4;
         const baselineY = volumePadding.top + volumeHeight;
 
         const allVolumeRects = [];
@@ -239,17 +239,17 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
                 const height = baselineY - topY;
 
                 let actualWidth = barWidth;
-                if (bar.volume < dayMaxVolume) {
-                    actualWidth = barWidth * 0.5;
-                } else if (
-                    bars.length === 2 &&
-                    totalBuyVolume === totalSellVolume &&
-                    bar.type === 'sell'
-                ) {
-                    actualWidth = barWidth * 0.5;
+                if (bars.length === 2) {
+                    if (bar.volume < dayMaxVolume) {
+                        actualWidth = barWidth;
+                    } else if (totalBuyVolume === totalSellVolume && bar.type === 'sell') {
+                        actualWidth = barWidth;
+                    } else {
+                        actualWidth = barWidth * 2;
+                    }
                 }
 
-                const currentX = x - actualWidth / 2;
+                const currentX = Math.round(x - actualWidth / 2);
 
                 if (height > 0) {
                     allVolumeRects.push({
