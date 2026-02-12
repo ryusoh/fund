@@ -205,13 +205,15 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         });
     };
 
-    const mappedBalanceSource = showBalance
+    const shouldCalculateBalance = showBalance || showAppreciation;
+
+    const mappedBalanceSource = shouldCalculateBalance
         ? (balanceSource || [])
               .map((item) => ({ ...item, date: parseLocalDate(item.date) }))
               .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
         : [];
 
-    const rawBalanceData = showBalance
+    const rawBalanceData = shouldCalculateBalance
         ? injectSyntheticStartPoint(
               filterDataByDateRange(mappedBalanceSource),
               balanceSource,
@@ -930,7 +932,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 color: balanceGradient ? balanceGradient[1] : colors.portfolio,
             });
         }
-        if (hasBalanceSeries) {
+        if (hasBalanceSeries && !drawdownMode) {
             const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
             legendSeries.push({
                 key: 'appreciation',
