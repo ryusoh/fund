@@ -754,4 +754,31 @@ describe('computeAppreciationSeries', () => {
         expect(computeAppreciationSeries([], null)).toEqual([]);
         expect(computeAppreciationSeries(undefined, undefined)).toEqual([]);
     });
+
+    test('produces zero at start when balance equals contribution (start label skip scenario)', () => {
+        // When "all" filter is used, both balance and contribution start at 0,
+        // so appreciation = 0. The renderer skips start labels for values < 0.01.
+        const d1 = new Date('2024-01-01');
+        const d2 = new Date('2024-02-01');
+        const d3 = new Date('2024-03-01');
+        const balance = [
+            { date: d1, value: 0 },
+            { date: d2, value: 1000 },
+            { date: d3, value: 1500 },
+        ];
+        const contribution = [
+            { date: d1, amount: 0 },
+            { date: d2, amount: 1000 },
+            { date: d3, amount: 1200 },
+        ];
+        const result = computeAppreciationSeries(balance, contribution);
+        expect(result).toHaveLength(3);
+        // First point: both are 0, so appreciation is 0 (renderer skips this label)
+        expect(result[0].value).toBe(0);
+        expect(Math.abs(result[0].value) < 0.01).toBe(true);
+        // Later points have meaningful appreciation
+        expect(result[1].value).toBe(0); // 1000 - 1000
+        expect(result[2].value).toBe(300); // 1500 - 1200
+        expect(Math.abs(result[2].value) >= 0.01).toBe(true);
+    });
 });

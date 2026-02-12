@@ -747,7 +747,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 return item.orderType.toLowerCase() !== 'padding';
             }) ||
             labelContributionData[0];
-        if (firstContribution) {
+        if (firstContribution && Math.abs(firstContribution.amount) >= 0.01) {
             const firstContributionX = xScale(firstContribution.date.getTime());
             const firstContributionY = yScale(
                 drawdownMode ? firstContribution.amount : firstContribution.amount
@@ -799,24 +799,26 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         const balanceEndColor = balanceGradient ? balanceGradient[1] : colors.portfolio;
 
         const firstBalance = labelBalanceData[0];
-        const firstBalanceX = xScale(firstBalance.date.getTime());
-        const firstBalanceY = yScale(firstBalance.value);
-        const balStartBounds = drawStartValue(
-            ctx,
-            firstBalanceX,
-            firstBalanceY,
-            firstBalance.value,
-            balanceStartColor,
-            isMobile,
-            padding,
-            plotWidth,
-            plotHeight,
-            formatBalanceValue,
-            true,
-            labelBounds
-        );
-        if (balStartBounds) {
-            labelBounds.push(balStartBounds);
+        if (Math.abs(firstBalance.value) >= 0.01) {
+            const firstBalanceX = xScale(firstBalance.date.getTime());
+            const firstBalanceY = yScale(firstBalance.value);
+            const balStartBounds = drawStartValue(
+                ctx,
+                firstBalanceX,
+                firstBalanceY,
+                firstBalance.value,
+                balanceStartColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                formatBalanceValue,
+                true,
+                labelBounds
+            );
+            if (balStartBounds) {
+                labelBounds.push(balStartBounds);
+            }
         }
 
         const lastBalance = labelBalanceData[labelBalanceData.length - 1];
@@ -848,24 +850,26 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         const appreciationEndColor = appreciationGradient ? appreciationGradient[1] : '#FF8E53';
 
         const firstAppreciation = appreciationData[0];
-        const firstAppreciationX = xScale(firstAppreciation.date.getTime());
-        const firstAppreciationY = yScale(firstAppreciation.value);
-        const apprStartBounds = drawStartValue(
-            ctx,
-            firstAppreciationX,
-            firstAppreciationY,
-            firstAppreciation.value,
-            appreciationStartColor,
-            isMobile,
-            padding,
-            plotWidth,
-            plotHeight,
-            formatBalanceValue,
-            true,
-            labelBounds
-        );
-        if (apprStartBounds) {
-            labelBounds.push(apprStartBounds);
+        if (Math.abs(firstAppreciation.value) >= 0.01) {
+            const firstAppreciationX = xScale(firstAppreciation.date.getTime());
+            const firstAppreciationY = yScale(firstAppreciation.value);
+            const apprStartBounds = drawStartValue(
+                ctx,
+                firstAppreciationX,
+                firstAppreciationY,
+                firstAppreciation.value,
+                appreciationStartColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                formatBalanceValue,
+                true,
+                labelBounds
+            );
+            if (apprStartBounds) {
+                labelBounds.push(apprStartBounds);
+            }
         }
 
         const lastAppreciation = appreciationData[appreciationData.length - 1];
