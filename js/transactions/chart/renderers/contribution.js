@@ -507,8 +507,6 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     };
 
     const showChartLabels = getShowChartLabels();
-    let firstContributionLabelY = null;
-    let contributionEndLabelY = null;
 
     if (showContribution && finalContributionData.length > 0) {
         animatedSeries.push({
@@ -700,6 +698,8 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     }
 
     // Draw start and end values using raw data to ensure accuracy (or transformed data for drawdown)
+    const labelBounds = [];
+
     const labelContributionData = drawdownMode ? finalContributionData : rawContributionData;
     if (showChartLabels && showContribution && labelContributionData.length > 0) {
         const contributionGradient = BALANCE_GRADIENTS['contribution'];
@@ -724,7 +724,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             const firstContributionY = yScale(
                 drawdownMode ? firstContribution.amount : firstContribution.amount
             );
-            firstContributionLabelY = drawStartValue(
+            const startBounds = drawStartValue(
                 ctx,
                 firstContributionX,
                 firstContributionY,
@@ -737,12 +737,15 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 formatContributionAnnotationValue,
                 true
             );
+            if (startBounds) {
+                labelBounds.push(startBounds);
+            }
         }
 
         const lastContribution = labelContributionData[labelContributionData.length - 1];
         const lastContributionX = xScale(lastContribution.date.getTime());
         const lastContributionY = yScale(lastContribution.amount);
-        contributionEndLabelY = drawEndValue(
+        const endBounds = drawEndValue(
             ctx,
             lastContributionX,
             lastContributionY,
@@ -753,8 +756,12 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotWidth,
             plotHeight,
             formatContributionAnnotationValue,
-            true
+            true,
+            labelBounds
         );
+        if (endBounds) {
+            labelBounds.push(endBounds);
+        }
     }
 
     const labelBalanceData = drawdownMode ? finalBalanceData : rawBalanceData;
@@ -765,21 +772,8 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
 
         const firstBalance = labelBalanceData[0];
         const firstBalanceX = xScale(firstBalance.date.getTime());
-        let firstBalanceY = yScale(firstBalance.value);
-        if (firstContributionLabelY !== null) {
-            const minGap = isMobile ? 18 : 14;
-            if (Math.abs(firstBalanceY - firstContributionLabelY) < minGap) {
-                if (firstBalanceY >= firstContributionLabelY) {
-                    firstBalanceY = Math.min(
-                        firstBalanceY + minGap,
-                        padding.top + plotHeight - minGap / 2
-                    );
-                } else {
-                    firstBalanceY = Math.max(firstBalanceY - minGap, padding.top + minGap / 2);
-                }
-            }
-        }
-        drawStartValue(
+        const firstBalanceY = yScale(firstBalance.value);
+        const balStartBounds = drawStartValue(
             ctx,
             firstBalanceX,
             firstBalanceY,
@@ -790,26 +784,17 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotWidth,
             plotHeight,
             formatBalanceValue,
-            true
+            true,
+            labelBounds
         );
+        if (balStartBounds) {
+            labelBounds.push(balStartBounds);
+        }
 
         const lastBalance = labelBalanceData[labelBalanceData.length - 1];
         const lastBalanceX = xScale(lastBalance.date.getTime());
-        let lastBalanceY = yScale(lastBalance.value);
-        if (contributionEndLabelY !== null) {
-            const minGap = isMobile ? 18 : 14;
-            if (Math.abs(lastBalanceY - contributionEndLabelY) < minGap) {
-                if (lastBalanceY >= contributionEndLabelY) {
-                    lastBalanceY = Math.min(
-                        lastBalanceY + minGap,
-                        padding.top + plotHeight - minGap / 2
-                    );
-                } else {
-                    lastBalanceY = Math.max(lastBalanceY - minGap, padding.top + minGap / 2);
-                }
-            }
-        }
-        drawEndValue(
+        const lastBalanceY = yScale(lastBalance.value);
+        const balEndBounds = drawEndValue(
             ctx,
             lastBalanceX,
             lastBalanceY,
@@ -820,8 +805,12 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotWidth,
             plotHeight,
             formatBalanceValue,
-            true
+            true,
+            labelBounds
         );
+        if (balEndBounds) {
+            labelBounds.push(balEndBounds);
+        }
     }
 
     ctx.restore(); // Restore the global clip

@@ -363,11 +363,12 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     // To match chart.js, I should import it.
     // Adding it to top imports.
     const showChartLabels = getShowChartLabels();
+    const labelBounds = [];
     if (showChartLabels) {
         renderedSeries.forEach((series) => {
             const { x, y, color, value } = series;
 
-            drawEndValue(
+            const bounds = drawEndValue(
                 ctx,
                 x,
                 y,
@@ -378,8 +379,12 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
                 plotWidth,
                 plotHeight,
                 formatValue,
-                true
+                true,
+                labelBounds
             );
+            if (bounds) {
+                labelBounds.push(bounds);
+            }
         });
     }
 

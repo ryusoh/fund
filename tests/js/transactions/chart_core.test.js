@@ -402,3 +402,253 @@ describe('drawAxes Y-Axis Label Clipping Prevention', () => {
         expect(textBaselineValues.every((baseline) => baseline === 'middle')).toBe(true);
     });
 });
+
+// ============================================================
+// Label collision avoidance tests
+// ============================================================
+
+describe('nudgeLabelPosition', () => {
+    let nudgeLabelPosition;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            ({ nudgeLabelPosition } = require('@js/transactions/chart/core.js'));
+        });
+    });
+
+    const padding = { top: 20 };
+    const plotHeight = 300;
+    const textHeight = 11;
+    const bgPadding = 4;
+
+    test('returns the same Y when there are no existing bounds', () => {
+        const result = nudgeLabelPosition(100, textHeight, bgPadding, [], padding, plotHeight);
+        expect(result).toBe(100);
+    });
+
+    test('returns the same Y when null is passed', () => {
+        const result = nudgeLabelPosition(100, textHeight, bgPadding, null, padding, plotHeight);
+        expect(result).toBe(100);
+    });
+
+    test('nudges downward when overlapping an existing label', () => {
+        const existing = [{ y: 100, height: textHeight + bgPadding * 2 }];
+        const result = nudgeLabelPosition(
+            102,
+            textHeight,
+            bgPadding,
+            existing,
+            padding,
+            plotHeight
+        );
+        // Should be pushed below the existing label
+        expect(result).toBeGreaterThan(100 + (textHeight + bgPadding * 2) / 2);
+    });
+
+    test('nudges upward when at the bottom edge of the plot', () => {
+        // Place existing label near the bottom of the plot
+        const nearBottom = padding.top + plotHeight - textHeight / 2 - 2;
+        const existing = [{ y: nearBottom, height: textHeight + bgPadding * 2 }];
+        // Proposed Y overlaps existing and downward would exceed bounds
+        const result = nudgeLabelPosition(
+            nearBottom - 2,
+            textHeight,
+            bgPadding,
+            existing,
+            padding,
+            plotHeight
+        );
+        // Should be pushed above the existing label
+        expect(result).toBeLessThan(nearBottom - (textHeight + bgPadding * 2) / 2);
+    });
+
+    test('does not nudge when labels are far apart', () => {
+        const existing = [{ y: 50, height: textHeight + bgPadding * 2 }];
+        const result = nudgeLabelPosition(
+            200,
+            textHeight,
+            bgPadding,
+            existing,
+            padding,
+            plotHeight
+        );
+        expect(result).toBe(200);
+    });
+});
+
+describe('drawStartValue returns bounds', () => {
+    let drawStartValue;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            ({ drawStartValue } = require('@js/transactions/chart/core.js'));
+        });
+    });
+
+    test('returns an object with x, y, width, height', () => {
+        const mockCtx = {
+            font: '',
+            textAlign: '',
+            textBaseline: '',
+            fillStyle: '',
+            measureText: () => ({ width: 40 }),
+            fillText: jest.fn(),
+            beginPath: jest.fn(),
+            roundRect: jest.fn(),
+            fill: jest.fn(),
+        };
+        const padding = { top: 20, left: 50 };
+        const bounds = drawStartValue(
+            mockCtx,
+            60,
+            100,
+            1234.56,
+            '#fff',
+            false,
+            padding,
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true
+        );
+        expect(bounds).toHaveProperty('x');
+        expect(bounds).toHaveProperty('y');
+        expect(bounds).toHaveProperty('width');
+        expect(bounds).toHaveProperty('height');
+        expect(typeof bounds.x).toBe('number');
+        expect(typeof bounds.y).toBe('number');
+        expect(bounds.width).toBeGreaterThan(0);
+        expect(bounds.height).toBeGreaterThan(0);
+    });
+
+    test('nudges away from existing bounds when overlapping', () => {
+        const makeMockCtx = () => ({
+            font: '',
+            textAlign: '',
+            textBaseline: '',
+            fillStyle: '',
+            measureText: () => ({ width: 40 }),
+            fillText: jest.fn(),
+            beginPath: jest.fn(),
+            roundRect: jest.fn(),
+            fill: jest.fn(),
+        });
+        const padding = { top: 20, left: 50 };
+
+        // Draw the first start label (contribution start)
+        const first = drawStartValue(
+            makeMockCtx(),
+            60,
+            100,
+            1000,
+            '#fff',
+            false,
+            padding,
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true
+        );
+
+        // Draw a second start label at the same Y (balance start) with existingBounds
+        const second = drawStartValue(
+            makeMockCtx(),
+            60,
+            100,
+            2000,
+            '#fff',
+            false,
+            padding,
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true,
+            [first]
+        );
+
+        // The second label should be nudged away from the first
+        expect(second.y).not.toBeCloseTo(first.y, 0);
+    });
+});
+
+describe('drawEndValue collision avoidance', () => {
+    let drawEndValue;
+
+    const makeMockCtx = () => ({
+        font: '',
+        textAlign: '',
+        textBaseline: '',
+        fillStyle: '',
+        measureText: () => ({ width: 40 }),
+        fillText: jest.fn(),
+        beginPath: jest.fn(),
+        roundRect: jest.fn(),
+        fill: jest.fn(),
+    });
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            ({ drawEndValue } = require('@js/transactions/chart/core.js'));
+        });
+    });
+
+    test('returns a bounds object', () => {
+        const bounds = drawEndValue(
+            makeMockCtx(),
+            200,
+            100,
+            50,
+            '#fff',
+            false,
+            { top: 20, left: 50 },
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true
+        );
+        expect(bounds).toHaveProperty('x');
+        expect(bounds).toHaveProperty('y');
+        expect(bounds).toHaveProperty('width');
+        expect(bounds).toHaveProperty('height');
+    });
+
+    test('nudges away from existing bounds when overlapping', () => {
+        const padding = { top: 20, left: 50 };
+        // Draw the first label
+        const first = drawEndValue(
+            makeMockCtx(),
+            200,
+            100,
+            50,
+            '#fff',
+            false,
+            padding,
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true
+        );
+
+        // Draw a second label at the same Y with existingBounds
+        const second = drawEndValue(
+            makeMockCtx(),
+            200,
+            100,
+            60,
+            '#fff',
+            false,
+            padding,
+            400,
+            300,
+            (v) => v.toFixed(2),
+            true,
+            [first]
+        );
+
+        // The second label should be nudged away from the first
+        expect(second.y).not.toBeCloseTo(first.y, 0);
+    });
+});

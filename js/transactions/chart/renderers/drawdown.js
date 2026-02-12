@@ -321,6 +321,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     }
 
     const showChartLabels = getShowChartLabels();
+    const labelBounds = [];
     if (showChartLabels) {
         seriesToDraw.forEach((series) => {
             const lastData = series.data[series.data.length - 1];
@@ -333,7 +334,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
             const formatter = (v) => `${v.toFixed(2)}%`;
 
-            drawEndValue(
+            const bounds = drawEndValue(
                 ctx,
                 x,
                 y,
@@ -344,8 +345,12 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
                 plotWidth,
                 plotHeight,
                 formatter,
-                true
+                true,
+                labelBounds
             );
+            if (bounds) {
+                labelBounds.push(bounds);
+            }
         });
     }
 

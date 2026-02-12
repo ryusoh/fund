@@ -552,6 +552,60 @@ export function drawMarker(context, x, y, radius, isBuy, colors, chartBounds) {
     context.stroke();
 }
 
+/**
+ * Nudge a label's vertical position so it does not overlap any previously
+ * placed labels.  The function tries moving the label downward first; if
+ * that would push it out of the visible plot area it tries upward instead.
+ */
+export function nudgeLabelPosition(
+    textY,
+    textHeight,
+    bgPadding,
+    existingBounds,
+    padding,
+    plotHeight
+) {
+    if (!Array.isArray(existingBounds) || existingBounds.length === 0) {
+        return textY;
+    }
+
+    const labelTop = () => textY - textHeight / 2 - bgPadding;
+    const labelBottom = () => textY + textHeight / 2 + bgPadding;
+    const minY = padding.top + textHeight / 2;
+    const maxY = padding.top + plotHeight - textHeight / 2;
+
+    for (const bounds of existingBounds) {
+        const existingTop = bounds.y - bounds.height / 2;
+        const existingBottom = bounds.y + bounds.height / 2;
+
+        // Check for horizontal overlap first – if labels don't share
+        // horizontal space they can't visually collide.
+        if (bounds.right !== undefined && bounds.left !== undefined) {
+            // We'll receive left/right from the caller if available
+        }
+
+        // Vertical overlap check
+        if (labelBottom() > existingTop && labelTop() < existingBottom) {
+            const gap = 2;
+            // Try moving below the existing label
+            const candidateDown = existingBottom + textHeight / 2 + bgPadding + gap;
+            // Try moving above the existing label
+            const candidateUp = existingTop - textHeight / 2 - bgPadding - gap;
+
+            if (candidateDown <= maxY) {
+                textY = candidateDown;
+            } else if (candidateUp >= minY) {
+                textY = candidateUp;
+            } else {
+                // Not enough room either way – just clamp below
+                textY = Math.min(candidateDown, maxY);
+            }
+        }
+    }
+
+    return textY;
+}
+
 export function drawEndValue(
     context,
     x,
@@ -563,7 +617,8 @@ export function drawEndValue(
     plotWidth,
     plotHeight,
     formatValue,
-    showBackground = false
+    showBackground = false,
+    existingBounds = null
 ) {
     const text = formatValue(value);
     const fontSize = isMobile ? 9 : 11;
@@ -617,6 +672,18 @@ export function drawEndValue(
         Math.min(textY, padding.top + plotHeight - textHeight / 2)
     );
 
+    // Nudge away from any previously drawn labels
+    if (existingBounds) {
+        textY = nudgeLabelPosition(
+            textY,
+            textHeight,
+            bgPadding,
+            existingBounds,
+            padding,
+            plotHeight
+        );
+    }
+
     if (showBackground) {
         context.fillStyle = 'rgba(0, 0, 0, 0.4)';
         context.beginPath();
@@ -642,7 +709,12 @@ export function drawEndValue(
     context.fillStyle = color;
     context.fillText(text, textX, textY);
 
-    return textY;
+    return {
+        x: textX,
+        y: textY,
+        width: textWidth + bgPadding * 2,
+        height: textHeight + bgPadding * 2,
+    };
 }
 
 export function drawStartValue(
@@ -656,7 +728,8 @@ export function drawStartValue(
     plotWidth,
     plotHeight,
     formatValue,
-    showBackground = false
+    showBackground = false,
+    existingBounds = null
 ) {
     const text = formatValue(value);
     const fontSize = isMobile ? 9 : 11;
@@ -674,10 +747,22 @@ export function drawStartValue(
     // Anchor near the left plot boundary while respecting vertical limits
     const baseX = padding.left + (isMobile ? 4 : 6);
     const textX = Math.min(baseX, padding.left + plotWidth - textWidth - 2);
-    const textY = Math.max(
+    let textY = Math.max(
         padding.top + textHeight / 2,
         Math.min(y, padding.top + plotHeight - textHeight / 2)
     );
+
+    // Nudge away from any previously drawn labels
+    if (existingBounds) {
+        textY = nudgeLabelPosition(
+            textY,
+            textHeight,
+            bgPadding,
+            existingBounds,
+            padding,
+            plotHeight
+        );
+    }
 
     if (showBackground) {
         context.fillStyle = 'rgba(0, 0, 0, 0.4)';
@@ -703,4 +788,11 @@ export function drawStartValue(
 
     context.fillStyle = color;
     context.fillText(text, textX, textY);
+
+    return {
+        x: textX,
+        y: textY,
+        width: textWidth + bgPadding * 2,
+        height: textHeight + bgPadding * 2,
+    };
 }

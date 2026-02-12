@@ -233,6 +233,7 @@ export function drawFxChart(ctx, chartManager, timestamp) {
 
     const showChartLabels = getShowChartLabels();
     const renderedSeries = [];
+    const labelBounds = [];
     filteredSeries.forEach((series) => {
         const visibility = transactionState.chartVisibility[series.key];
         if (visibility === false) {
@@ -301,7 +302,7 @@ export function drawFxChart(ctx, chartManager, timestamp) {
 
         if (showChartLabels) {
             const lastCoord = coords[coords.length - 1];
-            drawEndValue(
+            const bounds = drawEndValue(
                 ctx,
                 lastCoord.x,
                 lastCoord.y,
@@ -312,8 +313,12 @@ export function drawFxChart(ctx, chartManager, timestamp) {
                 plotWidth,
                 plotHeight,
                 formatPercentInline,
-                true
+                true,
+                labelBounds
             );
+            if (bounds) {
+                labelBounds.push(bounds);
+            }
         }
 
         renderedSeries.push({
