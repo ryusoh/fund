@@ -652,3 +652,106 @@ describe('drawEndValue collision avoidance', () => {
         expect(second.y).not.toBeCloseTo(first.y, 0);
     });
 });
+
+// ============================================================
+// Appreciation series computation tests
+// ============================================================
+
+describe('computeAppreciationSeries', () => {
+    let computeAppreciationSeries;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            ({
+                computeAppreciationSeries,
+            } = require('@js/transactions/chart/data/contribution.js'));
+        });
+    });
+
+    test('returns empty array when balance data is empty', () => {
+        const result = computeAppreciationSeries(
+            [],
+            [{ date: new Date('2024-01-01'), amount: 100 }]
+        );
+        expect(result).toEqual([]);
+    });
+
+    test('returns empty array when contribution data is empty', () => {
+        const result = computeAppreciationSeries(
+            [{ date: new Date('2024-01-01'), value: 150 }],
+            []
+        );
+        expect(result).toEqual([]);
+    });
+
+    test('computes appreciation with aligned timestamps', () => {
+        const d1 = new Date('2024-01-01');
+        const d2 = new Date('2024-02-01');
+        const balance = [
+            { date: d1, value: 1000 },
+            { date: d2, value: 1200 },
+        ];
+        const contribution = [
+            { date: d1, amount: 1000 },
+            { date: d2, amount: 1100 },
+        ];
+        const result = computeAppreciationSeries(balance, contribution);
+        expect(result).toHaveLength(2);
+        expect(result[0].value).toBe(0); // 1000 - 1000
+        expect(result[1].value).toBe(100); // 1200 - 1100
+        expect(result[0].date).toBe(d1);
+        expect(result[1].date).toBe(d2);
+    });
+
+    test('interpolates contribution when timestamps do not align', () => {
+        const d1 = new Date('2024-01-01');
+        const d2 = new Date('2024-01-03');
+        const dMid = new Date('2024-01-02'); // midpoint, not in contribution data
+        const balance = [
+            { date: d1, value: 1000 },
+            { date: dMid, value: 1100 },
+            { date: d2, value: 1200 },
+        ];
+        const contribution = [
+            { date: d1, amount: 500 },
+            { date: d2, amount: 700 },
+        ];
+        const result = computeAppreciationSeries(balance, contribution);
+        expect(result).toHaveLength(3);
+        expect(result[0].value).toBe(500); // 1000 - 500
+        // Midpoint: contribution interpolated to 600 (halfway between 500 and 700)
+        expect(result[1].value).toBe(500); // 1100 - 600
+        expect(result[2].value).toBe(500); // 1200 - 700
+    });
+
+    test('handles negative appreciation (market loss)', () => {
+        const d1 = new Date('2024-01-01');
+        const balance = [{ date: d1, value: 800 }];
+        const contribution = [{ date: d1, amount: 1000 }];
+        const result = computeAppreciationSeries(balance, contribution);
+        expect(result).toHaveLength(1);
+        expect(result[0].value).toBe(-200); // 800 - 1000
+    });
+
+    test('clamps contribution to first value for balance before contribution range', () => {
+        const dBefore = new Date('2023-12-31');
+        const d1 = new Date('2024-01-01');
+        const balance = [
+            { date: dBefore, value: 500 },
+            { date: d1, value: 1000 },
+        ];
+        const contribution = [{ date: d1, amount: 800 }];
+        const result = computeAppreciationSeries(balance, contribution);
+        expect(result).toHaveLength(2);
+        // dBefore is before contribution range, so contribution is clamped to 800
+        expect(result[0].value).toBe(-300); // 500 - 800
+        expect(result[1].value).toBe(200); // 1000 - 800
+    });
+
+    test('handles null/undefined inputs gracefully', () => {
+        expect(computeAppreciationSeries(null, [])).toEqual([]);
+        expect(computeAppreciationSeries([], null)).toEqual([]);
+        expect(computeAppreciationSeries(undefined, undefined)).toEqual([]);
+    });
+});

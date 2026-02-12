@@ -37,4 +37,5 @@ export const BENCHMARK_GRADIENTS = {
 export const BALANCE_GRADIENTS = {
     balance: ['#fb8500', '#ffef2f'],
     contribution: ['#0d3b66', '#64b5f6'],
+    appreciation: ['#CC4E1F', '#FF9A62'],
 };

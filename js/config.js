@@ -257,6 +257,7 @@ export const CROSSHAIR_SETTINGS = {
 export const CHART_LINE_WIDTHS = {
     contribution: 1,
     balance: 1,
+    appreciation: 1,
     performance: 1,
     fx: 1,
     crosshairMarker: 1,

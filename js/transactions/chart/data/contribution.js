@@ -401,3 +401,79 @@ export function applyDrawdownToSeries(data, valueKey, initialPeak = -Infinity) {
         };
     });
 }
+
+/**
+ * Compute the appreciation series (balance − contribution) at aligned timestamps.
+ * For each balance data point, the contribution value is matched exactly or
+ * linearly interpolated from the contribution series.
+ *
+ * @param {Array<{date: Date, value: number}>} balanceData
+ * @param {Array<{date: Date, amount: number}>} contributionData
+ * @returns {Array<{date: Date, value: number}>}
+ */
+export function computeAppreciationSeries(balanceData, contributionData) {
+    if (
+        !Array.isArray(balanceData) ||
+        balanceData.length === 0 ||
+        !Array.isArray(contributionData) ||
+        contributionData.length === 0
+    ) {
+        return [];
+    }
+
+    // Build exact-match map
+    const contribByTime = new Map();
+    contributionData.forEach((item) => {
+        contribByTime.set(item.date.getTime(), item.amount);
+    });
+
+    // Sort contribution timestamps for interpolation
+    const contribTimes = contributionData
+        .map((item) => ({ time: item.date.getTime(), value: item.amount }))
+        .sort((a, b) => a.time - b.time);
+
+    const interpolateContrib = (targetTime) => {
+        if (contribTimes.length === 0) {
+            return null;
+        }
+        if (targetTime <= contribTimes[0].time) {
+            return contribTimes[0].value;
+        }
+        if (targetTime >= contribTimes[contribTimes.length - 1].time) {
+            return contribTimes[contribTimes.length - 1].value;
+        }
+        for (let i = 0; i < contribTimes.length - 1; i++) {
+            if (targetTime >= contribTimes[i].time && targetTime <= contribTimes[i + 1].time) {
+                const ratio =
+                    (targetTime - contribTimes[i].time) /
+                    (contribTimes[i + 1].time - contribTimes[i].time);
+                return (
+                    contribTimes[i].value +
+                    ratio * (contribTimes[i + 1].value - contribTimes[i].value)
+                );
+            }
+        }
+        return contribTimes[contribTimes.length - 1].value;
+    };
+
+    const result = [];
+    balanceData.forEach((balItem) => {
+        const t = balItem.date.getTime();
+        let contribValue = contribByTime.get(t);
+        if (contribValue === undefined) {
+            contribValue = interpolateContrib(t);
+        }
+        if (
+            contribValue !== null &&
+            Number.isFinite(balItem.value) &&
+            Number.isFinite(contribValue)
+        ) {
+            result.push({
+                date: balItem.date,
+                value: balItem.value - contribValue,
+            });
+        }
+    });
+
+    return result;
+}

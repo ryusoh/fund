@@ -28,6 +28,7 @@ import {
     getContributionSeriesForTransactions,
     buildFilteredBalanceSeries,
     applyDrawdownToSeries,
+    computeAppreciationSeries,
 } from '../data/contribution.js';
 import { drawVolumeChart, drawContributionMarkers } from './contributionComponents.js';
 import {
@@ -159,6 +160,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     const visibility = chartVisibility || {};
     const showContribution = visibility.contribution !== false;
     const showBalance = visibility.balance !== false && hasBalanceSeries;
+    const showAppreciation = visibility.appreciation !== false && hasBalanceSeries;
     const showBuy = visibility.buy !== false;
     const showSell = visibility.sell !== false;
 
@@ -407,10 +409,17 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         delete window.DEBUG_CHART;
     }
 
+    // Compute appreciation data: balance − contribution at aligned timestamps
+    const appreciationData =
+        !drawdownMode && showAppreciation
+            ? computeAppreciationSeries(finalBalanceData, finalContributionData)
+            : [];
+
     const contributionValues = finalContributionData.map((item) => item.amount);
     const balanceValues = finalBalanceData.map((item) => item.value);
-    const combinedValues = [...contributionValues, ...balanceValues].filter((value) =>
-        Number.isFinite(value)
+    const appreciationValues = appreciationData.map((item) => item.value);
+    const combinedValues = [...contributionValues, ...balanceValues, ...appreciationValues].filter(
+        (value) => Number.isFinite(value)
     );
     const hasValues = combinedValues.length > 0;
     const rawMin = hasValues ? Math.min(...combinedValues) : 0;
@@ -533,6 +542,25 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             lineWidth: CHART_LINE_WIDTHS.balance ?? 2,
             order: 2,
             data: finalBalanceData
+                .filter((item) => {
+                    const t = item.date.getTime();
+                    return !filterStartTime || t >= filterStartTime;
+                })
+                .map((item) => ({
+                    time: item.date.getTime(),
+                    value: item.value,
+                })),
+        });
+    }
+
+    if (showAppreciation && appreciationData.length > 0) {
+        const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
+        animatedSeries.push({
+            key: 'appreciation',
+            color: appreciationGradient ? appreciationGradient[1] : '#FF8E53',
+            lineWidth: CHART_LINE_WIDTHS.appreciation ?? 1,
+            order: 1.5,
+            data: appreciationData
                 .filter((item) => {
                     const t = item.date.getTime();
                     return !filterStartTime || t >= filterStartTime;
@@ -813,6 +841,55 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         }
     }
 
+    // Draw appreciation labels (only in non-drawdown mode)
+    if (showChartLabels && showAppreciation && !drawdownMode && appreciationData.length > 0) {
+        const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
+        const appreciationStartColor = appreciationGradient ? appreciationGradient[0] : '#FF8E53';
+        const appreciationEndColor = appreciationGradient ? appreciationGradient[1] : '#FF8E53';
+
+        const firstAppreciation = appreciationData[0];
+        const firstAppreciationX = xScale(firstAppreciation.date.getTime());
+        const firstAppreciationY = yScale(firstAppreciation.value);
+        const apprStartBounds = drawStartValue(
+            ctx,
+            firstAppreciationX,
+            firstAppreciationY,
+            firstAppreciation.value,
+            appreciationStartColor,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatBalanceValue,
+            true,
+            labelBounds
+        );
+        if (apprStartBounds) {
+            labelBounds.push(apprStartBounds);
+        }
+
+        const lastAppreciation = appreciationData[appreciationData.length - 1];
+        const lastAppreciationX = xScale(lastAppreciation.date.getTime());
+        const lastAppreciationY = yScale(lastAppreciation.value);
+        const apprEndBounds = drawEndValue(
+            ctx,
+            lastAppreciationX,
+            lastAppreciationY,
+            lastAppreciation.value,
+            appreciationEndColor,
+            isMobile,
+            padding,
+            plotWidth,
+            plotHeight,
+            formatBalanceValue,
+            true,
+            labelBounds
+        );
+        if (apprEndBounds) {
+            labelBounds.push(apprEndBounds);
+        }
+    }
+
     ctx.restore(); // Restore the global clip
 
     if (legendState.contributionDirty) {
@@ -833,6 +910,14 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 color: balanceGradient ? balanceGradient[1] : colors.portfolio,
             });
         }
+        if (hasBalanceSeries) {
+            const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
+            legendSeries.push({
+                key: 'appreciation',
+                name: 'Appreciation',
+                color: appreciationGradient ? appreciationGradient[1] : '#FF8E53',
+            });
+        }
         legendSeries.push({ key: 'buy', name: 'Buy', color: colors.buy });
         legendSeries.push({ key: 'sell', name: 'Sell', color: colors.sell });
         updateLegend(legendSeries, chartManager);
@@ -845,8 +930,14 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         return day.getTime();
     };
 
+    const seriesDisplayLabels = {
+        balance: 'Balance',
+        contribution: 'Contribution',
+        appreciation: 'Appreciation',
+    };
+
     const baseSeries = animatedSeries.map((series) => {
-        const displayLabel = series.key === 'balance' ? 'Balance' : 'Contribution';
+        const displayLabel = seriesDisplayLabels[series.key] || series.key;
         let displayColor = series.color;
         if (series.key === 'balance') {
             displayColor =
@@ -855,6 +946,9 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             displayColor =
                 (BALANCE_GRADIENTS.contribution && BALANCE_GRADIENTS.contribution[1]) ||
                 colors.contribution;
+        } else if (series.key === 'appreciation') {
+            displayColor =
+                (BALANCE_GRADIENTS.appreciation && BALANCE_GRADIENTS.appreciation[1]) || '#FF8E53';
         }
         return {
             key: series.key,
