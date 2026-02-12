@@ -554,8 +554,19 @@ export function drawMarker(context, x, y, radius, isBuy, colors, chartBounds) {
 
 /**
  * Nudge a label's vertical position so it does not overlap any previously
- * placed labels.  The function tries moving the label downward first; if
- * that would push it out of the visible plot area it tries upward instead.
+ * placed labels.  The function tries moving the label in the direction that
+ * keeps it closer to its natural position (where the data line is); if that
+ * would push it out of the visible plot area it tries the other direction.
+ *
+ * @param {number} textY – initial y centre of the label
+ * @param {number} textHeight – total text height
+ * @param {number} bgPadding – padding around the text background
+ * @param {Array} existingBounds – bounding boxes of previously placed labels
+ * @param {object} padding – chart padding ({ top, … })
+ * @param {number} plotHeight – available plot height
+ * @param {number} [naturalY] – optional, the y position of the data point
+ *   on the chart.  When provided, the nudge direction will prefer moving
+ *   toward this position rather than always trying downward first.
  */
 export function nudgeLabelPosition(
     textY,
@@ -563,47 +574,72 @@ export function nudgeLabelPosition(
     bgPadding,
     existingBounds,
     padding,
-    plotHeight
+    plotHeight,
+    naturalY
 ) {
+    if (!Number.isFinite(textY)) {
+        return textY;
+    }
     if (!Array.isArray(existingBounds) || existingBounds.length === 0) {
         return textY;
     }
 
-    const labelTop = () => textY - textHeight / 2 - bgPadding;
-    const labelBottom = () => textY + textHeight / 2 + bgPadding;
-    const minY = padding.top + textHeight / 2;
-    const maxY = padding.top + plotHeight - textHeight / 2;
+    // Filter out invalid bounds
+    const validBounds = existingBounds.filter(
+        (b) => Number.isFinite(b.y) && Number.isFinite(b.height)
+    );
+    if (validBounds.length === 0) {
+        return textY;
+    }
 
-    for (const bounds of existingBounds) {
-        const existingTop = bounds.y - bounds.height / 2;
-        const existingBottom = bounds.y + bounds.height / 2;
+    const targetY = naturalY !== undefined ? naturalY : textY;
+    const halfHeight = textHeight / 2 + bgPadding;
+    const minY = padding.top + halfHeight;
+    const maxY = padding.top + plotHeight - halfHeight;
+    const gap = 2;
 
-        // Check for horizontal overlap first – if labels don't share
-        // horizontal space they can't visually collide.
-        if (bounds.right !== undefined && bounds.left !== undefined) {
-            // We'll receive left/right from the caller if available
+    // 1. Generate candidates: target, plus just above/below each existing label
+    const candidates = [targetY];
+    for (const bound of validBounds) {
+        const boundTop = bound.y - bound.height / 2;
+        const boundBottom = bound.y + bound.height / 2;
+
+        candidates.push(boundTop - gap - halfHeight);
+        candidates.push(boundBottom + gap + halfHeight);
+    }
+
+    // 2. Sort candidates by distance to targetY to find best position
+    candidates.sort((a, b) => Math.abs(a - targetY) - Math.abs(b - targetY));
+
+    // 3. Find first valid candidate that doesn't overlap
+    for (const candidateY of candidates) {
+        // Clamp to plot area first
+        const y = Math.max(minY, Math.min(candidateY, maxY));
+
+        // Check if this position causes overlap
+        const myTop = y - halfHeight;
+        const myBottom = y + halfHeight;
+        let overlap = false;
+
+        for (const bound of validBounds) {
+            const bTop = bound.y - bound.height / 2;
+            const bBottom = bound.y + bound.height / 2;
+
+            // Simple vertical overlap check (assuming shared X space)
+            if (myBottom > bTop && myTop < bBottom) {
+                overlap = true;
+                break;
+            }
         }
 
-        // Vertical overlap check
-        if (labelBottom() > existingTop && labelTop() < existingBottom) {
-            const gap = 2;
-            // Try moving below the existing label
-            const candidateDown = existingBottom + textHeight / 2 + bgPadding + gap;
-            // Try moving above the existing label
-            const candidateUp = existingTop - textHeight / 2 - bgPadding - gap;
-
-            if (candidateDown <= maxY) {
-                textY = candidateDown;
-            } else if (candidateUp >= minY) {
-                textY = candidateUp;
-            } else {
-                // Not enough room either way – just clamp below
-                textY = Math.min(candidateDown, maxY);
-            }
+        if (!overlap) {
+            return y;
         }
     }
 
-    return textY;
+    // Fallback: if all candidate positions overlap (e.g. crowded),
+    // return the target position clamped to screen
+    return Math.max(minY, Math.min(targetY, maxY));
 }
 
 export function drawEndValue(
@@ -680,7 +716,8 @@ export function drawEndValue(
             bgPadding,
             existingBounds,
             padding,
-            plotHeight
+            plotHeight,
+            y
         );
     }
 
@@ -760,7 +797,8 @@ export function drawStartValue(
             bgPadding,
             existingBounds,
             padding,
-            plotHeight
+            plotHeight,
+            y
         );
     }
 

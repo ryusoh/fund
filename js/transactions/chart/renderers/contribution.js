@@ -726,7 +726,13 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     }
 
     // Draw start and end values using raw data to ensure accuracy (or transformed data for drawdown)
-    const labelBounds = [];
+    // Use separate bounds for start vs end labels so they don't interfere across chart sides
+    const startLabelBounds = [];
+    const endLabelBounds = [];
+
+    // Collect start labels to draw them in sorted order.
+    // This fixed stacking order when multiple lines start near 0.
+    const startLabelsToDraw = [];
 
     const labelContributionData = drawdownMode ? finalContributionData : rawContributionData;
     if (showChartLabels && showContribution && labelContributionData.length > 0) {
@@ -752,22 +758,25 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             const firstContributionY = yScale(
                 drawdownMode ? firstContribution.amount : firstContribution.amount
             );
-            const startBounds = drawStartValue(
-                ctx,
-                firstContributionX,
-                firstContributionY,
-                firstContribution.amount,
-                contributionStartColor,
-                isMobile,
-                padding,
-                plotWidth,
-                plotHeight,
-                formatContributionAnnotationValue,
-                true
-            );
-            if (startBounds) {
-                labelBounds.push(startBounds);
-            }
+
+            startLabelsToDraw.push({
+                y: firstContributionY,
+                draw: (existingBounds) =>
+                    drawStartValue(
+                        ctx,
+                        firstContributionX,
+                        firstContributionY,
+                        firstContribution.amount,
+                        contributionStartColor,
+                        isMobile,
+                        padding,
+                        plotWidth,
+                        plotHeight,
+                        formatContributionAnnotationValue,
+                        true,
+                        existingBounds
+                    ),
+            });
         }
 
         const lastContribution = labelContributionData[labelContributionData.length - 1];
@@ -785,10 +794,10 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotHeight,
             formatContributionAnnotationValue,
             true,
-            labelBounds
+            endLabelBounds
         );
         if (endBounds) {
-            labelBounds.push(endBounds);
+            endLabelBounds.push(endBounds);
         }
     }
 
@@ -802,23 +811,25 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         if (Math.abs(firstBalance.value) >= 0.01) {
             const firstBalanceX = xScale(firstBalance.date.getTime());
             const firstBalanceY = yScale(firstBalance.value);
-            const balStartBounds = drawStartValue(
-                ctx,
-                firstBalanceX,
-                firstBalanceY,
-                firstBalance.value,
-                balanceStartColor,
-                isMobile,
-                padding,
-                plotWidth,
-                plotHeight,
-                formatBalanceValue,
-                true,
-                labelBounds
-            );
-            if (balStartBounds) {
-                labelBounds.push(balStartBounds);
-            }
+
+            startLabelsToDraw.push({
+                y: firstBalanceY,
+                draw: (existingBounds) =>
+                    drawStartValue(
+                        ctx,
+                        firstBalanceX,
+                        firstBalanceY,
+                        firstBalance.value,
+                        balanceStartColor,
+                        isMobile,
+                        padding,
+                        plotWidth,
+                        plotHeight,
+                        formatBalanceValue,
+                        true,
+                        existingBounds
+                    ),
+            });
         }
 
         const lastBalance = labelBalanceData[labelBalanceData.length - 1];
@@ -836,10 +847,10 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotHeight,
             formatBalanceValue,
             true,
-            labelBounds
+            endLabelBounds
         );
         if (balEndBounds) {
-            labelBounds.push(balEndBounds);
+            endLabelBounds.push(balEndBounds);
         }
     }
 
@@ -853,23 +864,25 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         if (Math.abs(firstAppreciation.value) >= 0.01) {
             const firstAppreciationX = xScale(firstAppreciation.date.getTime());
             const firstAppreciationY = yScale(firstAppreciation.value);
-            const apprStartBounds = drawStartValue(
-                ctx,
-                firstAppreciationX,
-                firstAppreciationY,
-                firstAppreciation.value,
-                appreciationStartColor,
-                isMobile,
-                padding,
-                plotWidth,
-                plotHeight,
-                formatBalanceValue,
-                true,
-                labelBounds
-            );
-            if (apprStartBounds) {
-                labelBounds.push(apprStartBounds);
-            }
+
+            startLabelsToDraw.push({
+                y: firstAppreciationY,
+                draw: (existingBounds) =>
+                    drawStartValue(
+                        ctx,
+                        firstAppreciationX,
+                        firstAppreciationY,
+                        firstAppreciation.value,
+                        appreciationStartColor,
+                        isMobile,
+                        padding,
+                        plotWidth,
+                        plotHeight,
+                        formatBalanceValue,
+                        true,
+                        existingBounds
+                    ),
+            });
         }
 
         const lastAppreciation = appreciationData[appreciationData.length - 1];
@@ -887,12 +900,15 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             plotHeight,
             formatBalanceValue,
             true,
-            labelBounds
+            endLabelBounds
         );
         if (apprEndBounds) {
-            labelBounds.push(apprEndBounds);
+            endLabelBounds.push(apprEndBounds);
         }
     }
+
+    // --- Sort and Draw Starts ---
+    drawSortedStartLabels(startLabelsToDraw, startLabelBounds);
 
     ctx.restore(); // Restore the global clip
 
@@ -1020,5 +1036,28 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         scheduleContributionAnimation(chartManager);
     } else {
         stopContributionAnimation();
+    }
+}
+
+/**
+ * Sorts start labels by Y-position (descending, i.e., bottom-up) and draws them.
+ * This ensures correct visual stacking when labels are constrained at the bottom.
+ *
+ * @param {Array<{y: number, draw: (existingBounds: Array) => object}>} items
+ * @param {Array} startLabelBounds
+ */
+export function drawSortedStartLabels(items, startLabelBounds) {
+    if (!items || items.length === 0) {
+        return;
+    }
+
+    // Sort by Y descending (largest Y = bottom of screen first)
+    items.sort((a, b) => b.y - a.y);
+
+    for (const item of items) {
+        const bounds = item.draw(startLabelBounds);
+        if (bounds) {
+            startLabelBounds.push(bounds);
+        }
     }
 }
