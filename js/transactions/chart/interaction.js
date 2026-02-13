@@ -64,6 +64,70 @@ export function updateCrosshairUI(snapshot, rangeSummary) {
     }
 }
 
+/**
+ * Given a cursor Y position on a composition (stacked-area) chart, determine
+ * which holding's band the cursor is inside by inverting the Y coordinate
+ * and walking the stacked series in order.
+ *
+ * @param {object} layout    – the composition chart layout
+ * @param {number} time      – the crosshair hover timestamp
+ * @param {number} hoverY    – the cursor Y pixel coordinate
+ * @param {Array}  holdings  – enhanced holdings array (sorted by value desc)
+ * @returns {object} the matched holding, or holdings[0] as fallback
+ */
+export function findHoveredHolding(layout, time, hoverY, holdings) {
+    if (!holdings || holdings.length === 0) {
+        return null;
+    }
+    if (
+        !layout ||
+        !Array.isArray(layout.series) ||
+        !layout.chartBounds ||
+        !Number.isFinite(hoverY)
+    ) {
+        return holdings[0];
+    }
+
+    const { top, bottom } = layout.chartBounds;
+    const plotHeight = bottom - top;
+    if (plotHeight <= 0) {
+        return holdings[0];
+    }
+
+    // Invert yScale: y = top + plotHeight - (value / stackMax) * plotHeight
+    // => value = ((bottom - y) / plotHeight) * stackMax
+    const stackMax = layout.stackMaxValue || 100;
+    const invertedValue = ((bottom - hoverY) / plotHeight) * stackMax;
+
+    // Build a set of holding keys for quick lookup
+    const holdingsByKey = new Map();
+    holdings.forEach((h) => holdingsByKey.set(h.key, h));
+
+    // Walk through layout.series in stacking order, accumulating values,
+    // to find which band the cursor falls in.
+    let cumulativeValue = 0;
+    for (const series of layout.series) {
+        const value = typeof series.getValueAtTime === 'function' ? series.getValueAtTime(time) : 0;
+        if (!Number.isFinite(value) || value <= 0) {
+            continue;
+        }
+        const bandBottom = cumulativeValue;
+        cumulativeValue += value;
+        const bandTop = cumulativeValue;
+
+        // Check if the inverted cursor value falls within this band
+        if (invertedValue >= bandBottom && invertedValue <= bandTop) {
+            const matched = holdingsByKey.get(series.key);
+            if (matched) {
+                return matched;
+            }
+        }
+    }
+
+    // Fallback: return the largest holding
+    return holdings[0];
+}
+
 export function drawCrosshairOverlay(ctx, layout) {
     if (!layout) {
         updateCrosshairUI(null, null);
@@ -169,8 +233,8 @@ export function drawCrosshairOverlay(ctx, layout) {
         // Only keep holdings that had actual positive allocation
         const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.1); // Using higher threshold to avoid noise
 
-        // Sort by value (percentage) in descending order and take up to 7 (or fewer if less available)
-        const topHoldings = nonZeroHoldings.sort((a, b) => b.value - a.value).slice(0, 7);
+        // Sort by value (percentage) in descending order
+        nonZeroHoldings.sort((a, b) => b.value - a.value);
 
         const totalValueRaw =
             typeof layout.getTotalValueAtTime === 'function'
@@ -178,7 +242,8 @@ export function drawCrosshairOverlay(ctx, layout) {
                 : null;
         const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
 
-        const enhancedHoldings = topHoldings.map((holding) => {
+        // Enhance ALL non-zero holdings so Y-position hit testing can match any stock
+        const enhanceHolding = (holding) => {
             const absoluteValue = isAbsoluteMode
                 ? holding.value
                 : convertValueToCurrency(
@@ -199,7 +264,11 @@ export function drawCrosshairOverlay(ctx, layout) {
                 absoluteValue,
                 formatted: `${currencyText} (${percentText})`,
             };
-        });
+        };
+
+        const allEnhancedHoldings = nonZeroHoldings.map(enhanceHolding);
+        // Top 7 for display in snapshot panel and dots
+        const enhancedHoldings = allEnhancedHoldings.slice(0, 7);
 
         enhancedHoldings.forEach((h) => seriesSnapshot.push(h));
 
@@ -239,15 +308,14 @@ export function drawCrosshairOverlay(ctx, layout) {
             });
         }
 
-        if (hasHover && enhancedHoldings.length > 0) {
-            drawCompositionHoverPanel(
-                ctx,
+        if (hasHover && allEnhancedHoldings.length > 0) {
+            const hoveredHolding = findHoveredHolding(
                 layout,
-                x,
-                crosshairState.hoverY,
                 time,
-                enhancedHoldings[0]
+                crosshairState.hoverY,
+                allEnhancedHoldings
             );
+            drawCompositionHoverPanel(ctx, layout, x, crosshairState.hoverY, time, hoveredHolding);
         }
     } else {
         layout.series.forEach((series) => {

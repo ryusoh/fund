@@ -1,6 +1,7 @@
 import {
     drawCrosshairOverlay,
     crosshairState,
+    findHoveredHolding,
 } from '../../../js/transactions/chart/interaction.js';
 
 // Mock dependencies
@@ -75,6 +76,7 @@ describe('Chart Interaction Logic', () => {
             series: series,
             valueType: 'percent',
             getTotalValueAtTime: jest.fn().mockReturnValue(200), // Total 200
+            stackMaxValue: 100,
         };
 
         // Reset crosshair state
@@ -111,5 +113,97 @@ describe('Chart Interaction Logic', () => {
 
         // 20 series, all valid. Should have 20 dots.
         expect(ctx.arc).toHaveBeenCalledTimes(20);
+    });
+});
+
+describe('findHoveredHolding', () => {
+    // Layout: chartBounds top=0, bottom=100, so plotHeight=100
+    // stackMaxValue=100 (percent mode)
+    // Three stacked tickers in series order:
+    //   A = 30%  -> band [0, 30]   -> pixel Y [100, 70]
+    //   B = 50%  -> band [30, 80]  -> pixel Y [70, 20]
+    //   C = 20%  -> band [80, 100] -> pixel Y [20, 0]
+    let layout;
+    let holdingA;
+    let holdingB;
+    let holdingC;
+
+    beforeEach(() => {
+        holdingA = { key: 'A', label: 'A', value: 30, color: '#f00' };
+        holdingB = { key: 'B', label: 'B', value: 50, color: '#0f0' };
+        holdingC = { key: 'C', label: 'C', value: 20, color: '#00f' };
+
+        layout = {
+            key: 'composition',
+            chartBounds: { left: 0, right: 200, top: 0, bottom: 100 },
+            stackMaxValue: 100,
+            series: [
+                { key: 'A', getValueAtTime: () => 30 },
+                { key: 'B', getValueAtTime: () => 50 },
+                { key: 'C', getValueAtTime: () => 20 },
+            ],
+        };
+    });
+
+    test('returns holding under cursor when hovering in middle band (B)', () => {
+        // Band B occupies values [30, 80], which maps to pixel Y [70, 20]
+        // hoverY=50 -> invertedValue = ((100-50)/100)*100 = 50, inside [30,80] = B
+        const result = findHoveredHolding(layout, 500, 50, [holdingB, holdingA, holdingC]);
+        expect(result.key).toBe('B');
+    });
+
+    test('returns holding under cursor when hovering in bottom band (A)', () => {
+        // Band A occupies values [0, 30], which maps to pixel Y [100, 70]
+        // hoverY=85 -> invertedValue = ((100-85)/100)*100 = 15, inside [0,30] = A
+        const result = findHoveredHolding(layout, 500, 85, [holdingB, holdingA, holdingC]);
+        expect(result.key).toBe('A');
+    });
+
+    test('returns holding under cursor when hovering in top band (C)', () => {
+        // Band C occupies values [80, 100], which maps to pixel Y [20, 0]
+        // hoverY=10 -> invertedValue = ((100-10)/100)*100 = 90, inside [80,100] = C
+        const result = findHoveredHolding(layout, 500, 10, [holdingB, holdingA, holdingC]);
+        expect(result.key).toBe('C');
+    });
+
+    test('returns first holding as fallback for invalid hoverY', () => {
+        const result = findHoveredHolding(layout, 500, NaN, [holdingB, holdingA, holdingC]);
+        expect(result.key).toBe('B');
+    });
+
+    test('returns null when holdings array is empty', () => {
+        const result = findHoveredHolding(layout, 500, 50, []);
+        expect(result).toBeNull();
+    });
+
+    test('returns first holding when layout has no series', () => {
+        layout.series = null;
+        const result = findHoveredHolding(layout, 500, 50, [holdingA]);
+        expect(result.key).toBe('A');
+    });
+
+    test('returns first holding when hoverY is at exact band boundary', () => {
+        // hoverY=70 -> invertedValue = ((100-70)/100)*100 = 30
+        // 30 is both the top of A's band [0,30] and the bottom of B's band [30,80]
+        // Since we check >= bandBottom && <= bandTop, A's band [0,30] matches first
+        const result = findHoveredHolding(layout, 500, 70, [holdingB, holdingA, holdingC]);
+        expect(result.key).toBe('A');
+    });
+
+    test('returns non-top-7 holding when cursor lands on its band', () => {
+        // Simulate 10 stacked tickers each at 10%
+        // Holdings passed include all 10 (as allEnhancedHoldings would)
+        const allHoldings = [];
+        const allSeries = [];
+        for (let i = 0; i < 10; i++) {
+            const key = `T${i}`;
+            allHoldings.push({ key, label: key, value: 10, color: `#${i}${i}${i}` });
+            allSeries.push({ key, getValueAtTime: () => 10 });
+        }
+        layout.series = allSeries;
+        // T0 band: [0, 10], pixel Y [100, 90]
+        // hoverY=95 -> invertedValue = ((100-95)/100)*100 = 5, inside [0,10] = T0
+        const result = findHoveredHolding(layout, 500, 95, allHoldings);
+        expect(result.key).toBe('T0');
     });
 });
