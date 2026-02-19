@@ -22,6 +22,10 @@ export function stopPeAnimation() {
     glowAnimator.stop('pe');
 }
 
+export function stopConcentrationAnimation() {
+    glowAnimator.stop('concentration');
+}
+
 export function schedulePerformanceAnimation(chartManager) {
     if (!isAnimationEnabled('performance')) {
         glowAnimator.stop('performance');
@@ -62,6 +66,16 @@ export function schedulePeAnimation(chartManager) {
     });
 }
 
+export function scheduleConcentrationAnimation(chartManager) {
+    if (!isAnimationEnabled('concentration')) {
+        glowAnimator.stop('concentration');
+        return;
+    }
+    glowAnimator.schedule('concentration', chartManager, {
+        isActive: () => transactionState.activeChart === 'concentration',
+    });
+}
+
 export function advancePerformanceAnimation(timestamp) {
     if (!isAnimationEnabled('performance')) {
         return 0;
@@ -88,6 +102,13 @@ export function advancePeAnimation(timestamp) {
         return 0;
     }
     return glowAnimator.advance('pe', timestamp);
+}
+
+export function advanceConcentrationAnimation(timestamp) {
+    if (!isAnimationEnabled('concentration')) {
+        return 0;
+    }
+    return glowAnimator.advance('concentration', timestamp);
 }
 
 export function drawSeriesGlow(ctx, seriesKey, seriesData, color, bounds) {

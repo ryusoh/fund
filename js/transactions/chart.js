@@ -113,7 +113,7 @@ export function createChartManager(options = {}) {
         } else if (transactionState.activeChart === 'compositionAbs') {
             drawCompositionAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'concentration') {
-            drawConcentrationChart(ctx, chartManager);
+            drawConcentrationChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'pe') {
             drawPEChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'fx') {

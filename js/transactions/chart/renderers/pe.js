@@ -7,6 +7,7 @@ import {
     stopContributionAnimation,
     stopFxAnimation,
     stopPeAnimation,
+    stopConcentrationAnimation,
     isAnimationEnabled,
     advancePeAnimation,
     schedulePeAnimation,
@@ -113,6 +114,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
+    stopConcentrationAnimation();
 
     const emptyState = document.getElementById('runningAmountEmpty');
 

@@ -136,5 +136,17 @@ describe('PE chart helpers', () => {
             expect(result[0].pe).toBeCloseTo(26.58, 5);
             expect(result[0].date).toEqual(parseLocalDate('2025-06-15'));
         });
+
+        test('stores per-ticker weights in tickerWeights', () => {
+            const dates = ['2025-01-01'];
+            const portfolioPE = [25.0];
+            const tickerPE = { GOOG: [30.0], ANET: [50.0] };
+            const tickerWeights = { GOOG: [0.4], ANET: [0.6] };
+
+            const result = buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, null, null);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].tickerWeights).toEqual({ GOOG: 0.4, ANET: 0.6 });
+        });
     });
 });

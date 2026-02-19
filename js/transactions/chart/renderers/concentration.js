@@ -7,6 +7,11 @@ import {
     stopPerformanceAnimation,
     stopContributionAnimation,
     stopFxAnimation,
+    stopPeAnimation,
+    isAnimationEnabled,
+    advanceConcentrationAnimation,
+    scheduleConcentrationAnimation,
+    drawSeriesGlow,
 } from '../animation.js';
 import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import { drawAxes, drawMountainFill, drawEndValue } from '../core.js';
@@ -92,10 +97,11 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
 /**
  * Draw the concentration chart – a single line showing HHI over time.
  */
-export function drawConcentrationChart(ctx, chartManager) {
+export function drawConcentrationChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
+    stopPeAnimation();
 
     const emptyState = document.getElementById('runningAmountEmpty');
 
@@ -306,6 +312,23 @@ export function drawConcentrationChart(ctx, chartManager) {
             true,
             null
         );
+    }
+
+    // --- Glow animation at endpoint ---
+    const concentrationAnimEnabled = isAnimationEnabled('concentration');
+    const animPhase = advanceConcentrationAnimation(timestamp);
+    if (concentrationAnimEnabled) {
+        drawSeriesGlow(
+            ctx,
+            { coords, color: lineColor, lineWidth: lineThickness },
+            {
+                basePhase: animPhase,
+                seriesIndex: 0,
+                isMobile,
+                chartKey: 'concentration',
+            }
+        );
+        scheduleConcentrationAnimation(chartManager);
     }
 
     // --- Layout for crosshair ---
