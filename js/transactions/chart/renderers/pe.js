@@ -687,8 +687,8 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             // Benchmark crosshair series
             ...benchmarkRendered.map((bmk) => ({
                 key: bmk.key,
-                name: bmk.key === '^GSPC' ? 'S&P 500' : bmk.key === '^IXIC' ? 'NASDAQ' : bmk.key,
-                label: bmk.key === '^GSPC' ? 'S&P' : bmk.key === '^IXIC' ? 'NDX' : bmk.key,
+                name: bmk.key,
+                label: bmk.key,
                 color: bmk.color,
                 getValueAtTime: createTimeInterpolator(bmk.points),
                 formatValue: (v) => `${v.toFixed(1)}x`,
