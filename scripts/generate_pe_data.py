@@ -28,7 +28,7 @@ import json
 import math
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import numpy as np
@@ -176,7 +176,8 @@ def get_closest_fx(fx_series: pd.Series, date: pd.Timestamp) -> float:
 def fetch_stock_eps_data(ticker: str) -> Dict:
     """Fetch Annual EPS points and Current TTM EPS for a stock."""
     symbol = yf_symbol(ticker)
-    data = {"points": [], "current_ttm": None, "currency": "USD"}
+    # Proper type annotation for mixed-type dictionary
+    data: Dict[str, Any] = {"points": [], "current_ttm": None, "currency": "USD"}
 
     try:
         t = yf.Ticker(symbol)
