@@ -242,6 +242,44 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         dataMax = Math.max(dataMax, forwardPEValue);
     }
 
+    // Build benchmark PE series
+    const benchmarkData = data.benchmark_pe || {};
+    const benchmarkSeriesMap = {};
+    const benchmarkKeys = Object.keys(benchmarkData);
+    for (const bmkKey of benchmarkKeys) {
+        const bmkPE = benchmarkData[bmkKey];
+        if (!Array.isArray(bmkPE)) {
+            continue;
+        }
+        const bmkSeries = buildPESeries(data.dates, bmkPE, null, null, filterFrom, filterTo);
+        if (bmkSeries.length > 0) {
+            benchmarkSeriesMap[bmkKey] = bmkSeries;
+        }
+    }
+
+    const benchmarkFwdPE = forwardPE ? forwardPE.benchmark_forward_pe || {} : {};
+
+    // Include benchmark values in Y range (only for the first visible benchmark)
+    const { chartVisibility } = transactionState;
+    let visibleBenchmarkKey = null;
+
+    // Only support ^GSPC
+    if (chartVisibility['^GSPC'] !== false && benchmarkData['^GSPC']) {
+        visibleBenchmarkKey = '^GSPC';
+    }
+
+    if (visibleBenchmarkKey && benchmarkSeriesMap[visibleBenchmarkKey]) {
+        const bmkSeries = benchmarkSeriesMap[visibleBenchmarkKey];
+        const bmkValues = bmkSeries.map((p) => p.pe);
+        dataMax = Math.max(dataMax, ...bmkValues);
+
+        // Include benchmark forward PE
+        const bmkFwdVal = benchmarkFwdPE[visibleBenchmarkKey];
+        if (typeof bmkFwdVal === 'number') {
+            dataMax = Math.max(dataMax, bmkFwdVal);
+        }
+    }
+
     // Y range with 10% padding
     const range = dataMax - dataMin;
     const yPadding = Math.max(range * 0.1, 1);
@@ -285,6 +323,147 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     const lineColor = gradientStops[1] || colors.portfolio || '#ffef2f';
     const lineThickness = CHART_LINE_WIDTHS.contribution ?? 2;
 
+    // --- Draw benchmark line (only the visible one) ---
+    const lastPoint = series[series.length - 1];
+    const showLabels = transactionState.showChartLabels !== false;
+    const benchmarkRendered = [];
+    const labelBounds = [];
+
+    if (visibleBenchmarkKey) {
+        const bmkSeries = benchmarkSeriesMap[visibleBenchmarkKey];
+        if (bmkSeries && bmkSeries.length > 0) {
+            const bmkGradientStops = BENCHMARK_GRADIENTS[visibleBenchmarkKey] || [
+                colors.portfolio,
+                colors.portfolio,
+            ];
+            const bmkColor = bmkGradientStops[1] || '#999';
+            // Mountain fill for benchmark
+            const bmkCoords = bmkSeries.map((point) => ({
+                x: xScale(point.date.getTime()),
+                y: yScale(point.pe),
+            }));
+
+            const bmkGradient = ctx.createLinearGradient(
+                0,
+                padding.top,
+                0,
+                plotHeight + padding.top
+            );
+            bmkGradient.addColorStop(0, `${bmkColor}33`); // ~20% opacity
+            bmkGradient.addColorStop(1, `${bmkColor}00`); // 0% opacity
+
+            ctx.beginPath();
+            if (bmkCoords.length > 0) {
+                ctx.moveTo(bmkCoords[0].x, plotHeight + padding.top);
+                bmkCoords.forEach((p) => ctx.lineTo(p.x, p.y));
+                ctx.lineTo(bmkCoords[bmkCoords.length - 1].x, plotHeight + padding.top);
+            }
+            ctx.closePath();
+            ctx.fillStyle = bmkGradient;
+            ctx.fill();
+
+            // Draw benchmark line
+            if (bmkGradientStops.length === 2) {
+                const gradient = ctx.createLinearGradient(
+                    padding.left,
+                    0,
+                    padding.left + plotWidth,
+                    0
+                );
+                gradient.addColorStop(0, bmkGradientStops[0]);
+                gradient.addColorStop(1, bmkGradientStops[1]);
+                ctx.strokeStyle = gradient;
+            } else {
+                ctx.strokeStyle = bmkColor;
+            }
+            ctx.beginPath();
+            ctx.lineWidth = Math.max(1, lineThickness - 0.5);
+            ctx.globalAlpha = 0.8;
+            bmkCoords.forEach((coord, index) => {
+                if (index === 0) {
+                    ctx.moveTo(coord.x, coord.y);
+                } else {
+                    ctx.lineTo(coord.x, coord.y);
+                }
+            });
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            // Benchmark forward PE dashed line
+            const bmkFwdPE = benchmarkFwdPE[visibleBenchmarkKey];
+            const bmkLastPoint = bmkSeries[bmkSeries.length - 1];
+            if (bmkFwdPE && forwardTargetTime !== null && bmkLastPoint && !filterTo) {
+                const bmkLastX = xScale(bmkLastPoint.date.getTime());
+                const bmkLastY = yScale(bmkLastPoint.pe);
+                const bmkFwdX = xScale(forwardTargetTime);
+                const bmkFwdY = yScale(bmkFwdPE);
+
+                ctx.save();
+                ctx.setLineDash([4, 3]);
+                ctx.strokeStyle = bmkColor;
+                ctx.lineWidth = Math.max(1, lineThickness - 0.5);
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(bmkLastX, bmkLastY);
+                ctx.lineTo(bmkFwdX, bmkFwdY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 1.0;
+                ctx.restore();
+            }
+
+            // Animated shimmer endpoint for benchmark
+            if (isAnimationEnabled('pe') && bmkLastPoint && !filterTo) {
+                const lastCoord = {
+                    x: xScale(bmkLastPoint.date.getTime()),
+                    y: yScale(bmkLastPoint.pe),
+                };
+                drawSeriesGlow(
+                    ctx,
+                    { coords: [lastCoord], color: bmkColor, lineWidth: lineThickness },
+                    {
+                        basePhase: 0,
+                        seriesIndex: 1,
+                        isMobile,
+                        chartKey: 'pe',
+                    }
+                );
+            }
+
+            // Benchmark end value label
+            if (showLabels && bmkLastPoint) {
+                const bmkLastX = xScale(bmkLastPoint.date.getTime());
+                const bmkLastY = yScale(bmkLastPoint.pe);
+                const bounds = drawEndValue(
+                    ctx,
+                    bmkLastX,
+                    bmkLastY,
+                    bmkLastPoint.pe,
+                    bmkColor,
+                    isMobile,
+                    padding,
+                    plotWidth,
+                    plotHeight,
+                    (v) => `${v.toFixed(1)}x`,
+                    true,
+                    labelBounds
+                );
+                if (bounds) {
+                    labelBounds.push(bounds);
+                }
+            }
+
+            // Store for crosshair
+            const bmkPoints = bmkSeries.map((p) => ({ time: p.date.getTime(), value: p.pe }));
+            benchmarkRendered.push({
+                key: visibleBenchmarkKey,
+                color: bmkColor,
+                points: bmkPoints,
+                lastPE: bmkLastPoint ? bmkLastPoint.pe : 0,
+            });
+        }
+    }
+
     const coords = series.map((point) => ({
         x: xScale(point.date.getTime()),
         y: yScale(point.pe),
@@ -325,8 +504,6 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     ctx.stroke();
 
     // --- Draw forward PE dashed line ---
-    const lastPoint = series[series.length - 1];
-    const showLabels = transactionState.showChartLabels !== false;
 
     if (forwardTargetTime !== null && forwardPEValue !== null && lastPoint) {
         const lastX = xScale(lastPoint.date.getTime());
@@ -411,7 +588,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     if (showLabels && lastPoint) {
         const lastX = xScale(lastPoint.date.getTime());
         const lastY = yScale(lastPoint.pe);
-        drawEndValue(
+        const bounds = drawEndValue(
             ctx,
             lastX,
             lastY,
@@ -423,8 +600,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             plotHeight,
             (v) => `${v.toFixed(1)}x`,
             true,
-            null
+            labelBounds
         );
+        if (bounds) {
+            labelBounds.push(bounds);
+        }
     }
 
     // --- Layout for crosshair ---
@@ -504,6 +684,16 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 },
                 formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
             },
+            // Benchmark crosshair series
+            ...benchmarkRendered.map((bmk) => ({
+                key: bmk.key,
+                name: bmk.key === '^GSPC' ? 'S&P 500' : bmk.key === '^IXIC' ? 'NASDAQ' : bmk.key,
+                label: bmk.key === '^GSPC' ? 'S&P' : bmk.key === '^IXIC' ? 'NDX' : bmk.key,
+                color: bmk.color,
+                getValueAtTime: createTimeInterpolator(bmk.points),
+                formatValue: (v) => `${v.toFixed(1)}x`,
+                formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
+            })),
         ],
         rawSeries: series,
         forwardPE: forwardPE || null,
@@ -527,6 +717,25 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             color: lineColor,
         });
     }
+    // Benchmark legend items (all potential benchmarks, not just visible)
+    // This allows toggling them on
+    const allBenchmarkKeys = ['^GSPC'];
+    for (const bmkKey of allBenchmarkKeys) {
+        if (!benchmarkData[bmkKey]) {
+            continue;
+        }
+
+        const bmkName = bmkKey;
+        const bmkGradient = BENCHMARK_GRADIENTS[bmkKey];
+        const bmkColor = bmkGradient ? bmkGradient[1] : '#999';
+
+        legendItems.push({
+            key: bmkKey,
+            name: bmkName, // Simple name without stats
+            color: bmkColor,
+        });
+    }
+
     updateLegend(legendItems, chartManager);
 }
 

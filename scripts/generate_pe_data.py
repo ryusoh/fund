@@ -38,6 +38,7 @@ PRICES_JSON_PATH = DATA_DIR / "historical_prices.json"
 EPS_CACHE_PATH = DATA_DIR / "checkpoints" / "fetched_eps_cache.json"
 MANUAL_PATCH_PATH = DATA_DIR / "manual_eps_patch.json"
 SPLIT_HISTORY_PATH = DATA_DIR / "split_history.csv"
+BENCHMARK_HISTORY_PATH = DATA_DIR / "benchmark_history.json"
 
 # Tickers classified as ETFs
 ETF_TICKERS = frozenset(
@@ -257,6 +258,104 @@ MANUAL_TICKER_PE_CURVES = {
         "2024-12-31": 32.0,
         "2026-02-19": 35.0,
     },
+    # --- Benchmark indices (for PE chart benchmarks) ---
+    # S&P 500 trailing PE — source: multpl.com (monthly)
+    "^GSPC": {
+        "2019-01-01": 19.60,
+        "2019-02-01": 20.60,
+        "2019-03-01": 20.86,
+        "2019-04-01": 21.56,
+        "2019-05-01": 21.15,
+        "2019-06-01": 21.37,
+        "2019-07-01": 22.28,
+        "2019-08-01": 21.67,
+        "2019-09-01": 22.44,
+        "2019-10-01": 22.04,
+        "2019-11-01": 22.62,
+        "2019-12-01": 22.78,
+        "2020-01-01": 24.88,
+        "2020-02-01": 26.42,
+        "2020-03-01": 22.80,
+        "2020-04-01": 24.97,
+        "2020-05-01": 27.82,
+        "2020-06-01": 31.29,
+        "2020-07-01": 32.44,
+        "2020-08-01": 34.41,
+        "2020-09-01": 34.27,
+        "2020-10-01": 35.30,
+        "2020-11-01": 37.16,
+        "2020-12-01": 39.26,
+        "2021-01-01": 35.96,
+        "2021-02-01": 33.24,
+        "2021-03-01": 30.50,
+        "2021-04-01": 29.92,
+        "2021-05-01": 28.05,
+        "2021-06-01": 26.70,
+        "2021-07-01": 26.56,
+        "2021-08-01": 26.23,
+        "2021-09-01": 25.35,
+        "2021-10-01": 24.39,
+        "2021-11-01": 24.52,
+        "2021-12-01": 23.63,
+        "2022-01-01": 23.11,
+        "2022-02-01": 22.42,
+        "2022-03-01": 22.19,
+        "2022-04-01": 22.40,
+        "2022-05-01": 20.81,
+        "2022-06-01": 20.28,
+        "2022-07-01": 20.53,
+        "2022-08-01": 22.03,
+        "2022-09-01": 20.58,
+        "2022-10-01": 20.44,
+        "2022-11-01": 22.07,
+        "2022-12-01": 22.65,
+        "2023-01-01": 22.82,
+        "2023-02-01": 23.40,
+        "2023-03-01": 22.66,
+        "2023-04-01": 23.27,
+        "2023-05-01": 23.15,
+        "2023-06-01": 24.01,
+        "2023-07-01": 24.76,
+        "2023-08-01": 24.16,
+        "2023-09-01": 23.93,
+        "2023-10-01": 22.78,
+        "2023-11-01": 23.51,
+        "2023-12-01": 24.35,
+        "2024-01-01": 25.01,
+        "2024-02-01": 26.14,
+        "2024-03-01": 27.02,
+        "2024-04-01": 26.41,
+        "2024-05-01": 26.93,
+        "2024-06-01": 27.64,
+        "2024-07-01": 28.08,
+        "2024-08-01": 27.67,
+        "2024-09-01": 28.09,
+        "2024-10-01": 28.45,
+        "2024-11-01": 28.66,
+        "2024-12-01": 28.60,
+        "2025-01-01": 28.16,
+        "2025-02-01": 28.15,
+        "2025-03-01": 26.23,
+        "2025-04-01": 24.56,
+        "2025-05-01": 26.34,
+        "2025-06-01": 27.10,
+        "2025-07-01": 27.81,
+        "2025-08-01": 27.84,
+        "2025-09-01": 28.13,
+        "2025-10-01": 28.78,
+        "2025-11-01": 28.80,
+        "2025-12-01": 29.28,
+        "2026-01-01": 29.60,
+        "2026-02-01": 29.55,
+        "2026-02-18": 29.56,
+    },
+}
+
+# Benchmark tickers to include as separate PE series.
+# Each maps to an ETF proxy for fetching current trailing PE (since Yahoo
+# returns None for raw index PE).
+BENCHMARK_PE_TICKERS: Dict[str, str] = {
+    "^GSPC": "SPY",
 }
 
 FX_CACHE: Dict[str, pd.Series] = {}
@@ -558,7 +657,46 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
 def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     symbol = yf_symbol(ticker)
     if ticker in MANUAL_TICKER_PE_CURVES:
-        points = MANUAL_TICKER_PE_CURVES[ticker]
+        points = MANUAL_TICKER_PE_CURVES[ticker].copy()  # Copy to avoid mutating global constant
+
+        # Auto-append current PE for benchmarks to history file
+        if ticker in BENCHMARK_PE_TICKERS:
+            proxy = BENCHMARK_PE_TICKERS[ticker]
+            try:
+                # Load existing history
+                history = {}
+                if BENCHMARK_HISTORY_PATH.exists():
+                    with open(BENCHMARK_HISTORY_PATH, "r") as f:
+                        try:
+                            history = json.load(f)
+                        except json.JSONDecodeError:
+                            history = {}
+
+                # Fetch current proxy PE
+                info = yf.Ticker(proxy).info
+                current_pe = info.get("trailingPE") if info else None
+
+                if current_pe and current_pe > 0:
+                    today_str = datetime.now().strftime("%Y-%m-%d")
+                    if ticker not in history:
+                        history[ticker] = {}
+
+                    # Update history
+                    history[ticker][today_str] = float(current_pe)
+
+                    # Save updated history
+                    with open(BENCHMARK_HISTORY_PATH, "w") as f:
+                        json.dump(history, f, indent=4, sort_keys=True)
+
+                    print(f"  Updated history for {ticker}: {today_str}={current_pe}")
+
+                # Merge history into points (live data overrides manual if duplicate date)
+                if ticker in history:
+                    points.update(history[ticker])
+
+            except Exception as e:
+                print(f"Warning: Failed to update benchmark history for {ticker}: {e}")
+
         s = pd.Series(index=dates, dtype=float)
         # Convert keys to timestamps and sort
         ts_points = {pd.Timestamp(k).tz_localize(None): v for k, v in points.items()}
@@ -790,6 +928,49 @@ def main():
             print(f"    {t}: {pe}x")
     else:
         print("  No forward PE data available")
+
+    # Compute benchmark PE series (^GSPC, ^IXIC)
+    print("Fetching Benchmark PE...")
+    benchmark_pe: Dict[str, Any] = {}
+    benchmark_fwd_pe: Dict[str, float] = {}
+    for bmk_ticker, proxy_etf in BENCHMARK_PE_TICKERS.items():
+        # Historical PE via MANUAL_TICKER_PE_CURVES interpolation
+        pe_series = fetch_etf_pe(bmk_ticker, dates)
+        if pe_series is None:
+            print(f"  {bmk_ticker}: No PE data from manual curves")
+            continue
+
+        # Update the last data point with live trailing PE from the ETF proxy
+        try:
+            proxy_info = yf.Ticker(proxy_etf).info
+            if proxy_info:
+                live_pe = proxy_info.get("trailingPE")
+                if live_pe and math.isfinite(live_pe) and live_pe > 0:
+                    pe_series.iloc[-1] = float(live_pe)
+
+                fwd_pe = proxy_info.get("forwardPE")
+                if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
+                    benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
+        except Exception:
+            pass
+
+        pe_values = [
+            round(float(v), 2) if pd.notna(v) and math.isfinite(v) else None for v in pe_series
+        ]
+        benchmark_pe[bmk_ticker] = pe_values
+        latest = next((v for v in reversed(pe_values) if v is not None), None)
+        fwd_label = (
+            f", Fwd={benchmark_fwd_pe[bmk_ticker]}x" if bmk_ticker in benchmark_fwd_pe else ""
+        )
+        print(f"  {bmk_ticker} ({proxy_etf}): Latest={latest}x{fwd_label}")
+
+    if benchmark_pe:
+        final_output["benchmark_pe"] = benchmark_pe
+    if benchmark_fwd_pe:
+        if "forward_pe" not in final_output:
+            target_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+            final_output["forward_pe"] = {"target_date": target_date}
+        final_output["forward_pe"]["benchmark_forward_pe"] = benchmark_fwd_pe
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:
