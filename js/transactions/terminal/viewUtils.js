@@ -5,6 +5,7 @@ import {
     getCompositionSnapshotLine,
     getFxSnapshotLine,
     getContributionSummaryText,
+    getConcentrationSnapshotText,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -32,6 +33,7 @@ export function isActiveChartVisible() {
             'performance',
             'composition',
             'compositionAbs',
+            'concentration',
             'fx',
             'drawdown',
             'drawdownAbs',
@@ -65,6 +67,9 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'drawdownAbs') {
         return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true });
+    }
+    if (activeChart === 'concentration') {
+        return getConcentrationSnapshotText();
     }
     return null;
 }

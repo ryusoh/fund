@@ -6,6 +6,7 @@ import {
     getFxSnapshotLine,
     getDrawdownSnapshotLine,
     getContributionSummaryText,
+    getConcentrationSnapshotText,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -26,13 +27,15 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot drawdown abs    - Show drawdown chart with absolute values\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
+            '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
             '  plot fx              - Show FX rate chart for the selected base currency\n\n' +
             'Usage: plot <subcommand> or p <subcommand>\n' +
-            '  balance      [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  performance  [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  drawdown     [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  composition  [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  fx           [year|quarter|qN] | [from <...>] | [<...> to <...>]';
+            '  balance       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  performance   [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  drawdown      [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  composition   [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
     }
@@ -295,6 +298,38 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 if (drawdownSnapshot) {
                     result += `\n${drawdownSnapshot}`;
                 }
+            }
+            break;
+        }
+        case 'concentration': {
+            dateRange = applyDateArgs(rawArgs);
+            const concSection = document.getElementById('runningAmountSection');
+            const concTableContainer = document.querySelector('.table-responsive-container');
+
+            const isConcActive = transactionState.activeChart === 'concentration';
+            const isConcVisible = concSection && !concSection.classList.contains('is-hidden');
+
+            if (isConcActive && isConcVisible) {
+                setActiveChart(null);
+                if (concSection) {
+                    concSection.classList.add('is-hidden');
+                }
+                result = 'Hidden concentration chart.';
+            } else {
+                setActiveChart('concentration');
+                if (concSection) {
+                    concSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (concTableContainer) {
+                    concTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing concentration (HHI) chart for ${formatDateRange(dateRange)}.`;
+                getConcentrationSnapshotText().then((text) => {
+                    if (text) {
+                        appendMessage(text);
+                    }
+                });
             }
             break;
         }

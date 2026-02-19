@@ -3,5 +3,6 @@ export const chartLayouts = {
     contribution: null,
     drawdown: null,
     composition: null,
+    concentration: null,
     fx: null,
 };

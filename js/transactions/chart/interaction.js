@@ -681,6 +681,7 @@ function getActiveChartKey() {
         active === 'performance' ||
         active === 'composition' ||
         active === 'compositionAbs' ||
+        active === 'concentration' ||
         active === 'contribution' ||
         active === 'fx' ||
         active === 'drawdown' ||

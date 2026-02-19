@@ -23,6 +23,7 @@ import {
 import { normalizeDateOnly } from '@utils/date.js';
 import { getHoldingAssetClass } from '@js/config.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
+import { getConcentrationText } from './stats/analysis.js';
 
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
@@ -763,4 +764,8 @@ export async function getContributionSummaryText(dateRange = transactionState.ch
         return '';
     }
     return ['Contribution & Balance Summary', ...blocks].join('\n');
+}
+
+export async function getConcentrationSnapshotText() {
+    return getConcentrationText();
 }

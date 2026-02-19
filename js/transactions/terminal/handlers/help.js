@@ -12,9 +12,9 @@ export function handleHelpCommand(args, { appendMessage }) {
             '                       Examples: stats lifespan, s cagr, stats concentration\n' +
             '  plot (p)           - Chart commands\n' +
             '                       Use "plot" or "p" for subcommands\n' +
-            '                       Subcommands: balance, performance, drawdown, composition, composition-abs, fx\n' +
+            '                       Subcommands: balance, performance, drawdown, composition, composition-abs, concentration, fx\n' +
             '                       Examples: plot balance, p performance, plot drawdown, plot composition 2023,\n' +
-            '                                 plot composition abs 2023, plot fx\n' +
+            '                                 plot composition abs 2023, plot concentration, plot fx\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
             '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
             '  summary            - Show summary of the currently active chart\n' +

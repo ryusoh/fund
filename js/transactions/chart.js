@@ -29,6 +29,7 @@ import {
     aggregateCompositionSeries,
     buildCompositionDisplayOrder,
 } from './chart/renderers/composition.js';
+import { drawConcentrationChart } from './chart/renderers/concentration.js';
 
 export { buildFxChartSeries };
 export { buildDrawdownSeries };
@@ -110,6 +111,8 @@ export function createChartManager(options = {}) {
             drawCompositionChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'compositionAbs') {
             drawCompositionAbsoluteChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'concentration') {
+            drawConcentrationChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {

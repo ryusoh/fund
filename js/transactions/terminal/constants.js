@@ -48,6 +48,7 @@ export const PLOT_SUBCOMMANDS = [
     'performance',
     'composition',
     'composition-abs',
+    'concentration',
     'fx',
     'drawdown',
 ];
