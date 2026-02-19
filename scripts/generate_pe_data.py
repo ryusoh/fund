@@ -44,6 +44,8 @@ OUTPUT_DIR = DATA_DIR / "output" / "figures"
 
 HOLDINGS_PATH = DATA_DIR / "checkpoints" / "holdings_daily.parquet"
 PRICES_JSON_PATH = DATA_DIR / "historical_prices.json"
+EPS_CACHE_PATH = DATA_DIR / "checkpoints" / "fetched_eps_cache.json"
+MANUAL_PATCH_PATH = DATA_DIR / "manual_eps_patch.json"
 
 # Tickers classified as ETFs
 ETF_TICKERS = frozenset(
@@ -120,7 +122,31 @@ YFINANCE_ALIASES = {
     "BF_B": "BF-B",
 }
 
-# Cache for FX history to avoid redundant fetches
+# Tickers that are Bonds, Money Market, Inverse, or Commodities (No P/E Intent)
+EXEMPT_TICKERS = frozenset(
+    {
+        "FNSFX",  # Bond Mutual Fund
+        "BOXX",  # Cash/Options Strategy
+        "BNDW",  # Total World Bond
+        "SH",  # Short S&P
+        "PSQ",  # Short QQQ
+        "SLV",  # Silver
+        "GLD",  # Gold
+        "SJB",  # Short High Yield
+        "BUG",  # Cyber Security (ETF but specialized) - actually is Equity ETF, keep checking?
+        # Wait, BUG is Equity ETF. Keeping it out.
+        "DICE",  # Pharm?
+        "PTLC",  # ?
+        "AG",  # First Majestic (Silver Miner) - Has PE
+        "AGG",  # Bond
+        "LQD",  # Corporate Bond
+        "TLT",  # Treasury Bond
+        "BIL",  # T-Bills
+        "SGOV",  # T-Bills
+    }
+)
+
+# Cache for FX rates
 FX_CACHE: Dict[str, pd.Series] = {}
 
 
@@ -173,66 +199,126 @@ def get_closest_fx(fx_series: pd.Series, date: pd.Timestamp) -> float:
     return 1.0  # Fallback
 
 
-def fetch_stock_eps_data(ticker: str) -> Dict:
-    """Fetch Annual EPS points and Current TTM EPS for a stock."""
-    symbol = yf_symbol(ticker)
-    # Proper type annotation for mixed-type dictionary
-    data: Dict[str, Any] = {"points": [], "current_ttm": None, "currency": "USD"}
+def load_eps_cache() -> Dict[str, Any]:
+    if EPS_CACHE_PATH.exists():
+        try:
+            with open(EPS_CACHE_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading EPS cache: {e}")
+    return {}
 
+
+def save_eps_cache(cache: Dict[str, Any]):
     try:
-        t = yf.Ticker(symbol)
-        info = t.info or {}
+        EPS_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(EPS_CACHE_PATH, "w") as f:
+            json.dump(cache, f, indent=4)
+    except Exception as e:
+        print(f"Error saving EPS cache: {e}")
 
-        curr = info.get("currency", "USD")
-        fin_curr = info.get("financialCurrency", curr)
 
-        # 1. Current TTM EPS (in Price Currency)
-        # This is our anchor for "today"
-        ttm_eps = info.get("trailingEps")
-        if ttm_eps is not None and math.isfinite(ttm_eps):
-            data["current_ttm"] = float(ttm_eps)
+def load_manual_patch() -> Dict[str, Dict[str, float]]:
+    if MANUAL_PATCH_PATH.exists():
+        try:
+            with open(MANUAL_PATCH_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading manual patch: {e}")
+    return {}
 
-        # 2. Historical Annual EPS (in Financial Currency)
-        income = t.income_stmt
-        if income is not None and not income.empty:
-            # Look for Basic EPS
-            eps_row = None
-            for label in ["Basic EPS", "Diluted EPS", "Basic Eps"]:
-                if label in income.index:
-                    eps_row = income.loc[label]
-                    break
 
-            if eps_row is not None:
-                # Need FX data?
+def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
+    """Fetch EPS data for stocks with caching and manual patches."""
+    # 1. Load Cache & Patch
+    cache = load_eps_cache()
+    manual_patch = load_manual_patch()
+
+    # 2. Update Cache with new data
+    # (Only if we want to refresh. Assume yes.)
+    for t in tickers:
+        try:
+            stock = yf.Ticker(t)
+            # Try to get info safely
+            info = {}
+            try:
+                info = stock.info
+            except:
+                pass
+
+            current_ttm = info.get("trailingEps")
+            currency = info.get("currency", "USD")
+
+            # Historical Annual
+            financials = stock.income_stmt
+            if not financials.empty and "Basic EPS" in financials.index:
+                eps_row = financials.loc["Basic EPS"]
+
+                # Check if FX conversion needed
+                fin_curr = info.get("financialCurrency", currency)
                 fx_series = None
-                if curr != fin_curr:
-                    pair = f"{fin_curr}{curr}=X"
+                if currency != fin_curr:
+                    # e.g. CNY -> USD. Pair = CNYUSD=X
+                    pair = f"{fin_curr}{currency}=X"
                     fx_series = get_fx_history(pair)
 
-                for date, val in eps_row.items():
-                    if val is None or not math.isfinite(val):
-                        continue
+                # Init ticker entry if needed
+                if t not in cache:
+                    cache[t] = {"points": {}, "currency": currency}
 
-                    date_ts = pd.Timestamp(date).normalize().tz_localize(None)
-                    val_float = float(val)
+                # Update metadata
+                cache[t]["current_ttm"] = current_ttm
+                cache[t]["currency"] = currency
+                if "points" not in cache[t]:
+                    cache[t]["points"] = {}
 
-                    # Convert if needed
-                    if fx_series is not None:
-                        rate = get_closest_fx(fx_series, date_ts)
-                        val_float *= rate
-                    elif curr == "GBp" and fin_curr == "GBP":
-                        # Pence vs Pounds special case
-                        val_float *= 100
+                # Merge points
+                for date_val, eps_val in eps_row.items():
+                    if pd.notna(eps_val):
+                        d_ts = pd.Timestamp(date_val)
+                        d_str = d_ts.strftime("%Y-%m-%d")
+                        val_float = float(eps_val)
 
-                    data["points"].append({"date": date_ts, "eps": val_float})
+                        # Convert if needed
+                        if fx_series is not None:
+                            rate = get_closest_fx(fx_series, d_ts)
+                            val_float *= rate
+                        elif currency == "GBP" and fin_curr == "GBp":  # Pence -> Pounds
+                            val_float /= 100.0
 
-        # Sort points by date
-        data["points"].sort(key=lambda x: x["date"])
+                        cache[t]["points"][d_str] = val_float
 
-    except Exception as exc:
-        print(f"  Warning: Error fetching data for {ticker}: {exc}")
+        except Exception as e:
+            print(f"Warning: Error fetching {t}: {e}")
 
-    return data
+    # 3. Save Cache
+    save_eps_cache(cache)
+
+    # 4. Construct Final Data (Merge Cache + Patch)
+    results = {}
+    for t in tickers:
+        # Default empty structure if not in cache (and fetch failed)
+        base = cache.get(t, {"points": {}, "current_ttm": None, "currency": "USD"})
+        points_map = base.get("points", {}).copy()
+
+        # Apply Patch
+        if t in manual_patch:
+            points_map.update(manual_patch[t])
+
+        # Convert to list
+        points_list = []
+        for d, v in points_map.items():
+            points_list.append({"date": pd.Timestamp(d), "eps": v})
+
+        points_list.sort(key=lambda x: x["date"])
+
+        results[t] = {
+            "points": points_list,
+            "current_ttm": base.get("current_ttm"),
+            "currency": base.get("currency", "USD"),
+        }
+
+    return results
 
 
 def fetch_etf_pe(ticker: str) -> Optional[float]:
@@ -346,8 +432,17 @@ def main():
 
     # Filter tickers
     all_tickers = [t for t in holdings_df.columns if t not in ("date", "total_value", "Others")]
-    stock_tickers = [t for t in all_tickers if not is_etf(t)]
-    etf_tickers = [t for t in all_tickers if is_etf(t)]
+
+    # Remove exempt tickers
+    filtered_tickers = []
+    for t in all_tickers:
+        if t in EXEMPT_TICKERS:
+            # print(f"Skipping Exempt (Bond/Non-Equity): {t}")
+            continue
+        filtered_tickers.append(t)
+
+    stock_tickers = [t for t in filtered_tickers if not is_etf(t)]
+    etf_tickers = [t for t in filtered_tickers if is_etf(t)]
 
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
 
@@ -363,10 +458,15 @@ def main():
     print("Fetching Stock EPS and history...")
     stock_eps_daily = pd.DataFrame(index=dates)
 
-    for t in stock_tickers:
-        data = fetch_stock_eps_data(t)
+    print("Fetching Stock EPS and history (Batch)...")
+    stock_eps_daily = pd.DataFrame(index=dates)
+
+    # Batch fetch
+    all_stock_data = fetch_stock_eps_data(stock_tickers)
+
+    for t, data in all_stock_data.items():
         if not data["points"] and data["current_ttm"] is None:
-            print(f"  {t}: No EPS data found")
+            # print(f"  {t}: No EPS data found") # Reduce noise
             continue
 
         eps_series = interpolate_eps_series(data, dates)
@@ -423,6 +523,12 @@ def main():
 
         # Calculate Portfolio PE
         portfolio_pe = calculate_harmonic_pe(mv_map, pe_map)
+
+        # Calculate weights
+        day_weights = {}
+        if total_mv > 0:
+            for t, mv in mv_map.items():
+                day_weights[t] = mv / total_mv
 
         result_dates.append(date_str)
         result_portfolio_pe.append(round(portfolio_pe, 2) if portfolio_pe else None)

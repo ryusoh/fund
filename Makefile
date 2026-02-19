@@ -22,7 +22,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 	 scripts/ratios/calculate_ratios.py \
 	 scripts/twrr/step07_plot_twrr.py
 
-PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
+PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | grep -v '^data/' | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
 
 help:
 	@echo "Targets:"
@@ -75,7 +75,7 @@ lint: js-lint
 	markdownlint "**/*.md" --ignore-path .gitignore
 
 fmt:
-	black .
+	$(PY) -m black .
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
 		npx prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \

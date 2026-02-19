@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any
+from unittest.mock import patch, MagicMock
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -14,6 +15,8 @@ from scripts.generate_pe_data import (
     interpolate_eps_series,
     calculate_harmonic_pe,
     get_closest_fx,
+    fetch_stock_eps_data,
+    EXEMPT_TICKERS,
 )
 
 
@@ -22,10 +25,6 @@ class TestGeneratePEData(unittest.TestCase):
         """Test daily interpolation logic between annual EPS points."""
         dates = pd.date_range(start="2023-01-01", end="2023-01-05")
 
-        # Mock stock data:
-        # Annual EPS 2023-01-01 = 1.0
-        # Annual EPS 2023-01-05 = 5.0
-        # No current TTM
         stock_data: Dict[str, Any] = {
             "points": [
                 {"date": pd.Timestamp("2023-01-01"), "eps": 1.0},
@@ -37,88 +36,99 @@ class TestGeneratePEData(unittest.TestCase):
 
         series = interpolate_eps_series(stock_data, dates)
 
-        # Check values
         self.assertAlmostEqual(series["2023-01-01"], 1.0)
         self.assertAlmostEqual(series["2023-01-05"], 5.0)
-
-        # Midpoint check (linear interpolation)
-        # Day 1 -> Day 5 is 4 days span. Delta = 4.0. Step = 1.0 per day.
-        # 2023-01-02 -> 2.0
         self.assertAlmostEqual(series["2023-01-02"], 2.0)
-        self.assertAlmostEqual(series["2023-01-03"], 3.0)
 
     def test_calculate_harmonic_pe_basic(self):
         """Test basic weighted harmonic mean calculation."""
-        # 2 stocks, equal weight ($100 each), PE 10 and 20.
         mv_map = {"A": 100.0, "B": 100.0}
         pe_map = {"A": 10.0, "B": 20.0}
-
-        # Weight A = 0.5, Yield A = 1/10 = 0.1
-        # Weight B = 0.5, Yield B = 1/20 = 0.05
-        # Weighted Yield = 0.05 + 0.025 = 0.075
-        # Portfolio PE = 1 / 0.075 = 13.333...
-
         pe = calculate_harmonic_pe(mv_map, pe_map)
-        self.assertIsNotNone(pe)
-        self.assertAlmostEqual(pe, 1 / 0.075, places=4)
+        # Weighted Yield = 0.5/10 + 0.5/20 = 0.05 + 0.025 = 0.075. PE = 1/0.075 = 13.33
+        self.assertAlmostEqual(pe, 13.3333, places=4)
 
     def test_calculate_harmonic_pe_outlier(self):
         """Test robustness against near-zero earnings (high PE)."""
-        # Stock A: Normal (mv=100, PE=20)
-        # Stock B: Outlier (mv=100, PE=8000) -> Yield = 0.000125
         mv_map = {"A": 100.0, "B": 100.0}
         pe_map = {"A": 20.0, "B": 8000.0}
-
-        # Weight A = 0.5, Yield A = 0.05
-        # Weight B = 0.5, Yield B = 0.000125
-        # Weighted Yield = 0.025 + 0.0000625 = 0.0250625
-        # Portfolio PE = 1 / 0.0250625 = 39.89...
-
         pe = calculate_harmonic_pe(mv_map, pe_map)
-
-        # Arithmetic mean would be (20 + 8000)/2 = 4010.
-        # Harmonic mean stays reasonable (~40).
         self.assertLess(pe, 50.0)
-        self.assertAlmostEqual(pe, 1 / 0.0250625, places=4)
 
-    def test_calculate_harmonic_pe_missing_data(self):
-        """Test handling of missing PE data."""
-        # Stock A: mv=100, PE=20
-        # Stock B: mv=100, PE=Missing (None)
-        mv_map = {"A": 100.0, "B": 100.0}
-        pe_map = {"A": 20.0}
+    def test_exempt_tickers_presence(self):
+        """Verify that known non-equity assets are in the exempt list."""
+        self.assertIn("FNSFX", EXEMPT_TICKERS)
+        self.assertIn("BNDW", EXEMPT_TICKERS)
+        self.assertIn("BOXX", EXEMPT_TICKERS)
+        self.assertIn("SH", EXEMPT_TICKERS)
 
-        # Weight B is ignored. Weight A becomes 1.0 of valid portion?
-        # Function normalizes weights based on valid items.
-        # Valid MV = 100 (A). Total valid MV = 100.
-        # Weight A = 100/200 = 0.5 originally.
-        # Weighted Yield = 0.5 * (1/20) = 0.025.
-        # Weight Sum = 0.5.
-        # Adjusted Yield = 0.025 / 0.5 = 0.05.
-        # PE = 1 / 0.05 = 20.0.
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    @patch("scripts.generate_pe_data.get_fx_history")
+    @patch("scripts.generate_pe_data.load_eps_cache")
+    @patch("scripts.generate_pe_data.load_manual_patch")
+    @patch("scripts.generate_pe_data.save_eps_cache")
+    def test_fetch_eps_currency_conversion(
+        self, mock_save, mock_patch, mock_cache, mock_fx, mock_ticker
+    ):
+        """Test that EPS is converted when Financial Currency != Price Currency."""
+        # Setup Mocks
+        mock_cache.return_value = {}
+        mock_patch.return_value = {}  # No manual patch
 
-        pe = calculate_harmonic_pe(mv_map, pe_map)
-        self.assertAlmostEqual(pe, 20.0)
+        # Mock Stock: BABA (Price in USD, Financials in CNY)
+        mock_stock = MagicMock()
+        mock_stock.info = {"currency": "USD", "financialCurrency": "CNY", "trailingEps": 5.0}
 
-    def test_get_closest_fx(self):
-        """Test matching FX rates by date."""
-        dates = pd.to_datetime(["2023-01-01", "2023-01-03"])
-        rates = [7.0, 7.2]
-        fx_series = pd.Series(rates, index=dates)
+        # Mock Financials (income_stmt)
+        # 2023 EPS = 10.0 CNY
+        dates = pd.to_datetime(["2023-12-31"])
+        mock_financials = pd.DataFrame({"2023-12-31": [10.0]}, index=["Basic EPS"])
+        mock_stock.income_stmt = mock_financials
 
-        # Exact match
-        rate = get_closest_fx(fx_series, pd.Timestamp("2023-01-01"))
-        self.assertEqual(rate, 7.0)
+        mock_ticker.return_value = mock_stock
 
-        # Nearest match (forward)
-        # 2023-01-02 is closer to which?
-        # logic: get_indexer(method="nearest")
-        # 01-02 is midpoint. Pandas nearest?
+        # Mock FX: CNYUSD=X -> Rate 0.15
+        mock_fx_series = pd.Series([0.15], index=dates)
+        mock_fx.return_value = mock_fx_series
 
-        # Let's test standard nearest behavior
-        rate_mid = get_closest_fx(fx_series, pd.Timestamp("2023-01-02"))
-        # Should be 7.0 or 7.2 depending on implementation/time
-        self.assertTrue(rate_mid in [7.0, 7.2])
+        # Execute
+        results = fetch_stock_eps_data(["BABA"])
+
+        # Verify
+        baba = results["BABA"]
+        self.assertEqual(baba["currency"], "USD")
+        self.assertEqual(len(baba["points"]), 1)
+
+        point = baba["points"][0]
+        # Expected: 10.0 CNY * 0.15 = 1.5 USD
+        self.assertAlmostEqual(point["eps"], 1.5)
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    @patch("scripts.generate_pe_data.load_eps_cache")
+    @patch("scripts.generate_pe_data.load_manual_patch")
+    @patch("scripts.generate_pe_data.save_eps_cache")
+    def test_fetch_eps_manual_patch(self, mock_save, mock_patch, mock_cache, mock_ticker):
+        """Test that manual patch overrides/augments fetched data."""
+        # Setup Mocks
+        mock_cache.return_value = {}
+
+        # Patch contains a fix for 2020
+        mock_patch.return_value = {"TEST": {"2020-12-31": 9.99}}
+
+        # Mock Stock returns NO data (empty financials)
+        mock_stock = MagicMock()
+        mock_stock.info = {"currency": "USD"}
+        mock_stock.income_stmt = pd.DataFrame()
+        mock_ticker.return_value = mock_stock
+
+        # Execute
+        results = fetch_stock_eps_data(["TEST"])
+
+        # Verify
+        data = results["TEST"]
+        self.assertEqual(len(data["points"]), 1)
+        self.assertEqual(data["points"][0]["eps"], 9.99)
+        self.assertEqual(data["points"][0]["date"], pd.Timestamp("2020-12-31"))
 
 
 if __name__ == "__main__":

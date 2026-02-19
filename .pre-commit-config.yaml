@@ -9,7 +9,7 @@ exclude: |
     ^coverage/|
     ^dist/|
     ^build/|
-    ^data/historical_prices\\.json$|
+    ^data/|
     ^ai/status/
 
 repos:
