@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Tuple, Optional, cast
 
 import numpy as np
 import pandas as pd
@@ -54,7 +54,7 @@ def load_fx_rates():
 def build_fx_json(fx_df: pd.DataFrame) -> dict[str, Any]:
     rates: dict[str, dict[str, float]] = {}
     for date, row in fx_df.iterrows():
-        rates[date.strftime('%Y-%m-%d')] = {
+        rates[cast(pd.Timestamp, date).strftime('%Y-%m-%d')] = {
             currency: float(row[currency]) for currency in SUPPORTED_CURRENCIES
         }
     return {
@@ -168,7 +168,7 @@ def render_box_table(
     return '\n'.join(lines), total_width
 
 
-def calculate_stats(latest_fx_rates):
+def calculate_stats(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str, Any]]:
     """Calculate transaction statistics using split-adjusted data."""
     transactions_df = pd.read_parquet(DATA_DIR / 'checkpoints' / 'transactions_with_splits.parquet')
     transactions_df = transactions_df.sort_values(
@@ -260,7 +260,7 @@ def calculate_stats(latest_fx_rates):
     return '\n' + table + '\n', stats_json
 
 
-def calculate_holdings(latest_fx_rates):
+def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str, Any]]:
     """Calculate current holdings directly from the transaction ledger."""
     transactions_path = DATA_DIR / 'transactions.csv'
     if not transactions_path.exists():
@@ -308,7 +308,7 @@ def calculate_holdings(latest_fx_rates):
         share_totals[symbol] = share_totals.get(symbol, Decimal('0')) + adjusted_quantity
 
     if not share_totals:
-        return "No current holdings."
+        return "No current holdings.", {}
 
     holdings_frame = pd.Series(
         {symbol: float(total) for symbol, total in share_totals.items()}, name='shares'
@@ -348,8 +348,9 @@ def calculate_holdings(latest_fx_rates):
     holdings_frame = holdings_frame.sort_values(by='total_cost', ascending=False)
 
     data_rows = []
-    holdings_data = []
-    for symbol, data in holdings_frame.iterrows():
+    holdings_data: List[Dict[str, Any]] = []
+    for symbol_hashable, data in holdings_frame.iterrows():
+        symbol = str(symbol_hashable)
         total_cost = data['total_cost'] if data['average_price'] > 0 else np.nan
         holdings_data.append(
             {
@@ -624,7 +625,7 @@ def calculate_ratios(series_map, risk_free_rate=0.0):
     return '\n'.join(['', table, ''] + notes) + '\n'
 
 
-def main():
+def main() -> None:
     """Generate all stats files."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -641,17 +642,19 @@ def main():
     balance_df['date'] = pd.to_datetime(balance_df['date'])
     balance_df = balance_df.set_index('date')
 
-    balance_series_by_currency: dict[str, list[dict[str, float]]] = {}
+    balance_series_by_currency: dict[str, list[dict[str, Any]]] = {}
     for currency in SUPPORTED_CURRENCIES:
         rates = fx_df[currency].reindex(balance_df.index).ffill().bfill()
         converted = balance_df['value'] * rates
         converted_df = pd.DataFrame(
             {
-                'date': balance_df.index.strftime('%Y-%m-%d'),
+                'date': cast(pd.DatetimeIndex, balance_df.index).strftime('%Y-%m-%d'),
                 'value': converted.astype(float),
             }
         )
-        balance_series_by_currency[currency] = converted_df.to_dict(orient='records')
+        balance_series_by_currency[currency] = cast(
+            List[Dict[str, Any]], converted_df.to_dict(orient='records')
+        )
 
     with open(OUTPUT_DIR / 'balance_series.json', 'w') as f:
         json.dump(balance_series_by_currency, f)
@@ -725,7 +728,7 @@ def main():
                 }
             )
 
-    contribution_series_by_currency: dict[str, list[dict[str, float]]] = {
+    contribution_series_by_currency: dict[str, list[dict[str, Any]]] = {
         currency: [] for currency in SUPPORTED_CURRENCIES
     }
     if running_rows:

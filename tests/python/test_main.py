@@ -7,6 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
+from typing import Dict, Any, List
 
 import pandas as pd
 
@@ -31,7 +32,7 @@ class TestFundScripts(unittest.TestCase):
     @patch("scripts.pnl.extract_pnl_history.pd.DataFrame.to_csv")
     @patch("scripts.pnl.extract_pnl_history.get_file_content_at_commit")
     @patch("scripts.pnl.extract_pnl_history.get_commit_history_for_file")
-    def test_process_pnl_history(self, mock_get_history, mock_get_content, mock_to_csv):
+    def test_process_pnl_history(self, mock_get_history, mock_get_content, mock_to_csv) -> None:
         # Arrange
         mock_get_history.return_value = [(1672531200, "hash1"), (1672617600, "hash2")]
         mock_get_content.side_effect = [
@@ -55,7 +56,7 @@ class TestFundScripts(unittest.TestCase):
     # Test for fetch_forex.py
     @patch("scripts.data.fetch_forex.yf.Ticker")
     @patch("builtins.open", new_callable=mock_open)
-    def test_fetch_forex_data(self, mock_file, mock_yf_ticker):
+    def test_fetch_forex_data(self, mock_file, mock_yf_ticker) -> None:
         # Mocking the yfinance Ticker
         mock_cny = MagicMock()
         mock_cny.history.return_value = pd.DataFrame({"Close": [7.2]})
@@ -90,7 +91,7 @@ class TestFundScripts(unittest.TestCase):
     # Test for manage_holdings.py
     @patch("scripts.portfolio.manage_holdings.save_holdings")
     @patch("scripts.portfolio.manage_holdings.load_holdings")
-    def test_manage_holdings_add(self, mock_load_holdings, mock_save_holdings):
+    def test_manage_holdings_add(self, mock_load_holdings, mock_save_holdings) -> None:
         # Mock the loaded holdings to be empty
         mock_load_holdings.return_value = {}
 
@@ -116,7 +117,7 @@ class TestFundScripts(unittest.TestCase):
     )
     def test_update_daily_pnl(
         self, mock_open_file, mock_load_json, mock_calc_values, mock_datetime
-    ):
+    ) -> None:
         # Arrange
         mock_datetime.now.return_value = datetime(2023, 1, 2)
         mock_load_json.return_value = {"some_data": "value"}
@@ -133,7 +134,7 @@ class TestFundScripts(unittest.TestCase):
     # Test for update_fund_data.py
     @patch("scripts.data.update_fund_data.get_prices")
     @patch("scripts.data.update_fund_data.get_tickers_from_holdings")
-    def test_update_fund_data(self, mock_get_tickers, mock_get_prices):
+    def test_update_fund_data(self, mock_get_tickers, mock_get_prices) -> None:
         # Arrange
         with tempfile.TemporaryDirectory() as tmpdir:
             mock_holdings_path = Path(tmpdir) / "holdings.json"
@@ -155,7 +156,7 @@ class TestFundScripts(unittest.TestCase):
             self.assertEqual(written_data["AAPL"], 150.0)
             self.assertEqual(written_data["GOOG"], 2800.0)
 
-    def test_backfill_portfolio_history(self):
+    def test_backfill_portfolio_history(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             csv_path = Path(tmpdir) / "historical_portfolio_values.csv"
             holdings_path = Path(tmpdir) / "holdings_details.json"
@@ -182,7 +183,7 @@ class TestFundScripts(unittest.TestCase):
                 date(2025, 6, 4),
             ]
 
-            def fake_price_fetcher(tickers, dates):
+            def fake_price_fetcher(tickers, dates) -> Dict[str, Dict[date, Decimal]]:
                 self.assertEqual(list(tickers), ["AAPL", "MSFT"])
                 self.assertEqual(list(dates), trading_days)
                 return {
@@ -200,7 +201,7 @@ class TestFundScripts(unittest.TestCase):
                     },
                 }
 
-            def fake_fx_fetcher(currencies, dates):
+            def fake_fx_fetcher(currencies, dates) -> Dict[date, Dict[str, Decimal]]:
                 self.assertEqual(currencies, ["CNY", "JPY", "KRW"])
                 self.assertEqual(list(dates), trading_days)
                 base_rates = {
@@ -253,7 +254,7 @@ class TestFundScripts(unittest.TestCase):
             self.assertEqual(rows[2]["value_usd"], "3460.0000000000")
             self.assertEqual(rows[2]["value_cny"], "24254.6000000000")
 
-    def test_backfill_includes_start_date_when_matching_earliest(self):
+    def test_backfill_includes_start_date_when_matching_earliest(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             csv_path = Path(tmpdir) / "historical_portfolio_values.csv"
             holdings_path = Path(tmpdir) / "holdings_details.json"

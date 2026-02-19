@@ -28,7 +28,7 @@ import json
 import math
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 import numpy as np
@@ -177,7 +177,7 @@ def get_fx_history(pair: str) -> Optional[pd.Series]:
             # Ensure timezone-naive dates
             series.index = series.index.normalize().tz_localize(None)
             FX_CACHE[pair] = series
-            return series
+            return cast(pd.Series, series)
     except Exception as exc:
         print(f"    Warning: Failed to fetch FX {pair}: {exc}")
 
@@ -199,11 +199,14 @@ def get_closest_fx(fx_series: pd.Series, date: pd.Timestamp) -> float:
     return 1.0  # Fallback
 
 
+# ... (omitted) ...
+
+
 def load_eps_cache() -> Dict[str, Any]:
     if EPS_CACHE_PATH.exists():
         try:
             with open(EPS_CACHE_PATH, "r") as f:
-                return json.load(f)
+                return cast(Dict[str, Any], json.load(f))
         except Exception as e:
             print(f"Error loading EPS cache: {e}")
     return {}
@@ -222,7 +225,7 @@ def load_manual_patch() -> Dict[str, Dict[str, float]]:
     if MANUAL_PATCH_PATH.exists():
         try:
             with open(MANUAL_PATCH_PATH, "r") as f:
-                return json.load(f)
+                return cast(Dict[str, Dict[str, float]], json.load(f))
         except Exception as e:
             print(f"Error loading manual patch: {e}")
     return {}
@@ -366,7 +369,7 @@ def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd
     interpolated = full_series.interpolate(method='time')
     interpolated = interpolated.reindex(date_index).ffill().bfill()
 
-    return interpolated
+    return cast(pd.Series, interpolated)
 
 
 def load_data():

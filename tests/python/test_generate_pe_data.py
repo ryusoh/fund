@@ -21,7 +21,7 @@ from scripts.generate_pe_data import (
 
 
 class TestGeneratePEData(unittest.TestCase):
-    def test_interpolate_eps_series(self):
+    def test_interpolate_eps_series(self) -> None:
         """Test daily interpolation logic between annual EPS points."""
         dates = pd.date_range(start="2023-01-01", end="2023-01-05")
 
@@ -40,22 +40,26 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertAlmostEqual(series["2023-01-05"], 5.0)
         self.assertAlmostEqual(series["2023-01-02"], 2.0)
 
-    def test_calculate_harmonic_pe_basic(self):
+    def test_calculate_harmonic_pe_basic(self) -> None:
         """Test basic weighted harmonic mean calculation."""
         mv_map = {"A": 100.0, "B": 100.0}
         pe_map = {"A": 10.0, "B": 20.0}
         pe = calculate_harmonic_pe(mv_map, pe_map)
+        self.assertIsNotNone(pe)
+        assert pe is not None
         # Weighted Yield = 0.5/10 + 0.5/20 = 0.05 + 0.025 = 0.075. PE = 1/0.075 = 13.33
         self.assertAlmostEqual(pe, 13.3333, places=4)
 
-    def test_calculate_harmonic_pe_outlier(self):
+    def test_calculate_harmonic_pe_outlier(self) -> None:
         """Test robustness against near-zero earnings (high PE)."""
         mv_map = {"A": 100.0, "B": 100.0}
         pe_map = {"A": 20.0, "B": 8000.0}
         pe = calculate_harmonic_pe(mv_map, pe_map)
+        self.assertIsNotNone(pe)
+        assert pe is not None
         self.assertLess(pe, 50.0)
 
-    def test_exempt_tickers_presence(self):
+    def test_exempt_tickers_presence(self) -> None:
         """Verify that known non-equity assets are in the exempt list."""
         self.assertIn("FNSFX", EXEMPT_TICKERS)
         self.assertIn("BNDW", EXEMPT_TICKERS)
@@ -69,7 +73,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.save_eps_cache")
     def test_fetch_eps_currency_conversion(
         self, mock_save, mock_patch, mock_cache, mock_fx, mock_ticker
-    ):
+    ) -> None:
         """Test that EPS is converted when Financial Currency != Price Currency."""
         # Setup Mocks
         mock_cache.return_value = {}
@@ -107,7 +111,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.load_eps_cache")
     @patch("scripts.generate_pe_data.load_manual_patch")
     @patch("scripts.generate_pe_data.save_eps_cache")
-    def test_fetch_eps_manual_patch(self, mock_save, mock_patch, mock_cache, mock_ticker):
+    def test_fetch_eps_manual_patch(self, mock_save, mock_patch, mock_cache, mock_ticker) -> None:
         """Test that manual patch overrides/augments fetched data."""
         # Setup Mocks
         mock_cache.return_value = {}
