@@ -21,25 +21,42 @@ export const ASSET_CLASS_OVERRIDES = {
     QQQ: 'etf',
     SPY: 'etf',
     DIA: 'etf',
+    IVV: 'etf',
     SCHD: 'etf',
     SCHX: 'etf',
     SCHF: 'etf',
     JEPI: 'etf',
     GLD: 'etf',
+    IAU: 'etf',
+    SLV: 'etf',
     RWM: 'etf',
     SOXL: 'etf',
+    SOXX: 'etf',
     SH: 'etf',
     SJB: 'etf',
     BUG: 'etf',
     PTLC: 'etf',
     ARKK: 'etf',
     ARKW: 'etf',
+    ARKG: 'etf',
+
+    // Commodity / crypto ETFs
+    USO: 'etf',
+    UNG: 'etf',
+    BITO: 'etf',
+    ETHE: 'etf',
+    GBTC: 'etf',
 
     // Fixed income ETFs
     BNDW: 'etf',
     AGG: 'etf',
     LQD: 'etf',
     TLT: 'etf',
+    TLH: 'etf',
+    IEF: 'etf',
+    SHY: 'etf',
+    BIL: 'etf',
+    SGOV: 'etf',
     BOXX: 'etf',
     IEMG: 'etf',
 
@@ -48,6 +65,30 @@ export const ASSET_CLASS_OVERRIDES = {
     EEM: 'etf',
     IXUS: 'etf',
     ASHR: 'etf',
+    VXUS: 'etf',
+
+    // Sector ETFs
+    XLE: 'etf',
+    XLV: 'etf',
+    XLI: 'etf',
+    XLB: 'etf',
+    XLY: 'etf',
+    XLP: 'etf',
+    XLU: 'etf',
+    XLC: 'etf',
+    VHT: 'etf',
+    VOX: 'etf',
+
+    // Vanguard style/size ETFs
+    VIG: 'etf',
+    VUG: 'etf',
+    VTV: 'etf',
+    VB: 'etf',
+    VO: 'etf',
+    VNQ: 'etf',
+    VGK: 'etf',
+    VPL: 'etf',
+    VRE: 'etf',
 
     // Fidelity & Vanguard mutual funds
     FXAIX: 'etf',
@@ -55,6 +96,7 @@ export const ASSET_CLASS_OVERRIDES = {
     FZILX: 'etf',
     FNILX: 'etf',
     FNSFX: 'etf',
+    FBCGX: 'etf',
     FSGGX: 'etf',
     FSKAX: 'etf',
     VFIAX: 'etf',
@@ -66,6 +108,9 @@ export const ASSET_CLASS_OVERRIDES = {
     VIEIX: 'etf',
     VTMGX: 'etf',
     VGSNX: 'etf',
+    VMVAX: 'etf',
+    VSIAX: 'etf',
+    VTPSX: 'etf',
 };
 
 export function isLikelyFundTicker(ticker) {
