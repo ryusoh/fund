@@ -311,6 +311,34 @@ def get_price(prices_data: dict, ticker: str, date_str: str) -> float | None:
     return None
 
 
+def calculate_harmonic_pe(mv_map: Dict[str, float], pe_map: Dict[str, float]) -> Optional[float]:
+    """
+    Calculate the weighted harmonic mean P/E of the portfolio.
+    Formula: 1 / Sum(Weight * (1/PE)) = 1 / Weighted_Earnings_Yield
+    Weights are normalized to the subset of holdings with valid P/E.
+    """
+    total_mv = sum(mv_map.values())
+    if total_mv <= 0:
+        return None
+
+    weighted_yield = 0.0
+    weight_sum = 0.0
+
+    for t, mv in mv_map.items():
+        pe_val = pe_map.get(t)
+        if pe_val is not None and pe_val > 0:
+            w = mv / total_mv
+            weighted_yield += w * (1.0 / pe_val)
+            weight_sum += w
+
+    if weight_sum > 0 and weighted_yield > 0:
+        # Adjusted Yield = Weighted_Yield / Total_Valid_Weight
+        adj_yield = weighted_yield / weight_sum
+        return 1.0 / adj_yield
+
+    return None
+
+
 def main():
     print("Loading holdings and prices...")
     holdings_df, prices_data = load_data()
@@ -393,33 +421,8 @@ def main():
                 if eps > 0:
                     pe_map[t] = price / eps
 
-        # Weighted Harmonic Average P/E (Industry Standard)
-        # Arithmetic Mean is sensitive to outliers (e.g. PE=8000 due to near-zero earnings).
-        # Harmonic Mean = 1 / Sum(Weight * (1/PE)) = 1 / Weighted_Earnings_Yield
-        weighted_yield = 0.0
-        weight_sum = 0.0
-
-        # Store weights for this day (normalized to total_mv)
-        day_weights = {}
-        if total_mv > 0:
-            for t, mv in mv_map.items():
-                day_weights[t] = mv / total_mv
-
-        for t, mv in mv_map.items():
-            if t in pe_map:
-                pe_val = pe_map[t]
-                if pe_val > 0:
-                    w = mv / total_mv
-                    weighted_yield += w * (1.0 / pe_val)
-                    weight_sum += w
-
-        # Normalize weights to 100% of valid PE holdings
-        if weight_sum > 0 and weighted_yield > 0:
-            # Adjusted Yield = Weighted_Yield / Total_Valid_Weight
-            adj_yield = weighted_yield / weight_sum
-            portfolio_pe = 1.0 / adj_yield
-        else:
-            portfolio_pe = None
+        # Calculate Portfolio PE
+        portfolio_pe = calculate_harmonic_pe(mv_map, pe_map)
 
         result_dates.append(date_str)
         result_portfolio_pe.append(round(portfolio_pe, 2) if portfolio_pe else None)
