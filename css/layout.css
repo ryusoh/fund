@@ -60,7 +60,7 @@ body:not(.body-calendar) .content-block {
 
 footer {
     position: fixed;
-    z-index: 2;
+    z-index: 1001;
     bottom: 10px;
     /* Align footer block with .content-block */
     width: 85%; /* Matches .content-block width */
