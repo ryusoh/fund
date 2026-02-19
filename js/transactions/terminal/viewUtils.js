@@ -8,6 +8,8 @@ import {
     getConcentrationSnapshotText,
 } from './snapshots.js';
 
+import { getPESnapshotText } from '../chart/renderers/pe.js';
+
 export function ensureTransactionTableVisible() {
     const tableContainer = document.querySelector('.table-responsive-container');
     if (tableContainer) {
@@ -34,6 +36,7 @@ export function isActiveChartVisible() {
             'composition',
             'compositionAbs',
             'concentration',
+            'pe',
             'fx',
             'drawdown',
             'drawdownAbs',
@@ -70,6 +73,9 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'concentration') {
         return getConcentrationSnapshotText();
+    }
+    if (activeChart === 'pe') {
+        return getPESnapshotText();
     }
     return null;
 }

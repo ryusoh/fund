@@ -333,6 +333,33 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             }
             break;
         }
+        case 'pe': {
+            dateRange = applyDateArgs(rawArgs);
+            const peSection = document.getElementById('runningAmountSection');
+            const peTableContainer = document.querySelector('.table-responsive-container');
+
+            const isPeActive = transactionState.activeChart === 'pe';
+            const isPeVisible = peSection && !peSection.classList.contains('is-hidden');
+
+            if (isPeActive && isPeVisible) {
+                setActiveChart(null);
+                if (peSection) {
+                    peSection.classList.add('is-hidden');
+                }
+                result = 'Hidden P/E ratio chart.';
+            } else {
+                setActiveChart('pe');
+                if (peSection) {
+                    peSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (peTableContainer) {
+                    peTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing weighted average P/E ratio chart for ${formatDateRange(dateRange)}.`;
+            }
+            break;
+        }
         default:
             result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
             break;

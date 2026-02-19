@@ -4,5 +4,6 @@ export const chartLayouts = {
     drawdown: null,
     composition: null,
     concentration: null,
+    pe: null,
     fx: null,
 };
