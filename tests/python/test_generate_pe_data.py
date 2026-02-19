@@ -16,7 +16,11 @@ from scripts.generate_pe_data import (
     calculate_harmonic_pe,
     get_closest_fx,
     fetch_stock_eps_data,
+    cumulative_forward_split_factor,
+    yf_symbol,
+    is_etf,
     EXEMPT_TICKERS,
+    ETF_TICKERS,
 )
 
 
@@ -61,10 +65,80 @@ class TestGeneratePEData(unittest.TestCase):
 
     def test_exempt_tickers_presence(self) -> None:
         """Verify that known non-equity assets are in the exempt list."""
-        self.assertIn("FNSFX", EXEMPT_TICKERS)
-        self.assertIn("BNDW", EXEMPT_TICKERS)
-        self.assertIn("BOXX", EXEMPT_TICKERS)
         self.assertIn("SH", EXEMPT_TICKERS)
+        self.assertIn("PSQ", EXEMPT_TICKERS)
+        self.assertIn("GLD", EXEMPT_TICKERS)
+        self.assertIn("SJB", EXEMPT_TICKERS)
+        # FNSFX, BNDW, BOXX are ETFs with manual PE curves, NOT exempt
+        self.assertNotIn("FNSFX", EXEMPT_TICKERS)
+
+    def test_yf_symbol_aliases(self) -> None:
+        """Test that yf_symbol correctly maps ticker aliases."""
+        self.assertEqual(yf_symbol("BRKB"), "BRK-B")
+        self.assertEqual(yf_symbol("BRK.B"), "BRK-B")
+        self.assertEqual(yf_symbol("BRK/B"), "BRK-B")
+        self.assertEqual(yf_symbol("BFB"), "BF-B")
+        # Non-aliased tickers should pass through unchanged
+        self.assertEqual(yf_symbol("AAPL"), "AAPL")
+        self.assertEqual(yf_symbol("MSFT"), "MSFT")
+        self.assertEqual(yf_symbol("ANET"), "ANET")
+
+    def test_is_etf(self) -> None:
+        """Test ETF classification logic."""
+        # Known ETFs
+        self.assertTrue(is_etf("SOXX"))
+        self.assertTrue(is_etf("QQQ"))
+        self.assertTrue(is_etf("SPY"))
+        self.assertTrue(is_etf("SCHD"))
+        self.assertTrue(is_etf("SOXL"))
+        # Mutual funds ending in X with >4 chars
+        self.assertTrue(is_etf("FSKAX"))
+        self.assertTrue(is_etf("VTSAX"))
+        # Stocks should NOT be classified as ETFs
+        self.assertFalse(is_etf("AAPL"))
+        self.assertFalse(is_etf("ANET"))
+        self.assertFalse(is_etf("NVDA"))
+        self.assertFalse(is_etf("GOOG"))
+        self.assertFalse(is_etf("BRKB"))
+
+    def test_cumulative_forward_split_factor_no_splits(self) -> None:
+        """No splits → factor should be 1.0."""
+        empty_splits = pd.Series(dtype=float)
+        factor = cumulative_forward_split_factor(pd.Timestamp("2023-01-01"), empty_splits)
+        self.assertEqual(factor, 1.0)
+
+    def test_cumulative_forward_split_factor_single_split(self) -> None:
+        """Single 4:1 split after the given date."""
+        splits = pd.Series(
+            [4.0],
+            index=pd.to_datetime(["2024-12-04"]),
+        )
+        # Date before split → factor = 4.0
+        factor = cumulative_forward_split_factor(pd.Timestamp("2024-01-01"), splits)
+        self.assertEqual(factor, 4.0)
+        # Date after split → factor = 1.0
+        factor = cumulative_forward_split_factor(pd.Timestamp("2025-01-01"), splits)
+        self.assertEqual(factor, 1.0)
+
+    def test_cumulative_forward_split_factor_multiple_splits(self) -> None:
+        """Two splits: 4:1 then 4:1 → 16x total for dates before both."""
+        splits = pd.Series(
+            [4.0, 4.0],
+            index=pd.to_datetime(["2021-11-18", "2024-12-04"]),
+        )
+        # Before both splits
+        factor = cumulative_forward_split_factor(pd.Timestamp("2021-01-01"), splits)
+        self.assertEqual(factor, 16.0)
+        # Between splits
+        factor = cumulative_forward_split_factor(pd.Timestamp("2023-01-01"), splits)
+        self.assertEqual(factor, 4.0)
+        # After both splits
+        factor = cumulative_forward_split_factor(pd.Timestamp("2025-06-01"), splits)
+        self.assertEqual(factor, 1.0)
+
+    def test_etf_tickers_contains_soxx(self) -> None:
+        """Verify SOXX is in the ETF list."""
+        self.assertIn("SOXX", ETF_TICKERS)
 
     @patch("scripts.generate_pe_data.yf.Ticker")
     @patch("scripts.generate_pe_data.get_fx_history")
@@ -82,12 +156,15 @@ class TestGeneratePEData(unittest.TestCase):
         # Mock Stock: BABA (Price in USD, Financials in CNY)
         mock_stock = MagicMock()
         mock_stock.info = {"currency": "USD", "financialCurrency": "CNY", "trailingEps": 5.0}
+        mock_stock.splits = pd.Series(dtype=float)
 
         # Mock Financials (income_stmt)
         # 2023 EPS = 10.0 CNY
         dates = pd.to_datetime(["2023-12-31"])
         mock_financials = pd.DataFrame({"2023-12-31": [10.0]}, index=["Basic EPS"])
         mock_stock.income_stmt = mock_financials
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame()
 
         mock_ticker.return_value = mock_stock
 
@@ -123,6 +200,9 @@ class TestGeneratePEData(unittest.TestCase):
         mock_stock = MagicMock()
         mock_stock.info = {"currency": "USD"}
         mock_stock.income_stmt = pd.DataFrame()
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        mock_stock.splits = pd.Series(dtype=float)
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame()
         mock_ticker.return_value = mock_stock
 
         # Execute

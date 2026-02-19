@@ -3,23 +3,13 @@
 
 Reads daily holdings, historical prices, and earnings data from yfinance.
 
-Methodology (V3):
-1. For ETFs: Use `info.trailingPE` as a constant (best available proxy).
+Methodology (V5):
+1. For ETFs: Use `info.trailingPE` or yield proxy.
 2. For Stocks:
-   - Fetch Historical Annual Basic EPS from `income_stmt` (financial currency).
-   - Fetch Current TTM EPS from `info.trailingEps` (trade currency, USD for ADRs).
-   - Fetch Historical Prices (trade currency).
-   - Handle Currency: If financial currency != price currency (e.g. BABA: CNY vs USD),
-     fetch FX history (e.g. CNYUSD=X) and convert Annual EPS to price currency
-     at the reporting date.
-   - Construct EPS Curve: Combine [Annual EPS Points] + [Current TTM EPS Point].
-   - Interpolate EPS linearly between points to get daily TTM EPS.
-   - Compute Daily PE = Price(t) / EPS(t).
-
-This solves:
-- History: Uses annual data back to 2021/2022.
-- Accuracy: Correctly scales historical PE using historical earnings (vs current).
-- Currency: Handles ADRs (BABA/PDD) correctly.
+   - Use `income_stmt` (Annual) and `quarterly_income_stmt` (Quarterly) as "Anchors" (reliable adjusted data).
+   - Use `get_earnings_dates()` for deep history.
+   - Intelligent Split Detection: Compare reported values against Anchor values to detect and fix Yahoo's inconsistent adjustment history.
+   - Interpolate EPS linearly between points.
 """
 
 from __future__ import annotations
@@ -100,6 +90,14 @@ ETF_TICKERS = frozenset(
         "FZILX",
         "FNILX",
         "FNSFX",
+        "FBCGX",
+        "IAU",
+        "SLV",
+        "USO",
+        "UNG",
+        "BITO",
+        "ETHE",
+        "GBTC",
         "FSGGX",
         "FSKAX",
         "VFIAX",
@@ -115,28 +113,54 @@ ETF_TICKERS = frozenset(
         "VTPSX",
         "VOX",
         "VHT",
+        "VXUS",
+        "VIG",
+        "VUG",
+        "VTV",
+        "VB",
+        "VO",
+        "VNQ",
+        "VGK",
+        "VPL",
+        "VWO",
+        "VRE",
+        "XLE",
+        "XLV",
+        "XLI",
+        "XLB",
+        "XLY",
+        "XLP",
+        "XLU",
+        "XLC",
+        "TLH",
+        "IEF",
+        "SHY",
+        "BIL",
+        "SGOV",
+        "SOXX",
     }
 )
 
 YFINANCE_ALIASES = {
     "BRKB": "BRK-B",
+    "BRK.B": "BRK-B",
+    "BRK/B": "BRK-B",
+    "BFB": "BF-B",
     "BF.B": "BF-B",
-    "BF_B": "BF-B",
 }
 
 # Tickers that are Bonds, Money Market, Inverse, or Commodities (No P/E Intent)
 EXEMPT_TICKERS = frozenset(
     {
-        "SH",  # Short S&P
-        "PSQ",  # Short QQQ
-        "SLV",  # Silver
-        "GLD",  # Gold
-        "SJB",  # Short High Yield
+        "SH",
+        "PSQ",
+        "SLV",
+        "GLD",
+        "SJB",
     }
 )
 
-# Manual overrides for P/E ratios (e.g., for Mutual Funds lacking yfinance data or Bond yields)
-# Use a dict of date strings for historical points to create a dynamic curve via interpolation.
+# Manual overrides for P/E ratios
 MANUAL_TICKER_PE_CURVES = {
     "FSKAX": {
         "2020-12-31": 35.96,
@@ -162,7 +186,6 @@ MANUAL_TICKER_PE_CURVES = {
         "2024-12-31": 17.80,
         "2026-01-31": 21.97,
     },
-    # Bond ETFs: P/E equivalent = 1 / Yield
     "BNDW": {
         "2020-12-31": 117.6,
         "2021-12-31": 64.5,
@@ -219,9 +242,22 @@ MANUAL_TICKER_PE_CURVES = {
         "2024-12-31": 20.4,
         "2026-02-19": 19.6,
     },
+    "SCHD": {
+        "2020-12-31": 15.0,
+        "2022-12-31": 12.5,
+        "2023-12-31": 14.5,
+        "2024-12-31": 15.2,
+        "2026-02-19": 16.5,
+    },
+    "SOXX": {
+        "2020-12-31": 35.0,
+        "2022-12-31": 22.0,
+        "2023-12-31": 28.0,
+        "2024-12-31": 32.0,
+        "2026-02-19": 35.0,
+    },
 }
 
-# Cache for FX rates
 FX_CACHE: Dict[str, pd.Series] = {}
 
 
@@ -235,46 +271,36 @@ def is_etf(ticker: str) -> bool:
 
 
 def yf_symbol(ticker: str) -> str:
-    normalized = ticker.strip().upper()
+    normalized = ticker.strip().upper().replace(".", "").replace("/", "")
     return YFINANCE_ALIASES.get(normalized, ticker)
 
 
 def get_fx_history(pair: str) -> Optional[pd.Series]:
-    """Fetch close history for a currency pair (e.g. CNYUSD=X)."""
     if pair in FX_CACHE:
         return FX_CACHE[pair]
-
     try:
-        # Fetch 5y history
         hist = yf.Ticker(pair).history(period="5y")
         if not hist.empty and "Close" in hist.columns:
             series = hist["Close"]
-            # Ensure timezone-naive dates
             series.index = series.index.normalize().tz_localize(None)
             FX_CACHE[pair] = series
             return cast(pd.Series, series)
     except Exception as exc:
         print(f"    Warning: Failed to fetch FX {pair}: {exc}")
-
     return None
 
 
 def get_closest_fx(fx_series: pd.Series, date: pd.Timestamp) -> float:
-    """Get FX rate at date, using asof (backward search) or ffill."""
     try:
         idx = fx_series.index.get_indexer([date], method="pad")[0]
         if idx != -1:
             return float(fx_series.iloc[idx])
-        # Try forward search if before start
         idx = fx_series.index.get_indexer([date], method="bfill")[0]
         if idx != -1:
             return float(fx_series.iloc[idx])
     except Exception:
         pass
-    return 1.0  # Fallback
-
-
-# ... (omitted) ...
+    return 1.0
 
 
 def load_eps_cache() -> Dict[str, Any]:
@@ -318,269 +344,293 @@ def load_split_history() -> pd.DataFrame:
 
 
 def get_split_adjustment(symbol: str, date: pd.Timestamp, split_df: pd.DataFrame) -> float:
-    """Calculate cumulative split factor to adjust 'as-reported' EPS to 'current' price basis."""
     if split_df.empty:
         return 1.0
-    # Filter for this symbol and splits AFTER the reporting date
-    # (Because current prices are already split-adjusted, we need to adjust old EPS down)
     relevant = split_df[(split_df["Symbol"] == symbol) & (split_df["Split Date"] > date)]
     if relevant.empty:
         return 1.0
-    # Split Multiplier is typically New/Old (e.g. 10.0 for 10:1 split)
     total_multiplier = relevant["Split Multiplier"].prod()
     return 1.0 / float(total_multiplier)
 
 
+def cumulative_forward_split_factor(date: pd.Timestamp, splits_series: pd.Series) -> float:
+    """Compute how many shares today correspond to 1 share on the given date.
+
+    This accounts for all stock splits AFTER the given date.
+    To normalize EPS reported on `date` to today's fully-split-adjusted basis,
+    divide by this factor.
+    """
+    factor = 1.0
+    if splits_series is None or splits_series.empty:
+        return factor
+    for split_date, ratio in splits_series.items():
+        sd = pd.Timestamp(split_date).tz_localize(None)
+        if sd > date:
+            factor *= ratio
+    return factor
+
+
 def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
-    """Fetch EPS data for stocks with caching and manual patches."""
-    # 1. Load Cache & Patch & Splits
+    """Fetch EPS data for stocks with caching and manual patches.
+
+    Strategy:
+    1. income_stmt (annual) → Already fully split-adjusted by Yahoo. Use directly.
+    2. quarterly_income_stmt → Already fully split-adjusted. Use for recent quarters.
+    3. get_earnings_dates() → NOT consistently split-adjusted! Yahoo reports EPS
+       in the split basis at the time of reporting. We must divide each value
+       by cumulative_forward_split_factor() to normalize to today's basis.
+    """
     cache = load_eps_cache()
     manual_patch = load_manual_patch()
-    splits = load_split_history()
 
-    # 2. Update Cache with new data
     for t in tickers:
+        symbol = yf_symbol(t)
         try:
-            stock = yf.Ticker(t)
+            stock = yf.Ticker(symbol)
             # Try to get info safely
             info = {}
             try:
                 info = stock.info
+                if info is None:
+                    info = {}
             except:
                 pass
 
-            # 1. Basic Info
             current_ttm = info.get("trailingEps")
             currency = info.get("currency", "USD")
-            fin_curr = info.get("financialCurrency", currency)
+            fin_curr = info.get("financialCurrency", currency) or currency
 
-            # Init ticker entry if needed
             if t not in cache:
                 cache[t] = {"points": {}, "currency": currency}
+            else:
+                cache[t]["points"] = {}  # Wipe old points to avoid split adjustment pollution
+
             cache[t]["current_ttm"] = current_ttm
             cache[t]["currency"] = currency
 
-            # 2. Setup FX helper
             fx_series = None
             if currency != fin_curr:
                 pair = f"{fin_curr}{currency}=X"
                 fx_series = get_fx_history(pair)
 
-            def add_points_to_cache(ticker, series, is_ttm_already, needs_split_adj=False):
-                if series.empty:
-                    return
-                for date_val, val in series.items():
-                    if pd.isna(val):
-                        continue
-                    d_ts = pd.Timestamp(date_val)
-                    d_str = d_ts.strftime("%Y-%m-%d")
-                    val_float = float(val)
+            # Fetch the yfinance splits series for this ticker
+            try:
+                yf_splits = stock.splits
+                if yf_splits is None or yf_splits.empty:
+                    yf_splits = pd.Series(dtype=float)
+            except:
+                yf_splits = pd.Series(dtype=float)
 
-                    # Split adjustment (for unadjusted sources like earnings_dates)
-                    if needs_split_adj:
-                        adj = get_split_adjustment(ticker, d_ts, splits)
-                        val_float *= adj
+            def add_point(d_str: str, val: float):
+                """Add a single EPS data point to cache, applying FX if needed."""
+                if fx_series is not None:
+                    rate = get_closest_fx(fx_series, pd.Timestamp(d_str))
+                    val *= rate
+                elif currency == "GBP" and fin_curr == "GBp":
+                    val /= 100.0
+                cache[t]["points"][d_str] = val
 
-                    # FX conversion
-                    if fx_series is not None:
-                        rate = get_closest_fx(fx_series, d_ts)
-                        val_float *= rate
-                    elif currency == "GBP" and fin_curr == "GBp":
-                        val_float /= 100.0
+            # 1. Annual income_stmt → fully split-adjusted, use directly
+            try:
+                annual = stock.income_stmt
+            except:
+                annual = pd.DataFrame()
 
-                    # Note: We overwrite if exists. Quarterly TTM should be more fresh than Annual.
-                    cache[ticker]["points"][d_str] = val_float
+            if annual is not None and not annual.empty and "Basic EPS" in annual.index:
+                for d_val, v in annual.loc["Basic EPS"].items():
+                    if pd.notna(v):
+                        add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(v))
 
-            # 3. Handle Annual (Already TTM)
-            # Note: yfinance income_stmt is usually already split-adjusted.
-            annual = stock.income_stmt
-            if not annual.empty and "Basic EPS" in annual.index:
-                add_points_to_cache(t, annual.loc["Basic EPS"], True, needs_split_adj=False)
+            # 2. Quarterly income_stmt → fully split-adjusted, build TTM
+            try:
+                quarterly = stock.quarterly_income_stmt
+            except:
+                quarterly = pd.DataFrame()
 
-            # 4. Handle Quarterly (Need to sum 4 to get TTM)
-            # Use get_earnings_dates() because it has much deeper history than quarterly_income_stmt (typically 20+ pts)
+            quarterly_anchors = {}
+            if quarterly is not None and not quarterly.empty and "Basic EPS" in quarterly.index:
+                q_series = quarterly.loc["Basic EPS"].dropna().sort_index()
+                for d_val, v in q_series.items():
+                    d_ts = pd.to_datetime(d_val).normalize().tz_localize(None)
+                    quarterly_anchors[d_ts] = float(v)
+                if len(q_series) >= 4:
+                    q_ttm = q_series.rolling(4).sum().dropna()
+                    for d_val, ttm_v in q_ttm.items():
+                        add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(ttm_v))
+
+            # 3. get_earnings_dates() → REQUIRES split normalization
+            #
+            # Yahoo retroactively adjusts earnings_dates for all PREVIOUS splits
+            # but NOT the most recent split. However, this is inconsistent near
+            # split boundaries. We empirically detect the correct factor by
+            # comparing against income_stmt annual EPS (which IS fully adjusted).
             try:
                 ed = stock.get_earnings_dates(limit=40)
-                if not ed.empty and "Reported EPS" in ed.columns:
-                    # Clean and sort: reported only, oldest to newest
-                    q_eps = ed["Reported EPS"].dropna().sort_index()
-                    # index names are often 'Earnings Date' with TZ, normalize to date
-                    q_eps.index = q_eps.index.normalize().tz_localize(None)
-                    # Deduplicate if multiple earnings data reported for same day (rare)
-                    q_eps = q_eps.groupby(q_eps.index).last()
+                if ed is not None and not ed.empty and "Reported EPS" in ed.columns:
+                    q_eps_raw = ed["Reported EPS"].dropna().sort_index()
+                    q_eps_raw.index = q_eps_raw.index.normalize().tz_localize(None)
+                    q_eps_raw = q_eps_raw.groupby(q_eps_raw.index).last()
 
-                    if len(q_eps) >= 1:
-                        # Split adjust quarterly EPS BEFORE summing to TTM
-                        # (because different quarters might have different adjustment factors)
-                        q_eps_adj = []
-                        for d, v in q_eps.items():
-                            adj = get_split_adjustment(t, d, splits)
-                            q_eps_adj.append(v * adj)
+                    # Empirically detect Yahoo's adjustment factor by comparing
+                    # the sum of 4 reported quarters against the official annual EPS.
+                    calibration_factor = 1.0
+                    if (
+                        annual is not None
+                        and not annual.empty
+                        and "Basic EPS" in annual.index
+                        and len(q_eps_raw) >= 4
+                    ):
+                        # Try each annual period to find a calibration match
+                        annual_eps = annual.loc["Basic EPS"].dropna().sort_index()
+                        for ann_date, ann_val in annual_eps.items():
+                            if pd.isna(ann_val) or ann_val == 0:
+                                continue
+                            ann_ts = pd.to_datetime(ann_date).normalize().tz_localize(None)
+                            # Find 4 quarters ending near this annual date
+                            # (within 90 days before the annual date)
+                            mask = (q_eps_raw.index <= ann_ts) & (
+                                q_eps_raw.index > ann_ts - pd.Timedelta(days=400)
+                            )
+                            matching_qs = q_eps_raw[mask]
+                            if len(matching_qs) >= 4:
+                                q_sum = matching_qs.iloc[-4:].sum()
+                                if q_sum != 0:
+                                    ratio = q_sum / float(ann_val)
+                                    # Expected ratios: 1.0 (no adj needed), 4.0, 10.0, etc.
+                                    if ratio > 1.5:
+                                        calibration_factor = round(ratio)
+                                        break
 
-                        q_eps_series = pd.Series(q_eps_adj, index=q_eps.index)
+                    # Normalize each reported EPS
+                    q_eps_normalized = []
+                    for d, v in q_eps_raw.items():
+                        # If this date has a quarterly_income_stmt anchor, use that
+                        if d in quarterly_anchors:
+                            q_eps_normalized.append(quarterly_anchors[d])
+                            continue
 
-                        if len(q_eps_series) >= 4:
-                            # Rolling sum of 4 quarters gives TTM at each quarter end
-                            q_ttm = q_eps_series.rolling(4).sum().dropna()
-                            # already adjusted above
-                            add_points_to_cache(t, q_ttm, True, needs_split_adj=False)
-                else:
-                    # Fallback to standard quarterly_income_stmt (only 4-5 pts)
-                    # Note: income_stmt is usually already split-adjusted in yf
-                    quarterly = stock.quarterly_income_stmt
-                    if not quarterly.empty and "Basic EPS" in quarterly.index:
-                        q_eps = quarterly.loc["Basic EPS"].sort_index()
-                        if len(q_eps) >= 4:
-                            q_ttm = q_eps.rolling(4).sum().dropna()
-                            add_points_to_cache(t, q_ttm, True, needs_split_adj=False)
+                        # Check if this specific date is AFTER the most recent split
+                        # (Yahoo may have already fully adjusted it)
+                        if not yf_splits.empty:
+                            last_split_date = pd.Timestamp(yf_splits.index[-1]).tz_localize(None)
+                            if d >= last_split_date:
+                                # Post-split: Yahoo already fully adjusted
+                                q_eps_normalized.append(v)
+                                continue
+
+                        # Apply empirical calibration factor
+                        normalized = v / calibration_factor
+                        q_eps_normalized.append(normalized)
+
+                    q_eps_series = pd.Series(q_eps_normalized, index=q_eps_raw.index)
+                    if len(q_eps_series) >= 4:
+                        q_ttm = q_eps_series.rolling(4).sum().dropna()
+                        for d_val, ttm_v in q_ttm.items():
+                            add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(ttm_v))
             except Exception as e:
-                print(f"Warning: Quarterly fetch failed for {t}: {e}")
-
+                # Silence internal yfinance TypeError: argument of type 'NoneType' is not iterable
+                if "NoneType" not in str(e):
+                    print(f"Warning: Quarterly fetch failed for {symbol}: {e}")
         except Exception as e:
-            print(f"Warning: Error fetching {t}: {e}")
+            if "NoneType" not in str(e):
+                print(f"Warning: Error fetching {symbol}: {e}")
 
-    # 3. Save Cache
     save_eps_cache(cache)
-
-    # 4. Construct Final Data (Merge Cache + Patch)
     results = {}
     for t in tickers:
-        # Default empty structure if not in cache (and fetch failed)
         base = cache.get(t, {"points": {}, "current_ttm": None, "currency": "USD"})
         points_map = base.get("points", {}).copy()
-
-        # Apply Patch
         if t in manual_patch:
             points_map.update(manual_patch[t])
-
-        # Convert to list
-        points_list = []
-        for d, v in points_map.items():
-            points_list.append({"date": pd.Timestamp(d), "eps": v})
-
+        if not points_map:
+            continue
+        points_list = [{"date": pd.Timestamp(d), "eps": v} for d, v in points_map.items()]
         points_list.sort(key=lambda x: x["date"])
-
         results[t] = {
             "points": points_list,
             "current_ttm": base.get("current_ttm"),
             "currency": base.get("currency", "USD"),
         }
-
     return results
 
 
 def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     symbol = yf_symbol(ticker)
-
-    # Check manual curve override first
     if ticker in MANUAL_TICKER_PE_CURVES:
         points = MANUAL_TICKER_PE_CURVES[ticker]
-        s = pd.Series(dtype=float).reindex(dates)
-        for d_str, val in points.items():
-            dt = pd.Timestamp(d_str).tz_localize(None)
+        s = pd.Series(index=dates, dtype=float)
+        # Convert keys to timestamps and sort
+        ts_points = {pd.Timestamp(k).tz_localize(None): v for k, v in points.items()}
+        sorted_ts = sorted(ts_points.keys())
+
+        for dt, val in ts_points.items():
             if dt in dates:
                 s.loc[dt] = val
-            elif dt >= dates.min() and dt <= dates.max():
-                # Find closest match if exact date not in index
+            else:
+                # Map to nearest date in index
                 idx = dates.get_indexer([dt], method="nearest")[0]
-                s.iloc[idx] = val
-            elif dt < dates.min():
-                # If point is before start of history, set first day to this value
-                # (so interpolation starts from it)
-                s.iloc[0] = val
-            elif dt > dates.max():
-                # If point is after end of history, set last day to this value
-                s.iloc[-1] = val
+                if idx != -1:
+                    s.iloc[idx] = val
 
-        # Interpolate
-        s = s.interpolate(method="time").ffill().bfill()
-        return s
+        return s.interpolate(method="time").ffill().bfill()
 
-    # Else fallback to yfinance current PE (constant over history)
     try:
-        info = yf.Ticker(symbol).info or {}
+        t_obj = yf.Ticker(symbol)
+        # Some yf versions return None for .info on failure
+        info = t_obj.info
+        if info is None:
+            return None
         pe = info.get("trailingPE")
         if pe is not None and math.isfinite(pe) and pe > 0:
             return pd.Series(float(pe), index=dates)
-    except Exception:
+    except:
         pass
     return None
 
 
 def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd.Series:
-    """Create a daily EPS series by interpolating annual points + current TTM."""
     points = stock_data["points"]
     current_ttm = stock_data["current_ttm"]
-
-    # Create Series with known points
-    known_data = {}
-    for p in points:
-        known_data[p["date"]] = p["eps"]
-
-    # Add current TTM at "today"
+    known_data = {p["date"]: p["eps"] for p in points}
     today = pd.Timestamp.now().normalize()
     if current_ttm is not None:
         known_data[today] = current_ttm
     elif points:
-        # If no current TTM (rare), assume flat from last point
         known_data[today] = points[-1]["eps"]
-
     if not known_data:
         return pd.Series(dtype=float).reindex(date_index)
-
-    # Convert to Series
     s_points = pd.Series(known_data).sort_index()
-
-    # Remove duplicates (keep last)
     s_points = s_points[~s_points.index.duplicated(keep='last')]
-
-    # Reindex to full range and interpolate
-    # We allow extrapolation (ffill/bfill) for dates outside the known points
     full_series = s_points.reindex(s_points.index.union(date_index))
     interpolated = full_series.interpolate(method='time')
-    interpolated = interpolated.reindex(date_index).ffill().bfill()
-
-    return cast(pd.Series, interpolated)
+    return interpolated.reindex(date_index).ffill().bfill()
 
 
 def load_data():
     if not HOLDINGS_PATH.exists():
         raise FileNotFoundError(f"Holdings not found: {HOLDINGS_PATH}")
     holdings_df = pd.read_parquet(HOLDINGS_PATH)
-
     if not PRICES_JSON_PATH.exists():
         raise FileNotFoundError(f"Prices not found: {PRICES_JSON_PATH}")
     with open(PRICES_JSON_PATH, "r") as f:
         prices_data = json.load(f)
-
     return holdings_df, prices_data
 
 
 def calculate_harmonic_pe(mv_map: Dict[str, float], pe_map: Dict[str, float]) -> Optional[float]:
-    """
-    Calculate the weighted harmonic mean P/E of the portfolio.
-    Formula: 1 / Sum(Weight * (1/PE)) = 1 / Weighted_Earnings_Yield
-    Weights are normalized to the subset of holdings with valid P/E.
-    """
     total_mv = sum(mv_map.values())
     if total_mv <= 0:
         return None
-
     weighted_yield = 0.0
     weight_sum = 0.0
-
     for t, mv in mv_map.items():
         pe_val = pe_map.get(t)
         if pe_val is not None and pe_val > 0:
             w = mv / total_mv
             weighted_yield += w * (1.0 / pe_val)
             weight_sum += w
-
     if weight_sum > 0 and weighted_yield > 0:
-        # Adjusted Yield = Weighted_Yield / Total_Valid_Weight
-        adj_yield = weighted_yield / weight_sum
-        return 1.0 / adj_yield
-
+        return 1.0 / (weighted_yield / weight_sum)
     return None
 
 
@@ -588,167 +638,84 @@ def main():
     print("Loading holdings and prices...")
     holdings_df, prices_data_raw = load_data()
     dates = holdings_df.index
-
-    # Pre-process Prices into a dense DataFrame (handles weekends/holidays)
     print("Preprocessing prices (forward-fill)...")
     prices_df = pd.DataFrame(prices_data_raw)
     prices_df.index = pd.to_datetime(prices_df.index)
-    # Reindex to full holding dates and ffill
     prices_df = prices_df.reindex(dates).ffill()
-
-    # Filter tickers
     all_tickers = [t for t in holdings_df.columns if t not in ("date", "total_value", "Others")]
-
-    # Remove exempt tickers
-    filtered_tickers = []
-    for t in all_tickers:
-        if t in EXEMPT_TICKERS:
-            # print(f"Skipping Exempt (Bond/Non-Equity): {t}")
-            continue
-        filtered_tickers.append(t)
-
+    filtered_tickers = [t for t in all_tickers if t not in EXEMPT_TICKERS]
     stock_tickers = [t for t in filtered_tickers if not is_etf(t)]
     etf_tickers = [t for t in filtered_tickers if is_etf(t)]
-
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
-
-    # 1. Fetch ETF Constant or Dynamic PEs
     print("Fetching ETF PEs...")
     etf_pe_daily = pd.DataFrame(index=dates)
     for t in etf_tickers:
         pe_series = fetch_etf_pe(t, dates)
         if pe_series is not None:
             etf_pe_daily[t] = pe_series
-            # print(f"  {t}: Dynamic Curving Enabled")
-
-    # 2. Fetch and Interpolate Stock EPS
-    print("Fetching Stock EPS and history...")
+    print("Fetching Stock EPS...")
     stock_eps_daily = pd.DataFrame(index=dates)
-
-    print("Fetching Stock EPS and history (Batch)...")
-    stock_eps_daily = pd.DataFrame(index=dates)
-
-    # Batch fetch
     all_stock_data = fetch_stock_eps_data(stock_tickers)
-
     for t, data in all_stock_data.items():
         if not data["points"] and data["current_ttm"] is None:
-            # print(f"  {t}: No EPS data found") # Reduce noise
             continue
-
-        eps_series = interpolate_eps_series(data, dates)
-        stock_eps_daily[t] = eps_series
-
-        # Debug log for verification
-        p0 = data["points"][0]["eps"] if data["points"] else "N/A"
-        curr = data["current_ttm"] if data["current_ttm"] else "N/A"
-        print(f"  {t}: HistPts={len(data['points'])}, First={p0:.2f}, Curr={curr}")
-
-    # 3. Compute Daily PE
+        stock_eps_daily[t] = interpolate_eps_series(data, dates)
+        p0 = data["points"][0]["eps"] if data["points"] else 0
+        curr = data["current_ttm"] if data["current_ttm"] else 0
+        print(f"  {t}: HistPts={len(data['points'])}, First={p0:.2f}, Curr={curr:.2f}")
     print("\nComputing Portfolio PE...")
-    result_dates = []
-    result_portfolio_pe = []
+    result_dates, result_portfolio_pe = [], []
     result_ticker_pe = {t: [] for t in all_tickers}
     result_ticker_weights = {t: [] for t in all_tickers}
-
     valid_ticker_mask = {}
-
     for date in dates:
-        date_str = date.strftime("%Y-%m-%d")
-
-        # Holdings weights
-        mv_map = {}
+        mv_map, pe_map = {}, {}
         total_mv = 0.0
-
-        # PE map for this day
-        pe_map = {}
-
         for t in all_tickers:
             shares = holdings_df.loc[date, t]
             if shares <= 1e-6:
                 continue
-
-            # Get Price (FFilled)
             price = None
             t_clean = t.strip().upper().replace("-", "")
             if t_clean in prices_df.columns:
                 price_val = prices_df.loc[date, t_clean]
                 if pd.notna(price_val) and price_val > 0:
                     price = float(price_val)
-
             if not price:
                 continue
-
             mv = shares * price
-            # Filter dust: ignore if value < $1.0
             if mv < 1.0:
                 continue
-
-            mv_map[t] = mv
-            total_mv += mv
-
-            # Get PE
+            mv_map[t], total_mv = mv, total_mv + mv
             if t in etf_pe_daily.columns:
                 pe_map[t] = etf_pe_daily.loc[date, t]
             elif t in stock_eps_daily.columns:
                 eps = stock_eps_daily.loc[date, t]
                 if eps > 0:
                     pe_map[t] = price / eps
-
-        # Calculate Portfolio PE
         portfolio_pe = calculate_harmonic_pe(mv_map, pe_map)
-
-        # Calculate weights
-        day_weights = {}
-        if total_mv > 0:
-            for t, mv in mv_map.items():
-                day_weights[t] = mv / total_mv
-
-        result_dates.append(date_str)
+        result_dates.append(date.strftime("%Y-%m-%d"))
         result_portfolio_pe.append(round(portfolio_pe, 2) if portfolio_pe else None)
-
         for t in all_tickers:
             val = pe_map.get(t)
             if val is not None:
                 val = round(val, 2)
                 valid_ticker_mask[t] = True
             result_ticker_pe[t].append(val)
-
-            # Save weight (rounded to 4 decimals = 0.01% precision)
-            w = day_weights.get(t)
-            if w is not None:
-                result_ticker_weights[t].append(round(w, 5))
-            else:
-                result_ticker_weights[t].append(None)
-
-    # Filter output (remove tickers with no data ever)
-    final_ticker_pe = {t: vals for t, vals in result_ticker_pe.items() if t in valid_ticker_mask}
-    final_ticker_weights = {
-        t: vals for t, vals in result_ticker_weights.items() if t in valid_ticker_mask
-    }
-
-    output = {
+            w = mv_map.get(t, 0) / total_mv if total_mv > 0 else 0
+            result_ticker_weights[t].append(round(w, 5) if w > 0 else None)
+    final_output = {
         "dates": result_dates,
         "portfolio_pe": result_portfolio_pe,
-        "ticker_pe": final_ticker_pe,
-        "ticker_weights": final_ticker_weights,
+        "ticker_pe": {t: v for t, v in result_ticker_pe.items() if t in valid_ticker_mask},
+        "ticker_weights": {
+            t: v for t, v in result_ticker_weights.items() if t in valid_ticker_mask
+        },
     }
-
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_file = OUTPUT_DIR / "pe_ratio.json"
-    with open(out_file, "w") as f:
-        json.dump(output, f, separators=(",", ":"))
-
-    print(f"\nSaved to {out_file}")
-
-    # Stats
-    valid_days = sum(1 for x in result_portfolio_pe if x is not None)
-    print(f"Valid Days: {valid_days}/{len(dates)}")
-    if result_portfolio_pe:
-        valid_vals = [x for x in result_portfolio_pe if x]
-        if valid_vals:
-            print(f"Range: {min(valid_vals):.2f} - {max(valid_vals):.2f}")
-            print(f"Latest: {valid_vals[-1]:.2f}")
+    with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:
+        json.dump(final_output, f, separators=(",", ":"))
+    print(f"\nSaved to {OUTPUT_DIR / 'pe_ratio.json'}")
 
 
 if __name__ == "__main__":
