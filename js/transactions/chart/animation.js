@@ -18,6 +18,10 @@ export function stopFxAnimation() {
     glowAnimator.stop('fx');
 }
 
+export function stopPeAnimation() {
+    glowAnimator.stop('pe');
+}
+
 export function schedulePerformanceAnimation(chartManager) {
     if (!isAnimationEnabled('performance')) {
         glowAnimator.stop('performance');
@@ -48,6 +52,16 @@ export function scheduleFxAnimation(chartManager) {
     });
 }
 
+export function schedulePeAnimation(chartManager) {
+    if (!isAnimationEnabled('pe')) {
+        glowAnimator.stop('pe');
+        return;
+    }
+    glowAnimator.schedule('pe', chartManager, {
+        isActive: () => transactionState.activeChart === 'pe',
+    });
+}
+
 export function advancePerformanceAnimation(timestamp) {
     if (!isAnimationEnabled('performance')) {
         return 0;
@@ -67,6 +81,13 @@ export function advanceFxAnimation(timestamp) {
         return 0;
     }
     return glowAnimator.advance('fx', timestamp);
+}
+
+export function advancePeAnimation(timestamp) {
+    if (!isAnimationEnabled('pe')) {
+        return 0;
+    }
+    return glowAnimator.advance('pe', timestamp);
 }
 
 export function drawSeriesGlow(ctx, seriesKey, seriesData, color, bounds) {

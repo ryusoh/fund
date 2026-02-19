@@ -115,7 +115,7 @@ export function createChartManager(options = {}) {
         } else if (transactionState.activeChart === 'concentration') {
             drawConcentrationChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'pe') {
-            drawPEChart(ctx, chartManager);
+            drawPEChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {

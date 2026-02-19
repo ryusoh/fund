@@ -6,6 +6,11 @@ import {
     stopPerformanceAnimation,
     stopContributionAnimation,
     stopFxAnimation,
+    stopPeAnimation,
+    isAnimationEnabled,
+    advancePeAnimation,
+    schedulePeAnimation,
+    drawSeriesGlow,
 } from '../animation.js';
 import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import { drawAxes, drawMountainFill, drawEndValue } from '../core.js';
@@ -104,7 +109,7 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
 /**
  * Draw the PE ratio chart — a single line showing weighted average P/E over time.
  */
-export function drawPEChart(ctx, chartManager) {
+export function drawPEChart(ctx, chartManager, timestamp) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
@@ -208,16 +213,32 @@ export function drawPEChart(ctx, chartManager) {
     // --- Scales ---
     const dateTimes = series.map((p) => p.date.getTime());
     let minTime = Math.min(...dateTimes);
-    const maxTime = Math.max(...dateTimes);
+    let maxTime = Math.max(...dateTimes);
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
 
+    // Check for forward PE data and extend maxTime if present
+    const forwardPE = data.forward_pe;
+    let forwardTargetTime = null;
+    let forwardPEValue = null;
+    if (forwardPE && forwardPE.target_date && forwardPE.portfolio_forward_pe && !filterTo) {
+        const targetDate = parseLocalDate(forwardPE.target_date);
+        if (targetDate && !Number.isNaN(targetDate.getTime())) {
+            forwardTargetTime = targetDate.getTime();
+            forwardPEValue = forwardPE.portfolio_forward_pe;
+            maxTime = Math.max(maxTime, forwardTargetTime);
+        }
+    }
+
     const peValues = series.map((p) => p.pe);
     const dataMin = Math.min(...peValues);
-    const dataMax = Math.max(...peValues);
+    let dataMax = Math.max(...peValues);
+    if (forwardPEValue !== null) {
+        dataMax = Math.max(dataMax, forwardPEValue);
+    }
 
     // Y range with 10% padding
     const range = dataMax - dataMin;
@@ -301,9 +322,90 @@ export function drawPEChart(ctx, chartManager) {
     });
     ctx.stroke();
 
-    // End value label
+    // --- Draw forward PE dashed line ---
     const lastPoint = series[series.length - 1];
     const showLabels = transactionState.showChartLabels !== false;
+
+    if (forwardTargetTime !== null && forwardPEValue !== null && lastPoint) {
+        const lastX = xScale(lastPoint.date.getTime());
+        const lastY = yScale(lastPoint.pe);
+        const fwdX = xScale(forwardTargetTime);
+        const fwdY = yScale(forwardPEValue);
+
+        // Mountain fill under the forward segment (reduced opacity)
+        if (mountainFill.enabled) {
+            const fwdCoords = [
+                { x: lastX, y: lastY },
+                { x: fwdX, y: fwdY },
+            ];
+            drawMountainFill(ctx, fwdCoords, baselineY, {
+                color: lineColor,
+                colorStops: gradientStops,
+                opacityTop: 0.15,
+                opacityBottom: 0.02,
+                bounds: chartBounds,
+            });
+        }
+
+        // Dashed line
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = lineThickness;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(fwdX, fwdY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1.0;
+        ctx.restore();
+
+        // Animated shimmer at the forward PE endpoint (uses same glow system as other charts)
+        const peAnimEnabled = isAnimationEnabled('pe');
+        const animPhase = advancePeAnimation(timestamp);
+        if (peAnimEnabled) {
+            const fwdGlowCoords = [
+                { x: lastX, y: lastY },
+                { x: fwdX, y: fwdY },
+            ];
+            drawSeriesGlow(
+                ctx,
+                { coords: fwdGlowCoords, color: lineColor, lineWidth: lineThickness },
+                {
+                    basePhase: animPhase,
+                    seriesIndex: 0,
+                    isMobile,
+                    chartKey: 'pe',
+                }
+            );
+            schedulePeAnimation(chartManager);
+        } else {
+            stopPeAnimation();
+        }
+
+        // End value label with dark box (matching trailing PE style)
+        if (showLabels) {
+            drawEndValue(
+                ctx,
+                fwdX,
+                fwdY,
+                forwardPEValue,
+                lineColor,
+                isMobile,
+                padding,
+                plotWidth,
+                plotHeight,
+                (v) => `Fwd ${v.toFixed(1)}x`,
+                true,
+                null
+            );
+        }
+    } else {
+        stopPeAnimation();
+    }
+
+    // End value label for trailing PE
     if (showLabels && lastPoint) {
         const lastX = xScale(lastPoint.date.getTime());
         const lastY = yScale(lastPoint.pe);
@@ -402,22 +504,28 @@ export function drawPEChart(ctx, chartManager) {
             },
         ],
         rawSeries: series,
+        forwardPE: forwardPE || null,
     };
 
     drawCrosshairOverlay(ctx, chartLayouts.pe);
 
     // --- Legend ---
     const latestPE = lastPoint ? lastPoint.pe : 0;
-    updateLegend(
-        [
-            {
-                key: 'pe',
-                name: `P/E Ratio: ${latestPE.toFixed(1)}x`,
-                color: lineColor,
-            },
-        ],
-        chartManager
-    );
+    const legendItems = [
+        {
+            key: 'pe',
+            name: `P/E Ratio: ${latestPE.toFixed(1)}x`,
+            color: lineColor,
+        },
+    ];
+    if (forwardPEValue !== null) {
+        legendItems.push({
+            key: 'fwd_pe',
+            name: `Forward P/E: ${forwardPEValue.toFixed(1)}x`,
+            color: lineColor,
+        });
+    }
+    updateLegend(legendItems, chartManager);
 }
 
 /**
@@ -449,5 +557,11 @@ export function getPESnapshotText() {
     const max = Math.max(...values);
     const current = values[values.length - 1];
 
-    return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
+    const fwd = chartLayouts.pe.forwardPE;
+    const fwdText =
+        fwd && fwd.portfolio_forward_pe
+            ? ` | Forward: ${fwd.portfolio_forward_pe.toFixed(2)}x`
+            : '';
+
+    return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))${fwdText}`;
 }

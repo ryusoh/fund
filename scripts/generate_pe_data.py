@@ -33,6 +33,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = DATA_DIR / "output" / "figures"
 
 HOLDINGS_PATH = DATA_DIR / "checkpoints" / "holdings_daily.parquet"
+HOLDINGS_DETAILS_PATH = DATA_DIR / "holdings_details.json"
 PRICES_JSON_PATH = DATA_DIR / "historical_prices.json"
 EPS_CACHE_PATH = DATA_DIR / "checkpoints" / "fetched_eps_cache.json"
 MANUAL_PATCH_PATH = DATA_DIR / "manual_eps_patch.json"
@@ -634,6 +635,69 @@ def calculate_harmonic_pe(mv_map: Dict[str, float], pe_map: Dict[str, float]) ->
     return None
 
 
+def fetch_forward_pe() -> Optional[Dict[str, Any]]:
+    """Fetch forward PE for current holdings and compute portfolio forward PE.
+
+    Reads current holdings from holdings_details.json, fetches forwardPE from
+    Yahoo for each stock/ETF, and computes a weighted harmonic mean.
+    Returns a dict with target_date, portfolio_forward_pe, and per-ticker values.
+    """
+    if not HOLDINGS_DETAILS_PATH.exists():
+        print("Warning: holdings_details.json not found, skipping forward PE")
+        return None
+
+    with open(HOLDINGS_DETAILS_PATH) as f:
+        holdings = json.load(f)
+
+    if not holdings:
+        return None
+
+    # Fetch current prices and forward PE for each holding
+    mv_map: Dict[str, float] = {}
+    fwd_pe_map: Dict[str, float] = {}
+    ticker_fwd_pe: Dict[str, float] = {}
+
+    for ticker, details in holdings.items():
+        shares = float(details.get("shares", 0))
+        if shares <= 0:
+            continue
+
+        symbol = yf_symbol(ticker)
+        try:
+            stock = yf.Ticker(symbol)
+            info = stock.info
+            if info is None:
+                continue
+
+            price = info.get("currentPrice") or info.get("regularMarketPrice")
+            fwd_pe = info.get("forwardPE")
+
+            if price and price > 0:
+                mv_map[ticker] = shares * price
+
+            if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
+                fwd_pe_map[ticker] = fwd_pe
+                ticker_fwd_pe[ticker] = round(fwd_pe, 2)
+        except Exception:
+            continue
+
+    if not fwd_pe_map:
+        return None
+
+    portfolio_fwd_pe = calculate_harmonic_pe(mv_map, fwd_pe_map)
+    if portfolio_fwd_pe is None:
+        return None
+
+    # Target date: 12 months from today (NTM convention)
+    target_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+
+    return {
+        "target_date": target_date,
+        "portfolio_forward_pe": round(portfolio_fwd_pe, 2),
+        "ticker_forward_pe": ticker_fwd_pe,
+    }
+
+
 def main():
     print("Loading holdings and prices...")
     holdings_df, prices_data_raw = load_data()
@@ -712,6 +776,21 @@ def main():
             t: v for t, v in result_ticker_weights.items() if t in valid_ticker_mask
         },
     }
+
+    # Compute forward PE from current holdings
+    print("Fetching Forward PE...")
+    forward_pe = fetch_forward_pe()
+    if forward_pe:
+        final_output["forward_pe"] = forward_pe
+        print(
+            f"  Portfolio Forward PE: {forward_pe['portfolio_forward_pe']}x "
+            f"(target: {forward_pe['target_date']})"
+        )
+        for t, pe in sorted(forward_pe["ticker_forward_pe"].items()):
+            print(f"    {t}: {pe}x")
+    else:
+        print("  No forward PE data available")
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:
         json.dump(final_output, f, separators=(",", ":"))
