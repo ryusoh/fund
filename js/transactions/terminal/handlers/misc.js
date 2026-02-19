@@ -31,10 +31,7 @@ export async function handleAllCommand(
     filterAndSort(''); // Clear all filters
 
     // Update chart if it's currently visible
-    if (
-        transactionState.activeChart === 'contribution' ||
-        transactionState.activeChart === 'performance'
-    ) {
+    if (isActiveChartVisible()) {
         chartManager.update();
     }
 

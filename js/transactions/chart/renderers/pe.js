@@ -19,7 +19,7 @@ let peDataLoading = false;
  * Load PE ratio data from the backend JSON.
  * @returns {Promise<Object|null>}
  */
-async function loadPEData() {
+export async function loadPEData() {
     try {
         const response = await fetch('../data/output/figures/pe_ratio.json');
         if (!response.ok) {
@@ -58,8 +58,8 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
 
     for (let i = 0; i < dates.length; i += 1) {
         const dateStr = dates[i];
-        const date = new Date(dateStr);
-        if (Number.isNaN(date.getTime())) {
+        const date = parseLocalDate(dateStr);
+        if (!date || Number.isNaN(date.getTime())) {
             continue;
         }
         if (filterFrom && date < filterFrom) {

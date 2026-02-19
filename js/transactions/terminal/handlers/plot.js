@@ -7,6 +7,7 @@ import {
     getDrawdownSnapshotLine,
     getContributionSummaryText,
     getConcentrationSnapshotText,
+    getPESnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -325,11 +326,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                     concTableContainer.classList.add('is-hidden');
                 }
                 result = `Showing concentration (HHI) chart for ${formatDateRange(dateRange)}.`;
-                getConcentrationSnapshotText().then((text) => {
-                    if (text) {
-                        appendMessage(text);
-                    }
-                });
+                const summary = await getConcentrationSnapshotText();
+                if (summary) {
+                    result += `\n${summary}`;
+                }
             }
             break;
         }
@@ -357,6 +357,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                     peTableContainer.classList.add('is-hidden');
                 }
                 result = `Showing weighted average P/E ratio chart for ${formatDateRange(dateRange)}.`;
+                const summary = await getPESnapshotLine();
+                if (summary) {
+                    result += `\n${summary}`;
+                }
             }
             break;
         }

@@ -24,6 +24,8 @@ import { normalizeDateOnly } from '@utils/date.js';
 import { getHoldingAssetClass } from '@js/config.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import { getConcentrationText } from './stats/analysis.js';
+import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
+import { parseLocalDate } from '../chart/helpers.js';
 
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
@@ -768,4 +770,39 @@ export async function getContributionSummaryText(dateRange = transactionState.ch
 
 export async function getConcentrationSnapshotText() {
     return getConcentrationText();
+}
+export async function getPESnapshotLine() {
+    const data = await loadPEData();
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray(data.dates) ||
+        data.dates.length === 0
+    ) {
+        return null;
+    }
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
+
+    const series = buildPESeries(
+        data.dates,
+        data.portfolio_pe,
+        data.ticker_pe,
+        data.ticker_weights,
+        filterFrom,
+        filterTo
+    );
+
+    if (series.length === 0) {
+        return 'No PE data in range';
+    }
+
+    const values = series.map((p) => p.pe);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const current = values[values.length - 1];
+
+    return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
 }

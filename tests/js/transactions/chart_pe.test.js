@@ -3,11 +3,14 @@ import { jest } from '@jest/globals';
 describe('PE chart helpers', () => {
     describe('buildPESeries', () => {
         let buildPESeries;
+        let parseLocalDate;
 
         beforeEach(async () => {
             jest.resetModules();
             const mod = await import('@js/transactions/chart/renderers/pe.js');
+            const helperMod = await import('@js/transactions/chart/helpers.js');
             buildPESeries = mod.buildPESeries;
+            parseLocalDate = helperMod.parseLocalDate;
         });
 
         test('returns empty array for empty dates', () => {
@@ -56,7 +59,7 @@ describe('PE chart helpers', () => {
             const dates = ['2025-01-01', '2025-06-01', '2025-12-01'];
             const portfolioPE = [20.0, 22.0, 24.0];
 
-            const filterFrom = new Date('2025-06-01');
+            const filterFrom = parseLocalDate('2025-06-01');
             const result = buildPESeries(dates, portfolioPE, {}, null, filterFrom, null);
 
             expect(result).toHaveLength(2);
@@ -67,7 +70,7 @@ describe('PE chart helpers', () => {
             const dates = ['2025-01-01', '2025-06-01', '2025-12-01'];
             const portfolioPE = [20.0, 22.0, 24.0];
 
-            const filterTo = new Date('2025-06-01');
+            const filterTo = parseLocalDate('2025-06-01');
             const result = buildPESeries(dates, portfolioPE, {}, null, null, filterTo);
 
             expect(result).toHaveLength(2);
@@ -131,7 +134,7 @@ describe('PE chart helpers', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].pe).toBeCloseTo(26.58, 5);
-            expect(result[0].date).toEqual(new Date('2025-06-15'));
+            expect(result[0].date).toEqual(parseLocalDate('2025-06-15'));
         });
     });
 });

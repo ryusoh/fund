@@ -6,9 +6,8 @@ import {
     getFxSnapshotLine,
     getContributionSummaryText,
     getConcentrationSnapshotText,
+    getPESnapshotLine,
 } from './snapshots.js';
-
-import { getPESnapshotText } from '../chart/renderers/pe.js';
 
 export function ensureTransactionTableVisible() {
     const tableContainer = document.querySelector('.table-responsive-container');
@@ -75,7 +74,7 @@ export async function getActiveChartSummaryText() {
         return getConcentrationSnapshotText();
     }
     if (activeChart === 'pe') {
-        return getPESnapshotText();
+        return await getPESnapshotLine();
     }
     return null;
 }
