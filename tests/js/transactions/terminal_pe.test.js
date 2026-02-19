@@ -140,4 +140,17 @@ describe('PE Ratio Terminal Integration', () => {
         expect(message).toContain('Range: 20.00x - 25.00x');
         expect(session.chartManager.update).toHaveBeenCalled();
     });
+
+    test('help strings include plot pe', async () => {
+        const session = await initTerminalSession();
+
+        // Check help command
+        await session.submitCommand('help');
+        expect(getLastTerminalMessage()).toContain('plot pe');
+
+        // Check plot command help
+        await session.submitCommand('plot');
+        expect(getLastTerminalMessage()).toContain('plot pe');
+        expect(getLastTerminalMessage()).toContain('pe            [year|quarter|qN]');
+    });
 });

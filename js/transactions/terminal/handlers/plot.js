@@ -29,6 +29,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
+            '  plot pe              - Show weighted average P/E ratio chart\n' +
             '  plot fx              - Show FX rate chart for the selected base currency\n\n' +
             'Usage: plot <subcommand> or p <subcommand>\n' +
             '  balance       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
@@ -36,6 +37,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  drawdown      [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  composition   [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
