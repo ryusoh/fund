@@ -16,6 +16,7 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/twrr/step03_fetch_prices.py \
 		 scripts/twrr/step04_compute_holdings.py \
 	 scripts/generate_composition_data.py \
+	 scripts/generate_pe_data.py \
 	 scripts/twrr/step05_cashflows.py \
 	 scripts/twrr/step06_compute_twrr.py \
 	 scripts/ratios/calculate_ratios.py \
