@@ -46,6 +46,7 @@ HOLDINGS_PATH = DATA_DIR / "checkpoints" / "holdings_daily.parquet"
 PRICES_JSON_PATH = DATA_DIR / "historical_prices.json"
 EPS_CACHE_PATH = DATA_DIR / "checkpoints" / "fetched_eps_cache.json"
 MANUAL_PATCH_PATH = DATA_DIR / "manual_eps_patch.json"
+SPLIT_HISTORY_PATH = DATA_DIR / "split_history.csv"
 
 # Tickers classified as ETFs
 ETF_TICKERS = frozenset(
@@ -60,6 +61,7 @@ ETF_TICKERS = frozenset(
         "VDC",
         "ICLN",
         "REK",
+        "ARKG",
         "IGV",
         "VGT",
         "IHF",
@@ -69,6 +71,7 @@ ETF_TICKERS = frozenset(
         "QQQ",
         "SPY",
         "DIA",
+        "IVV",
         "SCHD",
         "SCHX",
         "SCHF",
@@ -303,14 +306,39 @@ def load_manual_patch() -> Dict[str, Dict[str, float]]:
     return {}
 
 
+def load_split_history() -> pd.DataFrame:
+    if SPLIT_HISTORY_PATH.exists():
+        try:
+            df = pd.read_csv(SPLIT_HISTORY_PATH)
+            df["Split Date"] = pd.to_datetime(df["Split Date"])
+            return df
+        except Exception as e:
+            print(f"Error loading split history: {e}")
+    return pd.DataFrame()
+
+
+def get_split_adjustment(symbol: str, date: pd.Timestamp, split_df: pd.DataFrame) -> float:
+    """Calculate cumulative split factor to adjust 'as-reported' EPS to 'current' price basis."""
+    if split_df.empty:
+        return 1.0
+    # Filter for this symbol and splits AFTER the reporting date
+    # (Because current prices are already split-adjusted, we need to adjust old EPS down)
+    relevant = split_df[(split_df["Symbol"] == symbol) & (split_df["Split Date"] > date)]
+    if relevant.empty:
+        return 1.0
+    # Split Multiplier is typically New/Old (e.g. 10.0 for 10:1 split)
+    total_multiplier = relevant["Split Multiplier"].prod()
+    return 1.0 / float(total_multiplier)
+
+
 def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
     """Fetch EPS data for stocks with caching and manual patches."""
-    # 1. Load Cache & Patch
+    # 1. Load Cache & Patch & Splits
     cache = load_eps_cache()
     manual_patch = load_manual_patch()
+    splits = load_split_history()
 
     # 2. Update Cache with new data
-    # (Only if we want to refresh. Assume yes.)
     for t in tickers:
         try:
             stock = yf.Ticker(t)
@@ -321,47 +349,92 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             except:
                 pass
 
+            # 1. Basic Info
             current_ttm = info.get("trailingEps")
             currency = info.get("currency", "USD")
+            fin_curr = info.get("financialCurrency", currency)
 
-            # Historical Annual
-            financials = stock.income_stmt
-            if not financials.empty and "Basic EPS" in financials.index:
-                eps_row = financials.loc["Basic EPS"]
+            # Init ticker entry if needed
+            if t not in cache:
+                cache[t] = {"points": {}, "currency": currency}
+            cache[t]["current_ttm"] = current_ttm
+            cache[t]["currency"] = currency
 
-                # Check if FX conversion needed
-                fin_curr = info.get("financialCurrency", currency)
-                fx_series = None
-                if currency != fin_curr:
-                    # e.g. CNY -> USD. Pair = CNYUSD=X
-                    pair = f"{fin_curr}{currency}=X"
-                    fx_series = get_fx_history(pair)
+            # 2. Setup FX helper
+            fx_series = None
+            if currency != fin_curr:
+                pair = f"{fin_curr}{currency}=X"
+                fx_series = get_fx_history(pair)
 
-                # Init ticker entry if needed
-                if t not in cache:
-                    cache[t] = {"points": {}, "currency": currency}
+            def add_points_to_cache(ticker, series, is_ttm_already, needs_split_adj=False):
+                if series.empty:
+                    return
+                for date_val, val in series.items():
+                    if pd.isna(val):
+                        continue
+                    d_ts = pd.Timestamp(date_val)
+                    d_str = d_ts.strftime("%Y-%m-%d")
+                    val_float = float(val)
 
-                # Update metadata
-                cache[t]["current_ttm"] = current_ttm
-                cache[t]["currency"] = currency
-                if "points" not in cache[t]:
-                    cache[t]["points"] = {}
+                    # Split adjustment (for unadjusted sources like earnings_dates)
+                    if needs_split_adj:
+                        adj = get_split_adjustment(ticker, d_ts, splits)
+                        val_float *= adj
 
-                # Merge points
-                for date_val, eps_val in eps_row.items():
-                    if pd.notna(eps_val):
-                        d_ts = pd.Timestamp(date_val)
-                        d_str = d_ts.strftime("%Y-%m-%d")
-                        val_float = float(eps_val)
+                    # FX conversion
+                    if fx_series is not None:
+                        rate = get_closest_fx(fx_series, d_ts)
+                        val_float *= rate
+                    elif currency == "GBP" and fin_curr == "GBp":
+                        val_float /= 100.0
 
-                        # Convert if needed
-                        if fx_series is not None:
-                            rate = get_closest_fx(fx_series, d_ts)
-                            val_float *= rate
-                        elif currency == "GBP" and fin_curr == "GBp":  # Pence -> Pounds
-                            val_float /= 100.0
+                    # Note: We overwrite if exists. Quarterly TTM should be more fresh than Annual.
+                    cache[ticker]["points"][d_str] = val_float
 
-                        cache[t]["points"][d_str] = val_float
+            # 3. Handle Annual (Already TTM)
+            # Note: yfinance income_stmt is usually already split-adjusted.
+            annual = stock.income_stmt
+            if not annual.empty and "Basic EPS" in annual.index:
+                add_points_to_cache(t, annual.loc["Basic EPS"], True, needs_split_adj=False)
+
+            # 4. Handle Quarterly (Need to sum 4 to get TTM)
+            # Use get_earnings_dates() because it has much deeper history than quarterly_income_stmt (typically 20+ pts)
+            try:
+                ed = stock.get_earnings_dates(limit=40)
+                if not ed.empty and "Reported EPS" in ed.columns:
+                    # Clean and sort: reported only, oldest to newest
+                    q_eps = ed["Reported EPS"].dropna().sort_index()
+                    # index names are often 'Earnings Date' with TZ, normalize to date
+                    q_eps.index = q_eps.index.normalize().tz_localize(None)
+                    # Deduplicate if multiple earnings data reported for same day (rare)
+                    q_eps = q_eps.groupby(q_eps.index).last()
+
+                    if len(q_eps) >= 1:
+                        # Split adjust quarterly EPS BEFORE summing to TTM
+                        # (because different quarters might have different adjustment factors)
+                        q_eps_adj = []
+                        for d, v in q_eps.items():
+                            adj = get_split_adjustment(t, d, splits)
+                            q_eps_adj.append(v * adj)
+
+                        q_eps_series = pd.Series(q_eps_adj, index=q_eps.index)
+
+                        if len(q_eps_series) >= 4:
+                            # Rolling sum of 4 quarters gives TTM at each quarter end
+                            q_ttm = q_eps_series.rolling(4).sum().dropna()
+                            # already adjusted above
+                            add_points_to_cache(t, q_ttm, True, needs_split_adj=False)
+                else:
+                    # Fallback to standard quarterly_income_stmt (only 4-5 pts)
+                    # Note: income_stmt is usually already split-adjusted in yf
+                    quarterly = stock.quarterly_income_stmt
+                    if not quarterly.empty and "Basic EPS" in quarterly.index:
+                        q_eps = quarterly.loc["Basic EPS"].sort_index()
+                        if len(q_eps) >= 4:
+                            q_ttm = q_eps.rolling(4).sum().dropna()
+                            add_points_to_cache(t, q_ttm, True, needs_split_adj=False)
+            except Exception as e:
+                print(f"Warning: Quarterly fetch failed for {t}: {e}")
 
         except Exception as e:
             print(f"Warning: Error fetching {t}: {e}")
@@ -483,21 +556,6 @@ def load_data():
     return holdings_df, prices_data
 
 
-def get_price(prices_data: dict, ticker: str, date_str: str) -> float | None:
-    t_clean = ticker.strip().upper().replace("-", "")
-    if t_clean not in prices_data:
-        return None
-    price = prices_data[t_clean].get(date_str)
-    if price:
-        return float(price)
-
-    # Fallback to last available
-    # prices_data[t_clean] keys are unsorted dates, so we rely on exact match
-    # or costly search. Optimization: assume external prices file is dense enough
-    # or handle nulls.
-    return None
-
-
 def calculate_harmonic_pe(mv_map: Dict[str, float], pe_map: Dict[str, float]) -> Optional[float]:
     """
     Calculate the weighted harmonic mean P/E of the portfolio.
@@ -528,8 +586,15 @@ def calculate_harmonic_pe(mv_map: Dict[str, float], pe_map: Dict[str, float]) ->
 
 def main():
     print("Loading holdings and prices...")
-    holdings_df, prices_data = load_data()
+    holdings_df, prices_data_raw = load_data()
     dates = holdings_df.index
+
+    # Pre-process Prices into a dense DataFrame (handles weekends/holidays)
+    print("Preprocessing prices (forward-fill)...")
+    prices_df = pd.DataFrame(prices_data_raw)
+    prices_df.index = pd.to_datetime(prices_df.index)
+    # Reindex to full holding dates and ffill
+    prices_df = prices_df.reindex(dates).ffill()
 
     # Filter tickers
     all_tickers = [t for t in holdings_df.columns if t not in ("date", "total_value", "Others")]
@@ -603,7 +668,14 @@ def main():
             if shares <= 1e-6:
                 continue
 
-            price = get_price(prices_data, t, date_str)
+            # Get Price (FFilled)
+            price = None
+            t_clean = t.strip().upper().replace("-", "")
+            if t_clean in prices_df.columns:
+                price_val = prices_df.loc[date, t_clean]
+                if pd.notna(price_val) and price_val > 0:
+                    price = float(price_val)
+
             if not price:
                 continue
 
