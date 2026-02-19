@@ -125,7 +125,6 @@ YFINANCE_ALIASES = {
 # Tickers that are Bonds, Money Market, Inverse, or Commodities (No P/E Intent)
 EXEMPT_TICKERS = frozenset(
     {
-        "FNSFX",  # Bond Mutual Fund
         "BOXX",  # Cash/Options Strategy
         "BNDW",  # Total World Bond
         "SH",  # Short S&P
@@ -133,18 +132,40 @@ EXEMPT_TICKERS = frozenset(
         "SLV",  # Silver
         "GLD",  # Gold
         "SJB",  # Short High Yield
-        "BUG",  # Cyber Security (ETF but specialized) - actually is Equity ETF, keep checking?
-        # Wait, BUG is Equity ETF. Keeping it out.
-        "DICE",  # Pharm?
-        "PTLC",  # ?
-        "AG",  # First Majestic (Silver Miner) - Has PE
-        "AGG",  # Bond
-        "LQD",  # Corporate Bond
         "TLT",  # Treasury Bond
         "BIL",  # T-Bills
         "SGOV",  # T-Bills
     }
 )
+
+# Manual overrides for P/E ratios (e.g., for Mutual Funds lacking yfinance data)
+# Use a dict of date strings for historical points to create a dynamic curve via interpolation.
+MANUAL_TICKER_PE_CURVES = {
+    "FSKAX": {
+        "2020-12-31": 35.96,
+        "2021-12-31": 23.11,
+        "2022-12-31": 22.82,
+        "2023-12-31": 25.01,
+        "2024-12-31": 28.16,
+        "2026-01-31": 33.54,
+    },
+    "FSGGX": {
+        "2020-12-31": 18.22,
+        "2021-12-31": 18.28,
+        "2022-12-31": 12.80,
+        "2023-12-31": 14.50,
+        "2024-12-31": 16.50,
+        "2026-01-31": 18.65,
+    },
+    "FNSFX": {
+        "2020-12-31": 26.5,
+        "2021-12-31": 21.8,
+        "2022-12-31": 18.5,
+        "2023-12-31": 20.3,
+        "2024-12-31": 17.80,
+        "2026-01-31": 21.97,
+    },
+}
 
 # Cache for FX rates
 FX_CACHE: Dict[str, pd.Series] = {}
@@ -324,13 +345,39 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
     return results
 
 
-def fetch_etf_pe(ticker: str) -> Optional[float]:
+def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     symbol = yf_symbol(ticker)
+
+    # Check manual curve override first
+    if ticker in MANUAL_TICKER_PE_CURVES:
+        points = MANUAL_TICKER_PE_CURVES[ticker]
+        s = pd.Series(dtype=float).reindex(dates)
+        for d_str, val in points.items():
+            dt = pd.Timestamp(d_str).tz_localize(None)
+            if dt in dates:
+                s.loc[dt] = val
+            elif dt >= dates.min() and dt <= dates.max():
+                # Find closest match if exact date not in index
+                idx = dates.get_indexer([dt], method="nearest")[0]
+                s.iloc[idx] = val
+            elif dt < dates.min():
+                # If point is before start of history, set first day to this value
+                # (so interpolation starts from it)
+                s.iloc[0] = val
+            elif dt > dates.max():
+                # If point is after end of history, set last day to this value
+                s.iloc[-1] = val
+
+        # Interpolate
+        s = s.interpolate(method="time").ffill().bfill()
+        return s
+
+    # Else fallback to yfinance current PE (constant over history)
     try:
         info = yf.Ticker(symbol).info or {}
         pe = info.get("trailingPE")
         if pe is not None and math.isfinite(pe) and pe > 0:
-            return float(pe)
+            return pd.Series(float(pe), index=dates)
     except Exception:
         pass
     return None
@@ -449,13 +496,14 @@ def main():
 
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
 
-    # 1. Fetch ETF Constant PEs
+    # 1. Fetch ETF Constant or Dynamic PEs
     print("Fetching ETF PEs...")
-    etf_pes = {}
+    etf_pe_daily = pd.DataFrame(index=dates)
     for t in etf_tickers:
-        pe = fetch_etf_pe(t)
-        if pe:
-            etf_pes[t] = pe
+        pe_series = fetch_etf_pe(t, dates)
+        if pe_series is not None:
+            etf_pe_daily[t] = pe_series
+            # print(f"  {t}: Dynamic Curving Enabled")
 
     # 2. Fetch and Interpolate Stock EPS
     print("Fetching Stock EPS and history...")
@@ -517,8 +565,8 @@ def main():
             total_mv += mv
 
             # Get PE
-            if t in etf_pes:
-                pe_map[t] = etf_pes[t]
+            if t in etf_pe_daily.columns:
+                pe_map[t] = etf_pe_daily.loc[date, t]
             elif t in stock_eps_daily.columns:
                 eps = stock_eps_daily.loc[date, t]
                 if eps > 0:
