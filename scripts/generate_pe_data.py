@@ -110,7 +110,6 @@ ETF_TICKERS = frozenset(
         "VMVAX",
         "VSIAX",
         "VTPSX",
-        "VTLE",
         "VOX",
         "VHT",
     }
@@ -125,20 +124,15 @@ YFINANCE_ALIASES = {
 # Tickers that are Bonds, Money Market, Inverse, or Commodities (No P/E Intent)
 EXEMPT_TICKERS = frozenset(
     {
-        "BOXX",  # Cash/Options Strategy
-        "BNDW",  # Total World Bond
         "SH",  # Short S&P
         "PSQ",  # Short QQQ
         "SLV",  # Silver
         "GLD",  # Gold
         "SJB",  # Short High Yield
-        "TLT",  # Treasury Bond
-        "BIL",  # T-Bills
-        "SGOV",  # T-Bills
     }
 )
 
-# Manual overrides for P/E ratios (e.g., for Mutual Funds lacking yfinance data)
+# Manual overrides for P/E ratios (e.g., for Mutual Funds lacking yfinance data or Bond yields)
 # Use a dict of date strings for historical points to create a dynamic curve via interpolation.
 MANUAL_TICKER_PE_CURVES = {
     "FSKAX": {
@@ -164,6 +158,63 @@ MANUAL_TICKER_PE_CURVES = {
         "2023-12-31": 20.3,
         "2024-12-31": 17.80,
         "2026-01-31": 21.97,
+    },
+    # Bond ETFs: P/E equivalent = 1 / Yield
+    "BNDW": {
+        "2020-12-31": 117.6,
+        "2021-12-31": 64.5,
+        "2022-12-31": 23.7,
+        "2023-12-31": 24.2,
+        "2024-12-31": 24.5,
+        "2026-02-19": 24.2,
+    },
+    "AGG": {
+        "2020-12-31": 163.9,
+        "2021-12-31": 76.3,
+        "2022-12-31": 22.1,
+        "2023-12-31": 24.0,
+        "2024-12-31": 24.1,
+        "2026-02-19": 24.1,
+    },
+    "LQD": {
+        "2020-12-31": 57.5,
+        "2021-12-31": 42.9,
+        "2022-12-31": 18.7,
+        "2023-12-31": 19.5,
+        "2024-12-31": 19.0,
+        "2026-02-19": 19.1,
+    },
+    "TLT": {
+        "2020-12-31": 122.0,
+        "2021-12-31": 54.6,
+        "2022-12-31": 25.1,
+        "2023-12-31": 24.7,
+        "2024-12-31": 23.0,
+        "2026-02-19": 21.3,
+    },
+    "SGOV": {
+        "2020-12-31": 1250.0,
+        "2021-12-31": 1250.0,
+        "2022-12-31": 24.1,
+        "2023-12-31": 18.9,
+        "2024-12-31": 22.2,
+        "2026-02-19": 27.9,
+    },
+    "BIL": {
+        "2020-12-31": 1250.0,
+        "2021-12-31": 1250.0,
+        "2022-12-31": 24.1,
+        "2023-12-31": 18.9,
+        "2024-12-31": 22.2,
+        "2026-02-19": 27.9,
+    },
+    "BOXX": {
+        "2020-12-31": 1000.0,
+        "2021-12-31": 1000.0,
+        "2022-12-31": 23.8,
+        "2023-12-31": 18.5,
+        "2024-12-31": 20.4,
+        "2026-02-19": 19.6,
     },
 }
 
