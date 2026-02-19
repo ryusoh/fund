@@ -676,7 +676,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                                 const breakdown = entries
                                     .map(([t, pe]) => `${t}:${pe.toFixed(0)}`)
                                     .join(' ');
-                                text += ` (${breakdown})`;
+                                text += `\n(${breakdown})`;
                             }
                         }
                     }

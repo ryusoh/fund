@@ -138,6 +138,16 @@
     color: rgba(230, 236, 255, 0.88);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
+    flex-wrap: wrap;
+}
+
+.terminal-crosshair-breakdown {
+    flex: 0 0 100%;
+    margin-top: 3px;
+    font-size: 11px;
+    color: rgba(230, 236, 255, 0.5);
+    text-align: right;
+    font-family: var(--font-family-mono);
 }
 
 .terminal-crosshair-key {

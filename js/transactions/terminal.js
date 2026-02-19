@@ -117,17 +117,24 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
 
     if (details.list) {
         const markup = snapshot.series
-            .map(
-                (series) => `
+            .map((series) => {
+                const formattedLines = series.formatted.split('\n');
+                const mainVal = formattedLines[0];
+                const breakdownVal = formattedLines[1]
+                    ? `<div class="terminal-crosshair-breakdown">${formattedLines[1]}</div>`
+                    : '';
+
+                return `
                 <div class="terminal-crosshair-row">
                     <span class="terminal-crosshair-key">
                         <span class="terminal-crosshair-dot" style="background:${series.color};"></span>
-                        ${series.label}
+                        ${series.label || series.key}
                     </span>
-                    <span class="terminal-crosshair-value">${series.formatted}</span>
+                    <span class="terminal-crosshair-value">${mainVal}</span>
+                    ${breakdownVal}
                 </div>
-            `
-            )
+            `;
+            })
             .join('');
         details.list.innerHTML = markup;
     }
