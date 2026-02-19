@@ -396,7 +396,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 padding,
                 plotWidth,
                 plotHeight,
-                (v) => `Fwd ${v.toFixed(1)}x`,
+                (v) => `${v.toFixed(1)}x`,
                 true,
                 null
             );
