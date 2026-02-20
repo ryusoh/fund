@@ -27,7 +27,7 @@ export const FX_GRADIENTS = {
 export const BENCHMARK_GRADIENTS = {
     '^LZ': ['#fb8500', '#ffef2f'],
     '^GSPC': ['#0d3b66', '#64b5f6'],
-    '^IXIC': ['#4a0072', '#e040fb'], // Purple/Magenta for NASDAQ
+    '^IXIC': ['#0d3b66', '#64b5f6'], // Matching GSPC blue gradient for consistency
     '^DJI': ['#123c69', '#6aaefc'],
     '^SSEC': ['#0e487a', '#5da9f6'],
     '^HSI': ['#0d4977', '#7ab8ff'],
