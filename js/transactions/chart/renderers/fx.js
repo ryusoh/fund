@@ -103,8 +103,29 @@ export function drawFxChart(ctx, chartManager, timestamp) {
     }
 
     const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    let filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
+
+    if (!filterFrom) {
+        // If no explicit filter (like 'all'), clamp to the exact first date of the portfolio.
+        // This ensures the 0% baseline and the x-axis start match the other portfolio charts.
+        let earliestTime = null;
+        if (transactionState.portfolioSeries && transactionState.portfolioSeries.length > 0) {
+            const firstDate =
+                transactionState.portfolioSeries[0].date ||
+                transactionState.portfolioSeries[0].tradeDate;
+            const parsed = new Date(firstDate);
+            if (!Number.isNaN(parsed.getTime())) {
+                earliestTime = parsed.getTime();
+            }
+        }
+        if (earliestTime !== null) {
+            filterFrom = new Date(earliestTime);
+        } else {
+            // Safe fallback if portfolio data is inexplicably absent
+            filterFrom = new Date(Date.UTC(new Date().getFullYear(), 0, 1));
+        }
+    }
 
     const filteredSeries = seriesData
         .map((series) => {
