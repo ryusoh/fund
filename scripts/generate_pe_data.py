@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import math
+import re
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -835,6 +837,31 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
     }
 
 
+def scrape_wsj_forward_pe() -> Optional[float]:
+    """Scrape S&P 500 Forward P/E Estimate from WSJ Market Data."""
+    try:
+        url = "https://www.wsj.com/market-data/stocks/peyields"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            },
+        )
+        content = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+
+        block_starts = [m.start() for m in re.finditer(r"P 500 Index", content)]
+        for start in block_starts:
+            chunk = content[start : start + 500]
+            pe_match = re.search(
+                r"priceEarningsRatioEstimate\"?\s*:\s*\"?([0-9.]+)\"?", chunk, re.IGNORECASE
+            )
+            if pe_match:
+                return float(pe_match.group(1))
+    except Exception as e:
+        print(f"WSJ scrape failed: {e}")
+    return None
+
+
 def main():
     print("Loading holdings and prices...")
     holdings_df, prices_data_raw = load_data()
@@ -950,6 +977,11 @@ def main():
                 fwd_pe = proxy_info.get("forwardPE")
                 if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
                     benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
+                elif bmk_ticker == "^GSPC":
+                    wsj_pe = scrape_wsj_forward_pe()
+                    if wsj_pe is not None:
+                        benchmark_fwd_pe[bmk_ticker] = round(wsj_pe, 2)
+                        print(f"  {bmk_ticker}: Fetched Forward PE {wsj_pe} from WSJ")
         except Exception:
             pass
 

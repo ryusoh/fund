@@ -398,6 +398,20 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 const bmkFwdX = xScale(forwardTargetTime);
                 const bmkFwdY = yScale(bmkFwdPE);
 
+                if (mountainFill.enabled) {
+                    const fwdCoords = [
+                        { x: bmkLastX, y: bmkLastY },
+                        { x: bmkFwdX, y: bmkFwdY },
+                    ];
+                    drawMountainFill(ctx, fwdCoords, plotHeight + padding.top, {
+                        color: bmkColor,
+                        colorStops: bmkGradientStops,
+                        opacityTop: 0.1,
+                        opacityBottom: 0.0,
+                        bounds: chartBounds,
+                    });
+                }
+
                 ctx.save();
                 ctx.setLineDash([4, 3]);
                 ctx.strokeStyle = bmkColor;
@@ -410,10 +424,45 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 ctx.setLineDash([]);
                 ctx.globalAlpha = 1.0;
                 ctx.restore();
-            }
 
-            // Animated shimmer endpoint for benchmark
-            if (isAnimationEnabled('pe') && bmkLastPoint && !filterTo) {
+                if (isAnimationEnabled('pe')) {
+                    const fwdGlowCoords = [
+                        { x: bmkLastX, y: bmkLastY },
+                        { x: bmkFwdX, y: bmkFwdY },
+                    ];
+                    drawSeriesGlow(
+                        ctx,
+                        { coords: fwdGlowCoords, color: bmkColor, lineWidth: lineThickness },
+                        {
+                            basePhase: advancePeAnimation(timestamp),
+                            seriesIndex: 1,
+                            isMobile,
+                            chartKey: 'pe',
+                        }
+                    );
+                    schedulePeAnimation(chartManager);
+                }
+
+                if (showLabels) {
+                    const bounds = drawEndValue(
+                        ctx,
+                        bmkFwdX,
+                        bmkFwdY,
+                        bmkFwdPE,
+                        bmkColor,
+                        isMobile,
+                        padding,
+                        plotWidth,
+                        plotHeight,
+                        (v) => `${v.toFixed(1)}x`,
+                        true,
+                        null
+                    );
+                    if (bounds) {
+                        labelBounds.push(bounds);
+                    }
+                }
+            } else if (isAnimationEnabled('pe') && bmkLastPoint && !filterTo) {
                 const lastCoord = {
                     x: xScale(bmkLastPoint.date.getTime()),
                     y: yScale(bmkLastPoint.pe),
@@ -422,12 +471,13 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                     ctx,
                     { coords: [lastCoord], color: bmkColor, lineWidth: lineThickness },
                     {
-                        basePhase: 0,
+                        basePhase: advancePeAnimation(timestamp),
                         seriesIndex: 1,
                         isMobile,
                         chartKey: 'pe',
                     }
                 );
+                schedulePeAnimation(chartManager);
             }
 
             // Benchmark end value label
@@ -725,10 +775,13 @@ export function getPESnapshotText() {
     const current = values[values.length - 1];
 
     const fwd = chartLayouts.pe.forwardPE;
-    const fwdText =
-        fwd && fwd.portfolio_forward_pe
-            ? ` | Forward: ${fwd.portfolio_forward_pe.toFixed(2)}x`
-            : '';
+    let fwdText = '';
+    if (fwd && fwd.portfolio_forward_pe) {
+        fwdText = ` | Forward: ${fwd.portfolio_forward_pe.toFixed(2)}x`;
+        if (fwd.benchmark_forward_pe && fwd.benchmark_forward_pe['^GSPC']) {
+            fwdText += ` (S&P 500: ${fwd.benchmark_forward_pe['^GSPC'].toFixed(2)}x)`;
+        }
+    }
 
     return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))${fwdText}`;
 }
