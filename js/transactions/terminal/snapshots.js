@@ -808,6 +808,9 @@ export async function getPESnapshotLine() {
 
     let text = `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
 
+    const fwdPEData = data.forward_pe || {};
+    const tickerFwdPE = fwdPEData.ticker_forward_pe || {};
+
     if (lastPoint.tickerPEs) {
         const entries = Object.entries(lastPoint.tickerPEs)
             .filter(([, pe]) => pe !== null && Number.isFinite(pe))
@@ -818,7 +821,16 @@ export async function getPESnapshotLine() {
             })
             .slice(0, 8);
         if (entries.length > 0) {
-            const breakdown = entries.map(([t, pe]) => `${t}:${pe.toFixed(0)}`).join(' ');
+            const breakdown = entries
+                .map(([t, pe]) => {
+                    const fwd = tickerFwdPE[t];
+                    const trailingStr = pe.toFixed(0);
+                    if (fwd !== null && fwd !== undefined && Number.isFinite(fwd)) {
+                        return `${t}:${trailingStr}/${fwd.toFixed(0)}`;
+                    }
+                    return `${t}:${trailingStr}`;
+                })
+                .join(' ');
             text += `\nComponents: ${breakdown}`;
         }
     }

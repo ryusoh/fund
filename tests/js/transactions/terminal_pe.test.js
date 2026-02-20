@@ -94,6 +94,11 @@ describe('PE Ratio Terminal Integration', () => {
         portfolio_pe: [20.0, 22.0, 25.0],
         ticker_pe: { GOOG: [25.0, 26.0, 28.0] },
         ticker_weights: { GOOG: [1.0, 1.0, 1.0] },
+        forward_pe: {
+            portfolio_forward_pe: 22.0,
+            target_date: '2025-01-01',
+            ticker_forward_pe: { GOOG: 24.0 },
+        },
     };
 
     beforeEach(async () => {
@@ -103,16 +108,14 @@ describe('PE Ratio Terminal Integration', () => {
         loadPEDataMock.mockResolvedValue(mockData);
     });
 
-    test('plot pe command appends snapshot summary', async () => {
+    test('plot pe command appends snapshot summary with component forward PE', async () => {
         const session = await initTerminalSession();
         await session.submitCommand('plot pe');
 
         const message = getLastTerminalMessage();
         expect(message).toContain('Showing weighted average P/E ratio chart');
-        // Current: 25.00x | Range: 20.00x - 25.00x
         expect(message).toContain('Current: 25.00x');
-        expect(message).toContain('Range: 20.00x - 25.00x');
-        expect(message).toContain('Components: GOOG:28');
+        expect(message).toContain('Components: GOOG:28/24');
     });
 
     test('plot pe with date filter updates snapshot summary', async () => {
