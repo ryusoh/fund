@@ -610,26 +610,6 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     // --- Layout for crosshair ---
     const pePoints = series.map((p) => ({ time: p.date.getTime(), value: p.pe }));
 
-    // Build a lookup from time → tickerPEs for the hover panel
-    const tickerPEsByTime = new Map();
-    series.forEach((p) => {
-        tickerPEsByTime.set(p.date.getTime(), p.tickerPEs);
-    });
-
-    // Find closest series point for a given time
-    const findClosestPoint = (targetTime) => {
-        let closest = series[0];
-        let minDist = Math.abs(series[0].date.getTime() - targetTime);
-        for (let i = 1; i < series.length; i += 1) {
-            const dist = Math.abs(series[i].date.getTime() - targetTime);
-            if (dist < minDist) {
-                minDist = dist;
-                closest = series[i];
-            }
-        }
-        return closest;
-    };
-
     chartLayouts.pe = {
         key: 'pe',
         minTime,
@@ -654,34 +634,10 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             {
                 key: 'portfolioPE',
                 name: 'Portfolio P/E',
-                label: 'P/E',
+                label: '^LZ',
                 color: lineColor,
                 getValueAtTime: createTimeInterpolator(pePoints),
-                formatValue: (v, time) => {
-                    let text = `${v.toFixed(1)}x`;
-                    // Append per-ticker breakdown for tickers held on this date
-                    if (Number.isFinite(time)) {
-                        const point = findClosestPoint(time);
-                        if (point && point.tickerPEs) {
-                            const entries = Object.entries(point.tickerPEs)
-                                .filter(([, pe]) => pe !== null && Number.isFinite(pe))
-                                .sort((a, b) => {
-                                    // Sort by weight descending
-                                    const wA = point.tickerWeights ? point.tickerWeights[a[0]] : 0;
-                                    const wB = point.tickerWeights ? point.tickerWeights[b[0]] : 0;
-                                    return (wB || 0) - (wA || 0);
-                                })
-                                .slice(0, 8);
-                            if (entries.length > 0) {
-                                const breakdown = entries
-                                    .map(([t, pe]) => `${t}:${pe.toFixed(0)}`)
-                                    .join(' ');
-                                text += `\n(${breakdown})`;
-                            }
-                        }
-                    }
-                    return text;
-                },
+                formatValue: (v) => `${v.toFixed(1)}x`,
                 formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
             },
             // Benchmark crosshair series

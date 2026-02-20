@@ -112,6 +112,7 @@ describe('PE Ratio Terminal Integration', () => {
         // Current: 25.00x | Range: 20.00x - 25.00x
         expect(message).toContain('Current: 25.00x');
         expect(message).toContain('Range: 20.00x - 25.00x');
+        expect(message).toContain('Components: GOOG:28');
     });
 
     test('plot pe with date filter updates snapshot summary', async () => {
@@ -123,6 +124,7 @@ describe('PE Ratio Terminal Integration', () => {
         // Only 2024-01-01 is in range
         expect(message).toContain('Current: 25.00x');
         expect(message).toContain('Range: 25.00x - 25.00x');
+        expect(message).toContain('Components: GOOG:28');
     });
 
     test('all command clears filter and updates P/E summary', async () => {

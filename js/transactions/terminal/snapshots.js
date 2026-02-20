@@ -799,10 +799,29 @@ export async function getPESnapshotLine() {
         return 'No PE data in range';
     }
 
+    const lastPoint = series[series.length - 1];
+    const current = lastPoint.pe;
+
     const values = series.map((p) => p.pe);
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const current = values[values.length - 1];
 
-    return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
+    let text = `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
+
+    if (lastPoint.tickerPEs) {
+        const entries = Object.entries(lastPoint.tickerPEs)
+            .filter(([, pe]) => pe !== null && Number.isFinite(pe))
+            .sort((a, b) => {
+                const wA = lastPoint.tickerWeights ? lastPoint.tickerWeights[a[0]] : 0;
+                const wB = lastPoint.tickerWeights ? lastPoint.tickerWeights[b[0]] : 0;
+                return (wB || 0) - (wA || 0);
+            })
+            .slice(0, 8);
+        if (entries.length > 0) {
+            const breakdown = entries.map(([t, pe]) => `${t}:${pe.toFixed(0)}`).join(' ');
+            text += `\nComponents: ${breakdown}`;
+        }
+    }
+
+    return text;
 }
