@@ -15,6 +15,7 @@ import {
 } from '@js/config.js';
 import { logger } from '@utils/logger.js';
 
+const PE_RATIO_URL = '../data/output/figures/pe_ratio.json';
 const ANALYSIS_INDEX_URL = '../data/analysis/index.json';
 let analysisTickerPathCache = null;
 
@@ -94,23 +95,72 @@ async function fetchMarketRatiosForTickers(tickers = []) {
         const tickerPaths = await loadAnalysisTickerPaths();
         const ratiosByTicker = new Map();
 
+        // Load global PE ratio data as fallback for forward PE
+        let globalForwardPeMap = {};
+        try {
+            const peData = await fetchJSON(PE_RATIO_URL);
+            globalForwardPeMap = (peData?.forward_pe && peData.forward_pe.ticker_forward_pe) || {};
+        } catch (error) {
+            logger.warn('Failed to load global PE ratio data for fallback:', error);
+        }
+
         await Promise.all(
             uniqueSymbols.map(async (symbol) => {
+                const globalFwdPe = globalForwardPeMap[symbol];
+
+                const getFallbackValue = (val) => {
+                    if (Number.isFinite(val)) {
+                        return Number(val);
+                    }
+                    if (Array.isArray(val) && val.length > 0) {
+                        for (let i = val.length - 1; i >= 0; i--) {
+                            if (Number.isFinite(val[i])) {
+                                return Number(val[i]);
+                            }
+                        }
+                    }
+                    return null;
+                };
+
                 const analysisPath = tickerPaths.get(symbol);
+
                 if (!analysisPath) {
+                    const fallback = getFallbackValue(globalFwdPe);
+                    if (fallback !== null) {
+                        ratiosByTicker.set(symbol, {
+                            pe: null,
+                            forwardPe: fallback,
+                        });
+                    }
                     return;
                 }
                 try {
                     const detail = await fetchJSON(analysisPath);
                     const market = detail?.market || {};
                     const trailingPe = Number(market.pe);
-                    const forwardPe = Number(market.forwardPe);
+                    let forwardPe = Number(market.forwardPe);
+
+                    // Use global fallback if forwardPe is missing in analysis
+                    if (!Number.isFinite(forwardPe)) {
+                        const fallback = getFallbackValue(globalFwdPe);
+                        if (fallback !== null) {
+                            forwardPe = fallback;
+                        }
+                    }
+
                     ratiosByTicker.set(symbol, {
                         pe: Number.isFinite(trailingPe) ? trailingPe : null,
                         forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
                     });
                 } catch (error) {
                     logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
+                    const fallback = getFallbackValue(globalFwdPe);
+                    if (fallback !== null) {
+                        ratiosByTicker.set(symbol, {
+                            pe: null,
+                            forwardPe: fallback,
+                        });
+                    }
                 }
             })
         );

@@ -238,6 +238,55 @@ describe('dataService', () => {
             );
         });
 
+        it('should fallback to pe_ratio.json when forwardPe is missing in analysis data', async () => {
+            const mockHoldings = {
+                VT: { shares: '10', average_price: '100.00', name: 'Vanguard Total World' },
+            };
+            const mockPrices = { VT: '110.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'VT', path: '../data/analysis/VT.json' }],
+            };
+            const mockPeRatio = {
+                forward_pe: {
+                    ticker_forward_pe: {
+                        VT: 20.02,
+                    },
+                },
+            };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/VT')) {
+                    // Return trailing PE but NO forwardPe
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ market: { pe: 23.1 } }),
+                    });
+                }
+                if (url.includes('pe_ratio.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPeRatio) });
+                }
+                return Promise.reject(new Error(`Unexpected URL: ${url}`));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(document.querySelector('tr[data-ticker="VT"] td.per').textContent).toBe(
+                '23.10/20.02'
+            );
+        });
+
         it('should handle fetch error with proper error message', async () => {
             // Arrange
             fetch.mockRejectedValue(new Error('Network error'));
