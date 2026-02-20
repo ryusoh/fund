@@ -1000,16 +1000,19 @@ def main():
                 if live_pe and math.isfinite(live_pe) and live_pe > 0:
                     pe_series.iloc[-1] = float(live_pe)
 
-                fwd_pe = proxy_info.get("forwardPE")
-                if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
-                    benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
-                elif bmk_ticker == "^GSPC":
-                    wsj_pe = scrape_wsj_forward_pe()
-                    if wsj_pe is not None:
-                        benchmark_fwd_pe[bmk_ticker] = round(wsj_pe, 2)
-                        print(f"  {bmk_ticker}: Fetched Forward PE {wsj_pe} from WSJ")
-        except Exception:
-            pass
+                if bmk_ticker != "^GSPC":
+                    fwd_pe = proxy_info.get("forwardPE")
+                    if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
+                        benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
+        except Exception as e:
+            print(f"  {bmk_ticker} proxy info error: {e}")
+
+        # Fetch WSJ forward PE outside the proxy try-catch
+        if bmk_ticker == "^GSPC":
+            wsj_pe = scrape_wsj_forward_pe()
+            if wsj_pe is not None:
+                benchmark_fwd_pe[bmk_ticker] = round(wsj_pe, 2)
+                print(f"  {bmk_ticker}: Fetched Forward PE {wsj_pe} from WSJ")
 
         pe_values = [
             round(float(v), 2) if pd.notna(v) and math.isfinite(v) else None for v in pe_series
