@@ -811,6 +811,12 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
             price = info.get("currentPrice") or info.get("regularMarketPrice")
             fwd_pe = info.get("forwardPE")
 
+            if ticker == "VT" and (not fwd_pe or not math.isfinite(fwd_pe) or fwd_pe <= 0):
+                msci_pe = scrape_msci_forward_pe()
+                if msci_pe:
+                    fwd_pe = msci_pe
+                    print(f"    VT: Fetched Forward PE {fwd_pe} from MSCI proxy")
+
             if price and price > 0:
                 mv_map[ticker] = shares * price
 
@@ -835,6 +841,26 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
         "portfolio_forward_pe": round(portfolio_fwd_pe, 2),
         "ticker_forward_pe": ticker_fwd_pe,
     }
+
+
+def scrape_msci_forward_pe() -> Optional[float]:
+    """Scrape Forward P/E for VT from MSCI ACWI Index factsheet."""
+    try:
+        url = "https://www.msci.com/indexes/index/990100"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 AppleWebKit/537.36",
+                "Accept": "text/html",
+            },
+        )
+        content = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+        match = re.search(r"P/E Fwd.{0,200}?([0-9]+\.[0-9]+)", content, re.IGNORECASE | re.DOTALL)
+        if match:
+            return float(match.group(1))
+    except Exception as e:
+        print(f"MSCI scrape failed: {e}")
+    return None
 
 
 def scrape_wsj_forward_pe() -> Optional[float]:
