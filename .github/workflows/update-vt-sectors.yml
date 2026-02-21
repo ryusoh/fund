@@ -1,0 +1,40 @@
+name: Weekly VT Sector Data Update
+
+on:
+    schedule:
+        # Runs at 06:00 UTC every Monday.
+        - cron: '0 6 * * 1'
+    workflow_dispatch: # Allows manual triggering
+
+concurrency:
+    group: ${{ github.workflow }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+jobs:
+    update-vt-sectors:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: '3.x'
+
+            - name: Install dependencies
+              run: pip install -r requirements.txt
+
+            - name: Update VT sectors and regenerate data
+              run: python scripts/update_vt_sectors.py
+              env:
+                  SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+
+            - name: Commit and push changes
+              uses: stefanzweifel/git-auto-commit-action@v7
+              with:
+                  commit_message: 'chore(data): VTのセクター配分を自動更新 [skip ci]'
+                  file_pattern: 'data/fund_sector_allocations.json data/output/figures/composition.json data/output/figures/sectors.json'
