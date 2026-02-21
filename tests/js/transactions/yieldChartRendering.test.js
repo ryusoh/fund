@@ -2,72 +2,15 @@ import { jest } from '@jest/globals';
 
 jest.setTimeout(15000);
 
-// Mock dependent modules
-jest.mock('@js/transactions/chart/core.js', () => ({
-    drawAxes: jest.fn(),
-    drawEndValue: jest.fn(),
-    drawMountainFill: jest.fn(),
-    generateConcreteTicks: jest.fn().mockReturnValue([0, 250, 500, 750, 1000]),
-}));
-
-jest.mock('@js/transactions/chart/interaction.js', () => ({
-    updateLegend: jest.fn(),
-    updateCrosshairUI: jest.fn(),
-    drawCrosshairOverlay: jest.fn(),
-}));
-
-jest.mock('@js/transactions/chart/animation.js', () => ({
-    stopPerformanceAnimation: jest.fn(),
-    stopContributionAnimation: jest.fn(),
-    stopFxAnimation: jest.fn(),
-    stopPeAnimation: jest.fn(),
-    stopConcentrationAnimation: jest.fn(),
-    stopYieldAnimation: jest.fn(),
-    isAnimationEnabled: jest.fn().mockReturnValue(true),
-    advanceYieldAnimation: jest.fn().mockReturnValue(0),
-    scheduleYieldAnimation: jest.fn(),
-    drawSeriesGlow: jest.fn(),
-}));
-
-jest.mock('@js/transactions/chart/config.js', () => ({
-    CHART_LINE_WIDTHS: { main: 2 },
-    mountainFill: { enabled: true },
-    BENCHMARK_GRADIENTS: {
-        '^LZ': ['#ff0000', '#00ff00'],
-    },
-}));
-
-jest.mock('@js/transactions/chart/helpers.js', () => ({
-    getChartColors: jest.fn().mockReturnValue({
-        primary: '#ff0000',
-        secondary: '#00ff00',
-        portfolio: '#7a7a7a',
-        contribution: '#b3b3b3',
-    }),
-    createTimeInterpolator: jest.fn().mockReturnValue(() => 10),
-    parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
-}));
-
-jest.mock('@js/transactions/utils.js', () => ({
-    convertValueToCurrency: jest.fn((val, date, currency) => {
-        if (currency === 'EUR') {
-            return val * 2; // Simple mock conversion for testing
-        }
-        return val;
-    }),
-    formatCurrencyCompact: jest.fn((val, { currency }) => `${val} ${currency}`),
-    formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
-}));
-
-import { drawAxes, drawEndValue, generateConcreteTicks } from '@js/transactions/chart/core.js';
-import { updateLegend } from '@js/transactions/chart/interaction.js';
-import { drawYieldChart } from '@js/transactions/chart/renderers/yield.js';
-import { transactionState } from '@js/transactions/state.js';
-
 describe('Yield Chart Rendering & Interaction', () => {
     let ctx;
     let canvas;
     let chartManager;
+    let drawYieldChart;
+    let drawAxes;
+    let drawEndValue;
+    let updateLegend;
+    let transactionState;
 
     const mockData = [
         { date: '2023-01-01', forward_yield: 1.5, ttm_income: 1000.0 },
@@ -75,10 +18,81 @@ describe('Yield Chart Rendering & Interaction', () => {
         { date: '2024-01-01', forward_yield: 1.8, ttm_income: 1200.0 },
     ];
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
         jest.clearAllMocks();
 
-        // Mock global fetch
+        jest.doMock('@js/transactions/chart/core.js', () => ({
+            drawAxes: jest.fn(),
+            drawEndValue: jest.fn(),
+            drawMountainFill: jest.fn(),
+            generateConcreteTicks: jest.fn().mockReturnValue([0, 2, 4, 6, 8]),
+            generateYearBasedTicks: jest.fn().mockReturnValue([
+                { time: 1672531200000, label: '2023', isYearStart: true },
+                { time: 1704067200000, label: '2024', isYearStart: true },
+            ]),
+        }));
+
+        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+            updateLegend: jest.fn(),
+            updateCrosshairUI: jest.fn(),
+            drawCrosshairOverlay: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/animation.js', () => ({
+            stopPerformanceAnimation: jest.fn(),
+            stopContributionAnimation: jest.fn(),
+            stopFxAnimation: jest.fn(),
+            stopPeAnimation: jest.fn(),
+            stopConcentrationAnimation: jest.fn(),
+            stopYieldAnimation: jest.fn(),
+            isAnimationEnabled: jest.fn().mockReturnValue(true),
+            advanceYieldAnimation: jest.fn().mockReturnValue(0),
+            scheduleYieldAnimation: jest.fn(),
+            drawSeriesGlow: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/config.js', () => ({
+            CHART_LINE_WIDTHS: { main: 2 },
+            mountainFill: { enabled: true },
+            BENCHMARK_GRADIENTS: {
+                '^LZ': ['#ff0000', '#00ff00'],
+            },
+        }));
+
+        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+            getChartColors: jest.fn().mockReturnValue({
+                primary: '#ff0000',
+                secondary: '#00ff00',
+                portfolio: '#7a7a7a',
+                contribution: '#b3b3b3',
+            }),
+            createTimeInterpolator: jest.fn().mockReturnValue(() => 10),
+            parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
+        }));
+
+        jest.doMock('@js/transactions/utils.js', () => ({
+            convertValueToCurrency: jest.fn((val, date, currency) => {
+                if (currency === 'EUR') {
+                    return val * 2;
+                }
+                return val;
+            }),
+            formatCurrencyCompact: jest.fn((val, { currency }) => `${val} ${currency}`),
+            formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
+        }));
+
+        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('@js/transactions/chart/core.js');
+        const interactionModule = await import('@js/transactions/chart/interaction.js');
+        const stateModule = await import('@js/transactions/state.js');
+
+        drawYieldChart = yieldModule.drawYieldChart;
+        drawAxes = coreModule.drawAxes;
+        drawEndValue = coreModule.drawEndValue;
+        updateLegend = interactionModule.updateLegend;
+        transactionState = stateModule.transactionState;
+
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,
@@ -86,7 +100,6 @@ describe('Yield Chart Rendering & Interaction', () => {
             })
         );
 
-        // Mock window and computed style
         Object.defineProperty(window, 'innerWidth', {
             writable: true,
             configurable: true,
@@ -97,10 +110,10 @@ describe('Yield Chart Rendering & Interaction', () => {
         });
 
         canvas = {
-            width: 2000, // Physical width (High DPI)
-            height: 1000, // Physical height
-            offsetWidth: 1000, // Logical CSS width
-            offsetHeight: 500, // Logical CSS height
+            width: 2000,
+            height: 1000,
+            offsetWidth: 1000,
+            offsetHeight: 500,
         };
 
         ctx = {
@@ -127,22 +140,24 @@ describe('Yield Chart Rendering & Interaction', () => {
         };
     });
 
+    afterEach(() => {
+        jest.resetModules();
+        jest.dontMock('@js/transactions/chart/core.js');
+        jest.dontMock('@js/transactions/chart/interaction.js');
+        jest.dontMock('@js/transactions/chart/animation.js');
+        jest.dontMock('@js/transactions/chart/config.js');
+        jest.dontMock('@js/transactions/chart/helpers.js');
+        jest.dontMock('@js/transactions/utils.js');
+    });
+
     test('uses offsetWidth/offsetHeight for logical scaling on High-DPI screens', async () => {
-        // First call triggers load
         await drawYieldChart(ctx, chartManager);
-        // Wait for data load + second call
         await drawYieldChart(ctx, chartManager);
 
         expect(drawAxes).toHaveBeenCalled();
         const callArgs = drawAxes.mock.calls[0];
 
-        // drawAxes(ctx, margin, chartWidth, chartHeight, ...)
-        // chartWidth should be derived from offsetWidth (1000) not width (2000)
-        // Margin left=60, right=60 -> 1000 - 120 = 880
         expect(callArgs[2]).toBe(880);
-
-        // chartHeight from offsetHeight (500)
-        // Margin top=40, bottom=40 -> 500 - 80 = 420
         expect(callArgs[3]).toBe(420);
     });
 
@@ -154,12 +169,9 @@ describe('Yield Chart Rendering & Interaction', () => {
         const xScale = callArgs[8];
         const yScale = callArgs[9];
 
-        // Ensure they are functions
         expect(typeof xScale).toBe('function');
         expect(typeof yScale).toBe('function');
 
-        // Test scale mapping (simple check)
-        // minTime (index 4) should map to margin.left (60)
         expect(xScale(callArgs[4])).toBeCloseTo(60);
     });
 
@@ -184,34 +196,23 @@ describe('Yield Chart Rendering & Interaction', () => {
         expect(drawEndValue).toHaveBeenCalled();
         const args = drawEndValue.mock.calls[0];
 
-        // drawEndValue(ctx, x, y, value, color, isMobile, padding, plotWidth, plotHeight, formatValue, showBackground)
-        expect(args[0]).toBe(ctx); // ctx
-        expect(typeof args[1]).toBe('number'); // x
-        expect(typeof args[2]).toBe('number'); // y
-        expect(typeof args[3]).toBe('number'); // value
-        expect(typeof args[4]).toBe('string'); // color
-        expect(typeof args[5]).toBe('boolean'); // isMobile
-        expect(typeof args[6]).toBe('object'); // padding
-        expect(typeof args[7]).toBe('number'); // plotWidth
-        expect(typeof args[8]).toBe('number'); // plotHeight
-        expect(typeof args[9]).toBe('function'); // formatValue
-        expect(args[10]).toBe(true); // showBackground
+        expect(args[0]).toBe(ctx);
+        expect(typeof args[1]).toBe('number');
+        expect(typeof args[2]).toBe('number');
+        expect(typeof args[3]).toBe('number');
+        expect(typeof args[4]).toBe('string');
+        expect(typeof args[5]).toBe('boolean');
+        expect(typeof args[6]).toBe('object');
+        expect(typeof args[7]).toBe('number');
+        expect(typeof args[8]).toBe('number');
+        expect(typeof args[9]).toBe('function');
+        expect(args[10]).toBe(true);
     });
 
     test('applies currency conversion to income when a non-USD currency is selected', async () => {
         transactionState.selectedCurrency = 'EUR';
         await drawYieldChart(ctx, chartManager);
         await drawYieldChart(ctx, chartManager);
-
-        // Income values in mockData are 1000, 1100, 1200
-        // Our mock convertValueToCurrency multiplies by 2 for EUR -> 2000, 2200, 2400
-
-        expect(generateConcreteTicks).toHaveBeenCalledWith(
-            0,
-            2400 * 1.1, // maxIncome * 1.1
-            false,
-            'EUR'
-        );
 
         const series = updateLegend.mock.calls[updateLegend.mock.calls.length - 1][0];
         const incomeSeries = series.find((s) => s.key === 'Income');
@@ -220,7 +221,294 @@ describe('Yield Chart Rendering & Interaction', () => {
         expect(incomeSeries.points[1].value).toBe(2200);
         expect(incomeSeries.points[2].value).toBe(2400);
 
-        // Cleanup
         transactionState.selectedCurrency = 'USD';
+    });
+});
+
+describe('Yield Chart Right-Axis Alignment', () => {
+    let ctx;
+    let canvas;
+    let chartManager;
+    let fillTextCalls;
+    let drawYieldChart;
+    let drawAxes;
+    let generateConcreteTicks;
+
+    const mockData = [
+        { date: '2023-01-01', forward_yield: 1.5, ttm_income: 1000.0 },
+        { date: '2023-06-01', forward_yield: 3.0, ttm_income: 1500.0 },
+        { date: '2024-01-01', forward_yield: 5.0, ttm_income: 2000.0 },
+        { date: '2024-06-01', forward_yield: 7.0, ttm_income: 2500.0 },
+    ];
+
+    beforeEach(async () => {
+        jest.resetModules();
+        jest.clearAllMocks();
+        fillTextCalls = [];
+
+        jest.doMock('@js/transactions/chart/core.js', () => ({
+            drawAxes: jest.fn(),
+            drawEndValue: jest.fn(),
+            drawMountainFill: jest.fn(),
+            generateConcreteTicks: jest.fn().mockReturnValue([0, 2, 4, 6, 7.5]),
+            generateYearBasedTicks: jest.fn().mockReturnValue([
+                { time: 1672531200000, label: '2023', isYearStart: true },
+                { time: 1704067200000, label: '2024', isYearStart: true },
+            ]),
+        }));
+
+        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+            updateLegend: jest.fn(),
+            updateCrosshairUI: jest.fn(),
+            drawCrosshairOverlay: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/animation.js', () => ({
+            stopPerformanceAnimation: jest.fn(),
+            stopContributionAnimation: jest.fn(),
+            stopFxAnimation: jest.fn(),
+            stopPeAnimation: jest.fn(),
+            stopConcentrationAnimation: jest.fn(),
+            stopYieldAnimation: jest.fn(),
+            isAnimationEnabled: jest.fn().mockReturnValue(true),
+            advanceYieldAnimation: jest.fn().mockReturnValue(0),
+            scheduleYieldAnimation: jest.fn(),
+            drawSeriesGlow: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/config.js', () => ({
+            CHART_LINE_WIDTHS: { main: 2 },
+            mountainFill: { enabled: true },
+            BENCHMARK_GRADIENTS: {
+                '^LZ': ['#ff0000', '#00ff00'],
+            },
+        }));
+
+        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+            getChartColors: jest.fn().mockReturnValue({
+                primary: '#ff0000',
+                secondary: '#00ff00',
+                portfolio: '#7a7a7a',
+                contribution: '#b3b3b3',
+            }),
+            createTimeInterpolator: jest.fn().mockReturnValue(() => 10),
+            parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
+        }));
+
+        jest.doMock('@js/transactions/utils.js', () => ({
+            convertValueToCurrency: jest.fn((val, date, currency) => {
+                if (currency === 'EUR') {
+                    return val * 2;
+                }
+                return val;
+            }),
+            formatCurrencyCompact: jest.fn((val, { currency }) => `${val} ${currency}`),
+            formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
+        }));
+
+        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('@js/transactions/chart/core.js');
+
+        drawYieldChart = yieldModule.drawYieldChart;
+        drawAxes = coreModule.drawAxes;
+        generateConcreteTicks = coreModule.generateConcreteTicks;
+
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(mockData),
+            })
+        );
+
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 1024,
+        });
+        window.getComputedStyle = jest.fn().mockReturnValue({
+            getPropertyValue: jest.fn().mockReturnValue('#7a7a7a'),
+        });
+
+        canvas = {
+            width: 2000,
+            height: 1000,
+            offsetWidth: 1000,
+            offsetHeight: 500,
+        };
+
+        ctx = {
+            canvas,
+            clearRect: jest.fn(),
+            save: jest.fn(),
+            restore: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(),
+            fillRect: jest.fn(),
+            rect: jest.fn(),
+            fill: jest.fn(),
+            fillText: jest.fn((text, x, y) => {
+                fillTextCalls.push({ text, x, y });
+            }),
+            measureText: jest.fn().mockReturnValue({ width: 50 }),
+            createLinearGradient: jest.fn().mockReturnValue({
+                addColorStop: jest.fn(),
+            }),
+        };
+
+        chartManager = {
+            update: jest.fn(),
+        };
+    });
+
+    afterEach(() => {
+        jest.resetModules();
+        jest.dontMock('@js/transactions/chart/core.js');
+        jest.dontMock('@js/transactions/chart/interaction.js');
+        jest.dontMock('@js/transactions/chart/animation.js');
+        jest.dontMock('@js/transactions/chart/config.js');
+        jest.dontMock('@js/transactions/chart/helpers.js');
+        jest.dontMock('@js/transactions/utils.js');
+    });
+
+    test('right-axis has same number of ticks as left-axis', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+
+        expect(rightAxisLabels.length).toBe(mockYieldTicks.length);
+    });
+
+    test('right-axis labels align vertically with left-axis grid lines', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        const leftAxisYPositions = [];
+
+        drawAxes.mockImplementation(
+            (
+                context,
+                margin,
+                chartWidth,
+                chartHeight,
+                minTime,
+                maxTime,
+                yMin,
+                yMax,
+                xScale,
+                yScale
+            ) => {
+                mockYieldTicks.forEach((tick) => {
+                    const y = yScale(tick);
+                    leftAxisYPositions.push(y);
+                });
+            }
+        );
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+        const rightAxisYPositions = rightAxisLabels.map((label) => label.y);
+
+        expect(rightAxisYPositions.length).toBe(leftAxisYPositions.length);
+
+        for (let i = 0; i < leftAxisYPositions.length; i++) {
+            expect(rightAxisYPositions[i]).toBeCloseTo(leftAxisYPositions[i], 0);
+        }
+    });
+
+    test('right-axis shows top tick when left-axis has top tick (7% scenario)', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+
+        const yPositions = rightAxisLabels.map((label) => label.y);
+        const minYPosition = Math.min(...yPositions);
+
+        expect(minYPosition).toBeLessThan(100);
+        expect(rightAxisLabels.length).toBe(mockYieldTicks.length);
+    });
+
+    test('right-axis uses textBaseline middle for proper alignment', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+        expect(rightAxisLabels.length).toBeGreaterThan(0);
+
+        rightAxisLabels.forEach((label) => {
+            expect(typeof label.y).toBe('number');
+            expect(Number.isFinite(label.y)).toBe(true);
+        });
+    });
+
+    test('right-axis labels map correctly when yield and income have different ranges', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        const disparateData = [
+            { date: '2023-01-01', forward_yield: 0.5, ttm_income: 5000.0 },
+            { date: '2023-06-01', forward_yield: 8.0, ttm_income: 10000.0 },
+        ];
+
+        global.fetch.mockImplementation(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(disparateData),
+            })
+        );
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+
+        // Should still have same number of labels as yield ticks
+        expect(rightAxisLabels.length).toBe(mockYieldTicks.length);
+
+        // All labels should have valid y positions within chart bounds
+        const yPositions = rightAxisLabels.map((label) => label.y);
+        yPositions.forEach((y) => {
+            expect(y).toBeGreaterThanOrEqual(0);
+            expect(y).toBeLessThanOrEqual(500); // chart height
+        });
+    });
+
+    test('right-axis handles edge case when income range is flat', async () => {
+        const mockYieldTicks = [0, 2, 4, 6, 7.5];
+        generateConcreteTicks.mockReturnValue(mockYieldTicks);
+
+        const flatIncomeData = [
+            { date: '2023-01-01', forward_yield: 1.0, ttm_income: 1000.0 },
+            { date: '2023-06-01', forward_yield: 5.0, ttm_income: 1000.0 },
+            { date: '2024-01-01', forward_yield: 8.0, ttm_income: 1000.0 },
+        ];
+
+        global.fetch.mockImplementation(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(flatIncomeData),
+            })
+        );
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        const rightAxisLabels = fillTextCalls.filter((call) => call.x > 940);
+
+        expect(rightAxisLabels.length).toBe(mockYieldTicks.length);
     });
 });

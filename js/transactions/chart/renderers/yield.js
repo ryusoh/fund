@@ -121,6 +121,9 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
+    // Generate ticks for the left y-axis (yield) to use for both axes alignment
+    const yieldTicks = generateConcreteTicks(minY, maxY, false, selectedCurrency);
+
     // Explicitly set text style for axes before calling drawAxes
     ctx.fillStyle = '#8b949e';
 
@@ -150,24 +153,37 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
         'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
     // 1. Draw Secondary Y-Axis (Right) for TTM Income
+    // Use the same vertical positions as the left axis for alignment
     ctx.save();
     ctx.fillStyle = '#8b949e';
     ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
     ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
 
-    // Select a few ticks for the income axis using standard tick generator
-    const incomeTicks = generateConcreteTicks(minIncome, maxIncome, false, selectedCurrency);
+    // Map yield tick positions to income values for aligned labels
+    yieldTicks.forEach((yieldTick) => {
+        // Convert yield tick to a position (0-1 ratio)
+        const ratio = (yieldTick - minY) / (maxY - minY);
+        // Map that ratio to income scale
+        const incomeValue = minIncome + ratio * (maxIncome - minIncome);
 
-    // We only need the ticks that fit within the axis
-    const validIncomeTicks = incomeTicks.filter((t) => t >= minIncome && t <= maxIncome);
+        // Always draw the tick at the mapped position, even if slightly outside
+        // This ensures alignment with left axis grid lines
+        const y = y2Scale(incomeValue);
 
-    validIncomeTicks.forEach((tickVal) => {
-        const y = y2Scale(tickVal);
-        ctx.fillText(
-            formatCurrencyCompact(Math.round(tickVal), { currency: selectedCurrency }),
-            margin.left + chartWidth + 10,
-            y
-        );
+        // Only skip if the y position is completely outside the chart area
+        // Use generous padding to ensure edge ticks (top/bottom) are always visible
+        const chartTop = margin.top;
+        const chartBottom = margin.top + chartHeight;
+        const labelPadding = 20;
+
+        if (y >= chartTop - labelPadding && y <= chartBottom + labelPadding) {
+            ctx.fillText(
+                formatCurrencyCompact(Math.round(incomeValue), { currency: selectedCurrency }),
+                margin.left + chartWidth + 10,
+                y
+            );
+        }
     });
     ctx.restore();
 
@@ -301,7 +317,9 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
 
     // Draw current value annotation
     const lastYield = yieldSeries.points[yieldSeries.points.length - 1].value;
-    drawEndValue(
+    const lastIncome = incomeSeries.points[incomeSeries.points.length - 1].value;
+
+    const yieldBounds = drawEndValue(
         ctx,
         margin.left + chartWidth + 5,
         yScale(lastYield),
@@ -313,6 +331,21 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
         chartHeight,
         yieldSeries.formatValue,
         true
+    );
+
+    drawEndValue(
+        ctx,
+        margin.left + chartWidth + 5,
+        y2Scale(lastIncome),
+        lastIncome,
+        incomeSeries.color,
+        isMobile,
+        margin,
+        chartWidth,
+        chartHeight,
+        incomeSeries.formatValue,
+        true,
+        yieldBounds
     );
 
     const yieldAnimationEnabled = isAnimationEnabled('yield');
