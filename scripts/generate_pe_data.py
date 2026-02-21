@@ -870,7 +870,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
     try:
         target_url = "https://www.wsj.com/market-data/stocks/peyields"
         scraper_api_key = os.environ.get("SCRAPER_API_KEY")
-        
+
         if scraper_api_key:
             payload = {'api_key': scraper_api_key, 'url': target_url}
             url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
