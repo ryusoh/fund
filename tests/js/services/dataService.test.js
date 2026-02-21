@@ -287,6 +287,51 @@ describe('dataService', () => {
             );
         });
 
+        it('should dynamically calculate P/E ratios using real-time price and EPS data', async () => {
+            const mockHoldings = {
+                NVDA: { shares: '10', average_price: '100.00', name: 'Nvidia Corp.' },
+            };
+            // Current price is $120.00
+            const mockPrices = { NVDA: '120.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'NVDA', path: '../data/analysis/NVDA.json' }],
+            };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/NVDA')) {
+                    // Return fixed EPS values. Trailing = 4.00, Forward = 5.00
+                    return Promise.resolve({
+                        ok: true,
+                        json: () =>
+                            Promise.resolve({
+                                market: { pe: 25.0, forwardPe: 20.0, eps: 4.0, forwardEps: 5.0 },
+                            }),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected URL: ${url}`));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            // Trailing PE = 120.00 / 4.00 = 30.00
+            // Forward PE = 120.00 / 5.00 = 24.00
+            expect(document.querySelector('tr[data-ticker="NVDA"] td.per').textContent).toBe(
+                '30.00/24.00'
+            );
+        });
+
         it('should handle fetch error with proper error message', async () => {
             // Arrange
             fetch.mockRejectedValue(new Error('Network error'));

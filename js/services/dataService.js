@@ -148,9 +148,14 @@ async function fetchMarketRatiosForTickers(tickers = []) {
                         }
                     }
 
+                    const eps = Number(market.eps);
+                    const forwardEps = Number(market.forwardEps);
+
                     ratiosByTicker.set(symbol, {
                         pe: Number.isFinite(trailingPe) ? trailingPe : null,
                         forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
+                        eps: Number.isFinite(eps) ? eps : null,
+                        forwardEps: Number.isFinite(forwardEps) ? forwardEps : null,
                     });
                 } catch (error) {
                     logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
@@ -216,7 +221,7 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
-function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map()) {
+function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), currentPrice = null) {
     const normalizedTicker = normalizeTickerSymbol(ticker);
     if (!normalizedTicker || !(marketRatiosByTicker instanceof Map)) {
         return '—';
@@ -225,11 +230,26 @@ function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map()) {
     if (!ratioSnapshot) {
         return '—';
     }
+
+    let trailingValue = ratioSnapshot.pe;
+    let forwardValue = ratioSnapshot.forwardPe;
+
+    // Dynamically calculate PE using real-time price if EPS is available
+    if (Number.isFinite(currentPrice) && currentPrice > 0) {
+        if (Number.isFinite(ratioSnapshot.eps) && ratioSnapshot.eps > 0) {
+            trailingValue = currentPrice / ratioSnapshot.eps;
+        }
+        if (Number.isFinite(ratioSnapshot.forwardEps) && ratioSnapshot.forwardEps > 0) {
+            forwardValue = currentPrice / ratioSnapshot.forwardEps;
+        }
+    }
+
     const formatValue = (value) => (Number.isFinite(value) ? Number(value).toFixed(2) : '—');
-    const trailing = formatValue(ratioSnapshot.pe);
-    const forward = formatValue(ratioSnapshot.forwardPe);
+    const trailing = formatValue(trailingValue);
+    const forward = formatValue(forwardValue);
     const hasTrailing = trailing !== '—';
     const hasForward = forward !== '—';
+
     if (hasTrailing && hasForward) {
         return `${trailing}/${forward}`;
     }
@@ -255,7 +275,11 @@ function createHoldingRow(
 
     const allocationPercentage =
         totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
-    const perDisplayValue = formatPerDisplayForTicker(holding.ticker, marketRatiosByTicker);
+    const perDisplayValue = formatPerDisplayForTicker(
+        holding.ticker,
+        marketRatiosByTicker,
+        holding.currentPrice
+    );
 
     row.innerHTML = `
         <td>${holding.name}</td>
