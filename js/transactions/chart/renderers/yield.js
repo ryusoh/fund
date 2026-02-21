@@ -9,7 +9,7 @@ import {
     stopConcentrationAnimation,
     drawSeriesGlow,
 } from '../animation.js';
-import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../interaction.js';
+import { updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import { drawAxes, drawEndValue } from '../core.js';
 import { getChartColors, createTimeInterpolator, parseLocalDate } from '../helpers.js';
 
@@ -39,7 +39,8 @@ export async function loadYieldData() {
  */
 export async function drawYieldChart(ctx, chartManager) {
     const { canvas } = ctx;
-    const { width, height } = canvas;
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight;
     const { chartDateRange } = transactionState;
 
     // Load data if not cached
@@ -86,9 +87,9 @@ export async function drawYieldChart(ctx, chartManager) {
     const minIncome = 0;
     const maxIncome = Math.max(...incomes, 100) * 1.1;
 
-    const timeToX = (t) => margin.left + ((t - minTime) / (maxTime - minTime || 1)) * chartWidth;
-    const yieldToY = (y) => margin.top + chartHeight - ((y - minY) / (maxY - minY)) * chartHeight;
-    const incomeToY = (i) =>
+    const xScale = (t) => margin.left + ((t - minTime) / (maxTime - minTime || 1)) * chartWidth;
+    const yScale = (y) => margin.top + chartHeight - ((y - minY) / (maxY - minY)) * chartHeight;
+    const y2Scale = (i) =>
         margin.top + chartHeight - ((i - minIncome) / (maxIncome - minIncome)) * chartHeight;
 
     // Stop other animations
@@ -114,8 +115,8 @@ export async function drawYieldChart(ctx, chartManager) {
         maxTime,
         minY,
         maxY,
-        timeToX,
-        yieldToY,
+        xScale,
+        yScale,
         (v) => `${v.toFixed(1)}%`,
         false, // isPerformanceChart
         {}, // axisOptions
@@ -128,52 +129,47 @@ export async function drawYieldChart(ctx, chartManager) {
     const monoFont =
         'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
-    // 1. Draw Primary Y-Axis Label (Left)
+    // 1. Draw Secondary Y-Axis (Right) for TTM Income
     ctx.save();
     ctx.fillStyle = '#8b949e';
     ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
     ctx.textAlign = 'left';
-    ctx.fillText('Forward Yield (%)', margin.left, margin.top - 15);
-    ctx.restore();
 
-    // 2. Draw Secondary Y-Axis (Right) for TTM Income
-    // We manually draw the labels on the right side
+    // Select a few ticks for the income axis
     const incomeTicks = [0, maxIncome * 0.25, maxIncome * 0.5, maxIncome * 0.75, maxIncome];
-    ctx.save();
-    ctx.fillStyle = '#8b949e';
-    ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
-    ctx.textAlign = 'left';
     incomeTicks.forEach((tickVal) => {
-        const y = incomeToY(tickVal);
-        ctx.fillText(`$${Math.round(tickVal).toLocaleString()}`, margin.left + chartWidth + 10, y);
+        const y = y2Scale(tickVal);
+        ctx.fillText(`${Math.round(tickVal).toLocaleString()}`, margin.left + chartWidth + 10, y);
     });
 
-    // Secondary Y-Axis Title
+    // Secondary Y-Axis Title (above the axis)
     ctx.textAlign = 'right';
     ctx.fillText('TTM Income ($)', margin.left + chartWidth + margin.right, margin.top - 15);
     ctx.restore();
 
-    // 1. Draw TTM Income Bars (Background)
+    // 2. Draw TTM Income Bars (Background)
     ctx.save();
-    const barWidth = (chartWidth / filteredData.length) * 0.8;
+    const barWidth = Math.max(2, (chartWidth / filteredData.length) * 0.8);
     ctx.fillStyle = colors.secondary + '44'; // Semi-transparent
     filteredData.forEach((d) => {
         const t = parseLocalDate(d.date).getTime();
-        const x = timeToX(t) - barWidth / 2;
-        const y = incomeToY(d.ttm_income);
-        const h = margin.top + chartHeight - y;
-        ctx.fillRect(x, y, barWidth, h);
+        const x = xScale(t) - barWidth / 2;
+        const y = y2Scale(d.ttm_income);
+        const h = Math.max(0, margin.top + chartHeight - y);
+        if (h > 0) {
+            ctx.fillRect(x, y, barWidth, h);
+        }
     });
     ctx.restore();
 
-    // 2. Draw Forward Yield Line
+    // 3. Draw Forward Yield Line
     ctx.beginPath();
     ctx.strokeStyle = colors.primary;
     ctx.lineWidth = CHART_LINE_WIDTHS.main;
     filteredData.forEach((d, i) => {
         const t = parseLocalDate(d.date).getTime();
-        const x = timeToX(t);
-        const y = yieldToY(d.forward_yield);
+        const x = xScale(t);
+        const y = yScale(d.forward_yield);
         if (i === 0) {
             ctx.moveTo(x, y);
         } else {
@@ -182,10 +178,10 @@ export async function drawYieldChart(ctx, chartManager) {
     });
     ctx.stroke();
 
-    // Series for crosshair interaction
+    // Series for interaction and legend
     const yieldSeries = {
         key: 'Yield',
-        name: 'Forward Yield',
+        name: 'Yield',
         label: 'Forward Yield',
         color: colors.primary,
         points: filteredData.map((d) => ({
@@ -203,7 +199,7 @@ export async function drawYieldChart(ctx, chartManager) {
 
     const incomeSeries = {
         key: 'Income',
-        name: 'TTM Income',
+        name: 'Income',
         label: 'TTM Income',
         color: colors.secondary,
         points: filteredData.map((d) => ({
@@ -225,6 +221,7 @@ export async function drawYieldChart(ctx, chartManager) {
 
     const series = [yieldSeries, incomeSeries];
 
+    // Initialize chart layout for interaction system
     chartLayouts.yield = {
         key: 'yield',
         margin,
@@ -240,33 +237,40 @@ export async function drawYieldChart(ctx, chartManager) {
         maxTime,
         minY,
         maxY,
-        timeToX,
-        valueToY: yieldToY, // Main y-axis is yield
+        xScale,
+        yScale, // Main y-axis is yield
         invertX: (x) => minTime + ((x - margin.left) / chartWidth) * (maxTime - minTime),
         series,
     };
 
-    // Draw end values
+    // Ensure visibility state exists
+    if (transactionState.chartVisibility['Yield'] === undefined) {
+        transactionState.chartVisibility['Yield'] = true;
+    }
+    if (transactionState.chartVisibility['Income'] === undefined) {
+        transactionState.chartVisibility['Income'] = true;
+    }
+
+    // Draw current value annotation
     const lastYield = yieldSeries.points[yieldSeries.points.length - 1].value;
     drawEndValue(
         ctx,
-        margin.left + chartWidth + 5, // x
-        yieldToY(lastYield), // y
-        lastYield, // value
-        yieldSeries.color, // color
-        isMobile, // isMobile
-        margin, // padding
-        chartWidth, // plotWidth
-        chartHeight, // plotHeight
-        yieldSeries.formatValue, // formatValue
-        true // showBackground
+        margin.left + chartWidth + 5,
+        yScale(lastYield),
+        lastYield,
+        yieldSeries.color,
+        isMobile,
+        margin,
+        chartWidth,
+        chartHeight,
+        yieldSeries.formatValue,
+        true
     );
 
-    // Draw glow for the line
-    drawSeriesGlow(ctx, yieldSeries.points, yieldSeries.color, timeToX, yieldToY);
+    // Add glowing effect to the line
+    drawSeriesGlow(ctx, yieldSeries.points, yieldSeries.color, xScale, yScale);
 
-    // Legend & Crosshair
+    // Update UI components
     updateLegend(series, chartManager);
-    updateCrosshairUI(series, chartLayouts.yield, chartManager);
     drawCrosshairOverlay(ctx, series, chartLayouts.yield);
 }
