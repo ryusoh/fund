@@ -55,9 +55,9 @@ describe('buildDrawdownSeries', () => {
             { date: '2023-01-01', value: 100 },
         ];
         const result = buildDrawdownSeries(series);
-        expect(result[0].date).toEqual(new Date('2023-01-01'));
+        expect(result[0].date).toEqual(new Date(2023, 0, 1));
         expect(result[0].value).toBeCloseTo(0);
-        expect(result[1].date).toEqual(new Date('2023-01-02'));
+        expect(result[1].date).toEqual(new Date(2023, 0, 2));
         expect(result[1].value).toBeCloseTo(-10);
     });
 

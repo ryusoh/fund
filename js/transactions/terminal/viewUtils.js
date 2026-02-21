@@ -12,6 +12,7 @@ import {
     getSectorsSnapshotLine,
     getYieldSnapshotLine,
     getBetaSnapshotLine,
+    getGeographySnapshotLine,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -50,6 +51,8 @@ export function isActiveChartVisible() {
             'volatility',
             'yield',
             'beta',
+            'geography',
+            'geographyAbs',
         ].includes(activeChart)
     ) {
         return false;
@@ -104,6 +107,12 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'beta') {
         return await getBetaSnapshotLine();
+    }
+    if (activeChart === 'geography') {
+        return await getGeographySnapshotLine();
+    }
+    if (activeChart === 'geographyAbs') {
+        return await getGeographySnapshotLine({ labelPrefix: 'Geography Abs' });
     }
     return null;
 }

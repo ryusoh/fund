@@ -147,7 +147,7 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
     const filteredSeries = seriesToDraw.map((s) => ({
         ...s,
         data: s.data.filter((d) => {
-            const dt = new Date(d.date);
+            const dt = parseLocalDate(d.date);
             return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
         }),
     }));
@@ -158,7 +158,7 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
     let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
@@ -245,11 +245,11 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         const smoothingConfig = getSmoothingConfig('performance');
         const points = smoothingConfig
             ? smoothFinancialData(
-                  rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value })),
+                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
                   smoothingConfig,
                   true
-              ).map((p) => ({ date: new Date(p.x), value: p.y }))
-            : rawPoints.map((p) => ({ date: new Date(p.date), value: p.value }));
+              ).map((p) => ({ date: parseLocalDate(p.x), value: p.y }))
+            : rawPoints.map((p) => ({ date: parseLocalDate(p.date), value: p.value }));
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops

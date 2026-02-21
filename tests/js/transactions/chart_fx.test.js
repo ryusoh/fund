@@ -116,7 +116,7 @@ describe('fx.js renderer start time', () => {
 
         expect(chartLayouts.fx).toBeDefined();
 
-        const expectedMinTime = new Date('2020-01-01').getTime();
+        const expectedMinTime = new Date(2020, 0, 1).getTime();
 
         // 1. Min time bounds should match portfolio start
         expect(chartLayouts.fx.minTime).toBe(expectedMinTime);
