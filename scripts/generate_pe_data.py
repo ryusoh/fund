@@ -166,6 +166,22 @@ EXEMPT_TICKERS = frozenset(
     }
 )
 
+# Delisted or acquired stocks that cause yfinance lookups to fail and waste time
+DELISTED_TICKERS = frozenset(
+    {
+        "BKI",
+        "CHX",
+        "DICE",
+        "GD",
+        "LLAP",
+        "NATI",
+        "NYCB",
+        "PACW",
+        "SBSW",
+        "VTLE",
+    }
+)
+
 # Manual overrides for P/E ratios
 MANUAL_TICKER_PE_CURVES = {
     "FSKAX": {
@@ -907,7 +923,9 @@ def main():
     prices_df.index = pd.to_datetime(prices_df.index)
     prices_df = prices_df.reindex(dates).ffill()
     all_tickers = [t for t in holdings_df.columns if t not in ("date", "total_value", "Others")]
-    filtered_tickers = [t for t in all_tickers if t not in EXEMPT_TICKERS]
+    filtered_tickers = [
+        t for t in all_tickers if t not in EXEMPT_TICKERS and t not in DELISTED_TICKERS
+    ]
     stock_tickers = [t for t in filtered_tickers if not is_etf(t)]
     etf_tickers = [t for t in filtered_tickers if is_etf(t)]
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
