@@ -70,7 +70,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         const rollingData = [];
         for (let i = 0; i < points.length; i++) {
             const currentPoint = points[i];
-            const currentDate = new Date(currentPoint.date);
+            const currentDate = parseLocalDate(currentPoint.date);
             const oneYearAgo = new Date(currentDate);
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -79,7 +79,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             // Optimistic search: points are chronological.
             // We can search backwards from current index.
             for (let j = i - 1; j >= 0; j--) {
-                const d = new Date(points[j].date);
+                const d = parseLocalDate(points[j].date);
                 if (d <= oneYearAgo) {
                     startPoint = points[j];
                     break;
@@ -139,7 +139,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
     const filteredSeries = seriesToDraw.map((s) => ({
         ...s,
         data: s.data.filter((d) => {
-            const dt = new Date(d.date);
+            const dt = parseLocalDate(d.date);
             return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
         }),
     }));
@@ -150,7 +150,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
     let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
@@ -237,11 +237,11 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         const smoothingConfig = getSmoothingConfig('performance');
         const points = smoothingConfig
             ? smoothFinancialData(
-                  rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value })),
+                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
                   smoothingConfig,
                   true
-              ).map((p) => ({ date: new Date(p.x), value: p.y }))
-            : rawPoints.map((p) => ({ date: new Date(p.date), value: p.value }));
+              ).map((p) => ({ date: parseLocalDate(p.x), value: p.y }))
+            : rawPoints.map((p) => ({ date: parseLocalDate(p.date), value: p.value }));
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops

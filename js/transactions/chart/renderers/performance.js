@@ -122,7 +122,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     if (filterFrom || filterTo) {
         normalizedSeriesToDraw = normalizedSeriesToDraw.map((series) => {
             const filteredData = series.data
-                .map((d) => ({ ...d, date: new Date(d.date) }))
+                .map((d) => ({ ...d, date: parseLocalDate(d.date) }))
                 .filter((d) => {
                     const pointDate = d.date;
                     return (
@@ -169,7 +169,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
     let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
@@ -261,13 +261,13 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         const smoothingConfig = getSmoothingConfig('performance');
         const smoothedPoints = smoothingConfig
             ? smoothFinancialData(
-                  rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value })),
+                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
                   smoothingConfig,
                   true // preserveEnd - keep the last point unchanged
               )
-            : rawPoints.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+            : rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value }));
 
-        const points = smoothedPoints.map((p) => ({ date: new Date(p.x), value: p.y }));
+        const points = smoothedPoints.map((p) => ({ date: parseLocalDate(p.x), value: p.y }));
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops
             ? gradientStops[1]
@@ -283,7 +283,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         }
 
         const coords = points.map((point) => {
-            const time = new Date(point.date).getTime();
+            const time = point.date.getTime();
             const x = xScale(time);
             const y = yScale(point.value);
             return { x, y, time, value: point.value };

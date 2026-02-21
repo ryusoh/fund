@@ -117,11 +117,11 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
 
     const filteredIndices = rawDates
         .map((dateStr, index) => {
-            const date = new Date(dateStr);
+            const date = parseLocalDate(dateStr);
             return { index, date };
         })
         .filter(({ date }) => {
-            if (Number.isNaN(date.getTime())) {
+            if (!date || Number.isNaN(date.getTime())) {
                 return false;
             }
             if (filterFrom && date < filterFrom) {
@@ -135,7 +135,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         .map(({ index }) => index);
 
     const dates =
-        filteredIndices.length > 0 ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
+        filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
 
     if (dates.length === 0) {
         if (valueMode === 'absolute') {
@@ -168,15 +168,14 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const percentSeriesMap = {};
     const chartData = {};
     Object.entries(rawSeries).forEach(([ticker, values]) => {
-        const arr = Array.isArray(values) ? values : [];
-        const mappedPercent =
-            filteredIndices.length > 0
-                ? filteredIndices.map((i) => Number(arr[i] ?? 0))
-                : arr.map((value) => Number(value ?? 0));
+        const mappedValues =
+            filterFrom || filterTo
+                ? filteredIndices.map((index) => values[index] ?? 0)
+                : values.map((value) => value ?? 0);
         const percentValues =
-            mappedPercent.length === dates.length
-                ? mappedPercent
-                : dates.map((_, idx) => Number(mappedPercent[idx] ?? 0));
+            mappedValues.length === dates.length
+                ? mappedValues
+                : dates.map((_, idx) => Number(mappedValues[idx] ?? 0));
         percentSeriesMap[ticker] = percentValues;
         if (valueMode === 'absolute') {
             chartData[ticker] = percentValues.map(
@@ -260,7 +259,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         return colors[colorIndex % colors.length];
     };
 
-    const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
+    const dateTimes = dates.map((dateStr) => parseLocalDate(dateStr).getTime());
     let minTime = Math.min(...dateTimes);
     const maxTime = Math.max(...dateTimes);
 
@@ -328,7 +327,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.lineWidth = 1;
 
         dates.forEach((dateStr, index) => {
-            const x = xScale(new Date(dateStr).getTime());
+            const x = xScale(parseLocalDate(dateStr).getTime());
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
                 ctx.moveTo(x, y);
@@ -338,7 +337,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         });
 
         for (let i = dates.length - 1; i >= 0; i -= 1) {
-            const x = xScale(new Date(dates[i]).getTime());
+            const x = xScale(parseLocalDate(dates[i]).getTime());
             const y = yScale(cumulativeValues[i]);
             ctx.lineTo(x, y);
         }

@@ -2,8 +2,8 @@
 """Generate portfolio geography/country distribution data for stacked area chart."""
 
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
@@ -74,7 +74,6 @@ def get_country_for_ticker(ticker: str, metadata: dict) -> str:
             return normalize_country_name(country)
 
         # Fallback to city/state for US companies
-        city = info.get('city', '')
         state = info.get('state', '')
 
         if state and state.upper() in ('CA', 'NY', 'TX', 'WA', 'DE', 'MA', 'NJ', 'PA', 'IL', 'FL'):
@@ -644,7 +643,7 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
                     continue
                 daily_geography[country] = percentage
                 total_percentage += percentage
-            
+
             # Normalize to exactly 100% to avoid floating point issues and double-counting
             # This is necessary because ETF country allocations may overlap with individual stocks
             if total_percentage > 0:

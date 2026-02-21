@@ -50,8 +50,8 @@ export function buildFxChartSeries(baseCurrency) {
                 if (!Number.isFinite(value)) {
                     return null;
                 }
-                const parsedDate = new Date(date);
-                if (Number.isNaN(parsedDate.getTime())) {
+                const parsedDate = parseLocalDate(date);
+                if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
                     return null;
                 }
                 return { date: parsedDate, value };
@@ -114,8 +114,8 @@ export function drawFxChart(ctx, chartManager, timestamp) {
             const firstDate =
                 transactionState.portfolioSeries[0].date ||
                 transactionState.portfolioSeries[0].tradeDate;
-            const parsed = new Date(firstDate);
-            if (!Number.isNaN(parsed.getTime())) {
+            const parsed = parseLocalDate(firstDate);
+            if (parsed && !Number.isNaN(parsed.getTime())) {
                 earliestTime = parsed.getTime();
             }
         }

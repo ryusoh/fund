@@ -639,8 +639,12 @@ export function updateLegend(series, chartManager) {
         item.appendChild(swatch);
         item.appendChild(label);
 
-        // Skip click events for composition chart (non-interactive legend)
-        if (transactionState.activeChart !== 'composition') {
+        // Skip click events for stacked charts (composition, sectors, geography)
+        if (
+            transactionState.activeChart !== 'composition' &&
+            transactionState.activeChart !== 'sectors' &&
+            transactionState.activeChart !== 'geography'
+        ) {
             item.addEventListener('click', () => {
                 if (
                     transactionState.activeChart === 'performance' ||
@@ -713,6 +717,8 @@ function getActiveChartKey() {
         active === 'compositionAbs' ||
         active === 'sectors' ||
         active === 'sectorsAbs' ||
+        active === 'geography' ||
+        active === 'geographyAbs' ||
         active === 'concentration' ||
         active === 'pe' ||
         active === 'contribution' ||
@@ -797,6 +803,8 @@ function handlePointerMove(event) {
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
         layout.key === 'sectorsAbs' ||
+        layout.key === 'geography' ||
+        layout.key === 'geographyAbs' ||
         layout.key === 'beta' ||
         layout.key === 'yield'
     ) {
@@ -850,6 +858,8 @@ function handlePointerDown(event) {
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
         layout.key === 'sectorsAbs' ||
+        layout.key === 'geography' ||
+        layout.key === 'geographyAbs' ||
         layout.key === 'beta' ||
         layout.key === 'yield'
     ) {
@@ -909,6 +919,8 @@ function handlePointerUp(event) {
             layout.key === 'compositionAbs' ||
             layout.key === 'sectors' ||
             layout.key === 'sectorsAbs' ||
+            layout.key === 'geography' ||
+            layout.key === 'geographyAbs' ||
             layout.key === 'beta' ||
             layout.key === 'yield')
     ) {

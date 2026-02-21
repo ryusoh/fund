@@ -1,5 +1,10 @@
 import { transactionState, setActiveChart, setChartDateRange } from '../../state.js';
-import { updateContextYearFromRange, parseDateRange, formatDateRange } from '../dateUtils.js';
+import {
+    updateContextYearFromRange,
+    parseDateRange,
+    formatDateRange,
+    parseSimplifiedDateRange,
+} from '../dateUtils.js';
 import {
     getPerformanceSnapshotLine,
     getCompositionSnapshotLine,
@@ -110,7 +115,11 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             }
         }
 
-        const range = parseDateRange(normalizedTokens);
+        let range = parseDateRange(normalizedTokens);
+        if (!range.from && !range.to && normalizedTokens.length === 1) {
+            range = parseSimplifiedDateRange(normalizedTokens[0]);
+        }
+
         if (!range.from && !range.to) {
             return getExistingChartRange();
         }
@@ -315,7 +324,11 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             const isGeographyVisible =
                 geographySection && !geographySection.classList.contains('is-hidden');
 
-            if (isGeographyActive && isGeographyVisible) {
+            // If chart is already active and no date args provided, toggle off
+            // If date args are provided, always apply them and re-render
+            const hasDateArgs = rangeTokens.length > 0;
+
+            if (isGeographyActive && isGeographyVisible && !hasDateArgs) {
                 setActiveChart(null);
                 if (geographySection) {
                     geographySection.classList.add('is-hidden');

@@ -23,8 +23,8 @@ export function buildDrawdownSeries(series) {
 
     // Sort by date/transactionId to ensure correct order
     const sortedSeries = [...series].sort((a, b) => {
-        const timeA = new Date(a.date || a.tradeDate).getTime();
-        const timeB = new Date(b.date || b.tradeDate).getTime();
+        const timeA = parseLocalDate(a.date || a.tradeDate).getTime();
+        const timeB = parseLocalDate(b.date || b.tradeDate).getTime();
         if (timeA !== timeB) {
             return timeA - timeB;
         }
@@ -52,7 +52,7 @@ export function buildDrawdownSeries(series) {
         const drawdown = ((value - highWaterMark) / safePeak) * 100;
 
         drawdownSeries.push({
-            date: new Date(date),
+            date: parseLocalDate(date),
             value: drawdown,
             rawValue: value,
             peak: highWaterMark,
@@ -168,7 +168,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
     // ========== COMMON RENDERING LOGIC ==========
     const allPoints = seriesToDraw.flatMap((s) => s.data);
-    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
     let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
@@ -256,7 +256,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
         }
 
         const coords = series.data.map((point) => {
-            const time = new Date(point.date).getTime();
+            const time = parseLocalDate(point.date).getTime();
             return {
                 x: xScale(time),
                 y: yScale(point.value),
@@ -328,7 +328,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
             if (!lastData) {
                 return;
             }
-            const x = xScale(new Date(lastData.date).getTime());
+            const x = xScale(parseLocalDate(lastData.date).getTime());
             const y = yScale(lastData.value);
             const resolvedColor = colorMap[series.key] || colors.contribution;
 

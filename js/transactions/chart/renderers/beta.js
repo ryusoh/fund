@@ -98,7 +98,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
             if (startVal !== 0) {
                 returns.push({
                     date: points[i].date,
-                    time: new Date(points[i].date).getTime(),
+                    time: parseLocalDate(points[i].date).getTime(),
                     val: endVal / startVal - 1,
                 });
             }
@@ -200,7 +200,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
     const filteredSeries = seriesToDraw.map((s) => ({
         ...s,
         data: s.data.filter((d) => {
-            const dt = new Date(d.date);
+            const dt = parseLocalDate(d.date);
             return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
         }),
     }));
@@ -211,7 +211,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => new Date(p.date).getTime());
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
     let minTime = Math.min(...allTimes);
     const maxTime = Math.max(...allTimes);
 
@@ -306,7 +306,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         }
 
         // Use raw points for Beta to ensure statistical accuracy (no smoothing)
-        const points = series.data.map((p) => ({ date: new Date(p.date), value: p.value }));
+        const points = series.data.map((p) => ({ date: parseLocalDate(p.date), value: p.value }));
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops
