@@ -74,6 +74,9 @@ export const ANIMATED_LINE_SETTINGS = {
         fx: {
             enabled: true,
         },
+        yield: {
+            enabled: true,
+        },
     },
 };
 
@@ -260,6 +263,7 @@ export const CHART_LINE_WIDTHS = {
     appreciation: 1,
     performance: 1,
     fx: 1,
+    yield: 1,
     crosshairMarker: 1,
 };
 

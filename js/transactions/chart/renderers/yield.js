@@ -1,16 +1,21 @@
 import { transactionState } from '../../state.js';
 import { chartLayouts } from '../state.js';
-import { CHART_LINE_WIDTHS } from '../../../config.js';
+import { CHART_LINE_WIDTHS, mountainFill } from '../../../config.js';
+import { BENCHMARK_GRADIENTS } from '../config.js';
 import {
     stopPerformanceAnimation,
     stopContributionAnimation,
     stopFxAnimation,
     stopPeAnimation,
     stopConcentrationAnimation,
+    stopYieldAnimation,
+    isAnimationEnabled,
+    advanceYieldAnimation,
+    scheduleYieldAnimation,
     drawSeriesGlow,
 } from '../animation.js';
 import { updateLegend, drawCrosshairOverlay } from '../interaction.js';
-import { drawAxes, drawEndValue, generateConcreteTicks } from '../core.js';
+import { drawAxes, drawEndValue, generateConcreteTicks, drawMountainFill } from '../core.js';
 import { getChartColors, createTimeInterpolator, parseLocalDate } from '../helpers.js';
 import {
     formatCurrencyCompact,
@@ -40,7 +45,7 @@ export async function loadYieldData() {
 /**
  * Main draw function for the yield chart.
  */
-export async function drawYieldChart(ctx, chartManager) {
+export async function drawYieldChart(ctx, chartManager, timestamp) {
     const { canvas } = ctx;
     const width = canvas.offsetWidth;
     const height = canvas.offsetHeight;
@@ -69,6 +74,7 @@ export async function drawYieldChart(ctx, chartManager) {
     });
 
     if (filteredData.length === 0) {
+        stopYieldAnimation();
         return;
     }
 
@@ -185,26 +191,53 @@ export async function drawYieldChart(ctx, chartManager) {
     ctx.restore();
 
     // 3. Draw Forward Yield Line
-    ctx.beginPath();
-    // Use contribution color for Yield line
-    ctx.strokeStyle = colors.contribution || '#b3b3b3';
-    ctx.lineWidth = CHART_LINE_WIDTHS.main;
-    filteredData.forEach((d, i) => {
+    const yieldColor = colors.contribution || '#b3b3b3';
+    const gradientStops = BENCHMARK_GRADIENTS['^LZ'] || [yieldColor, yieldColor];
+
+    // Map data to coordinates
+    const yieldCoords = filteredData.map((d) => {
         const t = parseLocalDate(d.date).getTime();
-        const x = xScale(t);
-        const y = yScale(d.forward_yield);
+        return {
+            x: xScale(t),
+            y: yScale(d.forward_yield),
+            time: t,
+            value: d.forward_yield,
+        };
+    });
+
+    const chartBounds = {
+        top: margin.top,
+        bottom: margin.top + chartHeight,
+        left: margin.left,
+        right: margin.left + chartWidth,
+    };
+
+    if (mountainFill.enabled) {
+        drawMountainFill(ctx, yieldCoords, yScale(minY), {
+            color: yieldColor,
+            colorStops: gradientStops,
+            opacityTop: 0.35,
+            opacityBottom: 0,
+            bounds: chartBounds,
+        });
+    }
+
+    ctx.beginPath();
+
+    const grad = ctx.createLinearGradient(margin.left, 0, margin.left + chartWidth, 0);
+    grad.addColorStop(0, gradientStops[0]);
+    grad.addColorStop(1, gradientStops[1]);
+    ctx.strokeStyle = grad;
+
+    ctx.lineWidth = CHART_LINE_WIDTHS.yield || 1;
+    yieldCoords.forEach((c, i) => {
         if (i === 0) {
-            ctx.moveTo(x, y);
+            ctx.moveTo(c.x, c.y);
         } else {
-            ctx.lineTo(x, y);
+            ctx.lineTo(c.x, c.y);
         }
     });
     ctx.stroke();
-
-    const yieldPoints = filteredData.map((d) => ({
-        time: parseLocalDate(d.date).getTime(),
-        value: d.forward_yield,
-    }));
 
     const incomePoints = filteredData.map((d, i) => ({
         time: parseLocalDate(d.date).getTime(),
@@ -216,9 +249,9 @@ export async function drawYieldChart(ctx, chartManager) {
         key: 'Yield',
         name: 'Yield',
         label: 'Forward Yield',
-        color: colors.contribution || '#b3b3b3',
-        points: yieldPoints,
-        getValueAtTime: createTimeInterpolator(yieldPoints),
+        color: gradientStops[1],
+        points: yieldCoords,
+        getValueAtTime: createTimeInterpolator(yieldCoords),
         formatValue: (v) => `${v.toFixed(2)}%`,
     };
 
@@ -271,7 +304,7 @@ export async function drawYieldChart(ctx, chartManager) {
         margin.left + chartWidth + 5,
         yScale(lastYield),
         lastYield,
-        yieldSeries.color,
+        gradientStops[1],
         isMobile,
         margin,
         chartWidth,
@@ -280,8 +313,27 @@ export async function drawYieldChart(ctx, chartManager) {
         true
     );
 
+    const yieldAnimationEnabled = isAnimationEnabled('yield');
+    const animationPhase = advanceYieldAnimation(timestamp);
+
     // Add glowing effect to the line
-    drawSeriesGlow(ctx, yieldSeries.points, yieldSeries.color, xScale, yScale);
+    if (yieldAnimationEnabled) {
+        const lastCoord = yieldSeries.points[yieldSeries.points.length - 1];
+        const coords = [lastCoord];
+
+        drawSeriesGlow(
+            ctx,
+            { coords, color: yieldSeries.color, lineWidth: CHART_LINE_WIDTHS.yield || 1 },
+            {
+                basePhase: animationPhase,
+                seriesIndex: 0,
+                isMobile,
+                chartKey: 'yield',
+            }
+        );
+
+        scheduleYieldAnimation(chartManager);
+    }
 
     // Update UI components
     updateLegend(series, chartManager);

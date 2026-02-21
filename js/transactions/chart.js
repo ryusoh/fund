@@ -130,9 +130,9 @@ export function createChartManager(options = {}) {
         } else if (transactionState.activeChart === 'volatility') {
             await drawVolatilityChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'beta') {
-            await drawBetaChart(ctx, chartManager);
+            await drawBetaChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'yield') {
-            await drawYieldChart(ctx, chartManager);
+            await drawYieldChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {

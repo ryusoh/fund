@@ -26,6 +26,10 @@ export function stopConcentrationAnimation() {
     glowAnimator.stop('concentration');
 }
 
+export function stopYieldAnimation() {
+    glowAnimator.stop('yield');
+}
+
 export function schedulePerformanceAnimation(chartManager) {
     if (!isAnimationEnabled('performance')) {
         glowAnimator.stop('performance');
@@ -76,6 +80,16 @@ export function scheduleConcentrationAnimation(chartManager) {
     });
 }
 
+export function scheduleYieldAnimation(chartManager) {
+    if (!isAnimationEnabled('yield')) {
+        glowAnimator.stop('yield');
+        return;
+    }
+    glowAnimator.schedule('yield', chartManager, {
+        isActive: () => transactionState.activeChart === 'yield',
+    });
+}
+
 export function advancePerformanceAnimation(timestamp) {
     if (!isAnimationEnabled('performance')) {
         return 0;
@@ -111,6 +125,15 @@ export function advanceConcentrationAnimation(timestamp) {
     return glowAnimator.advance('concentration', timestamp);
 }
 
-export function drawSeriesGlow(ctx, seriesKey, seriesData, color, bounds) {
-    glowAnimator.drawSeriesGlow(ctx, seriesKey, seriesData, color, bounds);
+export function advanceYieldAnimation(timestamp) {
+    if (!isAnimationEnabled('yield')) {
+        return 0;
+    }
+    return glowAnimator.advance('yield', timestamp);
+}
+
+// Note: The signature here historically used wrong parameter names. It expects:
+// drawSeriesGlow(ctx, seriesObj, drawOptions)
+export function drawSeriesGlow(ctx, series, drawOptions) {
+    glowAnimator.drawSeriesGlow(ctx, series, drawOptions);
 }

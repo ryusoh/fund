@@ -6,6 +6,7 @@ jest.setTimeout(15000);
 jest.mock('@js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawEndValue: jest.fn(),
+    drawMountainFill: jest.fn(),
     generateConcreteTicks: jest.fn().mockReturnValue([0, 250, 500, 750, 1000]),
 }));
 
@@ -21,7 +22,19 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
     stopFxAnimation: jest.fn(),
     stopPeAnimation: jest.fn(),
     stopConcentrationAnimation: jest.fn(),
+    stopYieldAnimation: jest.fn(),
+    isAnimationEnabled: jest.fn().mockReturnValue(true),
+    advanceYieldAnimation: jest.fn().mockReturnValue(0),
+    scheduleYieldAnimation: jest.fn(),
     drawSeriesGlow: jest.fn(),
+}));
+
+jest.mock('@js/transactions/chart/config.js', () => ({
+    CHART_LINE_WIDTHS: { main: 2 },
+    mountainFill: { enabled: true },
+    BENCHMARK_GRADIENTS: {
+        '^LZ': ['#ff0000', '#00ff00'],
+    },
 }));
 
 jest.mock('@js/transactions/chart/helpers.js', () => ({
@@ -104,6 +117,9 @@ describe('Yield Chart Rendering & Interaction', () => {
             fill: jest.fn(),
             fillText: jest.fn(),
             measureText: jest.fn().mockReturnValue({ width: 50 }),
+            createLinearGradient: jest.fn().mockReturnValue({
+                addColorStop: jest.fn(),
+            }),
         };
 
         chartManager = {

@@ -107,30 +107,34 @@ function drawGlow(ctx, series, options, settings) {
         : settings.desktopHaloOscillation;
     const haloRadius = minPulseRadius + haloBase + oscillation * haloOscillation;
 
-    const tailCount = Math.max(2, Math.floor(coords.length * settings.tailRatio));
+    const tailCount =
+        settings.tailRatio > 0 ? Math.max(2, Math.floor(coords.length * settings.tailRatio)) : 0;
     if (tailCount > 1) {
         const tailPoints = coords.slice(-tailCount);
         const start = tailPoints[0];
         const end = tailPoints[tailPoints.length - 1];
-        const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
-        gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
-        gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.tailOpacity})`);
 
-        ctx.save();
-        ctx.lineWidth = lineWidth;
-        ctx.strokeStyle = gradient;
-        ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.shadowOpacity})`;
-        ctx.shadowBlur = isMobile ? settings.mobileShadowBlur : settings.desktopShadowBlur;
-        ctx.beginPath();
-        tailPoints.forEach((point, index) => {
-            if (index === 0) {
-                ctx.moveTo(point.x, point.y);
-            } else {
-                ctx.lineTo(point.x, point.y);
-            }
-        });
-        ctx.stroke();
-        ctx.restore();
+        if (start.x !== end.x || start.y !== end.y) {
+            const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+            gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+            gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.tailOpacity})`);
+
+            ctx.save();
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = gradient;
+            ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.shadowOpacity})`;
+            ctx.shadowBlur = isMobile ? settings.mobileShadowBlur : settings.desktopShadowBlur;
+            ctx.beginPath();
+            tailPoints.forEach((point, index) => {
+                if (index === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            });
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
     const gradient = ctx.createRadialGradient(
