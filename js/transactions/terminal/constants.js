@@ -29,6 +29,8 @@ export const COMMAND_ALIASES = [
     'summary',
     'beta',
     'yield',
+    'rolling',
+    'cumulative',
 ];
 
 export const STATS_SUBCOMMANDS = [
@@ -60,6 +62,8 @@ export const PLOT_SUBCOMMANDS = [
     'yield',
     'sectors',
     'sectors-abs',
+    'geography',
+    'geography-abs',
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];

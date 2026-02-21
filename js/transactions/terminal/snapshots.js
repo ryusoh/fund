@@ -14,7 +14,11 @@ import {
     getContributionSeriesForTransactions,
 } from '../chart.js';
 import { PERFORMANCE_SERIES_CURRENCY } from '../chart/config.js';
-import { loadCompositionSnapshotData, loadSectorsSnapshotData } from '../dataLoader.js'; // Adjust path if needed
+import {
+    loadCompositionSnapshotData,
+    loadSectorsSnapshotData,
+    loadGeographySnapshotData,
+} from '../dataLoader.js'; // Adjust path if needed
 import {
     formatCurrency as formatValueWithCurrency,
     convertBetweenCurrencies,
@@ -452,7 +456,8 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
     for (let i = 0; i < snapshots.length; i += 4) {
         lines.push(snapshots.slice(i, i + 4).join('   '));
     }
-    return `${header}\n${lines.join('\n')}`;
+    const hint = "\n(Hint: type 'rolling' to switch to rolling performance chart)";
+    return `${header}\n${lines.join('\n')}${hint}`;
 }
 
 export async function getBetaSnapshotLine() {
@@ -859,6 +864,94 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
+export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {}) {
+    if (
+        transactionState.activeChart !== 'geography' &&
+        transactionState.activeChart !== 'geographyAbs'
+    ) {
+        return null;
+    }
+    const data = await loadGeographySnapshotData();
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray(data.dates) ||
+        data.dates.length === 0
+    ) {
+        return null;
+    }
+
+    const dates = data.dates;
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    const filteredIndices = dates
+        .map((dateStr, index) => {
+            const date = parseDateSafe(dateStr);
+            return { index, date };
+        })
+        .filter(
+            ({ date }) =>
+                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
+        )
+        .map(({ index }) => index);
+
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
+    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+        targetIndex = dates.length - 1;
+    }
+
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const dateLabel = dates[targetIndex];
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const countrySeries = data.series || {};
+    const countries = [];
+    Object.entries(countrySeries).forEach(([name, values]) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percentage = Number(seriesValues[targetIndex] ?? 0);
+        if (!Number.isFinite(percentage) || percentage <= 0.01) {
+            return;
+        }
+        const baseValue = (totalValueRaw * percentage) / 100;
+        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
+        countries.push({
+            name,
+            percent: percentage,
+            absolute: convertedValue,
+        });
+    });
+
+    if (!countries.length) {
+        return null;
+    }
+
+    countries.sort((a, b) => b.percent - a.percent);
+
+    const formatted = countries.map((s) => {
+        const valueText = formatWithSelectedCurrency(s.absolute);
+        const percentText = `${s.percent.toFixed(2)}%`;
+        return `${s.name} ${valueText} (${percentText})`;
+    });
+
+    const lines = [];
+    for (let i = 0; i < formatted.length; i += 3) {
+        lines.push(formatted.slice(i, i + 3).join('   '));
+    }
+
+    let hint = '';
+    if (labelPrefix === 'Geography') {
+        hint = "\n(Hint: use 'abs' for absolute values)";
+    } else if (labelPrefix === 'Geography Abs') {
+        hint = "\n(Hint: use 'per' for percentages)";
+    }
+
+    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
+}
+
 function normalizeSeriesPoints(series, primaryDateKey, valueKey) {
     if (!Array.isArray(series) || series.length === 0) {
         return [];
@@ -1184,5 +1277,6 @@ export function getRollingSnapshotLine({ includeHidden = false } = {}) {
     for (let i = 0; i < snapshots.length; i += 4) {
         lines.push(snapshots.slice(i, i + 4).join('   '));
     }
-    return `${header}\n${lines.join('\n')}`;
+    const hint = "\n(Hint: type 'cumulative' to switch to cumulative performance chart)";
+    return `${header}\n${lines.join('\n')}${hint}`;
 }

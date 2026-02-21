@@ -20,6 +20,8 @@ import {
     handleSummaryCommand,
     handleAbsCommand,
     handlePercentageCommand,
+    handleRollingCommand,
+    handleCumulativeCommand,
 } from './handlers/misc.js';
 
 import { setFadePreserveSecondLast } from '../fade.js';
@@ -111,6 +113,14 @@ export async function executeCommand(command, context) {
         case 'percent':
         case 'per':
             await handlePercentageCommand(args, enhancedContext);
+            break;
+
+        case 'rolling':
+            await handleRollingCommand(args, enhancedContext);
+            break;
+
+        case 'cumulative':
+            await handleCumulativeCommand(args, enhancedContext);
             break;
 
         case 'summary':

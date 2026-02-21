@@ -357,3 +357,93 @@ export async function handlePercentageCommand(args, { appendMessage, chartManage
     }
     appendMessage(result);
 }
+
+export async function handleRollingCommand(args, { appendMessage, chartManager }) {
+    let result = '';
+    const chartSection = document.getElementById('runningAmountSection');
+    const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
+    const activeChart = transactionState.activeChart;
+
+    if (activeChart === 'rolling') {
+        if (!isChartVisible) {
+            setActiveChart('rolling');
+            if (chartSection) {
+                chartSection.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Showing 1-Year rolling returns chart.';
+        } else {
+            result = 'Rolling returns chart is already active.';
+        }
+    } else if (activeChart === 'performance') {
+        if (!isChartVisible) {
+            result = 'Performance chart must be visible. Use `plot performance` first.';
+        } else {
+            setActiveChart('rolling');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to 1-Year rolling returns chart.';
+        }
+    } else {
+        result =
+            'Performance or Rolling chart must be active. Use `plot performance` or `plot rolling` first.';
+    }
+
+    if (result.includes('Showing') || result.includes('Switched')) {
+        const { getRollingSnapshotLine } = await import('../snapshots.js');
+        const summary = getRollingSnapshotLine({ includeHidden: true });
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+
+    appendMessage(result);
+}
+
+export async function handleCumulativeCommand(args, { appendMessage, chartManager }) {
+    let result = '';
+    const chartSection = document.getElementById('runningAmountSection');
+    const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
+    const activeChart = transactionState.activeChart;
+
+    if (activeChart === 'performance') {
+        if (!isChartVisible) {
+            setActiveChart('performance');
+            if (chartSection) {
+                chartSection.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Showing performance chart.';
+        } else {
+            result = 'Performance chart is already active.';
+        }
+    } else if (activeChart === 'rolling') {
+        if (!isChartVisible) {
+            result = 'Rolling chart must be visible. Use `plot rolling` first.';
+        } else {
+            setActiveChart('performance');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to cumulative performance chart.';
+        }
+    } else {
+        result =
+            'Performance or Rolling chart must be active. Use `plot performance` or `plot rolling` first.';
+    }
+
+    if (result.includes('Showing') || result.includes('Switched')) {
+        const { getPerformanceSnapshotLine } = await import('../snapshots.js');
+        const summary = getPerformanceSnapshotLine({ includeHidden: true });
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+
+    appendMessage(result);
+}
