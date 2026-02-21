@@ -507,9 +507,13 @@ export async function getYieldSnapshotLine() {
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
     const convertedIncome = convertValueToCurrency(last.ttm_income, last.date, selectedCurrency);
 
+    const earlyPeriodNote =
+        '\nNote: Early period yields may appear inflated due to the smaller portfolio base and TTM dividend proxy.';
+
     return (
-        `Forward Yield: ${last.forward_yield.toFixed(2)}% (Range: ${minYield.toFixed(2)}% - ${maxYield.toFixed(2)}%)\n` +
-        `TTM Dividend Income: ${formatValueWithCurrency(convertedIncome, { currency: selectedCurrency })}`
+        `Forward Yield: ${last.forward_yield.toFixed(2)}% (Range: ${minYield.toFixed(2)}% - ${maxYield.toFixed(2)}%)` +
+        `\nTTM Dividend Income: ${formatValueWithCurrency(convertedIncome, { currency: selectedCurrency })}` +
+        earlyPeriodNote
     );
 }
 export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {

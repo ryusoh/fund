@@ -112,6 +112,7 @@ describe('Yield Chart Terminal Integration', () => {
         expect(message).toContain('Forward Yield: 1.80%');
         expect(message).toContain('Range: 1.50% - 1.80%');
         expect(message).toContain('TTM Dividend Income: $1,200.00');
+        expect(message).toContain('Note: Early period yields may appear inflated');
     });
 
     test('plot yield with date filter updates snapshot summary', async () => {
@@ -123,6 +124,7 @@ describe('Yield Chart Terminal Integration', () => {
         expect(message).toContain('Forward Yield: 1.80%');
         expect(message).toContain('Range: 1.80% - 1.80%');
         expect(message).toContain('TTM Dividend Income: $1,200.00');
+        expect(message).toContain('Note: Early period yields may appear inflated');
     });
 
     test('help strings include plot yield', async () => {

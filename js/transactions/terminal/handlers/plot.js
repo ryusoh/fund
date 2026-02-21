@@ -32,7 +32,7 @@ const BETA_EXPLANATION =
     'Beta measures the portfolio’s sensitivity to the broader market (S&P 500). A Beta of 1.0 means the portfolio moves in line with the market; >1.0 is more aggressive, and <1.0 is more defensive. This chart shows the 6-month (126 trading days) rolling Beta calculated as Covariance(Portfolio, Market) / Variance(Market), illustrating how your risk profile evolves as your holdings change.';
 
 const YIELD_EXPLANATION =
-    'This chart maps your portfolio’s Forward Dividend Yield (%) against actual Trailing 12-Month (TTM) Dividend Income ($). The line represents the aggregate yield if current holdings were held for a year, while the bars show the actual cash dividends collected in the preceding 12 months.';
+    "This chart maps your portfolio's Forward Dividend Yield (%) against actual Trailing 12-Month (TTM) Dividend Income ($). The line represents the aggregate yield if current holdings were held for a year, while the bars show the actual cash dividends collected in the preceding 12 months.\n\nNote: Early period yields may appear inflated due to the smaller portfolio base and the TTM dividend proxy used in the calculation.";
 
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {

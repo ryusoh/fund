@@ -28,6 +28,9 @@ describe('snapshots.js', () => {
     });
 
     describe('getYieldSnapshotLine', () => {
+        const EXPECTED_NOTE =
+            '\nNote: Early period yields may appear inflated due to the smaller portfolio base and TTM dividend proxy.';
+
         it('returns proper text with USD currency', async () => {
             loadYieldData.mockResolvedValue([
                 { date: '2024-01-01', forward_yield: 2.5, ttm_income: 1000 },
@@ -36,7 +39,8 @@ describe('snapshots.js', () => {
 
             const result = await getYieldSnapshotLine();
             expect(result).toBe(
-                'Forward Yield: 3.00% (Range: 2.50% - 3.00%)\nTTM Dividend Income: 1500 USD formatted'
+                'Forward Yield: 3.00% (Range: 2.50% - 3.00%)\nTTM Dividend Income: 1500 USD formatted' +
+                    EXPECTED_NOTE
             );
         });
 
@@ -51,7 +55,8 @@ describe('snapshots.js', () => {
             const result = await getYieldSnapshotLine();
             // 1500 * 2 = 3000 because of the mock converter
             expect(result).toBe(
-                'Forward Yield: 3.00% (Range: 2.50% - 3.00%)\nTTM Dividend Income: 3000 EUR formatted'
+                'Forward Yield: 3.00% (Range: 2.50% - 3.00%)\nTTM Dividend Income: 3000 EUR formatted' +
+                    EXPECTED_NOTE
             );
         });
 
@@ -67,7 +72,8 @@ describe('snapshots.js', () => {
             const result = await getYieldSnapshotLine();
             // Only the second item is in range
             expect(result).toBe(
-                'Forward Yield: 3.00% (Range: 3.00% - 3.00%)\nTTM Dividend Income: 1500 USD formatted'
+                'Forward Yield: 3.00% (Range: 3.00% - 3.00%)\nTTM Dividend Income: 1500 USD formatted' +
+                    EXPECTED_NOTE
             );
         });
 
