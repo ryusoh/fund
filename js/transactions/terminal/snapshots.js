@@ -505,10 +505,11 @@ export async function getYieldSnapshotLine() {
     const maxYield = Math.max(...yields);
 
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    const convertedIncome = convertValueToCurrency(last.ttm_income, last.date, selectedCurrency);
 
     return (
         `Forward Yield: ${last.forward_yield.toFixed(2)}% (Range: ${minYield.toFixed(2)}% - ${maxYield.toFixed(2)}%)\n` +
-        `TTM Dividend Income: ${formatValueWithCurrency(last.ttm_income, { currency: selectedCurrency })}`
+        `TTM Dividend Income: ${formatValueWithCurrency(convertedIncome, { currency: selectedCurrency })}`
     );
 }
 export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
