@@ -24,10 +24,17 @@ def load_data():
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
 
-    return holdings_df, prices_data, metadata
+    # Load granular fund allocations
+    fund_alloc_path = Path('data/fund_sector_allocations.json')
+    fund_allocations = {}
+    if fund_alloc_path.exists():
+        with open(fund_alloc_path, 'r') as f:
+            fund_allocations = json.load(f)
+
+    return holdings_df, prices_data, metadata, fund_allocations
 
 
-def calculate_daily_composition(holdings_df, prices_data, metadata):
+def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocations):
     """Calculate daily portfolio composition and sector allocation."""
     composition_data = []
     sector_data = []
@@ -70,17 +77,26 @@ def calculate_daily_composition(holdings_df, prices_data, metadata):
 
         # Calculate percentages for tickers
         total_percentage = 0
-        for ticker, value in ticker_values.items():
-            if daily_composition['total_value'] > 0:
+        if daily_composition['total_value'] > 0:
+            for ticker, value in ticker_values.items():
                 percentage = (value / daily_composition['total_value']) * 100
                 if percentage < 1e-6:
                     continue
                 daily_composition[ticker] = percentage
                 total_percentage += percentage
 
-        # Add "Others" category for any remaining percentage
-        if total_percentage < 100 and total_percentage > 0:
-            daily_composition['Others'] = 100 - total_percentage
+            # Normalize to exactly 100% to avoid floating point issues
+            if total_percentage > 0:
+                scale = 100.0 / total_percentage
+                # If we are close to 100, just scale. If we are far (e.g. 91%), the rest is "Others"
+                if total_percentage > 99.0:
+                    for ticker in ticker_values:
+                        if ticker in daily_composition:
+                            daily_composition[ticker] *= scale
+                else:
+                    daily_composition['Others'] = daily_composition.get('Others', 0) + (
+                        100 - total_percentage
+                    )
 
         composition_data.append(daily_composition)
 
@@ -88,28 +104,62 @@ def calculate_daily_composition(holdings_df, prices_data, metadata):
         sector_values = {}
         for ticker, value in ticker_values.items():
             ticker_meta = metadata.get(ticker, {})
+
+            # Check if we have granular breakdown for this ticker (ETF/Fund)
+            if ticker in fund_allocations:
+                allocation = fund_allocations[ticker]
+                # Normalize allocation weights for this specific fund
+                alloc_sum = sum(allocation.values())
+                scale = 1.0
+                if alloc_sum > 0:
+                    scale = 100.0 / alloc_sum
+
+                for sector_name, weight_pct in allocation.items():
+                    # weight_pct is percentage (e.g., 25.03)
+                    # Use normalized weight
+                    normalized_weight = weight_pct * scale
+                    sector_value = (value * normalized_weight) / 100
+                    sector_values[sector_name] = sector_values.get(sector_name, 0) + sector_value
+                continue
+
             sector = ticker_meta.get('sector') or ticker_meta.get('quoteType') or 'Unknown'
 
-            # Combine Mutual Funds and ETFs
+            # Combine Mutual Funds and ETFs if not broken down
             if sector in ['ETF', 'MUTUALFUND']:
                 sector = 'ETF'
 
             if sector == 'EQUITY':
                 sector = 'Other Stocks'
 
+            # Normalize sector names to match fund_sector_allocations format
+            sector_map = {
+                'Information Technology': 'Technology',
+                'Health Care': 'Healthcare',
+                'Communication': 'Communication Services',
+                'Communication Services': 'Communication Services',
+                'Basic Material': 'Basic Materials',
+                'Financial Services': 'Financials',
+                'Basic Materials': 'Basic Materials',
+            }
+            sector = sector_map.get(sector, sector)
+
             sector_values[sector] = sector_values.get(sector, 0) + value
 
         total_sector_percentage = 0
-        for sector, value in sector_values.items():
-            if daily_sectors['total_value'] > 0:
+        if daily_sectors['total_value'] > 0:
+            for sector, value in sector_values.items():
                 percentage = (value / daily_sectors['total_value']) * 100
                 if percentage < 1e-6:
                     continue
                 daily_sectors[sector] = percentage
                 total_sector_percentage += percentage
 
-        if total_sector_percentage < 100 and total_sector_percentage > 0:
-            daily_sectors['Others'] = 100 - total_sector_percentage
+            # Normalize to exactly 100%
+            if total_sector_percentage > 0:
+                scale = 100.0 / total_sector_percentage
+                for sector in sector_values:
+                    if sector in daily_sectors:
+                        daily_sectors[sector] *= scale
 
         sector_data.append(daily_sectors)
 
@@ -144,10 +194,12 @@ def save_json_data(df, output_path, label='composition'):
 def main():
     """Main function."""
     print("Loading data...")
-    holdings_df, prices_data, metadata = load_data()
+    holdings_df, prices_data, metadata, fund_allocations = load_data()
 
     print("Calculating daily composition and sectors...")
-    composition_df, sector_df = calculate_daily_composition(holdings_df, prices_data, metadata)
+    composition_df, sector_df = calculate_daily_composition(
+        holdings_df, prices_data, metadata, fund_allocations
+    )
 
     print("Saving composition data...")
     save_json_data(composition_df, Path('data/output/figures/composition.json'), 'composition')

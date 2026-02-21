@@ -225,6 +225,7 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         }))
         .filter((s) => s.percent > 0.1)
         .sort((a, b) => b.percent - a.percent)
+        .slice(0, 4)
         .map((s) => ({
             key: s.sector,
             name: s.sector,
@@ -285,6 +286,8 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
         series: seriesForCrosshair,
+        percentSeriesMap,
+        dates,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
 

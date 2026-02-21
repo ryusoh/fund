@@ -1,0 +1,466 @@
+{
+    "VT": {
+        "Technology": 25.03,
+        "Financials": 16.77,
+        "Industrials": 11.78,
+        "Consumer Cyclical": 10.17,
+        "Healthcare": 8.78,
+        "Communication Services": 8.16,
+        "Consumer Defensive": 4.92,
+        "Basic Materials": 4.39,
+        "Energy": 3.60,
+        "Utilities": 2.58,
+        "Real Estate": 2.23,
+        "Others": 1.59
+    },
+    "VOO": {
+        "Technology": 33.59,
+        "Financials": 12.75,
+        "Communication Services": 11.00,
+        "Consumer Cyclical": 10.60,
+        "Healthcare": 9.43,
+        "Industrials": 8.31,
+        "Consumer Defensive": 4.82,
+        "Energy": 3.17,
+        "Utilities": 2.25,
+        "Basic Materials": 1.96,
+        "Real Estate": 1.80,
+        "Others": 0.32
+    },
+    "SPY": {
+        "Technology": 33.62,
+        "Financials": 12.86,
+        "Communication Services": 11.01,
+        "Consumer Cyclical": 10.60,
+        "Healthcare": 9.44,
+        "Industrials": 8.32,
+        "Consumer Defensive": 4.82,
+        "Energy": 3.17,
+        "Utilities": 2.25,
+        "Basic Materials": 1.96,
+        "Real Estate": 1.81,
+        "Others": 0.14
+    },
+    "QQQ": {
+        "Technology": 51.65,
+        "Communication Services": 15.90,
+        "Consumer Cyclical": 12.83,
+        "Consumer Defensive": 7.78,
+        "Healthcare": 4.92,
+        "Industrials": 3.43,
+        "Utilities": 1.35,
+        "Basic Materials": 1.13,
+        "Energy": 0.54,
+        "Financials": 0.26,
+        "Others": 0.21
+    },
+    "FZROX": {
+        "Technology": 32.68,
+        "Financials": 13.62,
+        "Consumer Cyclical": 10.49,
+        "Healthcare": 9.99,
+        "Communication Services": 9.80,
+        "Industrials": 9.09,
+        "Consumer Defensive": 4.32,
+        "Energy": 2.91,
+        "Utilities": 2.21,
+        "Basic Materials": 2.15,
+        "Real Estate": 2.12,
+        "Others": 0.77
+    },
+    "GLD": {
+        "Others": 100.0
+    },
+    "VTI": {
+        "Technology": 31.31,
+        "Financials": 13.08,
+        "Consumer Cyclical": 10.43,
+        "Communication Services": 10.13,
+        "Healthcare": 10.01,
+        "Industrials": 9.87,
+        "Consumer Defensive": 4.54,
+        "Energy": 3.29,
+        "Utilities": 2.23,
+        "Basic Materials": 2.2,
+        "Real Estate": 2.18,
+        "Others": 0.71
+    },
+    "ARKG": {
+        "Healthcare": 98.9,
+        "Others": 1.1
+    },
+    "ARKW": {
+        "Technology": 44.1,
+        "Communication Services": 23.5,
+        "Consumer Cyclical": 15.2,
+        "Financials": 11.2,
+        "Others": 6.0
+    },
+    "ASHR": {
+        "Financials": 24.8,
+        "Consumer Defensive": 15.2,
+        "Technology": 13.5,
+        "Industrials": 11.2,
+        "Healthcare": 8.5,
+        "Basic Materials": 7.8,
+        "Others": 19.0
+    },
+    "BNDW": {
+        "Others": 100.0
+    },
+    "BOXX": {
+        "Others": 100.0
+    },
+    "BUG": {
+        "Technology": 92.5,
+        "Industrials": 7.5
+    },
+    "DIA": {
+        "Financials": 23.5,
+        "Healthcare": 19.2,
+        "Technology": 18.8,
+        "Industrials": 14.5,
+        "Consumer Cyclical": 13.2,
+        "Others": 10.8
+    },
+    "FBCGX": {
+        "Technology": 45.2,
+        "Communication Services": 18.5,
+        "Consumer Cyclical": 15.8,
+        "Healthcare": 8.2,
+        "Others": 12.3
+    },
+    "FNSFX": {
+        "Technology": 21.01,
+        "Financials": 17.44,
+        "Industrials": 13.55,
+        "Consumer Cyclical": 8.94,
+        "Communication Services": 8.5,
+        "Healthcare": 7.46,
+        "Basic Materials": 4.67,
+        "Energy": 3.98,
+        "Consumer Defensive": 3.86,
+        "Others": 10.59
+    },
+    "FSGGX": {
+        "Financials": 24.66,
+        "Technology": 14.37,
+        "Industrials": 14.19,
+        "Consumer Cyclical": 9.54,
+        "Healthcare": 7.65,
+        "Basic Materials": 6.6,
+        "Consumer Defensive": 5.7,
+        "Communication Services": 5.37,
+        "Energy": 4.25,
+        "Utilities": 3.05,
+        "Real Estate": 1.31,
+        "Others": 3.31
+    },
+    "FSKAX": {
+        "Technology": 33.36,
+        "Healthcare": 10.14,
+        "Communication Services": 10.09,
+        "Financials": 13.84,
+        "Industrials": 8.65,
+        "Consumer Cyclical": 13.84,
+        "Consumer Defensive": 4.47,
+        "Energy": 2.92,
+        "Utilities": 2.21,
+        "Real Estate": 2.31,
+        "Others": 0.17
+    },
+    "FXAIX": {
+        "Technology": 34.65,
+        "Financials": 13.29,
+        "Consumer Cyclical": 10.56,
+        "Communication Services": 10.56,
+        "Healthcare": 9.58,
+        "Industrials": 7.88,
+        "Consumer Defensive": 4.54,
+        "Energy": 2.81,
+        "Utilities": 2.25,
+        "Basic Materials": 1.83,
+        "Real Estate": 1.78,
+        "Others": 0.28
+    },
+    "ICLN": {
+        "Utilities": 41.83,
+        "Industrials": 37.59,
+        "Technology": 16.32,
+        "Basic Materials": 1.4,
+        "Energy": 0.85,
+        "Consumer Cyclical": 0.16,
+        "Others": 1.85
+    },
+    "IEMG": {
+        "Technology": 28.81,
+        "Financials": 20.19,
+        "Consumer Cyclical": 11.22,
+        "Industrials": 8.38,
+        "Communication Services": 8.08,
+        "Basic Materials": 7.54,
+        "Healthcare": 3.85,
+        "Energy": 3.53,
+        "Consumer Defensive": 3.39,
+        "Utilities": 2.23,
+        "Real Estate": 1.88,
+        "Others": 0.92
+    },
+    "IGV": {
+        "Technology": 96.42,
+        "Communication Services": 3.51,
+        "Others": 0.1
+    },
+    "PSQ": {
+        "Others": 100.15
+    },
+    "JEPI": {
+        "Technology": 14.77,
+        "Financials": 11.02,
+        "Communication Services": 5.7,
+        "Consumer Cyclical": 10.75,
+        "Healthcare": 12.4,
+        "Industrials": 11.98,
+        "Consumer Defensive": 6.68,
+        "Energy": 1.99,
+        "Utilities": 4.98,
+        "Basic Materials": 1.85,
+        "Real Estate": 2.75,
+        "Others": 15.15
+    },
+    "IHF": {
+        "Healthcare": 99.85,
+        "Others": 0.15
+    },
+    "IVV": {
+        "Technology": 33.59,
+        "Financials": 12.85,
+        "Communication Services": 11.0,
+        "Consumer Cyclical": 10.6,
+        "Healthcare": 9.43,
+        "Industrials": 8.31,
+        "Consumer Defensive": 4.82,
+        "Energy": 3.17,
+        "Utilities": 2.25,
+        "Basic Materials": 1.96,
+        "Real Estate": 1.81,
+        "Others": 0.22
+    },
+    "PTLC": {
+        "Technology": 33.62,
+        "Financials": 12.87,
+        "Communication Services": 10.99,
+        "Consumer Cyclical": 10.62,
+        "Healthcare": 9.44,
+        "Industrials": 8.34,
+        "Consumer Defensive": 4.81,
+        "Energy": 3.17,
+        "Utilities": 2.26,
+        "Basic Materials": 1.97,
+        "Real Estate": 1.81,
+        "Others": 0.09
+    },
+    "REK": {
+        "Others": 100.29
+    },
+    "RWM": {
+        "Healthcare": 18.8,
+        "Industrials": 18.1,
+        "Financials": 17.2,
+        "Technology": 13.4,
+        "Consumer Cyclical": 12.9,
+        "Real Estate": 6.3,
+        "Energy": 5.1,
+        "Basic Materials": 4.8,
+        "Consumer Defensive": 3.2,
+        "Utilities": 2.1,
+        "Communication Services": 1.5,
+        "Others": 0.0
+    },
+    "SCHD": {
+        "Energy": 20.74,
+        "Consumer Defensive": 16.37,
+        "Healthcare": 15.25,
+        "Industrials": 11.41,
+        "Consumer Cyclical": 10.14,
+        "Technology": 9.69,
+        "Financials": 9.13,
+        "Communication Services": 4.28,
+        "Basic Materials": 2.71,
+        "Utilities": 0.04,
+        "Others": 0.05
+    },
+    "SH": {
+        "Others": 100.07
+    },
+    "SJB": {
+        "Others": 100.18
+    },
+    "SLV": {
+        "Others": 100.0
+    },
+    "SOXL": {
+        "Technology": 69.3,
+        "Others": 32.76
+    },
+    "SOXX": {
+        "Technology": 99.89,
+        "Others": 0.11
+    },
+    "TLT": {
+        "Others": 100.0
+    },
+    "VDC": {
+        "Consumer Defensive": 95.97,
+        "Consumer Cyclical": 3.77,
+        "Others": 0.26
+    },
+    "VEMRX": {
+        "Others": 21.36,
+        "Financials": 16.08,
+        "Technology": 12.96,
+        "Consumer Cyclical": 8.78,
+        "Basic Materials": 8.76,
+        "Consumer Defensive": 6.37,
+        "Industrials": 6.37,
+        "Communication Services": 6.17,
+        "Energy": 4.08,
+        "Healthcare": 3.76,
+        "Utilities": 3.19,
+        "Real Estate": 2.12
+    },
+    "VFFSX": {
+        "Technology": 34.62,
+        "Financials": 13.11,
+        "Consumer Cyclical": 10.55,
+        "Communication Services": 10.55,
+        "Healthcare": 9.57,
+        "Industrials": 7.87,
+        "Consumer Defensive": 4.53,
+        "Energy": 2.81,
+        "Utilities": 2.25,
+        "Basic Materials": 1.83,
+        "Real Estate": 1.77,
+        "Others": 0.55
+    },
+    "VGSNX": {
+        "Real Estate": 99.32,
+        "Communication Services": 0.61,
+        "Others": 0.07
+    },
+    "VGT": {
+        "Technology": 99.58,
+        "Others": 0.42
+    },
+    "VHT": {
+        "Healthcare": 91.96,
+        "Others": 8.04
+    },
+    "VIEIX": {
+        "Industrials": 20.07,
+        "Technology": 17.21,
+        "Financials": 15.52,
+        "Healthcare": 13.43,
+        "Consumer Cyclical": 9.72,
+        "Real Estate": 4.79,
+        "Basic Materials": 4.42,
+        "Energy": 4.02,
+        "Communication Services": 3.64,
+        "Consumer Defensive": 2.62,
+        "Utilities": 1.97,
+        "Others": 2.6
+    },
+    "VNQ": {
+        "Real Estate": 99.42,
+        "Communication Services": 0.51,
+        "Others": 0.07
+    },
+    "VOX": {
+        "Communication Services": 99.33,
+        "Others": 0.68
+    },
+    "VTSAX": {
+        "Technology": 31.31,
+        "Financials": 13.08,
+        "Consumer Cyclical": 10.43,
+        "Communication Services": 10.13,
+        "Healthcare": 10.01,
+        "Industrials": 9.87,
+        "Consumer Defensive": 4.54,
+        "Energy": 3.29,
+        "Utilities": 2.23,
+        "Basic Materials": 2.2,
+        "Real Estate": 2.18,
+        "Others": 0.71
+    },
+    "VWO": {
+        "Others": 21.36,
+        "Financials": 16.08,
+        "Technology": 12.96,
+        "Consumer Cyclical": 8.78,
+        "Basic Materials": 8.76,
+        "Consumer Defensive": 6.37,
+        "Industrials": 6.37,
+        "Communication Services": 6.17,
+        "Energy": 4.08,
+        "Healthcare": 3.76,
+        "Utilities": 3.19,
+        "Real Estate": 2.12
+    },
+    "VSIAX": {
+        "Industrials": 20.07,
+        "Financials": 19.11,
+        "Consumer Cyclical": 10.54,
+        "Technology": 8.76,
+        "Real Estate": 8.64,
+        "Healthcare": 8.29,
+        "Basic Materials": 7.9,
+        "Utilities": 4.81,
+        "Consumer Defensive": 4.19,
+        "Energy": 3.67,
+        "Communication Services": 2.74,
+        "Others": 1.3
+    },
+    "VTMGX": {
+        "Financials": 23.6,
+        "Industrials": 18.4,
+        "Technology": 11.4,
+        "Healthcare": 9.0,
+        "Consumer Cyclical": 8.6,
+        "Basic Materials": 7.4,
+        "Consumer Defensive": 6.1,
+        "Energy": 4.3,
+        "Communication Services": 3.5,
+        "Utilities": 3.3,
+        "Real Estate": 2.5,
+        "Others": 1.9
+    },
+    "VTPSX": {
+        "Financials": 22.46,
+        "Industrials": 15.33,
+        "Technology": 14.64,
+        "Consumer Cyclical": 9.29,
+        "Basic Materials": 7.75,
+        "Healthcare": 7.42,
+        "Consumer Defensive": 5.4,
+        "Communication Services": 4.64,
+        "Energy": 4.15,
+        "Utilities": 3.08,
+        "Real Estate": 2.35,
+        "Others": 3.49
+    },
+    "VMVAX": {
+        "Financials": 19.2,
+        "Industrials": 13.0,
+        "Utilities": 11.4,
+        "Energy": 9.5,
+        "Technology": 9.1,
+        "Consumer Cyclical": 8.9,
+        "Healthcare": 6.8,
+        "Consumer Defensive": 4.9,
+        "Real Estate": 4.0,
+        "Basic Materials": 3.9,
+        "Communication Services": 0.6,
+        "Others": 0.0
+    }
+}

@@ -6,6 +6,7 @@ import {
     formatPercentInline,
     formatCrosshairDateLabel,
     clampTime,
+    createTimeInterpolator,
 } from './helpers.js';
 import { formatCurrencyInline, convertValueToCurrency } from '../utils.js';
 
@@ -225,6 +226,7 @@ export function drawCrosshairOverlay(ctx, layout) {
                 label: series.label || series.key,
                 color: series.color || '#ffffff',
                 value,
+                percent: isAbsoluteMode ? 0 : value, // Will be enhanced below
                 formatted: series.formatValue
                     ? series.formatValue(value, time)
                     : layout.valueType === 'percent' || layout.valueType === 'fx'
@@ -235,9 +237,9 @@ export function drawCrosshairOverlay(ctx, layout) {
 
         // Filter out holdings that had 0% allocation at this time (were not held)
         // Only keep holdings that had actual positive allocation
-        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.1); // Using higher threshold to avoid noise
+        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.01); // Lower threshold to capture small sectors
 
-        // Sort by value (percentage) in descending order
+        // Sort by value (percentage or absolute) in descending order
         nonZeroHoldings.sort((a, b) => b.value - a.value);
 
         const totalValueRaw =
@@ -255,18 +257,32 @@ export function drawCrosshairOverlay(ctx, layout) {
                       crosshairDate,
                       selectedCurrency
                   );
-            const percentValue =
-                totalValueBase > 0
-                    ? isAbsoluteMode
-                        ? (holding.value / totalValueBase) * 100
-                        : holding.value
-                    : 0;
+
+            let percentValue = 0;
+            if (!isAbsoluteMode) {
+                percentValue = holding.value;
+            } else if (layout.percentSeriesMap && layout.percentSeriesMap[holding.key]) {
+                const dates = layout.dates || [];
+                const interpolator = createTimeInterpolator(
+                    dates.map((d, i) => ({
+                        time: new Date(d).getTime(),
+                        value: layout.percentSeriesMap[holding.key][i],
+                    }))
+                );
+                percentValue = interpolator(time) ?? 0;
+            } else {
+                percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
+            }
+
             const currencyText = formatCurrencyInline(absoluteValue);
             const percentText = `${percentValue.toFixed(2)}%`;
             return {
                 ...holding,
+                percent: percentValue,
                 absoluteValue,
-                formatted: `${currencyText} (${percentText})`,
+                formatted: isAbsoluteMode ? `${currencyText} (${percentText})` : holding.formatted,
+                formattedPercent: percentText,
+                formattedValue: currencyText,
             };
         };
 
@@ -765,8 +781,13 @@ function handlePointerMove(event) {
         Math.min(y, layout.chartBounds.bottom)
     );
 
-    // Skip range functionality for composition charts
-    if (layout.key === 'composition' || layout.key === 'compositionAbs') {
+    // Skip range functionality for composition/sector charts
+    if (
+        layout.key === 'composition' ||
+        layout.key === 'compositionAbs' ||
+        layout.key === 'sectors' ||
+        layout.key === 'sectorsAbs'
+    ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;
         crosshairState.rangeEnd = null;
@@ -811,8 +832,13 @@ function handlePointerDown(event) {
         return;
     }
 
-    // Skip range functionality for composition charts
-    if (layout.key === 'composition' || layout.key === 'compositionAbs') {
+    // Skip range functionality for composition/sector charts
+    if (
+        layout.key === 'composition' ||
+        layout.key === 'compositionAbs' ||
+        layout.key === 'sectors' ||
+        layout.key === 'sectorsAbs'
+    ) {
         crosshairState.pointerId = event.pointerId;
         crosshairState.active = true;
         crosshairState.hoverTime = time;
@@ -862,8 +888,14 @@ function handlePointerUp(event) {
         );
     }
 
-    // Skip range functionality for composition charts
-    if (layout && (layout.key === 'composition' || layout.key === 'compositionAbs')) {
+    // Skip range functionality for composition/sector charts
+    if (
+        layout &&
+        (layout.key === 'composition' ||
+            layout.key === 'compositionAbs' ||
+            layout.key === 'sectors' ||
+            layout.key === 'sectorsAbs')
+    ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;
         crosshairState.rangeEnd = null;
