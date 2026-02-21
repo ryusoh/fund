@@ -452,6 +452,112 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
     }
     return `${header}\n${lines.join('\n')}`;
 }
+export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
+    const performanceSeries = transactionState.performanceSeries || {};
+    const seriesKeys = Object.keys(performanceSeries);
+    if (seriesKeys.length === 0) {
+        return null;
+    }
+
+    const visibility = transactionState.chartVisibility || {};
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const orderedKeys = [...seriesKeys].sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+
+    const snapshots = [];
+    const filterApplied = Boolean(filterFrom || filterTo);
+    const showAllSeries = includeHidden || filterApplied;
+
+    orderedKeys.forEach((key) => {
+        if (!showAllSeries && visibility[key] === false) {
+            return;
+        }
+
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        if (rawPoints.length < 91) {
+            return;
+        }
+
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+        const latestPoint = rawPoints[rawPoints.length - 1];
+        const latestDate = new Date(latestPoint.date);
+
+        // Respect date filters if applied
+        const targetDate = filterTo && filterTo < latestDate ? filterTo : latestDate;
+
+        // Find relevant data for volatility calculation (90 day window)
+        // We need 90 daily returns, so 91 price points.
+        let startIndex = -1;
+        let endIndex = -1;
+
+        for (let i = rawPoints.length - 1; i >= 0; i--) {
+            const d = new Date(rawPoints[i].date);
+            if (endIndex === -1 && d <= targetDate) {
+                endIndex = i;
+            }
+            if (endIndex !== -1 && i <= endIndex - 90) {
+                startIndex = i;
+                break;
+            }
+        }
+
+        if (startIndex !== -1 && endIndex !== -1) {
+            const windowPoints = rawPoints.slice(startIndex, endIndex + 1);
+            const dailyReturns = [];
+
+            for (let i = 1; i < windowPoints.length; i++) {
+                const startVal = convertBetweenCurrencies(
+                    Number(windowPoints[i - 1].value),
+                    sourceCurrency,
+                    windowPoints[i - 1].date,
+                    selectedCurrency
+                );
+                const endVal = convertBetweenCurrencies(
+                    Number(windowPoints[i].value),
+                    sourceCurrency,
+                    windowPoints[i].date,
+                    selectedCurrency
+                );
+
+                if (startVal !== 0) {
+                    dailyReturns.push(endVal / startVal - 1);
+                }
+            }
+
+            if (dailyReturns.length >= 2) {
+                const n = dailyReturns.length;
+                const mean = dailyReturns.reduce((a, b) => a + b, 0) / n;
+                const variance =
+                    dailyReturns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
+                const dailyStdDev = Math.sqrt(variance);
+                const annualizedVol = dailyStdDev * Math.sqrt(252) * 100;
+
+                snapshots.push(`${key} ${annualizedVol.toFixed(1)}%`);
+            }
+        }
+    });
+
+    if (snapshots.length === 0) {
+        return null;
+    }
+    const header = `90D Annualized Volatility (base ${selectedCurrency}):`;
+    const lines = [];
+    for (let i = 0; i < snapshots.length; i += 4) {
+        lines.push(snapshots.slice(i, i + 4).join('   '));
+    }
+    return `${header}\n${lines.join('\n')}`;
+}
 
 export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) {
     if (

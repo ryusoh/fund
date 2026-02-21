@@ -24,7 +24,7 @@ describe('Benchmark Legend Consistency Tests', () => {
         document.body.innerHTML = '';
     });
 
-    const benchmarkChartTypes = ['performance', 'drawdown', 'rolling'];
+    const benchmarkChartTypes = ['performance', 'drawdown', 'rolling', 'volatility'];
 
     benchmarkChartTypes.forEach((chartType) => {
         test(`legend clicks in ${chartType} chart toggle benchmarks as radio buttons`, async () => {

@@ -9,6 +9,7 @@ import {
     getConcentrationSnapshotText,
     getPESnapshotLine,
     getRollingSnapshotLine,
+    getVolatilitySnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -21,6 +22,9 @@ const TWRR_MESSAGE =
 const ROLLING_EXPLANATION =
     'Rolling returns show the investment performance for a fixed period (1 year) ending on each day. This provides a "rolling" window of performance that helps identify consistency over time and smooths out the dependency on a single arbitrary start date, offering a clearer view of historical return volatility.';
 
+const VOLATILITY_EXPLANATION =
+    "Rolling volatility shows the annualized standard deviation of daily returns over a fixed period (90 days) ending on each day. It provides a visual representation of the portfolio's risk profile, indicating how much returns deviate from their average. Comparing your portfolio's volatility against benchmarks like the S&P 500 helps you understand your relative risk exposure.";
+
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {
         // Show plot help
@@ -31,6 +35,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot drawdown        - Show underwater drawdown chart (percentage)\n' +
             '  plot drawdown abs    - Show drawdown chart with absolute values\n' +
             '  plot rolling         - Show 1-Year rolling returns chart\n' +
+            '  plot volatility      - Show 90-Day annualized rolling volatility chart\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
@@ -400,6 +405,39 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 const rollingSnapshot = getRollingSnapshotLine();
                 if (rollingSnapshot) {
                     result += `\n\n${rollingSnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'volatility': {
+            dateRange = applyDateArgs(rawArgs);
+            const volSection = document.getElementById('runningAmountSection');
+            const volTableContainer = document.querySelector('.table-responsive-container');
+
+            const isVolActive = transactionState.activeChart === 'volatility';
+            const isVolVisible = volSection && !volSection.classList.contains('is-hidden');
+
+            if (isVolActive && isVolVisible) {
+                setActiveChart(null);
+                if (volSection) {
+                    volSection.classList.add('is-hidden');
+                }
+                result = 'Hidden 90-Day annualized rolling volatility chart.';
+            } else {
+                setActiveChart('volatility');
+                if (volSection) {
+                    volSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (volTableContainer) {
+                    volTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(
+                    dateRange
+                )}.\n\n${VOLATILITY_EXPLANATION}`;
+                const volatilitySnapshot = getVolatilitySnapshotLine();
+                if (volatilitySnapshot) {
+                    result += `\n\n${volatilitySnapshot}`;
                 }
             }
             break;

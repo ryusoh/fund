@@ -618,7 +618,8 @@ export function updateLegend(series, chartManager) {
                 if (
                     transactionState.activeChart === 'performance' ||
                     transactionState.activeChart === 'drawdown' ||
-                    transactionState.activeChart === 'rolling'
+                    transactionState.activeChart === 'rolling' ||
+                    transactionState.activeChart === 'volatility'
                 ) {
                     // Special handling for performance chart
                     if (s.key === '^LZ') {
@@ -688,7 +689,8 @@ function getActiveChartKey() {
         active === 'fx' ||
         active === 'drawdown' ||
         active === 'drawdownAbs' ||
-        active === 'rolling'
+        active === 'rolling' ||
+        active === 'volatility'
     ) {
         return active;
     }

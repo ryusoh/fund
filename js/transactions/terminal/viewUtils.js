@@ -8,6 +8,7 @@ import {
     getConcentrationSnapshotText,
     getPESnapshotLine,
     getRollingSnapshotLine,
+    getVolatilitySnapshotLine,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -41,6 +42,7 @@ export function isActiveChartVisible() {
             'drawdown',
             'drawdownAbs',
             'rolling',
+            'volatility',
         ].includes(activeChart)
     ) {
         return false;
@@ -80,6 +82,9 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'rolling') {
         return getRollingSnapshotLine({ includeHidden: true });
+    }
+    if (activeChart === 'volatility') {
+        return getVolatilitySnapshotLine({ includeHidden: true });
     }
     return null;
 }
