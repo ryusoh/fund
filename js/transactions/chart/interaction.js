@@ -617,7 +617,8 @@ export function updateLegend(series, chartManager) {
             item.addEventListener('click', () => {
                 if (
                     transactionState.activeChart === 'performance' ||
-                    transactionState.activeChart === 'drawdown'
+                    transactionState.activeChart === 'drawdown' ||
+                    transactionState.activeChart === 'rolling'
                 ) {
                     // Special handling for performance chart
                     if (s.key === '^LZ') {
@@ -686,7 +687,8 @@ function getActiveChartKey() {
         active === 'contribution' ||
         active === 'fx' ||
         active === 'drawdown' ||
-        active === 'drawdownAbs'
+        active === 'drawdownAbs' ||
+        active === 'rolling'
     ) {
         return active;
     }

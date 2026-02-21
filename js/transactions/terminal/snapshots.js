@@ -837,3 +837,94 @@ export async function getPESnapshotLine() {
 
     return text;
 }
+export function getRollingSnapshotLine({ includeHidden = false } = {}) {
+    const performanceSeries = transactionState.performanceSeries || {};
+    const seriesKeys = Object.keys(performanceSeries);
+    if (seriesKeys.length === 0) {
+        return null;
+    }
+
+    const visibility = transactionState.chartVisibility || {};
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const orderedKeys = [...seriesKeys].sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+
+    const snapshots = [];
+    const filterApplied = Boolean(filterFrom || filterTo);
+    const showAllSeries = includeHidden || filterApplied;
+
+    orderedKeys.forEach((key) => {
+        if (!showAllSeries && visibility[key] === false) {
+            return;
+        }
+
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        if (rawPoints.length === 0) {
+            return;
+        }
+
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+        const latestPoint = rawPoints[rawPoints.length - 1];
+        const latestDate = new Date(latestPoint.date);
+
+        // Respect date filters if applied
+        const targetDate = filterTo && filterTo < latestDate ? filterTo : latestDate;
+
+        const oneYearAgo = new Date(targetDate);
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+        // Find the point closest to one year ago and the target point
+        let startPoint = null;
+        let endPoint = null;
+
+        for (let i = rawPoints.length - 1; i >= 0; i--) {
+            const d = new Date(rawPoints[i].date);
+            if (!endPoint && d <= targetDate) {
+                endPoint = rawPoints[i];
+            }
+            if (d <= oneYearAgo) {
+                startPoint = rawPoints[i];
+                break;
+            }
+        }
+
+        if (startPoint && endPoint && startPoint.value !== 0) {
+            const startVal = convertBetweenCurrencies(
+                Number(startPoint.value),
+                sourceCurrency,
+                startPoint.date,
+                selectedCurrency
+            );
+            const endVal = convertBetweenCurrencies(
+                Number(endPoint.value),
+                sourceCurrency,
+                endPoint.date,
+                selectedCurrency
+            );
+
+            const rollingReturn = (endVal / startVal - 1) * 100;
+            snapshots.push(`${key} ${formatPercentInline(rollingReturn)}`);
+        }
+    });
+
+    if (snapshots.length === 0) {
+        return null;
+    }
+    const header = `1Y Rolling Return (base ${selectedCurrency}):`;
+    const lines = [];
+    for (let i = 0; i < snapshots.length; i += 4) {
+        lines.push(snapshots.slice(i, i + 4).join('   '));
+    }
+    return `${header}\n${lines.join('\n')}`;
+}

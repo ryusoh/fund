@@ -52,6 +52,7 @@ export const PLOT_SUBCOMMANDS = [
     'pe',
     'fx',
     'drawdown',
+    'rolling',
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];

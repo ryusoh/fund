@@ -8,6 +8,7 @@ import {
     getContributionSummaryText,
     getConcentrationSnapshotText,
     getPESnapshotLine,
+    getRollingSnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -16,6 +17,9 @@ const TWRR_MESSAGE =
     'TWRR (Time-Weighted Rate of Return) describes how efficiently the portfolio has grown regardless of when money moved in or out. It focuses purely on investment performance, so the result is not distorted by the size or timing of deposits and withdrawals.\n' +
     '\n' +
     'We follow the industry-standard method: for each day we compute a return factor by dividing the ending market value by the prior-day value after applying that day’s net contribution (cash in is added, cash out is subtracted). Multiplying, or “chaining,” these daily factors produces the cumulative TWRR curve shown in the chart.';
+
+const ROLLING_EXPLANATION =
+    'Rolling returns show the investment performance for a fixed period (1 year) ending on each day. This provides a "rolling" window of performance that helps identify consistency over time and smooths out the dependency on a single arbitrary start date, offering a clearer view of historical return volatility.';
 
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {
@@ -26,6 +30,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot performance     - Show TWRR performance chart\n' +
             '  plot drawdown        - Show underwater drawdown chart (percentage)\n' +
             '  plot drawdown abs    - Show drawdown chart with absolute values\n' +
+            '  plot rolling         - Show 1-Year rolling returns chart\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
@@ -38,7 +43,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  composition   [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]';
+            '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  rolling       [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
     }
@@ -362,6 +368,38 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 const summary = await getPESnapshotLine();
                 if (summary) {
                     result += `\n${summary}`;
+                }
+            }
+            break;
+        }
+        case 'rolling': {
+            dateRange = applyDateArgs(rawArgs);
+            const rollingSection = document.getElementById('runningAmountSection');
+            const rollingTableContainer = document.querySelector('.table-responsive-container');
+
+            const isRollingActive = transactionState.activeChart === 'rolling';
+            const isRollingVisible =
+                rollingSection && !rollingSection.classList.contains('is-hidden');
+
+            if (isRollingActive && isRollingVisible) {
+                setActiveChart(null);
+                if (rollingSection) {
+                    rollingSection.classList.add('is-hidden');
+                }
+                result = 'Hidden 1-Year rolling returns chart.';
+            } else {
+                setActiveChart('rolling');
+                if (rollingSection) {
+                    rollingSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (rollingTableContainer) {
+                    rollingTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing 1-Year rolling returns chart for ${formatDateRange(dateRange)}.\n\n${ROLLING_EXPLANATION}`;
+                const rollingSnapshot = getRollingSnapshotLine();
+                if (rollingSnapshot) {
+                    result += `\n\n${rollingSnapshot}`;
                 }
             }
             break;

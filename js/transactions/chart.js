@@ -31,6 +31,7 @@ import {
 } from './chart/renderers/composition.js';
 import { drawConcentrationChart } from './chart/renderers/concentration.js';
 import { drawPEChart } from './chart/renderers/pe.js';
+import { drawRollingChart } from './chart/renderers/rolling.js';
 
 export { buildFxChartSeries };
 export { buildDrawdownSeries };
@@ -116,6 +117,8 @@ export function createChartManager(options = {}) {
             drawConcentrationChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'pe') {
             drawPEChart(ctx, chartManager, timestamp);
+        } else if (transactionState.activeChart === 'rolling') {
+            await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {
