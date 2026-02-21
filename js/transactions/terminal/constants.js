@@ -48,6 +48,7 @@ export const STATS_SUBCOMMANDS = [
     'cagr',
     'return',
     'ratio',
+    'geography',
 ];
 
 export const PLOT_SUBCOMMANDS = [

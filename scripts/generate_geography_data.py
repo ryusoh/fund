@@ -697,6 +697,63 @@ def main():
         latest_pct = chart_format['series'][country][-1] if chart_format['series'][country] else 0
         print(f"  {country}: {latest_pct:.1f}%")
 
+    # Generate continent/region summary report
+    print("\n" + "=" * 70)
+    print("Generating continent/region summary report...")
+
+    # Get latest country allocation
+    latest_country_data = {}
+    for country in countries:
+        if country not in ('date', 'total_value'):
+            latest_pct = (
+                chart_format['series'][country][-1] if chart_format['series'][country] else 0
+            )
+            if latest_pct >= 0.01:  # Only include if >= 0.01%
+                latest_country_data[country] = latest_pct
+
+    # Import continent/region aggregation
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from analysis.continent_regions import (
+        aggregate_by_continent,
+        aggregate_by_subregion,
+        format_summary_report,
+    )
+
+    # Print formatted summary
+    summary = format_summary_report(latest_country_data)
+    print(summary)
+
+    # Save summary to file
+    summary_path = Path('data/output/figures/geography_summary.txt')
+    with open(summary_path, 'w') as f:
+        f.write(summary)
+    print(f"\nSummary saved to {summary_path}")
+
+    # Also save continent and sub-region aggregated data
+    continent_data = aggregate_by_continent(latest_country_data)
+    subregion_data = aggregate_by_subregion(latest_country_data)
+
+    aggregated_output = {
+        'dates': chart_format['dates'],
+        'latest_date': chart_format['dates'][-1] if chart_format['dates'] else None,
+        'by_continent': {
+            k: round(v, 4) for k, v in sorted(continent_data.items(), key=lambda x: -x[1])
+        },
+        'by_subregion': {
+            k: round(v, 4) for k, v in sorted(subregion_data.items(), key=lambda x: -x[1])
+        },
+        'by_country': {
+            k: round(v, 4) for k, v in sorted(latest_country_data.items(), key=lambda x: -x[1])
+        },
+    }
+
+    aggregated_path = Path('data/output/figures/geography_aggregated.json')
+    with open(aggregated_path, 'w') as f:
+        json.dump(aggregated_output, f, indent=2)
+    print(f"Aggregated data saved to {aggregated_path}")
+
 
 if __name__ == '__main__':
     main()

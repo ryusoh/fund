@@ -12,6 +12,7 @@ import {
     getFinancialStatsText,
     getTechnicalStatsText,
 } from '../../terminalStats.js';
+import { getGeographySummaryText } from './geographySummary.js';
 import { STATS_SUBCOMMANDS } from '../constants.js';
 
 export async function handleStatsCommand(args, { appendMessage }) {
@@ -29,6 +30,7 @@ export async function handleStatsCommand(args, { appendMessage }) {
             '  stats cagr          - Show CAGR based on TWRR series\n' +
             '  stats return        - Show annual returns for portfolio and benchmarks\n' +
             '  stats ratio         - Show Sharpe and Sortino ratios\n' +
+            '  stats geography     - Show geographic allocation by continent/region\n' +
             '\nUsage: stats <subcommand> or s <subcommand>';
         appendMessage(result);
         return;
@@ -70,6 +72,9 @@ export async function handleStatsCommand(args, { appendMessage }) {
             break;
         case 'concentration':
             result = await getConcentrationText();
+            break;
+        case 'geography':
+            result = await getGeographySummaryText();
             break;
         default:
             result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;

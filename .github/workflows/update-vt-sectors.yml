@@ -45,4 +45,4 @@ jobs:
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): VT のセクター配分・国別構成を自動更新 [skip ci]'
-                  file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json'
+                  file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json'
