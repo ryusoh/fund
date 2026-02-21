@@ -6,6 +6,7 @@ jest.setTimeout(15000);
 jest.mock('@js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawEndValue: jest.fn(),
+    generateConcreteTicks: jest.fn().mockReturnValue([0, 250, 500, 750, 1000]),
 }));
 
 jest.mock('@js/transactions/chart/interaction.js', () => ({

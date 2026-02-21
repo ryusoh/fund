@@ -10,7 +10,7 @@ import {
     drawSeriesGlow,
 } from '../animation.js';
 import { updateLegend, drawCrosshairOverlay } from '../interaction.js';
-import { drawAxes, drawEndValue } from '../core.js';
+import { drawAxes, drawEndValue, generateConcreteTicks } from '../core.js';
 import { getChartColors, createTimeInterpolator, parseLocalDate } from '../helpers.js';
 
 // Data cache
@@ -140,16 +140,16 @@ export async function drawYieldChart(ctx, chartManager) {
     ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
     ctx.textAlign = 'left';
 
-    // Select a few ticks for the income axis
-    const incomeTicks = [0, maxIncome * 0.25, maxIncome * 0.5, maxIncome * 0.75, maxIncome];
-    incomeTicks.forEach((tickVal) => {
-        const y = y2Scale(tickVal);
-        ctx.fillText(`${Math.round(tickVal).toLocaleString()}`, margin.left + chartWidth + 10, y);
-    });
+    // Select a few ticks for the income axis using standard tick generator
+    const incomeTicks = generateConcreteTicks(minIncome, maxIncome, false, 'USD');
 
-    // Secondary Y-Axis Title (above the axis)
-    ctx.textAlign = 'right';
-    ctx.fillText('TTM Income ($)', margin.left + chartWidth + margin.right, margin.top - 15);
+    // We only need the ticks that fit within the axis
+    const validIncomeTicks = incomeTicks.filter((t) => t >= minIncome && t <= maxIncome);
+
+    validIncomeTicks.forEach((tickVal) => {
+        const y = y2Scale(tickVal);
+        ctx.fillText(`$${Math.round(tickVal).toLocaleString()}`, margin.left + chartWidth + 10, y);
+    });
     ctx.restore();
 
     // 2. Draw TTM Income Bars (Background)
