@@ -168,7 +168,8 @@ export async function drawYieldChart(ctx, chartManager) {
     // 2. Draw TTM Income Bars (Background)
     ctx.save();
     const barWidth = Math.max(2, (chartWidth / filteredData.length) * 0.8);
-    ctx.fillStyle = (colors.contribution || '#b3b3b3') + '44'; // Semi-transparent
+    // Use portfolio color for Income bars
+    ctx.fillStyle = (colors.portfolio || '#7a7a7a') + '44'; // Semi-transparent
 
     ctx.beginPath();
     filteredData.forEach((d, i) => {
@@ -185,7 +186,8 @@ export async function drawYieldChart(ctx, chartManager) {
 
     // 3. Draw Forward Yield Line
     ctx.beginPath();
-    ctx.strokeStyle = colors.portfolio || '#7a7a7a';
+    // Use contribution color for Yield line
+    ctx.strokeStyle = colors.contribution || '#b3b3b3';
     ctx.lineWidth = CHART_LINE_WIDTHS.main;
     filteredData.forEach((d, i) => {
         const t = parseLocalDate(d.date).getTime();
@@ -214,7 +216,7 @@ export async function drawYieldChart(ctx, chartManager) {
         key: 'Yield',
         name: 'Yield',
         label: 'Forward Yield',
-        color: colors.portfolio || '#7a7a7a',
+        color: colors.contribution || '#b3b3b3',
         points: yieldPoints,
         getValueAtTime: createTimeInterpolator(yieldPoints),
         formatValue: (v) => `${v.toFixed(2)}%`,
@@ -224,7 +226,7 @@ export async function drawYieldChart(ctx, chartManager) {
         key: 'Income',
         name: 'Income',
         label: 'TTM Income',
-        color: colors.contribution || '#b3b3b3',
+        color: colors.portfolio || '#7a7a7a',
         points: incomePoints,
         getValueAtTime: createTimeInterpolator(incomePoints),
         formatValue: (v) => formatCurrencyInline(v, { currency: selectedCurrency }),
