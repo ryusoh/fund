@@ -11,6 +11,20 @@ export async function loadSectorsSnapshotData() {
         return null;
     }
 }
+
+export async function loadGeographySnapshotData() {
+    try {
+        const response = await fetch('../data/output/figures/geography.json');
+        if (!response.ok) {
+            logger.warn('figures/geography.json not found');
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        logger.warn('Failed to load geography snapshot:', error);
+        return null;
+    }
+}
 import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';

@@ -201,7 +201,9 @@ export function drawCrosshairOverlay(ctx, layout) {
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs';
+        layout.key === 'sectorsAbs' ||
+        layout.key === 'geography' ||
+        layout.key === 'geographyAbs';
 
     // Special handling for composition/sector charts to show breakdown at the crosshair time
     if (isCompositionLayout) {

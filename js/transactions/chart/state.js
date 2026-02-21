@@ -8,6 +8,8 @@ export const chartLayouts = {
     fx: null,
     sectors: null,
     sectorsAbs: null,
+    geography: null,
+    geographyAbs: null,
     drawdown: null,
     drawdownAbs: null,
     rolling: null,

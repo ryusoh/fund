@@ -11,6 +11,7 @@ import {
     getRollingSnapshotLine,
     getVolatilitySnapshotLine,
     getSectorsSnapshotLine,
+    getGeographySnapshotLine,
     getBetaSnapshotLine,
     getYieldSnapshotLine,
 } from '../snapshots.js';
@@ -288,6 +289,53 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 });
                 if (sectorsSnapshot) {
                     result += `\n${sectorsSnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'geography':
+        case 'geography-abs':
+        case 'geographyabs':
+        case 'geographyabsolute': {
+            let useAbsolute = subcommand !== 'geography';
+            let rangeTokens = [...rawArgs];
+            if (!useAbsolute && rangeTokens.length > 0) {
+                const maybeMode = rangeTokens[0].toLowerCase();
+                if (maybeMode === 'abs' || maybeMode === 'absolute') {
+                    useAbsolute = true;
+                    rangeTokens = rangeTokens.slice(1);
+                }
+            }
+            dateRange = applyDateArgs(rangeTokens);
+            const geographySection = document.getElementById('runningAmountSection');
+            const geographyTableContainer = document.querySelector('.table-responsive-container');
+
+            const targetChart = useAbsolute ? 'geographyAbs' : 'geography';
+            const isGeographyActive = transactionState.activeChart === targetChart;
+            const isGeographyVisible =
+                geographySection && !geographySection.classList.contains('is-hidden');
+
+            if (isGeographyActive && isGeographyVisible) {
+                setActiveChart(null);
+                if (geographySection) {
+                    geographySection.classList.add('is-hidden');
+                }
+                result = 'Hidden geography chart.';
+            } else {
+                setActiveChart(targetChart);
+                if (geographySection) {
+                    geographySection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (geographyTableContainer) {
+                    geographyTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing geography allocation${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
+                const geographySnapshot = await getGeographySnapshotLine({
+                    labelPrefix: useAbsolute ? 'Geography Abs' : 'Geography',
+                });
+                if (geographySnapshot) {
+                    result += `\n${geographySnapshot}`;
                 }
             }
             break;

@@ -34,6 +34,7 @@ import { drawPEChart } from './chart/renderers/pe.js';
 import { drawRollingChart } from './chart/renderers/rolling.js';
 import { drawVolatilityChart } from './chart/renderers/volatility.js';
 import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
+import { drawGeographyChart, drawGeographyAbsoluteChart } from './chart/renderers/geography.js';
 import { drawBetaChart } from './chart/renderers/beta.js';
 import { drawYieldChart } from './chart/renderers/yield.js';
 
@@ -125,6 +126,10 @@ export function createChartManager(options = {}) {
             drawSectorsChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'sectorsAbs') {
             drawSectorsAbsoluteChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'geography') {
+            drawGeographyChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'geographyAbs') {
+            drawGeographyAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'rolling') {
             await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'volatility') {
