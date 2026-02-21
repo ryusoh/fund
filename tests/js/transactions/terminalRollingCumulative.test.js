@@ -102,3 +102,78 @@ describe('rolling/cumulative command handlers exist', () => {
         expect(commandsCode).toContain("case 'cumulative':");
     });
 });
+
+describe('composition/sectors snapshot hints', () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test('getCompositionSnapshotLine hint includes sectors switch reference', async () => {
+        const fs = await import('fs');
+        const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
+        expect(snapshotsCode).toContain("'sectors' to switch to sectors chart");
+        expect(snapshotsCode).toContain("'sectors' to switch to sectors abs chart");
+    });
+
+    test('getSectorsSnapshotLine hint includes composition switch reference', async () => {
+        const fs = await import('fs');
+        const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
+        expect(snapshotsCode).toContain("'composition' to switch to composition chart");
+        expect(snapshotsCode).toContain("'composition' to switch to composition abs chart");
+    });
+});
+
+describe('composition/sectors autocomplete', () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test('composition is included in COMMAND_ALIASES for autocomplete', async () => {
+        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        expect(COMMAND_ALIASES).toContain('composition');
+    });
+
+    test('sectors is included in COMMAND_ALIASES for autocomplete', async () => {
+        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        expect(COMMAND_ALIASES).toContain('sectors');
+    });
+
+    test('composition is in PLOT_SUBCOMMANDS', async () => {
+        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        expect(PLOT_SUBCOMMANDS).toContain('composition');
+    });
+
+    test('sectors is in PLOT_SUBCOMMANDS', async () => {
+        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        expect(PLOT_SUBCOMMANDS).toContain('sectors');
+    });
+});
+
+describe('composition/sectors command handlers exist', () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test('handleCompositionCommand is exported', async () => {
+        const { handleCompositionCommand } =
+            await import('@js/transactions/terminal/handlers/misc.js');
+        expect(typeof handleCompositionCommand).toBe('function');
+    });
+
+    test('handleSectorsCommand is exported', async () => {
+        const { handleSectorsCommand } = await import('@js/transactions/terminal/handlers/misc.js');
+        expect(typeof handleSectorsCommand).toBe('function');
+    });
+
+    test('commands.js has case for composition', async () => {
+        const fs = await import('fs');
+        const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
+        expect(commandsCode).toContain("case 'composition':");
+    });
+
+    test('commands.js has case for sectors', async () => {
+        const fs = await import('fs');
+        const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
+        expect(commandsCode).toContain("case 'sectors':");
+    });
+});

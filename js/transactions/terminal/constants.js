@@ -31,6 +31,8 @@ export const COMMAND_ALIASES = [
     'yield',
     'rolling',
     'cumulative',
+    'composition',
+    'sectors',
 ];
 
 export const STATS_SUBCOMMANDS = [

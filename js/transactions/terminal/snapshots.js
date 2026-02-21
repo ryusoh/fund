@@ -768,9 +768,9 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
 
     let hint = '';
     if (labelPrefix === 'Composition') {
-        hint = "\n(Hint: use 'abs' for absolute values)";
+        hint = "\n(Hint: use 'abs' for absolute values, 'sectors' to switch to sectors chart)";
     } else if (labelPrefix === 'Composition Abs') {
-        hint = "\n(Hint: use 'per' for percentages)";
+        hint = "\n(Hint: use 'per' for percentages, 'sectors' to switch to sectors abs chart)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
@@ -856,9 +856,11 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
 
     let hint = '';
     if (labelPrefix === 'Sectors') {
-        hint = "\n(Hint: use 'abs' for absolute values)";
+        hint =
+            "\n(Hint: use 'abs' for absolute values, 'composition' to switch to composition chart)";
     } else if (labelPrefix === 'Sectors Abs') {
-        hint = "\n(Hint: use 'per' for percentages)";
+        hint =
+            "\n(Hint: use 'per' for percentages, 'composition' to switch to composition abs chart)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;

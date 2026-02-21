@@ -282,9 +282,28 @@ export async function handleAbsCommand(args, { appendMessage, chartManager }) {
                 result += `\n${summary}`;
             }
         }
+    } else if (activeChart === 'geography' || activeChart === 'geographyAbs') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be active. Use `plot geography` first.';
+        } else if (activeChart === 'geographyAbs') {
+            result = 'Geography chart is already showing absolute values.';
+        } else {
+            setActiveChart('geographyAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched geography chart to absolute view.';
+            const { getGeographySnapshotLine } = await import('../snapshots.js');
+            const summary = await getGeographySnapshotLine({
+                labelPrefix: 'Geography Abs',
+            });
+            if (summary) {
+                result += `\n${summary}`;
+            }
+        }
     } else {
         result =
-            'Composition, Sectors, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, or `plot drawdown` first.';
+            'Composition, Sectors, Geography, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, or `plot drawdown` first.';
     }
     appendMessage(result);
 }
@@ -351,9 +370,28 @@ export async function handlePercentageCommand(args, { appendMessage, chartManage
                 result += `\n${summary}`;
             }
         }
+    } else if (activeChart === 'geography' || activeChart === 'geographyAbs') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be active. Use `plot geography` first.';
+        } else if (activeChart === 'geography') {
+            result = 'Geography chart is already showing percentages.';
+        } else {
+            setActiveChart('geography');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched geography chart to percentage view.';
+            const { getGeographySnapshotLine } = await import('../snapshots.js');
+            const summary = await getGeographySnapshotLine({
+                labelPrefix: 'Geography',
+            });
+            if (summary) {
+                result += `\n${summary}`;
+            }
+        }
     } else {
         result =
-            'Composition, Sectors, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, or `plot drawdown` first.';
+            'Composition, Sectors, Geography, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, or `plot drawdown` first.';
     }
     appendMessage(result);
 }
@@ -440,6 +478,128 @@ export async function handleCumulativeCommand(args, { appendMessage, chartManage
     if (result.includes('Showing') || result.includes('Switched')) {
         const { getPerformanceSnapshotLine } = await import('../snapshots.js');
         const summary = getPerformanceSnapshotLine({ includeHidden: true });
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+
+    appendMessage(result);
+}
+
+export async function handleCompositionCommand(args, { appendMessage, chartManager }) {
+    let result = '';
+    const chartSection = document.getElementById('runningAmountSection');
+    const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
+    const activeChart = transactionState.activeChart;
+
+    if (activeChart === 'composition' || activeChart === 'compositionAbs') {
+        if (!isChartVisible) {
+            setActiveChart(activeChart);
+            if (chartSection) {
+                chartSection.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Showing composition chart.';
+        } else {
+            result = 'Composition chart is already active.';
+        }
+    } else if (activeChart === 'sectors') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be visible. Use `plot sectors` first.';
+        } else {
+            setActiveChart('composition');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to composition chart.';
+        }
+    } else if (activeChart === 'sectorsAbs') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be visible. Use `plot sectors abs` first.';
+        } else {
+            setActiveChart('compositionAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to composition chart (absolute view).';
+        }
+    } else {
+        result =
+            'Composition or Sectors chart must be active. Use `plot composition` or `plot sectors` first.';
+    }
+
+    if (result.includes('Showing') || result.includes('Switched')) {
+        const { getCompositionSnapshotLine } = await import('../snapshots.js');
+        const labelPrefix =
+            activeChart === 'sectorsAbs' || activeChart === 'compositionAbs'
+                ? 'Composition Abs'
+                : 'Composition';
+        const summary = await getCompositionSnapshotLine({
+            labelPrefix,
+        });
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+
+    appendMessage(result);
+}
+
+export async function handleSectorsCommand(args, { appendMessage, chartManager }) {
+    let result = '';
+    const chartSection = document.getElementById('runningAmountSection');
+    const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
+    const activeChart = transactionState.activeChart;
+
+    if (activeChart === 'sectors' || activeChart === 'sectorsAbs') {
+        if (!isChartVisible) {
+            setActiveChart(activeChart);
+            if (chartSection) {
+                chartSection.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Showing sector allocation chart.';
+        } else {
+            result = 'Sector allocation chart is already active.';
+        }
+    } else if (activeChart === 'composition') {
+        if (!isChartVisible) {
+            result = 'Composition chart must be visible. Use `plot composition` first.';
+        } else {
+            setActiveChart('sectors');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to sector allocation chart.';
+        }
+    } else if (activeChart === 'compositionAbs') {
+        if (!isChartVisible) {
+            result = 'Composition chart must be visible. Use `plot composition abs` first.';
+        } else {
+            setActiveChart('sectorsAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to sector allocation chart (absolute view).';
+        }
+    } else {
+        result =
+            'Composition or Sectors chart must be active. Use `plot composition` or `plot sectors` first.';
+    }
+
+    if (result.includes('Showing') || result.includes('Switched')) {
+        const { getSectorsSnapshotLine } = await import('../snapshots.js');
+        const labelPrefix =
+            activeChart === 'compositionAbs' || activeChart === 'sectorsAbs'
+                ? 'Sectors Abs'
+                : 'Sectors';
+        const summary = await getSectorsSnapshotLine({
+            labelPrefix,
+        });
         if (summary) {
             result += `\n${summary}`;
         }
