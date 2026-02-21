@@ -68,7 +68,10 @@ precommit: hooks fmt-check
 precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(PY) -m ruff check --fix scripts tests
 	$(PY) -m pytest
-	$(MAKE) precommit
+	@$(MAKE) precommit; \
+	STATUS=$$?; \
+	git checkout data/transactions.csv 2>/dev/null || true; \
+	exit $$STATUS
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all

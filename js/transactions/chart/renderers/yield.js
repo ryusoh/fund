@@ -24,12 +24,10 @@ export async function loadYieldData() {
     try {
         const response = await fetch('../data/yield_data.json');
         if (!response.ok) {
-            console.warn('yield_data.json not found');
             return null;
         }
         return await response.json();
-    } catch (error) {
-        console.warn('Failed to load yield data:', error);
+    } catch {
         return null;
     }
 }
@@ -124,7 +122,8 @@ export async function drawYieldChart(ctx, chartManager) {
         false // forcePercent
     );
 
-    const colors = getChartColors();
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const colors = getChartColors(rootStyles);
     const isMobile = window.innerWidth <= 768;
     const monoFont =
         'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
@@ -150,7 +149,7 @@ export async function drawYieldChart(ctx, chartManager) {
     // 2. Draw TTM Income Bars (Background)
     ctx.save();
     const barWidth = Math.max(2, (chartWidth / filteredData.length) * 0.8);
-    ctx.fillStyle = colors.secondary + '44'; // Semi-transparent
+    ctx.fillStyle = (colors.contribution || '#b3b3b3') + '44'; // Semi-transparent
     filteredData.forEach((d) => {
         const t = parseLocalDate(d.date).getTime();
         const x = xScale(t) - barWidth / 2;
@@ -164,7 +163,7 @@ export async function drawYieldChart(ctx, chartManager) {
 
     // 3. Draw Forward Yield Line
     ctx.beginPath();
-    ctx.strokeStyle = colors.primary;
+    ctx.strokeStyle = colors.portfolio || '#7a7a7a';
     ctx.lineWidth = CHART_LINE_WIDTHS.main;
     filteredData.forEach((d, i) => {
         const t = parseLocalDate(d.date).getTime();
@@ -183,7 +182,7 @@ export async function drawYieldChart(ctx, chartManager) {
         key: 'Yield',
         name: 'Yield',
         label: 'Forward Yield',
-        color: colors.primary,
+        color: colors.portfolio || '#7a7a7a',
         points: filteredData.map((d) => ({
             time: parseLocalDate(d.date).getTime(),
             value: d.forward_yield,
@@ -201,7 +200,7 @@ export async function drawYieldChart(ctx, chartManager) {
         key: 'Income',
         name: 'Income',
         label: 'TTM Income',
-        color: colors.secondary,
+        color: colors.contribution || '#b3b3b3',
         points: filteredData.map((d) => ({
             time: parseLocalDate(d.date).getTime(),
             value: d.ttm_income,
@@ -213,7 +212,7 @@ export async function drawYieldChart(ctx, chartManager) {
             }))
         ),
         formatValue: (v) =>
-            `$${v.toLocaleString(undefined, {
+            `${v.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             })}`,

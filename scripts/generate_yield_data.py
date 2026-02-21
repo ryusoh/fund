@@ -41,7 +41,8 @@ def load_dividend_cache() -> Dict[str, Any]:
     if DIVIDEND_CACHE_PATH.exists():
         try:
             with DIVIDEND_CACHE_PATH.open("r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                return dict(data)
         except Exception as e:
             logging.warning(f"Error loading dividend cache: {e}")
     return {}

@@ -100,9 +100,12 @@ class TestFundScripts(unittest.TestCase):
         self.assertEqual(written_data["rates"]["KRW"], 1300.0)
 
     # Test for manage_holdings.py
+    @patch("scripts.portfolio.manage_holdings.record_transaction")
     @patch("scripts.portfolio.manage_holdings.save_holdings")
     @patch("scripts.portfolio.manage_holdings.load_holdings")
-    def test_manage_holdings_add(self, mock_load_holdings, mock_save_holdings) -> None:
+    def test_manage_holdings_add(
+        self, mock_load_holdings, mock_save_holdings, mock_record_transaction
+    ) -> None:
         # Mock the loaded holdings to be empty
         mock_load_holdings.return_value = {}
 
@@ -116,6 +119,7 @@ class TestFundScripts(unittest.TestCase):
         # The first argument to save_holdings is the filepath, the second is the data.
         called_args, _ = mock_save_holdings.call_args
         self.assertEqual(called_args[1], expected_holdings)
+        mock_record_transaction.assert_called_once()
 
     # Test for update_daily_pnl.py
     @patch("scripts.pnl.update_daily_pnl.datetime")
