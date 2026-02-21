@@ -34,6 +34,8 @@ jobs:
                   python scripts/pnl/update_daily_pnl.py
 
             - name: Run TWRR pipeline
+              env:
+                  SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
               run: |
                   make twrr-refresh
 

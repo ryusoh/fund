@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -866,14 +868,22 @@ def scrape_msci_forward_pe() -> Optional[float]:
 def scrape_wsj_forward_pe() -> Optional[float]:
     """Scrape S&P 500 Forward P/E Estimate from WSJ Market Data."""
     try:
-        url = "https://www.wsj.com/market-data/stocks/peyields"
+        target_url = "https://www.wsj.com/market-data/stocks/peyields"
+        scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+        
+        if scraper_api_key:
+            payload = {'api_key': scraper_api_key, 'url': target_url}
+            url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
+        else:
+            url = target_url
+
         req = urllib.request.Request(
             url,
             headers={
                 "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             },
         )
-        content = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+        content = urllib.request.urlopen(req, timeout=15).read().decode("utf-8")
 
         block_starts = [m.start() for m in re.finditer(r"P 500 Index", content)]
         for start in block_starts:
