@@ -28,6 +28,7 @@ export const COMMAND_ALIASES = [
     'z',
     'summary',
     'beta',
+    'yield',
 ];
 
 export const STATS_SUBCOMMANDS = [
@@ -56,6 +57,7 @@ export const PLOT_SUBCOMMANDS = [
     'rolling',
     'volatility',
     'beta',
+    'yield',
     'sectors',
     'sectors-abs',
 ];

@@ -35,6 +35,7 @@ import { drawRollingChart } from './chart/renderers/rolling.js';
 import { drawVolatilityChart } from './chart/renderers/volatility.js';
 import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
 import { drawBetaChart } from './chart/renderers/beta.js';
+import { drawYieldChart } from './chart/renderers/yield.js';
 
 export { buildFxChartSeries };
 export { buildDrawdownSeries };
@@ -130,6 +131,8 @@ export function createChartManager(options = {}) {
             await drawVolatilityChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'beta') {
             await drawBetaChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'yield') {
+            await drawYieldChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {

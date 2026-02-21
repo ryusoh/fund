@@ -714,7 +714,8 @@ function getActiveChartKey() {
         active === 'drawdownAbs' ||
         active === 'rolling' ||
         active === 'volatility' ||
-        active === 'beta'
+        active === 'beta' ||
+        active === 'yield'
     ) {
         return active;
     }
@@ -783,13 +784,14 @@ function handlePointerMove(event) {
         Math.min(y, layout.chartBounds.bottom)
     );
 
-    // Skip range functionality for composition/sector/beta charts
+    // Skip range functionality for composition/sector/beta/yield charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
         layout.key === 'sectorsAbs' ||
-        layout.key === 'beta'
+        layout.key === 'beta' ||
+        layout.key === 'yield'
     ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;
@@ -835,13 +837,14 @@ function handlePointerDown(event) {
         return;
     }
 
-    // Skip range functionality for composition/sector/beta charts
+    // Skip range functionality for composition/sector/beta/yield charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
         layout.key === 'sectorsAbs' ||
-        layout.key === 'beta'
+        layout.key === 'beta' ||
+        layout.key === 'yield'
     ) {
         crosshairState.pointerId = event.pointerId;
         crosshairState.active = true;
@@ -892,14 +895,15 @@ function handlePointerUp(event) {
         );
     }
 
-    // Skip range functionality for composition/sector/beta charts
+    // Skip range functionality for composition/sector/beta/yield charts
     if (
         layout &&
         (layout.key === 'composition' ||
             layout.key === 'compositionAbs' ||
             layout.key === 'sectors' ||
             layout.key === 'sectorsAbs' ||
-            layout.key === 'beta')
+            layout.key === 'beta' ||
+            layout.key === 'yield')
     ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;

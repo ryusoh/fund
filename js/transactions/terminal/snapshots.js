@@ -26,6 +26,7 @@ import { getHoldingAssetClass } from '@js/config.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
+import { loadYieldData } from '../chart/renderers/yield.js';
 import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
 
 function formatWithSelectedCurrency(value) {
@@ -477,6 +478,38 @@ export async function getBetaSnapshotLine() {
 
     const dateLabel = formatCrosshairDateLabel(time);
     return `6M Rolling Beta (vs S&P 500) as of ${dateLabel}:\n${snapshots.join('   ')}`;
+}
+
+export async function getYieldSnapshotLine() {
+    const data = await loadYieldData();
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        return null;
+    }
+
+    const { chartDateRange } = transactionState;
+    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
+
+    const filtered = data.filter((d) => {
+        const date = parseLocalDate(d.date);
+        return (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo);
+    });
+
+    if (filtered.length === 0) {
+        return 'No dividend data in range';
+    }
+
+    const last = filtered[filtered.length - 1];
+    const yields = filtered.map((d) => d.forward_yield);
+    const minYield = Math.min(...yields);
+    const maxYield = Math.max(...yields);
+
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    return (
+        `Forward Yield: ${last.forward_yield.toFixed(2)}% (Range: ${minYield.toFixed(2)}% - ${maxYield.toFixed(2)}%)\n` +
+        `TTM Dividend Income: ${formatValueWithCurrency(last.ttm_income, { currency: selectedCurrency })}`
+    );
 }
 export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
     const performanceSeries = transactionState.performanceSeries || {};

@@ -12,6 +12,7 @@ import {
     getVolatilitySnapshotLine,
     getSectorsSnapshotLine,
     getBetaSnapshotLine,
+    getYieldSnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -30,6 +31,9 @@ const VOLATILITY_EXPLANATION =
 const BETA_EXPLANATION =
     'Beta measures the portfolio’s sensitivity to the broader market (S&P 500). A Beta of 1.0 means the portfolio moves in line with the market; >1.0 is more aggressive, and <1.0 is more defensive. This chart shows the 6-month (126 trading days) rolling Beta calculated as Covariance(Portfolio, Market) / Variance(Market), illustrating how your risk profile evolves as your holdings change.';
 
+const YIELD_EXPLANATION =
+    'This chart maps your portfolio’s Forward Dividend Yield (%) against actual Trailing 12-Month (TTM) Dividend Income ($). The line represents the aggregate yield if current holdings were held for a year, while the bars show the actual cash dividends collected in the preceding 12 months.';
+
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {
         // Show plot help
@@ -42,6 +46,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot rolling         - Show 1-Year rolling returns chart\n' +
             '  plot volatility      - Show 90-Day annualized rolling volatility chart\n' +
             '  plot beta            - Show 6-Month rolling portfolio Beta vs S&P 500\n' +
+            '  plot yield           - Show portfolio forward yield (%) and TTM income ($)\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot sectors         - Show sector allocation chart (percent view)\n' +
@@ -59,7 +64,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  rolling       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  beta          [year|quarter|qN] | [from <...>] | [<...> to <...>]';
+            '  beta          [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  yield         [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
     }
@@ -528,6 +534,39 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 const betaSnapshot = await getBetaSnapshotLine();
                 if (betaSnapshot) {
                     result += `\n\n${betaSnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'yield': {
+            dateRange = applyDateArgs(rawArgs);
+            const yieldSection = document.getElementById('runningAmountSection');
+            const yieldTableContainer = document.querySelector('.table-responsive-container');
+
+            const isYieldActive = transactionState.activeChart === 'yield';
+            const isYieldVisible = yieldSection && !yieldSection.classList.contains('is-hidden');
+
+            if (isYieldActive && isYieldVisible) {
+                setActiveChart(null);
+                if (yieldSection) {
+                    yieldSection.classList.add('is-hidden');
+                }
+                result = 'Hidden dividend yield and income chart.';
+            } else {
+                setActiveChart('yield');
+                if (yieldSection) {
+                    yieldSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (yieldTableContainer) {
+                    yieldTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing dividend yield and income chart for ${formatDateRange(
+                    dateRange
+                )}.\n\n${YIELD_EXPLANATION}`;
+                const yieldSnapshot = await getYieldSnapshotLine();
+                if (yieldSnapshot) {
+                    result += `\n\n${yieldSnapshot}`;
                 }
             }
             break;

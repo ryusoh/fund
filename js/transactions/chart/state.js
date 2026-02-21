@@ -13,4 +13,5 @@ export const chartLayouts = {
     rolling: null,
     volatility: null,
     beta: null,
+    yield: null,
 };
