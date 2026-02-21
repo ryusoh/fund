@@ -705,4 +705,26 @@ describe('Yield Chart Label Toggle', () => {
         // drawEndValue should NOT be called when labels are disabled
         expect(drawEndValue).not.toHaveBeenCalled();
     });
+
+    test('respects label toggle state across multiple chart renders', async () => {
+        // Start with labels enabled
+        transactionState.showChartLabels = true;
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+        expect(drawEndValue).toHaveBeenCalledTimes(4);
+
+        // Disable labels and render again
+        jest.clearAllMocks();
+        transactionState.showChartLabels = false;
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+        expect(drawEndValue).not.toHaveBeenCalled();
+
+        // Re-enable labels and render again
+        jest.clearAllMocks();
+        transactionState.showChartLabels = true;
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+        expect(drawEndValue).toHaveBeenCalledTimes(4);
+    });
 });
