@@ -888,7 +888,12 @@ def scrape_wsj_forward_pe() -> Optional[float]:
         scraper_api_key = os.environ.get("SCRAPER_API_KEY")
 
         if scraper_api_key:
-            payload = {'api_key': scraper_api_key, 'url': target_url}
+            payload = {
+                'api_key': scraper_api_key,
+                'url': target_url,
+                'premium': 'true',
+                'country_code': 'us',
+            }
             url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
         else:
             url = target_url
@@ -899,9 +904,13 @@ def scrape_wsj_forward_pe() -> Optional[float]:
                 "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             },
         )
-        content = urllib.request.urlopen(req, timeout=15).read().decode("utf-8")
+        content = urllib.request.urlopen(req, timeout=20).read().decode("utf-8")
 
         block_starts = [m.start() for m in re.finditer(r"P 500 Index", content)]
+        if not block_starts:
+            print(f"WSJ scrape failed: 'P 500 Index' not found. Snippet: {content[:200]}")
+            return None
+
         for start in block_starts:
             chunk = content[start : start + 500]
             pe_match = re.search(
@@ -909,12 +918,24 @@ def scrape_wsj_forward_pe() -> Optional[float]:
             )
             if pe_match:
                 return float(pe_match.group(1))
+
+        print(f"WSJ scrape failed: 'priceEarningsRatioEstimate' not found near 'P 500 Index'.")
     except Exception as e:
         print(f"WSJ scrape failed: {e}")
     return None
 
 
 def main():
+    print("Loading existing PE data for fail-open fallback...")
+    existing_pe_data = {}
+    pe_file_path = OUTPUT_DIR / "pe_ratio.json"
+    if pe_file_path.exists():
+        try:
+            with open(pe_file_path, "r") as f:
+                existing_pe_data = json.load(f)
+        except Exception as e:
+            print(f"Failed to load existing pe_ratio.json: {e}")
+
     print("Loading holdings and prices...")
     holdings_df, prices_data_raw = load_data()
     dates = holdings_df.index
@@ -1007,7 +1028,14 @@ def main():
         for t, pe in sorted(forward_pe["ticker_forward_pe"].items()):
             print(f"    {t}: {pe}x")
     else:
-        print("  No forward PE data available")
+        print("  No forward PE data available. Attempting fallback...")
+        if "forward_pe" in existing_pe_data:
+            final_output["forward_pe"] = existing_pe_data["forward_pe"]
+            print(
+                f"  Fallback successful. Loaded old Portfolio Forward PE: {final_output['forward_pe'].get('portfolio_forward_pe')}x"
+            )
+        else:
+            print("  Fallback failed. No existing portfolio forward PE data found.")
 
     # Compute benchmark PE series (^GSPC, ^IXIC)
     print("Fetching Benchmark PE...")
@@ -1041,6 +1069,14 @@ def main():
             if wsj_pe is not None:
                 benchmark_fwd_pe[bmk_ticker] = round(wsj_pe, 2)
                 print(f"  {bmk_ticker}: Fetched Forward PE {wsj_pe} from WSJ")
+            else:
+                fwd_pe_dict = existing_pe_data.get("forward_pe", {})
+                bmk_fwd_pe_dict = fwd_pe_dict.get("benchmark_forward_pe", {})
+                if bmk_ticker in bmk_fwd_pe_dict:
+                    benchmark_fwd_pe[bmk_ticker] = bmk_fwd_pe_dict[bmk_ticker]
+                    print(
+                        f"  {bmk_ticker}: Fetched Forward PE {benchmark_fwd_pe[bmk_ticker]} from existing pe_ratio.json (fallback)"
+                    )
 
         pe_values = [
             round(float(v), 2) if pd.notna(v) and math.isfinite(v) else None for v in pe_series
