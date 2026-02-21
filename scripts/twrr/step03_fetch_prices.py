@@ -47,6 +47,22 @@ YFINANCE_ALIASES: Dict[str, str] = {
     '^SSEC': '000001.SS',
 }
 
+# Delisted or acquired stocks that cause yfinance lookups to fail and waste time
+DELISTED_TICKERS = frozenset(
+    {
+        'BKI',
+        'CHX',
+        'DICE',
+        'GD',
+        'LLAP',
+        'NATI',
+        'NYCB',
+        'PACW',
+        'SBSW',
+        'VTLE',
+    }
+)
+
 
 def ensure_directories() -> None:
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
@@ -337,11 +353,16 @@ def main() -> None:
         transactions['security'].dropna().astype(str).str.upper().unique().tolist()
     )
     unique_tickers = sorted(set(transaction_tickers + BENCHMARK_TICKERS))
-    print(
-        f'Fetching prices for {len(unique_tickers)} tickers from {date_index[0].date()} to {date_index[-1].date()}'
-    )
+    active_tickers = [t for t in unique_tickers if t not in DELISTED_TICKERS]
+    delisted_in_portfolio = [t for t in unique_tickers if t in DELISTED_TICKERS]
 
-    base_prices, successes, failures = fetch_yfinance_prices(unique_tickers, date_index)
+    print(
+        f'Fetching prices for {len(active_tickers)} active tickers from {date_index[0].date()} to {date_index[-1].date()}'
+    )
+    if delisted_in_portfolio:
+        print(f'Skipping network fetch for {len(delisted_in_portfolio)} known delisted tickers.')
+
+    base_prices, successes, failures = fetch_yfinance_prices(active_tickers, date_index)
     print(f'yfinance success: {len(successes)} tickers, failures: {len(failures)} tickers')
 
     start = date_index[0]
@@ -351,11 +372,19 @@ def main() -> None:
     unresolved = sorted(set(failures) - set(fallback_tickers))
     if fallback_tickers:
         print(f'Fallback sources retrieved {len(fallback_tickers)} tickers: {fallback_tickers}')
-    if unresolved:
-        print(f'WARNING: Unable to retrieve any prices for tickers: {unresolved}')
+
+    # Delisted tickers count as failures for the purpose of unresolved reporting, UNLESS they have overrides.
+    unresolved = sorted(set(failures + delisted_in_portfolio) - set(fallback_tickers))
 
     overrides = load_overrides(date_index)
     override_tickers = list(overrides.columns) if not overrides.empty else []
+
+    # Remove tickers that have overrides from the unresolved list
+    unresolved = sorted(set(unresolved) - set(override_tickers))
+
+    if unresolved:
+        print(f'WARNING: Unable to retrieve any prices for tickers: {unresolved}')
+
     if override_tickers:
         print(f'Overrides available for tickers: {override_tickers}')
 
