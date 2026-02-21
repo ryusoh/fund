@@ -1,3 +1,16 @@
+export async function loadSectorsSnapshotData() {
+    try {
+        const response = await fetch('../data/output/figures/sectors.json');
+        if (!response.ok) {
+            logger.warn('figures/sectors.json not found');
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        logger.warn('Failed to load sectors snapshot:', error);
+        return null;
+    }
+}
 import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';

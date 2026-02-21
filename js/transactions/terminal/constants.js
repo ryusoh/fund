@@ -54,6 +54,8 @@ export const PLOT_SUBCOMMANDS = [
     'drawdown',
     'rolling',
     'volatility',
+    'sectors',
+    'sectors-abs',
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];

@@ -1,0 +1,1273 @@
+{
+    "VT": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Total World Stock Index Fund ETF Shares",
+        "symbol": "VT"
+    },
+    "ANET": {
+        "sector": "Technology",
+        "industry": "Computer Hardware",
+        "quoteType": "EQUITY",
+        "longName": "Arista Networks, Inc.",
+        "symbol": "ANET"
+    },
+    "GOOG": {
+        "sector": "Communication Services",
+        "industry": "Internet Content & Information",
+        "quoteType": "EQUITY",
+        "longName": "Alphabet Inc.",
+        "symbol": "GOOG"
+    },
+    "PDD": {
+        "sector": "Consumer Cyclical",
+        "industry": "Internet Retail",
+        "quoteType": "EQUITY",
+        "longName": "PDD Holdings Inc.",
+        "symbol": "PDD"
+    },
+    "AAPL": {
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+        "quoteType": "EQUITY",
+        "longName": "Apple Inc.",
+        "symbol": "AAPL"
+    },
+    "ABT": {
+        "sector": "Healthcare",
+        "industry": "Medical Devices",
+        "quoteType": "EQUITY",
+        "longName": "Abbott Laboratories",
+        "symbol": "ABT"
+    },
+    "ACLS": {
+        "sector": "Technology",
+        "industry": "Semiconductor Equipment & Materials",
+        "quoteType": "EQUITY",
+        "longName": "Axcelis Technologies, Inc.",
+        "symbol": "ACLS"
+    },
+    "ADBE": {
+        "sector": "Technology",
+        "industry": "Software - Application",
+        "quoteType": "EQUITY",
+        "longName": "Adobe Inc.",
+        "symbol": "ADBE"
+    },
+    "AIG": {
+        "sector": "Financial Services",
+        "industry": "Insurance - Diversified",
+        "quoteType": "EQUITY",
+        "longName": "American International Group, Inc.",
+        "symbol": "AIG"
+    },
+    "ALB": {
+        "sector": "Basic Materials",
+        "industry": "Specialty Chemicals",
+        "quoteType": "EQUITY",
+        "longName": "Albemarle Corporation",
+        "symbol": "ALB"
+    },
+    "AMC": {
+        "sector": "Communication Services",
+        "industry": "Entertainment",
+        "quoteType": "EQUITY",
+        "longName": "AMC Entertainment Holdings, Inc.",
+        "symbol": "AMC"
+    },
+    "AMZN": {
+        "sector": "Consumer Cyclical",
+        "industry": "Internet Retail",
+        "quoteType": "EQUITY",
+        "longName": "Amazon.com, Inc.",
+        "symbol": "AMZN"
+    },
+    "ARKG": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ARK Genomic Revolution ETF",
+        "symbol": "ARKG"
+    },
+    "ARKW": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ARK Next Generation Internet ETF",
+        "symbol": "ARKW"
+    },
+    "ASHR": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Xtrackers Harvest CSI 300 China A-Shares ETF",
+        "symbol": "ASHR"
+    },
+    "BA": {
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "quoteType": "EQUITY",
+        "longName": "The Boeing Company",
+        "symbol": "BA"
+    },
+    "BABA": {
+        "sector": "Consumer Cyclical",
+        "industry": "Internet Retail",
+        "quoteType": "EQUITY",
+        "longName": "Alibaba Group Holding Limited",
+        "symbol": "BABA"
+    },
+    "BKI": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "BKI",
+        "yf_symbol": "BKI"
+    },
+    "BNDW": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Total World Bond ETF",
+        "symbol": "BNDW"
+    },
+    "BOXX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Alpha Architect 1-3 Month Box ETF",
+        "symbol": "BOXX"
+    },
+    "BRKB": {
+        "sector": "Financial Services",
+        "industry": "Insurance - Diversified",
+        "quoteType": "EQUITY",
+        "longName": "Berkshire Hathaway Inc.",
+        "symbol": "BRKB",
+        "yf_symbol": "BRK-B"
+    },
+    "BSX": {
+        "sector": "Healthcare",
+        "industry": "Medical Devices",
+        "quoteType": "EQUITY",
+        "longName": "Boston Scientific Corporation",
+        "symbol": "BSX"
+    },
+    "BUG": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Global X Cybersecurity ETF",
+        "symbol": "BUG"
+    },
+    "CAT": {
+        "sector": "Industrials",
+        "industry": "Farm & Heavy Construction Machinery",
+        "quoteType": "EQUITY",
+        "longName": "Caterpillar Inc.",
+        "symbol": "CAT"
+    },
+    "CB": {
+        "sector": "Financial Services",
+        "industry": "Insurance - Property & Casualty",
+        "quoteType": "EQUITY",
+        "longName": "Chubb Limited",
+        "symbol": "CB"
+    },
+    "CBZ": {
+        "sector": "Industrials",
+        "industry": "Specialty Business Services",
+        "quoteType": "EQUITY",
+        "longName": "CBIZ, Inc.",
+        "symbol": "CBZ"
+    },
+    "CELU": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Celularity Inc.",
+        "symbol": "CELU"
+    },
+    "CFLT": {
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "quoteType": "EQUITY",
+        "longName": "Confluent, Inc.",
+        "symbol": "CFLT"
+    },
+    "CHTR": {
+        "sector": "Communication Services",
+        "industry": "Telecom Services",
+        "quoteType": "EQUITY",
+        "longName": "Charter Communications, Inc.",
+        "symbol": "CHTR"
+    },
+    "CHX": {
+        "symbol": "CHX",
+        "error": "HTTP Error 404: "
+    },
+    "CI": {
+        "sector": "Healthcare",
+        "industry": "Healthcare Plans",
+        "quoteType": "EQUITY",
+        "longName": "The Cigna Group",
+        "symbol": "CI"
+    },
+    "CME": {
+        "sector": "Financial Services",
+        "industry": "Financial Data & Stock Exchanges",
+        "quoteType": "EQUITY",
+        "longName": "CME Group Inc.",
+        "symbol": "CME"
+    },
+    "CNC": {
+        "sector": "Healthcare",
+        "industry": "Healthcare Plans",
+        "quoteType": "EQUITY",
+        "longName": "Centene Corporation",
+        "symbol": "CNC"
+    },
+    "COF": {
+        "sector": "Financial Services",
+        "industry": "Credit Services",
+        "quoteType": "EQUITY",
+        "longName": "Capital One Financial Corporation",
+        "symbol": "COF"
+    },
+    "COHR": {
+        "sector": "Technology",
+        "industry": "Scientific & Technical Instruments",
+        "quoteType": "EQUITY",
+        "longName": "Coherent Corp.",
+        "symbol": "COHR"
+    },
+    "COST": {
+        "sector": "Consumer Defensive",
+        "industry": "Discount Stores",
+        "quoteType": "EQUITY",
+        "longName": "Costco Wholesale Corporation",
+        "symbol": "COST"
+    },
+    "CP": {
+        "sector": "Industrials",
+        "industry": "Railroads",
+        "quoteType": "EQUITY",
+        "longName": "Canadian Pacific Kansas City Limited",
+        "symbol": "CP"
+    },
+    "CRM": {
+        "sector": "Technology",
+        "industry": "Software - Application",
+        "quoteType": "EQUITY",
+        "longName": "Salesforce, Inc.",
+        "symbol": "CRM"
+    },
+    "CTRA": {
+        "sector": "Energy",
+        "industry": "Oil & Gas E&P",
+        "quoteType": "EQUITY",
+        "longName": "Coterra Energy Inc.",
+        "symbol": "CTRA"
+    },
+    "CVLG": {
+        "sector": "Industrials",
+        "industry": "Trucking",
+        "quoteType": "EQUITY",
+        "longName": "Covenant Logistics Group, Inc.",
+        "symbol": "CVLG"
+    },
+    "CVS": {
+        "sector": "Healthcare",
+        "industry": "Healthcare Plans",
+        "quoteType": "EQUITY",
+        "longName": "CVS Health Corporation",
+        "symbol": "CVS"
+    },
+    "CWH": {
+        "sector": "Consumer Cyclical",
+        "industry": "Auto & Truck Dealerships",
+        "quoteType": "EQUITY",
+        "longName": "Camping World Holdings, Inc.",
+        "symbol": "CWH"
+    },
+    "DHR": {
+        "sector": "Healthcare",
+        "industry": "Diagnostics & Research",
+        "quoteType": "EQUITY",
+        "longName": "Danaher Corporation",
+        "symbol": "DHR"
+    },
+    "DIA": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "SPDR Dow Jones Industrial Average ETF Trust",
+        "symbol": "DIA"
+    },
+    "DICE": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "DICE",
+        "yf_symbol": "DICE"
+    },
+    "DIS": {
+        "sector": "Communication Services",
+        "industry": "Entertainment",
+        "quoteType": "EQUITY",
+        "longName": "The Walt Disney Company",
+        "symbol": "DIS"
+    },
+    "DVN": {
+        "sector": "Energy",
+        "industry": "Oil & Gas E&P",
+        "quoteType": "EQUITY",
+        "longName": "Devon Energy Corporation",
+        "symbol": "DVN"
+    },
+    "EXPE": {
+        "sector": "Consumer Cyclical",
+        "industry": "Travel Services",
+        "quoteType": "EQUITY",
+        "longName": "Expedia Group, Inc.",
+        "symbol": "EXPE"
+    },
+    "EXR": {
+        "sector": "Real Estate",
+        "industry": "REIT - Industrial",
+        "quoteType": "EQUITY",
+        "longName": "Extra Space Storage Inc.",
+        "symbol": "EXR"
+    },
+    "FBCGX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Fidelity Blue Chip Growth K6",
+        "symbol": "FBCGX"
+    },
+    "FE": {
+        "sector": "Utilities",
+        "industry": "Utilities - Regulated Electric",
+        "quoteType": "EQUITY",
+        "longName": "FirstEnergy Corp.",
+        "symbol": "FE"
+    },
+    "FNSFX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Fidelity Freedom 2060 K",
+        "symbol": "FNSFX"
+    },
+    "FSGGX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Fidelity Global ex US Index",
+        "symbol": "FSGGX"
+    },
+    "FSKAX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Fidelity Total Market Index",
+        "symbol": "FSKAX"
+    },
+    "FTRE": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Fortrea Holdings Inc.",
+        "symbol": "FTRE"
+    },
+    "FXAIX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Fidelity 500 Index",
+        "symbol": "FXAIX"
+    },
+    "GD": {
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "quoteType": "EQUITY",
+        "longName": "General Dynamics Corporation",
+        "symbol": "GD"
+    },
+    "GEO": {
+        "sector": "Industrials",
+        "industry": "Security & Protection Services",
+        "quoteType": "EQUITY",
+        "longName": "The GEO Group, Inc.",
+        "symbol": "GEO"
+    },
+    "GLD": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "SPDR Gold Shares",
+        "symbol": "GLD"
+    },
+    "GNRC": {
+        "sector": "Industrials",
+        "industry": "Specialty Industrial Machinery",
+        "quoteType": "EQUITY",
+        "longName": "Generac Holdings Inc.",
+        "symbol": "GNRC"
+    },
+    "GOOGL": {
+        "sector": "Communication Services",
+        "industry": "Internet Content & Information",
+        "quoteType": "EQUITY",
+        "longName": "Alphabet Inc.",
+        "symbol": "GOOGL"
+    },
+    "GRMN": {
+        "sector": "Technology",
+        "industry": "Scientific & Technical Instruments",
+        "quoteType": "EQUITY",
+        "longName": "Garmin Ltd.",
+        "symbol": "GRMN"
+    },
+    "GTLS": {
+        "sector": "Industrials",
+        "industry": "Specialty Industrial Machinery",
+        "quoteType": "EQUITY",
+        "longName": "Chart Industries, Inc.",
+        "symbol": "GTLS"
+    },
+    "HBAN": {
+        "sector": "Financial Services",
+        "industry": "Banks - Regional",
+        "quoteType": "EQUITY",
+        "longName": "Huntington Bancshares Incorporated",
+        "symbol": "HBAN"
+    },
+    "HE": {
+        "sector": "Utilities",
+        "industry": "Utilities - Regulated Electric",
+        "quoteType": "EQUITY",
+        "longName": "Hawaiian Electric Industries, Inc.",
+        "symbol": "HE"
+    },
+    "HHH": {
+        "sector": "Real Estate",
+        "industry": "Real Estate - Development",
+        "quoteType": "EQUITY",
+        "longName": "Howard Hughes Holdings Inc.",
+        "symbol": "HHH"
+    },
+    "HLT": {
+        "sector": "Consumer Cyclical",
+        "industry": "Lodging",
+        "quoteType": "EQUITY",
+        "longName": "Hilton Worldwide Holdings Inc.",
+        "symbol": "HLT"
+    },
+    "HOLX": {
+        "sector": "Healthcare",
+        "industry": "Medical Instruments & Supplies",
+        "quoteType": "EQUITY",
+        "longName": "Hologic, Inc.",
+        "symbol": "HOLX"
+    },
+    "ICLN": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Global Clean Energy ETF",
+        "symbol": "ICLN"
+    },
+    "IEMG": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Core MSCI Emerging Markets ETF",
+        "symbol": "IEMG"
+    },
+    "IGV": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Expanded Tech-Software Sector ETF",
+        "symbol": "IGV"
+    },
+    "IHF": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares U.S. Healthcare Providers ETF",
+        "symbol": "IHF"
+    },
+    "ISRG": {
+        "sector": "Healthcare",
+        "industry": "Medical Instruments & Supplies",
+        "quoteType": "EQUITY",
+        "longName": "Intuitive Surgical, Inc.",
+        "symbol": "ISRG"
+    },
+    "IVV": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Core S&P 500 ETF",
+        "symbol": "IVV"
+    },
+    "JD": {
+        "sector": "Consumer Cyclical",
+        "industry": "Internet Retail",
+        "quoteType": "EQUITY",
+        "longName": "JD.com, Inc.",
+        "symbol": "JD"
+    },
+    "JEPI": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "JPMorgan Equity Premium Income ETF",
+        "symbol": "JEPI"
+    },
+    "JNJ": {
+        "sector": "Healthcare",
+        "industry": "Drug Manufacturers - General",
+        "quoteType": "EQUITY",
+        "longName": "Johnson & Johnson",
+        "symbol": "JNJ"
+    },
+    "JPM": {
+        "sector": "Financial Services",
+        "industry": "Banks - Diversified",
+        "quoteType": "EQUITY",
+        "longName": "JPMorgan Chase & Co.",
+        "symbol": "JPM"
+    },
+    "KKR": {
+        "sector": "Financial Services",
+        "industry": "Asset Management",
+        "quoteType": "EQUITY",
+        "longName": "KKR & Co. Inc.",
+        "symbol": "KKR"
+    },
+    "KO": {
+        "sector": "Consumer Defensive",
+        "industry": "Beverages - Non-Alcoholic",
+        "quoteType": "EQUITY",
+        "longName": "The Coca-Cola Company",
+        "symbol": "KO"
+    },
+    "LEN": {
+        "sector": "Consumer Cyclical",
+        "industry": "Residential Construction",
+        "quoteType": "EQUITY",
+        "longName": "Lennar Corporation",
+        "symbol": "LEN"
+    },
+    "LH": {
+        "sector": "Healthcare",
+        "industry": "Diagnostics & Research",
+        "quoteType": "EQUITY",
+        "longName": "Labcorp Holdings Inc.",
+        "symbol": "LH"
+    },
+    "LILAK": {
+        "sector": "Communication Services",
+        "industry": "Telecom Services",
+        "quoteType": "EQUITY",
+        "longName": "Liberty Latin America Ltd.",
+        "symbol": "LILAK"
+    },
+    "LLAP": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "LLAP",
+        "yf_symbol": "LLAP"
+    },
+    "LLY": {
+        "sector": "Healthcare",
+        "industry": "Drug Manufacturers - General",
+        "quoteType": "EQUITY",
+        "longName": "Eli Lilly and Company",
+        "symbol": "LLY"
+    },
+    "LMT": {
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "quoteType": "EQUITY",
+        "longName": "Lockheed Martin Corporation",
+        "symbol": "LMT"
+    },
+    "LOW": {
+        "sector": "Consumer Cyclical",
+        "industry": "Home Improvement Retail",
+        "quoteType": "EQUITY",
+        "longName": "Lowe's Companies, Inc.",
+        "symbol": "LOW"
+    },
+    "MA": {
+        "sector": "Financial Services",
+        "industry": "Credit Services",
+        "quoteType": "EQUITY",
+        "longName": "Mastercard Incorporated",
+        "symbol": "MA"
+    },
+    "MCD": {
+        "sector": "Consumer Cyclical",
+        "industry": "Restaurants",
+        "quoteType": "EQUITY",
+        "longName": "McDonald's Corporation",
+        "symbol": "MCD"
+    },
+    "META": {
+        "sector": "Communication Services",
+        "industry": "Internet Content & Information",
+        "quoteType": "EQUITY",
+        "longName": "Meta Platforms, Inc.",
+        "symbol": "META"
+    },
+    "MGM": {
+        "sector": "Consumer Cyclical",
+        "industry": "Resorts & Casinos",
+        "quoteType": "EQUITY",
+        "longName": "MGM Resorts International",
+        "symbol": "MGM"
+    },
+    "MNST": {
+        "sector": "Consumer Defensive",
+        "industry": "Beverages - Non-Alcoholic",
+        "quoteType": "EQUITY",
+        "longName": "Monster Beverage Corporation",
+        "symbol": "MNST"
+    },
+    "MRNA": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Moderna, Inc.",
+        "symbol": "MRNA"
+    },
+    "MSFT": {
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "quoteType": "EQUITY",
+        "longName": "Microsoft Corporation",
+        "symbol": "MSFT"
+    },
+    "MSI": {
+        "sector": "Technology",
+        "industry": "Communication Equipment",
+        "quoteType": "EQUITY",
+        "longName": "Motorola Solutions, Inc.",
+        "symbol": "MSI"
+    },
+    "MU": {
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "quoteType": "EQUITY",
+        "longName": "Micron Technology, Inc.",
+        "symbol": "MU"
+    },
+    "NATI": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "NATI",
+        "yf_symbol": "NATI"
+    },
+    "NFLX": {
+        "sector": "Communication Services",
+        "industry": "Entertainment",
+        "quoteType": "EQUITY",
+        "longName": "Netflix, Inc.",
+        "symbol": "NFLX"
+    },
+    "NLY": {
+        "sector": "Real Estate",
+        "industry": "REIT - Mortgage",
+        "quoteType": "EQUITY",
+        "longName": "Annaly Capital Management, Inc.",
+        "symbol": "NLY"
+    },
+    "NOV": {
+        "sector": "Energy",
+        "industry": "Oil & Gas Equipment & Services",
+        "quoteType": "EQUITY",
+        "longName": "NOV Inc.",
+        "symbol": "NOV"
+    },
+    "NVDA": {
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "quoteType": "EQUITY",
+        "longName": "NVIDIA Corporation",
+        "symbol": "NVDA"
+    },
+    "NYCB": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "NYCB",
+        "yf_symbol": "NYCB"
+    },
+    "O": {
+        "sector": "Real Estate",
+        "industry": "REIT - Retail",
+        "quoteType": "EQUITY",
+        "longName": "Realty Income Corporation",
+        "symbol": "O"
+    },
+    "OKE": {
+        "sector": "Energy",
+        "industry": "Oil & Gas Midstream",
+        "quoteType": "EQUITY",
+        "longName": "ONEOK, Inc.",
+        "symbol": "OKE"
+    },
+    "ORCL": {
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "quoteType": "EQUITY",
+        "longName": "Oracle Corporation",
+        "symbol": "ORCL"
+    },
+    "OSW": {
+        "sector": "Consumer Cyclical",
+        "industry": "Leisure",
+        "quoteType": "EQUITY",
+        "longName": "OneSpaWorld Holdings Limited",
+        "symbol": "OSW"
+    },
+    "OXY": {
+        "sector": "Energy",
+        "industry": "Oil & Gas E&P",
+        "quoteType": "EQUITY",
+        "longName": "Occidental Petroleum Corporation",
+        "symbol": "OXY"
+    },
+    "PACW": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "NONE",
+        "longName": null,
+        "symbol": "PACW",
+        "yf_symbol": "PACW"
+    },
+    "PANW": {
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "quoteType": "EQUITY",
+        "longName": "Palo Alto Networks, Inc.",
+        "symbol": "PANW"
+    },
+    "PEP": {
+        "sector": "Consumer Defensive",
+        "industry": "Beverages - Non-Alcoholic",
+        "quoteType": "EQUITY",
+        "longName": "PepsiCo, Inc.",
+        "symbol": "PEP"
+    },
+    "PFE": {
+        "sector": "Healthcare",
+        "industry": "Drug Manufacturers - General",
+        "quoteType": "EQUITY",
+        "longName": "Pfizer Inc.",
+        "symbol": "PFE"
+    },
+    "PG": {
+        "sector": "Consumer Defensive",
+        "industry": "Household & Personal Products",
+        "quoteType": "EQUITY",
+        "longName": "The Procter & Gamble Company",
+        "symbol": "PG"
+    },
+    "PSN": {
+        "sector": "Technology",
+        "industry": "Information Technology Services",
+        "quoteType": "EQUITY",
+        "longName": "Parsons Corporation",
+        "symbol": "PSN"
+    },
+    "PSQ": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ProShares Short QQQ",
+        "symbol": "PSQ"
+    },
+    "PTEN": {
+        "sector": "Energy",
+        "industry": "Oil & Gas Drilling",
+        "quoteType": "EQUITY",
+        "longName": "Patterson-UTI Energy, Inc.",
+        "symbol": "PTEN"
+    },
+    "PTLC": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Pacer Trendpilot US Large Cap ETF",
+        "symbol": "PTLC"
+    },
+    "QCOM": {
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "quoteType": "EQUITY",
+        "longName": "QUALCOMM Incorporated",
+        "symbol": "QCOM"
+    },
+    "QQQ": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Invesco QQQ Trust",
+        "symbol": "QQQ"
+    },
+    "QSR": {
+        "sector": "Consumer Cyclical",
+        "industry": "Restaurants",
+        "quoteType": "EQUITY",
+        "longName": "Restaurant Brands International Inc.",
+        "symbol": "QSR"
+    },
+    "RBLX": {
+        "sector": "Communication Services",
+        "industry": "Electronic Gaming & Multimedia",
+        "quoteType": "EQUITY",
+        "longName": "Roblox Corporation",
+        "symbol": "RBLX"
+    },
+    "RDN": {
+        "sector": "Financial Services",
+        "industry": "Insurance - Specialty",
+        "quoteType": "EQUITY",
+        "longName": "Radian Group Inc.",
+        "symbol": "RDN"
+    },
+    "REAL": {
+        "sector": "Consumer Cyclical",
+        "industry": "Luxury Goods",
+        "quoteType": "EQUITY",
+        "longName": "The RealReal, Inc.",
+        "symbol": "REAL"
+    },
+    "REGN": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Regeneron Pharmaceuticals, Inc.",
+        "symbol": "REGN"
+    },
+    "REK": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ProShares Short Real Estate",
+        "symbol": "REK"
+    },
+    "RMBS": {
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "quoteType": "EQUITY",
+        "longName": "Rambus Inc.",
+        "symbol": "RMBS"
+    },
+    "ROKU": {
+        "sector": "Communication Services",
+        "industry": "Entertainment",
+        "quoteType": "EQUITY",
+        "longName": "Roku, Inc.",
+        "symbol": "ROKU"
+    },
+    "RWM": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ProShares Short Russell2000",
+        "symbol": "RWM"
+    },
+    "RYI": {
+        "sector": "Industrials",
+        "industry": "Metal Fabrication",
+        "quoteType": "EQUITY",
+        "longName": "Ryerson Holding Corporation",
+        "symbol": "RYI"
+    },
+    "SBSW": {
+        "sector": "Basic Materials",
+        "industry": "Other Precious Metals & Mining",
+        "quoteType": "EQUITY",
+        "longName": "Sibanye Stillwater Limited",
+        "symbol": "SBSW"
+    },
+    "SBUX": {
+        "sector": "Consumer Cyclical",
+        "industry": "Restaurants",
+        "quoteType": "EQUITY",
+        "longName": "Starbucks Corporation",
+        "symbol": "SBUX"
+    },
+    "SCHD": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Schwab U.S. Dividend Equity ETF",
+        "symbol": "SCHD"
+    },
+    "SCI": {
+        "sector": "Consumer Cyclical",
+        "industry": "Personal Services",
+        "quoteType": "EQUITY",
+        "longName": "Service Corporation International",
+        "symbol": "SCI"
+    },
+    "SH": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ProShares Short S&P500",
+        "symbol": "SH"
+    },
+    "SHW": {
+        "sector": "Basic Materials",
+        "industry": "Specialty Chemicals",
+        "quoteType": "EQUITY",
+        "longName": "The Sherwin-Williams Company",
+        "symbol": "SHW"
+    },
+    "SIG": {
+        "sector": "Consumer Cyclical",
+        "industry": "Luxury Goods",
+        "quoteType": "EQUITY",
+        "longName": "Signet Jewelers Limited",
+        "symbol": "SIG"
+    },
+    "SJB": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "ProShares Short High Yield",
+        "symbol": "SJB"
+    },
+    "SLV": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Silver Trust",
+        "symbol": "SLV"
+    },
+    "SOXL": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Direxion Daily Semiconductor Bull 3X Shares",
+        "symbol": "SOXL"
+    },
+    "SOXX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares Semiconductor ETF",
+        "symbol": "SOXX"
+    },
+    "SPY": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "State Street SPDR S&P 500 ETF Trust",
+        "symbol": "SPY"
+    },
+    "THO": {
+        "sector": "Consumer Cyclical",
+        "industry": "Recreational Vehicles",
+        "quoteType": "EQUITY",
+        "longName": "THOR Industries, Inc.",
+        "symbol": "THO"
+    },
+    "TLT": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "iShares 20+ Year Treasury Bond ETF",
+        "symbol": "TLT"
+    },
+    "TMUS": {
+        "sector": "Communication Services",
+        "industry": "Telecom Services",
+        "quoteType": "EQUITY",
+        "longName": "T-Mobile US, Inc.",
+        "symbol": "TMUS"
+    },
+    "TREX": {
+        "sector": "Industrials",
+        "industry": "Building Products & Equipment",
+        "quoteType": "EQUITY",
+        "longName": "Trex Company, Inc.",
+        "symbol": "TREX"
+    },
+    "TRMB": {
+        "sector": "Technology",
+        "industry": "Scientific & Technical Instruments",
+        "quoteType": "EQUITY",
+        "longName": "Trimble Inc.",
+        "symbol": "TRMB"
+    },
+    "TROW": {
+        "sector": "Financial Services",
+        "industry": "Asset Management",
+        "quoteType": "EQUITY",
+        "longName": "T. Rowe Price Group, Inc.",
+        "symbol": "TROW"
+    },
+    "TSLA": {
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Manufacturers",
+        "quoteType": "EQUITY",
+        "longName": "Tesla, Inc.",
+        "symbol": "TSLA"
+    },
+    "TTD": {
+        "sector": "Communication Services",
+        "industry": "Advertising Agencies",
+        "quoteType": "EQUITY",
+        "longName": "The Trade Desk, Inc.",
+        "symbol": "TTD"
+    },
+    "UNH": {
+        "sector": "Healthcare",
+        "industry": "Healthcare Plans",
+        "quoteType": "EQUITY",
+        "longName": "UnitedHealth Group Incorporated",
+        "symbol": "UNH"
+    },
+    "UNP": {
+        "sector": "Industrials",
+        "industry": "Railroads",
+        "quoteType": "EQUITY",
+        "longName": "Union Pacific Corporation",
+        "symbol": "UNP"
+    },
+    "URI": {
+        "sector": "Industrials",
+        "industry": "Rental & Leasing Services",
+        "quoteType": "EQUITY",
+        "longName": "United Rentals, Inc.",
+        "symbol": "URI"
+    },
+    "V": {
+        "sector": "Financial Services",
+        "industry": "Credit Services",
+        "quoteType": "EQUITY",
+        "longName": "Visa Inc.",
+        "symbol": "V"
+    },
+    "VDC": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Consumer Staples Index Fund ETF Shares",
+        "symbol": "VDC"
+    },
+    "VEMRX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Emerging Markets Stock Index Fund",
+        "symbol": "VEMRX"
+    },
+    "VERA": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Vera Therapeutics, Inc.",
+        "symbol": "VERA"
+    },
+    "VFFSX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard 500 Index Fund",
+        "symbol": "VFFSX"
+    },
+    "VGSNX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Real Estate Index Institutional",
+        "symbol": "VGSNX"
+    },
+    "VGT": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Information Technology Index Fund ETF Shares",
+        "symbol": "VGT"
+    },
+    "VHT": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Health Care Index Fund ETF Shares",
+        "symbol": "VHT"
+    },
+    "VIEIX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Extended Market Index Instl",
+        "symbol": "VIEIX"
+    },
+    "VMVAX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Mid-Cap Value Index Admiral",
+        "symbol": "VMVAX"
+    },
+    "VNQ": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Real Estate Index Fund ETF Shares",
+        "symbol": "VNQ"
+    },
+    "VOO": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard S&P 500 ETF",
+        "symbol": "VOO"
+    },
+    "VOX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Communication Services Index Fund ETF Shares",
+        "symbol": "VOX"
+    },
+    "VRTX": {
+        "sector": "Healthcare",
+        "industry": "Biotechnology",
+        "quoteType": "EQUITY",
+        "longName": "Vertex Pharmaceuticals Incorporated",
+        "symbol": "VRTX"
+    },
+    "VSIAX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Small Cap Value Index Admiral",
+        "symbol": "VSIAX"
+    },
+    "VTI": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Total Stock Market Index Fund ETF Shares",
+        "symbol": "VTI"
+    },
+    "VTLE": {
+        "sector": "Energy",
+        "industry": "Oil & Gas E&P",
+        "quoteType": "EQUITY",
+        "longName": "Vital Energy, Inc.",
+        "symbol": "VTLE"
+    },
+    "VTMGX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Developed Markets Index Admiral",
+        "symbol": "VTMGX"
+    },
+    "VTPSX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Total Intl Stock Idx InstlPls",
+        "symbol": "VTPSX"
+    },
+    "VTSAX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "MUTUALFUND",
+        "longName": "Vanguard Total Stock Mkt Idx Adm",
+        "symbol": "VTSAX"
+    },
+    "VWO": {
+        "sector": null,
+        "industry": null,
+        "quoteType": "ETF",
+        "longName": "Vanguard Emerging Markets Stock Index Fund",
+        "symbol": "VWO"
+    },
+    "WAL": {
+        "sector": "Financial Services",
+        "industry": "Banks - Regional",
+        "quoteType": "EQUITY",
+        "longName": "Western Alliance Bancorporation",
+        "symbol": "WAL"
+    },
+    "WBD": {
+        "sector": "Communication Services",
+        "industry": "Entertainment",
+        "quoteType": "EQUITY",
+        "longName": "Warner Bros. Discovery, Inc.",
+        "symbol": "WBD"
+    },
+    "WELL": {
+        "sector": "Real Estate",
+        "industry": "REIT - Healthcare Facilities",
+        "quoteType": "EQUITY",
+        "longName": "Welltower Inc.",
+        "symbol": "WELL"
+    },
+    "WFC": {
+        "sector": "Financial Services",
+        "industry": "Banks - Diversified",
+        "quoteType": "EQUITY",
+        "longName": "Wells Fargo & Company",
+        "symbol": "WFC"
+    },
+    "WM": {
+        "sector": "Industrials",
+        "industry": "Waste Management",
+        "quoteType": "EQUITY",
+        "longName": "Waste Management, Inc.",
+        "symbol": "WM"
+    },
+    "WMT": {
+        "sector": "Consumer Defensive",
+        "industry": "Discount Stores",
+        "quoteType": "EQUITY",
+        "longName": "Walmart Inc.",
+        "symbol": "WMT"
+    },
+    "WRB": {
+        "sector": "Financial Services",
+        "industry": "Insurance - Property & Casualty",
+        "quoteType": "EQUITY",
+        "longName": "W. R. Berkley Corporation",
+        "symbol": "WRB"
+    },
+    "XOM": {
+        "sector": "Energy",
+        "industry": "Oil & Gas Integrated",
+        "quoteType": "EQUITY",
+        "longName": "Exxon Mobil Corporation",
+        "symbol": "XOM"
+    },
+    "ZM": {
+        "sector": "Technology",
+        "industry": "Software - Application",
+        "quoteType": "EQUITY",
+        "longName": "Zoom Communications, Inc.",
+        "symbol": "ZM"
+    }
+}

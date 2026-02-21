@@ -43,7 +43,7 @@ jobs:
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_portfolio_values.csv data/historical_prices.parquet data/historical_prices.json data/historical_prices_overrides.parquet data/output data/twrr_series.parquet
+                  git add data/checkpoints data/daily_cash_flow.parquet data/daily_market_value.parquet data/historical_portfolio_values.csv data/historical_prices.parquet data/historical_prices.json data/historical_prices_overrides.parquet data/output data/twrr_series.parquet data/ticker_metadata.json
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
                   else

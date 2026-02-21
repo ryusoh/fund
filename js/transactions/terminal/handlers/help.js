@@ -13,10 +13,10 @@ export function handleHelpCommand(args, { appendMessage }) {
             '  plot (p)           - Chart commands\n' +
             '                       Use "plot" or "p" for subcommands\n' +
             '                       Subcommands: balance, performance, drawdown, rolling, volatility, composition,\n' +
-            '                                    composition-abs, concentration, pe, fx\n' +
+            '                                    composition-abs, sectors, sectors-abs, concentration, pe, fx\n' +
             '                       Examples: plot balance, p performance, plot drawdown, plot rolling, plot volatility,\n' +
-            '                                 plot composition 2023, plot composition abs 2023, plot concentration,\n' +
-            '                                 plot pe, plot fx\n' +
+            '                                 plot composition 2023, plot composition abs 2023, plot sectors,\n' +
+            '                                 plot sectors abs, plot concentration, plot pe, plot fx\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
             '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
             '  summary            - Show summary of the currently active chart\n' +

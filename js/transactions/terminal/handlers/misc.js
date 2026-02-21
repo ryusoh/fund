@@ -263,9 +263,28 @@ export async function handleAbsCommand(args, { appendMessage, chartManager }) {
                 result += `\n${summary}`;
             }
         }
+    } else if (activeChart === 'sectors' || activeChart === 'sectorsAbs') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be active. Use `plot sectors` first.';
+        } else if (activeChart === 'sectorsAbs') {
+            result = 'Sector allocation chart is already showing absolute values.';
+        } else {
+            setActiveChart('sectorsAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched sector allocation chart to absolute view.';
+            const { getSectorsSnapshotLine } = await import('../snapshots.js');
+            const summary = await getSectorsSnapshotLine({
+                labelPrefix: 'Sectors Abs',
+            });
+            if (summary) {
+                result += `\n${summary}`;
+            }
+        }
     } else {
         result =
-            'Composition or Drawdown chart must be active to switch views. Use `plot composition` or `plot drawdown` first.';
+            'Composition, Sectors, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, or `plot drawdown` first.';
     }
     appendMessage(result);
 }
@@ -313,9 +332,28 @@ export async function handlePercentageCommand(args, { appendMessage, chartManage
                 result += `\n${summary}`;
             }
         }
+    } else if (activeChart === 'sectors' || activeChart === 'sectorsAbs') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be active. Use `plot sectors` first.';
+        } else if (activeChart === 'sectors') {
+            result = 'Sector allocation chart is already showing percentages.';
+        } else {
+            setActiveChart('sectors');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched sector allocation chart to percentage view.';
+            const { getSectorsSnapshotLine } = await import('../snapshots.js');
+            const summary = await getSectorsSnapshotLine({
+                labelPrefix: 'Sectors',
+            });
+            if (summary) {
+                result += `\n${summary}`;
+            }
+        }
     } else {
         result =
-            'Composition or Drawdown chart must be active to switch views. Use `plot composition` or `plot drawdown` first.';
+            'Composition, Sectors, or Drawdown chart must be active to switch views. Use `plot composition`, `plot sectors`, or `plot drawdown` first.';
     }
     appendMessage(result);
 }

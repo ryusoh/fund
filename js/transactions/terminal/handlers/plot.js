@@ -10,6 +10,7 @@ import {
     getPESnapshotLine,
     getRollingSnapshotLine,
     getVolatilitySnapshotLine,
+    getSectorsSnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -38,6 +39,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot volatility      - Show 90-Day annualized rolling volatility chart\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
+            '  plot sectors         - Show sector allocation chart (percent view)\n' +
+            '  plot sectors abs     - Show sector allocation chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
             '  plot pe              - Show weighted average P/E ratio chart\n' +
             '  plot fx              - Show FX rate chart for the selected base currency\n\n' +
@@ -46,6 +49,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  performance   [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  drawdown      [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  composition   [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  sectors       [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
@@ -225,6 +229,53 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 });
                 if (compositionSnapshot) {
                     result += `\n${compositionSnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'sectors':
+        case 'sectors-abs':
+        case 'sectorsabs':
+        case 'sectorsabsolute': {
+            let useAbsolute = subcommand !== 'sectors';
+            let rangeTokens = [...rawArgs];
+            if (!useAbsolute && rangeTokens.length > 0) {
+                const maybeMode = rangeTokens[0].toLowerCase();
+                if (maybeMode === 'abs' || maybeMode === 'absolute') {
+                    useAbsolute = true;
+                    rangeTokens = rangeTokens.slice(1);
+                }
+            }
+            dateRange = applyDateArgs(rangeTokens);
+            const sectorsSection = document.getElementById('runningAmountSection');
+            const sectorsTableContainer = document.querySelector('.table-responsive-container');
+
+            const targetChart = useAbsolute ? 'sectorsAbs' : 'sectors';
+            const isSectorsActive = transactionState.activeChart === targetChart;
+            const isSectorsVisible =
+                sectorsSection && !sectorsSection.classList.contains('is-hidden');
+
+            if (isSectorsActive && isSectorsVisible) {
+                setActiveChart(null);
+                if (sectorsSection) {
+                    sectorsSection.classList.add('is-hidden');
+                }
+                result = 'Hidden sector allocation chart.';
+            } else {
+                setActiveChart(targetChart);
+                if (sectorsSection) {
+                    sectorsSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (sectorsTableContainer) {
+                    sectorsTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing sector allocation${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
+                const sectorsSnapshot = await getSectorsSnapshotLine({
+                    labelPrefix: useAbsolute ? 'Sectors Abs' : 'Sectors',
+                });
+                if (sectorsSnapshot) {
+                    result += `\n${sectorsSnapshot}`;
                 }
             }
             break;

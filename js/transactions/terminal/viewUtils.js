@@ -9,6 +9,7 @@ import {
     getPESnapshotLine,
     getRollingSnapshotLine,
     getVolatilitySnapshotLine,
+    getSectorsSnapshotLine,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -36,6 +37,8 @@ export function isActiveChartVisible() {
             'performance',
             'composition',
             'compositionAbs',
+            'sectors',
+            'sectorsAbs',
             'concentration',
             'pe',
             'fx',
@@ -58,6 +61,12 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'compositionAbs') {
         return await getCompositionSnapshotLine({ labelPrefix: 'Composition Abs' });
+    }
+    if (activeChart === 'sectors') {
+        return await getSectorsSnapshotLine();
+    }
+    if (activeChart === 'sectorsAbs') {
+        return await getSectorsSnapshotLine({ labelPrefix: 'Sectors Abs' });
     }
     if (activeChart === 'performance') {
         return getPerformanceSnapshotLine({ includeHidden: true });

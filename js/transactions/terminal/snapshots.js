@@ -13,7 +13,7 @@ import {
     getContributionSeriesForTransactions,
 } from '../chart.js';
 import { PERFORMANCE_SERIES_CURRENCY } from '../chart/config.js';
-import { loadCompositionSnapshotData } from '../dataLoader.js'; // Adjust path if needed
+import { loadCompositionSnapshotData, loadSectorsSnapshotData } from '../dataLoader.js'; // Adjust path if needed
 import {
     formatCurrency as formatValueWithCurrency,
     convertBetweenCurrencies,
@@ -701,6 +701,94 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     if (labelPrefix === 'Composition') {
         hint = "\n(Hint: use 'abs' for absolute values)";
     } else if (labelPrefix === 'Composition Abs') {
+        hint = "\n(Hint: use 'per' for percentages)";
+    }
+
+    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
+}
+
+export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
+    if (
+        transactionState.activeChart !== 'sectors' &&
+        transactionState.activeChart !== 'sectorsAbs'
+    ) {
+        return null;
+    }
+    const data = await loadSectorsSnapshotData();
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray(data.dates) ||
+        data.dates.length === 0
+    ) {
+        return null;
+    }
+
+    const dates = data.dates;
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    const filteredIndices = dates
+        .map((dateStr, index) => {
+            const date = parseDateSafe(dateStr);
+            return { index, date };
+        })
+        .filter(
+            ({ date }) =>
+                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
+        )
+        .map(({ index }) => index);
+
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
+    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+        targetIndex = dates.length - 1;
+    }
+
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const dateLabel = dates[targetIndex];
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const sectorSeries = data.series || {};
+    const sectors = [];
+    Object.entries(sectorSeries).forEach(([name, values]) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percentage = Number(seriesValues[targetIndex] ?? 0);
+        if (!Number.isFinite(percentage) || percentage <= 0.01) {
+            return;
+        }
+        const baseValue = (totalValueRaw * percentage) / 100;
+        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
+        sectors.push({
+            name,
+            percent: percentage,
+            absolute: convertedValue,
+        });
+    });
+
+    if (!sectors.length) {
+        return null;
+    }
+
+    sectors.sort((a, b) => b.percent - a.percent);
+
+    const formatted = sectors.map((s) => {
+        const valueText = formatWithSelectedCurrency(s.absolute);
+        const percentText = `${s.percent.toFixed(2)}%`;
+        return `${s.name} ${valueText} (${percentText})`;
+    });
+
+    const lines = [];
+    for (let i = 0; i < formatted.length; i += 3) {
+        lines.push(formatted.slice(i, i + 3).join('   '));
+    }
+
+    let hint = '';
+    if (labelPrefix === 'Sectors') {
+        hint = "\n(Hint: use 'abs' for absolute values)";
+    } else if (labelPrefix === 'Sectors Abs') {
         hint = "\n(Hint: use 'per' for percentages)";
     }
 

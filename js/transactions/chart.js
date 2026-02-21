@@ -33,6 +33,7 @@ import { drawConcentrationChart } from './chart/renderers/concentration.js';
 import { drawPEChart } from './chart/renderers/pe.js';
 import { drawRollingChart } from './chart/renderers/rolling.js';
 import { drawVolatilityChart } from './chart/renderers/volatility.js';
+import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
 
 export { buildFxChartSeries };
 export { buildDrawdownSeries };
@@ -118,6 +119,10 @@ export function createChartManager(options = {}) {
             drawConcentrationChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'pe') {
             drawPEChart(ctx, chartManager, timestamp);
+        } else if (transactionState.activeChart === 'sectors') {
+            drawSectorsChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'sectorsAbs') {
+            drawSectorsAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'rolling') {
             await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'volatility') {

@@ -196,9 +196,13 @@ export function drawCrosshairOverlay(ctx, layout) {
     ctx.restore();
 
     const seriesSnapshot = [];
-    const isCompositionLayout = layout.key === 'composition' || layout.key === 'compositionAbs';
+    const isCompositionLayout =
+        layout.key === 'composition' ||
+        layout.key === 'compositionAbs' ||
+        layout.key === 'sectors' ||
+        layout.key === 'sectorsAbs';
 
-    // Special handling for composition charts to show holdings breakdown at the crosshair time
+    // Special handling for composition/sector charts to show breakdown at the crosshair time
     if (isCompositionLayout) {
         const crosshairDate = new Date(time);
         const selectedCurrency = layout.currency || transactionState.selectedCurrency || 'USD';
@@ -683,6 +687,8 @@ function getActiveChartKey() {
         active === 'performance' ||
         active === 'composition' ||
         active === 'compositionAbs' ||
+        active === 'sectors' ||
+        active === 'sectorsAbs' ||
         active === 'concentration' ||
         active === 'pe' ||
         active === 'contribution' ||
