@@ -100,6 +100,8 @@ describe('Yield Chart Rendering & Interaction', () => {
             lineTo: jest.fn(),
             stroke: jest.fn(),
             fillRect: jest.fn(),
+            rect: jest.fn(),
+            fill: jest.fn(),
             fillText: jest.fn(),
             measureText: jest.fn().mockReturnValue({ width: 50 }),
         };

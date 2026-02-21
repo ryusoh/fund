@@ -169,15 +169,18 @@ export async function drawYieldChart(ctx, chartManager) {
     ctx.save();
     const barWidth = Math.max(2, (chartWidth / filteredData.length) * 0.8);
     ctx.fillStyle = (colors.contribution || '#b3b3b3') + '44'; // Semi-transparent
+
+    ctx.beginPath();
     filteredData.forEach((d, i) => {
         const t = parseLocalDate(d.date).getTime();
         const x = xScale(t) - barWidth / 2;
         const y = y2Scale(incomes[i]);
         const h = Math.max(0, margin.top + chartHeight - y);
         if (h > 0) {
-            ctx.fillRect(x, y, barWidth, h);
+            ctx.rect(x, y, barWidth, h);
         }
     });
+    ctx.fill();
     ctx.restore();
 
     // 3. Draw Forward Yield Line
