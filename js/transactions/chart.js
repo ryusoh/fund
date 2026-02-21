@@ -34,6 +34,7 @@ import { drawPEChart } from './chart/renderers/pe.js';
 import { drawRollingChart } from './chart/renderers/rolling.js';
 import { drawVolatilityChart } from './chart/renderers/volatility.js';
 import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
+import { drawBetaChart } from './chart/renderers/beta.js';
 
 export { buildFxChartSeries };
 export { buildDrawdownSeries };
@@ -127,6 +128,8 @@ export function createChartManager(options = {}) {
             await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'volatility') {
             await drawVolatilityChart(ctx, chartManager, timestamp);
+        } else if (transactionState.activeChart === 'beta') {
+            await drawBetaChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'fx') {
             drawFxChart(ctx, chartManager, timestamp);
         } else {

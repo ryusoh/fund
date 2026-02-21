@@ -27,6 +27,7 @@ export const COMMAND_ALIASES = [
     'zoom',
     'z',
     'summary',
+    'beta',
 ];
 
 export const STATS_SUBCOMMANDS = [
@@ -54,6 +55,7 @@ export const PLOT_SUBCOMMANDS = [
     'drawdown',
     'rolling',
     'volatility',
+    'beta',
     'sectors',
     'sectors-abs',
 ];

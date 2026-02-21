@@ -11,6 +11,7 @@ import {
     getRollingSnapshotLine,
     getVolatilitySnapshotLine,
     getSectorsSnapshotLine,
+    getBetaSnapshotLine,
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
@@ -26,6 +27,9 @@ const ROLLING_EXPLANATION =
 const VOLATILITY_EXPLANATION =
     "Rolling volatility shows the annualized standard deviation of daily returns over a fixed period (90 days) ending on each day. It provides a visual representation of the portfolio's risk profile, indicating how much returns deviate from their average. Comparing your portfolio's volatility against benchmarks like the S&P 500 helps you understand your relative risk exposure.";
 
+const BETA_EXPLANATION =
+    'Beta measures the portfolio’s sensitivity to the broader market (S&P 500). A Beta of 1.0 means the portfolio moves in line with the market; >1.0 is more aggressive, and <1.0 is more defensive. This chart shows the 6-month (126 trading days) rolling Beta calculated as Covariance(Portfolio, Market) / Variance(Market), illustrating how your risk profile evolves as your holdings change.';
+
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {
         // Show plot help
@@ -37,6 +41,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot drawdown abs    - Show drawdown chart with absolute values\n' +
             '  plot rolling         - Show 1-Year rolling returns chart\n' +
             '  plot volatility      - Show 90-Day annualized rolling volatility chart\n' +
+            '  plot beta            - Show 6-Month rolling portfolio Beta vs S&P 500\n' +
             '  plot composition     - Show portfolio composition chart (percent view)\n' +
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot sectors         - Show sector allocation chart (percent view)\n' +
@@ -53,7 +58,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
-            '  rolling       [year|quarter|qN] | [from <...>] | [<...> to <...>]';
+            '  rolling       [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  beta          [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
     }
@@ -489,6 +495,39 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 const volatilitySnapshot = getVolatilitySnapshotLine();
                 if (volatilitySnapshot) {
                     result += `\n\n${volatilitySnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'beta': {
+            dateRange = applyDateArgs(rawArgs);
+            const betaSection = document.getElementById('runningAmountSection');
+            const betaTableContainer = document.querySelector('.table-responsive-container');
+
+            const isBetaActive = transactionState.activeChart === 'beta';
+            const isBetaVisible = betaSection && !betaSection.classList.contains('is-hidden');
+
+            if (isBetaActive && isBetaVisible) {
+                setActiveChart(null);
+                if (betaSection) {
+                    betaSection.classList.add('is-hidden');
+                }
+                result = 'Hidden portfolio beta chart.';
+            } else {
+                setActiveChart('beta');
+                if (betaSection) {
+                    betaSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (betaTableContainer) {
+                    betaTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(
+                    dateRange
+                )}.\n\n${BETA_EXPLANATION}`;
+                const betaSnapshot = await getBetaSnapshotLine();
+                if (betaSnapshot) {
+                    result += `\n\n${betaSnapshot}`;
                 }
             }
             break;

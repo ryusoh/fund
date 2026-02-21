@@ -639,7 +639,8 @@ export function updateLegend(series, chartManager) {
                     transactionState.activeChart === 'performance' ||
                     transactionState.activeChart === 'drawdown' ||
                     transactionState.activeChart === 'rolling' ||
-                    transactionState.activeChart === 'volatility'
+                    transactionState.activeChart === 'volatility' ||
+                    transactionState.activeChart === 'beta'
                 ) {
                     // Special handling for performance chart
                     if (s.key === '^LZ') {
@@ -712,7 +713,8 @@ function getActiveChartKey() {
         active === 'drawdown' ||
         active === 'drawdownAbs' ||
         active === 'rolling' ||
-        active === 'volatility'
+        active === 'volatility' ||
+        active === 'beta'
     ) {
         return active;
     }
@@ -781,12 +783,13 @@ function handlePointerMove(event) {
         Math.min(y, layout.chartBounds.bottom)
     );
 
-    // Skip range functionality for composition/sector charts
+    // Skip range functionality for composition/sector/beta charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs'
+        layout.key === 'sectorsAbs' ||
+        layout.key === 'beta'
     ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;
@@ -832,12 +835,13 @@ function handlePointerDown(event) {
         return;
     }
 
-    // Skip range functionality for composition/sector charts
+    // Skip range functionality for composition/sector/beta charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
         layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs'
+        layout.key === 'sectorsAbs' ||
+        layout.key === 'beta'
     ) {
         crosshairState.pointerId = event.pointerId;
         crosshairState.active = true;
@@ -888,13 +892,14 @@ function handlePointerUp(event) {
         );
     }
 
-    // Skip range functionality for composition/sector charts
+    // Skip range functionality for composition/sector/beta charts
     if (
         layout &&
         (layout.key === 'composition' ||
             layout.key === 'compositionAbs' ||
             layout.key === 'sectors' ||
-            layout.key === 'sectorsAbs')
+            layout.key === 'sectorsAbs' ||
+            layout.key === 'beta')
     ) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;

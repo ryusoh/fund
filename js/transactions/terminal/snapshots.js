@@ -4,6 +4,7 @@ import {
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
 } from '../state.js';
+import { chartLayouts } from '../chart/state.js';
 import {
     hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
@@ -25,7 +26,7 @@ import { getHoldingAssetClass } from '@js/config.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
-import { parseLocalDate } from '../chart/helpers.js';
+import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
 
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
@@ -451,6 +452,31 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
         lines.push(snapshots.slice(i, i + 4).join('   '));
     }
     return `${header}\n${lines.join('\n')}`;
+}
+
+export async function getBetaSnapshotLine() {
+    if (transactionState.activeChart !== 'beta' || !chartLayouts.beta) {
+        return null;
+    }
+    const layout = chartLayouts.beta;
+    const { chartDateRange } = transactionState;
+    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
+    const time = filterTo ? filterTo.getTime() : layout.maxTime;
+
+    const snapshots = [];
+    layout.series.forEach((s) => {
+        const val = s.getValueAtTime(time);
+        if (Number.isFinite(val)) {
+            snapshots.push(`${s.key === '^LZ' ? 'Portfolio' : s.key} ${val.toFixed(3)}`);
+        }
+    });
+
+    if (snapshots.length === 0) {
+        return null;
+    }
+
+    const dateLabel = formatCrosshairDateLabel(time);
+    return `6M Rolling Beta (vs S&P 500) as of ${dateLabel}:\n${snapshots.join('   ')}`;
 }
 export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
     const performanceSeries = transactionState.performanceSeries || {};

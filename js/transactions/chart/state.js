@@ -1,9 +1,16 @@
 export const chartLayouts = {
     performance: null,
     contribution: null,
-    drawdown: null,
     composition: null,
+    compositionAbs: null,
     concentration: null,
     pe: null,
     fx: null,
+    sectors: null,
+    sectorsAbs: null,
+    drawdown: null,
+    drawdownAbs: null,
+    rolling: null,
+    volatility: null,
+    beta: null,
 };

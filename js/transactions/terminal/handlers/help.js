@@ -12,9 +12,9 @@ export function handleHelpCommand(args, { appendMessage }) {
             '                       Examples: stats lifespan, s cagr, stats concentration\n' +
             '  plot (p)           - Chart commands\n' +
             '                       Use "plot" or "p" for subcommands\n' +
-            '                       Subcommands: balance, performance, drawdown, rolling, volatility, composition,\n' +
+            '                       Subcommands: balance, performance, drawdown, rolling, volatility, beta, composition,\n' +
             '                                    composition-abs, sectors, sectors-abs, concentration, pe, fx\n' +
-            '                       Examples: plot balance, p performance, plot drawdown, plot rolling, plot volatility,\n' +
+            '                       Examples: plot balance, p performance, plot drawdown, plot rolling, plot volatility, plot beta,\n' +
             '                                 plot composition 2023, plot composition abs 2023, plot sectors,\n' +
             '                                 plot sectors abs, plot concentration, plot pe, plot fx\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
