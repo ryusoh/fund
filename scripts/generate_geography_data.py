@@ -141,22 +141,37 @@ def normalize_country_name(country: str) -> str:
     return normalizations.get(country_lower, country)
 
 
-def get_etf_country_allocation(ticker: str) -> dict:
+def load_country_allocations() -> dict[str, dict[str, float]]:
+    """Load country allocations from data file."""
+    allocations_path = Path('data/fund_country_allocations.json')
+    if allocations_path.exists():
+        with open(allocations_path, 'r') as f:
+            data: dict[str, dict[str, float]] = json.load(f)
+            return data
+    return {}
+
+
+def get_etf_country_allocation(ticker: str) -> dict[str, float]:
     """
-    Get country allocation for an ETF or mutual fund from yfinance API.
+    Get country allocation for an ETF or mutual fund.
 
     Returns a dictionary of {country: percentage}.
 
-    Note: For major international ETFs, we use researched allocations from:
-    - Vanguard official factsheets (vanguard.com)
-    - ETF Database (etfdb.com)
-    - Morningstar
-    - iShares official factsheets
+    Priority:
+    1. Load from data/fund_country_allocations.json (auto-updated via ScraperAPI)
+    2. Fallback to hardcoded researched allocations
+    3. Try yfinance API
     """
     ticker_upper = ticker.upper().replace('-', '')
 
+    # First, try to load from auto-updated allocations file
+    allocations = load_country_allocations()
+    if ticker_upper in allocations and allocations[ticker_upper]:
+        return allocations[ticker_upper]
+
     # Pre-researched country allocations from official sources
     # These are based on latest available data (2024-2025)
+    # Used as fallback when auto-updated data is not available
     RESEARCHED_ALLOCATIONS = {
         # Total World Stock ETF - Source: vanguard.com (Jan 2026)
         'VT': {
@@ -629,7 +644,12 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
                     }
 
                     # Check against known fund lists
-                    if ticker_upper in us_etfs:
+                    # First, try to use auto-updated allocations from file
+                    loaded_alloc = load_country_allocations().get(ticker_upper)
+                    if loaded_alloc:
+                        for c, pct in loaded_alloc.items():
+                            country_values[c] += value * (pct / 100.0)
+                    elif ticker_upper in us_etfs:
                         country_values['United States'] += value
                     elif ticker_upper in developed_markets_etfs:
                         alloc = developed_markets_etfs[ticker_upper]

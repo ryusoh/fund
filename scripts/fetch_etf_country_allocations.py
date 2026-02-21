@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 
 
-def fetch_etf_country_allocation(etf_ticker: str) -> dict:
+def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
     """
     Fetch country allocation for an ETF from stockanalysis.com.
 
@@ -52,41 +52,53 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict:
         return {}
 
     # StockAnalysis embeds country data in JavaScript
-    # Look for patterns like: countries:[{name:"United States",y:62.5}, ...]
-    # Or: allocationByCountry:[{name:"United States",value:62.5}, ...]
+    # Format: {code:"US",weight:62.123,country:"United States"}
+    # Look for patterns like: country:"United States" with weight values
 
     country_data = {}
 
-    # Try different patterns
-    patterns = [
-        r'countries:\s*\[(.*?)\]',
-        r'allocationByCountry:\s*\[(.*?)\]',
-        r'countryAllocation:\s*\[(.*?)\]',
-        r'geographicAllocation:\s*\[(.*?)\]',
-    ]
+    # New pattern for stockanalysis.com format: {code:"XX",weight:NN.NNN,country:"Name"}
+    pattern = r'\{code:"[^"]+",weight:([^,]+),country:"([^"]+)"'
+    matches = re.findall(pattern, content)
 
-    for pattern in patterns:
-        match = re.search(pattern, content, re.IGNORECASE)
-        if match:
+    if matches:
+        for weight, country in matches:
             try:
-                js_data = '[' + match.group(1) + ']'
-                # Convert JS-like object to valid JSON
-                js_data = re.sub(r'(\w+):', r'"\1":', js_data)
-                js_data = re.sub(r"'([^']*)'", r'"\1"', js_data)
-                countries_list = json.loads(js_data)
-
-                for item in countries_list:
-                    name = item.get('name')
-                    value = item.get('y') or item.get('value')
-                    if name and value is not None:
-                        country_data[name] = float(value)
-
-                if country_data:
-                    print(f"  Found {len(country_data)} countries for {etf_ticker}")
-                    break
-            except Exception as e:
-                print(f"  Error parsing JSON for {etf_ticker}: {e}")
+                country_data[country] = float(weight)
+            except ValueError:
                 continue
+        print(f"  Found {len(country_data)} countries for {etf_ticker}")
+    else:
+        # Fallback to old patterns
+        patterns = [
+            r'countries:\s*\[(.*?)\]',
+            r'allocationByCountry:\s*\[(.*?)\]',
+            r'countryAllocation:\s*\[(.*?)\]',
+            r'geographicAllocation:\s*\[(.*?)\]',
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, content, re.IGNORECASE)
+            if match:
+                try:
+                    js_data = '[' + match.group(1) + ']'
+                    # Convert JS-like object to valid JSON
+                    js_data = re.sub(r'(\w+):', r'"\1":', js_data)
+                    js_data = re.sub(r"'([^']*)'", r'"\1"', js_data)
+                    countries_list = json.loads(js_data)
+
+                    for item in countries_list:
+                        name = item.get('name')
+                        value = item.get('y') or item.get('value')
+                        if name and value is not None:
+                            country_data[name] = float(value)
+
+                    if country_data:
+                        print(f"  Found {len(country_data)} countries for {etf_ticker}")
+                        break
+                except Exception as e:
+                    print(f"  Error parsing JSON for {etf_ticker}: {e}")
+                    continue
 
     if not country_data:
         print(f"  No country data found for {etf_ticker}")

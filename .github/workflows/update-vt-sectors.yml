@@ -1,4 +1,4 @@
-name: Weekly VT Sector Data Update
+name: Weekly VT Sector & Country Composition Update
 
 on:
     schedule:
@@ -14,7 +14,7 @@ permissions:
     contents: write
 
 jobs:
-    update-vt-sectors:
+    update-vt-data:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
@@ -28,13 +28,21 @@ jobs:
             - name: Install dependencies
               run: pip install -r requirements.txt
 
-            - name: Update VT sectors and regenerate data
+            - name: Update VT sector allocation
               run: python scripts/update_vt_sectors.py
               env:
                   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
 
+            - name: Update VT country composition
+              run: python scripts/fetch_etf_country_allocations.py
+              env:
+                  SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+
+            - name: Regenerate geography data with updated allocations
+              run: python scripts/generate_geography_data.py
+
             - name: Commit and push changes
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
-                  commit_message: 'chore(data): VTのセクター配分とBetaを自動更新 [skip ci]'
-                  file_pattern: 'data/fund_sector_allocations.json data/output/figures/composition.json data/output/figures/sectors.json'
+                  commit_message: 'chore(data): VT のセクター配分・国別構成を自動更新 [skip ci]'
+                  file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json'
