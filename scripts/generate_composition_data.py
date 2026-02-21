@@ -48,7 +48,7 @@ def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocat
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
-    for i, date in enumerate(dates):
+    for _i, date in enumerate(dates):
         date_str = date.strftime('%Y-%m-%d')
         daily_composition = {'date': date_str, 'total_value': 0}
         daily_sectors = {'date': date_str, 'total_value': 0}

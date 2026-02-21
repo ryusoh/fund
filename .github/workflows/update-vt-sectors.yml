@@ -36,5 +36,5 @@ jobs:
             - name: Commit and push changes
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
-                  commit_message: 'chore(data): VTのセクター配分を自動更新 [skip ci]'
+                  commit_message: 'chore(data): VTのセクター配分とBetaを自動更新 [skip ci]'
                   file_pattern: 'data/fund_sector_allocations.json data/output/figures/composition.json data/output/figures/sectors.json'

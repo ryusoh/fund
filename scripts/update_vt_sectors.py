@@ -1,10 +1,10 @@
-import urllib.request
-import urllib.parse
-import re
 import json
+import os
+import re
 import subprocess
 import sys
-import os
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 
@@ -139,7 +139,7 @@ def main():
                         python_exe = str(venv_python)
 
                 subprocess.run([python_exe, "scripts/generate_composition_data.py"], check=True)
-                print("Successfully updated and regenerated data.")
+                print("Successfully updated and regenerated all data.")
             except Exception as e:
                 print(f"Error regenerating data: {e}")
     else:
