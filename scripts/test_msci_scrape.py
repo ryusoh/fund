@@ -1,6 +1,5 @@
-import urllib.request
 import re
-import traceback
+import urllib.request
 
 
 def scrape_msci_forward_pe():

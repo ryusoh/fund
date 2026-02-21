@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
-import numpy as np
 
 try:
     import yfinance as yf
@@ -128,7 +127,6 @@ ETF_TICKERS = frozenset(
         "VNQ",
         "VGK",
         "VPL",
-        "VWO",
         "VRE",
         "XLE",
         "XLV",
@@ -512,7 +510,7 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 info = stock.info
                 if info is None:
                     info = {}
-            except:
+            except Exception:
                 pass
 
             current_ttm = info.get("trailingEps")
@@ -537,33 +535,47 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 yf_splits = stock.splits
                 if yf_splits is None or yf_splits.empty:
                     yf_splits = pd.Series(dtype=float)
-            except:
+            except Exception:
                 yf_splits = pd.Series(dtype=float)
 
-            def add_point(d_str: str, val: float):
+            def add_point(
+                d_str: str,
+                val: float,
+                ticker: str,
+                current_fx_series: Optional[pd.Series],
+                current_currency: str,
+                current_fin_curr: str,
+            ):
                 """Add a single EPS data point to cache, applying FX if needed."""
-                if fx_series is not None:
-                    rate = get_closest_fx(fx_series, pd.Timestamp(d_str))
+                if current_fx_series is not None:
+                    rate = get_closest_fx(current_fx_series, pd.Timestamp(d_str))
                     val *= rate
-                elif currency == "GBP" and fin_curr == "GBp":
+                elif current_currency == "GBP" and current_fin_curr == "GBp":
                     val /= 100.0
-                cache[t]["points"][d_str] = val
+                cache[ticker]["points"][d_str] = val
 
             # 1. Annual income_stmt → fully split-adjusted, use directly
             try:
                 annual = stock.income_stmt
-            except:
+            except Exception:
                 annual = pd.DataFrame()
 
             if annual is not None and not annual.empty and "Basic EPS" in annual.index:
                 for d_val, v in annual.loc["Basic EPS"].items():
                     if pd.notna(v):
-                        add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(v))
+                        add_point(
+                            pd.Timestamp(d_val).strftime("%Y-%m-%d"),
+                            float(v),
+                            t,
+                            fx_series,
+                            currency,
+                            fin_curr,
+                        )
 
             # 2. Quarterly income_stmt → fully split-adjusted, build TTM
             try:
                 quarterly = stock.quarterly_income_stmt
-            except:
+            except Exception:
                 quarterly = pd.DataFrame()
 
             quarterly_anchors = {}
@@ -575,7 +587,14 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 if len(q_series) >= 4:
                     q_ttm = q_series.rolling(4).sum().dropna()
                     for d_val, ttm_v in q_ttm.items():
-                        add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(ttm_v))
+                        add_point(
+                            pd.Timestamp(d_val).strftime("%Y-%m-%d"),
+                            float(ttm_v),
+                            t,
+                            fx_series,
+                            currency,
+                            fin_curr,
+                        )
 
             # 3. get_earnings_dates() → REQUIRES split normalization
             #
@@ -645,7 +664,14 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                     if len(q_eps_series) >= 4:
                         q_ttm = q_eps_series.rolling(4).sum().dropna()
                         for d_val, ttm_v in q_ttm.items():
-                            add_point(pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(ttm_v))
+                            add_point(
+                                pd.Timestamp(d_val).strftime("%Y-%m-%d"),
+                                float(ttm_v),
+                                t,
+                                fx_series,
+                                currency,
+                                fin_curr,
+                            )
             except Exception as e:
                 # Silence internal yfinance TypeError: argument of type 'NoneType' is not iterable
                 if "NoneType" not in str(e):
@@ -719,7 +745,6 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
         s = pd.Series(index=dates, dtype=float)
         # Convert keys to timestamps and sort
         ts_points = {pd.Timestamp(k).tz_localize(None): v for k, v in points.items()}
-        sorted_ts = sorted(ts_points.keys())
 
         for dt, val in ts_points.items():
             if dt in dates:
@@ -741,7 +766,7 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
         pe = info.get("trailingPE")
         if pe is not None and math.isfinite(pe) and pe > 0:
             return pd.Series(float(pe), index=dates)
-    except:
+    except Exception:
         pass
     return None
 
@@ -919,7 +944,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
             if pe_match:
                 return float(pe_match.group(1))
 
-        print(f"WSJ scrape failed: 'priceEarningsRatioEstimate' not found near 'P 500 Index'.")
+        print("WSJ scrape failed: 'priceEarningsRatioEstimate' not found near 'P 500 Index'.")
     except Exception as e:
         print(f"WSJ scrape failed: {e}")
     return None

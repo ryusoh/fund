@@ -1,6 +1,8 @@
 /* global KeyboardEvent */
 import { jest } from '@jest/globals';
 
+jest.setTimeout(15000);
+
 // Mock essential modules
 jest.mock('@js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),

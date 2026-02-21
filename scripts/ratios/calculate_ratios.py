@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional, cast
+from typing import Any, Dict, List, Tuple, cast
 
 import numpy as np
 import pandas as pd

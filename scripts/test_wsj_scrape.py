@@ -1,6 +1,6 @@
-import urllib.request
 import re
 import traceback
+import urllib.request
 
 
 def scrape_wsj_forward_pe():

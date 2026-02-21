@@ -6,8 +6,8 @@ import unittest
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Dict
 from unittest.mock import MagicMock, mock_open, patch
-from typing import Dict, Any, List
 
 import pandas as pd
 
@@ -55,8 +55,7 @@ class TestFundScripts(unittest.TestCase):
 
     # Test for fetch_forex.py
     @patch("scripts.data.fetch_forex.yf.Ticker")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_fetch_forex_data(self, mock_file, mock_yf_ticker) -> None:
+    def test_fetch_forex_data(self, mock_yf_ticker) -> None:
         # Mocking the yfinance Ticker
         mock_cny = MagicMock()
         mock_cny.history.return_value = pd.DataFrame({"Close": [7.2]})
@@ -76,13 +75,25 @@ class TestFundScripts(unittest.TestCase):
 
         mock_yf_ticker.side_effect = ticker_side_effect
 
-        # Run the function
-        fetch_forex_data()
+        # Mock file operations to handle multiple files with different formats
+        # First read is often fx_data.json, second is fx_daily_rates.csv
+        initial_json = json.dumps({"base": "USD", "currencies": ["CNY", "JPY", "KRW"], "rates": {}})
+        initial_csv = "date,USD,CNY,JPY,KRW\n2023-01-01,1.0,7.0,140.0,1200.0"
 
-        # Assert that the file was written to
-        handle = mock_file()
-        all_writes = "".join(c[0][0] for c in handle.write.call_args_list)
-        written_data = json.loads(all_writes)
+        json_mock = mock_open(read_data=initial_json).return_value
+        csv_mock = mock_open(read_data=initial_csv).return_value
+
+        def open_side_effect(path, *args, **kwargs):
+            if str(path).endswith('.json'):
+                return json_mock
+            return csv_mock
+
+        with patch("builtins.open", side_effect=open_side_effect):
+            fetch_forex_data()
+
+        # Assert that the JSON file was updated
+        all_json_writes = "".join(call[0][0] for call in json_mock.write.call_args_list)
+        written_data = json.loads(all_json_writes)
 
         self.assertEqual(written_data["rates"]["CNY"], 7.2)
         self.assertEqual(written_data["rates"]["JPY"], 145.0)

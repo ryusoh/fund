@@ -65,6 +65,8 @@ precommit: hooks fmt-check
 	fi
 
 precommit-fix: fmt lint-fix markdownlint-fix js-test
+	$(PY) -m ruff check --fix scripts tests
+	$(PY) -m pytest
 	$(MAKE) precommit
 
 perms:
@@ -112,7 +114,7 @@ js-test:
 	npm test
 
 test: js-test
-	pytest
+	$(PY) -m pytest
 
 verify: lint type sec test
 

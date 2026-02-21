@@ -1,26 +1,24 @@
 import sys
 import unittest
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any
-from unittest.mock import patch, MagicMock
+from typing import Any, Dict
+from unittest.mock import MagicMock, patch
+
+import pandas as pd
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.generate_pe_data import (
-    interpolate_eps_series,
-    calculate_harmonic_pe,
-    get_closest_fx,
-    fetch_stock_eps_data,
-    cumulative_forward_split_factor,
-    yf_symbol,
-    is_etf,
-    EXEMPT_TICKERS,
+from scripts.generate_pe_data import (  # noqa: E402
     ETF_TICKERS,
+    EXEMPT_TICKERS,
+    calculate_harmonic_pe,
+    cumulative_forward_split_factor,
+    fetch_stock_eps_data,
+    interpolate_eps_series,
+    is_etf,
+    yf_symbol,
 )
 
 

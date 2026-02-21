@@ -1,7 +1,5 @@
 import pandas as pd
 import yfinance as yf
-import json
-from pathlib import Path
 
 
 def main():
