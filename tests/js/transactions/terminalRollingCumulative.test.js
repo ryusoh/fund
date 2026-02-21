@@ -111,15 +111,19 @@ describe('composition/sectors snapshot hints', () => {
     test('getCompositionSnapshotLine hint includes sectors switch reference', async () => {
         const fs = await import('fs');
         const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
-        expect(snapshotsCode).toContain("'sectors' to switch to sectors chart");
-        expect(snapshotsCode).toContain("'sectors' to switch to sectors abs chart");
+        expect(snapshotsCode).toContain("'sectors' or 'geography' to switch charts");
     });
 
     test('getSectorsSnapshotLine hint includes composition switch reference', async () => {
         const fs = await import('fs');
         const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
-        expect(snapshotsCode).toContain("'composition' to switch to composition chart");
-        expect(snapshotsCode).toContain("'composition' to switch to composition abs chart");
+        expect(snapshotsCode).toContain("'composition' or 'geography' to switch charts");
+    });
+
+    test('getGeographySnapshotLine hint includes composition and sectors switch reference', async () => {
+        const fs = await import('fs');
+        const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
+        expect(snapshotsCode).toContain("'composition' or 'sectors' to switch charts");
     });
 });
 
@@ -138,6 +142,11 @@ describe('composition/sectors autocomplete', () => {
         expect(COMMAND_ALIASES).toContain('sectors');
     });
 
+    test('geography is included in COMMAND_ALIASES for autocomplete', async () => {
+        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        expect(COMMAND_ALIASES).toContain('geography');
+    });
+
     test('composition is in PLOT_SUBCOMMANDS', async () => {
         const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('composition');
@@ -146,6 +155,11 @@ describe('composition/sectors autocomplete', () => {
     test('sectors is in PLOT_SUBCOMMANDS', async () => {
         const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('sectors');
+    });
+
+    test('geography is in PLOT_SUBCOMMANDS', async () => {
+        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        expect(PLOT_SUBCOMMANDS).toContain('geography');
     });
 });
 
@@ -165,6 +179,12 @@ describe('composition/sectors command handlers exist', () => {
         expect(typeof handleSectorsCommand).toBe('function');
     });
 
+    test('handleGeographyCommand is exported', async () => {
+        const { handleGeographyCommand } =
+            await import('@js/transactions/terminal/handlers/misc.js');
+        expect(typeof handleGeographyCommand).toBe('function');
+    });
+
     test('commands.js has case for composition', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
@@ -175,5 +195,11 @@ describe('composition/sectors command handlers exist', () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
         expect(commandsCode).toContain("case 'sectors':");
+    });
+
+    test('commands.js has case for geography', async () => {
+        const fs = await import('fs');
+        const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
+        expect(commandsCode).toContain("case 'geography':");
     });
 });

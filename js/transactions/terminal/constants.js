@@ -33,6 +33,7 @@ export const COMMAND_ALIASES = [
     'cumulative',
     'composition',
     'sectors',
+    'geography',
 ];
 
 export const STATS_SUBCOMMANDS = [

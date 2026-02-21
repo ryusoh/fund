@@ -525,15 +525,37 @@ export async function handleCompositionCommand(args, { appendMessage, chartManag
             }
             result = 'Switched to composition chart (absolute view).';
         }
+    } else if (activeChart === 'geography') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be visible. Use `plot geography` first.';
+        } else {
+            setActiveChart('composition');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to composition chart.';
+        }
+    } else if (activeChart === 'geographyAbs') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be visible. Use `plot geography abs` first.';
+        } else {
+            setActiveChart('compositionAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to composition chart (absolute view).';
+        }
     } else {
         result =
-            'Composition or Sectors chart must be active. Use `plot composition` or `plot sectors` first.';
+            'Composition, Sectors, or Geography chart must be active. Use `plot composition`, `plot sectors`, or `plot geography` first.';
     }
 
     if (result.includes('Showing') || result.includes('Switched')) {
         const { getCompositionSnapshotLine } = await import('../snapshots.js');
         const labelPrefix =
-            activeChart === 'sectorsAbs' || activeChart === 'compositionAbs'
+            activeChart === 'sectorsAbs' ||
+            activeChart === 'compositionAbs' ||
+            activeChart === 'geographyAbs'
                 ? 'Composition Abs'
                 : 'Composition';
         const summary = await getCompositionSnapshotLine({
@@ -586,18 +608,123 @@ export async function handleSectorsCommand(args, { appendMessage, chartManager }
             }
             result = 'Switched to sector allocation chart (absolute view).';
         }
+    } else if (activeChart === 'geography') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be visible. Use `plot geography` first.';
+        } else {
+            setActiveChart('sectors');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to sector allocation chart.';
+        }
+    } else if (activeChart === 'geographyAbs') {
+        if (!isChartVisible) {
+            result = 'Geography chart must be visible. Use `plot geography abs` first.';
+        } else {
+            setActiveChart('sectorsAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to sector allocation chart (absolute view).';
+        }
     } else {
         result =
-            'Composition or Sectors chart must be active. Use `plot composition` or `plot sectors` first.';
+            'Composition, Sectors, or Geography chart must be active. Use `plot composition`, `plot sectors`, or `plot geography` first.';
     }
 
     if (result.includes('Showing') || result.includes('Switched')) {
         const { getSectorsSnapshotLine } = await import('../snapshots.js');
         const labelPrefix =
-            activeChart === 'compositionAbs' || activeChart === 'sectorsAbs'
+            activeChart === 'compositionAbs' ||
+            activeChart === 'sectorsAbs' ||
+            activeChart === 'geographyAbs'
                 ? 'Sectors Abs'
                 : 'Sectors';
         const summary = await getSectorsSnapshotLine({
+            labelPrefix,
+        });
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+
+    appendMessage(result);
+}
+
+export async function handleGeographyCommand(args, { appendMessage, chartManager }) {
+    let result = '';
+    const chartSection = document.getElementById('runningAmountSection');
+    const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
+    const activeChart = transactionState.activeChart;
+
+    if (activeChart === 'geography' || activeChart === 'geographyAbs') {
+        if (!isChartVisible) {
+            setActiveChart(activeChart);
+            if (chartSection) {
+                chartSection.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Showing geography chart.';
+        } else {
+            result = 'Geography chart is already active.';
+        }
+    } else if (activeChart === 'composition') {
+        if (!isChartVisible) {
+            result = 'Composition chart must be visible. Use `plot composition` first.';
+        } else {
+            setActiveChart('geography');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to geography chart.';
+        }
+    } else if (activeChart === 'compositionAbs') {
+        if (!isChartVisible) {
+            result = 'Composition chart must be visible. Use `plot composition abs` first.';
+        } else {
+            setActiveChart('geographyAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to geography chart (absolute view).';
+        }
+    } else if (activeChart === 'sectors') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be visible. Use `plot sectors` first.';
+        } else {
+            setActiveChart('geography');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to geography chart.';
+        }
+    } else if (activeChart === 'sectorsAbs') {
+        if (!isChartVisible) {
+            result = 'Sector allocation chart must be visible. Use `plot sectors abs` first.';
+        } else {
+            setActiveChart('geographyAbs');
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            result = 'Switched to geography chart (absolute view).';
+        }
+    } else {
+        result =
+            'Composition, Sectors, or Geography chart must be active. Use `plot composition`, `plot sectors`, or `plot geography` first.';
+    }
+
+    if (result.includes('Showing') || result.includes('Switched')) {
+        const { getGeographySnapshotLine } = await import('../snapshots.js');
+        const labelPrefix =
+            activeChart === 'compositionAbs' ||
+            activeChart === 'sectorsAbs' ||
+            activeChart === 'geographyAbs'
+                ? 'Geography Abs'
+                : 'Geography';
+        const summary = await getGeographySnapshotLine({
             labelPrefix,
         });
         if (summary) {

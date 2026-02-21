@@ -768,9 +768,9 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
 
     let hint = '';
     if (labelPrefix === 'Composition') {
-        hint = "\n(Hint: use 'abs' for absolute values, 'sectors' to switch to sectors chart)";
+        hint = "\n(Hint: use 'abs' for absolute values, 'sectors' or 'geography' to switch charts)";
     } else if (labelPrefix === 'Composition Abs') {
-        hint = "\n(Hint: use 'per' for percentages, 'sectors' to switch to sectors abs chart)";
+        hint = "\n(Hint: use 'per' for percentages, 'sectors' or 'geography' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
@@ -857,10 +857,9 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     let hint = '';
     if (labelPrefix === 'Sectors') {
         hint =
-            "\n(Hint: use 'abs' for absolute values, 'composition' to switch to composition chart)";
+            "\n(Hint: use 'abs' for absolute values, 'composition' or 'geography' to switch charts)";
     } else if (labelPrefix === 'Sectors Abs') {
-        hint =
-            "\n(Hint: use 'per' for percentages, 'composition' to switch to composition abs chart)";
+        hint = "\n(Hint: use 'per' for percentages, 'composition' or 'geography' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
@@ -946,9 +945,10 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
 
     let hint = '';
     if (labelPrefix === 'Geography') {
-        hint = "\n(Hint: use 'abs' for absolute values)";
+        hint =
+            "\n(Hint: use 'abs' for absolute values, 'composition' or 'sectors' to switch charts)";
     } else if (labelPrefix === 'Geography Abs') {
-        hint = "\n(Hint: use 'per' for percentages)";
+        hint = "\n(Hint: use 'per' for percentages, 'composition' or 'sectors' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
