@@ -362,8 +362,13 @@ export function drawCrosshairOverlay(ctx, layout) {
                 isBuySellBar,
             });
 
-            if (hasHover && !isBuySellBar && typeof layout.yScale === 'function') {
-                const y = layout.yScale(value);
+            if (
+                hasHover &&
+                !isBuySellBar &&
+                (typeof series.yScale === 'function' || typeof layout.yScale === 'function')
+            ) {
+                const yScale = typeof series.yScale === 'function' ? series.yScale : layout.yScale;
+                const y = yScale(value);
                 if (Number.isFinite(y)) {
                     ctx.beginPath();
                     ctx.fillStyle = series.color || '#ffffff';

@@ -251,6 +251,7 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
         label: 'Forward Yield',
         color: gradientStops[1],
         points: yieldCoords,
+        yScale,
         getValueAtTime: createTimeInterpolator(yieldCoords),
         formatValue: (v) => `${v.toFixed(2)}%`,
     };
@@ -261,6 +262,7 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
         label: 'TTM Income',
         color: colors.portfolio || '#7a7a7a',
         points: incomePoints,
+        yScale: y2Scale,
         getValueAtTime: createTimeInterpolator(incomePoints),
         formatValue: (v) => formatCurrencyInline(v, { currency: selectedCurrency }),
     };
@@ -337,5 +339,5 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
 
     // Update UI components
     updateLegend(series, chartManager);
-    drawCrosshairOverlay(ctx, series, chartLayouts.yield);
+    drawCrosshairOverlay(ctx, chartLayouts.yield);
 }
