@@ -159,8 +159,8 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
 
     Priority:
     1. Load from data/fund_country_allocations.json (auto-updated via ScraperAPI)
-    2. Fallback to hardcoded researched allocations
-    3. Try yfinance API
+    2. Use hardcoded allocations for mutual funds (not tracked by stockanalysis.com)
+    3. Try yfinance API as fallback
     """
     ticker_upper = ticker.upper().replace('-', '')
 
@@ -169,116 +169,106 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
     if ticker_upper in allocations and allocations[ticker_upper]:
         return allocations[ticker_upper]
 
-    # Pre-researched country allocations from official sources
-    # These are based on latest available data (2024-2025)
-    # Used as fallback when auto-updated data is not available
-    RESEARCHED_ALLOCATIONS = {
-        # Total World Stock ETF - Source: vanguard.com (Jan 2026)
-        'VT': {
-            'United States': 62.1,
-            'Japan': 5.8,
-            'United Kingdom': 3.4,
-            'China': 3.3,
-            'Canada': 3.0,
-            'France': 2.3,
-            'Germany': 2.1,
-            'Taiwan': 2.0,
-            'Switzerland': 2.0,
-            'India': 2.0,
-            'Australia': 1.7,
-            'South Korea': 1.5,
-            'Sweden': 0.9,
-            'Denmark': 0.8,
-            'Italy': 0.7,
-            'Spain': 0.6,
-            'Hong Kong': 0.6,
-            'Brazil': 0.5,
-            'Singapore': 0.4,
-            'Mexico': 0.3,
-            'Saudi Arabia': 0.3,
-            'Indonesia': 0.2,
-            'Thailand': 0.2,
-            'Other': 3.3,
+    # Mutual funds - not tracked by stockanalysis.com, use hardcoded allocations
+    # These are historical holdings, so static data is acceptable
+    MUTUAL_FUND_ALLOCATIONS: dict[str, dict[str, float]] = {
+        'VTMGX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
         },
-        # Emerging Markets ETF - Source: etfdb.com / morningstar (2025)
-        'VWO': {
-            'China': 27.93,
-            'Taiwan': 24.20,
-            'India': 15.10,
-            'Brazil': 4.20,
-            'South Africa': 3.30,
-            'South Korea': 3.00,
-            'Saudi Arabia': 2.80,
-            'Mexico': 2.50,
-            'Indonesia': 2.20,
-            'Thailand': 2.00,
-            'Poland': 1.50,
-            'Other': 11.27,
+        'FSGGX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
         },
-        # iShares Core MSCI Emerging Markets - Source: iShares (2025)
-        'IEMG': {
-            'China': 28.00,
-            'Taiwan': 23.50,
-            'India': 18.00,
-            'South Korea': 5.50,
-            'Brazil': 4.50,
-            'Saudi Arabia': 3.80,
-            'South Africa': 3.20,
-            'Mexico': 2.80,
-            'Indonesia': 2.50,
-            'Thailand': 2.20,
-            'Other': 6.00,
+        'VIEIX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
         },
-        # Vanguard Emerging Markets Index - Source: vanguard.com (2025)
+        'VTPSX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
+        },
+        'VFFSX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
+        },
+        'FBCGX': {
+            'Japan': 17.0,
+            'United Kingdom': 11.0,
+            'Canada': 7.5,
+            'France': 7.0,
+            'Switzerland': 6.5,
+            'Germany': 6.0,
+            'Australia': 5.5,
+            'Taiwan': 4.5,
+            'South Korea': 4.0,
+            'Netherlands': 3.0,
+            'Other': 28.0,
+        },
         'VEMRX': {
-            'China': 31.90,
-            'Taiwan': 22.80,
-            'India': 19.50,
-            'South Korea': 4.50,
-            'Brazil': 4.00,
-            'Saudi Arabia': 3.50,
-            'South Africa': 3.20,
-            'Mexico': 2.50,
-            'Indonesia': 2.20,
-            'Thailand': 2.00,
-            'Other': 3.90,
-        },
-        # iShares Global Clean Energy - Source: ishares.com factsheet (2025)
-        'ICLN': {
-            'United States': 42.56,
-            'China': 17.53,
-            'Brazil': 8.05,
-            'Spain': 7.99,
-            'Denmark': 4.26,
-            'India': 3.55,
-            'South Korea': 2.48,
-            'Japan': 2.24,
-            'Canada': 2.00,
-            'United Kingdom': 1.80,
-            'Other': 7.54,
-        },
-        # iShares Semiconductor ETF - Source: etfdb.com (2025)
-        'SOXX': {
-            'United States': 82.11,
-            'Taiwan': 5.66,
-            'Netherlands': 4.50,
-            'South Korea': 3.00,
-            'Japan': 2.00,
-            'Switzerland': 0.60,
-            'Other': 2.13,
-        },
-        # China A-Shares ETF - Source: issuer factsheet
-        'ASHR': {
-            'China': 95.00,
-            'Other': 5.00,
+            'China': 32.0,
+            'India': 18.0,
+            'Taiwan': 17.0,
+            'Brazil': 6.0,
+            'South Korea': 5.0,
+            'Saudi Arabia': 4.0,
+            'South Africa': 3.5,
+            'Mexico': 3.0,
+            'Indonesia': 2.5,
+            'Thailand': 2.5,
+            'Other': 6.5,
         },
     }
 
-    # Check researched allocations first
-    if ticker_upper in RESEARCHED_ALLOCATIONS:
-        return RESEARCHED_ALLOCATIONS[ticker_upper]
+    if ticker_upper in MUTUAL_FUND_ALLOCATIONS:
+        return MUTUAL_FUND_ALLOCATIONS[ticker_upper]
 
-    # Try to fetch from yfinance
+    # Try to fetch from yfinance as fallback
     try:
         yf_ticker = yf.Ticker(ticker_upper)
         funds_data = yf_ticker.funds_data
@@ -293,7 +283,7 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
             return {}
 
         # Normalize country names
-        normalized = {}
+        normalized: dict[str, float] = {}
         for country, pct in country_alloc.items():
             norm_country = normalize_country_name(country)
             normalized[norm_country] = pct
@@ -463,186 +453,6 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
                         'VGSNX',
                     )
 
-                    # International developed markets funds
-                    developed_markets_etfs = {
-                        'VTMGX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                        'FSGGX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                        'VIEIX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                        'VTPSX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                        'VFFSX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                        'FBCGX': {
-                            'Japan': 17.0,
-                            'United Kingdom': 11.0,
-                            'Canada': 7.5,
-                            'France': 7.0,
-                            'Switzerland': 6.5,
-                            'Germany': 6.0,
-                            'Australia': 5.5,
-                            'Taiwan': 4.5,
-                            'South Korea': 4.0,
-                            'Netherlands': 3.0,
-                            'Other': 28.0,
-                        },
-                    }
-
-                    # Emerging markets funds
-                    emerging_markets_etfs = {
-                        'VWO': {
-                            'China': 32.0,
-                            'India': 18.0,
-                            'Taiwan': 17.0,
-                            'Brazil': 6.0,
-                            'South Korea': 5.0,
-                            'Saudi Arabia': 4.0,
-                            'South Africa': 3.5,
-                            'Mexico': 3.0,
-                            'Indonesia': 2.5,
-                            'Thailand': 2.5,
-                            'Other': 6.5,
-                        },
-                        'IEMG': {
-                            'China': 32.0,
-                            'India': 18.0,
-                            'Taiwan': 17.0,
-                            'Brazil': 6.0,
-                            'South Korea': 5.0,
-                            'Saudi Arabia': 4.0,
-                            'South Africa': 3.5,
-                            'Mexico': 3.0,
-                            'Indonesia': 2.5,
-                            'Thailand': 2.5,
-                            'Other': 6.5,
-                        },
-                        'VEMRX': {
-                            'China': 32.0,
-                            'India': 18.0,
-                            'Taiwan': 17.0,
-                            'Brazil': 6.0,
-                            'South Korea': 5.0,
-                            'Saudi Arabia': 4.0,
-                            'South Africa': 3.5,
-                            'Mexico': 3.0,
-                            'Indonesia': 2.5,
-                            'Thailand': 2.5,
-                            'Other': 6.5,
-                        },
-                    }
-
-                    # Global/World funds
-                    global_etfs = {
-                        'VT': {
-                            'United States': 62.1,
-                            'Japan': 5.8,
-                            'United Kingdom': 3.4,
-                            'China': 3.3,
-                            'Canada': 3.0,
-                            'France': 2.3,
-                            'Germany': 2.1,
-                            'Taiwan': 2.0,
-                            'Switzerland': 2.0,
-                            'India': 2.0,
-                            'Australia': 1.7,
-                            'South Korea': 1.5,
-                            'Sweden': 0.9,
-                            'Denmark': 0.8,
-                            'Italy': 0.7,
-                            'Spain': 0.6,
-                            'Hong Kong': 0.6,
-                            'Brazil': 0.5,
-                            'Singapore': 0.4,
-                            'Mexico': 0.3,
-                            'Saudi Arabia': 0.3,
-                            'Indonesia': 0.2,
-                            'Thailand': 0.2,
-                            'Other': 3.3,
-                        },
-                    }
-
-                    # Sector/thematic ETFs with some international exposure
-                    sector_etfs = {
-                        'ICLN': {
-                            'United States': 40.0,
-                            'China': 10.0,
-                            'Spain': 8.0,
-                            'Denmark': 7.0,
-                            'Canada': 6.0,
-                            'United Kingdom': 5.0,
-                            'Germany': 4.0,
-                            'Japan': 4.0,
-                            'Other': 16.0,
-                        },
-                        'SOXX': {
-                            'United States': 80.0,
-                            'Taiwan': 10.0,
-                            'Netherlands': 5.0,
-                            'South Korea': 3.0,
-                            'Other': 2.0,
-                        },
-                        'IGV': {'United States': 95.0, 'Other': 5.0},
-                        'IHF': {'United States': 92.0, 'Other': 8.0},
-                        'ASHR': {'China': 95.0, 'Other': 5.0},  # China A-Shares
-                    }
-
                     # Check against known fund lists
                     # First, try to use auto-updated allocations from file
                     loaded_alloc = load_country_allocations().get(ticker_upper)
@@ -650,25 +460,11 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
                         for c, pct in loaded_alloc.items():
                             country_values[c] += value * (pct / 100.0)
                     elif ticker_upper in us_etfs:
+                        # US-domiciled ETFs are treated as 100% US
                         country_values['United States'] += value
-                    elif ticker_upper in developed_markets_etfs:
-                        alloc = developed_markets_etfs[ticker_upper]
-                        for c, pct in alloc.items():
-                            country_values[c] += value * (pct / 100.0)
-                    elif ticker_upper in emerging_markets_etfs:
-                        alloc = emerging_markets_etfs[ticker_upper]
-                        for c, pct in alloc.items():
-                            country_values[c] += value * (pct / 100.0)
-                    elif ticker_upper in global_etfs:
-                        alloc = global_etfs[ticker_upper]
-                        for c, pct in alloc.items():
-                            country_values[c] += value * (pct / 100.0)
-                    elif ticker_upper in sector_etfs:
-                        alloc = sector_etfs[ticker_upper]
-                        for c, pct in alloc.items():
-                            country_values[c] += value * (pct / 100.0)
                     else:
-                        # Unknown fund - use 'Other'
+                        # Unknown fund or missing allocation data - use 'Other'
+                        # This should rarely happen now that we fetch data for all ETFs
                         country_values['Other'] += value
             else:
                 country_values[country] += value

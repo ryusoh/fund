@@ -159,17 +159,14 @@ def normalize_country_name(country: str) -> str:
 
 def main():
     """Main function to fetch country allocations for ETFs."""
-    # ETFs to fetch country data for
+    # Only fetch VT country data since it's the only international ETF currently held
+    # Other ETFs are either US-only or mutual funds (not tracked by stockanalysis.com)
     etfs_to_fetch = [
-        'VT',  # Total World
-        'VWO',  # Emerging Markets
-        'IEMG',  # Emerging Markets
-        'VEA',  # Developed Markets
-        'VTMGX',  # Developed Markets
-        'ICLN',  # Clean Energy
-        'SOXX',  # Semiconductors
-        'ASHR',  # China A-Shares
+        'VT',  # Total World Stock - only international ETF currently held
     ]
+
+    # Note: Mutual funds (VTMGX, FSGGX, VIEIX, VTPSX, VFFSX, FBCGX, VEMRX)
+    # are not on stockanalysis.com - use hardcoded allocations in generate_geography_data.py
 
     # Load existing allocations
     allocations_path = Path('data/fund_country_allocations.json')

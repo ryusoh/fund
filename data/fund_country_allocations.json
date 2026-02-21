@@ -165,5 +165,295 @@
   "ASHR": {
     "China": 99.68699,
     "Hong Kong": 0.31301
+  },
+  "IGV": {
+    "United States": 99.35163,
+    "Canada": 0.64837
+  },
+  "IHF": {
+    "United States": 100.0
+  },
+  "BUG": {
+    "United States": 81.54638,
+    "Japan": 6.584,
+    "Israel": 5.98879,
+    "Canada": 4.16541,
+    "Korea": 0.92446,
+    "United Kingdom": 0.78886,
+    "Netherlands": 0.00122,
+    "Brazil": 0.00064,
+    "China": 0.00047
+  },
+  "SOXL": {
+    "United States": 83.07716,
+    "Netherlands": 8.16012,
+    "Taiwan": 5.16555,
+    "Hong Kong": 1.8504,
+    "China": 1.22696,
+    "Singapore": 0.51981
+  },
+  "AGG": {
+    "United States": 97.15
+  },
+  "HYG": {
+    "United States": 11.05613
+  },
+  "JNK": {
+    "United States": 100.0
+  },
+  "ARKK": {
+    "United States": 86.7048,
+    "Switzerland": 5.44634,
+    "Canada": 4.18248,
+    "China": 2.12842,
+    "Taiwan": 1.39376,
+    "Italy": 0.14421
+  },
+  "ARKG": {
+    "United States": 90.7937,
+    "Switzerland": 8.09424,
+    "United Kingdom": 1.11206
+  },
+  "ARKW": {
+    "United States": 86.99429,
+    "Canada": 5.11729,
+    "Taiwan": 2.93255,
+    "China": 2.44922,
+    "United Kingdom": 1.19569,
+    "Brazil": 1.1213,
+    "Italy": 0.18964
+  },
+  "ARKF": {
+    "United States": 71.81105,
+    "Canada": 10.09303,
+    "Brazil": 5.32975,
+    "Netherlands": 2.78171,
+    "Hong Kong": 1.78226,
+    "Singapore": 1.75943,
+    "South Africa": 1.5283,
+    "China": 1.38567,
+    "Japan": 1.268,
+    "Israel": 1.02216,
+    "Italy": 0.19942
+  },
+  "ARKQ": {
+    "United States": 86.88319,
+    "China": 5.72155,
+    "Taiwan": 2.47344,
+    "Canada": 1.96562,
+    "Japan": 1.519,
+    "Israel": 1.43702
+  },
+  "JEPI": {
+    "United States": 98.40403,
+    "Switzerland": 0.80704,
+    "Netherlands": 0.78893
+  },
+  "JEPQ": {
+    "United States": 96.79564,
+    "Netherlands": 1.76714,
+    "Canada": 0.66123,
+    "Brazil": 0.65108,
+    "China": 0.12491
+  },
+  "TQQQ": {
+    "United States": 96.43995,
+    "Netherlands": 1.21476,
+    "Canada": 1.19059,
+    "Brazil": 0.55739,
+    "China": 0.37804,
+    "United Kingdom": 0.21926
+  },
+  "UPRO": {
+    "United States": 99.46927,
+    "Switzerland": 0.24407,
+    "China": 0.11571,
+    "Netherlands": 0.10027,
+    "Ireland": 0.03732,
+    "United Kingdom": 0.03336
+  },
+  "SPXL": {
+    "United States": 99.46926,
+    "Switzerland": 0.24406,
+    "China": 0.11578,
+    "Netherlands": 0.10024,
+    "Ireland": 0.03731,
+    "United Kingdom": 0.03336
+  },
+  "QLD": {
+    "United States": 96.43995,
+    "Netherlands": 1.21472,
+    "Canada": 1.19059,
+    "Brazil": 0.55746,
+    "China": 0.37804,
+    "United Kingdom": 0.21925
+  },
+  "BOXX": {
+    "United States": 99.4691,
+    "Switzerland": 0.24411,
+    "China": 0.11579,
+    "Netherlands": 0.10041,
+    "Ireland": 0.03726,
+    "United Kingdom": 0.03334
+  },
+  "PTLC": {
+    "United States": 99.46708,
+    "Switzerland": 0.24421,
+    "China": 0.11687,
+    "Netherlands": 0.10088,
+    "Ireland": 0.03748,
+    "United Kingdom": 0.03348
+  },
+  "VNQ": {
+    "United States": 100.0
+  },
+  "VOX": {
+    "United States": 99.60189,
+    "United Kingdom": 0.20795,
+    "Canada": 0.11455
+  },
+  "VDE": {
+    "United States": 99.80893,
+    "Brazil": 0.19107
+  },
+  "VFH": {
+    "United States": 98.45741,
+    "Switzerland": 1.36451
+  },
+  "VIS": {
+    "United States": 98.93057,
+    "Canada": 0.65526,
+    "United Kingdom": 0.28113,
+    "India": 0.12517,
+    "Switzerland": 0.00785
+  },
+  "XLF": {
+    "United States": 98.56058,
+    "Switzerland": 1.43942
+  },
+  "XLK": {
+    "United States": 98.90777,
+    "China": 0.58547,
+    "Netherlands": 0.50676
+  },
+  "XLV": {
+    "United States": 100.0
+  },
+  "XLE": {
+    "United States": 100.0
+  },
+  "XLI": {
+    "United States": 100.0
+  },
+  "XLP": {
+    "United States": 100.0
+  },
+  "XLY": {
+    "United States": 99.24451,
+    "Switzerland": 0.75549
+  },
+  "XLB": {
+    "United States": 94.55563,
+    "Ireland": 2.8745,
+    "United Kingdom": 2.56987
+  },
+  "XLRE": {
+    "United States": 100.0
+  },
+  "DIA": {
+    "United States": 100.0
+  },
+  "IWM": {
+    "United States": 97.25013,
+    "Hong Kong": 0.77832,
+    "Brazil": 0.46924,
+    "Switzerland": 0.25708,
+    "United Kingdom": 0.25034,
+    "Canada": 0.16925,
+    "Taiwan": 0.08622,
+    "Norway": 0.07067,
+    "Singapore": 0.05195,
+    "Mexico": 0.04157,
+    "Australia": 0.03266,
+    "Belgium": 0.01327,
+    "Ireland": 0.01298,
+    "Israel": 0.00696,
+    "Japan": 0.001
+  },
+  "MDY": {
+    "United States": 97.55536,
+    "United Kingdom": 0.81193,
+    "Mexico": 0.69874,
+    "Canada": 0.5974,
+    "India": 0.23458,
+    "Brazil": 0.10199
+  },
+  "VTWO": {
+    "United States": 97.14195,
+    "Hong Kong": 0.77679,
+    "Brazil": 0.49109,
+    "Switzerland": 0.26877,
+    "United Kingdom": 0.25205,
+    "Canada": 0.19636,
+    "Taiwan": 0.09929,
+    "Norway": 0.07249,
+    "Singapore": 0.06772,
+    "Mexico": 0.04321,
+    "Australia": 0.03284,
+    "Ireland": 0.01443,
+    "Belgium": 0.01375,
+    "Israel": 0.00775,
+    "Japan": 0.001
+  },
+  "VUG": {
+    "United States": 99.84723,
+    "Canada": 0.15277
+  },
+  "VTV": {
+    "United States": 99.10597,
+    "Switzerland": 0.60997,
+    "China": 0.28406
+  },
+  "VO": {
+    "United States": 98.41011,
+    "China": 0.73393,
+    "Canada": 0.49231,
+    "Switzerland": 0.36365
+  },
+  "VB": {
+    "United States": 98.01632,
+    "United Kingdom": 0.3744,
+    "Hong Kong": 0.31312,
+    "Mexico": 0.31228,
+    "Canada": 0.29657,
+    "Ireland": 0.28223,
+    "India": 0.11273,
+    "Taiwan": 0.0402,
+    "Brazil": 0.03924
+  },
+  "VGT": {
+    "United States": 98.84983,
+    "China": 0.39366,
+    "Netherlands": 0.34224,
+    "Hong Kong": 0.18097,
+    "Mexico": 0.1794,
+    "Taiwan": 0.05361,
+    "Australia": 0.00029
+  },
+  "VHT": {
+    "United States": 99.77693,
+    "United Kingdom": 0.1347,
+    "Singapore": 0.03,
+    "Netherlands": 0.02482,
+    "Brazil": 0.01993,
+    "Ireland": 0.00695,
+    "Switzerland": 0.00667
+  },
+  "VDC": {
+    "United States": 100.0
+  },
+  "SCHD": {
+    "United States": 99.16429,
+    "United Kingdom": 0.76296
   }
 }
