@@ -151,8 +151,13 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
     };
 
     const dateTimes = dates.map((dateStr) => new Date(dateStr).getTime());
-    const minTime = Math.min(...dateTimes);
+    let minTime = Math.min(...dateTimes);
     const maxTime = Math.max(...dateTimes);
+
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
+    }
 
     const xScale = (time) =>
         padding.left +

@@ -10,6 +10,8 @@ import {
     getRollingSnapshotLine,
     getVolatilitySnapshotLine,
     getSectorsSnapshotLine,
+    getYieldSnapshotLine,
+    getBetaSnapshotLine,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -46,6 +48,8 @@ export function isActiveChartVisible() {
             'drawdownAbs',
             'rolling',
             'volatility',
+            'yield',
+            'beta',
         ].includes(activeChart)
     ) {
         return false;
@@ -94,6 +98,12 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'volatility') {
         return getVolatilitySnapshotLine({ includeHidden: true });
+    }
+    if (activeChart === 'yield') {
+        return await getYieldSnapshotLine();
+    }
+    if (activeChart === 'beta') {
+        return await getBetaSnapshotLine();
     }
     return null;
 }

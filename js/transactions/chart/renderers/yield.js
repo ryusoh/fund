@@ -72,8 +72,14 @@ export async function drawYieldChart(ctx, chartManager) {
     const chartHeight = height - margin.top - margin.bottom;
 
     const times = filteredData.map((d) => parseLocalDate(d.date).getTime());
-    const minTime = times[0];
+    let minTime = times[0];
     const maxTime = times[times.length - 1];
+
+    // Ensure minTime aligns with filter start for correct x-axis labels
+    const filterFromTime = filterFrom ? filterFrom.getTime() : null;
+    if (Number.isFinite(filterFromTime)) {
+        minTime = Math.max(minTime, filterFromTime);
+    }
 
     // Y-Axis 1: Forward Yield (%)
     const yields = filteredData.map((d) => d.forward_yield);
