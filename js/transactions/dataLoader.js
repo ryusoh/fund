@@ -355,8 +355,6 @@ export async function loadCompositionSnapshotData() {
                                     // If key didn't exist in composition before loop, it enters this block.
                                     // If it partially existed but loop missed it? No, Object.keys covers existing.
                                     // So this block is strictly for NEW keys.
-                                    // Wait, if I added it in the loop above? No, I iterate Object.keys(composition).
-                                    // So new keys are not in the loop.
                                     composition[normalizedTicker][targetIndex] = rtItem.percent;
                                 }
                             }

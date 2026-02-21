@@ -56,13 +56,16 @@
     .nav-container {
         /* Position: Top-Right, aligned with currency toggle */
         top: 15px;
-        right: 15px; /* Match currency toggle left margin */
+        right: 15px;
+        /* Match currency toggle left margin */
         transform: none;
 
         /* Shape: Compact Vertical Bar */
         width: auto;
-        padding: 3px; /* Match currency toggle padding */
-        border-radius: 6px; /* Match currency toggle radius */
+        padding: 3px;
+        /* Match currency toggle padding */
+        border-radius: 6px;
+        /* Match currency toggle radius */
 
         /* Material: Half-transparent Glass (Matches Currency Toggle) */
         background: rgba(50, 50, 50, 0.4);
@@ -70,7 +73,8 @@
         -webkit-backdrop-filter: blur(10px);
 
         /* Border: Subtle rim lighting */
-        border: none; /* Currency toggle has no border usually, or handled by shadow */
+        border: none;
+        /* Currency toggle has no border usually, or handled by shadow */
 
         /* Depth */
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -91,9 +95,11 @@
 
     .container ul,
     .nav-container ul {
-        flex-direction: row; /* Standard order for inner items */
+        flex-direction: row;
+        /* Standard order for inner items */
         width: auto;
-        gap: 0; /* No large gaps, just padding */
+        gap: 0;
+        /* No large gaps, just padding */
     }
 
     /* Move the Chevron (first item) to the visual end */
@@ -110,51 +116,55 @@
 
     .container a,
     .nav-container a {
-        color: rgba(200, 200, 200, 0.85); /* Match currency toggle text color */
-        font-size: 12px; /* Match currency toggle font size */
-        padding: 0; /* Remove padding to enforce fixed square size */
-        width: 30px; /* Fixed width for square */
-        height: 30px; /* Fixed height for square */
-        display: flex; /* Ensure centering */
+        color: rgba(200, 200, 200, 0.85);
+        /* Match currency toggle text color */
+        font-size: 12px;
+        /* Match currency toggle font size */
+        padding: 0;
+        /* Remove padding to enforce fixed square size */
+        width: 30px;
+        /* Fixed width for square */
+        height: 30px;
+        /* Fixed height for square */
+        display: flex;
+        /* Ensure centering */
         align-items: center;
         justify-content: center;
-        border-radius: 4px; /* Slight rounding for hover state */
+        border-radius: 4px;
+        /* Slight rounding for hover state */
     }
 
     /* Hover Interaction */
     .container a:hover,
     .nav-container a:hover {
         color: rgba(200, 200, 200, 0.85);
-        transform: none; /* Remove scale */
+        transform: none;
+        /* Remove scale */
         text-shadow: none;
-        background-color: transparent; /* Toggle buttons don't have hover bg unless active usually? Toggle css says: background-color: transparent default. Hover not explicit in toggle.css shared. */
-        /* Wait, toggle.css doesn't have a specific :hover rule for .currency-toggle that changes bg, only .active does.
-           If I want EXACT behavior, I should remove the hover BG unless the user wants hover feedback.
-           But usually buttons have hover.
-           Let's look at toggle.css again.
-           .currency-toggle { transition... }
-           It relies on :hover from browser defaults or maybe it's missing?
-           Actually, the toggle logic might just be active/inactive.
-           I'll keep a very subtle hover or remove it to match 'exact' behavior if toggle has none.
-           The user said "when selected... same effect".
-           Let's fix the ACTIVE state first.
-        */
+        background-color: transparent;
+        /* Toggle buttons don't have hover bg unless active usually? Toggle css says: background-color: transparent default. Hover not explicit in toggle.css shared. */
     }
 
     /* Active State: Pure White */
     .container li.is-current-page a,
     .nav-container li.is-current-page a {
-        background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
-        color: rgba(255, 255, 255, 0.85) !important; /* 80% white active text */
+        background-color: rgba(0, 0, 0, 0.5);
+        /* Slightly more transparent (was 0.6) */
+        color: rgba(255, 255, 255, 0.85) !important;
+        /* 80% white active text */
         text-shadow: none;
-        border-radius: 4px; /* Ensure radius matches */
+        border-radius: 4px;
+        /* Ensure radius matches */
 
         cursor: pointer;
         pointer-events: auto;
 
-        opacity: 1 !important; /* Force full opacity */
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Slightly stronger shadow */
+        opacity: 1 !important;
+        /* Force full opacity */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        /* Slightly stronger shadow */
     }
+
     /* Active Indicator: Removed per user request */
     .container li.is-current-page::before,
     .nav-container li.is-current-page::before {
@@ -172,7 +182,8 @@
         top: 0;
         left: 50%;
         right: auto;
-        bottom: auto; /* Reset bottom from previous overwrite */
+        bottom: auto;
+        /* Reset bottom from previous overwrite */
         transform: translateX(-50%);
 
         border: none;
@@ -221,7 +232,8 @@
     .nav-container a:hover {
         opacity: 1;
         color: #fff;
-        transform: none; /* No scale on mobile */
+        transform: none;
+        /* No scale on mobile */
         text-shadow: none;
     }
 
@@ -247,14 +259,16 @@
     /* Reset Desktop Specific Styles for Mobile */
     .container li.is-current-page a,
     .nav-container li.is-current-page a {
-        color: rgba(200, 200, 200, 0.85); /* Reset from gold */
+        color: rgba(200, 200, 200, 0.85);
+        /* Reset from gold */
         text-shadow: none;
         cursor: default;
     }
 
     .container li.is-current-page::before,
     .nav-container li.is-current-page::before {
-        display: none; /* Hide desktop orb */
+        display: none;
+        /* Hide desktop orb */
     }
 
     /* Mobile Safe Area */
@@ -283,10 +297,12 @@
         transform: scale(1);
         opacity: 1;
     }
+
     50% {
         transform: scale(1.5);
         opacity: 0.7;
     }
+
     100% {
         transform: scale(1);
         opacity: 1;

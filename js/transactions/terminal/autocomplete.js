@@ -86,10 +86,6 @@ export function autocompleteCommand(input) {
         autocompleteState.prefix === searchPrefix && // Use searchPrefix which includes spaces if any
         autocompleteState.matches.length > 0 &&
         trimmedValue === autocompleteState.matches[autocompleteState.index]
-        // Wait, original logic compared against matches[index].
-        // But if user keeps typing?
-        // Original logic:
-        // autocompleteState.prefix === lowerPrefix (which was just the search term)
     ) {
         // Check strict equality to original logic variables
     }
