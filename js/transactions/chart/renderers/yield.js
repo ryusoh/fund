@@ -1,4 +1,4 @@
-import { transactionState } from '../../state.js';
+import { transactionState, getShowChartLabels } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import { CHART_LINE_WIDTHS, mountainFill } from '../../../config.js';
 import { BENCHMARK_GRADIENTS } from '../config.js';
@@ -319,34 +319,38 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     const lastYield = yieldSeries.points[yieldSeries.points.length - 1].value;
     const lastIncome = incomeSeries.points[incomeSeries.points.length - 1].value;
 
-    const yieldBounds = drawEndValue(
-        ctx,
-        margin.left + chartWidth + 5,
-        yScale(lastYield),
-        lastYield,
-        gradientStops[1],
-        isMobile,
-        margin,
-        chartWidth,
-        chartHeight,
-        yieldSeries.formatValue,
-        true
-    );
+    const showChartLabels = getShowChartLabels();
+    let yieldBounds = null;
+    if (showChartLabels) {
+        yieldBounds = drawEndValue(
+            ctx,
+            margin.left + chartWidth + 5,
+            yScale(lastYield),
+            lastYield,
+            gradientStops[1],
+            isMobile,
+            margin,
+            chartWidth,
+            chartHeight,
+            yieldSeries.formatValue,
+            true
+        );
 
-    drawEndValue(
-        ctx,
-        margin.left + chartWidth + 5,
-        y2Scale(lastIncome),
-        lastIncome,
-        incomeSeries.color,
-        isMobile,
-        margin,
-        chartWidth,
-        chartHeight,
-        incomeSeries.formatValue,
-        true,
-        yieldBounds
-    );
+        drawEndValue(
+            ctx,
+            margin.left + chartWidth + 5,
+            y2Scale(lastIncome),
+            lastIncome,
+            incomeSeries.color,
+            isMobile,
+            margin,
+            chartWidth,
+            chartHeight,
+            incomeSeries.formatValue,
+            true,
+            yieldBounds
+        );
+    }
 
     const yieldAnimationEnabled = isAnimationEnabled('yield');
     const animationPhase = advanceYieldAnimation(timestamp);

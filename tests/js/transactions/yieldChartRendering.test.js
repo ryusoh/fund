@@ -512,3 +512,197 @@ describe('Yield Chart Right-Axis Alignment', () => {
         expect(rightAxisLabels.length).toBe(mockYieldTicks.length);
     });
 });
+
+describe('Yield Chart Label Toggle', () => {
+    let ctx;
+    let canvas;
+    let chartManager;
+    let drawYieldChart;
+    let drawEndValue;
+    let transactionState;
+    let getShowChartLabels;
+
+    const mockData = [
+        { date: '2023-01-01', forward_yield: 1.5, ttm_income: 1000.0 },
+        { date: '2023-06-01', forward_yield: 1.6, ttm_income: 1100.0 },
+        { date: '2024-01-01', forward_yield: 1.8, ttm_income: 1200.0 },
+    ];
+
+    beforeEach(async () => {
+        jest.resetModules();
+        jest.clearAllMocks();
+
+        jest.doMock('@js/transactions/chart/core.js', () => ({
+            drawAxes: jest.fn(),
+            drawEndValue: jest.fn(),
+            drawMountainFill: jest.fn(),
+            generateConcreteTicks: jest.fn().mockReturnValue([0, 2, 4, 6, 8]),
+            generateYearBasedTicks: jest.fn().mockReturnValue([
+                { time: 1672531200000, label: '2023', isYearStart: true },
+                { time: 1704067200000, label: '2024', isYearStart: true },
+            ]),
+        }));
+
+        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+            updateLegend: jest.fn(),
+            updateCrosshairUI: jest.fn(),
+            drawCrosshairOverlay: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/animation.js', () => ({
+            stopPerformanceAnimation: jest.fn(),
+            stopContributionAnimation: jest.fn(),
+            stopFxAnimation: jest.fn(),
+            stopPeAnimation: jest.fn(),
+            stopConcentrationAnimation: jest.fn(),
+            stopYieldAnimation: jest.fn(),
+            isAnimationEnabled: jest.fn().mockReturnValue(true),
+            advanceYieldAnimation: jest.fn().mockReturnValue(0),
+            scheduleYieldAnimation: jest.fn(),
+            drawSeriesGlow: jest.fn(),
+        }));
+
+        jest.doMock('@js/transactions/chart/config.js', () => ({
+            CHART_LINE_WIDTHS: { main: 2 },
+            mountainFill: { enabled: true },
+            BENCHMARK_GRADIENTS: {
+                '^LZ': ['#ff0000', '#00ff00'],
+            },
+        }));
+
+        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+            getChartColors: jest.fn().mockReturnValue({
+                primary: '#ff0000',
+                secondary: '#00ff00',
+                portfolio: '#7a7a7a',
+                contribution: '#b3b3b3',
+            }),
+            createTimeInterpolator: jest.fn().mockReturnValue(() => 10),
+            parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
+        }));
+
+        jest.doMock('@js/transactions/utils.js', () => ({
+            convertValueToCurrency: jest.fn((val, date, currency) => {
+                if (currency === 'EUR') {
+                    return val * 2;
+                }
+                return val;
+            }),
+            formatCurrencyCompact: jest.fn((val, { currency }) => `${val} ${currency}`),
+            formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
+        }));
+
+        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('@js/transactions/chart/core.js');
+        const stateModule = await import('@js/transactions/state.js');
+
+        drawYieldChart = yieldModule.drawYieldChart;
+        drawEndValue = coreModule.drawEndValue;
+        transactionState = stateModule.transactionState;
+        getShowChartLabels = stateModule.getShowChartLabels;
+
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(mockData),
+            })
+        );
+
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 1024,
+        });
+        window.getComputedStyle = jest.fn().mockReturnValue({
+            getPropertyValue: jest.fn().mockReturnValue('#7a7a7a'),
+        });
+
+        canvas = {
+            width: 2000,
+            height: 1000,
+            offsetWidth: 1000,
+            offsetHeight: 500,
+        };
+
+        ctx = {
+            canvas,
+            clearRect: jest.fn(),
+            save: jest.fn(),
+            restore: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(),
+            fillRect: jest.fn(),
+            rect: jest.fn(),
+            fill: jest.fn(),
+            fillText: jest.fn(),
+            measureText: jest.fn().mockReturnValue({ width: 50 }),
+            createLinearGradient: jest.fn().mockReturnValue({
+                addColorStop: jest.fn(),
+            }),
+        };
+
+        chartManager = {
+            update: jest.fn(),
+            redraw: jest.fn(),
+        };
+    });
+
+    afterEach(() => {
+        jest.resetModules();
+        jest.dontMock('@js/transactions/chart/core.js');
+        jest.dontMock('@js/transactions/chart/interaction.js');
+        jest.dontMock('@js/transactions/chart/animation.js');
+        jest.dontMock('@js/transactions/chart/config.js');
+        jest.dontMock('@js/transactions/chart/helpers.js');
+        jest.dontMock('@js/transactions/utils.js');
+        // Reset state to default
+        transactionState.showChartLabels = true;
+    });
+
+    test('draws end value labels when showChartLabels is true (default)', async () => {
+        // Ensure labels are enabled (default state)
+        transactionState.showChartLabels = true;
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        // drawEndValue should be called for both Yield and Income series
+        expect(drawEndValue).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not draw end value labels when showChartLabels is false', async () => {
+        // Disable labels
+        transactionState.showChartLabels = false;
+
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        // drawEndValue should NOT be called when labels are disabled
+        expect(drawEndValue).not.toHaveBeenCalled();
+    });
+
+    test('toggles labels visibility via getShowChartLabels function', async () => {
+        // Verify getShowChartLabels returns true by default
+        expect(getShowChartLabels()).toBe(true);
+
+        // Disable labels
+        transactionState.showChartLabels = false;
+        expect(getShowChartLabels()).toBe(false);
+
+        // Re-enable labels
+        transactionState.showChartLabels = true;
+        expect(getShowChartLabels()).toBe(true);
+    });
+
+    test('respects label toggle state when rendering chart', async () => {
+        // Test with labels disabled
+        transactionState.showChartLabels = false;
+
+        await drawYieldChart(ctx, chartManager);
+
+        // drawEndValue should NOT be called when labels are disabled
+        expect(drawEndValue).not.toHaveBeenCalled();
+    });
+});
