@@ -35,9 +35,21 @@ jest.mock('@js/transactions/chart/helpers.js', () => ({
     parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
 }));
 
-import { drawAxes, drawEndValue } from '@js/transactions/chart/core.js';
+jest.mock('@js/transactions/utils.js', () => ({
+    convertValueToCurrency: jest.fn((val, date, currency) => {
+        if (currency === 'EUR') {
+            return val * 2; // Simple mock conversion for testing
+        }
+        return val;
+    }),
+    formatCurrencyCompact: jest.fn((val, { currency }) => `${val} ${currency}`),
+    formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
+}));
+
+import { drawAxes, drawEndValue, generateConcreteTicks } from '@js/transactions/chart/core.js';
 import { updateLegend } from '@js/transactions/chart/interaction.js';
 import { drawYieldChart } from '@js/transactions/chart/renderers/yield.js';
+import { transactionState } from '@js/transactions/state.js';
 
 describe('Yield Chart Rendering & Interaction', () => {
     let ctx;
@@ -166,5 +178,31 @@ describe('Yield Chart Rendering & Interaction', () => {
         expect(typeof args[8]).toBe('number'); // plotHeight
         expect(typeof args[9]).toBe('function'); // formatValue
         expect(args[10]).toBe(true); // showBackground
+    });
+
+    test('applies currency conversion to income when a non-USD currency is selected', async () => {
+        transactionState.selectedCurrency = 'EUR';
+        await drawYieldChart(ctx, chartManager);
+        await drawYieldChart(ctx, chartManager);
+
+        // Income values in mockData are 1000, 1100, 1200
+        // Our mock convertValueToCurrency multiplies by 2 for EUR -> 2000, 2200, 2400
+
+        expect(generateConcreteTicks).toHaveBeenCalledWith(
+            0,
+            2400 * 1.1, // maxIncome * 1.1
+            false,
+            'EUR'
+        );
+
+        const series = updateLegend.mock.calls[updateLegend.mock.calls.length - 1][0];
+        const incomeSeries = series.find((s) => s.key === 'Income');
+
+        expect(incomeSeries.points[0].value).toBe(2000);
+        expect(incomeSeries.points[1].value).toBe(2200);
+        expect(incomeSeries.points[2].value).toBe(2400);
+
+        // Cleanup
+        transactionState.selectedCurrency = 'USD';
     });
 });

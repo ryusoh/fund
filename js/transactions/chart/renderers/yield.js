@@ -12,6 +12,11 @@ import {
 import { updateLegend, drawCrosshairOverlay } from '../interaction.js';
 import { drawAxes, drawEndValue, generateConcreteTicks } from '../core.js';
 import { getChartColors, createTimeInterpolator, parseLocalDate } from '../helpers.js';
+import {
+    formatCurrencyCompact,
+    formatCurrencyInline,
+    convertValueToCurrency,
+} from '../../utils.js';
 
 // Data cache
 let yieldDataCache = null;
@@ -81,13 +86,17 @@ export async function drawYieldChart(ctx, chartManager) {
         minTime = Math.max(minTime, filterFromTime);
     }
 
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
     // Y-Axis 1: Forward Yield (%)
     const yields = filteredData.map((d) => d.forward_yield);
     const minY = 0;
     const maxY = Math.max(...yields, 1) * 1.1;
 
-    // Y-Axis 2: TTM Income ($)
-    const incomes = filteredData.map((d) => d.ttm_income);
+    // Convert income to selected currency
+    const incomes = filteredData.map((d) =>
+        convertValueToCurrency(d.ttm_income, d.date, selectedCurrency)
+    );
     const minIncome = 0;
     const maxIncome = Math.max(...incomes, 100) * 1.1;
 
@@ -124,7 +133,7 @@ export async function drawYieldChart(ctx, chartManager) {
         (v) => `${v.toFixed(1)}%`,
         false, // isPerformanceChart
         {}, // axisOptions
-        'USD', // currency
+        selectedCurrency, // currency
         false // forcePercent
     );
 
@@ -141,14 +150,18 @@ export async function drawYieldChart(ctx, chartManager) {
     ctx.textAlign = 'left';
 
     // Select a few ticks for the income axis using standard tick generator
-    const incomeTicks = generateConcreteTicks(minIncome, maxIncome, false, 'USD');
+    const incomeTicks = generateConcreteTicks(minIncome, maxIncome, false, selectedCurrency);
 
     // We only need the ticks that fit within the axis
     const validIncomeTicks = incomeTicks.filter((t) => t >= minIncome && t <= maxIncome);
 
     validIncomeTicks.forEach((tickVal) => {
         const y = y2Scale(tickVal);
-        ctx.fillText(`$${Math.round(tickVal).toLocaleString()}`, margin.left + chartWidth + 10, y);
+        ctx.fillText(
+            formatCurrencyCompact(Math.round(tickVal), { currency: selectedCurrency }),
+            margin.left + chartWidth + 10,
+            y
+        );
     });
     ctx.restore();
 
@@ -156,10 +169,10 @@ export async function drawYieldChart(ctx, chartManager) {
     ctx.save();
     const barWidth = Math.max(2, (chartWidth / filteredData.length) * 0.8);
     ctx.fillStyle = (colors.contribution || '#b3b3b3') + '44'; // Semi-transparent
-    filteredData.forEach((d) => {
+    filteredData.forEach((d, i) => {
         const t = parseLocalDate(d.date).getTime();
         const x = xScale(t) - barWidth / 2;
-        const y = y2Scale(d.ttm_income);
+        const y = y2Scale(incomes[i]);
         const h = Math.max(0, margin.top + chartHeight - y);
         if (h > 0) {
             ctx.fillRect(x, y, barWidth, h);
@@ -183,22 +196,24 @@ export async function drawYieldChart(ctx, chartManager) {
     });
     ctx.stroke();
 
+    const yieldPoints = filteredData.map((d) => ({
+        time: parseLocalDate(d.date).getTime(),
+        value: d.forward_yield,
+    }));
+
+    const incomePoints = filteredData.map((d, i) => ({
+        time: parseLocalDate(d.date).getTime(),
+        value: incomes[i],
+    }));
+
     // Series for interaction and legend
     const yieldSeries = {
         key: 'Yield',
         name: 'Yield',
         label: 'Forward Yield',
         color: colors.portfolio || '#7a7a7a',
-        points: filteredData.map((d) => ({
-            time: parseLocalDate(d.date).getTime(),
-            value: d.forward_yield,
-        })),
-        getValueAtTime: createTimeInterpolator(
-            filteredData.map((d) => ({
-                time: parseLocalDate(d.date).getTime(),
-                value: d.forward_yield,
-            }))
-        ),
+        points: yieldPoints,
+        getValueAtTime: createTimeInterpolator(yieldPoints),
         formatValue: (v) => `${v.toFixed(2)}%`,
     };
 
@@ -207,21 +222,9 @@ export async function drawYieldChart(ctx, chartManager) {
         name: 'Income',
         label: 'TTM Income',
         color: colors.contribution || '#b3b3b3',
-        points: filteredData.map((d) => ({
-            time: parseLocalDate(d.date).getTime(),
-            value: d.ttm_income,
-        })),
-        getValueAtTime: createTimeInterpolator(
-            filteredData.map((d) => ({
-                time: parseLocalDate(d.date).getTime(),
-                value: d.ttm_income,
-            }))
-        ),
-        formatValue: (v) =>
-            `${v.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            })}`,
+        points: incomePoints,
+        getValueAtTime: createTimeInterpolator(incomePoints),
+        formatValue: (v) => formatCurrencyInline(v, { currency: selectedCurrency }),
     };
 
     const series = [yieldSeries, incomeSeries];
