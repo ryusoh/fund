@@ -55,6 +55,27 @@ def get_country_for_ticker(ticker: str, metadata: dict) -> str:
     if ticker_upper in SPECIAL_CASES:
         return SPECIAL_CASES[ticker_upper]
 
+    # Known US stocks that yfinance may not classify properly (incorporated in Delaware etc.)
+    KNOWN_US_STOCKS = {
+        'BRKB',
+        'BRK.A',  # Berkshire Hathaway
+        'NYCB',  # New York Community Bancorp
+        'PACW',  # PacWest Bancshares (California)
+        'SBNY',  # Signature Bank (New York)
+        'WAL',  # Western Alliance Bancorporation (Arizona)
+        'ZION',  # Zions Bancorporation (Utah)
+        'KEY',  # KeyCorp (Ohio)
+        'RF',  # Regions Financial (Alabama)
+        'HBAN',  # Huntington Bancshares (Ohio)
+        'FITB',  # Fifth Third Bancorp (Ohio)
+        'MTB',  # M&T Bank (New York)
+        'STI',  # SunTrust (Georgia)
+        'BBT',  # BB&T (North Carolina)
+    }
+
+    if ticker_upper in KNOWN_US_STOCKS:
+        return 'United States'
+
     # Check metadata first for quote type
     ticker_meta = metadata.get(ticker_upper, {})
     quote_type = ticker_meta.get('quoteType', '').upper()
@@ -237,18 +258,16 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
             'Netherlands': 3.0,
             'Other': 28.0,
         },
+        # Fidelity Blue Chip Growth - primarily US large-cap growth stocks
+        # Source: AAII (4.7% foreign stocks), Morningstar
         'FBCGX': {
-            'Japan': 17.0,
-            'United Kingdom': 11.0,
-            'Canada': 7.5,
-            'France': 7.0,
-            'Switzerland': 6.5,
-            'Germany': 6.0,
-            'Australia': 5.5,
-            'Taiwan': 4.5,
-            'South Korea': 4.0,
-            'Netherlands': 3.0,
-            'Other': 28.0,
+            'United States': 95.3,
+            'United Kingdom': 1.5,
+            'Canada': 1.0,
+            'Netherlands': 0.8,
+            'Switzerland': 0.6,
+            'Germany': 0.4,
+            'Other': 0.4,
         },
         'VEMRX': {
             'China': 32.0,
@@ -451,6 +470,20 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
                         'VSIAX',
                         'VMVAX',
                         'VGSNX',
+                        'VTSAX',  # Vanguard Total Stock Market Index
+                        'VTIAX',  # Vanguard Total International Stock Index
+                        'VBTLX',  # Vanguard Total Bond Market Index
+                        'VWELX',  # Vanguard Wellington Fund
+                        'VWINX',  # Vanguard Wellesley Income Fund
+                        'VGTSX',  # Vanguard Total International Stock Index
+                        'VFIAX',  # Vanguard 500 Index Fund
+                        'VIMAX',  # Vanguard Mid-Cap Index Fund
+                        'VSMAX',  # Vanguard Small-Cap Index Fund
+                        'VTISX',  # Vanguard Short-Term Inflation-Protected Securities
+                        'FZROX',  # Fidelity ZERO Total Market Index
+                        'FZILX',  # Fidelity ZERO International Index
+                        'FXNAX',  # Fidelity US Bond Index
+                        'FTBFX',  # Fidelity Total Bond Fund
                     )
 
                     # Check against known fund lists
