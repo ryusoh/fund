@@ -1,5 +1,5 @@
 /* Simple service worker for Fund */
-const CACHE_NAME = 'fund-cache-v3';
+const CACHE_NAME = 'fund-cache-v5';
 const CORE_ASSETS = [
     './',
     './index.html',

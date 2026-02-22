@@ -3,6 +3,7 @@ import { chartLayouts } from '../state.js';
 import { loadCompositionSnapshotData } from '../../dataLoader.js';
 import { mountainFill, CHART_LINE_WIDTHS } from '../../../config.js';
 import { BENCHMARK_GRADIENTS } from '../config.js';
+import { logger } from '@utils/logger.js';
 import {
     stopPerformanceAnimation,
     stopContributionAnimation,
@@ -21,6 +22,75 @@ import { getChartColors, createTimeInterpolator, clampTime, parseLocalDate } fro
 // Each renderer may be loaded independently, so we maintain our own cache reference.
 let concentrationDataCache = null;
 let concentrationDataLoading = false;
+
+/**
+ * ETF internal HHI values loaded from data/etf_hhi.json.
+ * Populated asynchronously when the module loads.
+ */
+let ETF_INTERNAL_HHI = {};
+
+/**
+ * Load ETF HHI data from JSON file.
+ * This data is calculated from sector/country/marketcap allocations.
+ */
+async function loadETFHHIData() {
+    if (Object.keys(ETF_INTERNAL_HHI).length > 0) {
+        return ETF_INTERNAL_HHI; // Already loaded
+    }
+
+    try {
+        const response = await fetch('../data/etf_hhi.json');
+        if (!response.ok) {
+            logger.warn('ETF HHI data not found, using fallback values');
+            // Fallback to minimal set with conservative estimates
+            ETF_INTERNAL_HHI = {
+                VT: 4019, // Calculated from country allocation
+                VOO: 6488, // Calculated from market cap distribution
+                QQQ: 7398, // Calculated from market cap distribution
+                SPY: 1733, // Calculated from sector allocation
+                VTI: 4050, // Calculated from market cap distribution
+            };
+            return ETF_INTERNAL_HHI;
+        }
+
+        const data = await response.json();
+        // Filter to just the numeric HHI values (exclude metadata keys)
+        ETF_INTERNAL_HHI = Object.fromEntries(
+            Object.entries(data).filter(
+                ([key, value]) => !key.startsWith('_') && typeof value === 'number'
+            )
+        );
+
+        return ETF_INTERNAL_HHI;
+    } catch (error) {
+        logger.warn('Failed to load ETF HHI data:', error);
+        // Fallback to minimal set
+        ETF_INTERNAL_HHI = {
+            VT: 4019,
+            VOO: 6488,
+            QQQ: 7398,
+            SPY: 1733,
+            VTI: 4050,
+        };
+        return ETF_INTERNAL_HHI;
+    }
+}
+
+/**
+ * Calculate adjusted HHI contribution for a holding.
+ * For ETFs, we adjust by their internal diversification.
+ * For individual stocks, HHI contribution = weight².
+ * For ETFs, HHI contribution = weight² × (ETF_HHI / 10000).
+ */
+function calculateAdjustedHhiContribution(ticker, normalizedWeight) {
+    const etfHhi = ETF_INTERNAL_HHI[ticker];
+    if (etfHhi) {
+        // ETF: adjust by internal HHI
+        return normalizedWeight * normalizedWeight * (etfHhi / 10000);
+    }
+    // Individual stock: full weight squared
+    return normalizedWeight * normalizedWeight;
+}
 
 /**
  * Build a concentration (HHI) time-series from composition data.
@@ -62,12 +132,14 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
         // Gather positive weights for this day
         let totalWeight = 0;
         const weights = [];
+        const tickerWeights = {};
         tickers.forEach((ticker) => {
             const values = compositionSeries[ticker];
             const pct = Number(Array.isArray(values) ? (values[i] ?? 0) : 0);
             if (Number.isFinite(pct) && pct > 0) {
                 weights.push(pct);
                 totalWeight += pct;
+                tickerWeights[ticker] = pct;
             }
         });
 
@@ -75,11 +147,19 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
             continue;
         }
 
-        // Normalize and compute HHI = Σ(wᵢ²) where wᵢ are fractions summing to 1
+        // Normalize and compute adjusted HHI
+        // For ETFs: HHI = Σ(wᵢ² × ETF_HHI/10000)
+        // For stocks: HHI = Σ(wᵢ²)
         let hhi = 0;
         weights.forEach((w) => {
             const normalized = w / totalWeight;
-            hhi += normalized * normalized;
+            // Find the ticker for this weight
+            const ticker = Object.keys(tickerWeights).find((t) => tickerWeights[t] === w);
+            if (ticker) {
+                hhi += calculateAdjustedHhiContribution(ticker, normalized);
+            } else {
+                hhi += normalized * normalized;
+            }
         });
 
         const effectiveHoldings = hhi > 0 ? 1 / hhi : 0;
@@ -97,7 +177,10 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
 /**
  * Draw the concentration chart – a single line showing HHI over time.
  */
-export function drawConcentrationChart(ctx, chartManager, timestamp) {
+export async function drawConcentrationChart(ctx, chartManager, timestamp) {
+    // Ensure ETF HHI data is loaded
+    await loadETFHHIData();
+
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
@@ -105,7 +188,7 @@ export function drawConcentrationChart(ctx, chartManager, timestamp) {
 
     const emptyState = document.getElementById('runningAmountEmpty');
 
-    // --- Data loading (reusing composition data) ---
+    // --- Data loading (use expanded composition for look-through) ---
     if (!concentrationDataCache && concentrationDataLoading) {
         if (emptyState) {
             emptyState.style.display = 'block';

@@ -9,6 +9,7 @@ import {
     formatPercent,
     formatTicker,
 } from './formatting.js';
+import { logger } from '@utils/logger.js';
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -106,6 +107,75 @@ async function getLatestCompositionSnapshot() {
         dateLabel: data.dates[targetIndex],
         holdings,
     };
+}
+
+/**
+ * ETF internal HHI values loaded from data/etf_hhi.json.
+ * Populated asynchronously when the module loads.
+ */
+let ETF_INTERNAL_HHI = {};
+
+/**
+ * Load ETF HHI data from JSON file.
+ * This data is calculated from sector/country/marketcap allocations.
+ */
+async function loadETFHHIData() {
+    if (Object.keys(ETF_INTERNAL_HHI).length > 0) {
+        return ETF_INTERNAL_HHI; // Already loaded
+    }
+
+    try {
+        const response = await fetch('../data/etf_hhi.json');
+        if (!response.ok) {
+            logger.warn('ETF HHI data not found, using fallback values');
+            // Fallback to minimal set
+            ETF_INTERNAL_HHI = {
+                VT: 4019,
+                VOO: 6488,
+                QQQ: 7398,
+                SPY: 1733,
+                VTI: 4050,
+            };
+            return ETF_INTERNAL_HHI;
+        }
+
+        const data = await response.json();
+        // Filter to just the numeric HHI values (exclude metadata keys)
+        ETF_INTERNAL_HHI = Object.fromEntries(
+            Object.entries(data).filter(
+                ([key, value]) => !key.startsWith('_') && typeof value === 'number'
+            )
+        );
+
+        return ETF_INTERNAL_HHI;
+    } catch (error) {
+        logger.warn('Failed to load ETF HHI data:', error);
+        // Fallback to minimal set
+        ETF_INTERNAL_HHI = {
+            VT: 4019,
+            VOO: 6488,
+            QQQ: 7398,
+            SPY: 1733,
+            VTI: 4050,
+        };
+        return ETF_INTERNAL_HHI;
+    }
+}
+
+/**
+ * Calculate adjusted HHI contribution for a holding.
+ * For ETFs, we adjust by their internal diversification.
+ * For individual stocks, HHI contribution = weight².
+ * For ETFs, HHI contribution = weight² × (ETF_HHI / 10000).
+ */
+function calculateAdjustedHhiContribution(ticker, normalizedWeight) {
+    const etfHhi = ETF_INTERNAL_HHI[ticker];
+    if (etfHhi) {
+        // ETF: adjust by internal HHI
+        return normalizedWeight * normalizedWeight * (etfHhi / 10000);
+    }
+    // Individual stock: full weight squared
+    return normalizedWeight * normalizedWeight;
 }
 
 export function buildLotSnapshots() {
@@ -543,6 +613,9 @@ export async function getLifespanStatsText() {
 }
 
 export async function getConcentrationText() {
+    // Ensure ETF HHI data is loaded
+    await loadETFHHIData();
+
     const snapshot = await getLatestCompositionSnapshot();
     if (!snapshot) {
         return 'Composition snapshot unavailable. Run `plot composition` first to generate this data.';
@@ -568,8 +641,9 @@ export async function getConcentrationText() {
         }))
         .sort((a, b) => b.normalizedWeight - a.normalizedWeight);
 
+    // Calculate adjusted HHI using ETF internal diversification
     const hhi = normalized.reduce(
-        (sum, item) => sum + item.normalizedWeight * item.normalizedWeight,
+        (sum, item) => sum + calculateAdjustedHhiContribution(item.ticker, item.normalizedWeight),
         0
     );
     const effectiveHoldings = hhi > 0 ? 1 / hhi : null;
@@ -601,23 +675,53 @@ export async function getConcentrationText() {
         alignments: ['left', 'right'],
     });
 
-    const detailRows = normalized
-        .slice(0, Math.min(normalized.length, 10))
-        .map((item) => [
+    const detailRows = normalized.slice(0, Math.min(normalized.length, 10)).map((item) => {
+        const adjustedContribution = calculateAdjustedHhiContribution(
+            item.ticker,
+            item.normalizedWeight
+        );
+        const etfHhi = ETF_INTERNAL_HHI[item.ticker];
+
+        // For ETFs, mark with footnote
+        if (etfHhi) {
+            return [
+                `${item.ticker}¹`,
+                formatPercent(item.normalizedWeight),
+                `${(adjustedContribution * 100).toFixed(2)}`,
+            ];
+        }
+
+        return [
             item.ticker,
             formatPercent(item.normalizedWeight),
-            `${(item.normalizedWeight * item.normalizedWeight * 100).toFixed(2)} pts`,
-        ]);
+            `${(adjustedContribution * 100).toFixed(2)}`,
+        ];
+    });
 
     const detailTable = renderAsciiTable({
         title: 'HHI CONTRIBUTION (TOP 10)',
-        headers: ['Ticker', 'Weight', 'w² (pts)'],
+        headers: ['Ticker', 'Weight', 'Adj. w² (pts)'],
         rows: detailRows,
         alignments: ['left', 'right', 'right'],
     });
 
-    const note =
-        'Method: Herfindahl-Hirschman Index (HHI = Σ wᵢ²) computed with normalized portfolio weights. Equivalent holdings = 1 / HHI.';
+    // Build footnote with only ETFs in top 10
+    const etfsInTop10 = normalized
+        .slice(0, 10)
+        .filter((item) => ETF_INTERNAL_HHI[item.ticker])
+        .map((item) => `${item.ticker}=${ETF_INTERNAL_HHI[item.ticker]}`);
+
+    const etfFootnote =
+        etfsInTop10.length > 0
+            ? `¹ ETF-adjusted: ${etfsInTop10.join(', ')}. Values reflect ETF's internal diversification.\n`
+            : '';
+
+    const note = [
+        etfFootnote,
+        'Method: HHI = Σ wᵢ² (with ETF adjustment). For ETFs: wᵢ² × (ETF_HHI/10000). Equivalent holdings = 1 / HHI.',
+    ]
+        .filter(Boolean)
+        .join('\n');
 
     return `\n${summaryTable}\n\n${detailTable}\n\n${note}`;
 }

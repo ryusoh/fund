@@ -1,0 +1,1367 @@
+{
+  "_comment": "ETF HHI values calculated from holdings data",
+  "_scale": "0-10000 (traditional US DOJ scale)",
+  "_methodology": "HHI = \u03a3(w\u1d62\u00b2) \u00d7 10000, using maximum across sector/country/marketcap dimensions",
+  "_sources": {
+    "sector": "data/fund_sector_allocations.json",
+    "country": "data/fund_country_allocations.json",
+    "marketcap": "data/fund_marketcap_breakdown.json"
+  },
+  "_usage": "For portfolio HHI: weight\u00b2 \u00d7 (ETF_HHI / 10000)",
+  "etf_hhi": {
+    "AGG": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "ARKF": {
+      "hhi": 5420,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 5420,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "ARKG": {
+      "hhi": 9782,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9782,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 8310,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2538,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "ARKK": {
+      "hhi": 7571,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 7571,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2544,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "ARKQ": {
+      "hhi": 7596,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 7596,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "ARKW": {
+      "hhi": 7612,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 2890,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 7612,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2974,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "ASHR": {
+      "hhi": 9938,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1648,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9938,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 3656,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "BNDW": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 2703,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "BOXX": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9894,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "BUG": {
+      "hhi": 8612,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 8612,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 6748,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 3506,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "DIA": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1775,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "FBCGX": {
+      "hhi": 9053,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 2853,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9053,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6694,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "FNSFX": {
+      "hhi": 3355,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1302,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 3355,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2996,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "FSGGX": {
+      "hhi": 3578,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1310,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 640,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 3578,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "FSKAX": {
+      "hhi": 9704,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1744,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9704,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4050,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "FXAIX": {
+      "hhi": 1794,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1794,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "FZROX": {
+      "hhi": 1679,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1679,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "GLD": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "HYG": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "ICLN": {
+      "hhi": 3435,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 3435,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 2473,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2746,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "IEMG": {
+      "hhi": 2932,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1603,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 1730,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2932,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "IGV": {
+      "hhi": 9871,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9304,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9871,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "IHF": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9970,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "IVV": {
+      "hhi": 1730,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1730,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "IWM": {
+      "hhi": 9555,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9555,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6650,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "JEPI": {
+      "hhi": 9685,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1098,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9685,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4958,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "JEPQ": {
+      "hhi": 9373,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9373,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "JNK": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "MDY": {
+      "hhi": 9519,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9519,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "PSQ": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "PTLC": {
+      "hhi": 9894,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1734,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9894,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5142,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "QLD": {
+      "hhi": 9304,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9304,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "QQQ": {
+      "hhi": 7398,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 3185,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 7398,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "REK": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "RWM": {
+      "hhi": 10000,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1336,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "SCHD": {
+      "hhi": 9848,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1372,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9848,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4758,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "SH": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "SJB": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "SLV": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "SOXL": {
+      "hhi": 10000,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 5641,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 7000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "SOXX": {
+      "hhi": 9978,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9978,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 6919,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6418,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "SPXL": {
+      "hhi": 9894,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9894,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "SPY": {
+      "hhi": 1733,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1733,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "TLT": {
+      "hhi": 10000,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 10000,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "TQQQ": {
+      "hhi": 10000,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9304,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "UPRO": {
+      "hhi": 9894,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9894,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VB": {
+      "hhi": 9649,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9649,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VDC": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9225,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5142,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VDE": {
+      "hhi": 9962,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9962,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VEA": {
+      "hhi": 3450,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "country": {
+          "hhi": 964,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 3450,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "VEMRX": {
+      "hhi": 1201,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1201,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VFFSX": {
+      "hhi": 1786,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1786,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VFH": {
+      "hhi": 9730,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9730,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VGSNX": {
+      "hhi": 9865,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9865,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VGT": {
+      "hhi": 9916,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9916,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9772,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6955,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VHT": {
+      "hhi": 9955,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 8521,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9955,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4784,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VIEIX": {
+      "hhi": 1304,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1304,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VIS": {
+      "hhi": 9788,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9788,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VMVAX": {
+      "hhi": 1226,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1226,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VNQ": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9885,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VO": {
+      "hhi": 9685,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9685,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VOO": {
+      "hhi": 6488,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1728,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6488,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "VOX": {
+      "hhi": 9936,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 9865,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 9936,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5694,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VSIAX": {
+      "hhi": 1224,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1224,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VT": {
+      "hhi": 4019,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1277,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 4019,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 3866,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "VTI": {
+      "hhi": 4050,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1608,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4050,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "VTMGX": {
+      "hhi": 1324,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1324,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VTPSX": {
+      "hhi": 1250,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1250,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VTSAX": {
+      "hhi": 1608,
+      "source": "data/fund_sector_allocations.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1608,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VTV": {
+      "hhi": 9822,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9822,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VTWO": {
+      "hhi": 9537,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9537,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VUG": {
+      "hhi": 9969,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9969,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        }
+      },
+      "note": "Max HHI across 1 dimensions"
+    },
+    "VWO": {
+      "hhi": 2932,
+      "source": "data/fund_marketcap_breakdown.json",
+      "dimensions": {
+        "sector": {
+          "hhi": 1201,
+          "source": "data/fund_sector_allocations.json",
+          "note": "Calculated from sector allocation weights"
+        },
+        "country": {
+          "hhi": 2239,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 2932,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 3 dimensions"
+    },
+    "XLB": {
+      "hhi": 8956,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 8956,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4168,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLE": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5542,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLF": {
+      "hhi": 9716,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9716,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4216,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLI": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 4318,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLK": {
+      "hhi": 9783,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9783,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6666,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLP": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5370,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLRE": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 10000,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLV": {
+      "hhi": 10000,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 10000,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 5046,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    },
+    "XLY": {
+      "hhi": 9850,
+      "source": "data/fund_country_allocations.json",
+      "dimensions": {
+        "country": {
+          "hhi": 9850,
+          "source": "data/fund_country_allocations.json",
+          "note": "Calculated from country allocation weights"
+        },
+        "marketcap": {
+          "hhi": 6042,
+          "source": "data/fund_marketcap_breakdown.json",
+          "note": "Calculated from market cap distribution"
+        }
+      },
+      "note": "Max HHI across 2 dimensions"
+    }
+  }
+}
