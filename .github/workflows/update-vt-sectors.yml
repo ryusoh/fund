@@ -42,9 +42,11 @@ jobs:
               run: python scripts/update_vt_marketcap.py
               continue-on-error: true # Fail-open: continue even if this step fails
 
-            - name: Calculate ETF HHI values for concentration adjustment
-              run: python scripts/calculate_etf_hhi.py
-              continue-on-error: true # Fail-open: continue even if this step fails
+            - name: Update VT HHI from ETFRC.com
+              run: python scripts/update_vt_hhi.py
+              env:
+                  SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+              continue-on-error: true # Fail-open: keep existing value if fetch fails
 
             - name: Regenerate geography data with updated allocations
               run: python scripts/generate_geography_data.py
@@ -60,5 +62,5 @@ jobs:
             - name: Commit and push changes
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
-                  commit_message: 'chore(data): VT のセクター配分・国別構成・時価総額・ETF HHI を自動更新 [skip ci]'
+                  commit_message: 'chore(data): VT のセクター配分・国別構成・時価総額・HHI を自動更新 [skip ci]'
                   file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json'
