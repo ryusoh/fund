@@ -25,6 +25,7 @@ import {
     handleCompositionCommand,
     handleSectorsCommand,
     handleGeographyCommand,
+    handleMarketcapCommand,
 } from './handlers/misc.js';
 
 import { setFadePreserveSecondLast } from '../fade.js';
@@ -136,6 +137,10 @@ export async function executeCommand(command, context) {
 
         case 'geography':
             await handleGeographyCommand(args, enhancedContext);
+            break;
+
+        case 'marketcap':
+            await handleMarketcapCommand(args, enhancedContext);
             break;
 
         case 'summary':

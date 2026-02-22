@@ -13,6 +13,7 @@ import {
     getYieldSnapshotLine,
     getBetaSnapshotLine,
     getGeographySnapshotLine,
+    getMarketcapSnapshotLine,
 } from './snapshots.js';
 
 export function ensureTransactionTableVisible() {
@@ -53,6 +54,8 @@ export function isActiveChartVisible() {
             'beta',
             'geography',
             'geographyAbs',
+            'marketcap',
+            'marketcapAbs',
         ].includes(activeChart)
     ) {
         return false;
@@ -113,6 +116,12 @@ export async function getActiveChartSummaryText() {
     }
     if (activeChart === 'geographyAbs') {
         return await getGeographySnapshotLine({ labelPrefix: 'Geography Abs' });
+    }
+    if (activeChart === 'marketcap') {
+        return await getMarketcapSnapshotLine();
+    }
+    if (activeChart === 'marketcapAbs') {
+        return await getMarketcapSnapshotLine({ labelPrefix: 'Market Cap Abs' });
     }
     return null;
 }

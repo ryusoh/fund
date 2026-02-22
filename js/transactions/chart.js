@@ -35,6 +35,7 @@ import { drawRollingChart } from './chart/renderers/rolling.js';
 import { drawVolatilityChart } from './chart/renderers/volatility.js';
 import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
 import { drawGeographyChart, drawGeographyAbsoluteChart } from './chart/renderers/geography.js';
+import { drawMarketcapChart, drawMarketcapAbsoluteChart } from './chart/renderers/marketcap.js';
 import { drawBetaChart } from './chart/renderers/beta.js';
 import { drawYieldChart } from './chart/renderers/yield.js';
 
@@ -130,6 +131,10 @@ export function createChartManager(options = {}) {
             drawGeographyChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'geographyAbs') {
             drawGeographyAbsoluteChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'marketcap') {
+            drawMarketcapChart(ctx, chartManager);
+        } else if (transactionState.activeChart === 'marketcapAbs') {
+            drawMarketcapAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'rolling') {
             await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'volatility') {

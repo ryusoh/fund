@@ -68,6 +68,8 @@ export const PLOT_SUBCOMMANDS = [
     'sectors-abs',
     'geography',
     'geography-abs',
+    'marketcap',
+    'marketcap-abs',
 ];
 
 export const HELP_SUBCOMMANDS = ['filter'];

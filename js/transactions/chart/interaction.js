@@ -203,7 +203,9 @@ export function drawCrosshairOverlay(ctx, layout) {
         layout.key === 'sectors' ||
         layout.key === 'sectorsAbs' ||
         layout.key === 'geography' ||
-        layout.key === 'geographyAbs';
+        layout.key === 'geographyAbs' ||
+        layout.key === 'marketcap' ||
+        layout.key === 'marketcapAbs';
 
     // Special handling for composition/sector charts to show breakdown at the crosshair time
     if (isCompositionLayout) {
@@ -639,11 +641,16 @@ export function updateLegend(series, chartManager) {
         item.appendChild(swatch);
         item.appendChild(label);
 
-        // Skip click events for stacked charts (composition, sectors, geography)
+        // Skip click events for stacked charts (composition, sectors, geography, marketcap)
         if (
             transactionState.activeChart !== 'composition' &&
+            transactionState.activeChart !== 'compositionAbs' &&
             transactionState.activeChart !== 'sectors' &&
-            transactionState.activeChart !== 'geography'
+            transactionState.activeChart !== 'sectorsAbs' &&
+            transactionState.activeChart !== 'geography' &&
+            transactionState.activeChart !== 'geographyAbs' &&
+            transactionState.activeChart !== 'marketcap' &&
+            transactionState.activeChart !== 'marketcapAbs'
         ) {
             item.addEventListener('click', () => {
                 if (
@@ -719,6 +726,8 @@ function getActiveChartKey() {
         active === 'sectorsAbs' ||
         active === 'geography' ||
         active === 'geographyAbs' ||
+        active === 'marketcap' ||
+        active === 'marketcapAbs' ||
         active === 'concentration' ||
         active === 'pe' ||
         active === 'contribution' ||
@@ -797,7 +806,7 @@ function handlePointerMove(event) {
         Math.min(y, layout.chartBounds.bottom)
     );
 
-    // Skip range functionality for composition/sector/beta/yield charts
+    // Skip range functionality for composition/sector/beta/yield/marketcap charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
@@ -805,6 +814,8 @@ function handlePointerMove(event) {
         layout.key === 'sectorsAbs' ||
         layout.key === 'geography' ||
         layout.key === 'geographyAbs' ||
+        layout.key === 'marketcap' ||
+        layout.key === 'marketcapAbs' ||
         layout.key === 'beta' ||
         layout.key === 'yield'
     ) {
@@ -852,7 +863,7 @@ function handlePointerDown(event) {
         return;
     }
 
-    // Skip range functionality for composition/sector/beta/yield charts
+    // Skip range functionality for composition/sector/beta/yield/marketcap charts
     if (
         layout.key === 'composition' ||
         layout.key === 'compositionAbs' ||
@@ -860,6 +871,8 @@ function handlePointerDown(event) {
         layout.key === 'sectorsAbs' ||
         layout.key === 'geography' ||
         layout.key === 'geographyAbs' ||
+        layout.key === 'marketcap' ||
+        layout.key === 'marketcapAbs' ||
         layout.key === 'beta' ||
         layout.key === 'yield'
     ) {
@@ -912,7 +925,7 @@ function handlePointerUp(event) {
         );
     }
 
-    // Skip range functionality for composition/sector/beta/yield charts
+    // Skip range functionality for composition/sector/beta/yield/marketcap charts
     if (
         layout &&
         (layout.key === 'composition' ||
@@ -921,6 +934,8 @@ function handlePointerUp(event) {
             layout.key === 'sectorsAbs' ||
             layout.key === 'geography' ||
             layout.key === 'geographyAbs' ||
+            layout.key === 'marketcap' ||
+            layout.key === 'marketcapAbs' ||
             layout.key === 'beta' ||
             layout.key === 'yield')
     ) {

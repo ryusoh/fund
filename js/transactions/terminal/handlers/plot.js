@@ -17,6 +17,7 @@ import {
     getVolatilitySnapshotLine,
     getSectorsSnapshotLine,
     getGeographySnapshotLine,
+    getMarketcapSnapshotLine,
     getBetaSnapshotLine,
     getYieldSnapshotLine,
 } from '../snapshots.js';
@@ -226,8 +227,12 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             const isCompositionActive = transactionState.activeChart === targetChart;
             const isCompChartVisible = compSection && !compSection.classList.contains('is-hidden');
 
-            if (isCompositionActive && isCompChartVisible) {
-                // Toggle off if composition chart is already visible
+            // If chart is already active and no date args provided, toggle off
+            // If date args are provided, always apply them and re-render
+            const hasDateArgs = rangeTokens.length > 0;
+
+            if (isCompositionActive && isCompChartVisible && !hasDateArgs) {
+                // Toggle off if composition chart is already visible and no date filter
                 setActiveChart(null);
                 if (compSection) {
                     compSection.classList.add('is-hidden');
@@ -277,7 +282,11 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             const isSectorsVisible =
                 sectorsSection && !sectorsSection.classList.contains('is-hidden');
 
-            if (isSectorsActive && isSectorsVisible) {
+            // If chart is already active and no date args provided, toggle off
+            // If date args are provided, always apply them and re-render
+            const hasDateArgs = rangeTokens.length > 0;
+
+            if (isSectorsActive && isSectorsVisible && !hasDateArgs) {
                 setActiveChart(null);
                 if (sectorsSection) {
                     sectorsSection.classList.add('is-hidden');
@@ -349,6 +358,63 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 });
                 if (geographySnapshot) {
                     result += `\n${geographySnapshot}`;
+                }
+            }
+            break;
+        }
+        case 'marketcap':
+        case 'marketcap-abs':
+        case 'marketcapabs':
+        case 'marketcapabsolute': {
+            let useAbsolute = subcommand !== 'marketcap';
+
+            let rangeTokens = [...rawArgs];
+            if (!useAbsolute && rangeTokens.length > 0) {
+                const maybeMode = rangeTokens[0].toLowerCase();
+                if (maybeMode === 'abs' || maybeMode === 'absolute') {
+                    useAbsolute = true;
+                    rangeTokens = rangeTokens.slice(1);
+                }
+            }
+            dateRange = applyDateArgs(rangeTokens);
+
+            const marketcapSection = document.getElementById('runningAmountSection');
+            const marketcapTableContainer = document.querySelector('.table-responsive-container');
+
+            const targetChart = useAbsolute ? 'marketcapAbs' : 'marketcap';
+            const isMarketcapActive = transactionState.activeChart === targetChart;
+            const isMarketcapVisible =
+                marketcapSection && !marketcapSection.classList.contains('is-hidden');
+
+            const hasDateArgs = rangeTokens.length > 0;
+
+            if (isMarketcapActive && isMarketcapVisible && !hasDateArgs) {
+                setActiveChart(null);
+                if (marketcapSection) {
+                    marketcapSection.classList.add('is-hidden');
+                }
+                result = 'Hidden market cap chart.';
+            } else {
+                setActiveChart(targetChart);
+                if (marketcapSection) {
+                    marketcapSection.classList.remove('is-hidden');
+                    chartManager.update();
+                }
+                if (marketcapTableContainer) {
+                    marketcapTableContainer.classList.add('is-hidden');
+                }
+                result = `Showing market cap composition${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
+
+                try {
+                    const marketcapSnapshot = await getMarketcapSnapshotLine({
+                        labelPrefix: useAbsolute ? 'Market Cap Abs' : 'Market Cap',
+                    });
+                    if (marketcapSnapshot) {
+                        result += `\n${marketcapSnapshot}`;
+                    }
+                } catch {
+                    // Snapshot failed, but command should still complete
+                    // Silently handle error - chart will still display
                 }
             }
             break;

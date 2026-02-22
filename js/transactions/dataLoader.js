@@ -25,6 +25,20 @@ export async function loadGeographySnapshotData() {
         return null;
     }
 }
+
+export async function loadMarketcapSnapshotData() {
+    try {
+        const response = await fetch('../data/output/figures/marketcap.json');
+        if (!response.ok) {
+            logger.warn('figures/marketcap.json not found');
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        logger.warn('Failed to load market cap snapshot:', error);
+        return null;
+    }
+}
 import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';

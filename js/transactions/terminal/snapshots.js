@@ -18,6 +18,7 @@ import {
     loadCompositionSnapshotData,
     loadSectorsSnapshotData,
     loadGeographySnapshotData,
+    loadMarketcapSnapshotData,
 } from '../dataLoader.js'; // Adjust path if needed
 import {
     formatCurrency as formatValueWithCurrency,
@@ -768,9 +769,11 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
 
     let hint = '';
     if (labelPrefix === 'Composition') {
-        hint = "\n(Hint: use 'abs' for absolute values, 'sectors' or 'geography' to switch charts)";
+        hint =
+            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'sectors/geography/marketcap' to switch charts)";
     } else if (labelPrefix === 'Composition Abs') {
-        hint = "\n(Hint: use 'per' for percentages, 'sectors' or 'geography' to switch charts)";
+        hint =
+            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'sectors/geography/marketcap' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
@@ -857,9 +860,10 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     let hint = '';
     if (labelPrefix === 'Sectors') {
         hint =
-            "\n(Hint: use 'abs' for absolute values, 'composition' or 'geography' to switch charts)";
+            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/geography/marketcap' to switch charts)";
     } else if (labelPrefix === 'Sectors Abs') {
-        hint = "\n(Hint: use 'per' for percentages, 'composition' or 'geography' to switch charts)";
+        hint =
+            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/geography/marketcap' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
@@ -946,9 +950,100 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
     let hint = '';
     if (labelPrefix === 'Geography') {
         hint =
-            "\n(Hint: use 'abs' for absolute values, 'composition' or 'sectors' to switch charts)";
+            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/marketcap' to switch charts)";
     } else if (labelPrefix === 'Geography Abs') {
-        hint = "\n(Hint: use 'per' for percentages, 'composition' or 'sectors' to switch charts)";
+        hint =
+            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/marketcap' to switch charts)";
+    }
+
+    return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
+}
+
+export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = {}) {
+    if (
+        transactionState.activeChart !== 'marketcap' &&
+        transactionState.activeChart !== 'marketcapAbs'
+    ) {
+        return null;
+    }
+    const data = await loadMarketcapSnapshotData();
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray(data.dates) ||
+        data.dates.length === 0
+    ) {
+        return null;
+    }
+
+    const dates = data.dates;
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    const filteredIndices = dates
+        .map((dateStr, index) => {
+            const date = parseDateSafe(dateStr);
+            return { index, date };
+        })
+        .filter(
+            ({ date }) =>
+                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
+        )
+        .map(({ index }) => index);
+
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
+    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+        targetIndex = dates.length - 1;
+    }
+
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const dateLabel = dates[targetIndex];
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const categorySeries = data.series || {};
+    const categories = [];
+    Object.entries(categorySeries).forEach(([name, values]) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percentage = Number(seriesValues[targetIndex] ?? 0);
+        if (!Number.isFinite(percentage) || percentage <= 0.01) {
+            return;
+        }
+        const baseValue = (totalValueRaw * percentage) / 100;
+        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
+        categories.push({
+            name,
+            percent: percentage,
+            absolute: convertedValue,
+        });
+    });
+
+    if (!categories.length) {
+        return null;
+    }
+
+    categories.sort((a, b) => b.percent - a.percent);
+
+    const formatted = categories.map((s) => {
+        const valueText = formatWithSelectedCurrency(s.absolute);
+        const percentText = `${s.percent.toFixed(2)}%`;
+        return `${s.name} ${valueText} (${percentText})`;
+    });
+
+    const lines = [];
+    for (let i = 0; i < formatted.length; i += 3) {
+        lines.push(formatted.slice(i, i + 3).join('   '));
+    }
+
+    let hint = '';
+    if (labelPrefix === 'Market Cap') {
+        hint =
+            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/geography' to switch charts)";
+    } else if (labelPrefix === 'Market Cap Abs') {
+        hint =
+            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/geography' to switch charts)";
     }
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;

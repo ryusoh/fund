@@ -111,19 +111,25 @@ describe('composition/sectors snapshot hints', () => {
     test('getCompositionSnapshotLine hint includes sectors switch reference', async () => {
         const fs = await import('fs');
         const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
-        expect(snapshotsCode).toContain("'sectors' or 'geography' to switch charts");
+        expect(snapshotsCode).toContain("'sectors/geography/marketcap' to switch charts");
     });
 
     test('getSectorsSnapshotLine hint includes composition switch reference', async () => {
         const fs = await import('fs');
         const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
-        expect(snapshotsCode).toContain("'composition' or 'geography' to switch charts");
+        expect(snapshotsCode).toContain("'composition/geography/marketcap' to switch charts");
     });
 
     test('getGeographySnapshotLine hint includes composition and sectors switch reference', async () => {
         const fs = await import('fs');
         const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
-        expect(snapshotsCode).toContain("'composition' or 'sectors' to switch charts");
+        expect(snapshotsCode).toContain("'composition/sectors/marketcap' to switch charts");
+    });
+
+    test('getMarketcapSnapshotLine hint includes composition/sectors/geography switch reference', async () => {
+        const fs = await import('fs');
+        const snapshotsCode = fs.readFileSync('./js/transactions/terminal/snapshots.js', 'utf8');
+        expect(snapshotsCode).toContain("'composition/sectors/geography' to switch charts");
     });
 });
 
