@@ -34,6 +34,7 @@ export const COMMAND_ALIASES = [
     'composition',
     'sectors',
     'geography',
+    'marketcap',
 ];
 
 export const STATS_SUBCOMMANDS = [
