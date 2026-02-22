@@ -12,13 +12,14 @@ export function handleHelpCommand(args, { appendMessage }) {
             '                       Examples: stats lifespan, s cagr, stats concentration\n' +
             '  plot (p)           - Chart commands\n' +
             '                       Use "plot" or "p" for subcommands\n' +
-            '                       Subcommands: balance, performance, drawdown, rolling, volatility, beta, yield, composition,\n' +
-            '                                    composition-abs, sectors, sectors-abs, geography, geography-abs, marketcap,\n' +
-            '                                    marketcap-abs, concentration, pe, fx\n' +
-            '                       Examples: plot balance, p performance, plot drawdown, plot rolling, plot volatility, plot beta,\n' +
-            '                                 plot yield, plot composition 2023, plot composition abs 2023, plot sectors,\n' +
-            '                                 plot sectors abs, plot geography, plot geography abs, plot marketcap, plot marketcap abs,\n' +
-            '                                 plot concentration, plot pe, plot fx\n' +
+            '                       Subcommands: balance, performance, drawdown, rolling, volatility, beta, yield,\n' +
+            '                                    composition, composition-abs, sectors, sectors-abs, geography,\n' +
+            '                                    geography-abs, marketcap, marketcap-abs, concentration, pe, fx\n' +
+            '                       Examples: plot balance, p performance, plot drawdown, plot rolling,\n' +
+            '                                 plot volatility, plot beta, plot yield, plot composition 2023,\n' +
+            '                                 plot composition abs 2023, plot sectors, plot sectors abs,\n' +
+            '                                 plot geography, plot geography abs, plot marketcap,\n' +
+            '                                 plot marketcap abs, plot concentration, plot pe, plot fx\n' +
             '  transaction (t)    - Toggle the transaction table visibility\n' +
             '  zoom (z)           - Toggle terminal zoom (expand to take over chart area)\n' +
             '  summary            - Show summary of the currently active chart\n' +
