@@ -15,6 +15,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 HOLDINGS_DAILY_FILE = PROJECT_ROOT / "data" / "checkpoints" / "holdings_daily.parquet"
 METADATA_FILE = PROJECT_ROOT / "data" / "ticker_metadata.json"
+DELISTED_TICKERS_FILE = PROJECT_ROOT / "data" / "delisted_tickers.csv"
+
+
+def load_delisted_tickers() -> frozenset:
+    """Load delisted tickers from CSV file."""
+    if not DELISTED_TICKERS_FILE.exists():
+        return frozenset()
+
+    tickers = set()
+    with DELISTED_TICKERS_FILE.open("r", encoding="utf-8") as f:
+        reader = pd.read_csv(f)
+        for ticker in reader["ticker"].dropna():
+            tickers.add(str(ticker).strip().upper())
+    return frozenset(tickers)
+
+
+DELISTED_TICKERS = load_delisted_tickers()
 
 
 def get_tickers_from_holdings() -> List[str]:
@@ -52,6 +69,10 @@ def fetch_metadata(tickers: List[str]) -> Dict[str, Any]:
             logging.warning(f"Error loading existing metadata: {e}")
 
     for ticker_symbol in tickers:
+        # Skip delisted tickers that won't have valid metadata
+        if ticker_symbol in DELISTED_TICKERS:
+            continue
+
         # Skip if already fetched and has valid info
         if ticker_symbol in metadata and (
             metadata[ticker_symbol].get("sector")

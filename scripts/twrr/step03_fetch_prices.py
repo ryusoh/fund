@@ -12,7 +12,7 @@ from typing import Dict, Iterable, List, Optional, Sequence
 import pandas as pd
 
 sys.path.append(str(Path(__file__).parent))
-from utils import append_changelog_entry
+from utils import append_changelog_entry, load_delisted_tickers
 
 try:
     import yfinance as yf
@@ -48,20 +48,7 @@ YFINANCE_ALIASES: Dict[str, str] = {
 }
 
 # Delisted or acquired stocks that cause yfinance lookups to fail and waste time
-DELISTED_TICKERS = frozenset(
-    {
-        'BKI',
-        'CHX',
-        'DICE',
-        'GD',
-        'LLAP',
-        'NATI',
-        'NYCB',
-        'PACW',
-        'SBSW',
-        'VTLE',
-    }
-)
+DELISTED_TICKERS = load_delisted_tickers()
 
 
 def ensure_directories() -> None:
