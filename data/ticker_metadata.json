@@ -205,8 +205,12 @@
         "symbol": "CHTR"
     },
     "CHX": {
+        "sector": null,
+        "industry": null,
+        "quoteType": null,
+        "longName": null,
         "symbol": "CHX",
-        "error": "HTTP Error 404: "
+        "yf_symbol": "CHX"
     },
     "CI": {
         "sector": "Healthcare",
