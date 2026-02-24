@@ -17,6 +17,7 @@ from utils import append_changelog_entry, load_delisted_tickers
 
 try:
     import yfinance as yf
+
     # Suppress yfinance logging about delisted tickers
     logging.getLogger('yfinance').setLevel(logging.ERROR)
 except ImportError as exc:  # pragma: no cover - dependency check
@@ -86,6 +87,9 @@ def chunked(iterable: Sequence[str], size: int) -> Iterable[List[str]]:
 
 
 def fetch_yfinance_prices(tickers: List[str], date_index: pd.DatetimeIndex):
+    import contextlib
+    import io
+
     if not tickers:
         empty = pd.DataFrame(index=date_index)
         return empty, [], []
@@ -102,17 +106,21 @@ def fetch_yfinance_prices(tickers: List[str], date_index: pd.DatetimeIndex):
     for batch in chunked(normalized, YFINANCE_MAX_BATCH):
         batch_fetch = [request_map[ticker] for ticker in batch]
         try:
-            data = yf.download(
-                batch_fetch,
-                start=start.strftime('%Y-%m-%d'),
-                end=end.strftime('%Y-%m-%d'),
-                interval='1d',
-                group_by='column',
-                auto_adjust=False,
-                progress=False,
-                threads=True,
-                actions=False,
-            )
+            # Suppress yfinance's direct print statements about failed downloads
+            f = io.StringIO()
+            with contextlib.redirect_stderr(f):
+                with contextlib.redirect_stdout(f):
+                    data = yf.download(
+                        batch_fetch,
+                        start=start.strftime('%Y-%m-%d'),
+                        end=end.strftime('%Y-%m-%d'),
+                        interval='1d',
+                        group_by='column',
+                        auto_adjust=False,
+                        progress=False,
+                        threads=True,
+                        actions=False,
+                    )
         except Exception as exc:  # pragma: no cover - network failures
             print(f'yfinance batch failed for {batch}: {exc}')
             failures.extend(batch)
