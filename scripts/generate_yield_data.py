@@ -157,6 +157,10 @@ def calculate_yield_data():
             if shares <= 0:
                 continue
 
+            # Skip tickers without price data (e.g., delisted stocks not in prices DataFrame)
+            if t not in prices_df.columns:
+                continue
+
             price = prices_df.at[current_date, t]
             if pd.isna(price) or price <= 0:
                 continue
