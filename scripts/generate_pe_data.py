@@ -976,21 +976,23 @@ def main():
     etf_tickers = [t for t in filtered_tickers if is_etf(t)]
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
     print("Fetching ETF PEs...")
-    etf_pe_daily = pd.DataFrame(index=dates)
+    etf_pe_series = {}
     for t in etf_tickers:
         pe_series = fetch_etf_pe(t, dates)
         if pe_series is not None:
-            etf_pe_daily[t] = pe_series
+            etf_pe_series[t] = pe_series
+    etf_pe_daily = pd.concat(etf_pe_series, axis=1) if etf_pe_series else pd.DataFrame(index=dates)
     print("Fetching Stock EPS...")
-    stock_eps_daily = pd.DataFrame(index=dates)
     all_stock_data = fetch_stock_eps_data(stock_tickers)
+    stock_eps_series = {}
     for t, data in all_stock_data.items():
         if not data["points"] and data["current_ttm"] is None:
             continue
-        stock_eps_daily[t] = interpolate_eps_series(data, dates)
+        stock_eps_series[t] = interpolate_eps_series(data, dates)
         p0 = data["points"][0]["eps"] if data["points"] else 0
         curr = data["current_ttm"] if data["current_ttm"] else 0
         print(f"  {t}: HistPts={len(data['points'])}, First={p0:.2f}, Curr={curr:.2f}")
+    stock_eps_daily = pd.concat(stock_eps_series, axis=1) if stock_eps_series else pd.DataFrame(index=dates)
     print("\nComputing Portfolio PE...")
     result_dates, result_portfolio_pe = [], []
     result_ticker_pe = {t: [] for t in all_tickers}
