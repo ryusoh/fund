@@ -992,7 +992,9 @@ def main():
         p0 = data["points"][0]["eps"] if data["points"] else 0
         curr = data["current_ttm"] if data["current_ttm"] else 0
         print(f"  {t}: HistPts={len(data['points'])}, First={p0:.2f}, Curr={curr:.2f}")
-    stock_eps_daily = pd.concat(stock_eps_series, axis=1) if stock_eps_series else pd.DataFrame(index=dates)
+    stock_eps_daily = (
+        pd.concat(stock_eps_series, axis=1) if stock_eps_series else pd.DataFrame(index=dates)
+    )
     print("\nComputing Portfolio PE...")
     result_dates, result_portfolio_pe = [], []
     result_ticker_pe = {t: [] for t in all_tickers}
