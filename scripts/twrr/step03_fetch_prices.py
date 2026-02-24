@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,8 @@ from utils import append_changelog_entry, load_delisted_tickers
 
 try:
     import yfinance as yf
+    # Suppress yfinance logging about delisted tickers
+    logging.getLogger('yfinance').setLevel(logging.ERROR)
 except ImportError as exc:  # pragma: no cover - dependency check
     raise RuntimeError('yfinance is required for price fetching. Install it and rerun.') from exc
 
