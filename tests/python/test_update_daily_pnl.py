@@ -28,6 +28,7 @@ sys.path.insert(0, str(project_root))
 from scripts.pnl.update_daily_pnl import (  # noqa: E402
     _get_latest_trading_day,
     calculate_daily_values,
+    calculate_daily_values_with_date,
 )
 
 
@@ -64,12 +65,15 @@ class TestUpdateDailyPnlRegression(unittest.TestCase):
         """Create a mock yfinance history response with specified dates and closes."""
         mock_history = MagicMock()
         mock_history.empty = False
+        # Create proper DatetimeIndex that strftime will work on
         mock_df = pd.DataFrame(
             {"Close": closes},
             index=pd.to_datetime(dates),
         )
         mock_history.__getitem__ = lambda self, key: mock_df[key]
         mock_history.get = lambda key: mock_df.get(key)
+        # Set up index to return actual datetime objects
+        mock_history.index = mock_df.index
         return mock_history
 
     def test_fetches_most_recent_trading_day_data(self) -> None:
@@ -290,12 +294,15 @@ class TestCalculateDailyValuesEdgeCases(unittest.TestCase):
         """Create a mock yfinance history response with specified dates and closes."""
         mock_history = MagicMock()
         mock_history.empty = False
+        # Create proper DatetimeIndex that strftime will work on
         mock_df = pd.DataFrame(
             {"Close": closes},
             index=pd.to_datetime(dates),
         )
         mock_history.__getitem__ = lambda self, key: mock_df[key]
         mock_history.get = lambda key: mock_df.get(key)
+        # Set up index to return actual datetime objects
+        mock_history.index = mock_df.index
         return mock_history
 
     def test_empty_history_returns_zero_value(self) -> None:
@@ -369,35 +376,180 @@ class TestStaleDataDetection(unittest.TestCase):
         """Create a mock yfinance history response with specified dates and closes."""
         mock_history = MagicMock()
         mock_history.empty = False
+        # Create proper DatetimeIndex that strftime will work on
         mock_df = pd.DataFrame(
             {"Close": closes},
             index=pd.to_datetime(dates),
         )
         mock_history.__getitem__ = lambda self, key: mock_df[key]
         mock_history.get = lambda key: mock_df.get(key)
+        # Set up index to return actual datetime objects
+        mock_history.index = mock_df.index
+        return mock_history
+
+
+class TestCalculateDailyValuesWithDate(unittest.TestCase):
+    """Tests for the new calculate_daily_values_with_date function."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        self.holdings_path = self.temp_path / "holdings_details.json"
+        self.holdings_data = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+        }
+        self.holdings_path.write_text(json.dumps(self.holdings_data), encoding="utf-8")
+
+        self.forex_path = self.temp_path / "fx_data.json"
+        self.forex_data = {"rates": {"USD": 1.0}}
+        self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+    def tearDown(self) -> None:
+        """Clean up test fixtures."""
+        self.temp_dir.cleanup()
+
+    def _create_mock_history_response(self, dates: List[str], closes: List[float]) -> MagicMock:
+        """Create a mock yfinance history response with specified dates and closes."""
+        mock_history = MagicMock()
+        mock_history.empty = False
+        # Create proper DatetimeIndex that strftime will work on
+        mock_df = pd.DataFrame(
+            {"Close": closes},
+            index=pd.to_datetime(dates),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        # Set up index to return actual datetime objects
+        mock_history.index = mock_df.index
+        return mock_history
+
+    def test_returns_actual_market_data_date(self) -> None:
+        """Test that calculate_daily_values_with_date returns the actual market data date."""
+        mock_history = self._create_mock_history_response(
+            dates=[
+                "2026-02-21 00:00:00-05:00",
+                "2026-02-24 00:00:00-05:00",  # Most recent trading day
+            ],
+            closes=[145.0, 150.0],
+        )
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                values, actual_date = calculate_daily_values_with_date(
+                    self.holdings_data, self.forex_data
+                )
+
+        # Should return the actual date from market data (Feb 24)
+        self.assertEqual(actual_date, "2026-02-24")
+        # Should calculate correct value (100 shares * $150)
+        self.assertAlmostEqual(values["value_usd"], 15000.0, places=2)
+
+    def test_returns_none_when_no_market_data(self) -> None:
+        """Test that calculate_daily_values_with_date returns None date when no data."""
+        mock_history = MagicMock()
+        mock_history.empty = True
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                values, actual_date = calculate_daily_values_with_date(
+                    self.holdings_data, self.forex_data
+                )
+
+        # Should return None when no market data available
+        self.assertIsNone(actual_date)
+        # Should return zero values
+        self.assertEqual(values["value_usd"], 0.0)
+
+
+class TestDateOverwritePrevention(unittest.TestCase):
+    """Regression tests for the date overwrite bug (GitHub issue).
+
+    This test suite prevents regression of the bug where running the update
+    script on a new day (e.g., Feb 25) would overwrite the previous day's
+    data (Feb 24) instead of appending new data.
+
+    The bug occurred because:
+    1. Script used datetime.now() to determine the target date
+    2. When running before market close, yfinance would return previous day's data
+    3. Script would label previous day's data with current date, overwriting existing data
+
+    The fix uses calculate_daily_values_with_date() to get the ACTUAL date
+    of the market data being fetched, ensuring the date label matches the data.
+    """
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        # Create mock holdings file
+        self.holdings_path = self.temp_path / "holdings_details.json"
+        self.holdings_data = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+        }
+        self.holdings_path.write_text(json.dumps(self.holdings_data), encoding="utf-8")
+
+        # Create mock forex file
+        self.forex_path = self.temp_path / "fx_data.json"
+        self.forex_data = {"rates": {"USD": 1.0}}
+        self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+    def tearDown(self) -> None:
+        """Clean up test fixtures."""
+        self.temp_dir.cleanup()
+
+    def _create_mock_history_response(self, dates: List[str], closes: List[float]) -> MagicMock:
+        """Create a mock yfinance history response with specified dates and closes."""
+        mock_history = MagicMock()
+        mock_history.empty = False
+        # Create proper DatetimeIndex that strftime will work on
+        mock_df = pd.DataFrame(
+            {"Close": closes},
+            index=pd.to_datetime(dates),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        # Set up index to return actual datetime objects
+        mock_history.index = mock_df.index
         return mock_history
 
     @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
-    @patch("scripts.pnl.update_daily_pnl._get_latest_trading_day")
     @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
-    def test_detects_and_fixes_stale_last_row(
-        self, mock_read_csv, mock_get_trading_day, mock_csv_path
+    def test_does_not_overwrite_existing_market_data_date(
+        self, mock_read_csv, mock_csv_path
     ) -> None:
-        """Test that stale data in the last row is detected and corrected.
+        """Test that existing data for the market data date is NOT overwritten.
 
-        Scenario:
-        - CSV has data up to 2026-02-23 (stale)
-        - Latest trading day is 2026-02-24
-        - Script should detect and fix the stale 2026-02-23 data
+        This is the primary regression test for the bug where:
+        - CSV has data for 2026-02-24 with value $10,000
+        - Script runs, fetches market data which returns 2026-02-24
+        - Script should NOT overwrite Feb 24 data, should exit cleanly
+
+        Before the fix: Script would use datetime.now() and overwrite data
+        After the fix: Script uses actual market data date and exits if it exists
         """
         from scripts.pnl.update_daily_pnl import main
 
-        # Create CSV with stale data
+        # Create CSV with existing data for Feb 24
         csv_path = self.temp_path / "historical_portfolio_values.csv"
+        original_feb24_value = 10000.0
         csv_path.write_text(
             "date,value_usd,value_cny,value_jpy,value_krw\n"
-            "2026-02-21,10000.0,72000.0,1450000.0,13000000.0\n"
-            "2026-02-23,10000.0,72000.0,1450000.0,13000000.0\n",  # Stale data
+            f"2026-02-24,{original_feb24_value},72000.0,1450000.0,13000000.0\n",
             encoding="utf-8",
         )
 
@@ -406,18 +558,15 @@ class TestStaleDataDetection(unittest.TestCase):
         mock_csv_path.exists.return_value = True
         mock_csv_path.open = csv_path.open
 
-        # Mock latest trading day as 2026-02-24 (newer than last CSV entry)
-        mock_get_trading_day.return_value = "2026-02-24"
-
-        # Mock pd.read_csv to avoid issues with mock file paths
+        # Mock pd.read_csv
         mock_df = MagicMock()
         mock_df.tail.return_value = "mock output"
         mock_read_csv.return_value = mock_df
 
-        # Mock yfinance to return current price of $150 (stale data used $100)
+        # Mock yfinance to return Feb 24 data (same as existing)
         mock_history = self._create_mock_history_response(
-            dates=["2026-02-23", "2026-02-24"],
-            closes=[100.0, 150.0],
+            dates=["2026-02-24"],
+            closes=[150.0],  # Would calculate to $15,000 (different from original)
         )
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = mock_history
@@ -426,27 +575,219 @@ class TestStaleDataDetection(unittest.TestCase):
             with (
                 patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
                 patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
-                patch("scripts.pnl.update_daily_pnl.datetime") as mock_datetime,
             ):
-                # Mock today as 2026-02-24 (same as latest trading day)
-                mock_today = MagicMock()
-                mock_today.strftime.return_value = "2026-02-24"
-                mock_datetime.now.return_value = mock_today
-
-                # Run main - it should detect stale data and fix it
-                try:
+                # Run main - should exit without modifying data
+                with self.assertRaises(SystemExit) as cm:
                     main()
-                except SystemExit:
-                    pass  # Expected when entry already exists
+                self.assertEqual(cm.exception.code, 0)  # Clean exit
 
-        # Verify the stale row was updated
+        # Verify the Feb 24 row was NOT modified
         with csv_path.open("r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             rows = list(reader)
 
-        # The 2026-02-23 row should now have updated values (100 shares * $150 = $15000)
-        feb23_row = next(r for r in rows if r["date"] == "2026-02-23")
-        self.assertEqual(float(feb23_row["value_usd"]), 15000.0)
+        self.assertEqual(len(rows), 1, "Should still have only one row")
+        self.assertEqual(rows[0]["date"], "2026-02-24")
+        # Critical assertion: original value should be preserved
+        self.assertEqual(float(rows[0]["value_usd"]), original_feb24_value)
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_appends_new_market_data_date_when_available(
+        self, mock_read_csv, mock_csv_path
+    ) -> None:
+        """Test that new data is appended when market returns a new date.
+
+        Scenario:
+        - CSV has data for 2026-02-24
+        - Market data returns 2026-02-25 (new trading day)
+        - Script should append Feb 25 data, NOT modify Feb 24
+
+        This verifies the fix correctly uses the actual market data date
+        instead of datetime.now().
+        """
+        from scripts.pnl.update_daily_pnl import main
+
+        # Create CSV with existing data for Feb 24
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        original_feb24_value = 10000.0
+        csv_path.write_text(
+            "date,value_usd,value_cny,value_jpy,value_krw\n"
+            f"2026-02-24,{original_feb24_value},72000.0,1450000.0,13000000.0\n",
+            encoding="utf-8",
+        )
+
+        # Mock the CSV path
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        # Mock pd.read_csv
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        # Mock yfinance to return Feb 25 data (NEW date)
+        mock_history = self._create_mock_history_response(
+            dates=["2026-02-24", "2026-02-25"],
+            closes=[150.0, 155.0],  # Feb 25 close is $155
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                # Run main - should append Feb 25 data (no SystemExit on success)
+                main()
+
+        # Verify results
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # Should have 2 rows now
+        self.assertEqual(len(rows), 2)
+
+        # Feb 24 should be unchanged
+        feb24_row = next(r for r in rows if r["date"] == "2026-02-24")
+        self.assertEqual(float(feb24_row["value_usd"]), original_feb24_value)
+
+        # Feb 25 should be appended with correct value (100 shares * $155 = $15,500)
+        feb25_row = next(r for r in rows if r["date"] == "2026-02-25")
+        self.assertEqual(float(feb25_row["value_usd"]), 15500.0)
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_ci_workflow_scenario_feb25_does_not_overwrite_feb24(
+        self, mock_read_csv, mock_csv_path
+    ) -> None:
+        """Test the exact CI workflow scenario that caused the bug.
+
+        Reproducing the original bug scenario:
+        - Date: Feb 25, 2026 (workflow runs at 21:15 UTC)
+        - CSV has: Feb 24 data (most recent trading day)
+        - Market: Feb 25 market just closed, yfinance returns Feb 25 data
+        - Expected: Append Feb 25 data, preserve Feb 24
+
+        The bug was that the script would:
+        - Use datetime.now() which returned Feb 25
+        - But yfinance might return Feb 24 close if market hadn't closed
+        - This caused Feb 24 row to be overwritten with Feb 25 label
+
+        The fix ensures:
+        - Uses actual market data date from yfinance
+        - Only appends when market data date > last_date_in_csv
+        - Never overwrites existing dates
+        """
+        from scripts.pnl.update_daily_pnl import main
+
+        # Simulate CSV with Feb 24 data (as it would exist before CI runs)
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        feb24_value = 1244879.673407347  # Actual value from the corrupted data
+        csv_path.write_text(
+            "date,value_usd,value_cny,value_jpy,value_krw\n"
+            f"2026-02-24,{feb24_value},8584067.78798036,193303670.8070194,1799622953.4711287\n",
+            encoding="utf-8",
+        )
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        # Mock pd.read_csv
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        # Scenario: Market has closed on Feb 25, yfinance returns Feb 25 data
+        mock_history = self._create_mock_history_response(
+            dates=["2026-02-24", "2026-02-25"],
+            closes=[150.0, 155.0],  # Feb 25 has new close price
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                # Run main - should append Feb 25 data
+                main()
+
+        # Verify results
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # Should have 2 rows
+        self.assertEqual(len(rows), 2)
+
+        # Feb 24 should be preserved with original value
+        feb24_row = next(r for r in rows if r["date"] == "2026-02-24")
+        self.assertEqual(float(feb24_row["value_usd"]), feb24_value)
+
+        # Feb 25 should be appended
+        feb25_row = next(r for r in rows if r["date"] == "2026-02-25")
+        self.assertEqual(float(feb25_row["value_usd"]), 15500.0)  # 100 * 155
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_handles_delayed_market_data_gracefully(self, mock_read_csv, mock_csv_path) -> None:
+        """Test that delayed market data (older than CSV) is handled gracefully.
+
+        Scenario:
+        - CSV has data for 2026-02-25
+        - yfinance returns data dated 2026-02-24 (delayed/stale)
+        - Script should NOT overwrite, should exit cleanly
+        """
+        from scripts.pnl.update_daily_pnl import main
+
+        # CSV has Feb 25 data
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        csv_path.write_text(
+            "date,value_usd,value_cny,value_jpy,value_krw\n"
+            "2026-02-25,15000.0,108000.0,2175000.0,19500000.0\n",
+            encoding="utf-8",
+        )
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        # Mock pd.read_csv
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        # yfinance returns stale Feb 24 data
+        mock_history = self._create_mock_history_response(
+            dates=["2026-02-24"],
+            closes=[150.0],
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                # Run main - should exit cleanly without modifying data
+                with self.assertRaises(SystemExit) as cm:
+                    main()
+                self.assertEqual(cm.exception.code, 0)
+
+        # Verify data is unchanged
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["date"], "2026-02-25")
 
 
 if __name__ == "__main__":

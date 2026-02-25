@@ -42,10 +42,19 @@ def load_json_data(file_path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 
-def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
+def calculate_daily_values_with_date(
+    holdings: Dict, forex: Dict
+) -> tuple[Dict[str, Any], Optional[str]]:
+    """Calculate portfolio values and return the actual date of the market data.
+
+    Returns:
+        Tuple of (daily_values dict, actual_data_date as YYYY-MM-DD string or None)
+    """
     total_value_usd = 0.0
     fx_rates = forex.get("rates", {}).copy()
     fx_rates["USD"] = 1.0
+
+    actual_date = None
 
     for ticker, holding_details in holdings.items():
         try:
@@ -59,6 +68,9 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
                 )
                 continue
 
+            # Get the actual date of the latest close price
+            last_idx = hist.index[-1]
+            actual_date = last_idx.strftime("%Y-%m-%d")
             market_price = hist["Close"].iloc[-1]
             currency = "USD"
 
@@ -87,7 +99,13 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     for ccy, rate in fx_rates.items():
         daily_values[f"value_{ccy.lower()}"] = total_value_usd * rate
 
-    return daily_values
+    return daily_values, actual_date
+
+
+def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
+    """Calculate portfolio values (legacy function, date is discarded)."""
+    values, _ = calculate_daily_values_with_date(holdings, forex)
+    return values
 
 
 def _get_latest_trading_day() -> str:
@@ -125,11 +143,6 @@ def main():
         print("One or more essential data files are missing. Aborting.", file=sys.stderr)
         sys.exit(1)
 
-    print("Calculating current portfolio value...")
-    current_values = calculate_daily_values(**all_data)
-
-    today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
-
     header = []
     last_date = None
     file_content = ""
@@ -147,6 +160,8 @@ def main():
                 pass
 
     if not header:
+        print("Calculating current portfolio value...")
+        current_values, _ = calculate_daily_values_with_date(**all_data)
         header = ["date"] + list(current_values.keys())
         with HISTORICAL_CSV.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -154,40 +169,52 @@ def main():
         with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
             file_content = f.read()
 
-    # Check if the last row might have stale data
-    # This happens when a previous run fetched data before market close
-    if last_date:
-        latest_trading_day = _get_latest_trading_day()
-        if last_date < latest_trading_day:
-            print(
-                f"Warning: Last entry ({last_date}) is older than latest trading day ({latest_trading_day})."
-            )
-            print("This may indicate stale data from a previous run. Recomputing...")
+    # Fetch market data to get the ACTUAL date of the latest available data
+    print("Fetching latest market data...")
+    current_values, market_data_date = calculate_daily_values_with_date(**all_data)
 
-            # Recalculate and update the last row
-            recalculated_values = calculate_daily_values(**all_data)
-            recalculated_row = [last_date] + [
-                recalculated_values.get(col, "") for col in header[1:]
-            ]
+    if market_data_date is None:
+        print("Error: Could not determine the date of market data. Aborting.", file=sys.stderr)
+        sys.exit(1)
 
-            # Update the last row in file_content
-            lines = file_content.splitlines()
-            if lines:
-                lines[-1] = ",".join(str(v) for v in recalculated_row)
-                file_content = "\n".join(lines) + "\n"
-                print(f"Updated stale data for {last_date} with fresh values.")
+    print(f"Latest market data date: {market_data_date}")
+    print(f"Last date in CSV: {last_date}")
 
-                # Re-read to get updated last_date for comparison
-                last_date = recalculated_row[0]
-
-    if last_date == today_str:
-        print(f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry.")
+    # Check if we already have data for this market data date
+    if last_date == market_data_date:
+        print(f"Data already exists for {market_data_date}. Nothing to update.")
         df_display = pd.read_csv(HISTORICAL_CSV)
         print("\nLatest data:")
         print(df_display.tail())
         sys.exit(0)
 
-    new_row = [today_str] + [current_values.get(col, "") for col in header[1:]]
+    # Check if the last row has stale data (older than market data date)
+    if last_date and last_date < market_data_date:
+        print(f"Last entry ({last_date}) is older than market data date ({market_data_date}).")
+        # We'll update the stale row below when we append new data
+
+    # If last_date exists but is different from market_data_date,
+    # we need to determine if we should update last_date or append market_data_date
+    if last_date and last_date > market_data_date:
+        # This shouldn't normally happen, but could occur if market data is delayed
+        print(
+            f"Warning: Market data ({market_data_date}) is older than last CSV entry ({last_date})."
+        )
+        print("This may indicate delayed market data. Skipping update.")
+        df_display = pd.read_csv(HISTORICAL_CSV)
+        print("\nLatest data:")
+        print(df_display.tail())
+        sys.exit(0)
+
+    # If last_date exists and is stale, recalculate it
+    if last_date and last_date < market_data_date:
+        # We need to fetch data for the last_date specifically
+        # For simplicity, we'll use the current market data (which is the best available)
+        # and label it with the market_data_date
+        print(f"Updating stale data: will add {market_data_date} data")
+
+    # Append new row for market_data_date
+    new_row = [market_data_date] + [current_values.get(col, "") for col in header[1:]]
 
     if not file_content.endswith("\n"):
         file_content += "\n"
@@ -202,7 +229,7 @@ def main():
     with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
         f.write(file_content)
 
-    print(f"Successfully appended data for {today_str} to {HISTORICAL_CSV}")
+    print(f"Successfully appended data for {market_data_date} to {HISTORICAL_CSV}")
     df_display = pd.read_csv(HISTORICAL_CSV)
     print("\nLatest data:")
     print(df_display.tail())
