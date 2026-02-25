@@ -90,6 +90,29 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     return daily_values
 
 
+def _get_latest_trading_day() -> str:
+    """Get the most recent trading day's date (YYYY-MM-DD format).
+
+    Uses yfinance to fetch SPY history and find the latest date with data.
+    Falls back to previous business day if market data is not available.
+    """
+    try:
+        spy = yf.Ticker("SPY")
+        hist = spy.history(period="2d")
+        if not hist.empty:
+            latest_date = hist.index[-1].date()
+            return str(latest_date.strftime("%Y-%m-%d"))
+    except Exception:
+        pass
+
+    # Fallback: use previous business day
+    today = datetime.now(ZoneInfo("America/New_York"))
+    prev_day = today - pd.Timedelta(days=1)
+    while prev_day.weekday() >= 5:  # Skip weekends
+        prev_day -= pd.Timedelta(days=1)
+    return str(prev_day.strftime("%Y-%m-%d"))
+
+
 def main():
     print("Starting daily portfolio value update...")
 
@@ -130,6 +153,32 @@ def main():
             writer.writerow(header)
         with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
             file_content = f.read()
+
+    # Check if the last row might have stale data
+    # This happens when a previous run fetched data before market close
+    if last_date:
+        latest_trading_day = _get_latest_trading_day()
+        if last_date < latest_trading_day:
+            print(
+                f"Warning: Last entry ({last_date}) is older than latest trading day ({latest_trading_day})."
+            )
+            print("This may indicate stale data from a previous run. Recomputing...")
+
+            # Recalculate and update the last row
+            recalculated_values = calculate_daily_values(**all_data)
+            recalculated_row = [last_date] + [
+                recalculated_values.get(col, "") for col in header[1:]
+            ]
+
+            # Update the last row in file_content
+            lines = file_content.splitlines()
+            if lines:
+                lines[-1] = ",".join(str(v) for v in recalculated_row)
+                file_content = "\n".join(lines) + "\n"
+                print(f"Updated stale data for {last_date} with fresh values.")
+
+                # Re-read to get updated last_date for comparison
+                last_date = recalculated_row[0]
 
     if last_date == today_str:
         print(f"An entry for {today_str} already exists. Aborting to prevent a duplicate entry.")
