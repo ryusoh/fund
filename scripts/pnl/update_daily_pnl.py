@@ -51,7 +51,7 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
         try:
             shares = float(holding_details["shares"])
             ticker_obj = yf.Ticker(ticker)
-            hist = ticker_obj.history(period="1d")
+            hist = ticker_obj.history(period="5d")
             if hist.empty:
                 print(
                     f"Warning: Could not get historical data for {ticker}. Skipping.",
