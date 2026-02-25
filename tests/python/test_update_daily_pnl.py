@@ -15,7 +15,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -289,7 +289,7 @@ class TestCalculateDailyValuesEdgeCases(unittest.TestCase):
         mock_ticker.history.return_value = mock_history
 
         # Forex with missing currency
-        forex_data = {"rates": {}}  # No rates defined
+        forex_data: Dict[str, Any] = {"rates": {}}  # No rates defined
 
         with patch("yfinance.Ticker", return_value=mock_ticker):
             with (
