@@ -399,8 +399,42 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
         },
     }
 
+    # US-only funds that yfinance can't resolve country data for
+    US_ONLY_FUNDS: dict[str, dict[str, float]] = {
+        # S&P 500 trackers
+        'VOO': {'United States': 100.0},
+        'IVV': {'United States': 100.0},
+        'SPY': {'United States': 100.0},
+        'FXAIX': {'United States': 100.0},
+        # Total US market
+        'VTI': {'United States': 100.0},
+        'VTSAX': {'United States': 100.0},
+        'FSKAX': {'United States': 100.0},
+        'FZROX': {'United States': 100.0},
+        # Nasdaq-100
+        'QQQ': {'United States': 100.0},
+        # US style/sector
+        'VMVAX': {'United States': 100.0},
+        'VSIAX': {'United States': 100.0},
+        'VGSNX': {'United States': 100.0},
+        # Commodities (US-vaulted)
+        'GLD': {'United States': 100.0},
+        'SLV': {'United States': 100.0},
+        # US bonds
+        'TLT': {'United States': 100.0},
+        # Inverse/derivative ETFs (US-based)
+        'PSQ': {'United States': 100.0},
+        'REK': {'United States': 100.0},
+        'RWM': {'United States': 100.0},
+        'SH': {'United States': 100.0},
+        'SJB': {'United States': 100.0},
+    }
+
     if ticker_upper in MUTUAL_FUND_ALLOCATIONS:
         return MUTUAL_FUND_ALLOCATIONS[ticker_upper]
+
+    if ticker_upper in US_ONLY_FUNDS:
+        return US_ONLY_FUNDS[ticker_upper]
 
     # Try to fetch from yfinance as fallback
     try:
@@ -410,8 +444,8 @@ def get_etf_country_allocation(ticker: str) -> dict[str, float]:
         if funds_data is None:
             return {}
 
-        # Try to get country allocation
-        country_alloc = funds_data.country_allocation
+        # Try to get country allocation (attribute removed in newer yfinance)
+        country_alloc = getattr(funds_data, 'country_allocation', None)
 
         if country_alloc is None or len(country_alloc) == 0:
             return {}
