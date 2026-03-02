@@ -78,7 +78,7 @@ def get_country_for_ticker(ticker: str, metadata: dict) -> str:
 
     # Check metadata first for quote type
     ticker_meta = metadata.get(ticker_upper, {})
-    quote_type = ticker_meta.get('quoteType', '').upper()
+    quote_type = (ticker_meta.get('quoteType') or '').upper()
 
     # ETFs and mutual funds need special handling
     if quote_type in ('ETF', 'MUTUALFUND'):
