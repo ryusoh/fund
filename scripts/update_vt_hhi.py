@@ -18,7 +18,7 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
     Fetch VT HHI value from ETFRC.com.
     Returns HHI on 0-10000 scale.
     """
-    url = "https://www.etfrc.com/fund/holdings.php?ticker=VT"
+    url = "https://www.etfrc.com/VT"
     scraper_api_key = os.environ.get("SCRAPER_API_KEY")
 
     if scraper_api_key:
@@ -26,6 +26,7 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
             'api_key': scraper_api_key,
             'url': url,
             'country_code': 'us',
+            'render': 'true',
         }
         fetch_url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
     else:
