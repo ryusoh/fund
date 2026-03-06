@@ -1,5 +1,3 @@
-# Contributing
-
 ## Project Layout Overview
 
 - `scripts/cli.py`: Main CLI entry point. Auto-discovers subcommands from
