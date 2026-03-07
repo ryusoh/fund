@@ -1,0 +1,3 @@
+## 2025-02-17 - Accessible Currency Toggles and Navigation
+**Learning:** Icon-only and symbol-only buttons, specifically currency toggles using `¥` for both CNY and JPY, cause visual ambiguity for sighted users and accessibility issues for screen readers. Navigation links containing only FontAwesome icons also lack context for assistive technologies.
+**Action:** Always add descriptive `title` attributes for sighted users' hover states and `aria-label` attributes for screen readers when using icon-only or ambiguous symbol-based interactive elements. Ensure decorative icons have `aria-hidden="true"`.
