@@ -969,7 +969,8 @@ async function init() {
                 summaryStatsEl.innerHTML = '';
                 summaryStatsEl.appendChild(loadingDiv);
             } else {
-                summaryStatsEl.innerHTML = '<div style="color:white; padding:10px;">Loading...</div>';
+                summaryStatsEl.innerHTML =
+                    '<div style="color:white; padding:10px;">Loading...</div>';
             }
         }
         await buildConfigs();
