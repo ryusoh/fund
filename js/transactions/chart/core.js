@@ -488,13 +488,21 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
     const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));
 
-    const offscreen = document.createElement('canvas');
-    offscreen.width = width;
-    offscreen.height = height;
-    const offCtx = offscreen.getContext('2d');
-    if (!offCtx) {
+    if (!drawMountainFill._sharedCanvas && typeof document !== 'undefined') {
+        drawMountainFill._sharedCanvas = document.createElement('canvas');
+        drawMountainFill._sharedCtx = drawMountainFill._sharedCanvas.getContext('2d');
+    }
+
+    const offscreen = drawMountainFill._sharedCanvas;
+    const offCtx = drawMountainFill._sharedCtx;
+
+    if (!offscreen || !offCtx) {
         return;
     }
+
+    // Resizing the canvas implicitly clears it for the new frame
+    offscreen.width = width;
+    offscreen.height = height;
 
     offCtx.beginPath();
     offCtx.moveTo(areaCoords[0].x - bounds.left, areaCoords[0].y - bounds.top);

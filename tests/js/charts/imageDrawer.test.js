@@ -77,6 +77,10 @@ describe('drawImage', () => {
             return {};
         });
 
+        // Clear shared canvas before each test
+        drawImage._sharedCanvas = undefined;
+        drawImage._sharedCtx = undefined;
+
         // Mock window.devicePixelRatio
         global.window = { devicePixelRatio: 2 };
     });
