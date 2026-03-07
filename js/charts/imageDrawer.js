@@ -189,10 +189,19 @@ export function drawImage(ctx, arc, img, logoInfo) {
     const dpr =
         typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
     // Safari drops ctx.globalAlpha when shadows are active on <canvas>; bake opacity into the bitmap.
-    const off = document.createElement('canvas');
-    off.width = Math.max(1, Math.round(drawW * dpr));
-    off.height = Math.max(1, Math.round(drawH * dpr));
-    const offCtx = off.getContext('2d', { willReadFrequently: true });
+
+    if (!drawImage._sharedCanvas && typeof document !== 'undefined') {
+        drawImage._sharedCanvas = document.createElement('canvas');
+        drawImage._sharedCtx = drawImage._sharedCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    const off = drawImage._sharedCanvas;
+    const offCtx = drawImage._sharedCtx;
+
+    if (off) {
+        off.width = Math.max(1, Math.round(drawW * dpr));
+        off.height = Math.max(1, Math.round(drawH * dpr));
+    }
 
     if (offCtx) {
         offCtx.save();
