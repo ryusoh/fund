@@ -192,7 +192,9 @@ export function drawImage(ctx, arc, img, logoInfo) {
 
     if (!drawImage._sharedCanvas && typeof document !== 'undefined') {
         drawImage._sharedCanvas = document.createElement('canvas');
-        drawImage._sharedCtx = drawImage._sharedCanvas.getContext('2d', { willReadFrequently: true });
+        drawImage._sharedCtx = drawImage._sharedCanvas.getContext('2d', {
+            willReadFrequently: true,
+        });
     }
 
     const off = drawImage._sharedCanvas;
