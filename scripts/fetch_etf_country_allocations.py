@@ -32,7 +32,8 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
             'url': target_url,
             'country_code': 'us',
         }
-        url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
+        # Security fix: use HTTPS to prevent insecure transmission of API keys
+        url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
     else:
         print(f"  ScraperAPI key not found, fetching directly for {etf_ticker}...")
         url = target_url

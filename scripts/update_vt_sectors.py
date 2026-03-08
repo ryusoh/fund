@@ -20,7 +20,8 @@ def fetch_vt_sectors():
             'url': target_url,
             'country_code': 'us',
         }
-        url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
+        # Security fix: use HTTPS to prevent insecure transmission of API keys
+        url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
     else:
         print("ScraperAPI key not found, fetching directly (may be blocked)...")
         url = target_url

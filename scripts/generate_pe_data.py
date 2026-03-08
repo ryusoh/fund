@@ -919,7 +919,8 @@ def scrape_wsj_forward_pe() -> Optional[float]:
                 'premium': 'true',
                 'country_code': 'us',
             }
-            url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
+            # Security fix: use HTTPS to prevent insecure transmission of API keys
+            url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
         else:
             url = target_url
 

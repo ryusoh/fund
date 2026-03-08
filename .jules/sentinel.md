@@ -1,3 +1,5 @@
+2024-03-08 - [Insecure API Keys Transmission], Insecure HTTP API Transmission, Transmitting secret API keys via HTTP allows MITM attacks. Always utilize HTTPS endpoints for external APIs. Mocks using `urllib.request.Request` were successfully employed to verify scheme usage (e.g. `mock_request.call_args[0][0].startswith("https://")`).
+
 ## 2024-05-24 - Cross-Site Scripting (XSS) via Error Messages
 
 **Vulnerability:** The application catches errors during data initialization/rendering and displays the `error.message` directly using `innerHTML` without sanitization. E.g., `document.querySelector(CALENDAR_SELECTORS.container).innerHTML = "<p>" + error.message + "</p>";` in `js/pages/calendar/index.js` and similar occurrences in `js/pages/analysis/lab.js`.
