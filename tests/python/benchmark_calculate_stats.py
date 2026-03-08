@@ -6,10 +6,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-from scripts.ratios.calculate_ratios import calculate_stats
+from scripts.ratios.calculate_ratios import calculate_stats  # noqa: E402
 
 # Mocking pd.read_parquet and other dependencies
 original_read_parquet = pd.read_parquet

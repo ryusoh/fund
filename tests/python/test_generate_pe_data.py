@@ -212,7 +212,6 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertEqual(data["points"][0]["eps"], 9.99)
         self.assertEqual(data["points"][0]["date"], pd.Timestamp("2020-12-31"))
 
-
     @patch("scripts.generate_pe_data.urllib.request.urlopen")
     @patch.dict("os.environ", {"SCRAPER_API_KEY": "test_key"})
     def test_scrape_wsj_forward_pe_https(self, mock_urlopen) -> None:
@@ -237,6 +236,7 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertTrue(req.full_url.startswith("https://api.scraperapi.com/"))
         self.assertIn("api_key=test_key", req.full_url)
         self.assertNotIn("http://api.scraperapi.com", req.full_url)
+
 
 if __name__ == "__main__":
     unittest.main()
