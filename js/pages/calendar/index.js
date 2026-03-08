@@ -1150,8 +1150,15 @@ export async function initCalendar() {
         if (container) {
             const p = document.createElement('p');
             p.textContent = error.message;
-            container.textContent = '';
-            container.appendChild(p);
+            if (typeof container.replaceChildren === 'function') {
+                container.replaceChildren(p);
+            } else if (typeof container.appendChild === 'function') {
+                container.innerHTML = '';
+                container.appendChild(p);
+            } else {
+                // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
+                container.innerHTML = `<p>${error.message}</p>`;
+            }
         }
     }
 }
