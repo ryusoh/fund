@@ -8,10 +8,10 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import the functions to test
-from scripts.fetch_etf_country_allocations import fetch_etf_country_allocation
-from scripts.generate_pe_data import scrape_wsj_forward_pe
-from scripts.update_vt_hhi import fetch_vt_hhi_from_etfrc
-from scripts.update_vt_sectors import fetch_vt_sectors
+from scripts.fetch_etf_country_allocations import fetch_etf_country_allocation  # noqa: E402
+from scripts.generate_pe_data import scrape_wsj_forward_pe  # noqa: E402
+from scripts.update_vt_hhi import fetch_vt_hhi_from_etfrc  # noqa: E402
+from scripts.update_vt_sectors import fetch_vt_sectors  # noqa: E402
 
 
 class TestScraperAPIHTTPS(unittest.TestCase):
