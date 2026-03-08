@@ -969,8 +969,8 @@ async function init() {
                 summaryStatsEl.innerHTML = '';
                 summaryStatsEl.appendChild(loadingDiv);
             } else {
-                summaryStatsEl.innerHTML =
-                    '<div style="color:white; padding:10px;">Loading...</div>';
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(loadingDiv);
             }
         }
         await buildConfigs();
@@ -990,7 +990,8 @@ async function init() {
                 summaryStatsEl.innerHTML = '';
                 summaryStatsEl.appendChild(errDiv);
             } else {
-                summaryStatsEl.innerHTML = `<div style="color:red; padding:10px;">Error: ${err.message}</div>`;
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(errDiv);
             }
         }
 
