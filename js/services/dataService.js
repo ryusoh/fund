@@ -355,6 +355,9 @@ function updateTableAndPrepareChartData(
         ],
     };
 
+    // Use DocumentFragment to batch DOM insertions for better performance
+    const fragment = document.createDocumentFragment();
+
     sortedHoldings.forEach((holding, index) => {
         const row = createHoldingRow(
             holding,
@@ -364,7 +367,7 @@ function updateTableAndPrepareChartData(
             currencySymbols,
             marketRatiosByTicker
         );
-        tbody.appendChild(row);
+        fragment.appendChild(row);
 
         const allocationPercentage =
             totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
@@ -386,6 +389,9 @@ function updateTableAndPrepareChartData(
         const logoInfo = { ...originalLogoInfo, src: resolvedSrc };
         chartData.datasets[0].images.push(logoInfo);
     });
+
+    // Append all rows at once
+    tbody.appendChild(fragment);
 
     return chartData;
 }

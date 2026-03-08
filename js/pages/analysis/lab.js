@@ -959,7 +959,19 @@ async function buildConfigs() {
 async function init() {
     try {
         if (summaryStatsEl) {
-            summaryStatsEl.innerHTML = '<div style="color:white; padding:10px;">Loading...</div>';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.style.color = 'white';
+            loadingDiv.style.padding = '10px';
+            loadingDiv.textContent = 'Loading...';
+            if (typeof summaryStatsEl.replaceChildren === 'function') {
+                summaryStatsEl.replaceChildren(loadingDiv);
+            } else if (typeof summaryStatsEl.appendChild === 'function') {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(loadingDiv);
+            } else {
+                summaryStatsEl.innerHTML =
+                    '<div style="color:white; padding:10px;">Loading...</div>';
+            }
         }
         await buildConfigs();
         renderTickerList();
@@ -968,7 +980,18 @@ async function init() {
         // eslint-disable-next-line no-console
         console.error(err);
         if (summaryStatsEl) {
-            summaryStatsEl.innerHTML = `<div style="color:red; padding:10px;">Error: ${err.message}</div>`;
+            const errDiv = document.createElement('div');
+            errDiv.style.color = 'red';
+            errDiv.style.padding = '10px';
+            errDiv.textContent = `Error: ${err.message}`;
+            if (typeof summaryStatsEl.replaceChildren === 'function') {
+                summaryStatsEl.replaceChildren(errDiv);
+            } else if (typeof summaryStatsEl.appendChild === 'function') {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(errDiv);
+            } else {
+                summaryStatsEl.innerHTML = `<div style="color:red; padding:10px;">Error: ${err.message}</div>`;
+            }
         }
 
         // eslint-disable-next-line no-undef
