@@ -1,3 +1,4 @@
+2024-05-24 - [Terminal DOM XSS Fix], Vulnerability: DOM Cross-Site Scripting (XSS), Learning: Direct concatenation of user input into \`innerHTML\` allows arbitrary JavaScript execution within the client's session., Prevention: Always use \`document.createElement()\` and assign user-controlled data via \`textContent\` or \`document.createTextNode()\` rather than \`innerHTML\` to ensure the browser treats it as literal text.
 2024-03-08 - [Insecure API Keys Transmission], Insecure HTTP API Transmission, Transmitting secret API keys via HTTP allows MITM attacks. Always utilize HTTPS endpoints for external APIs. Mocks using `urllib.request.Request` were successfully employed to verify scheme usage (e.g. `mock_request.call_args[0][0].startswith("https://")`).
 
 ## 2024-05-24 - Cross-Site Scripting (XSS) via Error Messages
