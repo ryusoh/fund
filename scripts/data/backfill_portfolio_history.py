@@ -156,24 +156,43 @@ def _default_price_fetcher(
     end_plus_one = end + timedelta(days=1)
     date_set = set(dates)
 
-    for ticker in tickers:
-        history = yf.Ticker(ticker).history(
-            start=start.isoformat(),
-            end=end_plus_one.isoformat(),
-            auto_adjust=False,
-            interval="1d",
-        )
-        if history.empty:
+    history = yf.download(
+        list(tickers),
+        start=start.isoformat(),
+        end=end_plus_one.isoformat(),
+        auto_adjust=False,
+        interval="1d",
+        ignore_tz=True,
+        progress=False,
+    )
+
+    if history.empty:
+        for ticker in tickers:
             raise ValueError(f"No historical price data returned for {ticker}")
 
-        close_series = history.get("Close")
-        if close_series is None:
+    close_series = history.get("Close")
+    if close_series is None:
+        for ticker in tickers:
             raise ValueError(f"Missing close prices for {ticker}")
 
+    if isinstance(close_series, pd.DataFrame):
+        for timestamp, row in close_series.dropna(how="all").iterrows():
+            day = timestamp.date()
+            if day in date_set:
+                for ticker, value in row.dropna().items():
+                    prices[str(ticker)][day] = Decimal(str(value))
+    else:
+        # Single ticker case
+        ticker = tickers[0]
         for timestamp, value in close_series.dropna().items():
             day = timestamp.date()
             if day in date_set:
                 prices[ticker][day] = Decimal(str(value))
+
+    # Verify that all tickers received at least some data (yf.download might return a DF with NaNs for a missing ticker)
+    for ticker in tickers:
+        if not prices[ticker]:
+            raise ValueError(f"No historical price data returned for {ticker}")
 
     return prices
 
@@ -189,21 +208,40 @@ def _default_fx_fetcher(
     end_plus_one = end + timedelta(days=1)
     date_set = set(dates)
 
-    for currency in currencies:
-        symbol = f"USD{currency}=X"
-        history = yf.Ticker(symbol).history(
-            start=start.isoformat(),
-            end=end_plus_one.isoformat(),
-            auto_adjust=False,
-            interval="1d",
-        )
-        if history.empty:
+    symbols = [f"USD{currency}=X" for currency in currencies]
+    symbol_to_currency = {f"USD{currency}=X": currency for currency in currencies}
+
+    history = yf.download(
+        symbols,
+        start=start.isoformat(),
+        end=end_plus_one.isoformat(),
+        auto_adjust=False,
+        interval="1d",
+        ignore_tz=True,
+        progress=False,
+    )
+
+    if history.empty:
+        for currency in currencies:
             raise ValueError(f"No FX data returned for USD/{currency}")
 
-        close_series = history.get("Close")
-        if close_series is None:
+    close_series = history.get("Close")
+    if close_series is None:
+        for currency in currencies:
             raise ValueError(f"Missing FX close prices for USD/{currency}")
 
+    if isinstance(close_series, pd.DataFrame):
+        for timestamp, row in close_series.dropna(how="all").iterrows():
+            day = timestamp.date()
+            if day not in date_set:
+                continue
+            day_rates = rates.setdefault(day, {})
+            for symbol, value in row.dropna().items():
+                currency = symbol_to_currency[str(symbol)]
+                day_rates[currency] = Decimal(str(value))
+    else:
+        # Single currency case
+        currency = currencies[0]
         for timestamp, value in close_series.dropna().items():
             day = timestamp.date()
             if day not in date_set:
