@@ -1146,7 +1146,20 @@ export async function initCalendar() {
     } catch (error) {
         logger.error('Error initializing calendar:', error);
         logger.log(error);
-        document.querySelector(CALENDAR_SELECTORS.container).innerHTML = `<p>${error.message}</p>`;
+        const container = document.querySelector(CALENDAR_SELECTORS.container);
+        if (container) {
+            const p = document.createElement('p');
+            p.textContent = error.message;
+            if (typeof container.replaceChildren === 'function') {
+                container.replaceChildren(p);
+            } else if (typeof container.appendChild === 'function') {
+                container.innerHTML = '';
+                container.appendChild(p);
+            } else {
+                // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
+                container.innerHTML = `<p>${error.message}</p>`;
+            }
+        }
     }
 }
 
