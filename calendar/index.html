@@ -98,32 +98,36 @@
         <div class="container">
             <ul>
                 <li>
-                    <a href="../">
-                        <i class="fa fa-chevron-right"></i>
+                    <a href="../" aria-label="Main Site">
+                        <i class="fa fa-chevron-right" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../position/">
-                        <i class="fa fa-pie-chart"></i>
+                    <a href="../position/" aria-label="Position">
+                        <i class="fa fa-pie-chart" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="./">
-                        <i class="fa fa-calendar"></i>
+                    <a href="./" aria-label="Calendar">
+                        <i class="fa fa-calendar" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li class="hide-on-mobile">
-                    <a href="../terminal/">
-                        <i class="fa fa-code"></i>
+                    <a href="../terminal/" aria-label="Terminal">
+                        <i class="fa fa-code" aria-hidden="true"></i>
                     </a>
                 </li>
             </ul>
         </div>
         <div id="currencyToggleContainer">
-            <button class="currency-toggle active" data-currency="USD">$</button>
-            <button class="currency-toggle" data-currency="CNY">¥</button>
-            <button class="currency-toggle" data-currency="JPY">¥</button>
-            <button class="currency-toggle" data-currency="KRW">₩</button>
+            <button class="currency-toggle active" data-currency="USD" aria-label="US Dollar">
+                $
+            </button>
+            <button class="currency-toggle" data-currency="CNY" aria-label="Chinese Yuan">¥</button>
+            <button class="currency-toggle" data-currency="JPY" aria-label="Japanese Yen">¥</button>
+            <button class="currency-toggle" data-currency="KRW" aria-label="South Korean Won">
+                ₩
+            </button>
         </div>
         <script src="../js/ui/currencyBootstrap.js"></script>
         <div class="page-center-wrapper">
@@ -133,14 +137,14 @@
                 </div>
             </div>
             <div id="calendar-navigation-controls">
-                <button id="cal-prev" class="cal-nav-btn" title="Previous Month">
-                    <i class="fa fa-chevron-left"></i>
+                <button id="cal-prev" class="cal-nav-btn" aria-label="Previous Month">
+                    <i class="fa fa-chevron-left" aria-hidden="true"></i>
                 </button>
-                <button id="cal-today" class="cal-nav-btn" title="Go to Today">
-                    <i class="fa fa-circle-o"></i>
+                <button id="cal-today" class="cal-nav-btn" aria-label="Go to Today">
+                    <i class="fa fa-circle-o" aria-hidden="true"></i>
                 </button>
-                <button id="cal-next" class="cal-nav-btn" title="Next Month">
-                    <i class="fa fa-chevron-right"></i>
+                <button id="cal-next" class="cal-nav-btn" aria-label="Next Month">
+                    <i class="fa fa-chevron-right" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
