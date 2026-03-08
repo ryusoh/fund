@@ -1150,7 +1150,8 @@ export async function initCalendar() {
         if (container) {
             const p = document.createElement('p');
             p.textContent = error.message;
-            container.replaceChildren(p);
+            container.textContent = '';
+            container.appendChild(p);
         }
     }
 }
