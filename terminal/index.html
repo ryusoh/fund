@@ -69,32 +69,36 @@
         <div class="nav-container">
             <ul>
                 <li>
-                    <a href="../">
-                        <i class="fa fa-chevron-right"></i>
+                    <a href="../" aria-label="Main Site">
+                        <i class="fa fa-chevron-right" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../position/">
-                        <i class="fa fa-pie-chart"></i>
+                    <a href="../position/" aria-label="Position">
+                        <i class="fa fa-pie-chart" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="../calendar/">
-                        <i class="fa fa-calendar"></i>
+                    <a href="../calendar/" aria-label="Calendar">
+                        <i class="fa fa-calendar" aria-hidden="true"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="./">
-                        <i class="fa fa-code"></i>
+                    <a href="./" aria-label="Terminal">
+                        <i class="fa fa-code" aria-hidden="true"></i>
                     </a>
                 </li>
             </ul>
         </div>
         <div id="currencyToggleContainer" class="hide-on-mobile">
-            <button class="currency-toggle active" data-currency="USD">$</button>
-            <button class="currency-toggle" data-currency="CNY">¥</button>
-            <button class="currency-toggle" data-currency="JPY">¥</button>
-            <button class="currency-toggle" data-currency="KRW">₩</button>
+            <button class="currency-toggle active" data-currency="USD" aria-label="US Dollar">
+                $
+            </button>
+            <button class="currency-toggle" data-currency="CNY" aria-label="Chinese Yuan">¥</button>
+            <button class="currency-toggle" data-currency="JPY" aria-label="Japanese Yen">¥</button>
+            <button class="currency-toggle" data-currency="KRW" aria-label="South Korean Won">
+                ₩
+            </button>
         </div>
         <script src="../js/ui/currencyBootstrap.js"></script>
         <div id="terminalSweepOverlay" aria-hidden="true"></div>
