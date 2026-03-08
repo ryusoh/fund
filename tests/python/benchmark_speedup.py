@@ -1,11 +1,12 @@
-import time
-import pandas as pd
-import numpy as np
 import sys
+import time
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
 # Add project root to path so we can import scripts
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 # Generate dummy data
@@ -99,7 +100,7 @@ r2 = method_optimized(df)
 t1 = time.time()
 time_opt = t1 - t0
 
-print(f"\nResults:")
+print("\nResults:")
 print(f"Baseline time: {time_base:.4f}s")
 print(f"Optimized time: {time_opt:.4f}s")
 print(f"Speedup: {time_base / time_opt:.2f}x")

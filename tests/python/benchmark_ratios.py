@@ -1,6 +1,7 @@
 import time
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 # Generate dummy data
 n = 10000
@@ -84,7 +85,7 @@ def method_zip(df):
     trade_values = df['trade_value'].to_numpy(dtype=float)
     order_types = df['order_type'].to_numpy()
 
-    for security, qty, trade_value, order_type in zip(securities, qtys, trade_values, order_types):
+    for security, qty, trade_value, order_type in zip(securities, qtys, trade_values, order_types, strict=False):
         price = trade_value / qty if qty else 0.0
         order_type_str = str(order_type).strip().lower()
         if qty <= 0 or price <= 0:
@@ -120,7 +121,7 @@ def method_zip_deque(df):
     trade_values = df['trade_value'].to_numpy(dtype=float)
     order_types = df['order_type'].to_numpy()
 
-    for security, qty, trade_value, order_type in zip(securities, qtys, trade_values, order_types):
+    for security, qty, trade_value, order_type in zip(securities, qtys, trade_values, order_types, strict=False):
         price = trade_value / qty if qty else 0.0
         order_type_str = str(order_type).strip().lower()
         if qty <= 0 or price <= 0:

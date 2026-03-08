@@ -1,14 +1,14 @@
-import time
-import os
 import sys
+import time
 from pathlib import Path
 
 # Add project root to path so we can import scripts
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from scripts.ratios.calculate_ratios import calculate_stats
 
 # Mocking pd.read_parquet and other dependencies
