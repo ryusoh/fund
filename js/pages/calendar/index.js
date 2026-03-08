@@ -1146,7 +1146,12 @@ export async function initCalendar() {
     } catch (error) {
         logger.error('Error initializing calendar:', error);
         logger.log(error);
-        document.querySelector(CALENDAR_SELECTORS.container).innerHTML = `<p>${error.message}</p>`;
+        const container = document.querySelector(CALENDAR_SELECTORS.container);
+        if (container) {
+            const p = document.createElement('p');
+            p.textContent = error.message;
+            container.replaceChildren(p);
+        }
     }
 }
 
