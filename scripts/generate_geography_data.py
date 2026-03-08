@@ -477,6 +477,9 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
     country_cache = {}
     etf_allocation_cache = {}
 
+    # Load allocations once for the fallback check
+    fallback_allocations = load_country_allocations()
+
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
@@ -637,7 +640,7 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
 
                     # Check against known fund lists
                     # First, try to use auto-updated allocations from file
-                    loaded_alloc = load_country_allocations().get(ticker_upper)
+                    loaded_alloc = fallback_allocations.get(ticker_upper)
                     if loaded_alloc:
                         for c, pct in loaded_alloc.items():
                             country_values[c] += value * (pct / 100.0)
