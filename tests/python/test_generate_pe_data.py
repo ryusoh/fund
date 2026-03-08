@@ -213,5 +213,30 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertEqual(data["points"][0]["date"], pd.Timestamp("2020-12-31"))
 
 
+    @patch("scripts.generate_pe_data.urllib.request.urlopen")
+    @patch.dict("os.environ", {"SCRAPER_API_KEY": "test_key"})
+    def test_scrape_wsj_forward_pe_https(self, mock_urlopen) -> None:
+        """Test that scrape_wsj_forward_pe uses HTTPS when API key is present."""
+        from scripts.generate_pe_data import scrape_wsj_forward_pe
+
+        # Setup mock to return dummy content to avoid parsing errors if possible
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"dummy content"
+        mock_urlopen.return_value = mock_response
+
+        # Call the function
+        scrape_wsj_forward_pe()
+
+        # Check the URL passed to urllib.request.Request
+        # urlopen is called with a Request object
+        mock_urlopen.assert_called_once()
+        args, _ = mock_urlopen.call_args
+        req = args[0]
+
+        # Verify the URL uses HTTPS
+        self.assertTrue(req.full_url.startswith("https://api.scraperapi.com/"))
+        self.assertIn("api_key=test_key", req.full_url)
+        self.assertNotIn("http://api.scraperapi.com", req.full_url)
+
 if __name__ == "__main__":
     unittest.main()
