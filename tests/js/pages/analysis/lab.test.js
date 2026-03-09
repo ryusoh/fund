@@ -119,4 +119,37 @@ describe('analysis lab data loading', () => {
             bear: 'Collapse',
         });
     });
+
+    describe('renderBayesOutput security', () => {
+        it('safely renders scenario names without executing HTML (DOM XSS prevention)', async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            const { renderBayesOutput, state } = module.__analysisLabTesting;
+
+            // Mock bayesEngine with malicious data
+            state.bayesEngine = {
+                priors: [
+                    {
+                        name: '<img src=x onerror=alert(1)> Malicious Name',
+                        prob: 0.5,
+                    },
+                ],
+            };
+
+            const bayesOutput = document.getElementById('bayesOutput');
+            bayesOutput.innerHTML = ''; // Ensure clear
+
+            // Render
+            renderBayesOutput();
+
+            // Verify
+            // The HTML string representation of the output should escape or encode the tags,
+            // or the DOM should not contain actual <img> elements.
+            const imgElements = bayesOutput.querySelectorAll('img');
+            expect(imgElements.length).toBe(0);
+            expect(bayesOutput.textContent).toContain(
+                '<img src=x onerror=alert(1)> Malicious Name'
+            );
+        });
+    });
 });
