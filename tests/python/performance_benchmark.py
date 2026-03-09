@@ -1,8 +1,9 @@
-import time
 import logging
-from unittest.mock import patch, MagicMock
+import time
+from unittest.mock import patch
+
 from polygon import RESTClient
-from polygon.rest.models.snapshot import TickerSnapshot, LastTrade
+from polygon.rest.models.snapshot import LastTrade, TickerSnapshot
 
 # Basic setup to mimic update_fund_data.py
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -15,7 +16,7 @@ def get_prices_old_way(client, tickers):
             last_trade = client.get_last_trade(ticker_symbol)
             if hasattr(last_trade, "price"):
                 data[ticker_symbol] = float(last_trade.price)
-        except Exception as e:
+        except Exception:
             pass
     return data
 
@@ -32,7 +33,7 @@ def get_prices_new_way(client, tickers):
             ):
                 if hasattr(snapshot.last_trade, "price") and snapshot.last_trade.price is not None:
                     data[snapshot.ticker] = float(snapshot.last_trade.price)
-    except Exception as e:
+    except Exception:
         pass
     return data
 
@@ -44,7 +45,6 @@ def run_benchmark():
         # Mock old way
         def side_effect_old(*args, **kwargs):
             time.sleep(0.01)  # Simulated latency
-            ticker_symbol = kwargs.get('path', '').split('/')[-1]
             return LastTrade(price=100.0)
 
         mock_get.side_effect = side_effect_old

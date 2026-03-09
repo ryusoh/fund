@@ -33,6 +33,9 @@ from pandas.tseries.holiday import (
 )
 from pandas.tseries.offsets import CustomBusinessDay
 
+# Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
+yf.set_tz_cache_location("/tmp/yf-cache")
+
 # Increase decimal precision for monetary calculations
 getcontext().prec = 28
 

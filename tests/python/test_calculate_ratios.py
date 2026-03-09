@@ -1,30 +1,36 @@
-import unittest
 import sys
+import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
-
-# Mock numpy and pandas before they are imported by calculate_ratios
-mock_np = MagicMock()
-# Simple implementation of isfinite for the purpose of these tests
-mock_np.isfinite.side_effect = lambda x: isinstance(x, (int, float)) and not (
-    x != x or x == float("inf") or x == float("-inf")
-)
-mock_np.nan = float("nan")
-mock_np.inf = float("inf")
-sys.modules["numpy"] = mock_np
-
-mock_pd = MagicMock()
-sys.modules["pandas"] = mock_pd
+from unittest.mock import MagicMock, patch
 
 # Add project root to path so we can import scripts
 project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from scripts.ratios.calculate_ratios import format_currency, format_percent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 
 class TestCalculateRatios(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Mock numpy and pandas before they are imported by calculate_ratios
+        cls.mock_np = MagicMock()
+        # Simple implementation of isfinite for the purpose of these tests
+        cls.mock_np.isfinite.side_effect = lambda x: isinstance(x, (int, float)) and not (
+            x != x or x == float("inf") or x == float("-inf")
+        )
+        cls.mock_np.nan = float("nan")
+        cls.mock_np.inf = float("inf")
+
+        cls.mock_pd = MagicMock()
+
+        # Use a temporary patch of sys.modules to import the script with mocked dependencies
+        with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
+            import scripts.ratios.calculate_ratios as cr
+
+            cls.cr = cr
+
     def test_format_currency(self):
+        format_currency = self.cr.format_currency
         # Happy paths
         self.assertEqual(format_currency(1234.56), "$1,234.56")
         self.assertEqual(format_currency(1234.567), "$1,234.57")
@@ -38,6 +44,7 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_currency(float("-inf")), "N/A")
 
     def test_format_percent(self):
+        format_percent = self.cr.format_percent
         # Happy paths
         self.assertEqual(format_percent(0.1234), "12.34%")
         self.assertEqual(format_percent(0.12345), "12.35%")
