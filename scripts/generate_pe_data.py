@@ -14,6 +14,7 @@ Methodology (V5):
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import math
 import os
@@ -500,7 +501,9 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
     cache = load_eps_cache()
     manual_patch = load_manual_patch()
 
-    for t in tickers:
+    from typing import Tuple
+
+    def fetch_single_stock_eps(t: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         symbol = yf_symbol(t)
         try:
             stock = yf.Ticker(symbol)
@@ -517,13 +520,11 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             currency = info.get("currency", "USD")
             fin_curr = info.get("financialCurrency", currency) or currency
 
-            if t not in cache:
-                cache[t] = {"points": {}, "currency": currency}
-            else:
-                cache[t]["points"] = {}  # Wipe old points to avoid split adjustment pollution
-
-            cache[t]["current_ttm"] = current_ttm
-            cache[t]["currency"] = currency
+            result_entry = {
+                "points": {},
+                "current_ttm": current_ttm,
+                "currency": currency,
+            }
 
             fx_series = None
             if currency != fin_curr:
@@ -541,18 +542,17 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             def add_point(
                 d_str: str,
                 val: float,
-                ticker: str,
                 current_fx_series: Optional[pd.Series],
                 current_currency: str,
                 current_fin_curr: str,
             ):
-                """Add a single EPS data point to cache, applying FX if needed."""
+                """Add a single EPS data point to result, applying FX if needed."""
                 if current_fx_series is not None:
                     rate = get_closest_fx(current_fx_series, pd.Timestamp(d_str))
                     val *= rate
                 elif current_currency == "GBP" and current_fin_curr == "GBp":
                     val /= 100.0
-                cache[ticker]["points"][d_str] = val
+                result_entry["points"][d_str] = val
 
             # 1. Annual income_stmt → fully split-adjusted, use directly
             try:
@@ -566,7 +566,6 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                         add_point(
                             pd.Timestamp(d_val).strftime("%Y-%m-%d"),
                             float(v),
-                            t,
                             fx_series,
                             currency,
                             fin_curr,
@@ -590,18 +589,12 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                         add_point(
                             pd.Timestamp(d_val).strftime("%Y-%m-%d"),
                             float(ttm_v),
-                            t,
                             fx_series,
                             currency,
                             fin_curr,
                         )
 
             # 3. get_earnings_dates() → REQUIRES split normalization
-            #
-            # Yahoo retroactively adjusts earnings_dates for all PREVIOUS splits
-            # but NOT the most recent split. However, this is inconsistent near
-            # split boundaries. We empirically detect the correct factor by
-            # comparing against income_stmt annual EPS (which IS fully adjusted).
             try:
                 ed = stock.get_earnings_dates(limit=40)
                 if ed is not None and not ed.empty and "Reported EPS" in ed.columns:
@@ -609,8 +602,6 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                     q_eps_raw.index = q_eps_raw.index.normalize().tz_localize(None)
                     q_eps_raw = q_eps_raw.groupby(q_eps_raw.index).last()
 
-                    # Empirically detect Yahoo's adjustment factor by comparing
-                    # the sum of 4 reported quarters against the official annual EPS.
                     calibration_factor = 1.0
                     if (
                         annual is not None
@@ -618,14 +609,11 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                         and "Basic EPS" in annual.index
                         and len(q_eps_raw) >= 4
                     ):
-                        # Try each annual period to find a calibration match
                         annual_eps = annual.loc["Basic EPS"].dropna().sort_index()
                         for ann_date, ann_val in annual_eps.items():
                             if pd.isna(ann_val) or ann_val == 0:
                                 continue
                             ann_ts = pd.to_datetime(ann_date).normalize().tz_localize(None)
-                            # Find 4 quarters ending near this annual date
-                            # (within 90 days before the annual date)
                             mask = (q_eps_raw.index <= ann_ts) & (
                                 q_eps_raw.index > ann_ts - pd.Timedelta(days=400)
                             )
@@ -634,29 +622,22 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                                 q_sum = matching_qs.iloc[-4:].sum()
                                 if q_sum != 0:
                                     ratio = q_sum / float(ann_val)
-                                    # Expected ratios: 1.0 (no adj needed), 4.0, 10.0, etc.
                                     if ratio > 1.5:
                                         calibration_factor = round(ratio)
                                         break
 
-                    # Normalize each reported EPS
                     q_eps_normalized = []
                     for d, v in q_eps_raw.items():
-                        # If this date has a quarterly_income_stmt anchor, use that
                         if d in quarterly_anchors:
                             q_eps_normalized.append(quarterly_anchors[d])
                             continue
 
-                        # Check if this specific date is AFTER the most recent split
-                        # (Yahoo may have already fully adjusted it)
                         if not yf_splits.empty:
                             last_split_date = pd.Timestamp(yf_splits.index[-1]).tz_localize(None)
                             if d >= last_split_date:
-                                # Post-split: Yahoo already fully adjusted
                                 q_eps_normalized.append(v)
                                 continue
 
-                        # Apply empirical calibration factor
                         normalized = v / calibration_factor
                         q_eps_normalized.append(normalized)
 
@@ -667,18 +648,32 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                             add_point(
                                 pd.Timestamp(d_val).strftime("%Y-%m-%d"),
                                 float(ttm_v),
-                                t,
                                 fx_series,
                                 currency,
                                 fin_curr,
                             )
             except Exception as e:
-                # Silence internal yfinance TypeError: argument of type 'NoneType' is not iterable
                 if "NoneType" not in str(e):
                     print(f"Warning: Quarterly fetch failed for {symbol}: {e}")
+            return (t, result_entry)
         except Exception as e:
             if "NoneType" not in str(e):
                 print(f"Warning: Error fetching {symbol}: {e}")
+            return (t, None)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_ticker = {executor.submit(fetch_single_stock_eps, t): t for t in tickers}
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            result = future.result()
+            if result:
+                t, entry = result
+                if entry is not None:
+                    # Update cache with the new entry
+                    if t not in cache:
+                        cache[t] = {}
+                    cache[t]["points"] = entry["points"]
+                    cache[t]["current_ttm"] = entry["current_ttm"]
+                    cache[t]["currency"] = entry["currency"]
 
     save_eps_cache(cache)
     results = {}
@@ -839,17 +834,17 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
     fwd_pe_map: Dict[str, float] = {}
     ticker_fwd_pe: Dict[str, float] = {}
 
-    for ticker, details in holdings.items():
+    def fetch_single_forward_pe(ticker: str, details: dict) -> Optional[dict]:
         shares = float(details.get("shares", 0))
         if shares <= 0:
-            continue
+            return None
 
         symbol = yf_symbol(ticker)
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
             if info is None:
-                continue
+                return None
 
             price = info.get("currentPrice") or info.get("regularMarketPrice")
             fwd_pe = info.get("forwardPE")
@@ -860,14 +855,28 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
                     fwd_pe = msci_pe
                     print(f"    VT: Fetched Forward PE {fwd_pe} from MSCI proxy")
 
-            if price and price > 0:
-                mv_map[ticker] = shares * price
-
-            if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
-                fwd_pe_map[ticker] = fwd_pe
-                ticker_fwd_pe[ticker] = round(fwd_pe, 2)
+            return {"ticker": ticker, "shares": shares, "price": price, "fwd_pe": fwd_pe}
         except Exception:
-            continue
+            return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_ticker = {
+            executor.submit(fetch_single_forward_pe, t, det): t for t, det in holdings.items()
+        }
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            result = future.result()
+            if result:
+                ticker = result["ticker"]
+                shares = result["shares"]
+                price = result["price"]
+                fwd_pe = result["fwd_pe"]
+
+                if price and price > 0:
+                    mv_map[ticker] = shares * price
+
+                if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
+                    fwd_pe_map[ticker] = fwd_pe
+                    ticker_fwd_pe[ticker] = round(fwd_pe, 2)
 
     if not fwd_pe_map:
         return None
@@ -978,10 +987,21 @@ def main():
     print(f"Processing {len(stock_tickers)} stocks and {len(etf_tickers)} ETFs...")
     print("Fetching ETF PEs...")
     etf_pe_series = {}
-    for t in etf_tickers:
-        pe_series = fetch_etf_pe(t, dates)
-        if pe_series is not None:
-            etf_pe_series[t] = pe_series
+
+    # Use ThreadPoolExecutor to fetch ETF PEs concurrently
+    # max_workers=10 is a reasonable default to speed up requests without getting aggressively rate-limited
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        # Submit all tasks and keep track of futures
+        future_to_ticker = {executor.submit(fetch_etf_pe, t, dates): t for t in etf_tickers}
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            t = future_to_ticker[future]
+            try:
+                pe_series = future.result()
+                if pe_series is not None:
+                    etf_pe_series[t] = pe_series
+            except Exception as exc:
+                print(f"  Warning: fetching ETF PE for {t} generated an exception: {exc}")
+
     etf_pe_daily = pd.concat(etf_pe_series, axis=1) if etf_pe_series else pd.DataFrame(index=dates)
     print("Fetching Stock EPS...")
     all_stock_data = fetch_stock_eps_data(stock_tickers)
