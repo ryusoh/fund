@@ -581,16 +581,25 @@ function renderBayesOutput() {
         return;
     }
     const priors = state.bayesEngine.priors;
-    bayesOutput.innerHTML = priors
-        .map(
-            (p) => `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--ink); padding: 4px 0;">
-            <span>${p.name}</span>
-            <strong>${(p.prob * 100).toFixed(1)}%</strong>
-        </div>
-    `
-        )
-        .join('');
+    const elements = priors.map((p) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.borderBottom = '1px dashed var(--ink)';
+        row.style.padding = '4px 0';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = p.name;
+
+        const probStrong = document.createElement('strong');
+        probStrong.textContent = `${(p.prob * 100).toFixed(1)}%`;
+
+        row.appendChild(nameSpan);
+        row.appendChild(probStrong);
+        return row;
+    });
+
+    bayesOutput.replaceChildren(...elements);
 }
 
 btnBayesBull.addEventListener('click', () => {
@@ -985,4 +994,6 @@ export const __analysisLabTesting = {
     computeScenarioOutcome,
     aggregateScenarios,
     extractScenarioTitles,
+    renderBayesOutput,
+    state,
 };
