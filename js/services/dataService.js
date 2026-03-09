@@ -284,17 +284,45 @@ function createHoldingRow(
         holding.currentPrice
     );
 
-    row.innerHTML = `
-        <td>${holding.name}</td>
-        <td class="allocation">${allocationPercentage.toFixed(2)}%</td>
-        <td class="price">${formatCurrency(holding.currentPrice, currentCurrency, exchangeRates, currencySymbols)}</td>
-        <td class="per">${perDisplayValue}</td>
-        <td class="cost">${formatCurrency(holding.cost, currentCurrency, exchangeRates, currencySymbols)}</td>
-        <td class="shares">${holding.shares.toFixed(2)}</td>
-        <td class="value">${formatCurrency(holding.currentValue, currentCurrency, exchangeRates, currencySymbols)}</td>
-        <td class="pnl"></td>
-        <td class="pnl-percentage"></td>
-    `;
+    const columns = [
+        { text: holding.name },
+        { class: 'allocation', text: `${allocationPercentage.toFixed(2)}%` },
+        {
+            class: 'price',
+            text: formatCurrency(
+                holding.currentPrice,
+                currentCurrency,
+                exchangeRates,
+                currencySymbols
+            ),
+        },
+        { class: 'per', text: perDisplayValue },
+        {
+            class: 'cost',
+            text: formatCurrency(holding.cost, currentCurrency, exchangeRates, currencySymbols),
+        },
+        { class: 'shares', text: holding.shares.toFixed(2) },
+        {
+            class: 'value',
+            text: formatCurrency(
+                holding.currentValue,
+                currentCurrency,
+                exchangeRates,
+                currencySymbols
+            ),
+        },
+        { class: 'pnl', text: '' },
+        { class: 'pnl-percentage', text: '' },
+    ];
+
+    columns.forEach((col) => {
+        const td = document.createElement('td');
+        if (col.class) {
+            td.className = col.class;
+        }
+        td.textContent = col.text;
+        row.appendChild(td);
+    });
 
     const pnlCell = row.querySelector('td.pnl');
     const pnlPercentageCell = row.querySelector('td.pnl-percentage');
@@ -341,7 +369,7 @@ function updateTableAndPrepareChartData(
     marketRatiosByTicker = new Map()
 ) {
     const tbody = document.querySelector('table tbody');
-    tbody.innerHTML = '';
+    tbody.replaceChildren();
 
     const chartData = {
         labels: [],
@@ -847,7 +875,7 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
 
         // Clear previous content and stop any existing thinking effects
         setThinkingHighlight(pnlElement, false);
-        pnlElement.innerHTML = '';
+        pnlElement.replaceChildren();
 
         // Create structured spans for PnL display with thinking effect
         const openBracket = document.createElement('span');
