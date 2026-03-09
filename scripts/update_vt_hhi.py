@@ -28,7 +28,7 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
             'country_code': 'us',
             'render': 'true',
         }
-        fetch_url = 'http://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
+        fetch_url = 'https://api.scraperapi.com/?' + urllib.parse.urlencode(payload)
     else:
         print("Warning: SCRAPER_API_KEY not set, fetching directly (may be blocked)")
         fetch_url = url
