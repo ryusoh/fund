@@ -291,13 +291,14 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
                 symbol_splits.sort(key=lambda item: item[0])
 
     share_totals: dict[str, Decimal] = {}
-    for _, row in transactions_df.iterrows():
-        symbol = str(row['Security'])
-        quantity = Decimal(str(row['Quantity']))
+    transactions_df.rename(columns=lambda x: str(x).replace(' ', '_'), inplace=True)
+    for row in transactions_df.itertuples(index=False):
+        symbol = str(row.Security)
+        quantity = Decimal(str(row.Quantity))
         if quantity == 0:
             continue
-        trade_date = row['Trade Date']
-        order_type = row['Order Type']
+        trade_date = row.Trade_Date
+        order_type = row.Order_Type
 
         multiplier = Decimal('1')
         for split_date, split_multiplier in splits_by_symbol.get(symbol, []):
@@ -684,11 +685,11 @@ def main() -> None:
             }
         )
 
-    for _, txn in transactions_df.iterrows():
-        trade_date = pd.to_datetime(txn['trade_date']).date()
-        order_type = str(txn['order_type']).strip().title()
-        quantity = float(txn['quantity'])
-        price = float(txn['executed_price'])
+    for txn in transactions_df.itertuples(index=False):
+        trade_date = pd.to_datetime(txn.trade_date).date()
+        order_type = str(txn.order_type).strip().title()
+        quantity = float(txn.quantity)
+        price = float(txn.executed_price)
 
         if quantity <= 0 or price <= 0:
             continue
