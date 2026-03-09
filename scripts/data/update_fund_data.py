@@ -55,35 +55,51 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
     tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
 
-    if tickers_for_polygon:
-        logging.info(
-            f"Trying to fetch overnight prices from Polygon.io for: {', '.join(tickers_for_polygon)}"
-        )
-        try:
-            api_key = os.environ["POLYGON_KEY"]
-            with RESTClient(api_key) as client:
-                for ticker_symbol in tickers_for_polygon:
-                    try:
-                        last_trade = client.get_last_trade(ticker_symbol)
-                        if hasattr(last_trade, "price"):
-                            price = last_trade.price
-                            data[ticker_symbol] = float(price)
-                            logging.info(
-                                f"Fetched price for {ticker_symbol} from Polygon.io: {price}"
-                            )
+    if not tickers_for_polygon:
+        return data
+
+    logging.info(
+        f"Trying to fetch overnight prices from Polygon.io for: {', '.join(tickers_for_polygon)}"
+    )
+    try:
+        api_key = os.environ["POLYGON_KEY"]
+        with RESTClient(api_key) as client:
+            try:
+                snapshots = client.get_snapshot_all(
+                    market_type="stocks", tickers=tickers_for_polygon
+                )
+
+                if not snapshots:
+                    logging.warning("No snapshots returned from Polygon.io.")
+                else:
+                    for snapshot in snapshots:
+                        ticker_symbol = snapshot.ticker
+                        if not ticker_symbol or ticker_symbol not in tickers_for_polygon:
+                            continue
+
+                        if hasattr(snapshot, "last_trade") and snapshot.last_trade is not None:
+                            last_trade = snapshot.last_trade
+                            if hasattr(last_trade, "price") and last_trade.price is not None:
+                                price = last_trade.price
+                                data[ticker_symbol] = float(price)
+                                logging.info(
+                                    f"Fetched price for {ticker_symbol} from Polygon.io: {price}"
+                                )
+                            else:
+                                logging.warning(
+                                    f"Could not fetch price for {ticker_symbol} from Polygon.io snapshot (price missing)."
+                                )
                         else:
                             logging.warning(
-                                f"Could not fetch price for {ticker_symbol} from Polygon.io."
+                                f"Could not fetch price for {ticker_symbol} from Polygon.io snapshot (last_trade missing)."
                             )
-                    except Exception as e:
-                        logging.error(f"Error fetching {ticker_symbol} from Polygon.io: {e}")
+            except Exception as e:
+                logging.error(f"Error fetching snapshots from Polygon.io: {e}")
 
-        except KeyError:
-            logging.error(
-                "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
-            )
-        except Exception as e:
-            logging.error(f"An error occurred with Polygon.io: {e}")
+    except KeyError:
+        logging.error("Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io.")
+    except Exception as e:
+        logging.error(f"An error occurred with Polygon.io: {e}")
 
     return data
 
