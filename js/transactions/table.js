@@ -142,7 +142,7 @@ function displayTransactions(transactions) {
     if (!tbody) {
         return;
     }
-    tbody.innerHTML = '';
+    tbody.replaceChildren();
     const runningTotalsMap = computeRunningTotals(transactions, transactionState.splitHistory);
 
     const currentCurrency = transactionState.selectedCurrency;
@@ -175,15 +175,41 @@ function displayTransactions(transactions) {
             currency: currentCurrency,
         });
 
-        row.innerHTML = `
-            <td class="date">${formatDate(transaction.tradeDate)}</td>
-            <td class="${orderTypeClass}">${transaction.orderType}</td>
-            <td>${transaction.security}</td>
-            <td>${parseFloat(transaction.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${formatCurrency(convertedPrice)}</td>
-            <td class="amount">${formattedNetAmount}</td>
-            <td class="amount">${formattedPortfolio}</td>
-        `;
+        const tdDate = document.createElement('td');
+        tdDate.className = 'date';
+        tdDate.textContent = formatDate(transaction.tradeDate);
+        row.appendChild(tdDate);
+
+        const tdOrderType = document.createElement('td');
+        tdOrderType.className = orderTypeClass;
+        tdOrderType.textContent = transaction.orderType;
+        row.appendChild(tdOrderType);
+
+        const tdSecurity = document.createElement('td');
+        tdSecurity.textContent = transaction.security;
+        row.appendChild(tdSecurity);
+
+        const tdQuantity = document.createElement('td');
+        tdQuantity.textContent = parseFloat(transaction.quantity).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        row.appendChild(tdQuantity);
+
+        const tdPrice = document.createElement('td');
+        tdPrice.textContent = formatCurrency(convertedPrice);
+        row.appendChild(tdPrice);
+
+        const tdAmount = document.createElement('td');
+        tdAmount.className = 'amount';
+        tdAmount.textContent = formattedNetAmount;
+        row.appendChild(tdAmount);
+
+        const tdPortfolio = document.createElement('td');
+        tdPortfolio.className = 'amount';
+        tdPortfolio.textContent = formattedPortfolio;
+        row.appendChild(tdPortfolio);
+
         tbody.appendChild(row);
     });
 
