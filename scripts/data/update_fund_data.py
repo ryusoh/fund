@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
 import yfinance as yf
 from polygon import RESTClient
 
@@ -38,19 +39,47 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     """
     data: Dict[str, Optional[float]] = {}
 
-    # Try yfinance first
-    for ticker_symbol in ticker_list:
-        try:
-            ticker = yf.Ticker(ticker_symbol)
-            hist = ticker.history(period="1d", interval="1m", prepost=True)
-            if not hist.empty:
-                price = hist["Close"].iloc[-1]
-                data[ticker_symbol] = float(price)
-                logging.info(f"Fetched price for {ticker_symbol} from yfinance: {price}")
+    if not ticker_list:
+        return data
+
+    # Try yfinance first (batched)
+    try:
+        hist = yf.download(ticker_list, period="1d", interval="1m", prepost=True, progress=False)
+
+        if "Close" in hist:
+            close_data = hist["Close"]
+
+            # If it's a single ticker, close_data is a Series. If multiple, it's a DataFrame.
+            if isinstance(close_data, pd.DataFrame):
+                for ticker_symbol in ticker_list:
+                    if ticker_symbol in close_data.columns:
+                        col = close_data[ticker_symbol].dropna()
+                        if not col.empty:
+                            price = float(col.iloc[-1])
+                            data[ticker_symbol] = price
+                            logging.info(
+                                f"Fetched price for {ticker_symbol} from yfinance: {price}"
+                            )
+                        else:
+                            data[ticker_symbol] = None
+                    else:
+                        data[ticker_symbol] = None
             else:
+                col = close_data.dropna()
+                ticker_symbol = ticker_list[0]
+                if not col.empty:
+                    price = float(col.iloc[-1])
+                    data[ticker_symbol] = price
+                    logging.info(f"Fetched price for {ticker_symbol} from yfinance: {price}")
+                else:
+                    data[ticker_symbol] = None
+        else:
+            for ticker_symbol in ticker_list:
                 data[ticker_symbol] = None
-        except Exception as e:
-            logging.warning(f"yfinance failed for {ticker_symbol}: {e}. Will try Polygon.io.")
+
+    except Exception as e:
+        logging.warning(f"yfinance batch download failed: {e}. Will try Polygon.io.")
+        for ticker_symbol in ticker_list:
             data[ticker_symbol] = None
 
     tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
