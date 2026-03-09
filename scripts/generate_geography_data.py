@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate portfolio geography/country distribution data for stacked area chart."""
 
+import functools
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -162,6 +163,7 @@ def normalize_country_name(country: str) -> str:
     return normalizations.get(country_lower, country)
 
 
+@functools.lru_cache(maxsize=1)
 def load_country_allocations() -> dict[str, dict[str, float]]:
     """Load country allocations from data file."""
     allocations_path = Path('data/fund_country_allocations.json')
@@ -477,6 +479,9 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
     country_cache = {}
     etf_allocation_cache = {}
 
+    # Load allocations once for the fallback check
+    fallback_allocations = load_country_allocations()
+
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
@@ -637,7 +642,7 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
 
                     # Check against known fund lists
                     # First, try to use auto-updated allocations from file
-                    loaded_alloc = load_country_allocations().get(ticker_upper)
+                    loaded_alloc = fallback_allocations.get(ticker_upper)
                     if loaded_alloc:
                         for c, pct in loaded_alloc.items():
                             country_values[c] += value * (pct / 100.0)

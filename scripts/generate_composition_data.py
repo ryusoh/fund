@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate portfolio composition data for stacked area chart."""
 
+import bisect
 import json
 from pathlib import Path
 
@@ -45,6 +46,11 @@ def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocat
             return ticker
         return ticker.replace('-', '').upper()
 
+    # Pre-sort available price dates for each ticker for O(log N) lookup
+    sorted_price_dates = {}
+    for ticker, dates_dict in prices_data.items():
+        sorted_price_dates[ticker] = sorted(dates_dict.keys())
+
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
@@ -64,9 +70,12 @@ def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocat
                     price = prices_data[price_ticker].get(date_str)
                     # If no price for this date, use the last available price
                     if not price:
-                        available_dates = [d for d in prices_data[price_ticker] if d < date_str]
-                        if available_dates:
-                            last_date = max(available_dates)
+                        ticker_dates = sorted_price_dates[price_ticker]
+                        # Find the insertion point for date_str
+                        idx = bisect.bisect_left(ticker_dates, date_str)
+                        # If idx > 0, the previous element is the largest date < date_str
+                        if idx > 0:
+                            last_date = ticker_dates[idx - 1]
                             price = prices_data[price_ticker].get(last_date)
 
                     if price:

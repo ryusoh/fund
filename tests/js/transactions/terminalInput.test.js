@@ -97,3 +97,19 @@ describe('terminal input clearing', () => {
         expect(value).toBe('');
     });
 });
+
+describe('terminal security', () => {
+    test('XSS attempt in command is rendered as text, not executed as HTML', async () => {
+        const maliciousCommand = '<img src=x onerror=alert(1)>';
+        await submitCommand(maliciousCommand);
+
+        const outputContainer = document.getElementById('terminalOutput');
+
+        // Assert that the raw command string is present in the text content
+        expect(outputContainer.textContent).toContain(maliciousCommand);
+
+        // Assert that no img tag was actually created in the DOM
+        const imgElements = outputContainer.querySelectorAll('img');
+        expect(imgElements.length).toBe(0);
+    });
+});

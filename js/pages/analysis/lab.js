@@ -581,16 +581,25 @@ function renderBayesOutput() {
         return;
     }
     const priors = state.bayesEngine.priors;
-    bayesOutput.innerHTML = priors
-        .map(
-            (p) => `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--ink); padding: 4px 0;">
-            <span>${p.name}</span>
-            <strong>${(p.prob * 100).toFixed(1)}%</strong>
-        </div>
-    `
-        )
-        .join('');
+    const elements = priors.map((p) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.borderBottom = '1px dashed var(--ink)';
+        row.style.padding = '4px 0';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = p.name;
+
+        const probStrong = document.createElement('strong');
+        probStrong.textContent = `${(p.prob * 100).toFixed(1)}%`;
+
+        row.appendChild(nameSpan);
+        row.appendChild(probStrong);
+        return row;
+    });
+
+    bayesOutput.replaceChildren(...elements);
 }
 
 btnBayesBull.addEventListener('click', () => {
@@ -959,7 +968,19 @@ async function buildConfigs() {
 async function init() {
     try {
         if (summaryStatsEl) {
-            summaryStatsEl.innerHTML = '<div style="color:white; padding:10px;">Loading...</div>';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.style.color = 'white';
+            loadingDiv.style.padding = '10px';
+            loadingDiv.textContent = 'Loading...';
+            if (typeof summaryStatsEl.replaceChildren === 'function') {
+                summaryStatsEl.replaceChildren(loadingDiv);
+            } else if (typeof summaryStatsEl.appendChild === 'function') {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(loadingDiv);
+            } else {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(loadingDiv);
+            }
         }
         await buildConfigs();
         renderTickerList();
@@ -968,7 +989,19 @@ async function init() {
         // eslint-disable-next-line no-console
         console.error(err);
         if (summaryStatsEl) {
-            summaryStatsEl.innerHTML = `<div style="color:red; padding:10px;">Error: ${err.message}</div>`;
+            const errDiv = document.createElement('div');
+            errDiv.style.color = 'red';
+            errDiv.style.padding = '10px';
+            errDiv.textContent = `Error: ${err.message}`;
+            if (typeof summaryStatsEl.replaceChildren === 'function') {
+                summaryStatsEl.replaceChildren(errDiv);
+            } else if (typeof summaryStatsEl.appendChild === 'function') {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(errDiv);
+            } else {
+                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.appendChild(errDiv);
+            }
         }
 
         // eslint-disable-next-line no-undef
@@ -985,4 +1018,6 @@ export const __analysisLabTesting = {
     computeScenarioOutcome,
     aggregateScenarios,
     extractScenarioTitles,
+    renderBayesOutput,
+    state,
 };
