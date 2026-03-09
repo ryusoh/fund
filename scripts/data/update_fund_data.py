@@ -9,6 +9,9 @@ import pandas as pd
 import yfinance as yf
 from polygon import RESTClient
 
+# Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
+yf.set_tz_cache_location("/tmp/yf-cache")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
