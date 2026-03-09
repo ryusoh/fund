@@ -12,3 +12,11 @@ Prevention: Never use `innerHTML` for dynamically generated content based on dat
 **Learning:** If an error message originates from an external source or user input and is unexpectedly an object or contains script tags, it can be executed by the browser leading to XSS. This is a common pattern when logging or presenting failure states to users.
 
 **Prevention:** Avoid using `innerHTML` for dynamic content display whenever possible. Instead, use `textContent` to ensure the content is treated as text and safely encoded by the browser. For inserting HTML structures, create elements programmatically using `document.createElement()` and `appendChild()` or `replaceChildren()`.
+
+## 2026-03-09 - DOM XSS via External Markdown Headers
+
+**Vulnerability:** The application parsed external Markdown files (`../docs/thesis/${symbol}.md`), extracted header text (like `outcome.name`), and injected it directly into the DOM using `innerHTML` string interpolation without sanitization in `js/pages/analysis/lab.js` (`renderScenarioCards` and `renderSummary`).
+
+**Learning:** Data from external files (even documentation files like Markdown) must be treated as untrusted user input, as they can be edited to include malicious HTML tags (e.g. `<script>alert(1)</script>`). Injecting such strings directly via `innerHTML` can lead to DOM XSS.
+
+**Prevention:** Never use `innerHTML` to display dynamic data extracted from external sources. Instead, utilize safe DOM manipulation techniques like `document.createElement` and assign untrusted strings using `textContent`.

@@ -444,7 +444,11 @@ function renderSummary(config) {
     ].forEach((stat) => {
         const card = document.createElement('div');
         card.className = 'stat-card';
-        card.innerHTML = `<h3>${stat.label}</h3><p>${stat.value}</p>`;
+        const h3 = document.createElement('h3');
+        h3.textContent = stat.label;
+        const p = document.createElement('p');
+        p.textContent = stat.value;
+        card.append(h3, p);
         summaryStatsEl.appendChild(card);
     });
 }
@@ -465,15 +469,24 @@ function renderScenarioCards(config) {
                 : null;
         const card = document.createElement('div');
         card.className = 'result-card';
-        card.innerHTML = `
-            <h4>${outcome.name}</h4>
-            <p>Prob: ${(outcome.prob * 100).toFixed(1)}%</p>
-            <p>Multiple: ${outcome.multiple.toFixed(2)}x</p>
-            <p>Price CAGR: ${formatPercent(outcome.priceCagr)}</p>
-            <p>Earnings CAGR: ${formatPercent(outcome.earningsCagr)}</p>
-            <p>Implied Annual EPS: ${formatCurrency(terminalEps)}</p>
-            <p>Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}</p>
-        `;
+
+        const h4 = document.createElement('h4');
+        h4.textContent = outcome.name;
+        card.appendChild(h4);
+
+        const createP = (text) => {
+            const p = document.createElement('p');
+            p.textContent = text;
+            return p;
+        };
+
+        card.appendChild(createP(`Prob: ${(outcome.prob * 100).toFixed(1)}%`));
+        card.appendChild(createP(`Multiple: ${outcome.multiple.toFixed(2)}x`));
+        card.appendChild(createP(`Price CAGR: ${formatPercent(outcome.priceCagr)}`));
+        card.appendChild(createP(`Earnings CAGR: ${formatPercent(outcome.earningsCagr)}`));
+        card.appendChild(createP(`Implied Annual EPS: ${formatCurrency(terminalEps)}`));
+        card.appendChild(createP(`Total Annual Earnings: ${formatCompactCurrency(totalEarnings)}`));
+
         scenarioResultsEl.appendChild(card);
     });
 }
