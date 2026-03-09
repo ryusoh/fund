@@ -46,6 +46,12 @@
     outline: none;
 }
 
+.currency-toggle:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
 .currency-toggle.active {
     background-color: rgba(0, 0, 0, 0.5); /* Slightly more transparent (was 0.6) */
     color: rgba(255, 255, 255, 0.85); /* 80% white active text */
