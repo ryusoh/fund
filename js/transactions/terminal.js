@@ -202,8 +202,13 @@ export function initTerminal({
         if (!outputContainer) {
             return;
         }
-        const prompt = `<div><span class="prompt-user">lz@fund:~$</span> ${command}</div>`;
-        outputContainer.innerHTML += prompt;
+        const promptDiv = document.createElement('div');
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 'prompt-user';
+        promptSpan.textContent = 'lz@fund:~$ ';
+        promptDiv.appendChild(promptSpan);
+        promptDiv.appendChild(document.createTextNode(command));
+        outputContainer.appendChild(promptDiv);
         requestFadeUpdate();
 
         await executeCommand(command, {

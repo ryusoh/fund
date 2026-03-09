@@ -183,34 +183,37 @@ def calculate_stats(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str, A
     total_sell_amount = transactions_df.loc[sell_mask, 'trade_value'].sum()
 
     # FIFO realized gain calculation
-    realized_gain_total = 0.0
-    lots_by_security: dict[str, list[dict[str, float]]] = {}
+    from collections import deque
 
-    for _, row in transactions_df.iterrows():
-        security = row['security']
-        qty = float(row['adjusted_quantity'])
-        trade_value = float(row['trade_value'])
+    realized_gain_total = 0.0
+    lots_by_security: dict[str, deque[list[float]]] = {}
+
+    for row in transactions_df.itertuples(index=False):
+        security = row.security
+        qty = float(row.adjusted_quantity)
+        trade_value = float(row.trade_value)
         price = trade_value / qty if qty else 0.0
-        order_type = str(row['order_type']).strip().lower()
+        order_type = str(row.order_type).strip().lower()
 
         if qty <= 0 or price <= 0:
             continue
 
-        lots = lots_by_security.setdefault(security, [])
+        lots = lots_by_security.setdefault(security, deque())
 
         if order_type == 'buy':
-            lots.append({'qty': qty, 'price': price})
+            # Store as list instead of dict for faster attribute access and mutability
+            lots.append([qty, price])
         elif order_type == 'sell':
             remaining = qty
             while remaining > 1e-9 and lots:
                 lot = lots[0]
-                available = lot['qty']
+                available = lot[0]
                 used = min(remaining, available)
-                realized_gain_total += (price - lot['price']) * used
-                lot['qty'] -= used
+                realized_gain_total += (price - lot[1]) * used
+                lot[0] -= used
                 remaining -= used
-                if lot['qty'] <= 1e-9:
-                    lots.pop(0)
+                if lot[0] <= 1e-9:
+                    lots.popleft()
             # If sells exceed recorded lots, treat excess as zero cost basis
             if remaining > 1e-9:
                 realized_gain_total += price * remaining
