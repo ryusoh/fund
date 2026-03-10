@@ -901,7 +901,7 @@ function handleViewportChange() {
                     try {
                         const calendarElement = document.querySelector(CALENDAR_SELECTORS.heatmap);
                         if (calendarElement) {
-                            calendarElement.innerHTML = '';
+                            calendarElement.replaceChildren();
                         }
                         calendarInstance
                             .paint(basePaintConfig)
@@ -1152,12 +1152,14 @@ export async function initCalendar() {
             p.textContent = error.message;
             if (typeof container.replaceChildren === 'function') {
                 container.replaceChildren(p);
-            } else if (typeof container.appendChild === 'function') {
-                container.innerHTML = '';
-                container.appendChild(p);
             } else {
                 // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
-                container.innerHTML = `<p>${error.message}</p>`;
+                container.innerHTML = '';
+                if (typeof container.appendChild === 'function') {
+                    container.appendChild(p);
+                } else {
+                    container.innerHTML = `<p>${error.message}</p>`;
+                }
             }
         }
     }

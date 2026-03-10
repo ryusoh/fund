@@ -422,11 +422,14 @@ function renderSummary(config) {
     if (!summaryStatsEl) {
         return;
     }
-    summaryStatsEl.innerHTML = '';
+    summaryStatsEl.replaceChildren();
 
     if (!config || !config.metrics) {
-        summaryStatsEl.innerHTML =
-            '<div style="color:var(--text-muted); padding:0 10px;">No metrics available</div>';
+        const div = document.createElement('div');
+        div.style.color = 'var(--text-muted)';
+        div.style.padding = '0 10px';
+        div.textContent = 'No metrics available';
+        summaryStatsEl.appendChild(div);
         return;
     }
 
@@ -455,7 +458,7 @@ function renderSummary(config) {
 
 function renderScenarioCards(config) {
     const outcomes = (config.metrics && config.metrics.outcomes) || [];
-    scenarioResultsEl.innerHTML = '';
+    scenarioResultsEl.replaceChildren();
     const sharesOutstanding =
         config.metrics && Number.isFinite(config.metrics.sharesOutstanding)
             ? config.metrics.sharesOutstanding
@@ -497,7 +500,7 @@ function renderValueBands(config) {
     const targetCagr = Number.isFinite(targetCagrRaw) ? targetCagrRaw : 0.1;
     const metrics = config.metrics;
     const exitYearValue = Number.isFinite(metrics.exitYear) ? metrics.exitYear : null;
-    valueBandsEl.innerHTML = '';
+    valueBandsEl.replaceChildren();
     [
         { label: 'Expected Terminal Price', value: formatCurrency(metrics.expectedTerminalPrice) },
         {
@@ -525,11 +528,14 @@ function renderTickerList() {
     if (!tickerListEl) {
         return;
     }
-    tickerListEl.innerHTML = '';
+    tickerListEl.replaceChildren();
 
     if (!state.configs || !state.configs.length) {
-        tickerListEl.innerHTML =
-            '<span style="color:var(--text-muted); padding:0 10px;">No tickers loaded</span>';
+        const span = document.createElement('span');
+        span.style.color = 'var(--text-muted)';
+        span.style.padding = '0 10px';
+        span.textContent = 'No tickers loaded';
+        tickerListEl.appendChild(span);
         return;
     }
 
@@ -584,7 +590,9 @@ function renderActiveTicker() {
     // Reset Risk UI
     const ctx = monteCarloCanvas.getContext('2d');
     ctx.clearRect(0, 0, monteCarloCanvas.width, monteCarloCanvas.height);
-    riskMetricsEl.innerHTML = '<p>Run simulation to see metrics.</p>';
+    const p = document.createElement('p');
+    p.textContent = 'Run simulation to see metrics.';
+    riskMetricsEl.replaceChildren(p);
 }
 
 // --- Bayesian Handlers ---
@@ -672,20 +680,27 @@ state.monteCarloWorker.onmessage = function (e) {
 
 function renderMonteCarloResults(result) {
     // Render Metrics
-    riskMetricsEl.innerHTML = `
-        <div class="stat-card" style="padding: 10px;">
-            <h3>Mean Terminal Price</h3>
-            <p>${formatCurrency(result.mean)}</p>
-        </div>
-        <div class="stat-card" style="padding: 10px;">
-            <h3>VaR (95%)</h3>
-            <p>${formatCurrency(result.VaR_95)}</p>
-        </div>
-        <div class="stat-card" style="padding: 10px;">
-            <h3>CVaR (95%)</h3>
-            <p>${formatCurrency(result.CVaR_95)}</p>
-        </div>
-    `;
+    riskMetricsEl.replaceChildren();
+
+    const createStatCard = (title, value) => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.style.padding = '10px';
+
+        const h3 = document.createElement('h3');
+        h3.textContent = title;
+
+        const p = document.createElement('p');
+        p.textContent = value;
+
+        card.appendChild(h3);
+        card.appendChild(p);
+        return card;
+    };
+
+    riskMetricsEl.appendChild(createStatCard('Mean Terminal Price', formatCurrency(result.mean)));
+    riskMetricsEl.appendChild(createStatCard('VaR (95%)', formatCurrency(result.VaR_95)));
+    riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
 
     // Render Histogram
     const ctx = monteCarloCanvas.getContext('2d');
