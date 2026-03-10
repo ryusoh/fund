@@ -20,3 +20,9 @@ Prevention: Never use `innerHTML` for dynamically generated content based on dat
 **Learning:** Data from external files (even documentation files like Markdown) must be treated as untrusted user input, as they can be edited to include malicious HTML tags (e.g. `<script>alert(1)</script>`). Injecting such strings directly via `innerHTML` can lead to DOM XSS.
 
 **Prevention:** Never use `innerHTML` to display dynamic data extracted from external sources. Instead, utilize safe DOM manipulation techniques like `document.createElement` and assign untrusted strings using `textContent`.
+
+## 2026-03-10 - DOM XSS via Error Messages & Dynamic Data Rendering
+
+**Vulnerability:** Found uses of `.innerHTML` to insert dynamic data (e.g., error messages and dynamic status indicators) directly into the DOM in `js/pages/analysis/lab.js` and `js/pages/calendar/index.js`, creating a potential Cross-Site Scripting (XSS) vulnerability.
+**Learning:** Using `.innerHTML` to clear content or insert dynamic text is insecure and can introduce DOM XSS, especially when handling arbitrary errors or dynamically fetched data. Furthermore, refactoring older code to modern safe DOM APIs (like `replaceChildren`) requires careful consideration of legacy test environments (like partial JSDOM mocks) that might not support these new APIs, necessitating a safe fallback (like `innerHTML = ''` when `typeof replaceChildren !== 'function'`).
+**Prevention:** Avoid `.innerHTML` entirely for dynamically generated content. Instead, create elements safely using `document.createElement()`, assign values via `textContent`, and manipulate the DOM using `.appendChild()` or `.replaceChildren()`. Always preserve fallback logic for environments lacking modern DOM API support to prevent breaking test suites.
