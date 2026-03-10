@@ -129,7 +129,7 @@ class TestCalculateRatios(unittest.TestCase):
             title='TEST',
             headers=['Col1', 'Col2'],
             rows=[['Val1', 'Val2'], ['A', 'B']],
-            alignments=['left', 'right']
+            alignments=['left', 'right'],
         )
 
         expected_table = (
@@ -157,27 +157,14 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(empty_width_title, 5)
 
         # Width hint
-        table_hint, width_hint = render_box_table(
-            headers=['A'],
-            rows=[['1']],
-            width_hint=10
-        )
-        expected_hint = (
-            "+--------+\n"
-            "| A      |\n"
-            "+========+\n"
-            "| 1      |\n"
-            "+--------+"
-        )
+        table_hint, width_hint = render_box_table(headers=['A'], rows=[['1']], width_hint=10)
+        expected_hint = "+--------+\n" "| A      |\n" "+========+\n" "| 1      |\n" "+--------+"
         self.assertEqual(table_hint, expected_hint)
         self.assertEqual(width_hint, 10)
 
         # Incorrect number of columns in row
         with self.assertRaises(ValueError):
-            render_box_table(
-                headers=['Col1', 'Col2'],
-                rows=[['Val1']]
-            )
+            render_box_table(headers=['Col1', 'Col2'], rows=[['Val1']])
 
 
 if __name__ == "__main__":

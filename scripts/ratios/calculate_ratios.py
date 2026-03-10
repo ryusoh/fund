@@ -53,9 +53,9 @@ def load_fx_rates():
 
 def build_fx_json(fx_df: pd.DataFrame) -> dict[str, Any]:
     rates: dict[str, dict[str, float]] = {}
-    for date, row in fx_df.iterrows():
-        rates[cast(pd.Timestamp, date).strftime('%Y-%m-%d')] = {
-            currency: float(row[currency]) for currency in SUPPORTED_CURRENCIES
+    for row in fx_df.itertuples(index=True):
+        rates[cast(pd.Timestamp, row.Index).strftime('%Y-%m-%d')] = {
+            currency: float(getattr(row, currency)) for currency in SUPPORTED_CURRENCIES
         }
     return {
         'base': 'USD',
@@ -283,10 +283,11 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
         splits_df = pd.read_csv(split_history_path)
         if not splits_df.empty:
             splits_df['Split Date'] = pd.to_datetime(splits_df['Split Date'])
-            for _, row in splits_df.iterrows():
-                symbol = str(row['Symbol'])
-                multiplier = Decimal(str(row.get('Split Multiplier', 1)))
-                splits_by_symbol.setdefault(symbol, []).append((row['Split Date'], multiplier))
+            splits_df_renamed = splits_df.rename(columns=lambda x: str(x).replace(' ', '_'))
+            for row in splits_df_renamed.itertuples(index=False):
+                symbol = str(row.Symbol)
+                multiplier = Decimal(str(getattr(row, 'Split_Multiplier', 1)))
+                splits_by_symbol.setdefault(symbol, []).append((row.Split_Date, multiplier))
             for symbol_splits in splits_by_symbol.values():
                 symbol_splits.sort(key=lambda item: item[0])
 
@@ -353,24 +354,23 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
 
     data_rows = []
     holdings_data: List[Dict[str, Any]] = []
-    for symbol_hashable, data in holdings_frame.iterrows():
-        symbol = str(symbol_hashable)
-        total_cost = data['total_cost'] if data['average_price'] > 0 else np.nan
+    for row in holdings_frame.itertuples(index=True):
+        symbol = str(row.Index)
+        total_cost = row.total_cost if row.average_price > 0 else np.nan
+        display_symbol = getattr(row, 'display_symbol', symbol)
         holdings_data.append(
             {
-                'security': str(data.get('display_symbol', symbol)),
-                'shares': float(data['shares']),
-                'average_price_usd': (
-                    float(data['average_price']) if data['average_price'] > 0 else None
-                ),
+                'security': str(display_symbol),
+                'shares': float(row.shares),
+                'average_price_usd': (float(row.average_price) if row.average_price > 0 else None),
                 'total_cost_usd': float(total_cost) if np.isfinite(total_cost) else None,
             }
         )
         data_rows.append(
             [
-                data.get('display_symbol', symbol),
-                f"{data['shares']:,.2f}",
-                f"${data['average_price']:.2f}" if data['average_price'] > 0 else 'N/A',
+                display_symbol,
+                f"{row.shares:,.2f}",
+                f"${row.average_price:.2f}" if row.average_price > 0 else 'N/A',
                 format_currency(total_cost) if np.isfinite(total_cost) else 'N/A',
             ]
         )
@@ -532,8 +532,9 @@ def calculate_annual_returns(series_map):
         prev_value = None
         first_value = df.iloc[0]['value']
 
-        for idx, row in year_end.iterrows():
-            value = row['value']
+        for row in year_end.itertuples(index=True):
+            idx = row.Index
+            value = row.value
             if not np.isfinite(value) or value <= 0:
                 continue
 
@@ -750,12 +751,12 @@ def main() -> None:
             converted_df['tradeDate'] = converted_df['tradeDate'].dt.strftime('%Y-%m-%d')
             contribution_series_by_currency[currency] = [
                 {
-                    'tradeDate': str(row['tradeDate']),
-                    'amount': float(row['amount']),
-                    'orderType': row['orderType'],
-                    'netAmount': float(row['netAmount']),
+                    'tradeDate': str(row.tradeDate),
+                    'amount': float(row.amount),
+                    'orderType': row.orderType,
+                    'netAmount': float(row.netAmount),
                 }
-                for _, row in converted_df.iterrows()
+                for row in converted_df.itertuples(index=False)
             ]
 
     with open(OUTPUT_DIR / 'contribution_series.json', 'w') as f:
