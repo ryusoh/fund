@@ -16,7 +16,10 @@ describe('smoothing utilities', () => {
         });
 
         it('returns input when data length is less than window', () => {
-            const data = [{ x: 1, y: 10 }, { x: 2, y: 20 }];
+            const data = [
+                { x: 1, y: 10 },
+                { x: 2, y: 20 },
+            ];
             expect(simpleMovingAverage(data, 3)).toBe(data); // Reference equality
         });
 
