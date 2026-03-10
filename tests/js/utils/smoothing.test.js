@@ -4,7 +4,7 @@ import {
     savitzkyGolay,
     lowess,
     adaptiveSmoothing,
-    smoothFinancialData
+    smoothFinancialData,
 } from '../../../js/utils/smoothing.js';
 
 describe('Smoothing Utilities', () => {
