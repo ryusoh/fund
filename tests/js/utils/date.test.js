@@ -1,6 +1,6 @@
 import * as dateUtils from '@utils/date.js';
 
-const { getNyDate, isTradingDay, getTradingDayDate } = dateUtils;
+const { getNyDate, isTradingDay, getTradingDayDate, toIsoDate } = dateUtils;
 
 describe('Date Utils', () => {
     it('getNyDate should return a Date object', () => {
@@ -108,6 +108,38 @@ describe('Date Utils', () => {
                 })
             );
             expect(getTradingDayDate(weekend)).toBe(null);
+        });
+    });
+
+    describe('toIsoDate', () => {
+        it('should return YYYY-MM-DD for a valid Date object', () => {
+            const date = new Date('2024-05-15T10:30:00Z');
+            expect(toIsoDate(date)).toBe('2024-05-15');
+        });
+
+        it('should return an empty string for an Invalid Date object', () => {
+            const invalidDate = new Date('not-a-date');
+            expect(toIsoDate(invalidDate)).toBe('');
+        });
+
+        it('should return an empty string when passed null', () => {
+            expect(toIsoDate(null)).toBe('');
+        });
+
+        it('should return an empty string when passed undefined', () => {
+            expect(toIsoDate(undefined)).toBe('');
+        });
+
+        it('should return an empty string when passed a string instead of a Date object', () => {
+            expect(toIsoDate('2024-05-15')).toBe('');
+        });
+
+        it('should return an empty string when passed a number', () => {
+            expect(toIsoDate(1715769000000)).toBe('');
+        });
+
+        it('should return an empty string when passed a plain object', () => {
+            expect(toIsoDate({})).toBe('');
         });
     });
 });
