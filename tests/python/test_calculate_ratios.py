@@ -14,10 +14,16 @@ class TestCalculateRatios(unittest.TestCase):
     def setUpClass(cls):
         # Mock numpy and pandas before they are imported by calculate_ratios
         cls.mock_np = MagicMock()
+
         # Simple implementation of isfinite for the purpose of these tests
-        cls.mock_np.isfinite.side_effect = lambda x: isinstance(x, (int, float)) and not (
-            x != x or x == float("inf") or x == float("-inf")
-        )
+        def mock_isfinite(x):
+            if x is None or isinstance(x, str):
+                raise TypeError("ufunc 'isfinite' not supported for the input types")
+            return isinstance(x, (int, float)) and not (
+                x != x or x == float("inf") or x == float("-inf")
+            )
+
+        cls.mock_np.isfinite.side_effect = mock_isfinite
         cls.mock_np.nan = float("nan")
         cls.mock_np.inf = float("inf")
 
@@ -34,14 +40,25 @@ class TestCalculateRatios(unittest.TestCase):
         # Happy paths
         self.assertEqual(format_currency(1234.56), "$1,234.56")
         self.assertEqual(format_currency(1234.567), "$1,234.57")
+        self.assertEqual(format_currency(1234.564), "$1,234.56")
         self.assertEqual(format_currency(0), "$0.00")
         self.assertEqual(format_currency(-1234.56), "$-1,234.56")
         self.assertEqual(format_currency(1000000), "$1,000,000.00")
+
+        # Small values
+        self.assertEqual(format_currency(0.001), "$0.00")
+        self.assertEqual(format_currency(-0.001), "$-0.00")
 
         # Edge cases (non-finite)
         self.assertEqual(format_currency(float("nan")), "N/A")
         self.assertEqual(format_currency(float("inf")), "N/A")
         self.assertEqual(format_currency(float("-inf")), "N/A")
+
+        # Invalid types
+        with self.assertRaises(TypeError):
+            format_currency(None)
+        with self.assertRaises(TypeError):
+            format_currency("123")
 
     def test_format_percent(self):
         format_percent = self.cr.format_percent
