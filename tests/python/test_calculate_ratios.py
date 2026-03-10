@@ -77,21 +77,33 @@ class TestCalculateRatios(unittest.TestCase):
     def test_compute_cagr(self):
         compute_cagr = self.cr.compute_cagr
 
-        # Happy path
+        # Happy paths
+        # 1 year doubling = 100%
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 200}], 1), 1.0)
+        # 2 year quadrupling = 100%
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 400}], 2), 1.0)
+        # fractional years
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 150}], 0.5), 1.25)
+
+        # Additional Happy path
         series = [{'value': 100}, {'value': 150}, {'value': 200}]
         # (200/100)^(1/2) - 1 = 2^0.5 - 1 = 1.41421356 - 1 = 0.41421356
         self.assertAlmostEqual(compute_cagr(series, 2), 0.41421356237309515)
 
-        # Edge cases
-        self.assertIsNone(compute_cagr([], 2))
-        self.assertIsNone(compute_cagr([{'value': 100}], 2)) # Less than 2 elements
-        self.assertIsNone(compute_cagr(series, 0)) # Years <= 0
-        self.assertIsNone(compute_cagr(series, -1)) # Years <= 0
-
-        # Start or end value <= 0
-        self.assertIsNone(compute_cagr([{'value': 0}, {'value': 200}], 2))
-        self.assertIsNone(compute_cagr([{'value': 100}, {'value': 0}], 2))
-        self.assertIsNone(compute_cagr([{'value': -100}, {'value': 200}], 2))
+        # Edge cases and error conditions
+        # empty series
+        self.assertIsNone(compute_cagr([], 1))
+        # series length < 2
+        self.assertIsNone(compute_cagr([{"value": 100}], 1))
+        # years <= 0
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 200}], 0))
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 200}], -1))
+        # start_val <= 0
+        self.assertIsNone(compute_cagr([{"value": 0}, {"value": 200}], 1))
+        self.assertIsNone(compute_cagr([{"value": -100}, {"value": 200}], 1))
+        # end_val <= 0
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 0}], 1))
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": -200}], 1))
 
     def test_render_box_table(self):
         render_box_table = self.cr.render_box_table
@@ -149,6 +161,7 @@ class TestCalculateRatios(unittest.TestCase):
                 headers=['Col1', 'Col2'],
                 rows=[['Val1']]
             )
+
 
 if __name__ == "__main__":
     unittest.main()
