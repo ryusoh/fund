@@ -26,14 +26,6 @@ describe('Smoothing Utilities', () => {
             const data = createData([1, 2, 3, 4, 5]);
             // window = 3, preserveEnd = false
             const result = simpleMovingAverage(data, 3, false);
-            // In the implementation:
-            // start = Math.max(0, i - Math.floor(window / 2)) -> i - 1
-            // end = Math.min(data.length, start + window) -> start + 3
-            // i=0: start=0, end=3 -> [1,2,3] avg = 2
-            // i=1: start=0, end=3 -> [1,2,3] avg = 2
-            // i=2: start=1, end=4 -> [2,3,4] avg = 3
-            // i=3: start=2, end=5 -> [3,4,5] avg = 4
-            // i=4: start=3, end=5 -> [4,5] avg = 4.5
             expect(result).toEqual([
                 { x: 0, y: 2 },
                 { x: 1, y: 2 },
@@ -115,8 +107,6 @@ describe('Smoothing Utilities', () => {
             const data = createData([10, 11, 10, 15, 20]);
             const result = savitzkyGolay(data, 3, 1, false);
             expect(result.length).toBe(5);
-            // It should calculate a linear fit
-            // the start/end points may use limited windows so we just verify it produces valid numbers
             result.forEach((point) => {
                 expect(typeof point.y).toBe('number');
                 expect(isNaN(point.y)).toBe(false);
@@ -125,7 +115,6 @@ describe('Smoothing Utilities', () => {
 
         it('falls back to original point for higher orders that are not fully implemented', () => {
             const data = createData([10, 11, 10, 15, 20]);
-            // order 2 falls back to returning the point's original value according to current implementation
             const result = savitzkyGolay(data, 3, 2, false);
             expect(result).toEqual(data);
         });
@@ -167,10 +156,7 @@ describe('Smoothing Utilities', () => {
         });
 
         it('returns point.y if total weight sums to 0', () => {
-            // this is an edge case where all normalized distances >= 1
             const data = createData([10, 15, 20]);
-            // setting bandwidth very close to 0 causes all points except itself to have 0 weight
-            // and the point itself to have distance 0 -> normalized 0 -> weight 1
             const result = lowess(data, 0.0001, false);
             expect(result.length).toBe(3);
             result.forEach((p, i) => {
@@ -193,7 +179,6 @@ describe('Smoothing Utilities', () => {
         });
 
         it('uses high alpha (0.4) for high volatility data', () => {
-            // Data with >5% avg volatility
             const data = createData([100, 110, 100, 110, 100, 110, 100, 110, 100, 110, 100, 110]);
             const adaptiveResult = adaptiveSmoothing(data, false);
             const emaResult = exponentialMovingAverage(data, 0.4, false);
@@ -201,7 +186,6 @@ describe('Smoothing Utilities', () => {
         });
 
         it('uses medium alpha (0.3) for medium volatility data', () => {
-            // Data with >2% and <=5% avg volatility
             const data = createData([100, 103, 100, 103, 100, 103, 100, 103, 100, 103, 100, 103]);
             const adaptiveResult = adaptiveSmoothing(data, false);
             const emaResult = exponentialMovingAverage(data, 0.3, false);
@@ -209,7 +193,6 @@ describe('Smoothing Utilities', () => {
         });
 
         it('uses low alpha (0.2) for low volatility data', () => {
-            // Data with <=2% avg volatility
             const data = createData([100, 101, 100, 101, 100, 101, 100, 101, 100, 101, 100, 101]);
             const adaptiveResult = adaptiveSmoothing(data, false);
             const emaResult = exponentialMovingAverage(data, 0.2, false);
