@@ -57,6 +57,32 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_percent(float("inf")), "N/A")
         self.assertEqual(format_percent(float("-inf")), "N/A")
 
+    def test_compute_cagr(self):
+        compute_cagr = self.cr.compute_cagr
+
+        # Happy paths
+        # 1 year doubling = 100%
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 200}], 1), 1.0)
+        # 2 year quadrupling = 100%
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 400}], 2), 1.0)
+        # fractional years
+        self.assertAlmostEqual(compute_cagr([{"value": 100}, {"value": 150}], 0.5), 1.25)
+
+        # Edge cases and error conditions
+        # empty series
+        self.assertIsNone(compute_cagr([], 1))
+        # series length < 2
+        self.assertIsNone(compute_cagr([{"value": 100}], 1))
+        # years <= 0
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 200}], 0))
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 200}], -1))
+        # start_val <= 0
+        self.assertIsNone(compute_cagr([{"value": 0}, {"value": 200}], 1))
+        self.assertIsNone(compute_cagr([{"value": -100}, {"value": 200}], 1))
+        # end_val <= 0
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": 0}], 1))
+        self.assertIsNone(compute_cagr([{"value": 100}, {"value": -200}], 1))
+
 
 if __name__ == "__main__":
     unittest.main()
