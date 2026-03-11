@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+import requests
 import yfinance as yf
 from polygon import RESTClient
 
@@ -33,6 +34,72 @@ def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
     except Exception as e:
         logging.error(f"Error reading tickers from {holdings_file_path}: {e}")
         return []
+
+
+def get_pyth_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
+    """
+    Fetches prices using Pyth Network Hermes API.
+    Specifically looks for overnight (.ON) feeds.
+    """
+    data: Dict[str, Optional[float]] = {}
+    if not ticker_list:
+        return data
+
+    # 1. Get Feed IDs for tickers
+    ticker_to_id = {}
+    for ticker in ticker_list:
+        try:
+            target_symbol = f"Equity.US.{ticker}/USD.ON"
+            resp = requests.get(
+                "https://hermes.pyth.network/v2/price_feeds",
+                params={"query": ticker, "asset_type": "equity"},
+            )
+            resp.raise_for_status()
+            feeds = resp.json()
+            for feed in feeds:
+                attributes = feed.get("attributes", {})
+                if attributes.get("symbol") == target_symbol:
+                    ticker_to_id[ticker] = feed["id"]
+                    break
+        except Exception as e:
+            logging.warning(f"Failed to find Pyth feed ID for {ticker}: {e}")
+
+    if not ticker_to_id:
+        return {t: None for t in ticker_list}
+
+    # 2. Fetch Latest Prices using IDs
+    ids_to_fetch = list(ticker_to_id.values())
+    try:
+        params = [("ids[]", feed_id) for feed_id in ids_to_fetch]
+        resp = requests.get("https://hermes.pyth.network/v2/updates/price/latest", params=params)
+        resp.raise_for_status()
+        updates = resp.json().get("parsed", [])
+
+        id_to_price = {}
+        for update in updates:
+            feed_id = update["id"]
+            price_info = update.get("price", {})
+            price_str = price_info.get("price")
+            expo = price_info.get("expo")
+            if price_str is not None and expo is not None:
+                actual_price = float(price_str) * (10 ** int(expo))
+                id_to_price[feed_id] = actual_price
+
+        for ticker in list(ticker_to_id.keys()):
+            feed_id = ticker_to_id.get(ticker)
+            if feed_id and feed_id in id_to_price:
+                price = id_to_price[feed_id]
+                data[ticker] = price
+                logging.info(f"Fetched overnight price for {ticker} from Pyth Network: {price}")
+            else:
+                data[ticker] = None
+
+    except Exception as e:
+        logging.warning(f"Failed to fetch Pyth prices: {e}")
+        for ticker in list(ticker_to_id.keys()):
+            data[ticker] = None
+
+    return data
 
 
 def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
@@ -81,9 +148,22 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                 data[ticker_symbol] = None
 
     except Exception as e:
-        logging.warning(f"yfinance batch download failed: {e}. Will try Polygon.io.")
+        logging.warning(f"yfinance batch download failed: {e}. Will try fallbacks.")
         for ticker_symbol in ticker_list:
             data[ticker_symbol] = None
+
+    tickers_for_pyth = [ticker for ticker, price in data.items() if price is None]
+
+    if not tickers_for_pyth:
+        return data
+
+    logging.info(
+        f"Trying to fetch overnight prices from Pyth Network for: {', '.join(tickers_for_pyth)}"
+    )
+    pyth_prices = get_pyth_prices(tickers_for_pyth)
+    for ticker, pyth_price in pyth_prices.items():
+        if pyth_price is not None:
+            data[ticker] = pyth_price
 
     tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
 
