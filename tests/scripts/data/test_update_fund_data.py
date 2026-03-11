@@ -1,4 +1,4 @@
-import json
+import os
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -9,10 +9,34 @@ from scripts.data.update_fund_data import get_prices, get_tickers_from_holdings
 
 @pytest.fixture
 def mock_holdings_file(tmp_path):
+    import json
+
     file_path = tmp_path / "holdings_details.json"
     data = {"AAPL": {}, "TSLA": {}}
     file_path.write_text(json.dumps(data))
     return file_path
+
+
+@patch("scripts.data.update_fund_data.yf.set_tz_cache_location")
+def test_set_tz_cache_location(mock_set_tz):
+    # This basically asserts the module-level execution didn't crash
+    # and we can potentially reload the module to track the exact call if needed,
+    # but since it runs on import, we just check that importing the module doesn't
+    # raise any exceptions due to our logic depending on os.getuid().
+    import importlib
+
+    import scripts.data.update_fund_data as module
+
+    # Reloading to trigger the top-level script code
+    importlib.reload(module)
+
+    # If getuid exists
+    if hasattr(os, "getuid"):
+        expected_path = f"/tmp/yf-cache-{os.getuid()}"
+    else:
+        expected_path = "/tmp/yf-cache"
+
+    mock_set_tz.assert_called_with(expected_path)
 
 
 def test_get_tickers_from_holdings(mock_holdings_file):

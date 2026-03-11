@@ -11,7 +11,9 @@ import yfinance as yf
 from polygon import RESTClient
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-yf.set_tz_cache_location("/tmp/yf-cache")
+# By using a unique path per user, we avoid permission collisions in shared environments like /tmp
+cache_dir = Path(f"/tmp/yf-cache-{os.getuid()}") if hasattr(os, "getuid") else Path("/tmp/yf-cache")
+yf.set_tz_cache_location(str(cache_dir))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
