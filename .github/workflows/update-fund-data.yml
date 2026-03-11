@@ -30,6 +30,8 @@ jobs:
             - name: Run update script
               env:
                   POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
+                  ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+                  ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
               run: python scripts/data/update_fund_data.py
 
             - name: Commit and push changes
