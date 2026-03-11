@@ -106,9 +106,9 @@ def apply_split_adjustments(transactions: pd.DataFrame, splits: pd.DataFrame) ->
         factors = np.ones(len(trade_idx), dtype='float64')
 
         sec_splits = sec_splits.sort_values('split_date')
-        for _, split_row in sec_splits.iterrows():
-            split_date = split_row['split_date']
-            split_factor = split_row['split_factor']
+        for split_row in sec_splits.itertuples(index=False):
+            split_date = split_row.split_date
+            split_factor = split_row.split_factor
             mask = trade_dates < np.datetime64(split_date)
             factors[mask] *= split_factor
 
