@@ -1,8 +1,10 @@
 import os
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+import pytz
 
 from scripts.data.update_fund_data import get_prices, get_tickers_from_holdings
 
@@ -44,99 +46,167 @@ def test_get_tickers_from_holdings(mock_holdings_file):
     assert set(tickers) == {"AAPL", "TSLA"}
 
 
+@patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
 @patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
-def test_get_prices_yfinance_success(mock_requests_get, mock_rest_client, mock_yf_download):
-    # Mock yfinance to return valid data
-    df = pd.DataFrame(
-        {"AAPL": [150.0], "TSLA": [200.0]},
-        index=pd.DatetimeIndex(["2023-01-01"]),
-    )
+@patch.dict(
+    "os.environ",
+    {
+        "ALPACA_API_KEY": "test_alpaca_key",
+        "ALPACA_API_SECRET": "test_alpaca_secret",
+    },
+    clear=True,
+)
+def test_get_prices_overnight_priority(
+    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
+):
+    # Mock time to be 11 PM ET (Overnight)
+    mock_now = datetime(2026, 3, 10, 23, 0, tzinfo=pytz.timezone("US/Eastern"))
+    mock_datetime.now.return_value = mock_now
+
+    # Mock Alpaca success
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"AAPL": {"latestTrade": {"p": 155.0}}}
+    mock_resp.status_code = 200
+    mock_requests_get.return_value = mock_resp
+
+    tickers = ["AAPL"]
+    prices = get_prices(tickers)
+
+    assert prices == {"AAPL": 155.0}
+    # Alpaca SHOULD be called
+    assert mock_requests_get.called
+    # yfinance SHOULD NOT be called initially
+    mock_yf_download.assert_not_called()
+
+
+@patch("scripts.data.update_fund_data.datetime")
+@patch("scripts.data.update_fund_data.yf.download")
+@patch("scripts.data.update_fund_data.RESTClient")
+@patch("scripts.data.update_fund_data.requests.get")
+@patch.dict(
+    "os.environ",
+    {
+        "ALPACA_API_KEY": "test_alpaca_key",
+        "ALPACA_API_SECRET": "test_alpaca_secret",
+    },
+    clear=True,
+)
+def test_get_prices_overnight_fallback(
+    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
+):
+    # Mock time to be 11 PM ET
+    mock_now = datetime(2026, 3, 10, 23, 0, tzinfo=pytz.timezone("US/Eastern"))
+    mock_datetime.now.return_value = mock_now
+
+    # Mock Alpaca failure
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {}
+    mock_resp.status_code = 200
+    mock_requests_get.return_value = mock_resp
+
+    # Mock yf success
+    df = pd.DataFrame({"AAPL": [150.0]}, index=pd.DatetimeIndex(["2023-01-01"]))
     mock_yf_download.return_value = {"Close": df}
 
-    tickers = ["AAPL", "TSLA"]
+    tickers = ["AAPL"]
     prices = get_prices(tickers)
 
-    assert prices == {"AAPL": 150.0, "TSLA": 200.0}
-    # Pyth and Polygon APIs should not be called
-    mock_requests_get.assert_not_called()
-    mock_rest_client.assert_not_called()
+    assert prices == {"AAPL": 150.0}
+    # Both should have been called
+    assert mock_requests_get.called
+    assert mock_yf_download.called
 
 
+@patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
 @patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
-@patch.dict("os.environ", {"POLYGON_KEY": "test_key"}, clear=True)
-def test_get_prices_pyth_success(mock_requests_get, mock_rest_client, mock_yf_download):
-    # Mock yfinance to return empty or fail
+def test_get_prices_standard_priority(
+    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
+):
+    # Mock time to be 10 AM ET (Regular hours)
+    mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
+    mock_datetime.now.return_value = mock_now
+
+    # Mock yf success
+    df = pd.DataFrame({"AAPL": [150.0]}, index=pd.DatetimeIndex(["2023-01-01"]))
+    mock_yf_download.return_value = {"Close": df}
+
+    tickers = ["AAPL"]
+    prices = get_prices(tickers)
+
+    assert prices == {"AAPL": 150.0}
+    # yfinance SHOULD be called
+    assert mock_yf_download.called
+    # Alpaca SHOULD NOT be called
+    mock_requests_get.assert_not_called()
+
+
+@patch("scripts.data.update_fund_data.datetime")
+@patch("scripts.data.update_fund_data.yf.download")
+@patch("scripts.data.update_fund_data.RESTClient")
+@patch("scripts.data.update_fund_data.requests.get")
+@patch.dict(
+    "os.environ",
+    {
+        "ALPACA_API_KEY": "test_alpaca_key",
+        "ALPACA_API_SECRET": "test_alpaca_secret",
+    },
+    clear=True,
+)
+def test_get_prices_standard_fallback(
+    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
+):
+    # Mock time to be 10 AM ET
+    mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
+    mock_datetime.now.return_value = mock_now
+
+    # Mock yfinance failure
     mock_yf_download.return_value = {}
 
-    # Mock Pyth Hermes queries
-    # First query for AAPL: returns .ON feed ID
-    # Second query for AAPL updates
-    def mock_requests_get_side_effect(url, params=None):
-        mock_resp = MagicMock()
-        if "/price_feeds" in url:
-            symbol = params.get("query")
-            if symbol == "AAPL":
-                mock_resp.json.return_value = [
-                    {
-                        "id": "aapl_on_id",
-                        "attributes": {"symbol": "Equity.US.AAPL/USD.ON"},
-                    }
-                ]
-            elif symbol == "TSLA":
-                mock_resp.json.return_value = [
-                    {
-                        "id": "tsla_on_id",
-                        "attributes": {"symbol": "Equity.US.TSLA/USD.ON"},
-                    }
-                ]
-            else:
-                mock_resp.json.return_value = []
-            mock_resp.status_code = 200
-        elif "/updates/price/latest" in url:
-            if isinstance(params, list):
-                ids = [v for k, v in params if k == "ids[]"]
-            else:
-                ids = params.get("ids[]", [])
-            # For simplicity in mock, let's just return both if requested
-            parsed = []
-            if "aapl_on_id" in ids or ids == "aapl_on_id":
-                parsed.append(
-                    {"id": "aapl_on_id", "price": {"price": "15500", "expo": -2}}
-                )  # 155.00
-            if "tsla_on_id" in ids or ids == "tsla_on_id":
-                parsed.append({"id": "tsla_on_id", "price": {"price": "2050", "expo": -1}})  # 205.0
-            mock_resp.json.return_value = {"parsed": parsed}
-            mock_resp.status_code = 200
+    # Mock Alpaca success
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"AAPL": {"latestTrade": {"p": 155.0}}}
+    mock_resp.status_code = 200
+    mock_requests_get.return_value = mock_resp
 
-        return mock_resp
-
-    mock_requests_get.side_effect = mock_requests_get_side_effect
-
-    tickers = ["AAPL", "TSLA"]
+    tickers = ["AAPL"]
     prices = get_prices(tickers)
 
-    assert prices == {"AAPL": 155.0, "TSLA": 205.0}
-    # Polygon API should not be called
-    mock_rest_client.assert_not_called()
+    assert prices == {"AAPL": 155.0}
+    # Both should have been called
+    assert mock_yf_download.called
+    assert mock_requests_get.called
 
 
+@patch("scripts.data.update_fund_data.datetime")
 @patch("scripts.data.update_fund_data.yf.download")
 @patch("scripts.data.update_fund_data.RESTClient")
 @patch("scripts.data.update_fund_data.requests.get")
-@patch.dict("os.environ", {"POLYGON_KEY": "test_key"}, clear=True)
-def test_get_prices_polygon_fallback(mock_requests_get, mock_rest_client, mock_yf_download):
+@patch.dict(
+    "os.environ",
+    {
+        "POLYGON_KEY": "test_key",
+        "ALPACA_API_KEY": "test_alpaca_key",
+        "ALPACA_API_SECRET": "test_alpaca_secret",
+    },
+    clear=True,
+)
+def test_get_prices_polygon_fallback(
+    mock_requests_get, mock_rest_client, mock_yf_download, mock_datetime
+):
+    # Mock time
+    mock_now = datetime(2026, 3, 10, 10, 0, tzinfo=pytz.timezone("US/Eastern"))
+    mock_datetime.now.return_value = mock_now
     # Mock yfinance to return empty
     mock_yf_download.return_value = {}
 
-    # Mock Pyth to return nothing
-    def mock_requests_get_side_effect(url, params=None):
+    # Mock Alpaca to return nothing or fail
+    def mock_requests_get_side_effect(url, params=None, headers=None):
         mock_resp = MagicMock()
-        if "/price_feeds" in url:
-            mock_resp.json.return_value = []
+        mock_resp.json.return_value = {}
         mock_resp.status_code = 200
         return mock_resp
 

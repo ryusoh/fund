@@ -97,4 +97,4 @@ repos:
       hooks:
           - id: mypy
             files: '^scripts/|^tests/python/'
-            additional_dependencies: ['types-requests']
+            additional_dependencies: ['types-requests', 'types-pytz']

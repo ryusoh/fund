@@ -10,6 +10,8 @@ bandit
 pip-audit
 pre-commit
 argcomplete
+types-pytz
+types-requests
 
 # Include runtime deps for test environment
 -r requirements.txt

@@ -2,10 +2,12 @@ import argparse
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+import pytz
 import requests
 import yfinance as yf
 from polygon import RESTClient
@@ -13,6 +15,7 @@ from polygon import RESTClient
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
 # By using a unique path per user, we avoid permission collisions in shared environments like /tmp
 cache_dir = Path(f"/tmp/yf-cache-{os.getuid()}") if hasattr(os, "getuid") else Path("/tmp/yf-cache")
+cache_dir.mkdir(parents=True, exist_ok=True)
 yf.set_tz_cache_location(str(cache_dir))
 
 # Configure logging
@@ -38,68 +41,59 @@ def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
         return []
 
 
-def get_pyth_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
+def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     """
-    Fetches prices using Pyth Network Hermes API.
-    Specifically looks for overnight (.ON) feeds.
+    Fetches latest prices using Alpaca Market Data API.
     """
-    data: Dict[str, Optional[float]] = {}
+    data: Dict[str, Optional[float]] = {t: None for t in ticker_list}
     if not ticker_list:
         return data
 
-    # 1. Get Feed IDs for tickers
-    ticker_to_id = {}
-    for ticker in ticker_list:
-        try:
-            target_symbol = f"Equity.US.{ticker}/USD.ON"
-            resp = requests.get(
-                "https://hermes.pyth.network/v2/price_feeds",
-                params={"query": ticker, "asset_type": "equity"},
-            )
-            resp.raise_for_status()
-            feeds = resp.json()
-            for feed in feeds:
-                attributes = feed.get("attributes", {})
-                if attributes.get("symbol") == target_symbol:
-                    ticker_to_id[ticker] = feed["id"]
-                    break
-        except Exception as e:
-            logging.warning(f"Failed to find Pyth feed ID for {ticker}: {e}")
+    api_key = os.environ.get("ALPACA_API_KEY")
+    api_secret = os.environ.get("ALPACA_API_SECRET")
 
-    if not ticker_to_id:
-        return {t: None for t in ticker_list}
+    if not api_key or not api_secret:
+        logging.error("Missing Alpaca API credentials. Cannot fetch from Alpaca.")
+        return data
 
-    # 2. Fetch Latest Prices using IDs
-    ids_to_fetch = list(ticker_to_id.values())
     try:
-        params = [("ids[]", feed_id) for feed_id in ids_to_fetch]
-        resp = requests.get("https://hermes.pyth.network/v2/updates/price/latest", params=params)
+        symbols = ",".join(ticker_list)
+        headers = {
+            "APCA-API-KEY-ID": api_key,
+            "APCA-API-SECRET-KEY": api_secret,
+            "Accept": "application/json",
+        }
+
+        # Determine if we should use the overnight feed (8 PM - 4 AM ET)
+        et_tz = pytz.timezone("US/Eastern")
+        et_now = datetime.now(et_tz)
+        is_overnight = et_now.hour >= 20 or et_now.hour < 4
+
+        params = {"symbols": symbols}
+        if is_overnight:
+            params["feed"] = "overnight"
+            logging.info(
+                f"Using 'overnight' feed for Alpaca 24/5 data (ET time: {et_now.strftime('%H:%M')})"
+            )
+
+        # Using Alpaca Snapshots endpoint for multiple tickers
+        url = "https://data.alpaca.markets/v2/stocks/snapshots"
+        resp = requests.get(url, params=params, headers=headers)
+        logging.info(f"Alpaca API Response Status: {resp.status_code}")
         resp.raise_for_status()
-        updates = resp.json().get("parsed", [])
+        snapshots = resp.json()
+        logging.info(f"Alpaca Snapshots data for: {list(snapshots.keys())}")
 
-        id_to_price = {}
-        for update in updates:
-            feed_id = update["id"]
-            price_info = update.get("price", {})
-            price_str = price_info.get("price")
-            expo = price_info.get("expo")
-            if price_str is not None and expo is not None:
-                actual_price = float(price_str) * (10 ** int(expo))
-                id_to_price[feed_id] = actual_price
-
-        for ticker in list(ticker_to_id.keys()):
-            feed_id = ticker_to_id.get(ticker)
-            if feed_id and feed_id in id_to_price:
-                price = id_to_price[feed_id]
-                data[ticker] = price
-                logging.info(f"Fetched overnight price for {ticker} from Pyth Network: {price}")
-            else:
-                data[ticker] = None
+        for ticker in ticker_list:
+            snapshot = snapshots.get(ticker)
+            if snapshot and "latestTrade" in snapshot:
+                price = snapshot["latestTrade"].get("p")
+                if price:
+                    data[ticker] = float(price)
+                    logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
 
     except Exception as e:
-        logging.warning(f"Failed to fetch Pyth prices: {e}")
-        for ticker in list(ticker_to_id.keys()):
-            data[ticker] = None
+        logging.error(f"Error fetching from Alpaca: {e}")
 
     return data
 
@@ -107,113 +101,101 @@ def get_pyth_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     """
     Fetches the latest prices for a list of tickers.
-    Tries yfinance first, falls back to Polygon.io for overnight data.
+    Prioritizes Alpaca during overnight hours (8 PM - 4 AM ET).
+    Prioritizes yfinance during standard/extended hours (4 AM - 8 PM ET).
+    Polygon.io is the final failsafe.
     """
-    data: Dict[str, Optional[float]] = {}
+    data: Dict[str, Optional[float]] = {t: None for t in ticker_list}
 
     if not ticker_list:
         return data
 
-    # Try yfinance first (batched)
-    try:
-        hist = yf.download(ticker_list, period="1d", interval="1m", prepost=True, progress=False)
+    def fetch_from_alpaca(tickers: List[str]):
+        logging.info(f"Trying to fetch prices from Alpaca for: {', '.join(tickers)}")
+        alpaca_prices = get_alpaca_prices(tickers)
+        for t, p in alpaca_prices.items():
+            if p is not None:
+                data[t] = p
 
-        if "Close" in hist:
-            close_data = hist["Close"]
-
-            # If it's a single ticker, close_data is a Series. If multiple, it's a DataFrame.
-            if isinstance(close_data, pd.DataFrame):
-                for ticker_symbol in ticker_list:
-                    if ticker_symbol in close_data.columns:
-                        col = close_data[ticker_symbol].dropna()
-                        if not col.empty:
-                            price = float(col.iloc[-1])
-                            data[ticker_symbol] = price
-                            logging.info(
-                                f"Fetched price for {ticker_symbol} from yfinance: {price}"
-                            )
-                        else:
-                            data[ticker_symbol] = None
-                    else:
-                        data[ticker_symbol] = None
-            else:
-                col = close_data.dropna()
-                ticker_symbol = ticker_list[0]
-                if not col.empty:
-                    price = float(col.iloc[-1])
-                    data[ticker_symbol] = price
-                    logging.info(f"Fetched price for {ticker_symbol} from yfinance: {price}")
+    def fetch_from_yfinance(tickers: List[str]):
+        logging.info(f"Trying to fetch prices from yfinance for: {', '.join(tickers)}")
+        try:
+            hist = yf.download(tickers, period="1d", interval="1m", prepost=True, progress=False)
+            if "Close" in hist:
+                close_data = hist["Close"]
+                if isinstance(close_data, pd.DataFrame):
+                    for t in tickers:
+                        if t in close_data.columns:
+                            col = close_data[t].dropna()
+                            if not col.empty:
+                                data[t] = float(col.iloc[-1])
+                                logging.info(f"Fetched price for {t} from yfinance: {data[t]}")
                 else:
-                    data[ticker_symbol] = None
-        else:
-            for ticker_symbol in ticker_list:
-                data[ticker_symbol] = None
+                    col = close_data.dropna()
+                    if not col.empty:
+                        t = tickers[0]
+                        data[t] = float(col.iloc[-1])
+                        logging.info(f"Fetched price for {t} from yfinance: {data[t]}")
+        except Exception as e:
+            logging.warning(f"yfinance download failed: {e}")
 
-    except Exception as e:
-        logging.warning(f"yfinance batch download failed: {e}. Will try fallbacks.")
-        for ticker_symbol in ticker_list:
-            data[ticker_symbol] = None
+    # Determine priority based on US/Eastern time
+    et_tz = pytz.timezone("US/Eastern")
+    et_now = datetime.now(et_tz)
+    is_overnight = et_now.hour >= 20 or et_now.hour < 4
 
-    tickers_for_pyth = [ticker for ticker, price in data.items() if price is None]
+    if is_overnight:
+        logging.info(
+            f"Overnight session detected ({et_now.strftime('%H:%M')} ET). Prioritizing Alpaca."
+        )
+        # Try Alpaca first
+        fetch_from_alpaca(ticker_list)
+        # Fallback to yfinance
+        missing = [t for t in ticker_list if data[t] is None]
+        if missing:
+            fetch_from_yfinance(missing)
+    else:
+        logging.info(
+            f"Standard/Extended session detected ({et_now.strftime('%H:%M')} ET). Prioritizing yfinance."
+        )
+        # Try yfinance first
+        fetch_from_yfinance(ticker_list)
+        # Fallback to Alpaca
+        missing = [t for t in ticker_list if data[t] is None]
+        if missing:
+            fetch_from_alpaca(missing)
 
-    if not tickers_for_pyth:
-        return data
-
-    logging.info(
-        f"Trying to fetch overnight prices from Pyth Network for: {', '.join(tickers_for_pyth)}"
-    )
-    pyth_prices = get_pyth_prices(tickers_for_pyth)
-    for ticker, pyth_price in pyth_prices.items():
-        if pyth_price is not None:
-            data[ticker] = pyth_price
-
-    tickers_for_polygon = [ticker for ticker, price in data.items() if price is None]
-
-    if not tickers_for_polygon:
-        return data
-
-    logging.info(
-        f"Trying to fetch overnight prices from Polygon.io for: {', '.join(tickers_for_polygon)}"
-    )
-    try:
-        api_key = os.environ["POLYGON_KEY"]
-        with RESTClient(api_key) as client:
-            try:
-                snapshots = client.get_snapshot_all(
-                    market_type="stocks", tickers=tickers_for_polygon
-                )
-
-                if not snapshots:
-                    logging.warning("No snapshots returned from Polygon.io.")
-                else:
-                    for snapshot in snapshots:
-                        ticker_symbol = snapshot.ticker
-                        if not ticker_symbol or ticker_symbol not in tickers_for_polygon:
-                            continue
-
-                        if hasattr(snapshot, "last_trade") and snapshot.last_trade is not None:
-                            last_trade = snapshot.last_trade
-                            if hasattr(last_trade, "price") and last_trade.price is not None:
-                                price = last_trade.price
-                                data[ticker_symbol] = float(price)
-                                logging.info(
-                                    f"Fetched price for {ticker_symbol} from Polygon.io: {price}"
-                                )
-                            else:
-                                logging.warning(
-                                    f"Could not fetch price for {ticker_symbol} from Polygon.io snapshot (price missing)."
-                                )
-                        else:
-                            logging.warning(
-                                f"Could not fetch price for {ticker_symbol} from Polygon.io snapshot (last_trade missing)."
-                            )
-            except Exception as e:
-                logging.error(f"Error fetching snapshots from Polygon.io: {e}")
-
-    except KeyError:
-        logging.error("Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io.")
-    except Exception as e:
-        logging.error(f"An error occurred with Polygon.io: {e}")
+    # Final fallback: Polygon.io
+    tickers_for_polygon = [t for t in ticker_list if data[t] is None]
+    if tickers_for_polygon:
+        logging.info(f"Final fallback to Polygon.io for: {', '.join(tickers_for_polygon)}")
+        try:
+            api_key = os.environ["POLYGON_KEY"]
+            with RESTClient(api_key) as client:
+                try:
+                    snapshots = client.get_snapshot_all(
+                        market_type="stocks", tickers=tickers_for_polygon
+                    )
+                    if snapshots:
+                        for snapshot in snapshots:
+                            t = snapshot.ticker
+                            if (
+                                t in tickers_for_polygon
+                                and hasattr(snapshot, "last_trade")
+                                and snapshot.last_trade
+                            ):
+                                p = snapshot.last_trade.price
+                                if p:
+                                    data[t] = float(p)
+                                    logging.info(f"Fetched price for {t} from Polygon.io: {p}")
+                except Exception as e:
+                    logging.error(f"Error fetching snapshots from Polygon.io: {e}")
+        except KeyError:
+            logging.error(
+                "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
+            )
+        except Exception as e:
+            logging.error(f"An error occurred with Polygon.io: {e}")
 
     return data
 
