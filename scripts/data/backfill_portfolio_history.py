@@ -179,11 +179,15 @@ def _default_price_fetcher(
             raise ValueError(f"Missing close prices for {ticker}")
 
     if isinstance(close_series, pd.DataFrame):
-        for timestamp, row in close_series.dropna(how="all").iterrows():
+        close_series = close_series.dropna(how="all")
+        for row in close_series.itertuples(index=True, name=None):
+            timestamp = row[0]
             day = timestamp.date()
             if day in date_set:
-                for ticker, value in row.dropna().items():
-                    prices[str(ticker)][day] = Decimal(str(value))
+                for idx, ticker in enumerate(close_series.columns, start=1):
+                    value = row[idx]
+                    if pd.notna(value):
+                        prices[str(ticker)][day] = Decimal(str(value))
     else:
         # Single ticker case
         ticker = tickers[0]
@@ -234,14 +238,18 @@ def _default_fx_fetcher(
             raise ValueError(f"Missing FX close prices for USD/{currency}")
 
     if isinstance(close_series, pd.DataFrame):
-        for timestamp, row in close_series.dropna(how="all").iterrows():
+        close_series = close_series.dropna(how="all")
+        for row in close_series.itertuples(index=True, name=None):
+            timestamp = row[0]
             day = timestamp.date()
             if day not in date_set:
                 continue
             day_rates = rates.setdefault(day, {})
-            for symbol, value in row.dropna().items():
-                currency = symbol_to_currency[str(symbol)]
-                day_rates[currency] = Decimal(str(value))
+            for idx, symbol in enumerate(close_series.columns, start=1):
+                value = row[idx]
+                if pd.notna(value):
+                    currency = symbol_to_currency[str(symbol)]
+                    day_rates[currency] = Decimal(str(value))
     else:
         # Single currency case
         currency = currencies[0]
