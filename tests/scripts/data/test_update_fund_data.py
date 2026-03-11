@@ -1,11 +1,11 @@
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 
-from scripts.data.update_fund_data import get_prices, get_tickers_from_holdings, main
+from scripts.data.update_fund_data import get_prices, get_tickers_from_holdings
+
 
 @pytest.fixture
 def mock_holdings_file(tmp_path):
@@ -80,12 +80,14 @@ def test_get_prices_pyth_success(mock_requests_get, mock_rest_client, mock_yf_do
             # For simplicity in mock, let's just return both if requested
             parsed = []
             if "aapl_on_id" in ids or ids == "aapl_on_id":
-                parsed.append({"id": "aapl_on_id", "price": {"price": "15500", "expo": -2}}) # 155.00
+                parsed.append(
+                    {"id": "aapl_on_id", "price": {"price": "15500", "expo": -2}}
+                )  # 155.00
             if "tsla_on_id" in ids or ids == "tsla_on_id":
-                parsed.append({"id": "tsla_on_id", "price": {"price": "2050", "expo": -1}}) # 205.0
+                parsed.append({"id": "tsla_on_id", "price": {"price": "2050", "expo": -1}})  # 205.0
             mock_resp.json.return_value = {"parsed": parsed}
             mock_resp.status_code = 200
-            
+
         return mock_resp
 
     mock_requests_get.side_effect = mock_requests_get_side_effect
@@ -110,10 +112,10 @@ def test_get_prices_polygon_fallback(mock_requests_get, mock_rest_client, mock_y
     def mock_requests_get_side_effect(url, params=None):
         mock_resp = MagicMock()
         if "/price_feeds" in url:
-             mock_resp.json.return_value = []
+            mock_resp.json.return_value = []
         mock_resp.status_code = 200
         return mock_resp
-    
+
     mock_requests_get.side_effect = mock_requests_get_side_effect
 
     # Mock Polygon to return data
