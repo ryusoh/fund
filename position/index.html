@@ -97,7 +97,11 @@
             </ul>
         </div>
         <div id="fundPieChartContainer">
-            <canvas id="fundPieChart"></canvas>
+            <canvas
+                id="fundPieChart"
+                role="img"
+                aria-label="Portfolio allocation pie chart"
+            ></canvas>
             <div id="currencyToggleContainer">
                 <button class="currency-toggle active" data-currency="USD" aria-label="US Dollar">
                     $
@@ -115,7 +119,7 @@
             <script src="../js/ui/currencyBootstrap.js"></script>
         </div>
         <div class="content-block">
-            <div class="table-responsive-container">
+            <div class="table-responsive-container" aria-live="polite">
                 <table class="hidden">
                     <thead>
                         <tr>
