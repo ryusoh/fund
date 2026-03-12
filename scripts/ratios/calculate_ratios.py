@@ -188,12 +188,17 @@ def calculate_stats(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str, A
     realized_gain_total = 0.0
     lots_by_security: dict[str, deque[list[float]]] = {}
 
-    for row in transactions_df.itertuples(index=False):
-        security = row.security
-        qty = float(row.adjusted_quantity)
-        trade_value = float(row.trade_value)
+    sec_idx = transactions_df.columns.get_loc('security') + 1
+    qty_idx = transactions_df.columns.get_loc('adjusted_quantity') + 1
+    val_idx = transactions_df.columns.get_loc('trade_value') + 1
+    type_idx = transactions_df.columns.get_loc('order_type') + 1
+
+    for row in transactions_df.itertuples(index=True, name=None):
+        security = row[sec_idx]
+        qty = float(row[qty_idx])
+        trade_value = float(row[val_idx])
         price = trade_value / qty if qty else 0.0
-        order_type = str(row.order_type).strip().lower()
+        order_type = str(row[type_idx]).strip().lower()
 
         if qty <= 0 or price <= 0:
             continue
@@ -283,23 +288,32 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
         splits_df = pd.read_csv(split_history_path)
         if not splits_df.empty:
             splits_df['Split Date'] = pd.to_datetime(splits_df['Split Date'])
-            splits_df_renamed = splits_df.rename(columns=lambda x: str(x).replace(' ', '_'))
-            for row in splits_df_renamed.itertuples(index=False):
-                symbol = str(row.Symbol)
-                multiplier = Decimal(str(getattr(row, 'Split_Multiplier', 1)))
-                splits_by_symbol.setdefault(symbol, []).append((row.Split_Date, multiplier))
+
+            sym_idx = splits_df.columns.get_loc('Symbol') + 1
+            mul_idx = splits_df.columns.get_loc('Split Multiplier') + 1
+            date_idx = splits_df.columns.get_loc('Split Date') + 1
+
+            for row in splits_df.itertuples(index=True, name=None):
+                symbol = str(row[sym_idx])
+                multiplier = Decimal(str(row[mul_idx]))
+                splits_by_symbol.setdefault(symbol, []).append((row[date_idx], multiplier))
             for symbol_splits in splits_by_symbol.values():
                 symbol_splits.sort(key=lambda item: item[0])
 
     share_totals: dict[str, Decimal] = {}
-    transactions_df.rename(columns=lambda x: str(x).replace(' ', '_'), inplace=True)
-    for row in transactions_df.itertuples(index=False):
-        symbol = str(row.Security)
-        quantity = Decimal(str(row.Quantity))
+
+    sec_idx = transactions_df.columns.get_loc('Security') + 1
+    qty_idx = transactions_df.columns.get_loc('Quantity') + 1
+    date_idx = transactions_df.columns.get_loc('Trade Date') + 1
+    type_idx = transactions_df.columns.get_loc('Order Type') + 1
+
+    for row in transactions_df.itertuples(index=True, name=None):
+        symbol = str(row[sec_idx])
+        quantity = Decimal(str(row[qty_idx]))
         if quantity == 0:
             continue
-        trade_date = row.Trade_Date
-        order_type = row.Order_Type
+        trade_date = row[date_idx]
+        order_type = row[type_idx]
 
         multiplier = Decimal('1')
         for split_date, split_multiplier in splits_by_symbol.get(symbol, []):
@@ -686,11 +700,16 @@ def main() -> None:
             }
         )
 
-    for txn in transactions_df.itertuples(index=False):
-        trade_date = pd.to_datetime(txn.trade_date).date()
-        order_type = str(txn.order_type).strip().title()
-        quantity = float(txn.quantity)
-        price = float(txn.executed_price)
+    date_idx = transactions_df.columns.get_loc('trade_date') + 1
+    type_idx = transactions_df.columns.get_loc('order_type') + 1
+    qty_idx = transactions_df.columns.get_loc('quantity') + 1
+    px_idx = transactions_df.columns.get_loc('executed_price') + 1
+
+    for txn in transactions_df.itertuples(index=True, name=None):
+        trade_date = pd.to_datetime(txn[date_idx]).date()
+        order_type = str(txn[type_idx]).strip().title()
+        quantity = float(txn[qty_idx])
+        price = float(txn[px_idx])
 
         if quantity <= 0 or price <= 0:
             continue
@@ -749,14 +768,20 @@ def main() -> None:
             converted_df['netAmount'] = converted_df['netAmount'].astype(float) * rates.values
             converted_df = converted_df.reset_index()
             converted_df['tradeDate'] = converted_df['tradeDate'].dt.strftime('%Y-%m-%d')
+
+            date_idx = converted_df.columns.get_loc('tradeDate') + 1
+            amt_idx = converted_df.columns.get_loc('amount') + 1
+            type_idx = converted_df.columns.get_loc('orderType') + 1
+            net_idx = converted_df.columns.get_loc('netAmount') + 1
+
             contribution_series_by_currency[currency] = [
                 {
-                    'tradeDate': str(row.tradeDate),
-                    'amount': float(row.amount),
-                    'orderType': row.orderType,
-                    'netAmount': float(row.netAmount),
+                    'tradeDate': str(row[date_idx]),
+                    'amount': float(row[amt_idx]),
+                    'orderType': row[type_idx],
+                    'netAmount': float(row[net_idx]),
                 }
-                for row in converted_df.itertuples(index=False)
+                for row in converted_df.itertuples(index=True, name=None)
             ]
 
     with open(OUTPUT_DIR / 'contribution_series.json', 'w') as f:
