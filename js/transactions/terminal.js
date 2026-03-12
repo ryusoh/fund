@@ -116,61 +116,109 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
     }
 
     if (details.list) {
-        const markup = snapshot.series
-            .map((series) => {
-                const formattedLines = series.formatted.split('\n');
-                const mainVal = formattedLines[0];
-                const breakdownVal = formattedLines[1]
-                    ? `<div class="terminal-crosshair-breakdown">${formattedLines[1]}</div>`
-                    : '';
+        if (typeof details.list.replaceChildren === 'function') {
+            details.list.replaceChildren();
+        } else {
+            details.list.innerHTML = '';
+        }
 
-                return `
-                <div class="terminal-crosshair-row">
-                    <span class="terminal-crosshair-key">
-                        <span class="terminal-crosshair-dot" style="background:${series.color};"></span>
-                        ${series.label || series.key}
-                    </span>
-                    <span class="terminal-crosshair-value">${mainVal}</span>
-                    ${breakdownVal}
-                </div>
-            `;
-            })
-            .join('');
-        details.list.innerHTML = markup;
+        snapshot.series.forEach((series) => {
+            const formattedLines = series.formatted.split('\n');
+            const mainVal = formattedLines[0];
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'terminal-crosshair-row';
+
+            const keySpan = document.createElement('span');
+            keySpan.className = 'terminal-crosshair-key';
+
+            const dotSpan = document.createElement('span');
+            dotSpan.className = 'terminal-crosshair-dot';
+            dotSpan.style.background = series.color;
+
+            keySpan.appendChild(dotSpan);
+            keySpan.appendChild(document.createTextNode(' ' + (series.label || series.key)));
+
+            const valSpan = document.createElement('span');
+            valSpan.className = 'terminal-crosshair-value';
+            valSpan.textContent = mainVal;
+
+            rowDiv.appendChild(keySpan);
+            rowDiv.appendChild(valSpan);
+
+            if (formattedLines[1]) {
+                const breakdownDiv = document.createElement('div');
+                breakdownDiv.className = 'terminal-crosshair-breakdown';
+                breakdownDiv.textContent = formattedLines[1];
+                rowDiv.appendChild(breakdownDiv);
+            }
+
+            details.list.appendChild(rowDiv);
+        });
     }
 
     if (details.range) {
         if (!rangeSummary) {
             details.range.hidden = true;
-            details.range.innerHTML = '';
+            if (typeof details.range.replaceChildren === 'function') {
+                details.range.replaceChildren();
+            } else {
+                details.range.innerHTML = '';
+            }
         } else {
+            if (typeof details.range.replaceChildren === 'function') {
+                details.range.replaceChildren();
+            } else {
+                details.range.innerHTML = '';
+            }
+
             const durationLabel =
                 rangeSummary.durationDays >= 1
                     ? `${Math.round(rangeSummary.durationDays)} day${
                           Math.round(rangeSummary.durationDays) === 1 ? '' : 's'
                       }`
                     : `${Math.max(1, Math.round(rangeSummary.durationMs / (1000 * 60 * 60)))} hrs`;
-            const entriesMarkup = rangeSummary.entries
-                .map(
-                    (entry) => `
-                        <div class="terminal-crosshair-range-row">
-                            <span class="terminal-crosshair-key">
-                                <span class="terminal-crosshair-dot" style="background:${entry.color};"></span>
-                                ${entry.label}
-                            </span>
-                            <span class="terminal-crosshair-value">${entry.deltaFormatted}${
-                                entry.percentFormatted ? ` (${entry.percentFormatted})` : ''
-                            }</span>
-                        </div>
-                    `
-                )
-                .join('');
+
             const startLabel = formatCrosshairDateLabel(rangeSummary.start);
             const endLabel = formatCrosshairDateLabel(rangeSummary.end);
-            details.range.innerHTML = `
-                <div class="terminal-crosshair-range-header">${startLabel} → ${endLabel} · ${durationLabel}</div>
-                ${entriesMarkup ? `<div class="terminal-crosshair-range-body">${entriesMarkup}</div>` : ''}
-            `;
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'terminal-crosshair-range-header';
+            headerDiv.textContent = `${startLabel} → ${endLabel} · ${durationLabel}`;
+            details.range.appendChild(headerDiv);
+
+            if (rangeSummary.entries && rangeSummary.entries.length > 0) {
+                const bodyDiv = document.createElement('div');
+                bodyDiv.className = 'terminal-crosshair-range-body';
+
+                rangeSummary.entries.forEach((entry) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'terminal-crosshair-range-row';
+
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'terminal-crosshair-key';
+
+                    const dotSpan = document.createElement('span');
+                    dotSpan.className = 'terminal-crosshair-dot';
+                    dotSpan.style.background = entry.color;
+
+                    keySpan.appendChild(dotSpan);
+                    keySpan.appendChild(document.createTextNode(' ' + entry.label));
+
+                    const valSpan = document.createElement('span');
+                    valSpan.className = 'terminal-crosshair-value';
+                    valSpan.textContent =
+                        entry.deltaFormatted +
+                        (entry.percentFormatted ? ` (${entry.percentFormatted})` : '');
+
+                    rowDiv.appendChild(keySpan);
+                    rowDiv.appendChild(valSpan);
+                    bodyDiv.appendChild(rowDiv);
+                });
+
+                details.range.appendChild(bodyDiv);
+            }
+
             details.range.hidden = false;
         }
     }
