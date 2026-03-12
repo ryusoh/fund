@@ -17,3 +17,9 @@
 **Learning:** When injecting dynamic output asynchronously via JavaScript (like Monte Carlo risk outputs or Bayesian text updates), the screen reader will remain completely silent because the new DOM nodes don't automatically trigger an announcement. Additionally, a `<canvas>` element without a `role="img"` and `aria-label` acts as a complete black box, making visual simulation feedback entirely inaccessible to non-sighted users.
 
 **Action:** Always add `aria-live="polite"` to parent containers that will be dynamically populated with important async results so that screen readers announce the changes naturally. Furthermore, give every meaningful `<canvas>` a semantic `role="img"` with a descriptive `aria-label`.
+
+## 2026-03-11 - Interactive Table Headers Accessibility Pitfall
+
+**Learning:** When making table headers (`<th>`) interactive for sorting or filtering, adding `role="button"` and `tabindex="0"` directly to the `<th>` tag is a severe accessibility anti-pattern. It overrides the implicit `columnheader` role, breaks table navigation for screen readers, and invalidates `aria-sort` attributes.
+
+**Action:** Always wrap the contents of the `<th>` in a semantic native `<button type="button">` element. Move the visual padding from the `<th>` to the `<button>` so that focus outlines (`:focus-visible`) wrap the text nicely without breaking native table semantics.

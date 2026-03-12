@@ -134,26 +134,51 @@
                 <table id="transactionTable">
                     <thead>
                         <tr>
-                            <th id="header-tradeDate" class="sortable">
-                                Date<span class="sort-indicator"></span>
+                            <th id="header-tradeDate" class="sortable" aria-sort="none">
+                                <button
+                                    type="button"
+                                    class="header-action-button"
+                                    aria-label="Sort by Date"
+                                >
+                                    Date<span class="sort-indicator"></span>
+                                </button>
                             </th>
                             <th id="header-orderType" class="filterable">
                                 Type
-                                <span class="filter-indicator" aria-hidden="true">
-                                    <i class="fa fa-filter"></i>
-                                </span>
+                                <button
+                                    type="button"
+                                    class="filter-indicator header-action-button"
+                                    aria-label="Filter by Type"
+                                >
+                                    <i class="fa fa-filter" aria-hidden="true"></i>
+                                </button>
                             </th>
-                            <th id="header-security" class="sortable filterable">
-                                Security
-                                <span class="sort-indicator"></span>
-                                <span class="filter-indicator" aria-hidden="true">
-                                    <i class="fa fa-filter"></i>
-                                </span>
+                            <th id="header-security" class="sortable filterable" aria-sort="none">
+                                <button
+                                    type="button"
+                                    class="header-action-button"
+                                    aria-label="Sort by Security"
+                                >
+                                    Security<span class="sort-indicator"></span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="filter-indicator header-action-button"
+                                    aria-label="Filter by Security"
+                                >
+                                    <i class="fa fa-filter" aria-hidden="true"></i>
+                                </button>
                             </th>
                             <th>Quantity</th>
                             <th>Price</th>
-                            <th id="header-netAmount" class="sortable">
-                                Amount<span class="sort-indicator"></span>
+                            <th id="header-netAmount" class="sortable" aria-sort="none">
+                                <button
+                                    type="button"
+                                    class="header-action-button"
+                                    aria-label="Sort by Amount"
+                                >
+                                    Amount<span class="sort-indicator"></span>
+                                </button>
                             </th>
                             <th>Total</th>
                         </tr>
