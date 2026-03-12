@@ -104,7 +104,7 @@
         <div id="terminalSweepOverlay" aria-hidden="true"></div>
         <div class="transaction-container">
             <div class="terminal" id="terminal">
-                <div class="terminal-output" id="terminalOutput"></div>
+                <div class="terminal-output" id="terminalOutput" aria-live="polite"></div>
                 <div class="terminal-prompt">
                     <span class="prompt-user">lz@fund:~$</span>
                     <input
@@ -124,7 +124,11 @@
                 aria-labelledby="runningAmountTitle"
             >
                 <div class="chart-container" role="img" aria-describedby="runningAmountTitle">
-                    <canvas id="runningAmountCanvas"></canvas>
+                    <canvas
+                        id="runningAmountCanvas"
+                        role="img"
+                        aria-label="Running amount chart"
+                    ></canvas>
                     <div class="chart-empty" id="runningAmountEmpty" style="display: none"></div>
                 </div>
                 <div class="chart-legend"></div>
