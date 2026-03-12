@@ -167,8 +167,16 @@ export function handleClearCommand(
 ) {
     if (typeof clearOutput === 'function') {
         clearOutput();
-    } else if (document.getElementById('terminalOutput')) {
-        document.getElementById('terminalOutput').innerHTML = '';
+    } else {
+        const terminalOutput = document.getElementById('terminalOutput');
+        if (terminalOutput) {
+            if (typeof terminalOutput.replaceChildren === 'function') {
+                terminalOutput.replaceChildren();
+            } else {
+                // Fallback for jsdom
+                terminalOutput.innerHTML = '';
+            }
+        }
     }
 
     closeAllFilterDropdowns();
