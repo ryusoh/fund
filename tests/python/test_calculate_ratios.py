@@ -12,10 +12,8 @@ if str(project_root) not in sys.path:
 class TestCalculateRatios(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Mock numpy and pandas before they are imported by calculate_ratios
         cls.mock_np = MagicMock()
 
-        # Simple implementation of isfinite for the purpose of these tests
         def mock_isfinite(x):
             if x is None or isinstance(x, str):
                 raise TypeError("ufunc 'isfinite' not supported for the input types")
@@ -26,10 +24,8 @@ class TestCalculateRatios(unittest.TestCase):
         cls.mock_np.isfinite.side_effect = mock_isfinite
         cls.mock_np.nan = float("nan")
         cls.mock_np.inf = float("inf")
-
         cls.mock_pd = MagicMock()
 
-        # Use a temporary patch of sys.modules to import the script with mocked dependencies
         with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
             import scripts.ratios.calculate_ratios as cr
 
@@ -165,6 +161,156 @@ class TestCalculateRatios(unittest.TestCase):
         # Incorrect number of columns in row
         with self.assertRaises(ValueError):
             render_box_table(headers=['Col1', 'Col2'], rows=[['Val1']])
+
+
+class TestCalculateRatiosWithPandas(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import numpy as np
+            import pandas as pd
+
+            cls.pd = pd
+            cls.np = np
+
+            # To import the real module, we must ensure it isn't the mocked version.
+            # Pop it if it's there.
+            if "scripts.ratios.calculate_ratios" in sys.modules:
+                del sys.modules["scripts.ratios.calculate_ratios"]
+
+            import scripts.ratios.calculate_ratios as cr
+
+            cls.cr = cr
+            cls.has_pandas = True
+        except ImportError:
+            cls.has_pandas = False
+
+    def test_normalize_symbol_index(self):
+        if not getattr(self, "has_pandas", False):
+            self.skipTest("pandas not available")
+
+        normalize_symbol_index = self.cr.normalize_symbol_index
+
+        # Test empty dataframe
+        df_empty = self.pd.DataFrame()
+        res_empty = normalize_symbol_index(df_empty)
+        self.assertTrue(res_empty.empty)
+
+        # Test valid dataframe without shares
+        df = self.pd.DataFrame({"price": [10, 20]}, index=["AAPL", "BRK-B"])
+        res = normalize_symbol_index(df)
+        self.assertEqual(list(res.index), ["AAPL", "BRKB"])
+        self.assertEqual(list(res["display_symbol"]), ["AAPL", "BRK-B"])
+        self.assertTrue("shares" not in res.columns)
+        self.assertTrue("broker_shares" not in res.columns)
+
+        # Test valid dataframe with shares
+        df2 = self.pd.DataFrame({"shares": [100, 200]}, index=["AAPL", "BRK-B"])
+        res2 = normalize_symbol_index(df2)
+        self.assertEqual(list(res2.index), ["AAPL", "BRKB"])
+        self.assertEqual(list(res2["display_symbol"]), ["AAPL", "BRK-B"])
+        self.assertTrue("shares" not in res2.columns)
+        self.assertEqual(list(res2["broker_shares"]), [100, 200])
+
+    def test_get_latest_rates(self):
+        if not getattr(self, "has_pandas", False):
+            self.skipTest("pandas not available")
+
+        get_latest_rates = self.cr.get_latest_rates
+
+        # Test empty dataframe returns 1.0 for all supported currencies
+        df_empty = self.pd.DataFrame()
+        res_empty = get_latest_rates(df_empty)
+        for cur in self.cr.SUPPORTED_CURRENCIES:
+            self.assertEqual(res_empty[cur], 1.0)
+
+        # Test with data
+        data = {
+            "USD": [1.0, 1.0],
+            "CNY": [7.0, 7.1],
+            "JPY": [140.0, 142.0],
+            "KRW": [1300.0, 1310.0],
+        }
+        df = self.pd.DataFrame(data, index=self.pd.to_datetime(["2023-01-01", "2023-01-02"]))
+        res = get_latest_rates(df)
+        self.assertEqual(res["USD"], 1.0)
+        self.assertEqual(res["CNY"], 7.1)
+        self.assertEqual(res["JPY"], 142.0)
+        self.assertEqual(res["KRW"], 1310.0)
+
+    def test_build_fx_json(self):
+        if not getattr(self, "has_pandas", False):
+            self.skipTest("pandas not available")
+
+        build_fx_json = self.cr.build_fx_json
+
+        # Test normal case
+        data = {
+            "USD": [1.0, 1.0],
+            "CNY": [7.0, 7.1],
+            "JPY": [140.0, 142.0],
+            "KRW": [1300.0, 1310.0],
+        }
+        df = self.pd.DataFrame(data, index=self.pd.to_datetime(["2023-01-01", "2023-01-02"]))
+        res = build_fx_json(df)
+
+        self.assertEqual(res["base"], "USD")
+        self.assertEqual(res["currencies"], self.cr.SUPPORTED_CURRENCIES)
+        self.assertIn("2023-01-01", res["rates"])
+        self.assertIn("2023-01-02", res["rates"])
+        self.assertEqual(res["rates"]["2023-01-01"]["CNY"], 7.0)
+        self.assertEqual(res["rates"]["2023-01-02"]["CNY"], 7.1)
+        self.assertEqual(res["rates"]["2023-01-02"]["KRW"], 1310.0)
+
+    def test_compute_returns(self):
+        if not getattr(self, "has_pandas", False):
+            self.skipTest("pandas not available")
+
+        compute_returns = self.cr.compute_returns
+
+        # Test empty points
+        res = compute_returns([], "daily")
+        self.assertTrue(res.empty if hasattr(res, "empty") else False)
+        self.assertEqual(compute_returns([], "annual"), {})
+
+        # Test single point
+        res_single = compute_returns([{"date": "2023-01-01", "value": 100}], "daily")
+        self.assertTrue(res_single.empty if hasattr(res_single, "empty") else False)
+
+        # Test normal points
+        points = [
+            {"date": "2023-01-01", "value": 100.0},
+            {"date": "2023-01-02", "value": 101.0},
+            {"date": "2023-01-03", "value": 105.04},
+        ]
+
+        # Daily
+        res_daily = compute_returns(points, "daily")
+        self.assertEqual(len(res_daily), 2)
+        self.assertAlmostEqual(res_daily.iloc[0], 0.01)  # 101/100 - 1
+        self.assertAlmostEqual(res_daily.iloc[1], 0.04)  # 105.04/101 - 1
+
+        # Monthly
+        points_monthly = [
+            {"date": "2023-01-15", "value": 100.0},
+            {"date": "2023-01-31", "value": 102.0},
+            {"date": "2023-02-15", "value": 105.0},
+            {"date": "2023-02-28", "value": 112.2},
+        ]
+        res_monthly = compute_returns(points_monthly, "monthly")
+        self.assertEqual(len(res_monthly), 1)
+        self.assertAlmostEqual(res_monthly["2023-02"], 0.1)  # 112.2 / 102 - 1 = 0.1
+
+        # Annual
+        points_annual = [
+            {"date": "2021-12-31", "value": 100.0},
+            {"date": "2022-12-31", "value": 110.0},
+            {"date": "2023-12-31", "value": 121.0},
+        ]
+        res_annual = compute_returns(points_annual, "annual")
+        self.assertEqual(len(res_annual), 2)
+        self.assertAlmostEqual(res_annual["2022"], 0.1)  # 110 / 100 - 1
+        self.assertAlmostEqual(res_annual["2023"], 0.1)  # 121 / 110 - 1
 
 
 if __name__ == "__main__":
