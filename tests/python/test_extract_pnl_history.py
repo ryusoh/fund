@@ -142,6 +142,52 @@ class TestExtractPnlHistory(unittest.TestCase):
         # Fallback FX to 1.0, Total = 20 * 100.0 / 1.0 = 2000.0
         self.assertEqual(result["value_usd"], 2000.0)
 
+    def test_calculate_daily_values_fx_to_usd_zero(self):
+        calculate_daily_values = self.extract_pnl.calculate_daily_values
+
+        holdings = {"AAPL": {"shares": 10}}
+        fund_data = {"data": [{"ticker": "AAPL", "price": 150.0, "currency": "JPY"}]}
+        forex = {"rates": {"JPY": 0.0}}  # Zero fx rate to trigger division by zero
+
+        # Division by zero should trigger an exception which the function catches and continues
+        result = calculate_daily_values(holdings, fund_data, forex)
+
+        self.assertIn("value_usd", result)
+        self.assertEqual(result["value_usd"], 0.0)
+
+    def test_calculate_daily_values_string_shares(self):
+        calculate_daily_values = self.extract_pnl.calculate_daily_values
+
+        holdings = {"AAPL": {"shares": "10.5"}}
+        fund_data = {"data": [{"ticker": "AAPL", "price": 100.0, "currency": "USD"}]}
+        forex = {"rates": {}}
+
+        result = calculate_daily_values(holdings, fund_data, forex)
+
+        self.assertIn("value_usd", result)
+        self.assertEqual(result["value_usd"], 1050.0)
+
+    def test_calculate_daily_values_unexpected_fund_data(self):
+        calculate_daily_values = self.extract_pnl.calculate_daily_values
+
+        holdings = {"AAPL": {"shares": 10}}
+        fund_data = {"unexpected_key": "some_value"}
+        forex = {"rates": {}}
+
+        result = calculate_daily_values(holdings, fund_data, forex)
+
+        self.assertEqual(result["value_usd"], 0.0)
+
+    def test_calculate_daily_values_rates_is_none(self):
+        calculate_daily_values = self.extract_pnl.calculate_daily_values
+
+        holdings = {"AAPL": {"shares": 10}}
+        fund_data = {"data": [{"ticker": "AAPL", "price": 100.0, "currency": "USD"}]}
+        forex = {"rates": None}  # None instead of dict
+
+        with self.assertRaises(TypeError):
+            calculate_daily_values(holdings, fund_data, forex)
+
 
 if __name__ == "__main__":
     unittest.main()
