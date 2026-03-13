@@ -1,6 +1,15 @@
 import * as dateUtils from '@utils/date.js';
 
-const { getNyDate, isTradingDay, getTradingDayDate, toIsoDate, parseYearFromDate } = dateUtils;
+const {
+    getNyDate,
+    isTradingDay,
+    getTradingDayDate,
+    toIsoDate,
+    parseYearFromDate,
+    parseQuarterToken,
+    resolveQuarterRange,
+    normalizeDateOnly,
+} = dateUtils;
 
 describe('Date Utils', () => {
     it('getNyDate should return a Date object', () => {
@@ -186,6 +195,157 @@ describe('Date Utils', () => {
             expect(parseYearFromDate('99')).toBe(null); // only 2 digits
             expect(parseYearFromDate('abc2024')).toBe(null);
             expect(parseYearFromDate('not a date')).toBe(null);
+        });
+    });
+
+    describe('parseQuarterToken', () => {
+        it('should parse an explicit quarter token', () => {
+            expect(parseQuarterToken('2024q1')).toEqual({ year: 2024, quarter: 1 });
+            expect(parseQuarterToken(' 2023Q4 ')).toEqual({ year: 2023, quarter: 4 });
+            expect(parseQuarterToken('1999q2')).toEqual({ year: 1999, quarter: 2 });
+        });
+
+        it('should parse a simple quarter token with fallback year', () => {
+            expect(parseQuarterToken('q1', 2024)).toEqual({ year: 2024, quarter: 1 });
+            expect(parseQuarterToken(' Q3 ', 2023)).toEqual({ year: 2023, quarter: 3 });
+        });
+
+        it('should return null for non-string tokens', () => {
+            expect(parseQuarterToken(null)).toBe(null);
+            expect(parseQuarterToken(undefined)).toBe(null);
+            expect(parseQuarterToken(2024)).toBe(null);
+            expect(parseQuarterToken({})).toBe(null);
+        });
+
+        it('should return null for invalid token formats', () => {
+            expect(parseQuarterToken('2024q5')).toBe(null);
+            expect(parseQuarterToken('q0', 2024)).toBe(null);
+            expect(parseQuarterToken('2024 q1')).toBe(null);
+            expect(parseQuarterToken('2024-q1')).toBe(null);
+            expect(parseQuarterToken('not a token')).toBe(null);
+            expect(parseQuarterToken('')).toBe(null);
+        });
+
+        it('should return null for simple quarter tokens with non-finite fallback year', () => {
+            expect(parseQuarterToken('q1', null)).toBe(null);
+            expect(parseQuarterToken('q1', undefined)).toBe(null);
+            expect(parseQuarterToken('q1', '2024')).toBe(null);
+            expect(parseQuarterToken('q1', NaN)).toBe(null);
+            expect(parseQuarterToken('q1', Infinity)).toBe(null);
+        });
+    });
+
+    describe('resolveQuarterRange', () => {
+        it('should return correct range for mode full (default)', () => {
+            expect(resolveQuarterRange(2024, 1)).toEqual({
+                from: '2024-01-01',
+                to: '2024-03-31',
+            });
+            expect(resolveQuarterRange(2023, 2, 'full')).toEqual({
+                from: '2023-04-01',
+                to: '2023-06-30',
+            });
+            expect(resolveQuarterRange(2023, 3)).toEqual({
+                from: '2023-07-01',
+                to: '2023-09-30',
+            });
+            expect(resolveQuarterRange(2023, 4)).toEqual({
+                from: '2023-10-01',
+                to: '2023-12-31',
+            });
+            // leap year Q1 end date should be March 31 anyway, but Q1 has 91 days
+            expect(resolveQuarterRange(2024, 1)).toEqual({
+                from: '2024-01-01',
+                to: '2024-03-31',
+            });
+        });
+
+        it('should return correct range for mode start', () => {
+            expect(resolveQuarterRange(2024, 1, 'start')).toEqual({
+                from: '2024-01-01',
+                to: null,
+            });
+            expect(resolveQuarterRange(2023, 4, 'start')).toEqual({
+                from: '2023-10-01',
+                to: null,
+            });
+        });
+
+        it('should return correct range for mode end', () => {
+            expect(resolveQuarterRange(2024, 1, 'end')).toEqual({
+                from: null,
+                to: '2024-03-31',
+            });
+            expect(resolveQuarterRange(2023, 4, 'end')).toEqual({
+                from: null,
+                to: '2023-12-31',
+            });
+        });
+
+        it('should return nulls if year or quarter is not a finite number', () => {
+            const nullRange = { from: null, to: null };
+            expect(resolveQuarterRange(null, 1)).toEqual(nullRange);
+            expect(resolveQuarterRange(2024, null)).toEqual(nullRange);
+            expect(resolveQuarterRange('2024', 1)).toEqual(nullRange);
+            expect(resolveQuarterRange(2024, '1')).toEqual(nullRange);
+            expect(resolveQuarterRange(NaN, 1)).toEqual(nullRange);
+            expect(resolveQuarterRange(2024, Infinity)).toEqual(nullRange);
+            expect(resolveQuarterRange(undefined, undefined)).toEqual(nullRange);
+        });
+    });
+
+    describe('normalizeDateOnly', () => {
+        it('should return null for falsy inputs', () => {
+            expect(normalizeDateOnly(null)).toBe(null);
+            expect(normalizeDateOnly(undefined)).toBe(null);
+            expect(normalizeDateOnly('')).toBe(null);
+            expect(normalizeDateOnly(0)).toBe(null);
+            expect(normalizeDateOnly(false)).toBe(null);
+        });
+
+        it('should return null for invalid date inputs', () => {
+            expect(normalizeDateOnly('invalid-date')).toBe(null);
+            expect(normalizeDateOnly(new Date('invalid-date'))).toBe(null);
+        });
+
+        it('should normalize a valid Date object to midnight local time', () => {
+            const date = new Date(2024, 0, 15, 14, 30, 45, 500); // 2024-01-15 14:30:45.500
+            const normalized = normalizeDateOnly(date);
+
+            expect(normalized.getFullYear()).toBe(2024);
+            expect(normalized.getMonth()).toBe(0);
+            expect(normalized.getDate()).toBe(15);
+            expect(normalized.getHours()).toBe(0);
+            expect(normalized.getMinutes()).toBe(0);
+            expect(normalized.getSeconds()).toBe(0);
+            expect(normalized.getMilliseconds()).toBe(0);
+
+            // ensure we didn't mutate the original input date
+            expect(date.getHours()).toBe(14);
+        });
+
+        it('should normalize a valid date string to midnight local time', () => {
+            // Note: date strings parse behavior can vary with timezones depending on format
+            // In a local browser env without UTC markers, they might map to local time.
+            const dateString = '2024-05-20T10:15:30Z';
+            const normalized = normalizeDateOnly(dateString);
+
+            // Time should be exactly midnight
+            expect(normalized.getHours()).toBe(0);
+            expect(normalized.getMinutes()).toBe(0);
+            expect(normalized.getSeconds()).toBe(0);
+            expect(normalized.getMilliseconds()).toBe(0);
+        });
+
+        it('should handle numeric timestamp inputs appropriately', () => {
+            const timestamp = new Date(2023, 11, 25, 8, 0, 0).getTime();
+            const normalized = normalizeDateOnly(timestamp);
+
+            expect(normalized.getFullYear()).toBe(2023);
+            expect(normalized.getMonth()).toBe(11);
+            expect(normalized.getDate()).toBe(25);
+            expect(normalized.getHours()).toBe(0);
+            expect(normalized.getMinutes()).toBe(0);
         });
     });
 });
