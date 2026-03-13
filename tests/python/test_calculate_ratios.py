@@ -45,6 +45,11 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_currency(-1234.56), "$-1,234.56")
         self.assertEqual(format_currency(1000000), "$1,000,000.00")
 
+        # Large and boundary values
+        self.assertEqual(format_currency(999999999.99), "$999,999,999.99")
+        self.assertEqual(format_currency(-0.005), "$-0.01")
+        self.assertEqual(format_currency(0.005), "$0.01")
+
         # Small values
         self.assertEqual(format_currency(0.001), "$0.00")
         self.assertEqual(format_currency(-0.001), "$-0.00")
@@ -53,6 +58,12 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_currency(float("nan")), "N/A")
         self.assertEqual(format_currency(float("inf")), "N/A")
         self.assertEqual(format_currency(float("-inf")), "N/A")
+
+        # Explicit nan/inf checks to improve coverage
+        import math
+        self.assertEqual(format_currency(math.nan), "N/A")
+        self.assertEqual(format_currency(math.inf), "N/A")
+        self.assertEqual(format_currency(-math.inf), "N/A")
 
         # Invalid types
         with self.assertRaises(TypeError):
@@ -73,6 +84,43 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_percent(float("nan")), "N/A")
         self.assertEqual(format_percent(float("inf")), "N/A")
         self.assertEqual(format_percent(float("-inf")), "N/A")
+
+        # Invalid types
+        with self.assertRaises(TypeError):
+            format_percent(None)
+        with self.assertRaises(TypeError):
+            format_percent("123")
+
+    def test_get_latest_rates(self):
+        get_latest_rates = self.cr.get_latest_rates
+        SUPPORTED_CURRENCIES = self.cr.SUPPORTED_CURRENCIES
+
+        # Empty DataFrame mock
+        mock_empty_df = MagicMock()
+        mock_empty_df.empty = True
+
+        expected_empty = {currency: 1.0 for currency in SUPPORTED_CURRENCIES}
+        self.assertEqual(get_latest_rates(mock_empty_df), expected_empty)
+
+        # Populated DataFrame mock
+        mock_populated_df = MagicMock()
+        mock_populated_df.empty = False
+
+        mock_latest_row = MagicMock()
+        def mock_get(currency, default=1.0):
+            rates = {"USD": 1.0, "CNY": 7.1, "JPY": 105.0}
+            return rates.get(currency, default)
+
+        mock_latest_row.get.side_effect = mock_get
+
+        # iloc is an object that supports slicing/indexing
+        mock_iloc = MagicMock()
+        # when iloc[-1] is accessed, return mock_latest_row
+        mock_iloc.__getitem__.return_value = mock_latest_row
+        mock_populated_df.iloc = mock_iloc
+
+        expected_populated = {"USD": 1.0, "CNY": 7.1, "JPY": 105.0, "KRW": 1.0}
+        self.assertEqual(get_latest_rates(mock_populated_df), expected_populated)
 
     def test_order_series_names(self):
         order_series_names = self.cr.order_series_names
