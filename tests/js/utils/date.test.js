@@ -117,6 +117,21 @@ describe('Date Utils', () => {
             expect(toIsoDate(date)).toBe('2024-05-15');
         });
 
+        it('should return correct YYYY-MM-DD for a leap year date', () => {
+            const leapDate = new Date('2024-02-29T10:30:00Z');
+            expect(toIsoDate(leapDate)).toBe('2024-02-29');
+        });
+
+        it('should return correct YYYY-MM-DD for the end of the year', () => {
+            const endOfYear = new Date('2023-12-31T23:59:59Z');
+            expect(toIsoDate(endOfYear)).toBe('2023-12-31');
+        });
+
+        it('should return correct YYYY-MM-DD for early dates', () => {
+            const earlyDate = new Date('1999-01-01T00:00:00Z');
+            expect(toIsoDate(earlyDate)).toBe('1999-01-01');
+        });
+
         it('should return an empty string for an Invalid Date object', () => {
             const invalidDate = new Date('not-a-date');
             expect(toIsoDate(invalidDate)).toBe('');
@@ -140,6 +155,17 @@ describe('Date Utils', () => {
 
         it('should return an empty string when passed a plain object', () => {
             expect(toIsoDate({})).toBe('');
+        });
+
+        it('should return an empty string when passed other non-Date types', () => {
+            expect(toIsoDate(NaN)).toBe('');
+            expect(toIsoDate(true)).toBe('');
+            expect(toIsoDate(false)).toBe('');
+            expect(toIsoDate([])).toBe('');
+            expect(toIsoDate(() => {})).toBe('');
+            expect(toIsoDate(Symbol('sym'))).toBe('');
+            expect(toIsoDate(BigInt(1))).toBe('');
+            expect(toIsoDate(new Error('test'))).toBe('');
         });
     });
 
