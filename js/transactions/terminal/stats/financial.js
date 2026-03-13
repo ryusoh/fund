@@ -63,6 +63,24 @@ async function loadAnalysisDetails(path) {
     return payload;
 }
 
+let peRatioCache = null;
+
+async function loadPeRatioData() {
+    if (peRatioCache) {
+        return peRatioCache;
+    }
+    try {
+        const response = await fetch(withCacheBust('../data/output/figures/pe_ratio.json'));
+        if (response.ok) {
+            peRatioCache = await response.json();
+            return peRatioCache;
+        }
+    } catch {
+        // ignore
+    }
+    return null;
+}
+
 export async function getFinancialStatsText() {
     try {
         const indexData = await loadAnalysisIndex();
@@ -70,6 +88,23 @@ export async function getFinancialStatsText() {
         if (!tickers.length) {
             return 'No financial data available for holdings.';
         }
+
+        const peRatioData = await loadPeRatioData();
+        const globalForwardPeMap = peRatioData?.forward_pe?.ticker_forward_pe || {};
+
+        const getFallbackValue = (val) => {
+            if (Number.isFinite(val)) {
+                return Number(val);
+            }
+            if (Array.isArray(val) && val.length > 0) {
+                for (let i = val.length - 1; i >= 0; i--) {
+                    if (Number.isFinite(val[i])) {
+                        return Number(val[i]);
+                    }
+                }
+            }
+            return null;
+        };
 
         const rows = await Promise.all(
             tickers.map(async (entry) => {
@@ -80,6 +115,17 @@ export async function getFinancialStatsText() {
                         return null;
                     }
                     const market = detail.market;
+
+                    let forwardPe = Number(market.forwardPe);
+                    if (!Number.isFinite(forwardPe)) {
+                        const fallback = getFallbackValue(
+                            globalForwardPeMap[detail.symbol || entrySymbol]
+                        );
+                        if (fallback !== null) {
+                            forwardPe = fallback;
+                        }
+                    }
+
                     const currency =
                         typeof market.currency === 'string' && market.currency.trim()
                             ? market.currency.trim().toUpperCase()
@@ -88,7 +134,7 @@ export async function getFinancialStatsText() {
                     return [
                         detail.symbol || entrySymbol || '—',
                         formatNumericPair(market.eps, market.forwardEps, 2),
-                        formatNumericPair(market.pe, market.forwardPe, 2),
+                        formatNumericPair(market.pe, forwardPe, 2),
                         formatNumeric(market.pegRatio, 2),
                         resolveEvToEbitda(market),
                         formatMarketCap(market.enterpriseValue, currency),
