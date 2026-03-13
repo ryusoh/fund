@@ -49,6 +49,35 @@ describe('Smoothing Utilities', () => {
             const result = simpleMovingAverage(data, 3, true);
             expect(result[4]).toEqual({ x: 4, y: 10 });
         });
+
+        it('handles window sizes less than 1 safely (e.g. 0 or negative)', () => {
+            const data = createData([1, 2, 3, 4, 5]);
+            // With window <= 0, start and end bounds evaluate to logic that might slice differently
+            // but JS slice handles it. Let's see how it behaves and assert it doesn't crash.
+            const resultZero = simpleMovingAverage(data, 0, false);
+            expect(resultZero.length).toBe(data.length);
+
+            const resultNegative = simpleMovingAverage(data, -1, false);
+            expect(resultNegative.length).toBe(data.length);
+        });
+
+        it('handles fractional window sizes gracefully', () => {
+            const data = createData([1, 2, 3, 4, 5]);
+            const result = simpleMovingAverage(data, 3.5, false);
+            expect(result.length).toBe(5);
+        });
+
+        it('handles malformed data points where y might be missing or non-numeric', () => {
+            const data = [
+                { x: 0, y: 10 },
+                { x: 1, y: null },
+                { x: 2, y: undefined },
+                { x: 3, y: 'string' },
+                { x: 4, y: 20 },
+            ];
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result.length).toBe(data.length);
+        });
     });
 
     describe('exponentialMovingAverage', () => {
