@@ -522,7 +522,7 @@ def compute_returns(points, period='daily'):
 
     if period == 'monthly':
         # Use month-end observations so beta aligns with Yahoo Finance (yfinance) methodology.
-        resampled = df.resample('M').last()
+        resampled = df.resample('ME').last()
         returns = resampled.pct_change()['value'].dropna()
         return {pd.to_datetime(idx).strftime('%Y-%m'): val for idx, val in returns.items()}
 
