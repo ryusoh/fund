@@ -16,6 +16,19 @@ ANALYSIS_DIR = DATA_DIR / "analysis"
 INDEX_FILE = ANALYSIS_DIR / "index.json"
 FUND_FILE = DATA_DIR / "fund_data.json"
 HOLDINGS_FILE = DATA_DIR / "holdings_details.json"
+FX_FILE = DATA_DIR / "fx_data.json"
+
+# Tickers where financial data is reported in local currency but trades in USD
+# These are typically Chinese ADRs incorporated offshore but operating in China
+CURRENCY_CONVERSION_TICKERS = {
+    'PDD': 'CNY',  # Pinduoduo
+    'BABA': 'CNY',  # Alibaba
+    'JD': 'CNY',  # JD.com
+    'BIDU': 'CNY',  # Baidu
+    'NIO': 'CNY',  # NIO
+    'XPEV': 'CNY',  # XPeng
+    'LI': 'CNY',  # Li Auto
+}
 
 MARKET_FIELD_MAP = {
     "price": "regularMarketPrice",
@@ -101,6 +114,61 @@ def maybe_round(value: Any) -> Any:
     return value
 
 
+def load_fx_rates() -> Dict[str, float]:
+    """Load FX rates from fx_data.json. Returns rates where base is USD."""
+    try:
+        fx_data = load_json(FX_FILE)
+        rates = fx_data.get('rates', {})
+        # Ensure USD is always 1.0
+        rates['USD'] = 1.0
+        return cast(Dict[str, float], rates)
+    except Exception:
+        return {'USD': 1.0}
+
+
+def convert_financial_currency(
+    value: Any, from_currency: str, to_currency: str, fx_rates: Dict[str, float]
+) -> Any:
+    """
+    Convert a financial value from one currency to another.
+
+    Args:
+        value: The numeric value to convert
+        from_currency: The source currency (e.g., 'CNY')
+        to_currency: The target currency (e.g., 'USD')
+        fx_rates: FX rates with USD as base (e.g., {'CNY': 7.2, 'USD': 1.0})
+
+    Returns:
+        Converted value or original value if conversion not possible
+
+    Note:
+        fx_rates are quoted as USD/base, so CNY=7.2 means 1 USD = 7.2 CNY
+        To convert CNY to USD: divide by the CNY rate
+    """
+    if not isinstance(value, (int, float)) or value is None:
+        return value
+
+    from_curr = from_currency.upper()
+    to_curr = to_currency.upper()
+
+    if from_curr == to_curr:
+        return value
+
+    # If converting to USD, divide by the FX rate
+    if to_curr == 'USD' and from_curr in fx_rates:
+        rate = fx_rates.get(from_curr, 1.0)
+        if rate and rate > 0:
+            return value / rate
+
+    # If converting from USD, multiply by the FX rate
+    if from_curr == 'USD' and to_curr in fx_rates:
+        rate = fx_rates.get(to_curr, 1.0)
+        if rate and rate > 0:
+            return value * rate
+
+    return value
+
+
 def normalize_benchmark(value: Any) -> Dict[str, Any]:
     if isinstance(value, dict):
         return {
@@ -176,6 +244,27 @@ def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any
                 )  # Assigned to new variable
         except Exception:
             pass
+
+    # Apply currency conversion for tickers that report in local currency
+    # but trade in USD (e.g., Chinese ADRs)
+    # Note: yfinance reports market cap and enterprise value in USD (derived from stock price),
+    # but financial metrics like EBITDA are in the company's reporting currency (CNY for Chinese firms)
+    symbol_upper = symbol.upper()
+    if symbol_upper in CURRENCY_CONVERSION_TICKERS:
+        local_currency = CURRENCY_CONVERSION_TICKERS[symbol_upper]
+        fx_rates = load_fx_rates()
+        trading_currency = result_metadata.get('currency', 'USD')
+
+        # Convert only income statement metrics from local currency to trading currency
+        # DO NOT convert market cap or enterprise value - they are already in USD
+        if trading_currency == 'USD' and local_currency == 'CNY':
+            # Convert EBITDA from CNY to USD
+            # This is the key metric that affects EV/EBITDA ratio
+            if 'ebitda' in result_metadata:
+                result_metadata['ebitda'] = convert_financial_currency(
+                    result_metadata['ebitda'], local_currency, trading_currency, fx_rates
+                )
+
     return result_metadata  # Returned new variable
 
 
