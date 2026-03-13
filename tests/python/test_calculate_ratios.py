@@ -35,6 +35,39 @@ class TestCalculateRatios(unittest.TestCase):
 
             cls.cr = cr
 
+    def test_get_latest_rates(self):
+        get_latest_rates = self.cr.get_latest_rates
+        SUPPORTED_CURRENCIES = self.cr.SUPPORTED_CURRENCIES
+
+        # Empty dataframe
+        mock_empty_df = MagicMock()
+        mock_empty_df.empty = True
+        self.assertEqual(get_latest_rates(mock_empty_df), {currency: 1.0 for currency in SUPPORTED_CURRENCIES})
+
+        # Populated dataframe
+        mock_df = MagicMock()
+        mock_df.empty = False
+        latest_row_mock = MagicMock()
+
+        # Test default value 1.0 when currency not present, and extracting actual float when present
+        def mock_get(key, default):
+            if key == 'USD': return 1.5
+            if key == 'CNY': return "6.8"
+            return default
+
+        latest_row_mock.get.side_effect = mock_get
+        # To mock iloc[-1], we mock the iloc attribute which is commonly used with []
+        # so we mock __getitem__ on whatever mock_df.iloc returns
+        iloc_mock = MagicMock()
+        iloc_mock.__getitem__.return_value = latest_row_mock
+        mock_df.iloc = iloc_mock
+
+        expected = {currency: 1.0 for currency in SUPPORTED_CURRENCIES}
+        expected['USD'] = 1.5
+        expected['CNY'] = 6.8
+
+        self.assertEqual(get_latest_rates(mock_df), expected)
+
     def test_format_currency(self):
         format_currency = self.cr.format_currency
         # Happy paths
