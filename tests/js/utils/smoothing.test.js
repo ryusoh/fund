@@ -83,6 +83,38 @@ describe('Smoothing Utilities', () => {
             const result = exponentialMovingAverage(data, 0.5, true);
             expect(result[2]).toEqual({ x: 2, y: 20 });
         });
+
+        it('handles negative values correctly', () => {
+            const data = createData([-10, -5, 0, 5, 10]);
+            const result = exponentialMovingAverage(data, 0.5, false);
+            expect(result).toEqual([
+                { x: 0, y: -10 },
+                { x: 1, y: -7.5 }, // 0.5 * -5 + 0.5 * -10
+                { x: 2, y: -3.75 }, // 0.5 * 0 + 0.5 * -7.5
+                { x: 3, y: 0.625 }, // 0.5 * 5 + 0.5 * -3.75
+                { x: 4, y: 5.3125 }, // 0.5 * 10 + 0.5 * 0.625
+            ]);
+        });
+
+        it('behaves like a flat line when alpha is 0', () => {
+            const data = createData([10, 20, 30, 40]);
+            const result = exponentialMovingAverage(data, 0, false);
+            // EMA calculation with alpha=0 means smoothedValue = 0 * current + 1 * prevSmoothed = prevSmoothed
+            // Result should be flat at the first point's value
+            expect(result).toEqual([
+                { x: 0, y: 10 },
+                { x: 1, y: 10 },
+                { x: 2, y: 10 },
+                { x: 3, y: 10 },
+            ]);
+        });
+
+        it('exactly follows original data when alpha is 1', () => {
+            const data = createData([10, 20, 30, 40]);
+            const result = exponentialMovingAverage(data, 1, false);
+            // EMA calculation with alpha=1 means smoothedValue = 1 * current + 0 * prevSmoothed = current
+            expect(result).toEqual(data);
+        });
     });
 
     describe('savitzkyGolay', () => {
@@ -128,6 +160,22 @@ describe('Smoothing Utilities', () => {
             // order 2 falls back to returning the point's original value according to current implementation
             const result = savitzkyGolay(data, 3, 2, false);
             expect(result).toEqual(data);
+        });
+
+        it('handles case where points length is less than or equal to order', () => {
+            // By requesting an order 5 but window is small, polynomialFit gets triggered early.
+            const data = createData([1, 2, 3, 4, 5]);
+            // Force polynomialFit to hit the `n <= order` block (n=3 for window boundaries, order=5).
+            const result = savitzkyGolay(data, 3, 5, false);
+            expect(result).toEqual(data);
+        });
+
+        it('handles out of bounds indices gracefully when falling back', () => {
+            // Using small data size to ensure boundaries logic is triggered
+            const data = createData([10, 11, 10, 15, 20]);
+            // Request large order, but some edge cases might hit where targetIndex is beyond array if we mess with data manually
+            const result = savitzkyGolay(data, 5, 10, false);
+            expect(result.length).toEqual(5);
         });
 
         it('preserves the last point when requested', () => {
