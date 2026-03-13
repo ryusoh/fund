@@ -78,6 +78,11 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_currency(-1234.56), "$-1,234.56")
         self.assertEqual(format_currency(1000000), "$1,000,000.00")
 
+        # Large and boundary values
+        self.assertEqual(format_currency(999999999.99), "$999,999,999.99")
+        self.assertEqual(format_currency(-0.005), "$-0.01")
+        self.assertEqual(format_currency(0.005), "$0.01")
+
         # Small values
         self.assertEqual(format_currency(0.001), "$0.00")
         self.assertEqual(format_currency(-0.001), "$-0.00")
@@ -86,6 +91,12 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_currency(float("nan")), "N/A")
         self.assertEqual(format_currency(float("inf")), "N/A")
         self.assertEqual(format_currency(float("-inf")), "N/A")
+
+        # Explicit nan/inf checks to improve coverage
+        import math
+        self.assertEqual(format_currency(math.nan), "N/A")
+        self.assertEqual(format_currency(math.inf), "N/A")
+        self.assertEqual(format_currency(-math.inf), "N/A")
 
         # Invalid types
         with self.assertRaises(TypeError):
@@ -106,6 +117,12 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(format_percent(float("nan")), "N/A")
         self.assertEqual(format_percent(float("inf")), "N/A")
         self.assertEqual(format_percent(float("-inf")), "N/A")
+
+        # Invalid types
+        with self.assertRaises(TypeError):
+            format_percent(None)
+        with self.assertRaises(TypeError):
+            format_percent("123")
 
     def test_order_series_names(self):
         order_series_names = self.cr.order_series_names
