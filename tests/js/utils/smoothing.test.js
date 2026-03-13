@@ -83,6 +83,41 @@ describe('Smoothing Utilities', () => {
             const result = exponentialMovingAverage(data, 0.5, true);
             expect(result[2]).toEqual({ x: 2, y: 20 });
         });
+
+        it('uses default parameters correctly (alpha = 0.3, preserveEnd = true)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data);
+
+            // Expected for alpha = 0.3:
+            // [0]: 10
+            // [1]: 0.3 * 15 + 0.7 * 10 = 4.5 + 7 = 11.5
+            // [2]: preserved = 20
+            expect(result).toEqual([
+                { x: 0, y: 10 },
+                { x: 1, y: 11.5 },
+                { x: 2, y: 20 },
+            ]);
+        });
+
+        it('handles alpha = 1 (no smoothing)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data, 1, false);
+            expect(result).toEqual(data);
+        });
+
+        it('handles alpha = 0 (completely flat after first point)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data, 0, false);
+            // Expected for alpha = 0:
+            // [0]: 10
+            // [1]: 0 * 15 + 1 * 10 = 10
+            // [2]: 0 * 20 + 1 * 10 = 10
+            expect(result).toEqual([
+                { x: 0, y: 10 },
+                { x: 1, y: 10 },
+                { x: 2, y: 10 },
+            ]);
+        });
     });
 
     describe('savitzkyGolay', () => {
