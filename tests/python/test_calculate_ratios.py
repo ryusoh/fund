@@ -12,28 +12,41 @@ if str(project_root) not in sys.path:
 class TestCalculateRatios(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Mock numpy and pandas before they are imported by calculate_ratios
-        cls.mock_np = MagicMock()
+        try:
+            import numpy as np  # noqa: F401
+            import pandas as pd  # noqa: F401
 
-        # Simple implementation of isfinite for the purpose of these tests
-        def mock_isfinite(x):
-            if x is None or isinstance(x, str):
-                raise TypeError("ufunc 'isfinite' not supported for the input types")
-            return isinstance(x, (int, float)) and not (
-                x != x or x == float("inf") or x == float("-inf")
-            )
+            cls.has_pandas = True
+        except ImportError:
+            cls.has_pandas = False
 
-        cls.mock_np.isfinite.side_effect = mock_isfinite
-        cls.mock_np.nan = float("nan")
-        cls.mock_np.inf = float("inf")
-
-        cls.mock_pd = MagicMock()
-
-        # Use a temporary patch of sys.modules to import the script with mocked dependencies
-        with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
+        if cls.has_pandas:
             import scripts.ratios.calculate_ratios as cr
 
             cls.cr = cr
+        else:
+            # Mock numpy and pandas before they are imported by calculate_ratios
+            cls.mock_np = MagicMock()
+
+            # Simple implementation of isfinite for the purpose of these tests
+            def mock_isfinite(x):
+                if x is None or isinstance(x, str):
+                    raise TypeError("ufunc 'isfinite' not supported for the input types")
+                return isinstance(x, (int, float)) and not (
+                    x != x or x == float("inf") or x == float("-inf")
+                )
+
+            cls.mock_np.isfinite.side_effect = mock_isfinite
+            cls.mock_np.nan = float("nan")
+            cls.mock_np.inf = float("inf")
+
+            cls.mock_pd = MagicMock()
+
+            # Use a temporary patch of sys.modules to import the script with mocked dependencies
+            with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
+                import scripts.ratios.calculate_ratios as cr
+
+                cls.cr = cr
 
     def test_format_currency(self):
         format_currency = self.cr.format_currency
@@ -165,6 +178,226 @@ class TestCalculateRatios(unittest.TestCase):
         # Incorrect number of columns in row
         with self.assertRaises(ValueError):
             render_box_table(headers=['Col1', 'Col2'], rows=[['Val1']])
+
+    def test_normalize_symbol_index(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        df = pd.DataFrame({'price': [150.0, 200.0]}, index=['AAPL', 'BRK-B'])
+        res = self.cr.normalize_symbol_index(df)
+
+        self.assertEqual(res.index.tolist(), ['AAPL', 'BRKB'])
+        self.assertEqual(res['display_symbol'].tolist(), ['AAPL', 'BRK-B'])
+        self.assertNotIn('shares', res.columns)
+
+        df_with_shares = pd.DataFrame({'shares': [10, 20]}, index=['AAPL', 'BRK-B'])
+        res2 = self.cr.normalize_symbol_index(df_with_shares)
+        self.assertIn('broker_shares', res2.columns)
+        self.assertNotIn('shares', res2.columns)
+
+        # Test empty df
+        empty_df = pd.DataFrame()
+        self.assertTrue(self.cr.normalize_symbol_index(empty_df).empty)
+
+    def test_build_fx_json(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        fx_df = pd.DataFrame(
+            {
+                'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
+                'USD': [1.0, 1.0],
+                'CNY': [6.9, 7.0],
+                'JPY': [130.0, 131.0],
+                'KRW': [1200.0, 1210.0],
+            }
+        ).set_index('date')
+
+        res = self.cr.build_fx_json(fx_df)
+        self.assertEqual(res['base'], 'USD')
+        self.assertEqual(res['currencies'], self.cr.SUPPORTED_CURRENCIES)
+        self.assertEqual(
+            res['rates']['2023-01-01'], {'USD': 1.0, 'CNY': 6.9, 'JPY': 130.0, 'KRW': 1200.0}
+        )
+
+    def test_get_latest_rates(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        fx_df = pd.DataFrame(
+            {
+                'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
+                'USD': [1.0, 1.0],
+                'CNY': [6.9, 7.0],
+                'JPY': [130.0, 131.0],
+                'KRW': [1200.0, 1210.0],
+            }
+        ).set_index('date')
+
+        res = self.cr.get_latest_rates(fx_df)
+        self.assertEqual(res, {'USD': 1.0, 'CNY': 7.0, 'JPY': 131.0, 'KRW': 1210.0})
+
+        empty_df = pd.DataFrame()
+        res_empty = self.cr.get_latest_rates(empty_df)
+        self.assertEqual(res_empty, {currency: 1.0 for currency in self.cr.SUPPORTED_CURRENCIES})
+
+    def test_compute_returns(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        points = [
+            {'date': '2023-01-01', 'value': 100.0},
+            {'date': '2023-01-02', 'value': 105.0},
+            {'date': '2023-01-03', 'value': 102.9},
+        ]
+
+        # Daily
+        res_daily = self.cr.compute_returns(points, 'daily')
+        self.assertTrue(isinstance(res_daily, pd.Series))
+        self.assertAlmostEqual(res_daily.iloc[0], 0.05)
+        self.assertAlmostEqual(res_daily.iloc[1], -0.02)
+
+        # Monthly
+        points_monthly = [
+            {'date': '2023-01-31', 'value': 100.0},
+            {'date': '2023-02-28', 'value': 110.0},
+            {'date': '2023-03-31', 'value': 104.5},
+        ]
+        res_monthly = self.cr.compute_returns(points_monthly, 'monthly')
+        self.assertAlmostEqual(res_monthly['2023-02'], 0.1)
+        self.assertAlmostEqual(res_monthly['2023-03'], -0.05)
+
+        # Annual
+        points_annual = [
+            {'date': '2022-12-31', 'value': 100.0},
+            {'date': '2023-12-31', 'value': 120.0},
+            {'date': '2024-12-31', 'value': 150.0},
+        ]
+        res_annual = self.cr.compute_returns(points_annual, 'annual')
+        self.assertAlmostEqual(res_annual['2023'], 0.2)
+        self.assertAlmostEqual(res_annual['2024'], 0.25)
+
+        # Empty
+        self.assertTrue(self.cr.compute_returns([], 'daily').empty)
+
+    def test_calculate_annual_returns(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        points = [
+            {'date': '2022-12-31', 'value': 100.0},
+            {'date': '2023-12-31', 'value': 120.0},
+            {'date': '2024-12-31', 'value': 150.0},
+        ]
+        series_map = {'^LZ': points}
+        res = self.cr.calculate_annual_returns(series_map)
+        self.assertIn("2023", res)
+        self.assertIn("20.00%", res)
+        self.assertIn("2024", res)
+        self.assertIn("25.00%", res)
+
+        self.assertEqual(
+            self.cr.calculate_annual_returns({}), "Return breakdown unavailable: no annual data."
+        )
+
+    def test_calculate_ratios(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+        points = [{'date': f'2023-01-{i:02d}', 'value': 100.0 * (1.001**i)} for i in range(1, 31)]
+        series_map = {'^LZ': points}
+
+        res = self.cr.calculate_ratios(series_map)
+        self.assertIn("RISK RATIOS", res)
+        self.assertIn("^LZ", res)
+
+    def test_calculate_stats(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+
+        # Test calculate_stats directly with real pandas
+        mock_transactions = pd.DataFrame(
+            {
+                'trade_date': ['2023-01-01', '2023-01-02'],
+                'security': ['AAPL', 'AAPL'],
+                'order_type': ['buy', 'sell'],
+                'trade_value': [1500.0, 1600.0],
+                'adjusted_quantity': [10.0, 10.0],
+            }
+        )
+
+        with patch(
+            'scripts.ratios.calculate_ratios.pd.read_parquet', return_value=mock_transactions
+        ):
+            with patch.object(self.cr, 'DATA_DIR', new_callable=MagicMock):
+                res_text, res_json = self.cr.calculate_stats({'USD': 1.0})
+
+                self.assertIn("TRANSACTION STATS", res_text)
+                self.assertEqual(res_json['counts']['total_transactions'], 2)
+                self.assertEqual(res_json['counts']['buy_orders'], 1)
+                self.assertEqual(res_json['counts']['sell_orders'], 1)
+                self.assertEqual(res_json['currency_values']['USD']['realized_gain'], 100.0)
+                self.assertEqual(res_json['currency_values']['USD']['net_contributions'], -100.0)
+
+    def test_calculate_holdings(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+
+        # Mock empty case
+        with patch.object(self.cr.Path, 'exists', return_value=False):
+            res_text, res_json = self.cr.calculate_holdings({'USD': 1.0})
+            self.assertEqual(res_text, "No current holdings.")
+            self.assertEqual(res_json, {})
+
+    def test_get_performance_series(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+
+        # Mock pd.read_parquet
+        mock_prices = pd.DataFrame(
+            {'^AAPL': [100.0, 105.0]}, index=pd.to_datetime(['2023-01-01', '2023-01-02'])
+        )
+        mock_twrr = pd.DataFrame(
+            {'value': [1.0, 1.05]}, index=pd.to_datetime(['2023-01-01', '2023-01-02'])
+        )
+
+        with patch('scripts.ratios.calculate_ratios.pd.read_parquet') as mock_read_parquet:
+            mock_read_parquet.side_effect = [mock_prices, mock_twrr]
+
+            res = self.cr.get_performance_series()
+            self.assertIn(self.cr.PORTFOLIO_SERIES_KEY, res)
+            self.assertIn('^AAPL', res)
+            self.assertEqual(res['^AAPL'][0]['value'], 1.0)
+            self.assertEqual(res['^AAPL'][1]['value'], 1.05)
+
+    def test_calculate_cagr(self):
+        try:
+            import pandas as pd  # noqa: F401
+        except ImportError:
+            self.skipTest("pandas is not available")
+
+        res_empty = self.cr.calculate_cagr({})
+        self.assertEqual(res_empty, "CAGR unavailable: insufficient portfolio observations.")
+
+        res_short = self.cr.calculate_cagr({'^LZ': [{'date': '2023-01-01', 'value': 100}]})
+        self.assertEqual(res_short, "CAGR unavailable: insufficient portfolio observations.")
+
+        res_same_day = self.cr.calculate_cagr(
+            {'^LZ': [{'date': '2023-01-01', 'value': 100}, {'date': '2023-01-01', 'value': 105}]}
+        )
+        self.assertEqual(res_same_day, "CAGR unavailable: invalid measurement period.")
 
 
 if __name__ == "__main__":
