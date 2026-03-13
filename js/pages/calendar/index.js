@@ -1158,7 +1158,7 @@ export async function initCalendar() {
                 if (typeof container.appendChild === 'function') {
                     container.appendChild(p);
                 } else {
-                    container.innerHTML = `<p>${error.message}</p>`;
+                    container.textContent = error.message;
                 }
             }
         }

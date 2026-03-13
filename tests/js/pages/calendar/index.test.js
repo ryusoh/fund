@@ -849,10 +849,10 @@ describe('calendar page', () => {
     it('should handle data fetch error and show error message', async () => {
         console.error = jest.fn();
         console.log = jest.fn();
-        getCalendarData.mockRejectedValue(new Error('boom'));
+        getCalendarData.mockRejectedValue(new Error('Network Error'));
         await initCalendar();
         const container = document.querySelector('#calendar-container');
-        expect(container.innerHTML).toContain('<p>');
+        expect(container.textContent).toContain('Network Error');
         expect(console.error).toHaveBeenCalled();
     });
 
