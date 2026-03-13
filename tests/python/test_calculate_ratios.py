@@ -216,6 +216,58 @@ class TestCalculateRatios(unittest.TestCase):
         with self.assertRaises(ValueError):
             render_box_table(headers=['Col1', 'Col2'], rows=[['Val1']])
 
+    def test_calculate_cagr(self):
+        calculate_cagr = self.cr.calculate_cagr
+        PORTFOLIO_SERIES_KEY = self.cr.PORTFOLIO_SERIES_KEY
+
+        # Need to mock pd.to_datetime behavior
+        from datetime import datetime
+        def mock_to_datetime(date_str):
+            if isinstance(date_str, datetime):
+                return date_str
+            return datetime.strptime(date_str, '%Y-%m-%d')
+        self.mock_pd.to_datetime.side_effect = mock_to_datetime
+
+        # Test case: missing portfolio series
+        res = calculate_cagr({})
+        self.assertEqual(res, "CAGR unavailable: insufficient portfolio observations.")
+
+        # Test case: insufficient observations
+        res = calculate_cagr({PORTFOLIO_SERIES_KEY: [{'date': '2020-01-01', 'value': 100}]})
+        self.assertEqual(res, "CAGR unavailable: insufficient portfolio observations.")
+
+        # Test case: invalid measurement period (same day)
+        res = calculate_cagr({
+            PORTFOLIO_SERIES_KEY: [
+                {'date': '2020-01-01', 'value': 100},
+                {'date': '2020-01-01', 'value': 200}
+            ]
+        })
+        self.assertEqual(res, "CAGR unavailable: invalid measurement period.")
+
+        # Test case: valid measurement period, multiple series
+        # One year exactly (roughly 365.25 days)
+        series_map = {
+            PORTFOLIO_SERIES_KEY: [
+                {'date': '2020-01-01', 'value': 100},
+                {'date': '2020-12-31', 'value': 200}
+            ],
+            '^SPX': [
+                {'date': '2020-01-01', 'value': 100},
+                {'date': '2020-12-31', 'value': 150}
+            ]
+        }
+        res = calculate_cagr(series_map)
+
+        # Check that expected strings appear in the result
+        self.assertIn("PERFORMANCE CAGR", res)
+        self.assertIn(PORTFOLIO_SERIES_KEY, res)
+        self.assertIn("^SPX", res)
+        # Portfolio return: 100 -> 200 = 100%
+        self.assertIn("100.00%", res)
+        # SPX return: 100 -> 150 = 50%
+        self.assertIn("50.00%", res)
+
 
 if __name__ == "__main__":
     unittest.main()
