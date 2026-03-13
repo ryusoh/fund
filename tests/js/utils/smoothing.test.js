@@ -49,6 +49,93 @@ describe('Smoothing Utilities', () => {
             const result = simpleMovingAverage(data, 3, true);
             expect(result[4]).toEqual({ x: 4, y: 10 });
         });
+
+        it('uses default parameters when omitted', () => {
+            const data = createData([1, 2, 3, 4, 10]);
+            // Default window is 3, preserveEnd is true
+            const result = simpleMovingAverage(data);
+
+            // Should preserve the end point (y: 10)
+            expect(result[4]).toEqual({ x: 4, y: 10 });
+
+            // Should match explicit window=3, preserveEnd=true
+            const explicitResult = simpleMovingAverage(data, 3, true);
+            expect(result).toEqual(explicitResult);
+        });
+
+        it('handles even window sizes correctly', () => {
+            const data = createData([1, 2, 3, 4, 5, 6]);
+            // window = 4, preserveEnd = false
+            const result = simpleMovingAverage(data, 4, false);
+            // i=0: Math.max(0, 0-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=1: Math.max(0, 1-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=2: Math.max(0, 2-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=3: Math.max(0, 3-2)=1, Math.min(6, 5)=5 -> data.slice(1, 5) -> [2,3,4,5] -> avg=3.5
+            // i=4: Math.max(0, 4-2)=2, Math.min(6, 6)=6 -> data.slice(2, 6) -> [3,4,5,6] -> avg=4.5
+            // i=5: Math.max(0, 5-2)=3, Math.min(6, 7)=6 -> data.slice(3, 6) -> [4,5,6] -> avg=5
+            expect(result).toEqual([
+                { x: 0, y: 2.5 },
+                { x: 1, y: 2.5 },
+                { x: 2, y: 2.5 },
+                { x: 3, y: 3.5 },
+                { x: 4, y: 4.5 },
+                { x: 5, y: 5 },
+            ]);
+        });
+
+        it('handles negative y values correctly', () => {
+            const data = createData([-1, -2, -3, -4, -5]);
+            // window = 3, preserveEnd = false
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result).toEqual([
+                { x: 0, y: -2 },
+                { x: 1, y: -2 },
+                { x: 2, y: -3 },
+                { x: 3, y: -4 },
+                { x: 4, y: -4.5 },
+            ]);
+        });
+
+        it('handles window sizes less than 1 safely (e.g. 0 or negative)', () => {
+            const data = createData([1, 2, 3, 4, 5]);
+            // With window <= 0, start and end bounds evaluate to logic that might slice differently
+            // but JS slice handles it. Let's see how it behaves and assert it doesn't crash.
+            const resultZero = simpleMovingAverage(data, 0, false);
+            expect(resultZero.length).toBe(data.length);
+
+            const resultNegative = simpleMovingAverage(data, -1, false);
+            expect(resultNegative.length).toBe(data.length);
+        });
+
+        it('handles fractional window sizes gracefully', () => {
+            const data = createData([1, 2, 3, 4, 5]);
+            const result = simpleMovingAverage(data, 3.5, false);
+            expect(result.length).toBe(5);
+        });
+
+        it('handles missing y values gracefully', () => {
+            const data = [{ x: 0, y: 1 }, { x: 1 }, { x: 2, y: 3 }];
+            // window = 3, preserveEnd = false
+            // y is undefined, so undefined + 1 = NaN
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result[1].y).toBeNaN();
+        });
+
+        it('handles malformed data points where y might be missing or non-numeric', () => {
+            const data = [
+                { x: 0, y: 10 },
+                { x: 1, y: null },
+                { x: 2, y: undefined },
+                { x: 3, y: 'string' },
+                { x: 4, y: 20 },
+            ];
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result.length).toBe(data.length);
+            // Verify it produces NaNs for malformed y values consistent with current implementation
+            expect(result[1].y).toBeNaN();
+            expect(result[2].y).toBeNaN();
+            expect(result[3].y).toBeNaN();
+        });
     });
 
     describe('exponentialMovingAverage', () => {
@@ -84,6 +171,41 @@ describe('Smoothing Utilities', () => {
             expect(result[2]).toEqual({ x: 2, y: 20 });
         });
 
+        it('uses default parameters correctly (alpha = 0.3, preserveEnd = true)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data);
+
+            // Expected for alpha = 0.3:
+            // [0]: 10
+            // [1]: 0.3 * 15 + 0.7 * 10 = 4.5 + 7 = 11.5
+            // [2]: preserved = 20
+            expect(result).toEqual([
+                { x: 0, y: 10 },
+                { x: 1, y: 11.5 },
+                { x: 2, y: 20 },
+            ]);
+        });
+
+        it('handles alpha = 1 (no smoothing)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data, 1, false);
+            expect(result).toEqual(data);
+        });
+
+        it('handles alpha = 0 (completely flat after first point)', () => {
+            const data = createData([10, 15, 20]);
+            const result = exponentialMovingAverage(data, 0, false);
+            // Expected for alpha = 0:
+            // [0]: 10
+            // [1]: 0 * 15 + 1 * 10 = 10
+            // [2]: 0 * 20 + 1 * 10 = 10
+            expect(result).toEqual([
+                { x: 0, y: 10 },
+                { x: 1, y: 10 },
+                { x: 2, y: 10 },
+            ]);
+        });
+
         it('handles negative values correctly', () => {
             const data = createData([-10, -5, 0, 5, 10]);
             const result = exponentialMovingAverage(data, 0.5, false);
@@ -94,26 +216,6 @@ describe('Smoothing Utilities', () => {
                 { x: 3, y: 0.625 }, // 0.5 * 5 + 0.5 * -3.75
                 { x: 4, y: 5.3125 }, // 0.5 * 10 + 0.5 * 0.625
             ]);
-        });
-
-        it('behaves like a flat line when alpha is 0', () => {
-            const data = createData([10, 20, 30, 40]);
-            const result = exponentialMovingAverage(data, 0, false);
-            // EMA calculation with alpha=0 means smoothedValue = 0 * current + 1 * prevSmoothed = prevSmoothed
-            // Result should be flat at the first point's value
-            expect(result).toEqual([
-                { x: 0, y: 10 },
-                { x: 1, y: 10 },
-                { x: 2, y: 10 },
-                { x: 3, y: 10 },
-            ]);
-        });
-
-        it('exactly follows original data when alpha is 1', () => {
-            const data = createData([10, 20, 30, 40]);
-            const result = exponentialMovingAverage(data, 1, false);
-            // EMA calculation with alpha=1 means smoothedValue = 1 * current + 0 * prevSmoothed = current
-            expect(result).toEqual(data);
         });
     });
 
@@ -184,6 +286,42 @@ describe('Smoothing Utilities', () => {
             const result = savitzkyGolay(data, 3, 1, true);
             expect(result[4]).toEqual({ x: 4, y: 5 });
         });
+
+        it('handles polynomialFit edge cases with n <= order', () => {
+            // To trigger n <= order, we need windowData.length <= order.
+            // In savitzkyGolay, windowData.length must be >= 3 (otherwise it falls back early).
+            // So if order is 3 and windowData.length is 3, n <= order is true.
+            // Then it returns points[targetIndex]?.y || 0
+            const data = createData([10, 20, 30, 40]);
+            // window = 3, order = 3
+            // The middle points will have a window of 3 elements.
+            const result = savitzkyGolay(data, 3, 3, false);
+            expect(result[1].y).toBe(20);
+
+            // Test case for ?.y || 0 when y is falsy (e.g., 0)
+            const dataWithZero = createData([10, 0, 30, 40]);
+            const resultZero = savitzkyGolay(dataWithZero, 3, 3, false);
+            expect(resultZero[1].y).toBe(0);
+        });
+
+        it('handles out of bounds indices and missing values for polynomialFit', () => {
+            // Test for order > 1 but not matching order === 1 (e.g. order 2 logic fallthrough)
+            // with out-of-bounds target index causing points[targetIndex] to be undefined
+            // we can test order=3 to skip order=1 logic. Since n (window size) > order,
+            // we need window >= 5, and order 3.
+            const data = createData([10, 20, 30, 40, 50, 60]);
+            // This normally shouldn't give an undefined point, but we can verify order > 1 logic
+            // returns `points[targetIndex]?.y || 0` which is hit when order !== 1
+            const result = savitzkyGolay(data, 5, 2, false);
+            expect(result[2].y).toBe(30);
+
+            // Force a case where targetIndex doesn't exist by providing a bad array object (mocking for test coverage)
+            // Or just verify that when order != 1, it hits the `|| 0` logic correctly.
+            // By making y 0, we can hit the `|| 0` branch directly for order 2
+            const dataWithZero = createData([10, 20, 0, 40, 50]);
+            const resultZero = savitzkyGolay(dataWithZero, 5, 2, false);
+            expect(resultZero[2].y).toBe(0);
+        });
     });
 
     describe('lowess', () => {
@@ -224,6 +362,20 @@ describe('Smoothing Utilities', () => {
             result.forEach((p, i) => {
                 expect(p.y).toBeCloseTo(data[i].y);
             });
+        });
+
+        it('returns point.y when all weights are strictly 0', () => {
+            // We want to force weightSum === 0 in weightedLocalRegression.
+            // This happens if for ALL points `normalizedDistance >= 1`.
+            // The normalizedDistance is `distance / (bandwidth * maxDistance)`.
+            // maxDistance is from `targetX` to the furthest point.
+            // distance is from `targetX` to `x`.
+            // If bandwidth <= 0 (e.g., 0), then `bandwidth * maxDistance` is 0.
+            // Then `distance / 0` becomes Infinity (or NaN for the point itself).
+            // This causes `normalizedDistance < 1` to be false for all elements, pushing 0 to weights.
+            const data = createData([10, 20, 30]);
+            const result = lowess(data, 0, false);
+            expect(result).toEqual(data);
         });
     });
 
@@ -316,18 +468,26 @@ describe('Smoothing Utilities', () => {
             expect(result).toEqual(expectedPass2);
         });
 
-        it('routes to savitzky correctly', () => {
+        it('routes to savitzky correctly with custom and fallback params', () => {
             const data = createData([10, 20, 30, 40, 50]);
             const config = { method: 'savitzky', params: { window: 5, order: 2 } };
             const expected = savitzkyGolay(data, 5, 2, false);
             expect(smoothFinancialData(data, config, false)).toEqual(expected);
+
+            const fallbackConfig = { method: 'savitzky', params: {} };
+            const fallbackExpected = savitzkyGolay(data, 5, 2, false);
+            expect(smoothFinancialData(data, fallbackConfig, false)).toEqual(fallbackExpected);
         });
 
-        it('routes to lowess correctly', () => {
+        it('routes to lowess correctly with custom and fallback params', () => {
             const data = createData([10, 20, 30, 40, 50]);
             const config = { method: 'lowess', params: { bandwidth: 0.3 } };
             const expected = lowess(data, 0.3, false);
             expect(smoothFinancialData(data, config, false)).toEqual(expected);
+
+            const fallbackConfig = { method: 'lowess', params: {} };
+            const fallbackExpected = lowess(data, 0.3, false);
+            expect(smoothFinancialData(data, fallbackConfig, false)).toEqual(fallbackExpected);
         });
 
         it('routes to adaptive correctly', () => {
@@ -335,6 +495,30 @@ describe('Smoothing Utilities', () => {
             const config = { method: 'adaptive', params: {} };
             const expected = adaptiveSmoothing(data, false);
             expect(smoothFinancialData(data, config, false)).toEqual(expected);
+        });
+
+        it('handles exponential configurations and fallbacks', () => {
+            const data = createData([10, 20, 30, 40, 50]);
+            const config = { method: 'exponential', params: { alpha: 0.4 } };
+            const expected = exponentialMovingAverage(data, 0.4, false);
+            expect(smoothFinancialData(data, config, false)).toEqual(expected);
+
+            const fallbackConfig = { method: 'exponential', params: {} };
+            const fallbackExpected = exponentialMovingAverage(data, 0.3, false);
+            expect(smoothFinancialData(data, fallbackConfig, false)).toEqual(fallbackExpected);
+        });
+
+        it('handles simple moving average configurations and fallbacks', () => {
+            const data = createData([10, 20, 30, 40, 50]);
+            const fallbackConfig = { method: 'simple', params: {} };
+            const fallbackExpected = simpleMovingAverage(data, 3, false);
+            expect(smoothFinancialData(data, fallbackConfig, false)).toEqual(fallbackExpected);
+        });
+
+        it('falls back to balanced config if unknown string is provided', () => {
+            const data = createData([10, 20, 30, 40, 50]);
+            const expected = exponentialMovingAverage(data, 0.3, false);
+            expect(smoothFinancialData(data, 'invalid_string_config', false)).toEqual(expected);
         });
 
         it('falls back to EMA (0.3) for unknown methods', () => {
