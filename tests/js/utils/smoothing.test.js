@@ -50,6 +50,52 @@ describe('Smoothing Utilities', () => {
             expect(result[4]).toEqual({ x: 4, y: 10 });
         });
 
+        it('uses default parameters when omitted', () => {
+            const data = createData([1, 2, 3, 4, 10]);
+            // Default window is 3, preserveEnd is true
+            const result = simpleMovingAverage(data);
+
+            // Should preserve the end point (y: 10)
+            expect(result[4]).toEqual({ x: 4, y: 10 });
+
+            // Should match explicit window=3, preserveEnd=true
+            const explicitResult = simpleMovingAverage(data, 3, true);
+            expect(result).toEqual(explicitResult);
+        });
+
+        it('handles even window sizes correctly', () => {
+            const data = createData([1, 2, 3, 4, 5, 6]);
+            // window = 4, preserveEnd = false
+            const result = simpleMovingAverage(data, 4, false);
+            // i=0: Math.max(0, 0-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=1: Math.max(0, 1-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=2: Math.max(0, 2-2)=0, Math.min(6, 4)=4 -> data.slice(0, 4) -> [1,2,3,4] -> avg=2.5
+            // i=3: Math.max(0, 3-2)=1, Math.min(6, 5)=5 -> data.slice(1, 5) -> [2,3,4,5] -> avg=3.5
+            // i=4: Math.max(0, 4-2)=2, Math.min(6, 6)=6 -> data.slice(2, 6) -> [3,4,5,6] -> avg=4.5
+            // i=5: Math.max(0, 5-2)=3, Math.min(6, 7)=6 -> data.slice(3, 6) -> [4,5,6] -> avg=5
+            expect(result).toEqual([
+                { x: 0, y: 2.5 },
+                { x: 1, y: 2.5 },
+                { x: 2, y: 2.5 },
+                { x: 3, y: 3.5 },
+                { x: 4, y: 4.5 },
+                { x: 5, y: 5 },
+            ]);
+        });
+
+        it('handles negative y values correctly', () => {
+            const data = createData([-1, -2, -3, -4, -5]);
+            // window = 3, preserveEnd = false
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result).toEqual([
+                { x: 0, y: -2 },
+                { x: 1, y: -2 },
+                { x: 2, y: -3 },
+                { x: 3, y: -4 },
+                { x: 4, y: -4.5 },
+            ]);
+        });
+
         it('handles window sizes less than 1 safely (e.g. 0 or negative)', () => {
             const data = createData([1, 2, 3, 4, 5]);
             // With window <= 0, start and end bounds evaluate to logic that might slice differently
@@ -67,6 +113,14 @@ describe('Smoothing Utilities', () => {
             expect(result.length).toBe(5);
         });
 
+        it('handles missing y values gracefully', () => {
+            const data = [{ x: 0, y: 1 }, { x: 1 }, { x: 2, y: 3 }];
+            // window = 3, preserveEnd = false
+            // y is undefined, so undefined + 1 = NaN
+            const result = simpleMovingAverage(data, 3, false);
+            expect(result[1].y).toBeNaN();
+        });
+
         it('handles malformed data points where y might be missing or non-numeric', () => {
             const data = [
                 { x: 0, y: 10 },
@@ -77,6 +131,10 @@ describe('Smoothing Utilities', () => {
             ];
             const result = simpleMovingAverage(data, 3, false);
             expect(result.length).toBe(data.length);
+            // Verify it produces NaNs for malformed y values consistent with current implementation
+            expect(result[1].y).toBeNaN();
+            expect(result[2].y).toBeNaN();
+            expect(result[3].y).toBeNaN();
         });
     });
 
