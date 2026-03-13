@@ -74,6 +74,7 @@ class TestCalculateRatios(unittest.TestCase):
 
         # Explicit nan/inf checks to improve coverage
         import math
+
         self.assertEqual(format_currency(math.nan), "N/A")
         self.assertEqual(format_currency(math.inf), "N/A")
         self.assertEqual(format_currency(-math.inf), "N/A")
@@ -121,6 +122,7 @@ class TestCalculateRatios(unittest.TestCase):
             mock_populated_df.empty = False
 
             mock_latest_row = MagicMock()
+
             def mock_get(currency, default=1.0):
                 rates = {"USD": 1.0, "CNY": 7.1, "JPY": 105.0}
                 return rates.get(currency, default)
@@ -137,6 +139,7 @@ class TestCalculateRatios(unittest.TestCase):
             self.assertEqual(get_latest_rates(mock_populated_df), expected_populated)
         else:
             import pandas as pd
+
             fx_df = pd.DataFrame(
                 {
                     'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
@@ -250,6 +253,7 @@ class TestCalculateRatios(unittest.TestCase):
         if not self.has_pandas:
             self.skipTest("pandas is not available")
         import pandas as pd
+
         df = pd.DataFrame({'price': [150.0, 200.0]}, index=['AAPL', 'BRK-B'])
         res = self.cr.normalize_symbol_index(df)
 
@@ -270,6 +274,7 @@ class TestCalculateRatios(unittest.TestCase):
         if not self.has_pandas:
             self.skipTest("pandas is not available")
         import pandas as pd
+
         fx_df = pd.DataFrame(
             {
                 'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
@@ -291,6 +296,7 @@ class TestCalculateRatios(unittest.TestCase):
         if not self.has_pandas:
             self.skipTest("pandas is not available")
         import pandas as pd
+
         points = [
             {'date': '2023-01-01', 'value': 100.0},
             {'date': '2023-01-02', 'value': 105.0},
@@ -429,28 +435,29 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertEqual(res, "CAGR unavailable: insufficient portfolio observations.")
 
         # Test case: invalid measurement period (same day)
-        res = calculate_cagr({
-            PORTFOLIO_SERIES_KEY: [
-                {'date': '2020-01-01', 'value': 100},
-                {'date': '2020-01-01', 'value': 200}
-            ]
-        })
+        res = calculate_cagr(
+            {
+                PORTFOLIO_SERIES_KEY: [
+                    {'date': '2020-01-01', 'value': 100},
+                    {'date': '2020-01-01', 'value': 200},
+                ]
+            }
+        )
         self.assertEqual(res, "CAGR unavailable: invalid measurement period.")
 
         # Happy path testing
         if self.has_pandas:
-            import pandas as pd
             # Test case: valid measurement period, multiple series
             # One year exactly (roughly 365.25 days)
             series_map = {
                 PORTFOLIO_SERIES_KEY: [
                     {'date': '2020-01-01', 'value': 100},
-                    {'date': '2020-12-31', 'value': 200}
+                    {'date': '2020-12-31', 'value': 200},
                 ],
                 '^SPX': [
                     {'date': '2020-01-01', 'value': 100},
-                    {'date': '2020-12-31', 'value': 150}
-                ]
+                    {'date': '2020-12-31', 'value': 150},
+                ],
             }
             res = calculate_cagr(series_map)
 
@@ -465,17 +472,19 @@ class TestCalculateRatios(unittest.TestCase):
         else:
             # Mock pd.to_datetime behavior
             from datetime import datetime
+
             def mock_to_datetime(date_str):
                 if isinstance(date_str, datetime):
                     return date_str
                 return datetime.strptime(date_str, '%Y-%m-%d')
+
             self.mock_pd.to_datetime.side_effect = mock_to_datetime
 
             # Minimal happy path test with mocks
             series_map = {
                 PORTFOLIO_SERIES_KEY: [
                     {'date': '2020-01-01', 'value': 100},
-                    {'date': '2020-12-31', 'value': 200}
+                    {'date': '2020-12-31', 'value': 200},
                 ]
             }
             res = calculate_cagr(series_map)
