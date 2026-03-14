@@ -45,8 +45,8 @@ describe('Terminal Crosshair Multi-line Support', () => {
         expect(breakdown).not.toBeNull();
         expect(breakdown.textContent).toBe('(AAPL:30 MSFT:28)');
 
-        // Also check if it's rendered as expected in the innerHTML
-        expect(rows[0].innerHTML).toContain('terminal-crosshair-breakdown');
+        // Verify the element is properly appended in the DOM structure
+        expect(rows[0].querySelector('.terminal-crosshair-breakdown')).not.toBeNull();
     });
 
     test('updateTerminalCrosshair renders single line values normally', () => {
