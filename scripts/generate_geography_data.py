@@ -504,7 +504,13 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
 
     print(f"\nProcessing {len(dates)} dates...")
 
-    for i, date in enumerate(dates):
+    # Pre-calculate ticker column indices for fast iteration
+    ticker_indices = {
+        ticker: holdings_df.columns.get_loc(ticker) + 1 for ticker in holdings_df.columns
+    }
+
+    for i, row in enumerate(holdings_df.itertuples(index=True, name=None)):
+        date = row[0]
         if (i + 1) % 100 == 0:
             print(f"  Processing date {i + 1}/{len(dates)}...")
 
@@ -513,8 +519,8 @@ def calculate_daily_geography(holdings_df, prices_data, metadata):
 
         # Calculate market value for each ticker
         ticker_values = {}
-        for ticker in holdings_df.columns:
-            shares = holdings_df.loc[date, ticker]
+        for ticker, idx in ticker_indices.items():
+            shares = row[idx]
 
             if shares > 0:
                 price_ticker = map_ticker(ticker)
