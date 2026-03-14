@@ -60,7 +60,7 @@ hooks:
 precommit: hooks fmt-check
 	@# Run pre-commit only if a config exists
 	@if [ -f .pre-commit-config.yaml ]; then \
-		$(PY) -m pre_commit run --all-files --show-diff-on-failure; \
+		$(PY) -m pre_commit run --all-files --show-diff-on-failure --color never; \
 	else \
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
