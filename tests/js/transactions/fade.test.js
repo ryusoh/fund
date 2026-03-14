@@ -7,7 +7,11 @@ describe('Fade Effect Logic', () => {
     beforeEach(() => {
         // Mock requestAnimationFrame to execute synchronously
         global.requestAnimationFrame = (cb) => cb();
-        Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 }); // Desktop width
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 1024,
+        }); // Desktop width
 
         // Create container mock
         outputContainer = document.createElement('div');
@@ -96,7 +100,11 @@ describe('Fade Effect Logic', () => {
     });
 
     test('updateOutputFade handles mobile view by making all items opaque', () => {
-        Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 }); // Mobile width
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 500,
+        }); // Mobile width
 
         const child = document.createElement('div');
         outputContainer.appendChild(child);
@@ -107,7 +115,11 @@ describe('Fade Effect Logic', () => {
     });
 
     test('updateOutputFade skips non-element nodes in mobile view', () => {
-        Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 }); // Mobile width
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 500,
+        }); // Mobile width
 
         const textNode = document.createTextNode('test');
         outputContainer.appendChild(textNode);
