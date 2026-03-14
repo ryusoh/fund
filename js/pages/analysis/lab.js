@@ -564,6 +564,11 @@ function appendTickerButton(config, extraClass = '') {
     button.className = `ticker-btn${extraClass}${isActive ? ' active' : ''}`;
     button.textContent = config.symbol;
     button.title = `${config.name} · ${formatPercent(config.weight)}`;
+    button.setAttribute(
+        'aria-label',
+        `${config.symbol}, ${config.name}, Weight: ${formatPercent(config.weight)}`
+    );
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     button.addEventListener('click', () => {
         state.activeSymbol = config.symbol;
         renderTickerList();
