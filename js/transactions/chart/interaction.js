@@ -622,7 +622,11 @@ export function updateLegend(series, chartManager) {
         return;
     }
 
-    legendContainer.innerHTML = ''; // Clear existing legend
+    if (typeof legendContainer.replaceChildren === 'function') {
+        legendContainer.replaceChildren();
+    } else {
+        legendContainer.innerHTML = ''; // Clear existing legend
+    }
 
     series.forEach((s) => {
         const item = document.createElement('div');
