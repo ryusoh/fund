@@ -91,22 +91,43 @@ def fetch_forex_data():
             f"Could not read or parse {FX_DATA_FILE} to determine currencies: {e}. Using default list."
         )
 
-    for currency in currencies_to_fetch:
-        try:
-            ticker_symbol = f"USD{currency}=X"
-            data = yf.Ticker(ticker_symbol)
-            hist = data.history(period="1d")
-            if not hist.empty:
-                latest_price = float(hist["Close"].iloc[-1])
-                json_rates[currency] = round(latest_price, 4)
-                csv_rates[currency] = round(latest_price, 6)
-                print(f"Fetched USD/{currency}: {json_rates[currency]}")
-            else:
-                print(f"Warning: No data for USD/{currency}")
-                has_errors = True
-        except Exception as e:
-            print(f"Error fetching USD/{currency}: {e}")
+    tickers = [f"USD{currency}=X" for currency in currencies_to_fetch]
+
+    try:
+        # Fetch all tickers in a single batch
+        data = yf.download(tickers, period="1d")
+
+        if "Close" in data.columns:
+            close_data = data["Close"]
+            for currency in currencies_to_fetch:
+                ticker = f"USD{currency}=X"
+                try:
+                    s = None
+                    if isinstance(close_data, pd.DataFrame):
+                        if ticker in close_data.columns:
+                            s = close_data[ticker].dropna()
+                    elif isinstance(close_data, pd.Series):
+                        # With yfinance.download, sometimes a single valid ticker might return a Series
+                        if len(tickers) == 1 or close_data.name == ticker:
+                            s = close_data.dropna()
+
+                    if s is not None and not s.empty:
+                        latest_price = float(s.iloc[-1])
+                        json_rates[currency] = round(latest_price, 4)
+                        csv_rates[currency] = round(latest_price, 6)
+                        print(f"Fetched USD/{currency}: {json_rates[currency]}")
+                    else:
+                        print(f"Warning: No data for USD/{currency}")
+                        has_errors = True
+                except Exception as e:
+                    print(f"Error processing USD/{currency}: {e}")
+                    has_errors = True
+        else:
+            print("Warning: 'Close' prices not found in fetched data.")
             has_errors = True
+    except Exception as e:
+        print(f"Error during batch fetching forex data: {e}")
+        has_errors = True
 
     if (
         not has_errors or len(json_rates) > 1
