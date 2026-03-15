@@ -625,7 +625,7 @@ export function updateLegend(series, chartManager) {
     if (typeof legendContainer.replaceChildren === 'function') {
         legendContainer.replaceChildren();
     } else {
-        legendContainer.innerHTML = ''; // Clear existing legend
+        legendContainer.textContent = ''; // Clear existing legend
     }
 
     series.forEach((s) => {
