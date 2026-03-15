@@ -174,7 +174,7 @@ export function handleClearCommand(
                 terminalOutput.replaceChildren();
             } else {
                 // Fallback for jsdom
-                terminalOutput.innerHTML = '';
+                terminalOutput.textContent = '';
             }
         }
     }

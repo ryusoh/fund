@@ -137,7 +137,7 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
         if (typeof details.list.replaceChildren === 'function') {
             details.list.replaceChildren();
         } else {
-            details.list.innerHTML = '';
+            details.list.textContent = '';
         }
 
         snapshot.series.forEach((series) => {
@@ -181,13 +181,13 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
             if (typeof details.range.replaceChildren === 'function') {
                 details.range.replaceChildren();
             } else {
-                details.range.innerHTML = '';
+                details.range.textContent = '';
             }
         } else {
             if (typeof details.range.replaceChildren === 'function') {
                 details.range.replaceChildren();
             } else {
-                details.range.innerHTML = '';
+                details.range.textContent = '';
             }
 
             const durationLabel =

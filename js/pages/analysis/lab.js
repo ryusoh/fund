@@ -1008,10 +1008,10 @@ async function init() {
             if (typeof summaryStatsEl.replaceChildren === 'function') {
                 summaryStatsEl.replaceChildren(loadingDiv);
             } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(loadingDiv);
             } else {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(loadingDiv);
             }
         }
@@ -1029,10 +1029,10 @@ async function init() {
             if (typeof summaryStatsEl.replaceChildren === 'function') {
                 summaryStatsEl.replaceChildren(errDiv);
             } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(errDiv);
             } else {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(errDiv);
             }
         }
