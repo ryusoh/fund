@@ -92,11 +92,16 @@ function activateCurrency(currency, { emit = true, persist = true } = {}) {
             return false;
         }
         if (currentCurrency !== normalized) {
-            currencyButtons.forEach((btn) => btn.classList.remove('active'));
+            currencyButtons.forEach((btn) => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
+            });
             targetButton.classList.add('active');
+            targetButton.setAttribute('aria-pressed', 'true');
             currentCurrency = normalized;
         } else if (!targetButton.classList.contains('active')) {
             targetButton.classList.add('active');
+            targetButton.setAttribute('aria-pressed', 'true');
         }
     } else {
         currentCurrency = normalized;
