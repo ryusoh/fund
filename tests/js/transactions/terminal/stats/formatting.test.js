@@ -13,7 +13,7 @@ import {
     formatResidualValue,
     formatTicker,
     formatDurationLabel,
-    formatYearsValue
+    formatYearsValue,
 } from '../../../../../js/transactions/terminal/stats/formatting.js';
 
 describe('terminal stats formatting', () => {
@@ -108,9 +108,9 @@ describe('terminal stats formatting', () => {
                 headers: ['Col 1', 'Col 2'],
                 rows: [
                     ['a', 'b'],
-                    ['c', 'd']
+                    ['c', 'd'],
                 ],
-                alignments: ['left', 'right']
+                alignments: ['left', 'right'],
             });
             expect(table).toContain('MY TABLE');
             expect(table).toContain('Col 1');
@@ -120,7 +120,7 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 headers: ['Col 1'],
                 rows: [['a']],
-                alignments: ['center']
+                alignments: ['center'],
             });
             expect(table).toContain(' a ');
         });
@@ -128,7 +128,7 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 headers: ['Col 1'],
                 rows: [['a']],
-                alignments: ['right']
+                alignments: ['right'],
             });
             expect(table).toContain('    a ');
         });
@@ -136,7 +136,7 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 headers: ['Col 1'],
                 rows: [['a']],
-                alignments: []
+                alignments: [],
             });
             expect(table).toContain(' a ');
         });
@@ -144,7 +144,7 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 headers: ['Col 1'],
                 rows: [[null]],
-                alignments: ['left']
+                alignments: ['left'],
             });
             expect(table).toContain('   ');
         });
@@ -153,7 +153,7 @@ describe('terminal stats formatting', () => {
                 title: 'A VERY LONG TITLE THAT EXCEEDS',
                 headers: ['A'],
                 rows: [['B']],
-                alignments: ['left']
+                alignments: ['left'],
             });
             expect(table).toContain('A VERY LONG TITLE');
         });
@@ -161,14 +161,14 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 headers: [''],
                 rows: [['']],
-                alignments: ['left']
+                alignments: ['left'],
             });
             expect(table).toContain('|  |');
         });
         it('handles missing rows entirely', () => {
             const table = renderAsciiTable({
                 headers: ['A'],
-                alignments: ['left']
+                alignments: ['left'],
             });
             expect(table).toContain('A');
         });
@@ -176,7 +176,7 @@ describe('terminal stats formatting', () => {
             const table = renderAsciiTable({
                 title: 'T',
                 headers: ['A'],
-                alignments: ['left']
+                alignments: ['left'],
             });
             expect(table).toContain('T');
         });
