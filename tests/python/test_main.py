@@ -54,26 +54,15 @@ class TestFundScripts(unittest.TestCase):
         self.assertEqual(path_arg.name, "historical_portfolio_values.csv")
 
     # Test for fetch_forex.py
-    @patch("scripts.data.fetch_forex.yf.Ticker")
-    def test_fetch_forex_data(self, mock_yf_ticker) -> None:
-        # Mocking the yfinance Ticker
-        mock_cny = MagicMock()
-        mock_cny.history.return_value = pd.DataFrame({"Close": [7.2]})
-        mock_jpy = MagicMock()
-        mock_jpy.history.return_value = pd.DataFrame({"Close": [145.0]})
-        mock_krw = MagicMock()
-        mock_krw.history.return_value = pd.DataFrame({"Close": [1300.0]})
-
-        def ticker_side_effect(symbol):
-            if symbol == "USDCNY=X":
-                return mock_cny
-            if symbol == "USDJPY=X":
-                return mock_jpy
-            if symbol == "USDKRW=X":
-                return mock_krw
-            return MagicMock()
-
-        mock_yf_ticker.side_effect = ticker_side_effect
+    @patch("scripts.data.fetch_forex.yf.download")
+    def test_fetch_forex_data(self, mock_yf_download) -> None:
+        # Mocking the yfinance download output
+        import pandas as pd
+        # It needs to return a multiindex dataframe with "Close" level
+        columns = pd.MultiIndex.from_tuples(
+            [("Close", "USDCNY=X"), ("Close", "USDJPY=X"), ("Close", "USDKRW=X")]
+        )
+        mock_yf_download.return_value = pd.DataFrame([[7.2, 145.0, 1300.0]], columns=columns, index=pd.to_datetime(["2023-01-01"]))
 
         # Mock file operations to handle multiple files with different formats
         # First read is often fx_data.json, second is fx_daily_rates.csv
