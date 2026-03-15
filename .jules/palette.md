@@ -23,3 +23,7 @@
 **Learning:** When making table headers (`<th>`) interactive for sorting or filtering, adding `role="button"` and `tabindex="0"` directly to the `<th>` tag is a severe accessibility anti-pattern. It overrides the implicit `columnheader` role, breaks table navigation for screen readers, and invalidates `aria-sort` attributes.
 
 **Action:** Always wrap the contents of the `<th>` in a semantic native `<button type="button">` element. Move the visual padding from the `<th>` to the `<button>` so that focus outlines (`:focus-visible`) wrap the text nicely without breaking native table semantics.
+
+## 2026-03-15 - Currency Toggle Accessibility
+**Learning:** When using custom elements for grouped toggles like currency selectors, purely relying on an 'active' CSS class creates an accessibility gap where screen reader users cannot perceive the active state. 'aria-pressed' attribute works effectively to distinguish true/false states in a custom toggle group.
+**Action:** Always complement visual 'active' classes on toggle buttons with 'aria-pressed' logic to ensure parity between visual and assistive technologies.
