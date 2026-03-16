@@ -45,7 +45,11 @@ class TestCalculateRatios(unittest.TestCase):
             from datetime import datetime
 
             def mock_to_datetime(arg):
-                if isinstance(arg, (datetime, pd.Timestamp)) if cls.has_pandas else isinstance(arg, datetime):
+                if (
+                    isinstance(arg, (datetime, pd.Timestamp))
+                    if cls.has_pandas
+                    else isinstance(arg, datetime)
+                ):
                     return arg
                 if isinstance(arg, str):
                     return datetime.strptime(arg, '%Y-%m-%d')

@@ -11,6 +11,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'KRW']
 
+
 def build_fx_json_original(fx_df: pd.DataFrame) -> dict[str, Any]:
     rates: dict[str, dict[str, float]] = {}
     for row in fx_df.itertuples(index=True):
@@ -22,6 +23,7 @@ def build_fx_json_original(fx_df: pd.DataFrame) -> dict[str, Any]:
         'currencies': SUPPORTED_CURRENCIES,
         'rates': rates,
     }
+
 
 def build_fx_json_optimized(fx_df: pd.DataFrame) -> dict[str, Any]:
     # Suggested optimization:
@@ -39,8 +41,9 @@ def build_fx_json_optimized(fx_df: pd.DataFrame) -> dict[str, Any]:
         'rates': rates,
     }
 
+
 # Generate dummy data
-n = 5000 # 5000 days of FX data
+n = 5000  # 5000 days of FX data
 dates = pd.date_range(start='2010-01-01', periods=n)
 data = np.random.uniform(0.5, 150, size=(n, len(SUPPORTED_CURRENCIES)))
 fx_df = pd.DataFrame(data, index=dates, columns=SUPPORTED_CURRENCIES)

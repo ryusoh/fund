@@ -7,7 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 import pandas as pd
 
@@ -57,12 +57,14 @@ class TestFundScripts(unittest.TestCase):
     @patch("scripts.data.fetch_forex.yf.download")
     def test_fetch_forex_data(self, mock_yf_download) -> None:
         # Mocking the yfinance download output
-        import pandas as pd
+
         # It needs to return a multiindex dataframe with "Close" level
         columns = pd.MultiIndex.from_tuples(
             [("Close", "USDCNY=X"), ("Close", "USDJPY=X"), ("Close", "USDKRW=X")]
         )
-        mock_yf_download.return_value = pd.DataFrame([[7.2, 145.0, 1300.0]], columns=columns, index=pd.to_datetime(["2023-01-01"]))
+        mock_yf_download.return_value = pd.DataFrame(
+            [[7.2, 145.0, 1300.0]], columns=columns, index=pd.to_datetime(["2023-01-01"])
+        )
 
         # Mock file operations to handle multiple files with different formats
         # First read is often fx_data.json, second is fx_daily_rates.csv

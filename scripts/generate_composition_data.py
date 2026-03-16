@@ -51,11 +51,10 @@ def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocat
     for ticker, dates_dict in prices_data.items():
         sorted_price_dates[ticker] = sorted(dates_dict.keys())
 
-    # Get all dates from holdings
-    dates = holdings_df.index.tolist()
-
     # Precalculate column indices to avoid inner loop lookups and .loc
-    ticker_indices = {ticker: holdings_df.columns.get_loc(ticker) + 1 for ticker in holdings_df.columns}
+    ticker_indices = {
+        ticker: holdings_df.columns.get_loc(ticker) + 1 for ticker in holdings_df.columns
+    }
 
     for _i, row in enumerate(holdings_df.itertuples(index=True, name=None)):
         date = row[0]
