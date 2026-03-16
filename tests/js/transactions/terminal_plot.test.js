@@ -118,6 +118,56 @@ function getLastTerminalMessage() {
     return output ? output.textContent : '';
 }
 
+describe('plot command chart toggling', () => {
+    let session;
+    let chartSection;
+
+    beforeEach(() => {
+        jest.resetModules();
+        session = initTerminalSession();
+        chartSection = document.getElementById('runningAmountSection');
+        if (!chartSection) {
+            chartSection = document.createElement('section');
+            chartSection.id = 'runningAmountSection';
+            document.body.appendChild(chartSection);
+        }
+    });
+
+    const toggleCases = [
+        ['balance', 'contribution', 'Hidden contribution chart.'],
+        ['performance', 'performance', 'Hidden performance chart.'],
+        ['composition', 'composition', 'Hidden composition chart.'],
+        ['sectors', 'sectors', 'Hidden sector allocation chart.'],
+        ['geography', 'geography', 'Hidden geography chart.'],
+        ['fx', 'fx', 'Hidden FX chart.'],
+        ['drawdown', 'drawdown', 'Hidden drawdown chart.'],
+        ['concentration', 'concentration', 'Hidden concentration chart.'],
+        ['pe', 'pe', 'Hidden P/E ratio chart.'],
+        ['rolling', 'rolling', 'Hidden 1-Year rolling returns chart.'],
+        ['volatility', 'volatility', 'Hidden 90-Day annualized rolling volatility chart.'],
+        ['beta', 'beta', 'Hidden portfolio beta chart.'],
+        ['yield', 'yield', 'Hidden dividend yield and income chart.']
+    ];
+
+    test.each(toggleCases)(
+        'toggles off %s chart when already active without date args',
+        async (commandArgs, expectedChartState, expectedMessage) => {
+            const command = `plot ${commandArgs}`;
+
+            // First call activates the chart
+            await session.submitCommand(command);
+            expect(transactionState.activeChart).toBe(expectedChartState);
+            expect(chartSection.classList.contains('is-hidden')).toBe(false);
+
+            // Second call toggles it off
+            await session.submitCommand(command);
+            expect(transactionState.activeChart).toBe(null);
+            expect(chartSection.classList.contains('is-hidden')).toBe(true);
+            expect(getLastTerminalMessage()).toContain(expectedMessage);
+        }
+    );
+});
+
 describe('plot command date range handling', () => {
     beforeEach(() => {
         jest.resetModules();
