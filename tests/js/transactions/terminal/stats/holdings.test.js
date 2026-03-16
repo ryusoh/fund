@@ -7,9 +7,9 @@ jest.mock('@js/transactions/utils.js', () => ({
 
 jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
     renderAsciiTable: jest.fn(({ rows }) => rows.map((r) => r.join(',')).join('\n')),
-    formatTicker: jest.fn(val => `TICKER_${val}`),
-    formatShareValue: jest.fn(val => `SHARE_${val}`),
-    formatResidualValue: jest.fn(val => `RESID_${val}`),
+    formatTicker: jest.fn((val) => `TICKER_${val}`),
+    formatShareValue: jest.fn((val) => `SHARE_${val}`),
+    formatResidualValue: jest.fn((val) => `RESID_${val}`),
 }));
 
 jest.mock('@js/transactions/terminal/stats/analysis.js', () => ({
@@ -25,7 +25,8 @@ describe('Holdings Stats Module', () => {
         global.fetch = jest.fn();
         globalFetchSpy = global.fetch;
 
-        buildLotSnapshotsMock = require('@js/transactions/terminal/stats/analysis.js').buildLotSnapshots;
+        buildLotSnapshotsMock =
+            require('@js/transactions/terminal/stats/analysis.js').buildLotSnapshots;
     });
 
     afterEach(() => {
@@ -43,10 +44,20 @@ describe('Holdings Stats Module', () => {
                         ok: true,
                         json: async () => ({
                             USD: [
-                                { security: 'AAPL', shares: 10, average_price: 150, total_cost: 1500 },
-                                { security: 'MSFT', shares: 5, average_price: 200, total_cost: 1000 }
-                            ]
-                        })
+                                {
+                                    security: 'AAPL',
+                                    shares: 10,
+                                    average_price: 150,
+                                    total_cost: 1500,
+                                },
+                                {
+                                    security: 'MSFT',
+                                    shares: 5,
+                                    average_price: 200,
+                                    total_cost: 1000,
+                                },
+                            ],
+                        }),
                     });
                 }
                 return Promise.reject(new Error(`Unhandled: ${url}`));
@@ -75,7 +86,7 @@ describe('Holdings Stats Module', () => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({
                         ok: true,
-                        json: async () => ({ USD: [] }) // Empty holdings
+                        json: async () => ({ USD: [] }), // Empty holdings
                     });
                 }
                 return Promise.reject();
@@ -99,7 +110,7 @@ describe('Holdings Stats Module', () => {
                 if (url.includes('holdings.txt')) {
                     return Promise.resolve({
                         ok: true,
-                        text: async () => 'LEGACY TEXT HOLDINGS'
+                        text: async () => 'LEGACY TEXT HOLDINGS',
                     });
                 }
                 return Promise.reject();
@@ -148,7 +159,7 @@ describe('Holdings Stats Module', () => {
 
             const lotsByTicker = new Map([
                 ['EMPTY_CORP', [{ qty: 10 }, { qty: -10 }]], // nets to 0
-                ['REAL_CORP', [{ qty: 15.5 }]]
+                ['REAL_CORP', [{ qty: 15.5 }]],
             ]);
             buildLotSnapshotsMock.mockReturnValue({ lotsByTicker });
 

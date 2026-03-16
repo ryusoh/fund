@@ -44,9 +44,10 @@ describe('getFinancialStatsText', () => {
             json: async () => ({ tickers: [] }),
         });
 
-        globalFetchSpy.mockResolvedValueOnce({ // pe_ratio load (could succeed or fail)
+        globalFetchSpy.mockResolvedValueOnce({
+            // pe_ratio load (could succeed or fail)
             ok: true,
-            json: async () => ({})
+            json: async () => ({}),
         });
 
         // Act
@@ -67,9 +68,9 @@ describe('getFinancialStatsText', () => {
                     json: async () => ({
                         tickers: [
                             { symbol: 'AAPL', path: '../data/aapl.json' },
-                            { symbol: 'MSFT', path: '../data/msft.json' }
-                        ]
-                    })
+                            { symbol: 'MSFT', path: '../data/msft.json' },
+                        ],
+                    }),
                 });
             }
             if (url.includes('pe_ratio.json')) {
@@ -77,9 +78,9 @@ describe('getFinancialStatsText', () => {
                     ok: true,
                     json: async () => ({
                         forward_pe: {
-                            ticker_forward_pe: { AAPL: [10, 15] } // Test getFallbackValue logic
-                        }
-                    })
+                            ticker_forward_pe: { AAPL: [10, 15] }, // Test getFallbackValue logic
+                        },
+                    }),
                 });
             }
             if (url.includes('aapl.json')) {
@@ -88,17 +89,19 @@ describe('getFinancialStatsText', () => {
                     json: async () => ({
                         symbol: 'AAPL',
                         market: {
-                            eps: 5, forwardEps: 6,
-                            pe: 20, forwardPe: undefined, // Will use fallback when mapped to NaN by Number()
+                            eps: 5,
+                            forwardEps: 6,
+                            pe: 20,
+                            forwardPe: undefined, // Will use fallback when mapped to NaN by Number()
                             pegRatio: 1.5,
                             evToEbitda: 15.5, // Direct value present
                             enterpriseValue: 3000,
                             ebitda: 200,
                             dividendYield: 0.05,
                             marketCap: 2800,
-                            currency: 'USD'
-                        }
-                    })
+                            currency: 'USD',
+                        },
+                    }),
                 });
             }
             if (url.includes('msft.json')) {
@@ -107,17 +110,19 @@ describe('getFinancialStatsText', () => {
                     json: async () => ({
                         symbol: 'MSFT',
                         market: {
-                            eps: 8, forwardEps: 9,
-                            pe: 30, forwardPe: 28,
+                            eps: 8,
+                            forwardEps: 9,
+                            pe: 30,
+                            forwardPe: 28,
                             pegRatio: 2.0,
                             // No direct evToEbitda, should calculate from EV and EBITDA
                             enterpriseValue: 4000,
                             ebitda: 400,
                             dividendYield: 0.08,
                             marketCap: 3800,
-                            currency: 'eur ' // tests currency trim and uppercase
-                        }
-                    })
+                            currency: 'eur ', // tests currency trim and uppercase
+                        },
+                    }),
                 });
             }
             return Promise.resolve({ ok: true, json: async () => ({}) }); // Mock unknown requests to prevent breaking
@@ -159,7 +164,7 @@ describe('getFinancialStatsText', () => {
             if (url.includes('index.json')) {
                 return Promise.resolve({
                     ok: true,
-                    json: async () => ({ tickers: [{ symbol: 'BAD', path: 'bad.json' }] })
+                    json: async () => ({ tickers: [{ symbol: 'BAD', path: 'bad.json' }] }),
                 });
             }
             if (url.includes('pe_ratio.json')) {
@@ -168,7 +173,7 @@ describe('getFinancialStatsText', () => {
             if (url.includes('bad.json')) {
                 return Promise.resolve({
                     ok: true,
-                    json: async () => ({ symbol: 'BAD' }) // missing market object
+                    json: async () => ({ symbol: 'BAD' }), // missing market object
                 });
             }
             return Promise.reject(new Error(`Unhandled request: ${url}`));

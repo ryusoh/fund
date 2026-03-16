@@ -42,7 +42,6 @@ function resetTransactionState() {
     transactionState.fxRatesByCurrency = {};
     transactionState.historicalPrices = {};
     transactionState.showChartLabels = true;
-    return transactionState;
 }
 
 function setupDom({ tableVisible = false } = {}) {
@@ -74,9 +73,9 @@ function initTerminalSession({
     const resetSortState = jest.fn();
 
     setupDom({ tableVisible });
-    const localState = resetTransactionState();
+    resetTransactionState();
     if (typeof setupState === 'function') {
-        setupState(localState);
+        setupState(transactionState);
     }
 
     const chartManager = providedChartManager || {
@@ -146,26 +145,27 @@ describe('plot command chart toggling', () => {
         ['rolling', 'rolling', 'Hidden 1-Year rolling returns chart.'],
         ['volatility', 'volatility', 'Hidden 90-Day annualized rolling volatility chart.'],
         ['beta', 'beta', 'Hidden portfolio beta chart.'],
-        ['yield', 'yield', 'Hidden dividend yield and income chart.']
+        ['yield', 'yield', 'Hidden dividend yield and income chart.'],
     ];
 
     test.each(toggleCases)(
         'toggles off %s chart when already active without date args',
         async (commandArgs, expectedChartState, expectedMessage) => {
-            const stateLocal = require('@js/transactions/state.js').transactionState;
             const command = `plot ${commandArgs}`;
 
             // Ensure section has a clean start for visibility toggle test
             chartSection.classList.add('is-hidden');
 
+        const localState = require('@js/transactions/state.js').transactionState;
+
             // First call activates the chart
             await session.submitCommand(command);
-            expect(stateLocal.activeChart).toBe(expectedChartState);
+        expect(localState.activeChart).toBe(expectedChartState);
             expect(chartSection.classList.contains('is-hidden')).toBe(false);
 
             // Second call toggles it off
             await session.submitCommand(command);
-            expect(stateLocal.activeChart).toBe(null);
+        expect(localState.activeChart).toBe(null);
             expect(chartSection.classList.contains('is-hidden')).toBe(true);
             expect(getLastTerminalMessage()).toContain(expectedMessage);
         }
