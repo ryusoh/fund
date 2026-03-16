@@ -29,3 +29,8 @@
 **Learning:** When using custom elements for grouped toggles like currency selectors, purely relying on an 'active' CSS class creates an accessibility gap where screen reader users cannot perceive the active state. 'aria-pressed' attribute works effectively to distinguish true/false states in a custom toggle group.
 
 **Action:** Always complement visual 'active' classes on toggle buttons with 'aria-pressed' logic to ensure parity between visual and assistive technologies.
+
+## 2026-03-24 - Table Horizontal Scrolling Accessibility
+
+**Learning:** Containers with `overflow-x: auto` (like `.table-responsive-container` used across `position/index.html` and `terminal/index.html`) must be explicitly focusable so keyboard-only users can scroll through wide tables. Without `tabindex="0"` and a `:focus-visible` ring, horizontal scrolling is impossible or invisible for keyboard navigation.
+**Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to scrollable table containers. Ensure any `border-radius` visually matches the layout.
