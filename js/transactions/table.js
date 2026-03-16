@@ -365,6 +365,30 @@ function filterAndSort(searchTerm = '') {
                     'desc'
                 );
             }
+            case 'quantity': {
+                const result = compareValues(parseFloat(a.quantity), parseFloat(b.quantity), order);
+                if (result !== 0) {
+                    return result;
+                }
+                return compareValues(
+                    new Date(a.tradeDate).getTime(),
+                    new Date(b.tradeDate).getTime(),
+                    'desc'
+                );
+            }
+            case 'price': {
+                const priceA = convertValueToCurrency(a.price, a.tradeDate, currentCurrency);
+                const priceB = convertValueToCurrency(b.price, b.tradeDate, currentCurrency);
+                const result = compareValues(priceA, priceB, order);
+                if (result !== 0) {
+                    return result;
+                }
+                return compareValues(
+                    new Date(a.tradeDate).getTime(),
+                    new Date(b.tradeDate).getTime(),
+                    'desc'
+                );
+            }
             case 'netAmount': {
                 const amountA = Math.abs(
                     convertValueToCurrency(a.netAmount, a.tradeDate, currentCurrency)
@@ -480,6 +504,14 @@ function setupTableControls() {
                 handleSort('security');
             }
         });
+    }
+    const quantityHeader = document.getElementById('header-quantity');
+    if (quantityHeader) {
+        quantityHeader.addEventListener('click', () => handleSort('quantity'));
+    }
+    const priceHeader = document.getElementById('header-price');
+    if (priceHeader) {
+        priceHeader.addEventListener('click', () => handleSort('price'));
     }
     const netAmountHeader = document.getElementById('header-netAmount');
     if (netAmountHeader) {

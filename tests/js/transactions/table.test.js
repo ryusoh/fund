@@ -421,4 +421,22 @@ describe('ticker alias filtering', () => {
         expect(transactionState.filteredTransactions).toHaveLength(1);
         expect(transactionState.filteredTransactions[0].security).toBe('BRK-B');
     });
+
+    it('does not have a filter indicator on the Quantity header', () => {
+        document.body.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th id="header-quantity">
+                            <button class="header-action-button">Quantity<span class="sort-indicator"></span></button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="transactionBody"></tbody>
+            </table>
+        `;
+        const quantityHeader = document.getElementById('header-quantity');
+        const filterIndicator = quantityHeader.querySelector('.filter-indicator');
+        expect(filterIndicator).toBeNull();
+    });
 });
