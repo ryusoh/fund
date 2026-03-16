@@ -27,11 +27,14 @@ from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 
+import tempfile
+
 try:
     import yfinance as yf
 
-    # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-    yf.set_tz_cache_location("/tmp/yf-cache")
+    # Configure yfinance to use a secure, user-specific temporary directory for timezone cache to avoid [Errno 17] in CI and prevent symlink attacks
+    cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
+    yf.set_tz_cache_location(cache_dir)
 except ImportError as exc:
     raise SystemExit("yfinance is required. Install with: pip install yfinance") from exc
 
