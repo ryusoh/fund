@@ -156,16 +156,16 @@ describe('plot command chart toggling', () => {
             // Ensure section has a clean start for visibility toggle test
             chartSection.classList.add('is-hidden');
 
-        const localState = require('@js/transactions/state.js').transactionState;
+            const localState = require('@js/transactions/state.js').transactionState;
 
             // First call activates the chart
             await session.submitCommand(command);
-        expect(localState.activeChart).toBe(expectedChartState);
+            expect(localState.activeChart).toBe(expectedChartState);
             expect(chartSection.classList.contains('is-hidden')).toBe(false);
 
             // Second call toggles it off
             await session.submitCommand(command);
-        expect(localState.activeChart).toBe(null);
+            expect(localState.activeChart).toBe(null);
             expect(chartSection.classList.contains('is-hidden')).toBe(true);
             expect(getLastTerminalMessage()).toContain(expectedMessage);
         }
