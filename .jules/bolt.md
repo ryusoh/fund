@@ -22,3 +22,8 @@
 
 **Learning:** When using Pandas `itertuples(index=True, name=None)`, dynamically searching for column indices inside the loop using `df.columns.get_loc()` or matching column names causes significant overhead. The O(1) attribute lookup of `namedtuple` is lost, making it slower than necessary.
 **Action:** When using regular tuples with `itertuples(name=None)`, pre-calculate the column indices outside the iteration loop using a dictionary like `{col: df.columns.get_loc(col) + 1 for col in df.columns}` (adding 1 because the index is at `row[0]`). This restores O(1) access speed while completely avoiding the fragility of invalid Python identifiers in namedtuples.
+
+## 2025-05-15 - Vectorized Pandas to_dict conversion
+
+**Learning:** Row-by-row construction of a JSON-ready dictionary from a Pandas DataFrame using `itertuples` and `getattr` is slow because it operates at the Python level and incurs significant attribute lookup overhead.
+**Action:** Use vectorized index formatting (`df.index.strftime('%Y-%m-%d')`) followed by `df.to_dict(orient='index')`. This leverages optimized C/Cython implementations within Pandas, providing a substantial speedup for large datasets.

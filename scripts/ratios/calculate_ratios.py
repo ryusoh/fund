@@ -52,11 +52,11 @@ def load_fx_rates():
 
 
 def build_fx_json(fx_df: pd.DataFrame) -> dict[str, Any]:
-    rates: dict[str, dict[str, float]] = {}
-    for row in fx_df.itertuples(index=True):
-        rates[cast(pd.Timestamp, row.Index).strftime('%Y-%m-%d')] = {
-            currency: float(getattr(row, currency)) for currency in SUPPORTED_CURRENCIES
-        }
+    # Use vectorized operations to avoid slow row-by-row iteration
+    df_temp = fx_df[SUPPORTED_CURRENCIES].copy()
+    df_temp.index = df_temp.index.strftime('%Y-%m-%d')
+    rates = df_temp.to_dict(orient='index')
+
     return {
         'base': 'USD',
         'currencies': SUPPORTED_CURRENCIES,

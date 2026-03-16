@@ -42,6 +42,17 @@ class TestCalculateRatios(unittest.TestCase):
 
             cls.mock_pd = MagicMock()
 
+            from datetime import datetime
+
+            def mock_to_datetime(arg):
+                if isinstance(arg, (datetime, pd.Timestamp)) if cls.has_pandas else isinstance(arg, datetime):
+                    return arg
+                if isinstance(arg, str):
+                    return datetime.strptime(arg, '%Y-%m-%d')
+                return arg
+
+            cls.mock_pd.to_datetime.side_effect = mock_to_datetime
+
             # Use a temporary patch of sys.modules to import the script with mocked dependencies
             with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
                 import scripts.ratios.calculate_ratios as cr
@@ -271,26 +282,56 @@ class TestCalculateRatios(unittest.TestCase):
         self.assertTrue(self.cr.normalize_symbol_index(empty_df).empty)
 
     def test_build_fx_json(self):
+        SUPPORTED_CURRENCIES = self.cr.SUPPORTED_CURRENCIES
         if not self.has_pandas:
-            self.skipTest("pandas is not available")
-        import pandas as pd
+            # Mock the DataFrame and its methods
+            mock_df = MagicMock()
+            mock_subset = MagicMock()
+            mock_copy = MagicMock()
+            mock_index = MagicMock()
 
-        fx_df = pd.DataFrame(
-            {
-                'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
-                'USD': [1.0, 1.0],
-                'CNY': [6.9, 7.0],
-                'JPY': [130.0, 131.0],
-                'KRW': [1200.0, 1210.0],
+            mock_df.__getitem__.return_value = mock_subset
+            mock_subset.copy.return_value = mock_copy
+            mock_copy.index = mock_index
+
+            # Mock strftime and to_dict
+            mock_index.strftime.return_value = ['2023-01-01', '2023-01-02']
+            mock_copy.to_dict.return_value = {
+                '2023-01-01': {'USD': 1.0, 'CNY': 6.9, 'JPY': 130.0, 'KRW': 1200.0},
+                '2023-01-02': {'USD': 1.0, 'CNY': 7.0, 'JPY': 131.0, 'KRW': 1210.0},
             }
-        ).set_index('date')
 
-        res = self.cr.build_fx_json(fx_df)
-        self.assertEqual(res['base'], 'USD')
-        self.assertEqual(res['currencies'], self.cr.SUPPORTED_CURRENCIES)
-        self.assertEqual(
-            res['rates']['2023-01-01'], {'USD': 1.0, 'CNY': 6.9, 'JPY': 130.0, 'KRW': 1200.0}
-        )
+            res = self.cr.build_fx_json(mock_df)
+
+            # Verify mock calls
+            mock_df.__getitem__.assert_called_with(SUPPORTED_CURRENCIES)
+            mock_index.strftime.assert_called_with('%Y-%m-%d')
+            mock_copy.to_dict.assert_called_with(orient='index')
+
+            self.assertEqual(res['base'], 'USD')
+            self.assertEqual(res['currencies'], SUPPORTED_CURRENCIES)
+            self.assertEqual(
+                res['rates']['2023-01-01'], {'USD': 1.0, 'CNY': 6.9, 'JPY': 130.0, 'KRW': 1200.0}
+            )
+        else:
+            import pandas as pd
+
+            fx_df = pd.DataFrame(
+                {
+                    'date': pd.to_datetime(['2023-01-01', '2023-01-02']),
+                    'USD': [1.0, 1.0],
+                    'CNY': [6.9, 7.0],
+                    'JPY': [130.0, 131.0],
+                    'KRW': [1200.0, 1210.0],
+                }
+            ).set_index('date')
+
+            res = self.cr.build_fx_json(fx_df)
+            self.assertEqual(res['base'], 'USD')
+            self.assertEqual(res['currencies'], SUPPORTED_CURRENCIES)
+            self.assertEqual(
+                res['rates']['2023-01-01'], {'USD': 1.0, 'CNY': 6.9, 'JPY': 130.0, 'KRW': 1200.0}
+            )
 
     def test_compute_returns(self):
         if not self.has_pandas:
@@ -487,7 +528,20 @@ class TestCalculateRatios(unittest.TestCase):
                     {'date': '2020-12-31', 'value': 200},
                 ]
             }
-            res = calculate_cagr(series_map)
+
+            # Ensure years comparison works when pandas is mocked
+            mock_years = MagicMock()
+            mock_years.__le__.return_value = False
+            mock_years.__gt__.return_value = True
+            mock_years.days = 365
+
+            with patch.object(self.cr.pd, 'to_datetime') as mock_dt:
+                d1 = datetime(2020, 1, 1)
+                d2 = datetime(2020, 12, 31)
+                mock_dt.side_effect = [d1, d2]
+                with patch.object(self.cr, 'compute_cagr', return_value=1.0):
+                    res = calculate_cagr(series_map)
+
             self.assertIn("PERFORMANCE CAGR", res)
             self.assertIn(PORTFOLIO_SERIES_KEY, res)
 
