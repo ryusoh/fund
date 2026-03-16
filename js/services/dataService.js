@@ -797,6 +797,7 @@ function computeMonthlyPnl(processedData) {
 }
 
 export const __testables = {
+    _calculateCurrencyChanges,
     computeMonthlyPnl,
     resetAnalysisTickerCache: () => {
         analysisTickerPathCache = null;
