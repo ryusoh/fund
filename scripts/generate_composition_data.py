@@ -54,15 +54,19 @@ def calculate_daily_composition(holdings_df, prices_data, metadata, fund_allocat
     # Get all dates from holdings
     dates = holdings_df.index.tolist()
 
-    for _i, date in enumerate(dates):
+    # Precalculate column indices to avoid inner loop lookups and .loc
+    ticker_indices = {ticker: holdings_df.columns.get_loc(ticker) + 1 for ticker in holdings_df.columns}
+
+    for _i, row in enumerate(holdings_df.itertuples(index=True, name=None)):
+        date = row[0]
         date_str = date.strftime('%Y-%m-%d')
         daily_composition = {'date': date_str, 'total_value': 0}
         daily_sectors = {'date': date_str, 'total_value': 0}
 
         # Calculate market value for each ticker
         ticker_values = {}
-        for ticker in holdings_df.columns:
-            shares = holdings_df.loc[date, ticker]
+        for ticker, idx in ticker_indices.items():
+            shares = row[idx]
 
             if shares > 0:
                 price_ticker = map_ticker(ticker)

@@ -1154,7 +1154,7 @@ export async function initCalendar() {
                 container.replaceChildren(p);
             } else {
                 // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
-                container.innerHTML = '';
+                container.textContent = '';
                 if (typeof container.appendChild === 'function') {
                     container.appendChild(p);
                 } else {

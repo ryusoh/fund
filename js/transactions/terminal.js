@@ -54,17 +54,35 @@ function ensureCrosshairOverlay() {
         overlay.className = 'terminal-crosshair-overlay';
         overlay.style.visibility = 'hidden';
         overlay.classList.remove('terminal-crosshair-active');
-        overlay.innerHTML = `
-            <div class="terminal-crosshair-panel">
-                <div class="terminal-crosshair-header">
-                    <span class="terminal-crosshair-date" id="terminalCrosshairDate"></span>
-                </div>
-                <div class="terminal-crosshair-body">
-                    <div id="terminalCrosshairList" class="terminal-crosshair-list"></div>
-                    <div id="terminalCrosshairRange" class="terminal-crosshair-range" hidden></div>
-                </div>
-            </div>
-        `;
+        const panel = document.createElement('div');
+        panel.className = 'terminal-crosshair-panel';
+
+        const header = document.createElement('div');
+        header.className = 'terminal-crosshair-header';
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'terminal-crosshair-date';
+        dateSpan.id = 'terminalCrosshairDate';
+        header.appendChild(dateSpan);
+
+        const body = document.createElement('div');
+        body.className = 'terminal-crosshair-body';
+
+        const listDiv = document.createElement('div');
+        listDiv.id = 'terminalCrosshairList';
+        listDiv.className = 'terminal-crosshair-list';
+        body.appendChild(listDiv);
+
+        const rangeDiv = document.createElement('div');
+        rangeDiv.id = 'terminalCrosshairRange';
+        rangeDiv.className = 'terminal-crosshair-range';
+        rangeDiv.hidden = true;
+        body.appendChild(rangeDiv);
+
+        panel.appendChild(header);
+        panel.appendChild(body);
+
+        overlay.appendChild(panel);
         terminalElement.appendChild(overlay);
     }
 
@@ -119,7 +137,7 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
         if (typeof details.list.replaceChildren === 'function') {
             details.list.replaceChildren();
         } else {
-            details.list.innerHTML = '';
+            details.list.textContent = '';
         }
 
         snapshot.series.forEach((series) => {
@@ -163,13 +181,13 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
             if (typeof details.range.replaceChildren === 'function') {
                 details.range.replaceChildren();
             } else {
-                details.range.innerHTML = '';
+                details.range.textContent = '';
             }
         } else {
             if (typeof details.range.replaceChildren === 'function') {
                 details.range.replaceChildren();
             } else {
-                details.range.innerHTML = '';
+                details.range.textContent = '';
             }
 
             const durationLabel =

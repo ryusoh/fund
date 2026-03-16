@@ -1,4 +1,4 @@
-const { createTimeInterpolator } = require('../../js/transactions/chart/helpers.js');
+const { createTimeInterpolator } = require('@js/transactions/chart/helpers.js');
 
 describe('Geography Chart Crosshair Data', () => {
     it('should correctly build seriesSnapshot for geography charts', () => {

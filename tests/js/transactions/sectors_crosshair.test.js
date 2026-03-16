@@ -1,4 +1,4 @@
-const { createTimeInterpolator } = require('../../js/transactions/chart/helpers.js');
+const { createTimeInterpolator } = require('@js/transactions/chart/helpers.js');
 
 describe('Sectors Chart Crosshair Data', () => {
     it('createTimeInterpolator should correctly interpolate values', () => {

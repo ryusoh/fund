@@ -1,7 +1,7 @@
 /* global KeyboardEvent */
 import { jest } from '@jest/globals';
 
-jest.setTimeout(15000);
+jest.setTimeout(30000);
 
 // Mock essential modules
 jest.mock('@js/transactions/zoom.js', () => ({

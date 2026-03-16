@@ -564,6 +564,11 @@ function appendTickerButton(config, extraClass = '') {
     button.className = `ticker-btn${extraClass}${isActive ? ' active' : ''}`;
     button.textContent = config.symbol;
     button.title = `${config.name} · ${formatPercent(config.weight)}`;
+    button.setAttribute(
+        'aria-label',
+        `${config.symbol}, ${config.name}, Weight: ${formatPercent(config.weight)}`
+    );
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     button.addEventListener('click', () => {
         state.activeSymbol = config.symbol;
         renderTickerList();
@@ -1003,10 +1008,10 @@ async function init() {
             if (typeof summaryStatsEl.replaceChildren === 'function') {
                 summaryStatsEl.replaceChildren(loadingDiv);
             } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(loadingDiv);
             } else {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(loadingDiv);
             }
         }
@@ -1024,10 +1029,10 @@ async function init() {
             if (typeof summaryStatsEl.replaceChildren === 'function') {
                 summaryStatsEl.replaceChildren(errDiv);
             } else if (typeof summaryStatsEl.appendChild === 'function') {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(errDiv);
             } else {
-                summaryStatsEl.innerHTML = '';
+                summaryStatsEl.textContent = '';
                 summaryStatsEl.appendChild(errDiv);
             }
         }
