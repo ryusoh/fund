@@ -32,3 +32,8 @@
 
 **Learning:** Using `.loc[row, col]` inside nested loops for row-by-row and column-by-column access has severe performance overhead in Pandas DataFrames.
 **Action:** Always pre-calculate positional indices using `df.columns.get_loc('col_name') + 1` outside the loop, and use `.itertuples(index=True, name=None)` for the outer iteration. Access column values efficiently via `row[idx]`. This reduced iteration time from ~25s to ~2s.
+
+## 2024-05-15 - Date Parsing Bottleneck in Large Sorts
+
+**Learning:** Instantiating `new Date(dateString)` inside a JavaScript `Array.prototype.sort()` comparator function causes massive CPU overhead for large arrays, as the comparator executes O(N log N) times.
+**Action:** Always pre-calculate timestamps (e.g., caching it via a `Map` or mapping an array) before or during sorting to ensure each date string is parsed exactly once without mutating original objects.

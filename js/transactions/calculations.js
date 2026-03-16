@@ -59,8 +59,20 @@ export function computeRunningTotals(transactions, splitHistory) {
     const runningTotalsById = new Map();
     let cumulativeNetAmount = 0;
 
+    // Bolt: Cache parsed timestamps in a Map to avoid O(N log N) Date instantiations
+    // and prevent mutating the original transaction objects
+    const tsCache = new Map();
+    const getTs = (t) => {
+        let ts = tsCache.get(t);
+        if (ts === undefined) {
+            ts = new Date(t.tradeDate).getTime();
+            tsCache.set(t, ts);
+        }
+        return ts;
+    };
+
     const chronologicalTransactions = [...transactions].sort(
-        (a, b) => new Date(a.tradeDate) - new Date(b.tradeDate) || a.transactionId - b.transactionId
+        (a, b) => getTs(a) - getTs(b) || a.transactionId - b.transactionId
     );
 
     chronologicalTransactions.forEach((transaction) => {
