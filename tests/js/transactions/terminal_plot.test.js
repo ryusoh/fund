@@ -42,6 +42,7 @@ function resetTransactionState() {
     transactionState.fxRatesByCurrency = {};
     transactionState.historicalPrices = {};
     transactionState.showChartLabels = true;
+    return transactionState;
 }
 
 function setupDom({ tableVisible = false } = {}) {
@@ -73,9 +74,9 @@ function initTerminalSession({
     const resetSortState = jest.fn();
 
     setupDom({ tableVisible });
-    resetTransactionState();
+    const localState = resetTransactionState();
     if (typeof setupState === 'function') {
-        setupState(transactionState);
+        setupState(localState);
     }
 
     const chartManager = providedChartManager || {
@@ -126,11 +127,10 @@ describe('plot command chart toggling', () => {
         jest.resetModules();
         session = initTerminalSession();
         chartSection = document.getElementById('runningAmountSection');
-        if (!chartSection) {
-            chartSection = document.createElement('section');
-            chartSection.id = 'runningAmountSection';
-            document.body.appendChild(chartSection);
-        }
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
     });
 
     const toggleCases = [
@@ -152,16 +152,20 @@ describe('plot command chart toggling', () => {
     test.each(toggleCases)(
         'toggles off %s chart when already active without date args',
         async (commandArgs, expectedChartState, expectedMessage) => {
+            const stateLocal = require('@js/transactions/state.js').transactionState;
             const command = `plot ${commandArgs}`;
+
+            // Ensure section has a clean start for visibility toggle test
+            chartSection.classList.add('is-hidden');
 
             // First call activates the chart
             await session.submitCommand(command);
-            expect(transactionState.activeChart).toBe(expectedChartState);
+            expect(stateLocal.activeChart).toBe(expectedChartState);
             expect(chartSection.classList.contains('is-hidden')).toBe(false);
 
             // Second call toggles it off
             await session.submitCommand(command);
-            expect(transactionState.activeChart).toBe(null);
+            expect(stateLocal.activeChart).toBe(null);
             expect(chartSection.classList.contains('is-hidden')).toBe(true);
             expect(getLastTerminalMessage()).toContain(expectedMessage);
         }
@@ -173,29 +177,34 @@ describe('plot command date range handling', () => {
         jest.resetModules();
     });
 
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
     test('retains active date filter across chart toggles', async () => {
         const session = initTerminalSession();
+        const localState = require('@js/transactions/state.js').transactionState;
 
         await session.submitCommand('plot balance 2025');
-        expect(transactionState.chartDateRange).toEqual({
+        expect(localState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
         });
 
         await session.submitCommand('plot composition');
-        expect(transactionState.chartDateRange).toEqual({
+        expect(localState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
         });
 
         await session.submitCommand('plot performance');
-        expect(transactionState.chartDateRange).toEqual({
+        expect(localState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
         });
 
         await session.submitCommand('plot fx');
-        expect(transactionState.chartDateRange).toEqual({
+        expect(localState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
         });
@@ -204,28 +213,31 @@ describe('plot command date range handling', () => {
 
     test('allows explicit reset via special tokens', async () => {
         const session = initTerminalSession();
+        const localState = require('@js/transactions/state.js').transactionState;
 
         await session.submitCommand('plot balance 2025');
-        expect(transactionState.chartDateRange.from).toBe('2025-01-01');
+        expect(localState.chartDateRange.from).toBe('2025-01-01');
 
         // Reset chart visibility before testing composition to avoid toggle behavior
         const chartSection = document.getElementById('runningAmountSection');
         if (chartSection) {
             chartSection.classList.add('is-hidden');
         }
-        transactionState.activeChart = null;
+        localState.activeChart = null;
 
         await session.submitCommand('plot composition all');
-        expect(transactionState.chartDateRange).toEqual({ from: null, to: null });
+        expect(localState.chartDateRange).toEqual({ from: null, to: null });
         expect(getLastTerminalMessage()).toContain('Showing composition chart for all time.');
     }, 30000);
 
     test('ignores unrecognized date tokens and keeps existing range', async () => {
         const session = initTerminalSession();
+        const localState = require('@js/transactions/state.js').transactionState;
+
         await session.submitCommand('plot balance 2025');
 
         await session.submitCommand('plot composition someday');
-        expect(transactionState.chartDateRange).toEqual({
+        expect(localState.chartDateRange).toEqual({
             from: '2025-01-01',
             to: '2025-12-31',
         });

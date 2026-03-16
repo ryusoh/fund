@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 // Mock the formatters to pass through predictability
 jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
-    renderAsciiTable: jest.fn(({ rows }) => rows), // Just return the rows array for easy assertion
+    renderAsciiTable: jest.fn(({ rows }) => rows.map((r) => r.join(',')).join('\n')), // Return a string representation
     formatNumeric: jest.fn((val) => `NUM_${val}`),
     formatNumericPair: jest.fn((val1, val2) => `PAIR_${val1}_${val2}`),
     formatMarketCap: jest.fn((val, currency) => `MCAP_${val}_${currency}`),
@@ -23,10 +23,7 @@ describe('getFinancialStatsText', () => {
     });
 
     test('returns error message if analysis index fetch fails', async () => {
-        let financialModule;
-        jest.isolateModules(() => {
-            financialModule = require('@js/transactions/terminal/stats/financial.js');
-        });
+        const financialModule = require('@js/transactions/terminal/stats/financial.js');
 
         // Arrange
         globalFetchSpy.mockResolvedValueOnce({ ok: false }); // Fails index load
@@ -39,10 +36,7 @@ describe('getFinancialStatsText', () => {
     });
 
     test('returns "No financial data available" if index has no tickers', async () => {
-        let financialModule;
-        jest.isolateModules(() => {
-            financialModule = require('@js/transactions/terminal/stats/financial.js');
-        });
+        const financialModule = require('@js/transactions/terminal/stats/financial.js');
 
         // Arrange
         globalFetchSpy.mockResolvedValueOnce({
@@ -63,11 +57,7 @@ describe('getFinancialStatsText', () => {
     });
 
     test('resolves and formats financial data for valid tickers', async () => {
-        let financialModule;
-        jest.isolateModules(() => {
-            // Because financial.js caches index responses in a module-level variable
-            financialModule = require('@js/transactions/terminal/stats/financial.js');
-        });
+        const financialModule = require('@js/transactions/terminal/stats/financial.js');
 
         // Arrange
         globalFetchSpy.mockImplementation((url) => {
@@ -162,10 +152,7 @@ describe('getFinancialStatsText', () => {
     });
 
     test('handles missing market data gracefully', async () => {
-        let financialModule;
-        jest.isolateModules(() => {
-            financialModule = require('@js/transactions/terminal/stats/financial.js');
-        });
+        const financialModule = require('@js/transactions/terminal/stats/financial.js');
 
         // Arrange
         globalFetchSpy.mockImplementation((url) => {

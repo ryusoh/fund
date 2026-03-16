@@ -6,7 +6,7 @@ jest.mock('@js/transactions/utils.js', () => ({
 }));
 
 jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
-    renderAsciiTable: jest.fn(({ rows }) => rows), // Simplified mapping to string later
+    renderAsciiTable: jest.fn(({ rows }) => rows.map((r) => r.join(',')).join('\n')),
     formatTicker: jest.fn(val => `TICKER_${val}`),
     formatShareValue: jest.fn(val => `SHARE_${val}`),
     formatResidualValue: jest.fn(val => `RESID_${val}`),
@@ -35,10 +35,8 @@ describe('Holdings Stats Module', () => {
     describe('getHoldingsText', () => {
         test('fetches and formats JSON holding data correctly for USD', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({
@@ -58,7 +56,6 @@ describe('Holdings Stats Module', () => {
             const result = await moduleLocal.getHoldingsText('USD');
 
             // Assert
-            // The mocked `renderAsciiTable` returns the rows array directly, so it interpolates into \nArray,Array\n
             expect(typeof result).toBe('string');
             expect(result).toContain('AAPL');
             expect(result).toContain('10.00');
@@ -72,10 +69,8 @@ describe('Holdings Stats Module', () => {
 
         test('returns "No current holdings." when data is empty', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({
@@ -95,10 +90,8 @@ describe('Holdings Stats Module', () => {
 
         test('falls back to text file on JSON failure', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({ ok: false }); // Fails JSON load
@@ -121,11 +114,9 @@ describe('Holdings Stats Module', () => {
 
         test('returns error string when both json and txt endpoints fail', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
-            globalFetchSpy.mockImplementation((url) => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+
+            globalFetchSpy.mockImplementation(() => {
                 return Promise.resolve({ ok: false });
             });
 
@@ -140,10 +131,8 @@ describe('Holdings Stats Module', () => {
     describe('getHoldingsDebugText', () => {
         test('returns error string if lotsByTicker is null or empty', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+
             buildLotSnapshotsMock.mockReturnValue({ lotsByTicker: new Map() });
 
             // Act
@@ -155,10 +144,7 @@ describe('Holdings Stats Module', () => {
 
         test('ignores zero-balance shares correctly', async () => {
             // Arrange
-            let moduleLocal;
-            jest.isolateModules(() => {
-                moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
-            });
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
 
             const lotsByTicker = new Map([
                 ['EMPTY_CORP', [{ qty: 10 }, { qty: -10 }]], // nets to 0
@@ -170,10 +156,9 @@ describe('Holdings Stats Module', () => {
             const result = await moduleLocal.getHoldingsDebugText();
 
             // Assert
-            // Our mock renderAsciiTable returns rows as an array, interpolating to string
             expect(result).toContain('TICKER_REAL_CORP');
             expect(result).toContain('SHARE_15.5');
-            expect(result).toContain('15.50'); // Rounded
+            expect(result).toContain('15.50'); // the explicit rounded value in output string
             expect(result).toContain('RESID_0');
             expect(result).not.toContain('EMPTY_CORP'); // should be ignored due to near-zero logic
         });
