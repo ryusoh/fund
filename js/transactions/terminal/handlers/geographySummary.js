@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 /**
  * Fetch and display geographic allocation summary with continent/region breakdown
  * @returns {Promise<string>} Formatted geography summary text
@@ -9,7 +10,8 @@ export async function getGeographySummaryText() {
             throw new Error(`Failed to fetch geography summary: ${response.status}`);
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error: Unable to load geography summary. Run data generation first.';
     }
 }

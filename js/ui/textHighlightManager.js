@@ -43,7 +43,9 @@ function prefersReducedMotion() {
     }
     try {
         return w.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch {
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
         return false;
     }
 }

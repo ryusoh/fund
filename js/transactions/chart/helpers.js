@@ -1,4 +1,5 @@
 import { CHART_SMOOTHING } from '../../config.js';
+import { logger } from '../../utils/logger.js';
 
 const DEFAULT_MONO_FONT = "'JetBrains Mono','IBM Plex Mono','Menlo',monospace";
 
@@ -256,7 +257,8 @@ export function parseColorToRgb(baseColor) {
         if (computed && computed !== baseColor) {
             return parseColorToRgb(computed);
         }
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         ctx.restore();
         return null;
     }

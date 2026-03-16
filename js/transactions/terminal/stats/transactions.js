@@ -1,6 +1,7 @@
 import { formatCurrency } from '../../utils.js';
 import { transactionState } from '../../state.js';
 import { renderAsciiTable } from './formatting.js';
+import { logger } from '../../../utils/logger.js';
 
 let statsDataCache = null;
 
@@ -99,7 +100,8 @@ export async function getStatsText(currency = 'USD') {
 ${table}
 `;
         }
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         // Fall through to legacy text fallback
     }
 
@@ -109,7 +111,8 @@ ${table}
             return 'Error loading transaction stats.';
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading transaction stats.';
     }
 }

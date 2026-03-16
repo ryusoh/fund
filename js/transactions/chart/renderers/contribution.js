@@ -49,6 +49,7 @@ import {
     constrainSeriesToRange,
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
+import { logger } from '../../../utils/logger.js';
 
 export async function drawContributionChart(ctx, chartManager, timestamp, options = {}) {
     const { drawdownMode = false } = options;
@@ -126,7 +127,8 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             } else {
                 historicalPrices = {};
             }
-        } catch {
+        } catch (error) {
+            logger.warn('Caught exception:', error);
             historicalPrices = {};
         }
     } else {

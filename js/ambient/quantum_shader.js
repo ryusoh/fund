@@ -97,7 +97,9 @@ function initControls(container, surface, state, uniforms, onStateChange) {
         if (typeof surface.setPointerCapture === 'function') {
             try {
                 surface.setPointerCapture(pointerId);
-            } catch {
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception:', error);
                 // Ignore pointer capture failures on platforms that disallow it.
             }
         }
@@ -147,7 +149,9 @@ function initControls(container, surface, state, uniforms, onStateChange) {
             ) {
                 surface.releasePointerCapture(event.pointerId);
             }
-        } catch {
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn('Caught exception:', error);
             // Ignore errors from releasePointerCapture on browsers without support.
         }
         container.classList.remove('is-dragging');

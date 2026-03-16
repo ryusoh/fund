@@ -23,7 +23,9 @@ function readStoredCurrency() {
             const stored = window.localStorage.getItem(STORAGE_KEY);
             return normalizeCurrency(stored);
         }
-    } catch {
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
         // Ignore storage errors (e.g., private mode)
     }
     return null;
@@ -34,7 +36,9 @@ function persistCurrency(currency) {
         if (typeof window !== 'undefined' && window.localStorage) {
             window.localStorage.setItem(STORAGE_KEY, currency);
         }
-    } catch {
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
         // Ignore storage errors
     }
 }

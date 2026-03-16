@@ -1,4 +1,5 @@
 import { drawImage } from '@charts/imageDrawer.js';
+import { logger } from '../utils/logger.js';
 
 export const imagePlugin = {
     id: 'imagePlugin',
@@ -48,7 +49,9 @@ export const imagePlugin = {
                     // Hint decode scheduling; avoid blocking the main thread
                     try {
                         img.decoding = 'async';
-                    } catch {}
+                    } catch (error) {
+                        logger.warn('Caught exception:', error);
+                    }
                     img.onload = () => {
                         loadedImages[imageUrl] = img;
                         pendingLoads.delete(imageUrl);
@@ -59,7 +62,9 @@ export const imagePlugin = {
                     };
                     img.src = imageUrl;
                 }
-            } catch {}
+            } catch (error) {
+                logger.warn('Caught exception:', error);
+            }
             // Do not draw yet; exit early since logos aren't visible
             return;
         }

@@ -31,7 +31,9 @@
                 target.classList.add('active');
             }
         });
-    } catch {
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
         // Ignore storage/DOM errors to avoid blocking page load
     }
 })();

@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import {
     renderAsciiTable,
     formatNumeric,
@@ -75,7 +76,8 @@ async function loadPeRatioData() {
             peRatioCache = await response.json();
             return peRatioCache;
         }
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         // ignore
     }
     return null;
@@ -142,7 +144,8 @@ export async function getFinancialStatsText() {
                         formatPercentageValue(market.dividendYield, { digits: 2, mode: 'percent' }),
                         formatMarketCap(market.marketCap, currency),
                     ];
-                } catch {
+                } catch (error) {
+                    logger.warn('Caught exception:', error);
                     return null;
                 }
             })
@@ -183,7 +186,8 @@ export async function getFinancialStatsText() {
         return `
 ${table}
 `;
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading financial analysis data.';
     }
 }
@@ -225,7 +229,8 @@ export async function getTechnicalStatsText() {
                         formatNumeric(market.beta, 2),
                         formatPercentageValue(market.volatility, { digits: 2, mode: 'fraction' }),
                     ];
-                } catch {
+                } catch (error) {
+                    logger.warn('Caught exception:', error);
                     return null;
                 }
             })
@@ -266,7 +271,8 @@ export async function getTechnicalStatsText() {
         return `
 ${table}
 `;
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading technical analysis data.';
     }
 }

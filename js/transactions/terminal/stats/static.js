@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 export async function getCagrText() {
     try {
         const response = await fetch('../data/output/cagr.txt');
@@ -5,7 +6,8 @@ export async function getCagrText() {
             return 'Error loading CAGR data.';
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading CAGR data.';
     }
 }
@@ -17,7 +19,8 @@ export async function getAnnualReturnText() {
             return 'Error loading annual returns.';
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading annual returns.';
     }
 }
@@ -29,7 +32,8 @@ export async function getRatioText() {
             return 'Error loading Sharpe and Sortino ratios.';
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading Sharpe and Sortino ratios.';
     }
 }
