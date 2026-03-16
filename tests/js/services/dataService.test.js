@@ -1595,3 +1595,63 @@ describe('dataService', () => {
         });
     });
 });
+
+describe('_calculateCurrencyChanges', () => {
+    it('should correctly calculate absolute and percentage changes across currencies', () => {
+        const baseEntry = {
+            total: 1000,
+            totalCNY: 7000,
+            totalJPY: 150000,
+            totalKRW: 1300000,
+        };
+        const lastEntry = {
+            total: 1100, // +10%
+            totalCNY: 7700, // +10%
+            totalJPY: 142500, // -5%
+            totalKRW: 1300000, // 0%
+        };
+
+        const result = __testables._calculateCurrencyChanges(baseEntry, lastEntry);
+
+        expect(result.absoluteChangeUSD).toBe(100);
+        expect(result.absoluteChangeCNY).toBe(700);
+        expect(result.absoluteChangeJPY).toBe(-7500);
+        expect(result.absoluteChangeKRW).toBe(0);
+
+        expect(result.percentChangeUSD).toBeCloseTo(0.1);
+        expect(result.percentChangeCNY).toBeCloseTo(0.1);
+        expect(result.percentChangeJPY).toBeCloseTo(-0.05);
+        expect(result.percentChangeKRW).toBe(0);
+        expect(result.percentChange).toBeCloseTo(0.1); // USD is default
+    });
+
+    it('should handle zero base edge cases gracefully', () => {
+        const baseEntry = {
+            total: 0,
+            totalCNY: 0,
+            totalJPY: 0,
+            totalKRW: 0,
+        };
+        const lastEntry = {
+            total: 100,
+            totalCNY: 0,
+            totalJPY: -50,
+            totalKRW: 10,
+        };
+
+        const result = __testables._calculateCurrencyChanges(baseEntry, lastEntry);
+
+        expect(result.percentChangeUSD).toBeNull();
+        expect(result.percentChangeCNY).toBe(0);
+        expect(result.percentChangeJPY).toBeNull();
+        expect(result.percentChangeKRW).toBeNull();
+    });
+
+    it('should return null if baseline totals are not finite', () => {
+        const baseEntry = { total: 'invalid' };
+        const lastEntry = { total: 100 };
+
+        const result = __testables._calculateCurrencyChanges(baseEntry, lastEntry);
+        expect(result).toBeNull();
+    });
+});

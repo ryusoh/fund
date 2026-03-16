@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import { transactionState, getShowChartLabels } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import { CHART_LINE_WIDTHS, mountainFill } from '../../../config.js';
@@ -37,7 +38,8 @@ export async function loadYieldData() {
             return null;
         }
         return await response.json();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return null;
     }
 }

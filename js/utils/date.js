@@ -7,6 +7,102 @@ export function getNyDate() {
 }
 
 /**
+ * Checks if a given date is a US market holiday.
+ * Uses simplified rules for core US market holidays.
+ * @param {Date} date The date to check.
+ * @returns {boolean} True if it is a holiday.
+ */
+function isMarketHoliday(date) {
+    const month = date.getMonth(); // 0-indexed
+    const day = date.getDate();
+    const dayOfWeek = date.getDay();
+
+    // Helper: nth day of week in month (e.g., 3rd Monday)
+    const isNthDayOfWeek = (n, targetDayOfWeek) => {
+        return dayOfWeek === targetDayOfWeek && Math.ceil(day / 7) === n;
+    };
+
+    // Helper: Last day of week in month
+    const isLastDayOfWeek = (targetDayOfWeek) => {
+        const d = new Date(date.getTime());
+        d.setDate(d.getDate() + 7);
+        return dayOfWeek === targetDayOfWeek && d.getMonth() !== month;
+    };
+
+    // Static dates (or observed on nearest weekday)
+    const checkStaticHoliday = (targetMonth, targetDay) => {
+        if (month === targetMonth) {
+            if (day === targetDay) {
+                return true;
+            } // on the day
+            // Observed on Friday if holiday falls on Saturday
+            if (day === targetDay - 1 && dayOfWeek === 5) {
+                return true;
+            }
+            // Observed on Monday if holiday falls on Sunday
+            if (day === targetDay + 1 && dayOfWeek === 1) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // 1. New Year's Day (Jan 1)
+    if (checkStaticHoliday(0, 1)) {
+        return true;
+    }
+    // New Year's Day observed on Friday, Dec 31 of previous year if Jan 1 is Saturday
+    if (month === 11 && day === 31 && dayOfWeek === 5) {
+        return true;
+    }
+
+    // 2. Martin Luther King Jr. Day (3rd Monday in Jan)
+    if (month === 0 && isNthDayOfWeek(3, 1)) {
+        return true;
+    }
+
+    // 3. Washington's Birthday (Presidents' Day) (3rd Monday in Feb)
+    if (month === 1 && isNthDayOfWeek(3, 1)) {
+        return true;
+    }
+
+    // 4. Good Friday (Complex calculation, usually ignored in simple checks, skipping for simplicity unless strictly required)
+    // We omit Good Friday here to keep complexity bounded.
+
+    // 5. Memorial Day (Last Monday in May)
+    if (month === 4 && isLastDayOfWeek(1)) {
+        return true;
+    }
+
+    // 6. Juneteenth National Independence Day (June 19)
+    if (checkStaticHoliday(5, 19)) {
+        return true;
+    }
+
+    // 7. Independence Day (July 4)
+    if (checkStaticHoliday(6, 4)) {
+        return true;
+    }
+
+    // 8. Labor Day (1st Monday in Sept)
+    if (month === 8 && isNthDayOfWeek(1, 1)) {
+        return true;
+    }
+
+    // 9. Thanksgiving Day (4th Thursday in Nov)
+    if (month === 10 && isNthDayOfWeek(4, 4)) {
+        return true;
+    }
+
+    // 10. Christmas Day (Dec 25)
+    if (checkStaticHoliday(11, 25)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Checks if a given date (in NY timezone) is a trading day.
  * Trading days are Monday-Friday, excluding major US holidays.
  * @param {Date} date The date to check (should be in NY timezone).
@@ -20,8 +116,9 @@ export function isTradingDay(date) {
         return false; // Sunday or Saturday
     }
 
-    // TODO: Add major holiday checks here if needed
-    // For now, we'll just check weekends
+    if (isMarketHoliday(date)) {
+        return false;
+    }
 
     return true; // Monday through Friday
 }

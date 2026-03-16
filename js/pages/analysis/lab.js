@@ -1,6 +1,7 @@
 /* global Worker */
 import { compactNumber } from '../../utils/formatting.js';
 import { BayesianEngine } from './bayes.js';
+import { logger } from '../../utils/logger.js';
 
 const tickerListEl = document.getElementById('tickerList');
 const summaryStatsEl = document.getElementById('summaryStats');
@@ -153,7 +154,8 @@ async function fetchThesisScenarioTitles(symbol) {
         const titles = extractScenarioTitles(markdown);
         thesisTitleCache.set(symbol, titles);
         return titles;
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         thesisTitleCache.set(symbol, null);
         return null;
     }
@@ -980,7 +982,8 @@ async function buildConfigs() {
                 applyThesisScenarioTitles(config, thesisTitles);
                 config.metrics = computeMetrics(config);
                 return config;
-            } catch {
+            } catch (error) {
+                logger.warn('Caught exception:', error);
                 return null;
             }
         })

@@ -13,7 +13,10 @@
                 l.crossOrigin = 'anonymous';
                 document.head.appendChild(l);
             }
-        } catch {}
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn('Caught exception:', error);
+        }
     }
     function loadScriptSequential(urls, attrs) {
         return new Promise(function (resolve, reject) {

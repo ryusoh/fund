@@ -33,6 +33,7 @@ import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
 import { loadYieldData } from '../chart/renderers/yield.js';
 import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
+import { logger } from '../../utils/logger.js';
 
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
@@ -1148,7 +1149,8 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
         } else {
             historicalPrices = {};
         }
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         historicalPrices = {};
     }
     return historicalPrices;

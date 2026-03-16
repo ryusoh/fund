@@ -10,7 +10,9 @@
             let list;
             try {
                 list = JSON.parse(listAttr);
-            } catch {
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception:', error);
                 list = [];
             }
             if (!Array.isArray(list) || list.length === 0) {
@@ -41,5 +43,8 @@
         for (let j = 0; j < imgs.length; j++) {
             attach(imgs[j]);
         }
-    } catch {}
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
+    }
 })();

@@ -41,11 +41,15 @@
         window.addEventListener('load', function () {
             try {
                 navigator.serviceWorker.register(swPath, { scope }).catch(function () {});
-            } catch {
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception:', error);
                 /* no-op */
             }
         });
-    } catch {
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception:', error);
         /* no-op */
     }
 })();

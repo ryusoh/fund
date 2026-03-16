@@ -1,3 +1,4 @@
+import { logger } from '@utils/logger.js';
 export async function loadSectorsSnapshotData() {
     try {
         const response = await fetch('../data/output/figures/sectors.json');
@@ -39,7 +40,6 @@ export async function loadMarketcapSnapshotData() {
         return null;
     }
 }
-import { logger } from '@utils/logger.js';
 import { parseCSV } from './calculations.js';
 import { parseCSVLine } from './utils.js';
 
@@ -299,7 +299,8 @@ export async function loadPerformanceSeries() {
                         });
                     }
                 }
-            } catch {
+            } catch (error) {
+                logger.warn('Caught exception:', error);
                 // Ignore complexity if balance fetch fails
             }
         }

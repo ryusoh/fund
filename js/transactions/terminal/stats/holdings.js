@@ -6,6 +6,7 @@ import {
     formatResidualValue,
 } from './formatting.js';
 import { buildLotSnapshots } from './analysis.js';
+import { logger } from '../../../utils/logger.js';
 
 let holdingsDataCache = null;
 
@@ -51,7 +52,8 @@ export async function getHoldingsText(currency = 'USD') {
 ${table}
 `;
         }
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         // fallback to legacy text
     }
 
@@ -61,7 +63,8 @@ ${table}
             return 'Error loading holdings data.';
         }
         return await response.text();
-    } catch {
+    } catch (error) {
+        logger.warn('Caught exception:', error);
         return 'Error loading holdings data.';
     }
 }

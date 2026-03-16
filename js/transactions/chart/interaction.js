@@ -9,6 +9,7 @@ import {
     createTimeInterpolator,
 } from './helpers.js';
 import { formatCurrencyInline, convertValueToCurrency } from '../utils.js';
+import { logger } from '../../utils/logger.js';
 
 export const crosshairState = {
     active: false,
@@ -910,7 +911,8 @@ function handlePointerUp(event) {
     if (pointerCanvas && pointerCanvas.releasePointerCapture) {
         try {
             pointerCanvas.releasePointerCapture(event.pointerId);
-        } catch {
+        } catch (error) {
+            logger.warn('Caught exception:', error);
             // Ignore release errors
         }
     }

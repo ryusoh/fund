@@ -619,7 +619,8 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
                         todayBtnEl.dispatchEvent(
                             new MouseEvent('dblclick', { bubbles: true, cancelable: true })
                         );
-                    } catch {
+                    } catch (error) {
+                        logger.warn('Caught exception:', error);
                         /* istanbul ignore next: keyboard navigation double-click emulation edge case */
                         const evt = document.createEvent('MouseEvents');
                         /* istanbul ignore next: keyboard navigation double-click emulation edge case */
