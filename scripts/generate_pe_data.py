@@ -19,6 +19,7 @@ import json
 import math
 import os
 import re
+import tempfile
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
@@ -26,8 +27,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
-
-import tempfile
 
 try:
     import yfinance as yf
