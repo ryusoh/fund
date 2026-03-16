@@ -4,11 +4,11 @@
 +--------------------+---------------+
 | Metric             |         Value |
 +====================+===============+
-| Total Transactions |         2,659 |
-| Buy Orders         |         1,997 |
+| Total Transactions |         2,660 |
+| Buy Orders         |         1,998 |
 | Sell Orders        |           662 |
-| Total Buy Amount   | $1,887,431.48 |
+| Total Buy Amount   | $1,891,194.92 |
 | Total Sell Amount  | $1,093,615.35 |
-| Net Contributions  |   $793,816.13 |
+| Net Contributions  |   $797,579.57 |
 | Realized Gain      |   $104,331.34 |
 +--------------------+---------------+
