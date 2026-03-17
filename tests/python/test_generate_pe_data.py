@@ -237,16 +237,16 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertIn("api_key=test_key", req.full_url)
         self.assertNotIn("http://api.scraperapi.com", req.full_url)
 
-
-
-
     @patch("scripts.generate_pe_data.yf.Ticker")
     def test_get_fx_history_success(self, mock_ticker):
-        from scripts.generate_pe_data import get_fx_history, FX_CACHE
+        from scripts.generate_pe_data import FX_CACHE, get_fx_history
+
         FX_CACHE.clear()
 
         mock_stock = MagicMock()
-        mock_hist = pd.DataFrame({"Close": [1.2, 1.3]}, index=pd.to_datetime(["2023-01-01", "2023-01-02"], utc=True))
+        mock_hist = pd.DataFrame(
+            {"Close": [1.2, 1.3]}, index=pd.to_datetime(["2023-01-01", "2023-01-02"], utc=True)
+        )
         mock_stock.history.return_value = mock_hist
         mock_ticker.return_value = mock_stock
 
@@ -265,7 +265,8 @@ class TestGeneratePEData(unittest.TestCase):
 
     @patch("scripts.generate_pe_data.yf.Ticker")
     def test_get_fx_history_exception(self, mock_ticker):
-        from scripts.generate_pe_data import get_fx_history, FX_CACHE
+        from scripts.generate_pe_data import FX_CACHE, get_fx_history
+
         FX_CACHE.clear()
 
         mock_ticker.side_effect = Exception("Failed")
@@ -293,8 +294,8 @@ class TestGeneratePEData(unittest.TestCase):
 
     @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
     def test_load_eps_cache_exists(self, mock_path):
+
         from scripts.generate_pe_data import load_eps_cache
-        import json
 
         mock_path.exists.return_value = True
 
@@ -307,6 +308,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
     def test_load_eps_cache_not_exists(self, mock_path):
         from scripts.generate_pe_data import load_eps_cache
+
         mock_path.exists.return_value = False
 
         result = load_eps_cache()
@@ -315,6 +317,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
     def test_load_eps_cache_error(self, mock_path):
         from scripts.generate_pe_data import load_eps_cache
+
         mock_path.exists.return_value = True
 
         with patch("builtins.open", side_effect=Exception("Failed")):
@@ -354,13 +357,16 @@ class TestGeneratePEData(unittest.TestCase):
 
         mock_path.exists.return_value = True
 
-        with patch("builtins.open", unittest.mock.mock_open(read_data='{"A": {"2020-01-01": 1.0}}')):
+        with patch(
+            "builtins.open", unittest.mock.mock_open(read_data='{"A": {"2020-01-01": 1.0}}')
+        ):
             result = load_manual_patch()
             self.assertEqual(result, {"A": {"2020-01-01": 1.0}})
 
     @patch("scripts.generate_pe_data.MANUAL_PATCH_PATH")
     def test_load_manual_patch_not_exists(self, mock_path):
         from scripts.generate_pe_data import load_manual_patch
+
         mock_path.exists.return_value = False
 
         result = load_manual_patch()
@@ -369,6 +375,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.MANUAL_PATCH_PATH")
     def test_load_manual_patch_error(self, mock_path):
         from scripts.generate_pe_data import load_manual_patch
+
         mock_path.exists.return_value = True
 
         with patch("builtins.open", side_effect=Exception("Failed")):
@@ -392,6 +399,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.SPLIT_HISTORY_PATH")
     def test_load_split_history_not_exists(self, mock_path):
         from scripts.generate_pe_data import load_split_history
+
         mock_path.exists.return_value = False
 
         result = load_split_history()
@@ -400,6 +408,7 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.SPLIT_HISTORY_PATH")
     def test_load_split_history_error(self, mock_path):
         from scripts.generate_pe_data import load_split_history
+
         mock_path.exists.return_value = True
 
         with patch("pandas.read_csv", side_effect=Exception("Failed")):
@@ -409,20 +418,22 @@ class TestGeneratePEData(unittest.TestCase):
     def test_get_split_adjustment(self):
         from scripts.generate_pe_data import get_split_adjustment
 
-        split_df = pd.DataFrame({
-            "Symbol": ["A", "A", "B"],
-            "Split Date": pd.to_datetime(["2020-01-01", "2021-01-01", "2020-01-01"]),
-            "Split Multiplier": [2.0, 3.0, 4.0]
-        })
+        split_df = pd.DataFrame(
+            {
+                "Symbol": ["A", "A", "B"],
+                "Split Date": pd.to_datetime(["2020-01-01", "2021-01-01", "2020-01-01"]),
+                "Split Multiplier": [2.0, 3.0, 4.0],
+            }
+        )
 
         # Empty df
         self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), pd.DataFrame()), 1.0)
 
         # Before any splits -> compound both -> 2 * 3 = 6
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), split_df), 1.0/6.0)
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), split_df), 1.0 / 6.0)
 
         # Between splits -> only the later one -> 3
-        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2020-06-01"), split_df), 1.0/3.0)
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2020-06-01"), split_df), 1.0 / 3.0)
 
         # After all splits -> 1
         self.assertEqual(get_split_adjustment("A", pd.Timestamp("2022-01-01"), split_df), 1.0)
