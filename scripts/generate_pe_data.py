@@ -21,7 +21,7 @@ import os
 import re
 import tempfile
 import urllib.parse
-import urllib.request
+import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
@@ -904,14 +904,13 @@ def scrape_msci_forward_pe() -> Optional[float]:
     """Scrape Forward P/E for VT from MSCI ACWI Index factsheet."""
     try:
         url = "https://www.msci.com/indexes/index/990100"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0 AppleWebKit/537.36",
-                "Accept": "text/html",
-            },
-        )
-        content = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+        headers = {
+            "User-Agent": "Mozilla/5.0 AppleWebKit/537.36",
+            "Accept": "text/html",
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        content = response.text
         match = re.search(r"P/E Fwd.{0,200}?([0-9]+\.[0-9]+)", content, re.IGNORECASE | re.DOTALL)
         if match:
             return float(match.group(1))
@@ -938,13 +937,12 @@ def scrape_wsj_forward_pe() -> Optional[float]:
         else:
             url = target_url
 
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            },
-        )
-        content = urllib.request.urlopen(req, timeout=20).read().decode("utf-8")
+        headers = {
+            "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=20)
+        response.raise_for_status()
+        content = response.text
 
         block_starts = [m.start() for m in re.finditer(r"P 500 Index", content)]
         if not block_starts:

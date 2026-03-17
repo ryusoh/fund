@@ -8,7 +8,7 @@ import json
 import os
 import re
 import urllib.parse
-import urllib.request
+import requests
 from pathlib import Path
 
 
@@ -38,16 +38,14 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
         print(f"  ScraperAPI key not found, fetching directly for {etf_ticker}...")
         url = target_url
 
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            content = response.read().decode("utf-8")
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        content = response.text
     except Exception as e:
         print(f"  Error fetching {etf_ticker}: {e}")
         return {}

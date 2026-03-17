@@ -1,18 +1,17 @@
 import re
 import traceback
-import urllib.request
+import requests
 
 
 def scrape_wsj_forward_pe():
     try:
         url = "https://www.wsj.com/market-data/stocks/peyields"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            },
-        )
-        content = urllib.request.urlopen(req, timeout=10).read().decode("utf-8")
+        headers = {
+            "User-Agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        content = response.text
 
         print(f"Content length: {len(content)}")
 

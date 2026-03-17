@@ -8,7 +8,7 @@ import json
 import os
 import re
 import urllib.parse
-import urllib.request
+import requests
 from datetime import datetime
 from pathlib import Path
 
@@ -34,16 +34,14 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
         print("Warning: SCRAPER_API_KEY not set, fetching directly (may be blocked)")
         fetch_url = url
 
-    req = urllib.request.Request(
-        fetch_url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        },
-    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    }
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            content = response.read().decode("utf-8")
+        response = requests.get(fetch_url, headers=headers, timeout=30)
+        response.raise_for_status()
+        content = response.text
     except Exception as e:
         print(f"Error fetching from ETFRC: {e}")
         return None
