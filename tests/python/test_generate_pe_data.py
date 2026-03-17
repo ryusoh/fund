@@ -238,5 +238,198 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertNotIn("http://api.scraperapi.com", req.full_url)
 
 
+
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_get_fx_history_success(self, mock_ticker):
+        from scripts.generate_pe_data import get_fx_history, FX_CACHE
+        FX_CACHE.clear()
+
+        mock_stock = MagicMock()
+        mock_hist = pd.DataFrame({"Close": [1.2, 1.3]}, index=pd.to_datetime(["2023-01-01", "2023-01-02"], utc=True))
+        mock_stock.history.return_value = mock_hist
+        mock_ticker.return_value = mock_stock
+
+        result = get_fx_history("EURUSD=X")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(list(result), [1.2, 1.3])
+        # Check that index is normalized and tz-naive
+        self.assertIsNone(result.index.tz)
+
+        # Check cache hit
+        mock_ticker.reset_mock()
+        get_fx_history("EURUSD=X")
+        mock_ticker.assert_not_called()
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_get_fx_history_exception(self, mock_ticker):
+        from scripts.generate_pe_data import get_fx_history, FX_CACHE
+        FX_CACHE.clear()
+
+        mock_ticker.side_effect = Exception("Failed")
+
+        result = get_fx_history("EURUSD=X")
+
+        self.assertIsNone(result)
+
+    def test_get_closest_fx(self):
+        from scripts.generate_pe_data import get_closest_fx
+
+        fx_series = pd.Series([1.2, 1.3], index=pd.to_datetime(["2023-01-01", "2023-01-05"]))
+
+        # Exact match
+        self.assertEqual(get_closest_fx(fx_series, pd.Timestamp("2023-01-01")), 1.2)
+
+        # Pad (forward fill)
+        self.assertEqual(get_closest_fx(fx_series, pd.Timestamp("2023-01-03")), 1.2)
+
+        # Backfill
+        self.assertEqual(get_closest_fx(fx_series, pd.Timestamp("2022-12-31")), 1.2)
+
+        # Exception handling
+        self.assertEqual(get_closest_fx(pd.Series(dtype=float), pd.Timestamp("2023-01-01")), 1.0)
+
+    @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
+    def test_load_eps_cache_exists(self, mock_path):
+        from scripts.generate_pe_data import load_eps_cache
+        import json
+
+        mock_path.exists.return_value = True
+
+        # We need to mock open
+        with patch("builtins.open", unittest.mock.mock_open(read_data='{"A": 1}')) as mock_file:
+            result = load_eps_cache()
+            self.assertEqual(result, {"A": 1})
+            mock_file.assert_called_once_with(mock_path, "r")
+
+    @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
+    def test_load_eps_cache_not_exists(self, mock_path):
+        from scripts.generate_pe_data import load_eps_cache
+        mock_path.exists.return_value = False
+
+        result = load_eps_cache()
+        self.assertEqual(result, {})
+
+    @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
+    def test_load_eps_cache_error(self, mock_path):
+        from scripts.generate_pe_data import load_eps_cache
+        mock_path.exists.return_value = True
+
+        with patch("builtins.open", side_effect=Exception("Failed")):
+            result = load_eps_cache()
+            self.assertEqual(result, {})
+
+    @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
+    def test_save_eps_cache_success(self, mock_path):
+        from scripts.generate_pe_data import save_eps_cache
+
+        mock_parent = MagicMock()
+        mock_path.parent = mock_parent
+
+        with patch("builtins.open", unittest.mock.mock_open()) as mock_file:
+            save_eps_cache({"A": 1})
+            mock_parent.mkdir.assert_called_once_with(parents=True, exist_ok=True)
+            mock_file.assert_called_once_with(mock_path, "w")
+
+            # Check json was written
+            handle = mock_file()
+            handle.write.assert_called()
+
+    @patch("scripts.generate_pe_data.EPS_CACHE_PATH")
+    def test_save_eps_cache_error(self, mock_path):
+        from scripts.generate_pe_data import save_eps_cache
+
+        mock_parent = MagicMock()
+        mock_parent.mkdir.side_effect = Exception("Failed")
+        mock_path.parent = mock_parent
+
+        # Should catch exception and not raise
+        save_eps_cache({"A": 1})
+
+    @patch("scripts.generate_pe_data.MANUAL_PATCH_PATH")
+    def test_load_manual_patch_exists(self, mock_path):
+        from scripts.generate_pe_data import load_manual_patch
+
+        mock_path.exists.return_value = True
+
+        with patch("builtins.open", unittest.mock.mock_open(read_data='{"A": {"2020-01-01": 1.0}}')):
+            result = load_manual_patch()
+            self.assertEqual(result, {"A": {"2020-01-01": 1.0}})
+
+    @patch("scripts.generate_pe_data.MANUAL_PATCH_PATH")
+    def test_load_manual_patch_not_exists(self, mock_path):
+        from scripts.generate_pe_data import load_manual_patch
+        mock_path.exists.return_value = False
+
+        result = load_manual_patch()
+        self.assertEqual(result, {})
+
+    @patch("scripts.generate_pe_data.MANUAL_PATCH_PATH")
+    def test_load_manual_patch_error(self, mock_path):
+        from scripts.generate_pe_data import load_manual_patch
+        mock_path.exists.return_value = True
+
+        with patch("builtins.open", side_effect=Exception("Failed")):
+            result = load_manual_patch()
+            self.assertEqual(result, {})
+
+    @patch("scripts.generate_pe_data.SPLIT_HISTORY_PATH")
+    def test_load_split_history_exists(self, mock_path):
+        from scripts.generate_pe_data import load_split_history
+
+        mock_path.exists.return_value = True
+
+        with patch("pandas.read_csv") as mock_read_csv:
+            mock_read_csv.return_value = pd.DataFrame({"Split Date": ["2020-01-01"]})
+            result = load_split_history()
+
+            self.assertEqual(len(result), 1)
+            self.assertTrue(pd.api.types.is_datetime64_any_dtype(result["Split Date"]))
+            mock_read_csv.assert_called_once_with(mock_path)
+
+    @patch("scripts.generate_pe_data.SPLIT_HISTORY_PATH")
+    def test_load_split_history_not_exists(self, mock_path):
+        from scripts.generate_pe_data import load_split_history
+        mock_path.exists.return_value = False
+
+        result = load_split_history()
+        self.assertTrue(result.empty)
+
+    @patch("scripts.generate_pe_data.SPLIT_HISTORY_PATH")
+    def test_load_split_history_error(self, mock_path):
+        from scripts.generate_pe_data import load_split_history
+        mock_path.exists.return_value = True
+
+        with patch("pandas.read_csv", side_effect=Exception("Failed")):
+            result = load_split_history()
+            self.assertTrue(result.empty)
+
+    def test_get_split_adjustment(self):
+        from scripts.generate_pe_data import get_split_adjustment
+
+        split_df = pd.DataFrame({
+            "Symbol": ["A", "A", "B"],
+            "Split Date": pd.to_datetime(["2020-01-01", "2021-01-01", "2020-01-01"]),
+            "Split Multiplier": [2.0, 3.0, 4.0]
+        })
+
+        # Empty df
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), pd.DataFrame()), 1.0)
+
+        # Before any splits -> compound both -> 2 * 3 = 6
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2019-01-01"), split_df), 1.0/6.0)
+
+        # Between splits -> only the later one -> 3
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2020-06-01"), split_df), 1.0/3.0)
+
+        # After all splits -> 1
+        self.assertEqual(get_split_adjustment("A", pd.Timestamp("2022-01-01"), split_df), 1.0)
+
+        # No symbol found -> 1
+        self.assertEqual(get_split_adjustment("C", pd.Timestamp("2019-01-01"), split_df), 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
