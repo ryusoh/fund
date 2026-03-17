@@ -4,7 +4,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
-import urllib.request
+import requests
 from pathlib import Path
 
 
@@ -26,15 +26,13 @@ def fetch_vt_sectors():
         print("ScraperAPI key not found, fetching directly (may be blocked)...")
         url = target_url
 
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    }
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            content = response.read().decode("utf-8")
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        content = response.text
     except Exception as e:
         print(f"Error fetching VT data: {e}")
         return None

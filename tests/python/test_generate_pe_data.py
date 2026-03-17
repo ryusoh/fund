@@ -212,30 +212,29 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertEqual(data["points"][0]["eps"], 9.99)
         self.assertEqual(data["points"][0]["date"], pd.Timestamp("2020-12-31"))
 
-    @patch("scripts.generate_pe_data.urllib.request.urlopen")
+    @patch("scripts.generate_pe_data.requests.get")
     @patch.dict("os.environ", {"SCRAPER_API_KEY": "test_key"})
-    def test_scrape_wsj_forward_pe_https(self, mock_urlopen) -> None:
+    def test_scrape_wsj_forward_pe_https(self, mock_get) -> None:
         """Test that scrape_wsj_forward_pe uses HTTPS when API key is present."""
         from scripts.generate_pe_data import scrape_wsj_forward_pe
 
         # Setup mock to return dummy content to avoid parsing errors if possible
         mock_response = MagicMock()
-        mock_response.read.return_value = b"dummy content"
-        mock_urlopen.return_value = mock_response
+        mock_response.text = "dummy content"
+        mock_get.return_value = mock_response
 
         # Call the function
         scrape_wsj_forward_pe()
 
-        # Check the URL passed to urllib.request.Request
-        # urlopen is called with a Request object
-        mock_urlopen.assert_called_once()
-        args, _ = mock_urlopen.call_args
-        req = args[0]
+        # Check the URL passed to requests.get
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        url = args[0]
 
         # Verify the URL uses HTTPS
-        self.assertTrue(req.full_url.startswith("https://api.scraperapi.com/"))
-        self.assertIn("api_key=test_key", req.full_url)
-        self.assertNotIn("http://api.scraperapi.com", req.full_url)
+        self.assertTrue(url.startswith("https://api.scraperapi.com/"))
+        self.assertIn("api_key=test_key", url)
+        self.assertNotIn("http://api.scraperapi.com", url)
 
     @patch("scripts.generate_pe_data.yf.Ticker")
     def test_get_fx_history_success(self, mock_ticker):
