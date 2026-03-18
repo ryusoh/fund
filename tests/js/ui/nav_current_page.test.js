@@ -1,6 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
 describe('nav_current_page', () => {
 
     beforeEach(() => {
@@ -151,7 +148,7 @@ describe('nav_current_page', () => {
 
         loadNavCurrentPage();
 
-        let testLink = document.getElementById('test-link');
+        const testLink = document.getElementById('test-link');
         // Because it waits for DOMContentLoaded, it shouldn't be processed yet
         expect(testLink.hasAttribute('href')).toBe(true);
 

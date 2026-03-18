@@ -1,6 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
 describe('icon_font_ready', () => {
     let originalFonts;
 
