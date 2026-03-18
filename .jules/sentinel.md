@@ -67,3 +67,11 @@
 **Learning:** Always utilize HTTPS endpoints for external APIs. Mocks using `urllib.request.Request` were successfully employed to verify scheme usage (e.g. `mock_request.call_args[0][0].startswith("https://")`).
 
 **Prevention:** Enforce HTTPS for all external data fetching and API interactions.
+
+## 2025-01-20 - Auditing Silent Exceptions and Catch Blocks
+
+**Vulnerability:** Several utility and ambient logic modules contained empty or improperly handled `catch(error) {}` blocks. For example, `js/ui/service_worker_register.js`, `js/ambient/config.js`, and `js/ambient/loader.js`. Empty try-catch blocks suppress stack traces during critical service worker registrations or canvas initialization loops, causing silent runtime failures with no diagnostic context for debugging errors.
+
+**Learning:** This widespread pattern usually stems from lazy error handling where a component is deemed "optional" (like the Ambient graphics loader), so developers swallow the error. However, even for optional visual effects, `console.warn` or `logger.warn` must be triggered to log the failure cleanly for tracking production issues.
+
+**Prevention:** Ensure consistent usage of an internal logger or standard `console.warn`/`console.error` with specific context in all catch blocks. Linter rules should enforce `no-empty` blocks natively, or exceptions should be captured and bubbled up.

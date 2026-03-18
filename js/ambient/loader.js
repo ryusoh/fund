@@ -34,12 +34,12 @@
         loadScript('./js/ambient/sketch.js')
             .then(() => loadScript('./js/ambient/config.js', true))
             .then(() => loadScript('./js/ambient/ambient.js', true))
-            .catch(() => {
-                // Ambient is optional
+            .catch((error) => {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception loading ambient scripts:', error);
             });
-
-        // eslint-disable-next-line no-unused-vars
-    } catch (e) {
-        // ignore
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception initializing ambient loader:', error);
     }
 })();

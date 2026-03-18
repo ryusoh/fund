@@ -44,7 +44,7 @@ function cloneGlassEffectConfig(config) {
     try {
         return JSON.parse(JSON.stringify(config));
     } catch (error) {
-        logger.warn('Unable to deep clone glass effect config. Using reference.', error);
+        logger.warn('Unable to deep clone glass effect config. Using reference:', error);
         return config;
     }
 }
