@@ -240,13 +240,6 @@ describe('Chart data helpers', () => {
 
             const series = contribution.buildContributionSeriesFromTransactions(transactions);
 
-            // If sorted alphabetically: '12/31/2024' < '2025-01-01'.
-            // In this specific case, '1' < '2' so 12/31 would be first anyway.
-            // BUT what if it was '1/1/2025'? '1/' < '12' is false, '1/' < '12/'?
-            // ASCII '/': 47, ASCII '2': 50. So '1/' comes BEFORE '12'.
-            // If it's '2024-01-01' vs '12/31/2023', '12/' < '2024'.
-            // My point is alphabetical sorting on mixed formats is unreliable.
-
             // We expect chronological: 2024-12-31, 2025-01-01, 2025-01-02
             expect(series[0].tradeDate).toBe('2024-12-31');
             expect(series[0].amount).toBe(50);
