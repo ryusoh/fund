@@ -360,8 +360,8 @@ function filterAndSort(searchTerm = '') {
                     return result;
                 }
                 return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
+                    a.tradeDate,
+                    b.tradeDate,
                     'desc'
                 );
             }
@@ -371,8 +371,8 @@ function filterAndSort(searchTerm = '') {
                     return result;
                 }
                 return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
+                    a.tradeDate,
+                    b.tradeDate,
                     'desc'
                 );
             }
@@ -384,8 +384,8 @@ function filterAndSort(searchTerm = '') {
                     return result;
                 }
                 return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
+                    a.tradeDate,
+                    b.tradeDate,
                     'desc'
                 );
             }
@@ -401,16 +401,15 @@ function filterAndSort(searchTerm = '') {
                     return result;
                 }
                 return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
+                    a.tradeDate,
+                    b.tradeDate,
                     'desc'
                 );
             }
             case 'tradeDate':
             default: {
-                const dateA = new Date(a.tradeDate).getTime();
-                const dateB = new Date(b.tradeDate).getTime();
-                const dateComparison = compareValues(dateA, dateB, order);
+                // Direct string comparison of ISO dates YYYY-MM-DD is significantly faster
+                const dateComparison = compareValues(a.tradeDate, b.tradeDate, order);
                 if (dateComparison !== 0) {
                     return dateComparison;
                 }

@@ -48,7 +48,7 @@ export function buildContributionSeriesFromTransactions(
 
     const sortedTransactions = [...transactions].sort(
         (a, b) =>
-            new Date(a.tradeDate) - new Date(b.tradeDate) ||
+            (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0) ||
             (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
 
@@ -77,7 +77,7 @@ export function buildContributionSeriesFromTransactions(
         }
     });
 
-    const uniqueDates = Array.from(dailyMap.keys()).sort((a, b) => new Date(a) - new Date(b));
+    const uniqueDates = Array.from(dailyMap.keys()).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const series = [];
     let cumulativeAmount = 0;
 
@@ -246,7 +246,7 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
     const sortedTransactions = [...transactions].sort(
         (a, b) =>
-            new Date(a.tradeDate) - new Date(b.tradeDate) ||
+            (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0) ||
             (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
 
@@ -388,7 +388,7 @@ export function applyDrawdownToSeries(data, valueKey, initialPeak = -Infinity) {
         return [];
     }
     // Sort by date first
-    const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     let runningPeak = initialPeak;
     return sorted.map((p) => {
         const val = p[valueKey];
