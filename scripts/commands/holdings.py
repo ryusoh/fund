@@ -69,7 +69,8 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
                 with json_path.open("r", encoding="utf-8") as f:
                     data = json.load(f)
                 return [t for t in data.keys() if str(t).upper().startswith(prefix.upper())]
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Ticker completer failed: {e}", file=sys.stderr)
             return []
         return []
 
@@ -90,5 +91,5 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
             if getattr(act, "dest", "") == "action" and 'choices' in act.__dict__:
                 # Explicitly attach choices completer for clarity
                 act.completer = ChoicesCompleter(list(act.choices))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Warning: Failed to set up autocomplete for holdings command: {e}", file=sys.stderr)

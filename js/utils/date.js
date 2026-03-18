@@ -12,116 +12,116 @@ export function getNyDate() {
  * @param {Date} date The date to check.
  * @returns {boolean} True if it is a holiday.
  */
-function isMarketHoliday(date) {
-    const month = date.getMonth(); // 0-indexed
+// Helper: nth day of week in month (e.g., 3rd Monday)
+function isNthDayOfWeek(date, n, targetDayOfWeek) {
+    return date.getDay() === targetDayOfWeek && Math.ceil(date.getDate() / 7) === n;
+}
+
+// Helper: Last day of week in month
+function isLastDayOfWeek(date, targetDayOfWeek) {
+    const d = new Date(date.getTime());
+    d.setDate(d.getDate() + 7);
+    return date.getDay() === targetDayOfWeek && d.getMonth() !== date.getMonth();
+}
+
+// Static dates (or observed on nearest weekday)
+function checkStaticHoliday(date, targetMonth, targetDay) {
+    const month = date.getMonth();
     const day = date.getDate();
     const dayOfWeek = date.getDay();
 
-    // Helper: nth day of week in month (e.g., 3rd Monday)
-    const isNthDayOfWeek = (n, targetDayOfWeek) => {
-        return dayOfWeek === targetDayOfWeek && Math.ceil(day / 7) === n;
-    };
-
-    // Helper: Last day of week in month
-    const isLastDayOfWeek = (targetDayOfWeek) => {
-        const d = new Date(date.getTime());
-        d.setDate(d.getDate() + 7);
-        return dayOfWeek === targetDayOfWeek && d.getMonth() !== month;
-    };
-
-    // Static dates (or observed on nearest weekday)
-    const checkStaticHoliday = (targetMonth, targetDay) => {
-        if (month === targetMonth) {
-            if (day === targetDay) {
-                return true;
-            } // on the day
-            // Observed on Friday if holiday falls on Saturday
-            if (day === targetDay - 1 && dayOfWeek === 5) {
-                return true;
-            }
-            // Observed on Monday if holiday falls on Sunday
-            if (day === targetDay + 1 && dayOfWeek === 1) {
-                return true;
-            }
+    if (month === targetMonth) {
+        if (day === targetDay) {
+            return true;
         }
-        return false;
-    };
+        // Observed on Friday if holiday falls on Saturday
+        if (day === targetDay - 1 && dayOfWeek === 5) {
+            return true;
+        }
+        // Observed on Monday if holiday falls on Sunday
+        if (day === targetDay + 1 && dayOfWeek === 1) {
+            return true;
+        }
+    }
+    return false;
+}
 
-    // 1. New Year's Day (Jan 1)
-    if (checkStaticHoliday(0, 1)) {
+function getGoodFriday(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const n = Math.floor((h + l - 7 * m + 114) / 31);
+    const p = (h + l - 7 * m + 114) % 31;
+    const easter = new Date(year, n - 1, p + 1);
+    return new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+}
+
+function isNthDayHoliday(month, date) {
+    if (month === 0 && isNthDayOfWeek(date, 3, 1)) {
         return true;
     }
-    // New Year's Day observed on Friday, Dec 31 of previous year if Jan 1 is Saturday
-    if (month === 11 && day === 31 && dayOfWeek === 5) {
+    if (month === 1 && isNthDayOfWeek(date, 3, 1)) {
+        return true;
+    }
+    if (month === 8 && isNthDayOfWeek(date, 1, 1)) {
+        return true;
+    }
+    if (month === 10 && isNthDayOfWeek(date, 4, 4)) {
+        return true;
+    }
+    return false;
+}
+
+function isDynamicHoliday(date) {
+    const month = date.getMonth();
+    if (isNthDayHoliday(month, date)) {
+        return true;
+    }
+    if (month === 4 && isLastDayOfWeek(date, 1)) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Checks if a given date is a US market holiday.
+ * Uses simplified rules for core US market holidays.
+ * @param {Date} date The date to check.
+ * @returns {boolean} True if it is a holiday.
+ */
+function isMarketHoliday(date) {
+    const month = date.getMonth();
+    const day = date.getDate();
+    const dayOfWeek = date.getDay();
+
+    if (checkStaticHoliday(date, 0, 1) || (month === 11 && day === 31 && dayOfWeek === 5)) {
+        return true;
+    }
+    if (checkStaticHoliday(date, 5, 19)) {
+        return true;
+    }
+    if (checkStaticHoliday(date, 6, 4)) {
+        return true;
+    }
+    if (checkStaticHoliday(date, 11, 25)) {
         return true;
     }
 
-    // 2. Martin Luther King Jr. Day (3rd Monday in Jan)
-    if (month === 0 && isNthDayOfWeek(3, 1)) {
-        return true;
-    }
-
-    // 3. Washington's Birthday (Presidents' Day) (3rd Monday in Feb)
-    if (month === 1 && isNthDayOfWeek(3, 1)) {
-        return true;
-    }
-
-    // 4. Good Friday (computus calculation)
-    const getEaster = (y) => {
-        const a = y % 19;
-        const b = Math.floor(y / 100);
-        const c = y % 100;
-        const d = Math.floor(b / 4);
-        const e = b % 4;
-        const f = Math.floor((b + 8) / 25);
-        const g = Math.floor((b - f + 1) / 3);
-        const h = (19 * a + b - d - g + 15) % 30;
-        const i = Math.floor(c / 4);
-        const k = c % 4;
-        const l = (32 + 2 * e + 2 * i - h - k) % 7;
-        const m = Math.floor((a + 11 * h + 22 * l) / 451);
-        const n = Math.floor((h + l - 7 * m + 114) / 31);
-        const p = (h + l - 7 * m + 114) % 31;
-        return new Date(y, n - 1, p + 1);
-    };
-
-    const easter = getEaster(date.getFullYear());
-    const goodFriday = new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
+    const goodFriday = getGoodFriday(date.getFullYear());
     if (month === goodFriday.getMonth() && day === goodFriday.getDate()) {
         return true;
     }
 
-    // 5. Memorial Day (Last Monday in May)
-    if (month === 4 && isLastDayOfWeek(1)) {
-        return true;
-    }
-
-    // 6. Juneteenth National Independence Day (June 19)
-    if (checkStaticHoliday(5, 19)) {
-        return true;
-    }
-
-    // 7. Independence Day (July 4)
-    if (checkStaticHoliday(6, 4)) {
-        return true;
-    }
-
-    // 8. Labor Day (1st Monday in Sept)
-    if (month === 8 && isNthDayOfWeek(1, 1)) {
-        return true;
-    }
-
-    // 9. Thanksgiving Day (4th Thursday in Nov)
-    if (month === 10 && isNthDayOfWeek(4, 4)) {
-        return true;
-    }
-
-    // 10. Christmas Day (Dec 25)
-    if (checkStaticHoliday(11, 25)) {
-        return true;
-    }
-
-    return false;
+    return isDynamicHoliday(date);
 }
 
 /**

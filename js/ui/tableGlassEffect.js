@@ -338,105 +338,72 @@ export class TableGlassEffect {
 
     // Helper to get point along rounded rectangle path
     // Helper to get point along rounded rectangle path
+    getPointAtProgressZeroRadius(progress) {
+        const w = this.width;
+        const h = this.height;
+        const perimeter = 2 * w + 2 * h;
+        const dist = progress * perimeter;
+        if (dist <= w) {
+            return { x: dist, y: 0 };
+        }
+        if (dist <= w + h) {
+            return { x: w, y: dist - w };
+        }
+        if (dist <= 2 * w + h) {
+            return { x: w - (dist - (w + h)), y: h };
+        }
+        return { x: 0, y: h - (dist - (2 * w + h)) };
+    }
+
+    getSegments(w, h, radius) {
+        const cornerLen = 0.5 * Math.PI * radius;
+        return [
+            { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: radius + d, y: 0 }) },
+            { type: 'arc', len: cornerLen, calc: (d) => {
+                const angle = -Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
+                return { x: w - radius + Math.cos(angle) * radius, y: radius + Math.sin(angle) * radius };
+            } },
+            { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: w, y: radius + d }) },
+            { type: 'arc', len: cornerLen, calc: (d) => {
+                const angle = (d / cornerLen) * (Math.PI / 2);
+                return { x: w - radius + Math.cos(angle) * radius, y: h - radius + Math.sin(angle) * radius };
+            } },
+            { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: w - radius - d, y: h }) },
+            { type: 'arc', len: cornerLen, calc: (d) => {
+                const angle = Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
+                return { x: radius + Math.cos(angle) * radius, y: h - radius + Math.sin(angle) * radius };
+            } },
+            { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: 0, y: h - radius - d }) },
+            { type: 'arc', len: cornerLen, calc: (d) => {
+                const angle = Math.PI + (d / cornerLen) * (Math.PI / 2);
+                return { x: radius + Math.cos(angle) * radius, y: radius + Math.sin(angle) * radius };
+            } }
+        ];
+    }
+
     getPointAtProgress(progress, radius) {
-        // Ensure progress is 0-1
         progress = progress % 1;
         if (progress < 0) {
             progress += 1;
         }
 
-        const w = this.width;
-        const h = this.height;
-
-        // If radius is 0, simplify
         if (radius === 0) {
-            const perimeter = 2 * w + 2 * h;
-            const dist = progress * perimeter;
-            if (dist <= w) {
-                return { x: dist, y: 0 };
-            } // Top
-            if (dist <= w + h) {
-                return { x: w, y: dist - w };
-            } // Right
-            if (dist <= 2 * w + h) {
-                return { x: w - (dist - (w + h)), y: h };
-            } // Bottom
-            return { x: 0, y: h - (dist - (2 * w + h)) }; // Left
+            return this.getPointAtProgressZeroRadius(progress);
         }
 
-        // Corner length (quarter circle)
-        const cornerLen = 0.5 * Math.PI * radius;
-        // Straight lengths
-        const topLen = w - 2 * radius;
-        const rightLen = h - 2 * radius;
-        const bottomLen = w - 2 * radius;
-        const leftLen = h - 2 * radius;
-
-        const perimeter = 2 * topLen + 2 * rightLen + 4 * cornerLen;
+        const segments = this.getSegments(this.width, this.height, radius);
+        const perimeter = segments.reduce((sum, seg) => sum + seg.len, 0);
         const dist = progress * perimeter;
 
         let currentDist = 0;
-
-        // Top
-        if (dist <= topLen) {
-            return { x: radius + dist, y: 0 };
+        for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i];
+            if (dist <= currentDist + seg.len || i === segments.length - 1) {
+                return seg.calc(dist - currentDist);
+            }
+            currentDist += seg.len;
         }
-        currentDist += topLen;
-
-        // Top-Right Corner
-        if (dist <= currentDist + cornerLen) {
-            const angle = -Math.PI / 2 + ((dist - currentDist) / cornerLen) * (Math.PI / 2);
-            return {
-                x: w - radius + Math.cos(angle) * radius,
-                y: radius + Math.sin(angle) * radius,
-            };
-        }
-        currentDist += cornerLen;
-
-        // Right
-        if (dist <= currentDist + rightLen) {
-            return { x: w, y: radius + (dist - currentDist) };
-        }
-        currentDist += rightLen;
-
-        // Bottom-Right Corner
-        if (dist <= currentDist + cornerLen) {
-            const angle = 0 + ((dist - currentDist) / cornerLen) * (Math.PI / 2);
-            return {
-                x: w - radius + Math.cos(angle) * radius,
-                y: h - radius + Math.sin(angle) * radius,
-            };
-        }
-        currentDist += cornerLen;
-
-        // Bottom
-        if (dist <= currentDist + bottomLen) {
-            return { x: w - radius - (dist - currentDist), y: h };
-        }
-        currentDist += bottomLen;
-
-        // Bottom-Left Corner
-        if (dist <= currentDist + cornerLen) {
-            const angle = Math.PI / 2 + ((dist - currentDist) / cornerLen) * (Math.PI / 2);
-            return {
-                x: radius + Math.cos(angle) * radius,
-                y: h - radius + Math.sin(angle) * radius,
-            };
-        }
-        currentDist += cornerLen;
-
-        // Left
-        if (dist <= currentDist + leftLen) {
-            return { x: 0, y: h - radius - (dist - currentDist) };
-        }
-        currentDist += leftLen;
-
-        // Top-Left Corner
-        const angle = Math.PI + ((dist - currentDist) / cornerLen) * (Math.PI / 2);
-        return {
-            x: radius + Math.cos(angle) * radius,
-            y: radius + Math.sin(angle) * radius,
-        };
+        return { x: 0, y: 0 };
     }
 
     // Better path follower that respects corners

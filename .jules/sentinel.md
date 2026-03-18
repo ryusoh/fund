@@ -75,3 +75,9 @@
 **Learning:** This widespread pattern usually stems from lazy error handling where a component is deemed "optional" (like the Ambient graphics loader), so developers swallow the error. However, even for optional visual effects, `console.warn` or `logger.warn` must be triggered to log the failure cleanly for tracking production issues.
 
 **Prevention:** Ensure consistent usage of an internal logger or standard `console.warn`/`console.error` with specific context in all catch blocks. Linter rules should enforce `no-empty` blocks natively, or exceptions should be captured and bubbled up.
+
+## 2025-01-20 - Silent Exception Audit
+
+- **Vulnerability:** Empty exception blocks like `except Exception: pass` were found in multiple Python scripts including `scripts/commands/tickers.py`, `scripts/commands/holdings.py`, and `scripts/generate_pe_data.py`. This suppressed all unhandled errors silently, making debugging nearly impossible during failures.
+- **Learning:** Widespread copy-pasting of error suppression without consideration for unexpected error paths led to a pattern of failing silently.
+- **Prevention:** Removed all occurrences of `except Exception: pass`. Instead, specific exceptions are caught, or generic `Exception` objects are correctly output using `print(f"Warning: {e}", file=sys.stderr)` or equivalent logging.

@@ -421,8 +421,8 @@ def get_closest_fx(fx_series: pd.Series, date: pd.Timestamp) -> float:
         idx = fx_series.index.get_indexer([date], method="bfill")[0]
         if idx != -1:
             return float(fx_series.iloc[idx])
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Warning: Exception fetching closest FX rate: {e}", file=sys.stderr)
     return 1.0
 
 
@@ -518,8 +518,8 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 info = stock.info
                 if info is None:
                     info = {}
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: Exception fetching info for stock {symbol}: {e}", file=sys.stderr)
 
             current_ttm = info.get("trailingEps")
             currency = info.get("currency", "USD")
@@ -541,7 +541,8 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 yf_splits = stock.splits
                 if yf_splits is None or yf_splits.empty:
                     yf_splits = pd.Series(dtype=float)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Exception fetching splits for {symbol}: {e}", file=sys.stderr)
                 yf_splits = pd.Series(dtype=float)
 
             def add_point(
@@ -562,7 +563,8 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             # 1. Annual income_stmt → fully split-adjusted, use directly
             try:
                 annual = stock.income_stmt
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Exception fetching annual income statement for {symbol}: {e}", file=sys.stderr)
                 annual = pd.DataFrame()
 
             if annual is not None and not annual.empty and "Basic EPS" in annual.index:
@@ -579,7 +581,8 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             # 2. Quarterly income_stmt → fully split-adjusted, build TTM
             try:
                 quarterly = stock.quarterly_income_stmt
-            except Exception:
+            except Exception as e:
+                print(f"Warning: Exception fetching quarterly income statement for {symbol}: {e}", file=sys.stderr)
                 quarterly = pd.DataFrame()
 
             quarterly_anchors = {}
@@ -766,8 +769,8 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
         pe = info.get("trailingPE")
         if pe is not None and math.isfinite(pe) and pe > 0:
             return pd.Series(float(pe), index=dates)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Warning: Exception fetching fallback trailing PE for ETF {t}: {e}", file=sys.stderr)
     return None
 
 
@@ -861,7 +864,8 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
                     print(f"    VT: Fetched Forward PE {fwd_pe} from MSCI proxy")
 
             return {"ticker": ticker, "shares": shares, "price": price, "fwd_pe": fwd_pe}
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Exception computing forward PE for {ticker}: {e}", file=sys.stderr)
             return None
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:

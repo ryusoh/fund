@@ -1,34 +1,27 @@
+function isLocalHostname(hostname) {
+    const localPrefixes = [
+        '10.', '192.168.',
+        '172.16.', '172.17.', '172.18.', '172.19.',
+        '172.20.', '172.21.', '172.22.', '172.23.',
+        '172.24.', '172.25.', '172.26.', '172.27.',
+        '172.28.', '172.29.', '172.30.', '172.31.'
+    ];
+    return hostname === 'localhost' ||
+           hostname === '127.0.0.1' ||
+           localPrefixes.some((prefix) => hostname.startsWith(prefix));
+}
+
+function getHostname() {
+    const forcedHostname =
+        typeof window !== 'undefined' && typeof window.__SW_FORCE_SW_HOSTNAME__ === 'string'
+            ? window.__SW_FORCE_SW_HOSTNAME__
+            : null;
+    return forcedHostname || window.location.hostname;
+}
+
 (function () {
     try {
-        // Skip service worker registration on local development addresses
-        const forcedHostname =
-            typeof window !== 'undefined' && typeof window.__SW_FORCE_SW_HOSTNAME__ === 'string'
-                ? window.__SW_FORCE_SW_HOSTNAME__
-                : null;
-        const hostname = forcedHostname || window.location.hostname;
-        const isLocalDev =
-            hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname.startsWith('10.') ||
-            hostname.startsWith('192.168.') ||
-            hostname.startsWith('172.16.') ||
-            hostname.startsWith('172.17.') ||
-            hostname.startsWith('172.18.') ||
-            hostname.startsWith('172.19.') ||
-            hostname.startsWith('172.20.') ||
-            hostname.startsWith('172.21.') ||
-            hostname.startsWith('172.22.') ||
-            hostname.startsWith('172.23.') ||
-            hostname.startsWith('172.24.') ||
-            hostname.startsWith('172.25.') ||
-            hostname.startsWith('172.26.') ||
-            hostname.startsWith('172.27.') ||
-            hostname.startsWith('172.28.') ||
-            hostname.startsWith('172.29.') ||
-            hostname.startsWith('172.30.') ||
-            hostname.startsWith('172.31.');
-
-        if (isLocalDev) {
+        if (isLocalHostname(getHostname())) {
             return;
         }
 
@@ -47,12 +40,10 @@
             } catch (error) {
                 // eslint-disable-next-line no-console
                 console.warn('Caught exception calling service worker register:', error);
-                /* no-op */
             }
         });
     } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('Caught exception initializing service worker:', error);
-        /* no-op */
     }
 })();

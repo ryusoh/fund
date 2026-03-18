@@ -126,6 +126,27 @@ export function getHistoricalCurrencyValue(entry, currency, valueType = 'total')
  * @param {string} valueType Either 'total' or 'dailyChange' (used with entry).
  * @returns {string} The formatted number string.
  */
+function getConvertedNum(num, currency, rates, entry, valueType) {
+    if (entry && (valueType === 'total' || valueType === 'dailyChange')) {
+        return getHistoricalCurrencyValue(entry, currency, valueType);
+    }
+    return num * (rates[currency] || 1);
+}
+
+function getNumberSign(num) {
+    if (num > 0) {
+        return '+';
+    }
+    if (num < 0) {
+        return '-';
+    }
+    return '';
+}
+
+function isValidNumber(num) {
+    return num !== null && num !== undefined && !Number.isNaN(Number(num));
+}
+
 export function formatNumber(
     num,
     currencySymbols,
@@ -135,97 +156,79 @@ export function formatNumber(
     entry = null,
     valueType = 'total'
 ) {
-    if (num === null || num === undefined || isNaN(num)) {
+    if (!isValidNumber(num)) {
         return '';
     }
 
-    let convertedNum;
-
-    // If we have historical data entry, use actual historical currency values
-    if (entry && (valueType === 'total' || valueType === 'dailyChange')) {
-        convertedNum = getHistoricalCurrencyValue(entry, currency, valueType);
-    } else {
-        // Fallback to rate conversion for real-time or non-historical data
-        convertedNum = num * (rates[currency] || 1);
-    }
-
-    const sign = convertedNum > 0 ? '+' : convertedNum < 0 ? '-' : '';
+    const convertedNum = getConvertedNum(num, currency, rates, entry, valueType);
+    const sign = getNumberSign(convertedNum);
     const absNum = Math.abs(convertedNum);
-    let formattedNum;
-
     const symbol = currencySymbols[currency] || '';
 
     if (withSign) {
-        let val;
-        let suffix = '';
-        if (absNum >= 1e9) {
-            val = absNum / 1e9;
-            suffix = 'b';
-        } else if (absNum >= 1e6) {
-            val = absNum / 1e6;
-            suffix = 'm';
-        } else if (absNum >= 1e3) {
-            val = absNum / 1e3;
-            suffix = 'k';
-        } else {
-            val = absNum;
-        }
-
-        let formattedVal;
-        if (val >= 100) {
-            formattedVal = val.toFixed(0);
-        } else if (val >= 10) {
-            formattedVal = val.toFixed(1);
-        } else if (val >= 1) {
-            formattedVal = val.toFixed(2);
-        } else {
-            formattedVal = val.toPrecision(3);
-        }
-
-        formattedNum = symbol + formattedVal + suffix;
-        return sign + formattedNum;
+        return sign + formatNumberWithSign(absNum, symbol);
     }
-    let val;
-    let suffix = '';
+    return formatNumberWithoutSign(absNum, currency, symbol);
+}
+
+function getMagnitude(absNum) {
+    if (absNum >= 1e9) {
+        return { val: absNum / 1e9, suffix: 'b' };
+    }
+    if (absNum >= 1e6) {
+        return { val: absNum / 1e6, suffix: 'm' };
+    }
+    if (absNum >= 1e3) {
+        return { val: absNum / 1e3, suffix: 'k' };
+    }
+    return { val: absNum, suffix: '' };
+}
+
+function formatNumberWithSign(absNum, symbol) {
+    const { val, suffix } = getMagnitude(absNum);
+    let formattedVal;
+    if (val >= 100) {
+        formattedVal = val.toFixed(0);
+    } else if (val >= 10) {
+        formattedVal = val.toFixed(1);
+    } else if (val >= 1) {
+        formattedVal = val.toFixed(2);
+    } else {
+        formattedVal = val.toPrecision(3);
+    }
+    return symbol + formattedVal + suffix;
+}
+
+function calculatePrecision(val, suffix) {
+    let precision = 0;
+    if (val > 0) {
+        if (suffix === '' && val % 1 === 0) {
+            precision = 0;
+        } else {
+            precision = 4 - Math.floor(Math.log10(val)) - 1;
+            if (precision < 0) {
+                precision = 0;
+            }
+            if (suffix === 'k' && precision > 2) {
+                precision = 2;
+            }
+        }
+    }
+    return precision;
+}
+
+function formatNumberWithoutSign(absNum, currency, symbol) {
     if (currency === 'KRW' && absNum >= 1e6 && absNum < 1e9) {
-        val = absNum / 1e6;
-        suffix = 'm';
+        const val = absNum / 1e6;
         let precision = 3 - Math.floor(Math.log10(val)) - 1;
         if (precision < 0) {
             precision = 0;
         }
-        formattedNum = symbol + val.toFixed(precision) + suffix;
-    } else {
-        if (absNum >= 1e9) {
-            val = absNum / 1e9;
-            suffix = 'b';
-        } else if (absNum >= 1e6) {
-            val = absNum / 1e6;
-            suffix = 'm';
-        } else if (absNum >= 1e3) {
-            val = absNum / 1e3;
-            suffix = 'k';
-        } else {
-            val = absNum;
-        }
-
-        let precision = 0;
-        if (val > 0) {
-            if (suffix === '' && val % 1 === 0) {
-                precision = 0;
-            } else {
-                precision = 4 - Math.floor(Math.log10(val)) - 1;
-                if (precision < 0) {
-                    precision = 0;
-                }
-                if (suffix === 'k' && precision > 2) {
-                    precision = 2;
-                }
-            }
-        }
-        formattedNum = symbol + val.toFixed(precision) + suffix;
+        return symbol + val.toFixed(precision) + 'm';
     }
-    return formattedNum;
+    const { val, suffix } = getMagnitude(absNum);
+    const precision = calculatePrecision(val, suffix);
+    return symbol + val.toFixed(precision) + suffix;
 }
 
 /**
@@ -376,38 +379,32 @@ export function formatSummaryBlock(label, summary, dateRange, { formatValue } = 
 }
 
 export function formatAppreciationBlock(balanceSummary, contributionSummary, { formatValue } = {}) {
-    if (
-        !balanceSummary ||
-        !contributionSummary ||
-        !balanceSummary.hasData ||
-        !contributionSummary.hasData
-    ) {
+    if (!balanceSummary?.hasData || !contributionSummary?.hasData) {
         return '';
     }
     const formatValueFn =
         typeof formatValue === 'function' ? formatValue : defaultCurrencyFormatter;
-    const deltaContribution = contributionSummary.netChange;
-    const deltaBalance = balanceSummary.netChange;
-    const valueAdded = deltaBalance - deltaContribution;
+    const valueAdded = balanceSummary.netChange - contributionSummary.netChange;
     if (!Number.isFinite(valueAdded)) {
         return '';
     }
     const changeText = formatCurrencyChange(valueAdded, formatValueFn);
-
-    // Calculate appreciation percentage relative to contribution end value
-    const contributionEndValue = contributionSummary.endValue;
-    let percentageText = '';
-    if (Number.isFinite(contributionEndValue) && contributionEndValue !== 0) {
-        const percentage = (valueAdded / contributionEndValue) * 100;
-        const sign = percentage > 0 ? '+' : '';
-        percentageText = ` (${sign}${percentage.toFixed(2)}%)`;
-    }
+    const percentageText = calculateAppreciationPercentage(valueAdded, contributionSummary.endValue);
 
     return [
         '  Appreciation',
         `    Value: ${changeText}${percentageText}`,
         '    (balance change minus contribution change)',
     ].join('\n');
+}
+
+function calculateAppreciationPercentage(valueAdded, endValue) {
+    if (Number.isFinite(endValue) && endValue !== 0) {
+        const percentage = (valueAdded / endValue) * 100;
+        const sign = percentage > 0 ? '+' : '';
+        return ` (${sign}${percentage.toFixed(2)}%)`;
+    }
+    return '';
 }
 
 /**

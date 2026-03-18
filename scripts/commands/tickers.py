@@ -1,3 +1,4 @@
+import sys
 from __future__ import annotations
 
 import argparse
@@ -38,5 +39,5 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         for act in parser._actions:
             if any(opt == "--file" for opt in getattr(act, "option_strings", [])):
                 act.completer = FilesCompleter()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Warning: Failed to set up autocomplete for tickers command: {e}", file=sys.stderr)
