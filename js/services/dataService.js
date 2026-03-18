@@ -740,9 +740,18 @@ function _calculateCurrencyChanges(baseEntry, lastEntry) {
         absoluteChangeKRW,
         percentChange: _calculatePercentChange(absoluteChangeUSD, baseTotal),
         percentChangeUSD: _calculatePercentChange(absoluteChangeUSD, baseTotal),
-        percentChangeCNY: _calculatePercentChange(absoluteChangeCNY, getSafeVal(baseEntry, 'totalCNY')),
-        percentChangeJPY: _calculatePercentChange(absoluteChangeJPY, getSafeVal(baseEntry, 'totalJPY')),
-        percentChangeKRW: _calculatePercentChange(absoluteChangeKRW, getSafeVal(baseEntry, 'totalKRW')),
+        percentChangeCNY: _calculatePercentChange(
+            absoluteChangeCNY,
+            getSafeVal(baseEntry, 'totalCNY')
+        ),
+        percentChangeJPY: _calculatePercentChange(
+            absoluteChangeJPY,
+            getSafeVal(baseEntry, 'totalJPY')
+        ),
+        percentChangeKRW: _calculatePercentChange(
+            absoluteChangeKRW,
+            getSafeVal(baseEntry, 'totalKRW')
+        ),
     };
 }
 
