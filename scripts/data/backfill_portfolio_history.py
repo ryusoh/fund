@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import atexit
 import json
+import shutil
+import tempfile
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, getcontext
@@ -34,7 +37,9 @@ from pandas.tseries.holiday import (
 from pandas.tseries.offsets import CustomBusinessDay
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-yf.set_tz_cache_location("/tmp/yf-cache")
+_yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
+yf.set_tz_cache_location(_yf_cache_dir)
+atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 
 # Increase decimal precision for monetary calculations
 getcontext().prec = 28

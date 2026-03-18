@@ -20,11 +20,12 @@ def mock_holdings_file(tmp_path):
 
 
 @patch("scripts.data.update_fund_data.yf.set_tz_cache_location")
-def test_set_tz_cache_location(mock_set_tz):
+@patch("scripts.data.update_fund_data.tempfile.mkdtemp")
+def test_set_tz_cache_location(mock_mkdtemp, mock_set_tz):
     # This basically asserts the module-level execution didn't crash
-    # and we can potentially reload the module to track the exact call if needed,
-    # but since it runs on import, we just check that importing the module doesn't
-    # raise any exceptions due to our logic depending on os.getuid().
+    # and we can potentially reload the module to track the exact call if needed.
+    mock_mkdtemp.return_value = "/mock/temp/dir/yf-cache-123"
+
     import importlib
 
     import scripts.data.update_fund_data as module
@@ -32,13 +33,7 @@ def test_set_tz_cache_location(mock_set_tz):
     # Reloading to trigger the top-level script code
     importlib.reload(module)
 
-    # If getuid exists
-    if hasattr(os, "getuid"):
-        expected_path = f"/tmp/yf-cache-{os.getuid()}"
-    else:
-        expected_path = "/tmp/yf-cache"
-
-    mock_set_tz.assert_called_with(expected_path)
+    mock_set_tz.assert_called_with("/mock/temp/dir/yf-cache-123")
 
 
 def test_get_tickers_from_holdings(mock_holdings_file):
