@@ -24,7 +24,7 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'fonts', {
             value: originalFonts,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 
@@ -36,7 +36,7 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'fonts', {
             value: mockValue,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     };
 
@@ -44,7 +44,7 @@ describe('icon_font_ready', () => {
         mockDocumentFonts({
             check: jest.fn().mockReturnValue(true),
             load: jest.fn(),
-            ready: Promise.resolve()
+            ready: Promise.resolve(),
         });
 
         loadIconFontReady();
@@ -58,7 +58,7 @@ describe('icon_font_ready', () => {
         mockDocumentFonts({
             check: jest.fn().mockReturnValue(false),
             load: jest.fn().mockReturnValue(loadPromise),
-            ready: readyPromise
+            ready: readyPromise,
         });
 
         loadIconFontReady();
@@ -81,7 +81,7 @@ describe('icon_font_ready', () => {
         mockDocumentFonts({
             check: jest.fn().mockReturnValue(false),
             load: jest.fn().mockReturnValue(loadPromise),
-            ready: readyPromise
+            ready: readyPromise,
         });
 
         loadIconFontReady();
@@ -91,7 +91,9 @@ describe('icon_font_ready', () => {
         // Catch to prevent unhandled rejection
         try {
             await loadPromise;
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
 
         await readyPromise;
 
@@ -115,7 +117,7 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'body', {
             value: null,
             writable: true,
-            configurable: true
+            configurable: true,
         });
 
         expect(() => {
@@ -126,7 +128,7 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'body', {
             value: originalBody,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 
@@ -135,7 +137,7 @@ describe('icon_font_ready', () => {
             check: jest.fn().mockReturnValue(false),
             // Unresolving promises
             load: jest.fn().mockReturnValue(new Promise(() => {})),
-            ready: new Promise(() => {})
+            ready: new Promise(() => {}),
         });
 
         loadIconFontReady();
@@ -154,11 +156,11 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'readyState', {
             value: 'loading',
             writable: true,
-            configurable: true
+            configurable: true,
         });
 
         mockDocumentFonts({
-            check: jest.fn().mockReturnValue(true)
+            check: jest.fn().mockReturnValue(true),
         });
 
         loadIconFontReady();
@@ -173,7 +175,7 @@ describe('icon_font_ready', () => {
         Object.defineProperty(document, 'readyState', {
             value: originalReadyState,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 });

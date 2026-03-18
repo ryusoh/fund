@@ -105,19 +105,27 @@ describe('currencyBootstrap', () => {
     });
 
     test('catches exceptions and logs warning', () => {
+        const originalLocalStorage = window.localStorage;
+
         // Force an exception by mocking localStorage.getItem to throw
         Object.defineProperty(window, 'localStorage', {
             value: {
                 getItem: () => {
                     throw new Error('Test Error');
-                }
+                },
             },
-            configurable: true
+            configurable: true,
         });
 
         loadBootstrap();
 
         expect(console.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
+
+        Object.defineProperty(window, 'localStorage', {
+            value: originalLocalStorage,
+            writable: true,
+            configurable: true
+        });
     });
 
     test('returns early if window.localStorage is not available', () => {
@@ -126,7 +134,7 @@ describe('currencyBootstrap', () => {
         Object.defineProperty(window, 'localStorage', {
             value: undefined,
             writable: true,
-            configurable: true
+            configurable: true,
         });
 
         loadBootstrap();
@@ -136,7 +144,7 @@ describe('currencyBootstrap', () => {
         Object.defineProperty(window, 'localStorage', {
             value: originalLocalStorage,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 });

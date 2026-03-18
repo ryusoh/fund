@@ -1,5 +1,4 @@
 describe('nav_current_page', () => {
-
     beforeEach(() => {
         // Reset the DOM
         document.body.innerHTML = '';
@@ -25,14 +24,16 @@ describe('nav_current_page', () => {
         // as long as the location matches. If `window.location.origin` fails, let's explicitly provide it:
 
         // Ensure hrefs properly simulate browser behavior relative to "http://localhost"
-        document.querySelectorAll('a').forEach(a => {
+        document.querySelectorAll('a').forEach((a) => {
             const raw = a.getAttribute('href');
             if (raw && raw.startsWith('/')) {
                 Object.defineProperty(a, 'href', {
                     get: () => {
-                        return a.hasAttribute('href') ? `http://localhost${a.getAttribute('href')}` : '';
+                        return a.hasAttribute('href')
+                            ? `http://localhost${a.getAttribute('href')}`
+                            : '';
                     },
-                    configurable: true
+                    configurable: true,
                 });
             }
         });
@@ -137,7 +138,7 @@ describe('nav_current_page', () => {
         Object.defineProperty(document, 'readyState', {
             value: 'loading',
             writable: true,
-            configurable: true
+            configurable: true,
         });
 
         createContainer(`
@@ -161,7 +162,7 @@ describe('nav_current_page', () => {
         Object.defineProperty(document, 'readyState', {
             value: originalReadyState,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 });
