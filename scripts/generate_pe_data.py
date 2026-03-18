@@ -14,6 +14,7 @@ Methodology (V5):
 
 from __future__ import annotations
 
+import sys
 import concurrent.futures
 import json
 import math
@@ -770,7 +771,7 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
         if pe is not None and math.isfinite(pe) and pe > 0:
             return pd.Series(float(pe), index=dates)
     except Exception as e:
-        print(f"Warning: Exception fetching fallback trailing PE for ETF {t}: {e}", file=sys.stderr)
+        print(f"Warning: Exception fetching fallback trailing PE for ETF {ticker}: {e}", file=sys.stderr)
     return None
 
 
