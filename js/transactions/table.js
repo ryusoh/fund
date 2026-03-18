@@ -359,22 +359,14 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'quantity': {
                 const result = compareValues(parseFloat(a.quantity), parseFloat(b.quantity), order);
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'price': {
                 const priceA = convertValueToCurrency(a.price, a.tradeDate, currentCurrency);
@@ -383,11 +375,7 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'netAmount': {
                 const amountA = Math.abs(
@@ -400,17 +388,12 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    new Date(a.tradeDate).getTime(),
-                    new Date(b.tradeDate).getTime(),
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'tradeDate':
             default: {
-                const dateA = new Date(a.tradeDate).getTime();
-                const dateB = new Date(b.tradeDate).getTime();
-                const dateComparison = compareValues(dateA, dateB, order);
+                // Direct string comparison of ISO dates YYYY-MM-DD is significantly faster
+                const dateComparison = compareValues(a.tradeDate, b.tradeDate, order);
                 if (dateComparison !== 0) {
                     return dateComparison;
                 }

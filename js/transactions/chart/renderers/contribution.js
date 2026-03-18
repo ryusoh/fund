@@ -150,7 +150,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     // (including drawdown which should calculate HWM in the target currency)
     if (selectedCurrency !== 'USD' && Array.isArray(balanceSource) && filtersActive) {
         balanceSource = [...balanceSource]
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
             .map((entry) => ({
                 ...entry,
                 value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
