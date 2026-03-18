@@ -389,7 +389,10 @@ export function formatAppreciationBlock(balanceSummary, contributionSummary, { f
         return '';
     }
     const changeText = formatCurrencyChange(valueAdded, formatValueFn);
-    const percentageText = calculateAppreciationPercentage(valueAdded, contributionSummary.endValue);
+    const percentageText = calculateAppreciationPercentage(
+        valueAdded,
+        contributionSummary.endValue
+    );
 
     return [
         '  Appreciation',

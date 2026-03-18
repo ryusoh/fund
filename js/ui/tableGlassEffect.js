@@ -359,25 +359,53 @@ export class TableGlassEffect {
         const cornerLen = 0.5 * Math.PI * radius;
         return [
             { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: radius + d, y: 0 }) },
-            { type: 'arc', len: cornerLen, calc: (d) => {
-                const angle = -Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
-                return { x: w - radius + Math.cos(angle) * radius, y: radius + Math.sin(angle) * radius };
-            } },
+            {
+                type: 'arc',
+                len: cornerLen,
+                calc: (d) => {
+                    const angle = -Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
+                    return {
+                        x: w - radius + Math.cos(angle) * radius,
+                        y: radius + Math.sin(angle) * radius,
+                    };
+                },
+            },
             { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: w, y: radius + d }) },
-            { type: 'arc', len: cornerLen, calc: (d) => {
-                const angle = (d / cornerLen) * (Math.PI / 2);
-                return { x: w - radius + Math.cos(angle) * radius, y: h - radius + Math.sin(angle) * radius };
-            } },
+            {
+                type: 'arc',
+                len: cornerLen,
+                calc: (d) => {
+                    const angle = (d / cornerLen) * (Math.PI / 2);
+                    return {
+                        x: w - radius + Math.cos(angle) * radius,
+                        y: h - radius + Math.sin(angle) * radius,
+                    };
+                },
+            },
             { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: w - radius - d, y: h }) },
-            { type: 'arc', len: cornerLen, calc: (d) => {
-                const angle = Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
-                return { x: radius + Math.cos(angle) * radius, y: h - radius + Math.sin(angle) * radius };
-            } },
+            {
+                type: 'arc',
+                len: cornerLen,
+                calc: (d) => {
+                    const angle = Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
+                    return {
+                        x: radius + Math.cos(angle) * radius,
+                        y: h - radius + Math.sin(angle) * radius,
+                    };
+                },
+            },
             { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: 0, y: h - radius - d }) },
-            { type: 'arc', len: cornerLen, calc: (d) => {
-                const angle = Math.PI + (d / cornerLen) * (Math.PI / 2);
-                return { x: radius + Math.cos(angle) * radius, y: radius + Math.sin(angle) * radius };
-            } }
+            {
+                type: 'arc',
+                len: cornerLen,
+                calc: (d) => {
+                    const angle = Math.PI + (d / cornerLen) * (Math.PI / 2);
+                    return {
+                        x: radius + Math.cos(angle) * radius,
+                        y: radius + Math.sin(angle) * radius,
+                    };
+                },
+            },
         ];
     }
 
