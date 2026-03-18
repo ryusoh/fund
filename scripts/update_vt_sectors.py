@@ -4,8 +4,9 @@ import re
 import subprocess
 import sys
 import urllib.parse
-import requests
 from pathlib import Path
+
+import requests
 
 
 def fetch_vt_sectors():

@@ -8,8 +8,9 @@ import json
 import os
 import re
 import urllib.parse
-import requests
 from pathlib import Path
+
+import requests
 
 
 def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:

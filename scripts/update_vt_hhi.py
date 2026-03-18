@@ -8,9 +8,10 @@ import json
 import os
 import re
 import urllib.parse
-import requests
 from datetime import datetime
 from pathlib import Path
+
+import requests
 
 
 def fetch_vt_hhi_from_etfrc() -> int | None:
