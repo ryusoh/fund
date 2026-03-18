@@ -1,7 +1,10 @@
 import argparse
+import atexit
 import json
 import logging
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -13,10 +16,10 @@ import yfinance as yf
 from polygon import RESTClient
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-# By using a unique path per user, we avoid permission collisions in shared environments like /tmp
-cache_dir = Path(f"/tmp/yf-cache-{os.getuid()}") if hasattr(os, "getuid") else Path("/tmp/yf-cache")
-cache_dir.mkdir(parents=True, exist_ok=True)
+# Use a secure temporary directory to avoid security vulnerabilities
+cache_dir = Path(tempfile.mkdtemp(prefix="yf-cache-"))
 yf.set_tz_cache_location(str(cache_dir))
+atexit.register(shutil.rmtree, cache_dir, ignore_errors=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
