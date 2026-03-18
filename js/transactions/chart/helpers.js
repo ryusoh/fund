@@ -483,7 +483,7 @@ export function injectCarryForwardStartPoint(
     filterFrom,
     valueKey = 'value'
 ) {
-    if (!filterFrom || !Array.isArray(filteredData) || filteredData.length === 0) {
+    if (!filterFrom || !Array.isArray(filteredData)) {
         return filteredData;
     }
     if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
@@ -517,11 +517,13 @@ export function injectCarryForwardStartPoint(
     }
 
     // Check if first filtered point is at or before filterFrom (no need to inject)
-    const firstFiltered = filteredData[0];
-    const firstFilteredDate =
-        firstFiltered.date instanceof Date ? firstFiltered.date : new Date(firstFiltered.date);
-    if (firstFilteredDate.getTime() <= filterFromTime) {
-        return filteredData;
+    if (filteredData.length > 0) {
+        const firstFiltered = filteredData[0];
+        const firstFilteredDate =
+            firstFiltered.date instanceof Date ? firstFiltered.date : new Date(firstFiltered.date);
+        if (firstFilteredDate.getTime() <= filterFromTime) {
+            return filteredData;
+        }
     }
 
     // Inject a carry-forward point at filterFrom with the last value before filter

@@ -279,6 +279,64 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         return;
     }
 
+    const allTimes = [
+        ...contributionData.map((d) => d.date.getTime()),
+        ...balanceData.map((d) => d.date.getTime()),
+    ];
+
+    // Calculate effective min times based on actual data within filter range
+    const effectiveMinTimes = [];
+    if (rawContributionData.length > 0) {
+        // Use the first point (including synthetic start point) for consistency with balance data
+        effectiveMinTimes.push(rawContributionData[0].date.getTime());
+    }
+
+    if (showBalance && rawBalanceData.length > 0) {
+        effectiveMinTimes.push(rawBalanceData[0].date.getTime());
+    }
+
+    const fallbackMinTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
+    let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
+
+    if (Number.isFinite(filterFromTime)) {
+        // Ensure minTime is at least the filter start time, but don't extend before actual data
+        minTime = Math.max(minTime, filterFromTime);
+    }
+    // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
+    let maxTime;
+    if (Number.isFinite(filterToTime)) {
+        // When filter is active, extend to min(filterEnd, today)
+        // This handles both past periods (stops at filter end) and current periods (stops at today)
+        maxTime = Math.min(filterToTime, Date.now());
+    } else if (allTimes.length > 0) {
+        // No filter: use the maximum time from the data (including padding points)
+        maxTime = Math.max(...allTimes);
+    } else {
+        maxTime = Date.now();
+    }
+
+    // Force-extend series to maxTime to ensure the line reaches the right edge of the chart
+    // This fixes issues where the line stops at the last transaction date instead of the filter end/today
+    if (contributionData.length > 0) {
+        const lastPoint = contributionData[contributionData.length - 1];
+        if (lastPoint.date.getTime() < maxTime) {
+            contributionData.push({
+                date: new Date(maxTime),
+                amount: lastPoint.amount,
+            });
+        }
+    }
+
+    if (balanceData.length > 0) {
+        const lastPoint = balanceData[balanceData.length - 1];
+        if (lastPoint.date.getTime() < maxTime) {
+            balanceData.push({
+                date: new Date(maxTime),
+                value: lastPoint.value,
+            });
+        }
+    }
+
     // Apply drawdown transformation if in drawdown mode
     let finalContributionData = contributionData;
     let finalBalanceData = balanceData;
@@ -349,64 +407,6 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
 
     const plotHeight = mainPlotHeight;
     const volumeTop = padding.top + plotHeight + (volumeHeight > 0 ? volumeGap : 0);
-
-    const allTimes = [
-        ...contributionData.map((d) => d.date.getTime()),
-        ...balanceData.map((d) => d.date.getTime()),
-    ];
-
-    // Calculate effective min times based on actual data within filter range
-    const effectiveMinTimes = [];
-    if (rawContributionData.length > 0) {
-        // Use the first point (including synthetic start point) for consistency with balance data
-        effectiveMinTimes.push(rawContributionData[0].date.getTime());
-    }
-
-    if (showBalance && rawBalanceData.length > 0) {
-        effectiveMinTimes.push(rawBalanceData[0].date.getTime());
-    }
-
-    const fallbackMinTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
-    let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
-
-    if (Number.isFinite(filterFromTime)) {
-        // Ensure minTime is at least the filter start time, but don't extend before actual data
-        minTime = Math.max(minTime, filterFromTime);
-    }
-    // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
-    let maxTime;
-    if (Number.isFinite(filterToTime)) {
-        // When filter is active, extend to min(filterEnd, today)
-        // This handles both past periods (stops at filter end) and current periods (stops at today)
-        maxTime = Math.min(filterToTime, Date.now());
-    } else if (allTimes.length > 0) {
-        // No filter: use the maximum time from the data (including padding points)
-        maxTime = Math.max(...allTimes);
-    } else {
-        maxTime = Date.now();
-    }
-
-    // Force-extend series to maxTime to ensure the line reaches the right edge of the chart
-    // This fixes issues where the line stops at the last transaction date instead of the filter end/today
-    if (contributionData.length > 0) {
-        const lastPoint = contributionData[contributionData.length - 1];
-        if (lastPoint.date.getTime() < maxTime) {
-            contributionData.push({
-                date: new Date(maxTime),
-                amount: lastPoint.amount,
-            });
-        }
-    }
-
-    if (balanceData.length > 0) {
-        const lastPoint = balanceData[balanceData.length - 1];
-        if (lastPoint.date.getTime() < maxTime) {
-            balanceData.push({
-                date: new Date(maxTime),
-                value: lastPoint.value,
-            });
-        }
-    }
 
     // Remove debug object
     if (window.DEBUG_CHART) {

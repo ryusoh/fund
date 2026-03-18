@@ -1,6 +1,7 @@
 import { transactionState } from '../../state.js';
 import { convertValueToCurrency } from '../../utils.js';
 import { getSplitAdjustment } from '../../calculations.js';
+import { parseLocalDate } from '../helpers.js';
 
 const contributionSeriesCache = new WeakMap();
 
@@ -46,7 +47,13 @@ export function buildContributionSeriesFromTransactions(
         return [];
     }
 
-    const sortedTransactions = [...transactions].sort(
+    const normalizedTransactions = transactions.map((t) => {
+        const d = parseLocalDate(t.tradeDate);
+        const isoDate = d ? d.toISOString().split('T')[0] : (t.tradeDate || '').trim();
+        return { ...t, tradeDate: isoDate };
+    });
+
+    const sortedTransactions = normalizedTransactions.sort(
         (a, b) =>
             (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0) ||
             (a.transactionId ?? 0) - (b.transactionId ?? 0)
@@ -102,6 +109,7 @@ export function buildContributionSeriesFromTransactions(
                     series.push({
                         tradeDate: intermediateDate.toISOString().split('T')[0],
                         amount: cumulativeAmount,
+                        value: cumulativeAmount,
                         orderType: 'padding',
                         netAmount: 0,
                     });
@@ -127,6 +135,7 @@ export function buildContributionSeriesFromTransactions(
         series.push({
             tradeDate: dateStr,
             amount: cumulativeAmount,
+            value: cumulativeAmount,
             orderType: orderType,
             netAmount: netDelta,
             buyVolume: entry.buyVolume,
@@ -148,6 +157,7 @@ export function buildContributionSeriesFromTransactions(
             series.push({
                 tradeDate: clampedTarget.toISOString().split('T')[0],
                 amount: lastPoint.amount,
+                value: lastPoint.amount,
                 orderType: 'padding',
                 netAmount: 0,
             });
@@ -170,6 +180,7 @@ export function buildContributionSeriesFromTransactions(
                 series.unshift({
                     tradeDate: syntheticDateStr,
                     amount: 0,
+                    value: 0,
                     orderType: 'padding',
                     netAmount: 0,
                     synthetic: true,
@@ -192,6 +203,7 @@ export function buildContributionSeriesFromTransactions(
             ...point,
             netAmount: convertedNet,
             amount: cumulative,
+            value: cumulative,
             buyVolume: point.buyVolume
                 ? convertValueToCurrency(point.buyVolume, dateRef, selectedCurrency)
                 : point.buyVolume,

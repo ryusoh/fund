@@ -89,6 +89,172 @@ describe('Chart data helpers', () => {
             expect(result.length).toBe(1);
             expect(result[0].value).toBe(770000);
         });
+
+        test('injects carry-forward value even if filteredData is empty', () => {
+            const fullSeries = [
+                { date: '2025-12-01', value: 500000 },
+                { date: '2025-12-15', value: 700000 },
+                { date: '2025-12-31', value: 764000 }, // Last point before filter
+            ];
+
+            const filteredData = [];
+            const filterFrom = new Date('2026-01-01');
+
+            const result = injectCarryForwardStartPoint(
+                filteredData,
+                fullSeries,
+                filterFrom,
+                'value'
+            );
+
+            // Should inject a synthetic point at filterFrom with the last value before filter
+            expect(result.length).toBe(1);
+            expect(result[0].date.getTime()).toBe(filterFrom.getTime());
+            expect(result[0].value).toBe(764000);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].carryForward).toBe(true);
+        });
+
+        test('buildContributionSeriesFromTransactions handles inconsistent date formats and non-USD currency correctly', async () => {
+            // This test checks if mixed date formats (YYYY-MM-DD vs YYYY/MM/DD)
+            // or different capitalizations could cause issues in cumulative calculation.
+
+            jest.resetModules();
+            const state = await import('@js/transactions/state.js');
+            const contribution = await import('@js/transactions/chart/data/contribution.js');
+            const utils = await import('@js/transactions/utils.js');
+
+            // Mock selected currency to EUR
+            state.transactionState.selectedCurrency = 'EUR';
+
+            const transactions = [
+                { tradeDate: '2024-01-01', netAmount: '100.00', orderType: 'Buy' },
+                { tradeDate: '2024-01-02', netAmount: '50.00', orderType: 'Buy' },
+                { tradeDate: '2024-01-03', netAmount: '20.00', orderType: 'Buy' },
+            ];
+
+            // Mock FX rate to always return 0.9 (except for specific date if we want to test failures)
+            jest.spyOn(utils, 'convertValueToCurrency').mockImplementation(
+                (val) => Number(val) * 0.9
+            );
+
+            const series = contribution.buildContributionSeriesFromTransactions(transactions, {
+                currency: 'EUR',
+            });
+
+            // Day 1: 100 * 0.9 = 90
+            // Day 2: (100+50) * 0.9 = 135
+            // Day 3: (100+50+20) * 0.9 = 153
+            expect(series[0].amount).toBe(90);
+            expect(series[1].amount).toBe(135);
+            expect(series[2].amount).toBe(153);
+
+            // Now try inconsistent formats which might mess up sorting if not normalized
+            const txMixed = [
+                { tradeDate: '2024-01-01', netAmount: '100.00', orderType: 'Buy' },
+                { tradeDate: '2024/01/02', netAmount: '50.00', orderType: 'Buy' }, // mixed format
+                { tradeDate: '2024-01-03', netAmount: '20.00', orderType: 'Buy' },
+            ];
+
+            const seriesMixed = contribution.buildContributionSeriesFromTransactions(txMixed, {
+                currency: 'EUR',
+            });
+
+            seriesMixed.forEach((p, i) => {
+                expect(p.amount).toBeGreaterThan(0);
+                if (i > 0) {
+                    expect(p.amount).toBeGreaterThanOrEqual(seriesMixed[i - 1].amount);
+                }
+            });
+        });
+
+        test('buildContributionSeriesFromTransactions handles duplicate or messy dates without resetting to zero', async () => {
+            jest.resetModules();
+            const state = await import('@js/transactions/state.js');
+            const contribution = await import('@js/transactions/chart/data/contribution.js');
+
+            // USD mode
+            state.transactionState.selectedCurrency = 'USD';
+
+            const transactions = [
+                { tradeDate: '2024-01-01', netAmount: '100.00', orderType: 'Buy' },
+                { tradeDate: '2024-01-01 ', netAmount: '50.00', orderType: 'Buy' }, // Duplicate with space
+                { tradeDate: '2024-01-02', netAmount: '20.00', orderType: 'Buy' },
+            ];
+
+            const series = contribution.buildContributionSeriesFromTransactions(transactions);
+
+            // Should have Day 1 (150) and Day 2 (170)
+            series.forEach((p) => {
+                expect(p.amount).toBeGreaterThan(0);
+            });
+        });
+
+        test('buildContributionSeriesFromTransactions maintains cumulative sum and correct keys for non-USD', async () => {
+            jest.resetModules();
+            const state = await import('@js/transactions/state.js');
+            const contribution = await import('@js/transactions/chart/data/contribution.js');
+            const utils = await import('@js/transactions/utils.js');
+
+            state.transactionState.selectedCurrency = 'GBP';
+            jest.spyOn(utils, 'convertValueToCurrency').mockImplementation(
+                (val) => Number(val) * 0.8
+            );
+
+            const transactions = [
+                { tradeDate: '2024-01-01', netAmount: '100.00', orderType: 'Buy' },
+                { tradeDate: '2024-01-10', netAmount: '100.00', orderType: 'Buy' },
+            ];
+
+            const series = contribution.buildContributionSeriesFromTransactions(transactions, {
+                currency: 'GBP',
+            });
+
+            // Should have:
+            // 0: Day 1 (Tx) -> amount: 80
+            // 1: Day 9 (Padding) -> amount: 80
+            // 2: Day 10 (Tx) -> amount: 160
+
+            expect(series.length).toBeGreaterThanOrEqual(3);
+            expect(series[0].amount).toBe(80);
+            expect(series[series.length - 1].amount).toBe(160);
+
+            // Check that NONE of the points have amount: 0 (after Day 1)
+            series.forEach((p, i) => {
+                if (i > 0 && !p.synthetic) {
+                    expect(p.amount).toBeGreaterThan(0);
+                    expect(p.netAmount).toBeDefined();
+                }
+            });
+        });
+
+        test('buildContributionSeriesFromTransactions sorts mixed date formats correctly (not alphabetically)', async () => {
+            jest.resetModules();
+            const contribution = await import('@js/transactions/chart/data/contribution.js');
+
+            const transactions = [
+                { tradeDate: '2025-01-01', netAmount: '100.00', orderType: 'Buy' },
+                { tradeDate: '12/31/2024', netAmount: '50.00', orderType: 'Buy' }, // MM/DD/YYYY
+                { tradeDate: '2025-01-02', netAmount: '20.00', orderType: 'Buy' },
+            ];
+
+            const series = contribution.buildContributionSeriesFromTransactions(transactions);
+
+            // If sorted alphabetically: '12/31/2024' < '2025-01-01'.
+            // In this specific case, '1' < '2' so 12/31 would be first anyway.
+            // BUT what if it was '1/1/2025'? '1/' < '12' is false, '1/' < '12/'?
+            // ASCII '/': 47, ASCII '2': 50. So '1/' comes BEFORE '12'.
+            // If it's '2024-01-01' vs '12/31/2023', '12/' < '2024'.
+            // My point is alphabetical sorting on mixed formats is unreliable.
+
+            // We expect chronological: 2024-12-31, 2025-01-01, 2025-01-02
+            expect(series[0].tradeDate).toBe('2024-12-31');
+            expect(series[0].amount).toBe(50);
+            expect(series[1].tradeDate).toBe('2025-01-01');
+            expect(series[1].amount).toBe(150);
+            expect(series[2].tradeDate).toBe('2025-01-02');
+            expect(series[2].amount).toBe(170);
+        });
     });
 
     describe('applyDrawdownToSeries with historical peak', () => {
