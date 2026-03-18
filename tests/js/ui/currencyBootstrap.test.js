@@ -124,7 +124,7 @@ describe('currencyBootstrap', () => {
         Object.defineProperty(window, 'localStorage', {
             value: originalLocalStorage,
             writable: true,
-            configurable: true
+            configurable: true,
         });
     });
 
