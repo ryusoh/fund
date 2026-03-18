@@ -359,22 +359,14 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    a.tradeDate,
-                    b.tradeDate,
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'quantity': {
                 const result = compareValues(parseFloat(a.quantity), parseFloat(b.quantity), order);
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    a.tradeDate,
-                    b.tradeDate,
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'price': {
                 const priceA = convertValueToCurrency(a.price, a.tradeDate, currentCurrency);
@@ -383,11 +375,7 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    a.tradeDate,
-                    b.tradeDate,
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'netAmount': {
                 const amountA = Math.abs(
@@ -400,11 +388,7 @@ function filterAndSort(searchTerm = '') {
                 if (result !== 0) {
                     return result;
                 }
-                return compareValues(
-                    a.tradeDate,
-                    b.tradeDate,
-                    'desc'
-                );
+                return compareValues(a.tradeDate, b.tradeDate, 'desc');
             }
             case 'tradeDate':
             default: {
