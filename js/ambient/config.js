@@ -21,7 +21,8 @@
             },
             window.AMBIENT_CONFIG || {}
         );
-
-        // eslint-disable-next-line no-unused-vars
-    } catch (e) {}
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Caught exception initializing ambient config:', error);
+    }
 })();

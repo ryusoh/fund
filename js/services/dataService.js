@@ -107,71 +107,70 @@ async function fetchMarketRatiosForTickers(tickers = []) {
             logger.warn('Failed to load global PE ratio data for fallback:', error);
         }
 
-        await Promise.all(
-            uniqueSymbols.map(async (symbol) => {
-                const globalFwdPe = globalForwardPeMap[symbol];
-
-                const getFallbackValue = (val) => {
-                    if (Number.isFinite(val)) {
-                        return Number(val);
-                    }
-                    if (Array.isArray(val) && val.length > 0) {
-                        for (let i = val.length - 1; i >= 0; i--) {
-                            if (Number.isFinite(val[i])) {
-                                return Number(val[i]);
-                            }
-                        }
-                    }
-                    return null;
-                };
-
-                const analysisPath = tickerPaths.get(symbol);
-
-                if (!analysisPath) {
-                    const fallback = getFallbackValue(globalFwdPe);
-                    if (fallback !== null) {
-                        ratiosByTicker.set(symbol, {
-                            pe: null,
-                            forwardPe: fallback,
-                        });
-                    }
-                    return;
-                }
-                try {
-                    const detail = await fetchJSON(analysisPath);
-                    const market = detail?.market || {};
-                    const trailingPe = Number(market.pe);
-                    let forwardPe = Number(market.forwardPe);
-
-                    // Use global fallback if forwardPe is missing in analysis
-                    if (!Number.isFinite(forwardPe)) {
-                        const fallback = getFallbackValue(globalFwdPe);
-                        if (fallback !== null) {
-                            forwardPe = fallback;
-                        }
-                    }
-
-                    const eps = Number(market.eps);
-                    const forwardEps = Number(market.forwardEps);
-
-                    ratiosByTicker.set(symbol, {
-                        pe: Number.isFinite(trailingPe) ? trailingPe : null,
-                        forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
-                        eps: Number.isFinite(eps) ? eps : null,
-                        forwardEps: Number.isFinite(forwardEps) ? forwardEps : null,
-                    });
-                } catch (error) {
-                    logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
-                    const fallback = getFallbackValue(globalFwdPe);
-                    if (fallback !== null) {
-                        ratiosByTicker.set(symbol, {
-                            pe: null,
-                            forwardPe: fallback,
-                        });
+        const getFallbackValue = (val) => {
+            if (Number.isFinite(val)) {
+                return Number(val);
+            }
+            if (Array.isArray(val) && val.length > 0) {
+                for (let i = val.length - 1; i >= 0; i--) {
+                    if (Number.isFinite(val[i])) {
+                        return Number(val[i]);
                     }
                 }
-            })
-        );
+            }
+            return null;
+        };
+
+        const setFallbackRatio = (symbol, globalFwdPe) => {
+            const fallback = getFallbackValue(globalFwdPe);
+            if (fallback !== null) {
+                ratiosByTicker.set(symbol, {
+                    pe: null,
+                    forwardPe: fallback,
+                });
+            }
+        };
+
+        const _getMarketFallback = (forwardPe, globalFwdPe) => {
+            if (!Number.isFinite(forwardPe)) {
+                const fallback = getFallbackValue(globalFwdPe);
+                return fallback !== null ? fallback : forwardPe;
+            }
+            return forwardPe;
+        };
+
+        const processTickerRatio = async (symbol) => {
+            const globalFwdPe = globalForwardPeMap[symbol];
+            const analysisPath = tickerPaths.get(symbol);
+
+            if (!analysisPath) {
+                setFallbackRatio(symbol, globalFwdPe);
+                return;
+            }
+            try {
+                const detail = await fetchJSON(analysisPath);
+                const market = detail?.market || {};
+                const trailingPe = Number(market.pe);
+                let forwardPe = Number(market.forwardPe);
+
+                forwardPe = _getMarketFallback(forwardPe, globalFwdPe);
+
+                const eps = Number(market.eps);
+                const forwardEps = Number(market.forwardEps);
+
+                ratiosByTicker.set(symbol, {
+                    pe: Number.isFinite(trailingPe) ? trailingPe : null,
+                    forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
+                    eps: Number.isFinite(eps) ? eps : null,
+                    forwardEps: Number.isFinite(forwardEps) ? forwardEps : null,
+                });
+            } catch (error) {
+                logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
+                setFallbackRatio(symbol, globalFwdPe);
+            }
+        };
+
+        await Promise.all(uniqueSymbols.map(processTickerRatio));
 
         return ratiosByTicker;
     } catch (error) {
@@ -224,20 +223,10 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
-function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), currentPrice = null) {
-    const normalizedTicker = normalizeTickerSymbol(ticker);
-    if (!normalizedTicker || !(marketRatiosByTicker instanceof Map)) {
-        return '—';
-    }
-    const ratioSnapshot = marketRatiosByTicker.get(normalizedTicker);
-    if (!ratioSnapshot) {
-        return '—';
-    }
-
+function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
     let trailingValue = ratioSnapshot.pe;
     let forwardValue = ratioSnapshot.forwardPe;
 
-    // Dynamically calculate PE using real-time price if EPS is available
     if (Number.isFinite(currentPrice) && currentPrice > 0) {
         if (Number.isFinite(ratioSnapshot.eps) && ratioSnapshot.eps > 0) {
             trailingValue = currentPrice / ratioSnapshot.eps;
@@ -246,7 +235,10 @@ function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), cur
             forwardValue = currentPrice / ratioSnapshot.forwardEps;
         }
     }
+    return { trailingValue, forwardValue };
+}
 
+function _formatPeString(trailingValue, forwardValue) {
     const formatValue = (value) => (Number.isFinite(value) ? Number(value).toFixed(2) : '—');
     const trailing = formatValue(trailingValue);
     const forward = formatValue(forwardValue);
@@ -263,6 +255,21 @@ function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), cur
         return forward;
     }
     return '—';
+}
+
+function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), currentPrice = null) {
+    const normalizedTicker = normalizeTickerSymbol(ticker);
+    if (!normalizedTicker || !(marketRatiosByTicker instanceof Map)) {
+        return '—';
+    }
+    const ratioSnapshot = marketRatiosByTicker.get(normalizedTicker);
+    if (!ratioSnapshot) {
+        return '—';
+    }
+
+    const { trailingValue, forwardValue } = _calculateDynamicPeValues(ratioSnapshot, currentPrice);
+
+    return _formatPeString(trailingValue, forwardValue);
 }
 
 function createHoldingRow(
@@ -518,6 +525,39 @@ function processHistoricalData(rawData) {
     return processed;
 }
 
+function _calculateCurrentTotalUSD(holdingsData, fundData) {
+    let currentTotalValueUSD = 0;
+    for (const ticker in holdingsData) {
+        if (fundData[ticker]) {
+            currentTotalValueUSD +=
+                parseFloat(holdingsData[ticker].shares) * parseFloat(fundData[ticker]);
+        }
+    }
+    return currentTotalValueUSD;
+}
+
+function _getValidBaselineValue(baselineEntry, key, fallbackKey = null) {
+    if (!baselineEntry) {
+        return 0;
+    }
+    if (Number.isFinite(baselineEntry[key])) {
+        return baselineEntry[key];
+    }
+    if (fallbackKey && Number.isFinite(baselineEntry[fallbackKey])) {
+        return baselineEntry[fallbackKey];
+    }
+    return 0;
+}
+
+function _extractBaselineTotals(baselineEntry) {
+    return {
+        totalUSD: _getValidBaselineValue(baselineEntry, 'totalUSD', 'total') || 0,
+        totalCNY: _getValidBaselineValue(baselineEntry, 'totalCNY') || 0,
+        totalJPY: _getValidBaselineValue(baselineEntry, 'totalJPY') || 0,
+        totalKRW: _getValidBaselineValue(baselineEntry, 'totalKRW') || 0,
+    };
+}
+
 function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {}) {
     if (!holdingsData || !fundData) {
         return null;
@@ -529,35 +569,8 @@ function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {})
         return null;
     }
 
-    // Calculate current total value in USD
-    let currentTotalValueUSD = 0;
-    for (const ticker in holdingsData) {
-        if (fundData[ticker]) {
-            currentTotalValueUSD +=
-                parseFloat(holdingsData[ticker].shares) * parseFloat(fundData[ticker]);
-        }
-    }
-
-    const baselineTotals = {
-        totalUSD:
-            (baselineEntry && Number.isFinite(baselineEntry.totalUSD)
-                ? baselineEntry.totalUSD
-                : baselineEntry && Number.isFinite(baselineEntry.total)
-                  ? baselineEntry.total
-                  : 0) || 0,
-        totalCNY:
-            (baselineEntry && Number.isFinite(baselineEntry.totalCNY)
-                ? baselineEntry.totalCNY
-                : 0) || 0,
-        totalJPY:
-            (baselineEntry && Number.isFinite(baselineEntry.totalJPY)
-                ? baselineEntry.totalJPY
-                : 0) || 0,
-        totalKRW:
-            (baselineEntry && Number.isFinite(baselineEntry.totalKRW)
-                ? baselineEntry.totalKRW
-                : 0) || 0,
-    };
+    const currentTotalValueUSD = _calculateCurrentTotalUSD(holdingsData, fundData);
+    const baselineTotals = _extractBaselineTotals(baselineEntry);
 
     // Convert to other currencies using current exchange rates for real-time data
     const currentTotalValueCNY = currentTotalValueUSD * (rates.CNY || 1);
@@ -695,6 +708,13 @@ function _groupDataByMonth(processedData) {
 }
 
 /* istanbul ignore next: defensive calculate currency function */
+function _calculatePercentChange(change, base) {
+    if (base === 0) {
+        return change === 0 ? 0 : null;
+    }
+    return change / base;
+}
+
 function _calculateCurrencyChanges(baseEntry, lastEntry) {
     /* istanbul ignore next: defensive programming for invalid totals */
     const baseTotal = Number(baseEntry?.total);
@@ -706,32 +726,44 @@ function _calculateCurrencyChanges(baseEntry, lastEntry) {
         return null;
     }
 
-    const absoluteChangeUSD = lastTotal - baseTotal;
-    const absoluteChangeCNY = (lastEntry.totalCNY || 0) - (baseEntry.totalCNY || 0);
-    const absoluteChangeJPY = (lastEntry.totalJPY || 0) - (baseEntry.totalJPY || 0);
-    const absoluteChangeKRW = (lastEntry.totalKRW || 0) - (baseEntry.totalKRW || 0);
+    const getSafeVal = (entry, key) => (entry && entry[key]) || 0;
 
-    const calculatePercentChange = (change, base) => {
-        if (base === 0) {
-            return change === 0 ? 0 : null;
-        }
-        return change / base;
-    };
+    const absoluteChangeUSD = lastTotal - baseTotal;
+    const absoluteChangeCNY = getSafeVal(lastEntry, 'totalCNY') - getSafeVal(baseEntry, 'totalCNY');
+    const absoluteChangeJPY = getSafeVal(lastEntry, 'totalJPY') - getSafeVal(baseEntry, 'totalJPY');
+    const absoluteChangeKRW = getSafeVal(lastEntry, 'totalKRW') - getSafeVal(baseEntry, 'totalKRW');
 
     return {
         absoluteChangeUSD,
         absoluteChangeCNY,
         absoluteChangeJPY,
         absoluteChangeKRW,
-        percentChange: calculatePercentChange(absoluteChangeUSD, baseTotal),
-        percentChangeUSD: calculatePercentChange(absoluteChangeUSD, baseTotal),
-        percentChangeCNY: calculatePercentChange(absoluteChangeCNY, baseEntry.totalCNY || 0),
-        percentChangeJPY: calculatePercentChange(absoluteChangeJPY, baseEntry.totalJPY || 0),
-        percentChangeKRW: calculatePercentChange(absoluteChangeKRW, baseEntry.totalKRW || 0),
+        percentChange: _calculatePercentChange(absoluteChangeUSD, baseTotal),
+        percentChangeUSD: _calculatePercentChange(absoluteChangeUSD, baseTotal),
+        percentChangeCNY: _calculatePercentChange(absoluteChangeCNY, getSafeVal(baseEntry, 'totalCNY')),
+        percentChangeJPY: _calculatePercentChange(absoluteChangeJPY, getSafeVal(baseEntry, 'totalJPY')),
+        percentChangeKRW: _calculatePercentChange(absoluteChangeKRW, getSafeVal(baseEntry, 'totalKRW')),
     };
 }
 
 /* istanbul ignore next: defensive monthly PnL computation function */
+/* istanbul ignore next: defensive helper for finding previous month entry */
+function _findPrevMonthLastEntry(buckets, sortedMonthKeys, idx, monthKey) {
+    const prevMonthKey = getPreviousMonthKey(monthKey);
+    const prevEntries = prevMonthKey ? buckets.get(prevMonthKey) : null;
+    let prevMonthLastEntry =
+        prevEntries && prevEntries.length > 0 ? prevEntries[prevEntries.length - 1] : null;
+
+    if (!prevMonthLastEntry && idx > 0) {
+        const fallbackKey = sortedMonthKeys[idx - 1];
+        const fallbackEntries = buckets.get(fallbackKey);
+        if (fallbackEntries && fallbackEntries.length > 0) {
+            prevMonthLastEntry = fallbackEntries[fallbackEntries.length - 1];
+        }
+    }
+    return prevMonthLastEntry;
+}
+
 function computeMonthlyPnl(processedData) {
     /* istanbul ignore next: defensive programming for empty data */
     if (!Array.isArray(processedData) || processedData.length === 0) {
@@ -743,54 +775,36 @@ function computeMonthlyPnl(processedData) {
     const sortedMonthKeys = Array.from(buckets.keys()).sort();
     const monthlyPnl = new Map();
 
-    /* istanbul ignore next: defensive programming for malformed entries */
-    for (let idx = 0; idx < sortedMonthKeys.length; idx++) {
-        const monthKey = sortedMonthKeys[idx];
+    const processMonthBucket = (monthKey, idx) => {
         const entries = buckets.get(monthKey);
-
-        /* istanbul ignore next: defensive programming for empty month buckets */
         if (!entries || entries.length === 0) {
-            continue;
+            return;
         }
 
         entries.sort((a, b) => a.date.localeCompare(b.date));
         const firstEntry = entries[0];
         const lastEntry = entries[entries.length - 1];
 
-        /* istanbul ignore next: defensive programming for missing entries */
         if (!firstEntry || !lastEntry) {
-            continue;
+            return;
         }
 
-        /* istanbul ignore next: defensive programming for optional previous month */
-        const prevMonthKey = getPreviousMonthKey(monthKey);
-        /* istanbul ignore next: defensive programming for optional previous month */
-        const prevEntries = prevMonthKey ? buckets.get(prevMonthKey) : null;
-        /* istanbul ignore next: defensive programming for optional previous month entries */
-        let prevMonthLastEntry =
-            prevEntries && prevEntries.length > 0 ? prevEntries[prevEntries.length - 1] : null;
+        const prevMonthLastEntry = _findPrevMonthLastEntry(buckets, sortedMonthKeys, idx, monthKey);
 
-        /* istanbul ignore next: defensive programming for gaps in historical data */
-        if (!prevMonthLastEntry && idx > 0) {
-            const fallbackKey = sortedMonthKeys[idx - 1];
-            const fallbackEntries = buckets.get(fallbackKey);
-            if (fallbackEntries && fallbackEntries.length > 0) {
-                prevMonthLastEntry = fallbackEntries[fallbackEntries.length - 1];
-            }
-        }
-
-        /* istanbul ignore next: defensive programming for fallback entry selection */
         let baseEntry = prevMonthLastEntry || firstEntry;
-        /* istanbul ignore next: defensive programming for fallback entry selection */
         if (!prevMonthLastEntry && idx === 0 && earliestValidEntry) {
             baseEntry = earliestValidEntry;
         }
 
         const changes = _calculateCurrencyChanges(baseEntry, lastEntry);
-        /* istanbul ignore next: defensive programming for zero base total edge case */
         if (changes) {
             monthlyPnl.set(monthKey, changes);
         }
+    };
+
+    /* istanbul ignore next: defensive programming for malformed entries */
+    for (let idx = 0; idx < sortedMonthKeys.length; idx++) {
+        processMonthBucket(sortedMonthKeys[idx], idx);
     }
 
     return monthlyPnl;
@@ -803,6 +817,83 @@ export const __testables = {
         analysisTickerPathCache = null;
     },
 };
+
+function _renderPnlSummary(
+    totalPnlUSD,
+    totalPortfolioValueUSD,
+    currentCurrency,
+    exchangeRates,
+    currencySymbols
+) {
+    const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;
+    const totalPnlPercentage =
+        totalPortfolioCostUSD !== 0 ? (totalPnlUSD / totalPortfolioCostUSD) * 100 : 0;
+
+    const pnlContainer = document.getElementById('table-footer-summary');
+    const pnlElement = pnlContainer.querySelector('.total-pnl');
+
+    const formattedPnl = formatCurrency(
+        Math.abs(totalPnlUSD),
+        currentCurrency,
+        exchangeRates,
+        currencySymbols
+    );
+    const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
+    const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
+
+    setThinkingHighlight(pnlElement, false);
+    pnlElement.replaceChildren();
+
+    const openBracket = document.createElement('span');
+    openBracket.className = 'pnl-bracket';
+    openBracket.textContent = ' (';
+
+    const pnlAmount = document.createElement('span');
+    pnlAmount.className = 'pnl-amount';
+    pnlAmount.textContent = `${pnlSign}${formattedPnl}`;
+
+    const separator = document.createElement('span');
+    separator.className = 'pnl-separator';
+    separator.textContent = ', ';
+
+    const pnlPercent = document.createElement('span');
+    pnlPercent.className = 'pnl-percent';
+    pnlPercent.textContent = `${pnlPercentageSign}${totalPnlPercentage.toFixed(2)}%`;
+
+    const closeBracket = document.createElement('span');
+    closeBracket.className = 'pnl-bracket';
+    closeBracket.textContent = ')';
+
+    const pnlColor = totalPnlUSD >= 0 ? COLORS.POSITIVE_PNL : COLORS.NEGATIVE_PNL;
+    pnlAmount.style.color = pnlColor;
+    pnlPercent.style.color = pnlColor;
+
+    const footerTextColor = window.getComputedStyle(pnlContainer).color;
+    openBracket.style.color = footerTextColor;
+    separator.style.color = footerTextColor;
+    closeBracket.style.color = footerTextColor;
+
+    pnlElement.appendChild(openBracket);
+    pnlElement.appendChild(pnlAmount);
+    pnlElement.appendChild(separator);
+    pnlElement.appendChild(pnlPercent);
+    pnlElement.appendChild(closeBracket);
+
+    /* istanbul ignore next: defensive fallback for null case */
+    const lightenedPnlColor =
+        lightenHexToRgba(
+            pnlColor,
+            POSITION_PNL_HIGHLIGHT.pnlLightenFactor,
+            POSITION_PNL_HIGHLIGHT.pnlLightAlpha
+        ) || POSITION_PNL_HIGHLIGHT.neutralDimColor;
+    const thinkingOptions = {
+        intervalMs: POSITION_PNL_HIGHLIGHT.intervalMs,
+        waveSize: POSITION_PNL_HIGHLIGHT.waveSize,
+        baseColor: POSITION_PNL_HIGHLIGHT.baseColor,
+        dimColor: lightenedPnlColor,
+    };
+    setThinkingHighlight([pnlAmount, pnlPercent], true, thinkingOptions);
+}
 
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
@@ -844,81 +935,13 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             currencySymbols
         );
 
-        const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;
-        const totalPnlPercentage =
-            totalPortfolioCostUSD !== 0 ? (totalPnlUSD / totalPortfolioCostUSD) * 100 : 0;
-
-        const pnlContainer = document.getElementById('table-footer-summary');
-        const pnlElement = pnlContainer.querySelector('.total-pnl');
-
-        const formattedPnl = formatCurrency(
-            Math.abs(totalPnlUSD),
+        _renderPnlSummary(
+            totalPnlUSD,
+            totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
             currencySymbols
         );
-        const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
-        const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
-
-        // Clear previous content and stop any existing thinking effects
-        setThinkingHighlight(pnlElement, false);
-        pnlElement.replaceChildren();
-
-        // Create structured spans for PnL display with thinking effect
-        const openBracket = document.createElement('span');
-        openBracket.className = 'pnl-bracket';
-        openBracket.textContent = ' (';
-
-        const pnlAmount = document.createElement('span');
-        pnlAmount.className = 'pnl-amount';
-        pnlAmount.textContent = `${pnlSign}${formattedPnl}`;
-
-        const separator = document.createElement('span');
-        separator.className = 'pnl-separator';
-        separator.textContent = ', ';
-
-        const pnlPercent = document.createElement('span');
-        pnlPercent.className = 'pnl-percent';
-        pnlPercent.textContent = `${pnlPercentageSign}${totalPnlPercentage.toFixed(2)}%`;
-
-        const closeBracket = document.createElement('span');
-        closeBracket.className = 'pnl-bracket';
-        closeBracket.textContent = ')';
-
-        // Set colors for interactive elements
-        const pnlColor = totalPnlUSD >= 0 ? COLORS.POSITIVE_PNL : COLORS.NEGATIVE_PNL;
-        pnlAmount.style.color = pnlColor;
-        pnlPercent.style.color = pnlColor;
-
-        // Set bracket color to match footer text color (same as "TOTAL")
-        const footerTextColor = window.getComputedStyle(pnlContainer).color;
-        openBracket.style.color = footerTextColor;
-        separator.style.color = footerTextColor;
-        closeBracket.style.color = footerTextColor;
-
-        // Append all parts
-        pnlElement.appendChild(openBracket);
-        pnlElement.appendChild(pnlAmount);
-        pnlElement.appendChild(separator);
-        pnlElement.appendChild(pnlPercent);
-        pnlElement.appendChild(closeBracket);
-
-        // Apply thinking highlight to the PnL values (amount and percentage)
-        // Create a lightened version of the PnL color for the wave effect (same as calendar)
-        /* istanbul ignore next: defensive fallback for null case */
-        const lightenedPnlColor =
-            lightenHexToRgba(
-                pnlColor,
-                POSITION_PNL_HIGHLIGHT.pnlLightenFactor,
-                POSITION_PNL_HIGHLIGHT.pnlLightAlpha
-            ) || POSITION_PNL_HIGHLIGHT.neutralDimColor;
-        const thinkingOptions = {
-            intervalMs: POSITION_PNL_HIGHLIGHT.intervalMs,
-            waveSize: POSITION_PNL_HIGHLIGHT.waveSize,
-            baseColor: POSITION_PNL_HIGHLIGHT.baseColor,
-            dimColor: lightenedPnlColor,
-        };
-        setThinkingHighlight([pnlAmount, pnlPercent], true, thinkingOptions);
 
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();

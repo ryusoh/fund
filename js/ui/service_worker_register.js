@@ -40,16 +40,19 @@
         const scope = (script && script.getAttribute('data-sw-scope')) || './';
         window.addEventListener('load', function () {
             try {
-                navigator.serviceWorker.register(swPath, { scope }).catch(function () {});
+                navigator.serviceWorker.register(swPath, { scope }).catch(function (error) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Service worker registration failed:', error);
+                });
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Caught exception calling service worker register:', error);
                 /* no-op */
             }
         });
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Caught exception initializing service worker:', error);
         /* no-op */
     }
 })();
