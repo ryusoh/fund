@@ -125,6 +125,75 @@ describe('Responsive Utilities', () => {
             expect(toggleContainer.style.top).toBe('180px');
         });
 
+        it('should fallback to svg rect if no domains exist', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach(el => el.remove());
+            const svgRect = { top: 120, height: 200, bottom: 320 };
+            heatmapSvg.getBoundingClientRect = jest.fn().mockReturnValue(svgRect);
+            responsive.initCalendarResponsiveHandlers();
+            expect(toggleContainer.style.getPropertyValue('top')).toBeTruthy();
+        });
+
+        it('should fallback to first child rect if no SVG exists', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach(el => el.remove());
+            heatmapSvg.remove();
+            const childNode = document.createElement('div');
+            childNode.getBoundingClientRect = jest.fn().mockReturnValue({ top: 130, height: 100, bottom: 230 });
+            heatmapRoot.appendChild(childNode);
+            responsive.initCalendarResponsiveHandlers();
+            expect(toggleContainer.style.getPropertyValue('top')).toBeTruthy();
+        });
+
+        it('should fallback to calendarContainer rect if no first child exists', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach(el => el.remove());
+            heatmapSvg.remove();
+            const containerRect = { top: 140, height: 300, bottom: 440 };
+            calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(containerRect);
+            responsive.initCalendarResponsiveHandlers();
+            expect(toggleContainer.style.getPropertyValue('top')).toBeTruthy();
+        });
+
+        it('should fallback to heatmapRoot rect if calendarContainer also fails', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach(el => el.remove());
+            heatmapSvg.remove();
+            calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(null);
+            heatmapRoot.getBoundingClientRect = jest.fn().mockReturnValue({ top: 150, height: 100, bottom: 250 });
+            responsive.initCalendarResponsiveHandlers();
+            expect(toggleContainer.style.getPropertyValue('top')).toBeTruthy();
+        });
+
+        it('should handle todayButton double click to zoom and fire event', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE + 1; // desktop
+            responsive.initCalendarResponsiveHandlers();
+            const todayButton = document.querySelector(CALENDAR_SELECTORS.todayButton);
+            const pageWrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+            const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent');
+            todayButton.dispatchEvent(new MouseEvent('dblclick'));
+            expect(pageWrapper.classList.contains('zoomed')).toBe(true);
+            expect(document.body.classList.contains('calendar-zoomed')).toBe(true);
+            pageWrapper.dispatchEvent(new Event('transitionend'));
+            expect(dispatchEventSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
+            todayButton.dispatchEvent(new MouseEvent('dblclick'));
+            expect(pageWrapper.classList.contains('zoomed')).toBe(false);
+            expect(document.body.classList.contains('calendar-zoomed')).toBe(false);
+        });
+
+        it('should ignore todayButton double click on mobile', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+            responsive.initCalendarResponsiveHandlers();
+            const todayButton = document.querySelector(CALENDAR_SELECTORS.todayButton);
+            const pageWrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+            todayButton.dispatchEvent(new MouseEvent('dblclick'));
+            expect(pageWrapper.classList.contains('zoomed')).toBe(false);
+        });
+
         it('should reset position and top for desktop', () => {
             toggleContainer.style.position = 'fixed';
             toggleContainer.style.top = '100px';
