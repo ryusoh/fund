@@ -440,6 +440,176 @@ class TestGeneratePEData(unittest.TestCase):
         # No symbol found -> 1
         self.assertEqual(get_split_adjustment("C", pd.Timestamp("2019-01-01"), split_df), 1.0)
 
+    def test_calculate_harmonic_pe_missing_pe(self):
+        from scripts.generate_pe_data import calculate_harmonic_pe
+        self.assertIsNone(calculate_harmonic_pe({"A": 100}, {}))
+
+    def test_calculate_harmonic_pe_zero_total_mv(self):
+        from scripts.generate_pe_data import calculate_harmonic_pe
+        self.assertIsNone(calculate_harmonic_pe({"A": 0}, {"A": 10}))
+
+    def test_calculate_harmonic_pe_zero_pe(self):
+        from scripts.generate_pe_data import calculate_harmonic_pe
+        self.assertIsNone(calculate_harmonic_pe({"A": 100}, {"A": 0}))
+
+    def test_get_closest_fx_exception(self):
+        from scripts.generate_pe_data import get_closest_fx
+        fx_series = pd.Series([1.2], index=pd.to_datetime(["2023-01-01"]))
+        with patch.object(pd.Index, 'get_indexer', side_effect=Exception("Failed")):
+            self.assertEqual(get_closest_fx(fx_series, pd.Timestamp("2023-01-01")), 1.0)
+
+    @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
+    def test_fetch_forward_pe_no_holdings_file(self, mock_path):
+        from scripts.generate_pe_data import fetch_forward_pe
+        mock_path.exists.return_value = False
+        self.assertIsNone(fetch_forward_pe())
+
+    @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
+    def test_fetch_forward_pe_empty_holdings(self, mock_path):
+        from scripts.generate_pe_data import fetch_forward_pe
+        mock_path.exists.return_value = True
+        with patch("builtins.open", unittest.mock.mock_open(read_data="{}")):
+            self.assertIsNone(fetch_forward_pe())
+
+    @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
+    def test_fetch_forward_pe_with_holdings(self, mock_path):
+        from scripts.generate_pe_data import fetch_forward_pe
+        mock_path.exists.return_value = True
+        with patch("builtins.open", unittest.mock.mock_open(read_data='{"AAPL": {"shares": 10}, "INVALID": {"shares": -1}}')):
+            with patch("scripts.generate_pe_data.yf.Ticker") as mock_ticker:
+                mock_stock = unittest.mock.MagicMock()
+                mock_stock.info = {"currentPrice": 150.0, "forwardPE": 20.0}
+                mock_ticker.return_value = mock_stock
+                res = fetch_forward_pe()
+                self.assertIsNotNone(res)
+                self.assertIn("AAPL", res["ticker_forward_pe"])
+                self.assertEqual(res["ticker_forward_pe"]["AAPL"], 20.0)
+
+    @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
+    def test_fetch_forward_pe_vt_fallback(self, mock_path):
+        from scripts.generate_pe_data import fetch_forward_pe
+        mock_path.exists.return_value = True
+        with patch("builtins.open", unittest.mock.mock_open(read_data='{"VT": {"shares": 10}}')):
+            with patch("scripts.generate_pe_data.yf.Ticker") as mock_ticker:
+                mock_stock = unittest.mock.MagicMock()
+                mock_stock.info = {"currentPrice": 150.0, "forwardPE": None}
+                mock_ticker.return_value = mock_stock
+                with patch("scripts.generate_pe_data.scrape_msci_forward_pe", return_value=15.0):
+                    res = fetch_forward_pe()
+                    self.assertIsNotNone(res)
+                    self.assertEqual(res["ticker_forward_pe"]["VT"], 15.0)
+
+    @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
+    def test_fetch_forward_pe_exception(self, mock_path):
+        from scripts.generate_pe_data import fetch_forward_pe
+        mock_path.exists.return_value = True
+        with patch("builtins.open", unittest.mock.mock_open(read_data='{"AAPL": {"shares": 10}}')):
+            with patch("scripts.generate_pe_data.yf.Ticker", side_effect=Exception("Failed")):
+                res = fetch_forward_pe()
+                self.assertIsNone(res)
+
+    def test_scrape_msci_forward_pe_success(self):
+        from scripts.generate_pe_data import scrape_msci_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_response = unittest.mock.MagicMock()
+            mock_response.text = "<html><body>P/E Fwd 15.5</body></html>"
+            mock_get.return_value = mock_response
+            res = scrape_msci_forward_pe()
+            self.assertEqual(res, 15.5)
+
+    def test_scrape_msci_forward_pe_no_match(self):
+        from scripts.generate_pe_data import scrape_msci_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_response = unittest.mock.MagicMock()
+            mock_response.text = "<html><body>No data</body></html>"
+            mock_get.return_value = mock_response
+            res = scrape_msci_forward_pe()
+            self.assertIsNone(res)
+
+    def test_scrape_msci_forward_pe_exception(self):
+        from scripts.generate_pe_data import scrape_msci_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_get.side_effect = Exception("Failed")
+            res = scrape_msci_forward_pe()
+            self.assertIsNone(res)
+
+    def test_scrape_wsj_forward_pe_success(self):
+        from scripts.generate_pe_data import scrape_wsj_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_response = unittest.mock.MagicMock()
+            mock_response.text = 'P 500 Index "priceEarningsRatioEstimate": 20.5'
+            mock_get.return_value = mock_response
+            res = scrape_wsj_forward_pe()
+            self.assertEqual(res, 20.5)
+
+    def test_scrape_wsj_forward_pe_no_match(self):
+        from scripts.generate_pe_data import scrape_wsj_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_response = unittest.mock.MagicMock()
+            mock_response.text = 'P 500 Index xyz'
+            mock_get.return_value = mock_response
+            res = scrape_wsj_forward_pe()
+            self.assertIsNone(res)
+
+    def test_scrape_wsj_forward_pe_exception(self):
+        from scripts.generate_pe_data import scrape_wsj_forward_pe
+        with patch("scripts.generate_pe_data.requests.get") as mock_get:
+            mock_get.side_effect = Exception("Failed")
+            res = scrape_wsj_forward_pe()
+            self.assertIsNone(res)
+
+    def test_fetch_etf_pe_yf(self):
+        from scripts.generate_pe_data import fetch_etf_pe
+        with patch('scripts.generate_pe_data.yf.Ticker') as mock_ticker:
+            mock_stock = MagicMock()
+            mock_stock.info = {"trailingPE": 20.0}
+            mock_ticker.return_value = mock_stock
+            dates = pd.DatetimeIndex([pd.Timestamp("2020-01-01")])
+            result = fetch_etf_pe("AAPL", dates)
+            self.assertEqual(result.iloc[0], 20.0)
+
+    def test_fetch_etf_pe_yf_none(self):
+        from scripts.generate_pe_data import fetch_etf_pe
+        with patch('scripts.generate_pe_data.yf.Ticker') as mock_ticker:
+            mock_stock = MagicMock()
+            mock_stock.info = None
+            mock_ticker.return_value = mock_stock
+            dates = pd.DatetimeIndex([pd.Timestamp("2020-01-01")])
+            result = fetch_etf_pe("AAPL", dates)
+            self.assertIsNone(result)
+
+    def test_fetch_etf_pe_yf_exception(self):
+        from scripts.generate_pe_data import fetch_etf_pe
+        with patch('scripts.generate_pe_data.yf.Ticker') as mock_ticker:
+            mock_ticker.side_effect = Exception("Failed")
+            dates = pd.DatetimeIndex([pd.Timestamp("2020-01-01")])
+            result = fetch_etf_pe("AAPL", dates)
+            self.assertIsNone(result)
+
+    def test_fetch_stock_eps_data_exception(self):
+        from scripts.generate_pe_data import fetch_stock_eps_data
+        with patch('scripts.generate_pe_data.yf.Ticker') as mock_ticker:
+            mock_ticker.side_effect = Exception("Failed")
+            with patch('scripts.generate_pe_data.load_eps_cache', return_value={}):
+                with patch('scripts.generate_pe_data.load_manual_patch', return_value={}):
+                    with patch('scripts.generate_pe_data.save_eps_cache'):
+                        result = fetch_stock_eps_data(["AAPL"])
+                        self.assertNotIn("AAPL", result)
+
+    def test_fetch_etf_pe_manual(self):
+        from scripts.generate_pe_data import fetch_etf_pe
+        with patch.dict('scripts.generate_pe_data.MANUAL_TICKER_PE_CURVES', {"TEST": {pd.Timestamp("2020-01-01"): 15.0}}):
+            dates = pd.DatetimeIndex([pd.Timestamp("2020-01-01")])
+            result = fetch_etf_pe("TEST", dates)
+            self.assertEqual(result.iloc[0], 15.0)
+
+    def test_interpolate_eps_series_exception(self):
+        from scripts.generate_pe_data import interpolate_eps_series
+        stock_data = {"points": [{"date": pd.Timestamp("2023-01-01"), "eps": 1.0}], "current_ttm": None}
+        dates = pd.DatetimeIndex([pd.Timestamp("2023-01-01"), pd.Timestamp("2023-01-02")])
+        res = interpolate_eps_series(stock_data, dates)
+        self.assertEqual(res.iloc[0], 1.0)
+        self.assertEqual(res.iloc[1], 1.0)
 
 if __name__ == "__main__":
     unittest.main()
