@@ -47,6 +47,14 @@ function isMarketHoliday(date) {
         return false;
     };
 
+    return (
+        checkStaticHolidays(month, day, dayOfWeek, checkStaticHoliday) ||
+        checkNthDayHolidays(month, isNthDayOfWeek, isLastDayOfWeek) ||
+        checkGoodFridayHoliday(date, month, day)
+    );
+}
+
+function checkStaticHolidays(month, day, dayOfWeek, checkStaticHoliday) {
     // 1. New Year's Day (Jan 1)
     if (checkStaticHoliday(0, 1)) {
         return true;
@@ -55,17 +63,46 @@ function isMarketHoliday(date) {
     if (month === 11 && day === 31 && dayOfWeek === 5) {
         return true;
     }
-
-    // 2. Martin Luther King Jr. Day (3rd Monday in Jan)
-    if (month === 0 && isNthDayOfWeek(3, 1)) {
+    // 6. Juneteenth National Independence Day (June 19)
+    if (checkStaticHoliday(5, 19)) {
         return true;
     }
-
-    // 3. Washington's Birthday (Presidents' Day) (3rd Monday in Feb)
-    if (month === 1 && isNthDayOfWeek(3, 1)) {
+    // 7. Independence Day (July 4)
+    if (checkStaticHoliday(6, 4)) {
         return true;
     }
+    // 10. Christmas Day (Dec 25)
+    if (checkStaticHoliday(11, 25)) {
+        return true;
+    }
+    return false;
+}
 
+function checkNthDayHolidays(month, isNthDayOfWeek, isLastDayOfWeek) {
+    if (month === 0) {
+        // 2. Martin Luther King Jr. Day (3rd Monday in Jan)
+        return isNthDayOfWeek(3, 1);
+    }
+    if (month === 1) {
+        // 3. Washington's Birthday (Presidents' Day) (3rd Monday in Feb)
+        return isNthDayOfWeek(3, 1);
+    }
+    if (month === 4) {
+        // 5. Memorial Day (Last Monday in May)
+        return isLastDayOfWeek(1);
+    }
+    if (month === 8) {
+        // 8. Labor Day (1st Monday in Sept)
+        return isNthDayOfWeek(1, 1);
+    }
+    if (month === 10) {
+        // 9. Thanksgiving Day (4th Thursday in Nov)
+        return isNthDayOfWeek(4, 4);
+    }
+    return false;
+}
+
+function checkGoodFridayHoliday(date, month, day) {
     // 4. Good Friday (computus calculation)
     const getEaster = (y) => {
         const a = y % 19;
@@ -90,37 +127,6 @@ function isMarketHoliday(date) {
     if (month === goodFriday.getMonth() && day === goodFriday.getDate()) {
         return true;
     }
-
-    // 5. Memorial Day (Last Monday in May)
-    if (month === 4 && isLastDayOfWeek(1)) {
-        return true;
-    }
-
-    // 6. Juneteenth National Independence Day (June 19)
-    if (checkStaticHoliday(5, 19)) {
-        return true;
-    }
-
-    // 7. Independence Day (July 4)
-    if (checkStaticHoliday(6, 4)) {
-        return true;
-    }
-
-    // 8. Labor Day (1st Monday in Sept)
-    if (month === 8 && isNthDayOfWeek(1, 1)) {
-        return true;
-    }
-
-    // 9. Thanksgiving Day (4th Thursday in Nov)
-    if (month === 10 && isNthDayOfWeek(4, 4)) {
-        return true;
-    }
-
-    // 10. Christmas Day (Dec 25)
-    if (checkStaticHoliday(11, 25)) {
-        return true;
-    }
-
     return false;
 }
 
