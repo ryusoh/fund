@@ -10,8 +10,8 @@ rates to compute the portfolio value across currencies.
 from __future__ import annotations
 
 import argparse
-import csv
 import atexit
+import csv
 import json
 import shutil
 import tempfile

@@ -5,6 +5,7 @@ try:
     import atexit
     import shutil
     import tempfile
+
     import yfinance as yf
 
     # Use a secure temporary directory

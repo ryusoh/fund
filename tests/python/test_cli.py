@@ -1,4 +1,4 @@
-import sys
+import sys  # noqa: E402
 import types
 import unittest
 from pathlib import Path
@@ -106,15 +106,20 @@ class TestCLI(unittest.TestCase):
         )
 
 
-import pytest
-from unittest.mock import patch
-from scripts.commands import tickers
+# noqa: E402
+from unittest.mock import patch  # noqa: E402
+
+# noqa: E402
+import pytest  # noqa: E402
+
+# noqa: E402
+from scripts.commands import tickers  # noqa: E402
 
 
 def test_tickers_success():
-    import tempfile
-    import json
     import argparse
+    import json
+    import tempfile
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -149,8 +154,8 @@ def test_tickers_file_not_found():
 
 
 def test_tickers_read_error():
-    import tempfile
     import argparse
+    import tempfile
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -178,17 +183,18 @@ def test_tickers_default_path():
     tickers.add_parser(subparsers)
 
     args = parser.parse_args(["tickers"])  # no file arg
-    with patch("builtins.print") as mock_print:
+    with patch("builtins.print"):
         with patch.object(Path, "open", side_effect=FileNotFoundError):
             args.func(args)
 
 
 def test_tickers_argcomplete_exception():
     import argparse
+
     from scripts.commands import tickers
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+    parser.add_subparsers()
 
     class BrokenSubparsers:
         def add_parser(self, *args, **kwargs):
@@ -208,11 +214,10 @@ def test_tickers_argcomplete_exception():
     tickers.add_parser(BrokenSubparsers())
 
 
-import pytest
-from unittest.mock import patch
-from scripts.commands import update_all
-import argparse
-import sys
+import argparse  # noqa: E402
+import sys  # noqa: E402
+
+from scripts.commands import update_all  # noqa: E402
 
 
 def test_update_all_success():
@@ -253,12 +258,9 @@ def test_update_all_failures():
                     mock_print.assert_any_call("Daily P&L update failed: pnl err")
 
 
-import argparse
-import sys
-import pytest
-from unittest.mock import MagicMock, patch
+import sys  # noqa: E402
 
-from scripts.commands import holdings
+from scripts.commands import holdings  # noqa: E402
 
 
 def test_holdings_buy_missing_all_args():
@@ -273,10 +275,11 @@ def test_holdings_buy_missing_all_args():
 
 def test_holdings_add_parser_exception():
     import argparse
+
     from scripts.commands import holdings
 
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+    parser.add_subparsers()
 
     class BrokenSubparsers:
         def add_parser(self, *args, **kwargs):
@@ -299,8 +302,8 @@ def test_holdings_add_parser_exception():
 def test_holdings_file_and_transactions_args():
     import argparse
     import sys
-    import pytest
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import patch
+
     from scripts.commands import holdings
 
     parser = argparse.ArgumentParser()
@@ -310,7 +313,7 @@ def test_holdings_file_and_transactions_args():
         ["holdings", "--file", "my_file.json", "--transactions", "my_tx.csv", "list"]
     )
 
-    with patch("scripts.portfolio.manage_holdings.main") as mock_main:
+    with patch("scripts.portfolio.manage_holdings.main"):
         with patch.object(sys, "argv", ["fake"]):
             args.func(args)
             assert sys.argv == ["fake"]
@@ -319,8 +322,8 @@ def test_holdings_file_and_transactions_args():
 def test_holdings_buy_all_args():
     import argparse
     import sys
-    import pytest
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import patch
+
     from scripts.commands import holdings
 
     parser = argparse.ArgumentParser()
@@ -328,14 +331,17 @@ def test_holdings_buy_all_args():
     holdings.add_parser(subparsers)
     args = parser.parse_args(["holdings", "buy", "AAPL", "10", "150"])
 
-    with patch("scripts.portfolio.manage_holdings.main") as mock_main:
+    with patch("scripts.portfolio.manage_holdings.main"):
         with patch.object(sys, "argv", ["fake"]):
             args.func(args)
             assert sys.argv == ["fake"]
 
+
 def test_holdings_argcomplete():
-    from scripts.commands import holdings
     import argparse
+
+    from scripts.commands import holdings
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
     holdings.add_parser(subparsers)
@@ -343,9 +349,7 @@ def test_holdings_argcomplete():
     # We simulate the argcomplete hook.
     # It's hidden in the action completers.
     subparsers_actions = [
-        action
-        for action in parser._actions
-        if isinstance(action, argparse._SubParsersAction)
+        action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
     ]
     holdings_parser = subparsers_actions[0].choices["holdings"]
 
@@ -353,8 +357,8 @@ def test_holdings_argcomplete():
 
     # Now run the completer.
     # Try finding dummy JSON to complete.
-    import tempfile
     import json
+    import tempfile
 
     with tempfile.NamedTemporaryFile("w", delete=True, suffix=".json") as f:
         json.dump({"AAPL": {}, "MSFT": {}, "AMZN": {}}, f)
@@ -375,17 +379,18 @@ def test_holdings_argcomplete():
     completions_err = ticker_action.completer("A", ErrorParsedArgs())
     assert completions_err == []
 
+
 def test_holdings_argcomplete_exception():
-    from scripts.commands import holdings
     import argparse
+
+    from scripts.commands import holdings
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
     holdings.add_parser(subparsers)
 
     subparsers_actions = [
-        action
-        for action in parser._actions
-        if isinstance(action, argparse._SubParsersAction)
+        action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
     ]
     holdings_parser = subparsers_actions[0].choices["holdings"]
 
@@ -399,9 +404,12 @@ def test_holdings_argcomplete_exception():
     completions_err = ticker_action.completer("A", ErrorParsedArgs())
     assert completions_err == []
 
+
 def test_holdings_buy_missing_shares_and_price():
     import argparse
+
     from scripts.commands import holdings
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
     holdings.add_parser(subparsers)
@@ -412,9 +420,12 @@ def test_holdings_buy_missing_shares_and_price():
         args.func(args)
     assert "buy requires ticker, shares, and price" in str(context.value)
 
+
 def test_holdings_buy_missing_price():
     import argparse
+
     from scripts.commands import holdings
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
     holdings.add_parser(subparsers)
@@ -424,6 +435,7 @@ def test_holdings_buy_missing_price():
     with pytest.raises(SystemExit) as context:
         args.func(args)
     assert "buy requires ticker, shares, and price" in str(context.value)
+
 
 if __name__ == "__main__":
     unittest.main()

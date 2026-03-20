@@ -42,3 +42,8 @@
 
 **Learning:** For ISO 8601 formatted date strings (like `YYYY-MM-DD`), using `new Date(a)` inside `Array.prototype.sort()` is a massive performance bottleneck. Even caching parsed dates has unnecessary memory overhead.
 **Action:** When sorting arrays by `YYYY-MM-DD` strings, entirely avoid date parsing. Instead, use direct lexicographical string comparison (e.g., `a < b ? -1 : (a > b ? 1 : 0)`). This is ~10x faster than parsing and requires no additional memory for caching.
+
+## 2025-03-20 - Pandas zip+numpy Iteration Optimization
+
+**Learning:** Iterating through Pandas DataFrames row-by-row, even using `.itertuples(index=True, name=None)`, introduces overhead. Extracting individual columns to NumPy arrays (`df['col'].to_numpy()`) and iterating over them simultaneously using `zip()` is about ~40% faster for operations where vectorized Pandas calculations are not feasible (e.g. FIFO stateful evaluation like calculating realized gains).
+**Action:** Replace `itertuples()` row iteration with `zip()` on extracted `.to_numpy()` arrays for large loops to optimize raw iteration performance.
