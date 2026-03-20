@@ -130,7 +130,7 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
                 // Lexicographical string comparison is completely safe and ~10x faster here.
                 const da = a[dateKey] || a.date;
                 const db = b[dateKey] || b.date;
-                return da < db ? -1 : (da > db ? 1 : 0);
+                return da < db ? -1 : da > db ? 1 : 0;
             });
 
             // Consolidate by day (keep last value)
