@@ -190,27 +190,26 @@ def calculate_stats(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str, A
     realized_gain_total = 0.0
     lots_by_security: dict[str, deque[list[float]]] = {}
 
-    sec_idx = transactions_df.columns.get_loc('security') + 1
-    qty_idx = transactions_df.columns.get_loc('adjusted_quantity') + 1
-    val_idx = transactions_df.columns.get_loc('trade_value') + 1
-    type_idx = transactions_df.columns.get_loc('order_type') + 1
+    securities = transactions_df['security'].to_numpy()
+    qtys = transactions_df['adjusted_quantity'].to_numpy(dtype=float)
+    trade_values = transactions_df['trade_value'].to_numpy(dtype=float)
+    order_types = transactions_df['order_type'].to_numpy()
 
-    for row in transactions_df.itertuples(index=True, name=None):
-        security = row[sec_idx]
-        qty = float(row[qty_idx])
-        trade_value = float(row[val_idx])
+    for security, qty, trade_value, order_type in zip(
+        securities, qtys, trade_values, order_types, strict=False
+    ):
         price = trade_value / qty if qty else 0.0
-        order_type = str(row[type_idx]).strip().lower()
+        order_type_str = str(order_type).strip().lower()
 
         if qty <= 0 or price <= 0:
             continue
 
         lots = lots_by_security.setdefault(security, deque())
 
-        if order_type == 'buy':
+        if order_type_str == 'buy':
             # Store as list instead of dict for faster attribute access and mutability
             lots.append([qty, price])
-        elif order_type == 'sell':
+        elif order_type_str == 'sell':
             remaining = qty
             while remaining > 1e-9 and lots:
                 lot = lots[0]
