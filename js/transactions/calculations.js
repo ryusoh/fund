@@ -1,11 +1,10 @@
 import { parseCSVLine } from './utils.js';
 
 export function getSplitAdjustment(splitHistory, symbol, transactionDate) {
+    // Bolt: Optimized split adjustment to use direct string comparison for YYYY-MM-DD strings.
+    // Instantiating Date objects within a filter loop is a major performance bottleneck for O(N*M) operations.
     return splitHistory
-        .filter(
-            (split) =>
-                split.symbol === symbol && new Date(split.splitDate) > new Date(transactionDate)
-        )
+        .filter((split) => split.symbol === symbol && split.splitDate > transactionDate)
         .reduce((cumulative, split) => cumulative * split.splitMultiplier, 1.0);
 }
 
