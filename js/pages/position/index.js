@@ -248,19 +248,26 @@ setInterval(async () => {
     }
 }, APP_SETTINGS.DATA_REFRESH_INTERVAL);
 
-// Refresh when tab becomes visible again
+async function refreshPortfolioData() {
+    try {
+        await loadAndDisplayPortfolioData(currentSelectedCurrency, exchangeRates, CURRENCY_SYMBOLS);
+        alignToggleWithChartMobile();
+    } catch (error) {
+        logger.error('Error updating portfolio on visibility change:', error);
+    }
+}
+
+// Refresh when tab becomes visible again (standard browsers)
 document.addEventListener('visibilitychange', async () => {
     if (!document.hidden) {
-        try {
-            await loadAndDisplayPortfolioData(
-                currentSelectedCurrency,
-                exchangeRates,
-                CURRENCY_SYMBOLS
-            );
-            alignToggleWithChartMobile();
-        } catch (error) {
-            logger.error('Error updating portfolio on visibility change:', error);
-        }
+        await refreshPortfolioData();
+    }
+});
+
+// Refresh when iOS PWA is foregrounded from background (more reliable than visibilitychange on iOS)
+window.addEventListener('pageshow', async (event) => {
+    if (event.persisted) {
+        await refreshPortfolioData();
     }
 });
 
