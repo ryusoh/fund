@@ -13,7 +13,9 @@ function isMarketHours() {
     const etString = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
     const et = new Date(etString);
     const day = et.getDay(); // 0=Sun, 6=Sat
-    if (day === 0 || day === 6) {return false;}
+    if (day === 0 || day === 6) {
+        return false;
+    }
     const hours = et.getHours();
     const minutes = et.getMinutes();
     const timeInMinutes = hours * 60 + minutes;
@@ -69,6 +71,33 @@ async function fetchFromAlpaca(symbols, env) {
     return prices;
 }
 
+async function fetchFromYahoo(symbols) {
+    // Yahoo Finance v7 quote endpoint — same source yfinance uses
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
+    const response = await fetch(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0',
+            Accept: 'application/json',
+        },
+    });
+    if (!response.ok) {
+        throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    const results = data?.quoteResponse?.result ?? [];
+    if (results.length === 0) {
+        throw new Error('Yahoo Finance returned no results');
+    }
+    const prices = {};
+    for (const quote of results) {
+        const price = quote?.regularMarketPrice ?? null;
+        if (quote?.symbol && price !== null) {
+            prices[quote.symbol] = price;
+        }
+    }
+    return prices;
+}
+
 export default {
     async fetch(request, env) {
         const origin = request.headers.get('Origin') ?? '';
@@ -114,22 +143,25 @@ export default {
             return jsonResponse(cached, 200, origin, { 'X-Cache': 'HIT' });
         }
 
-        // 2. Fetch from Alpaca
+        // 2. Fetch from Alpaca, fall back to Yahoo Finance
         let prices;
         try {
             prices = await fetchFromAlpaca(symbols, env);
-        } catch (err) {
-            // 3. On Alpaca failure, serve last-known-good value (stale-on-error)
-            // Stored without TTL so it survives after the cache entry expires
-            const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
-            if (stale) {
-                return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+        } catch {
+            try {
+                prices = await fetchFromYahoo(symbols);
+            } catch (yahooErr) {
+                // 3. Both sources failed — serve last-known-good value (stale-on-error)
+                const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+                if (stale) {
+                    return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+                }
+                return jsonResponse(
+                    { error: 'Failed to fetch prices', detail: yahooErr.message },
+                    502,
+                    origin
+                );
             }
-            return jsonResponse(
-                { error: 'Failed to fetch prices', detail: err.message },
-                502,
-                origin
-            );
         }
 
         // 4. Write to KV (fire-and-forget, don't block response)

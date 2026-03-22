@@ -53,7 +53,7 @@ async function fetchJSON(url) {
 
 async function fetchPortfolioData() {
     const holdingsDetails = await fetchJSON(HOLDINGS_DETAILS_URL);
-    const symbols = Object.keys(holdingsDetails).join(',');
+    const symbols = holdingsDetails ? Object.keys(holdingsDetails).join(',') : '';
 
     const isLocal = typeof window === 'undefined' || isLocalhost(window.location.hostname);
     let prices;
