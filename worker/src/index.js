@@ -1,26 +1,33 @@
 const ALPACA_SNAPSHOTS_URL = 'https://data.alpaca.markets/v2/stocks/snapshots';
 const ALLOWED_ORIGIN = 'https://fund.lyeutsaon.com';
 
-// Market hours in ET: 09:30–16:00 Mon–Fri
-// TTL in seconds during / outside market hours
-const MARKET_HOURS_TTL = 60;
-const OFF_HOURS_TTL = 3600;
+// TTL in seconds per trading session
+const TTL = {
+    regular: 60, // 09:30–16:00 ET Mon–Fri
+    extended: 300, // 04:00–09:30 and 16:00–20:00 ET Mon–Fri
+    closed: 3600, // overnight and weekends
+};
 
-function isMarketHours() {
+// Returns 'regular', 'extended', or 'closed'
+function getTradingSession() {
     const now = new Date();
-    // Convert UTC to US/Eastern (UTC-5 standard, UTC-4 daylight)
-    // Use a fixed-format locale string trick that works in Workers
     const etString = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
     const et = new Date(etString);
     const day = et.getDay(); // 0=Sun, 6=Sat
     if (day === 0 || day === 6) {
-        return false;
+        return 'closed';
     }
-    const hours = et.getHours();
-    const minutes = et.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
-    return timeInMinutes >= 9 * 60 + 30 && timeInMinutes < 16 * 60;
+    const t = et.getHours() * 60 + et.getMinutes();
+    if (t >= 9 * 60 + 30 && t < 16 * 60) {
+        return 'regular';
+    }
+    if (t >= 4 * 60 && t < 20 * 60) {
+        return 'extended';
+    }
+    return 'closed';
 }
+
+export { getTradingSession };
 
 function corsHeaders(origin) {
     const allowed =
@@ -135,7 +142,7 @@ export default {
         }
 
         const cacheKey = `prices:${symbols.sort().join(',')}`;
-        const ttl = isMarketHours() ? MARKET_HOURS_TTL : OFF_HOURS_TTL;
+        const ttl = TTL[getTradingSession()];
 
         // 1. Try KV cache
         const cached = await env.PRICE_CACHE.get(cacheKey, { type: 'json' });

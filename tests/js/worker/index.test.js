@@ -1,4 +1,4 @@
-import worker from '../../../worker/src/index.js';
+import worker, { getTradingSession } from '../../../worker/src/index.js';
 
 global.fetch = jest.fn();
 global.btoa = global.btoa ?? ((s) => Buffer.from(s).toString('base64'));
@@ -199,5 +199,43 @@ describe('Cloudflare Worker — /prices', () => {
         const alpacaUrl = fetch.mock.calls[0][0];
         const params = new URL(alpacaUrl).searchParams.get('symbols');
         expect(params.split(',').filter((s) => s === 'VT').length).toBe(1);
+    });
+});
+
+describe('getTradingSession', () => {
+    // All dates use January (UTC-5, no DST) so ET = UTC - 5h
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    const setET = (isoUTC) => jest.setSystemTime(new Date(isoUTC));
+
+    it('returns "regular" during market hours on a weekday', () => {
+        setET('2025-01-06T15:00:00Z'); // Monday 10:00 ET
+        expect(getTradingSession()).toBe('regular');
+    });
+
+    it('returns "extended" during pre-market on a weekday', () => {
+        setET('2025-01-06T12:00:00Z'); // Monday 07:00 ET
+        expect(getTradingSession()).toBe('extended');
+    });
+
+    it('returns "extended" during after-hours on a weekday', () => {
+        setET('2025-01-06T22:00:00Z'); // Monday 17:00 ET
+        expect(getTradingSession()).toBe('extended');
+    });
+
+    it('returns "closed" overnight on a weekday', () => {
+        setET('2025-01-06T07:00:00Z'); // Monday 02:00 ET
+        expect(getTradingSession()).toBe('closed');
+    });
+
+    it('returns "closed" on Saturday', () => {
+        setET('2025-01-11T17:00:00Z'); // Saturday 12:00 ET
+        expect(getTradingSession()).toBe('closed');
+    });
+
+    it('returns "closed" on Sunday', () => {
+        setET('2025-01-05T17:00:00Z'); // Sunday 12:00 ET
+        expect(getTradingSession()).toBe('closed');
     });
 });
