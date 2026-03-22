@@ -71,7 +71,10 @@
                 }
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception parsing manifest URL, falling back to window location:', error);
+                console.warn(
+                    'Caught exception parsing manifest URL, falling back to window location:',
+                    error
+                );
             }
         }
 
