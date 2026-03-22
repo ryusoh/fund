@@ -116,6 +116,19 @@ module.exports = [
         },
     },
     {
+        files: ['worker/**/*.js'],
+        languageOptions: {
+            globals: {
+                Request: 'readonly',
+                Response: 'readonly',
+                URL: 'readonly',
+                btoa: 'readonly',
+                fetch: 'readonly',
+                console: 'readonly',
+            },
+        },
+    },
+    {
         files: ['scripts/**/*.js', 'babel.config.js', 'tests/js/__mocks__/**/*.js'],
         languageOptions: {
             sourceType: 'commonjs',

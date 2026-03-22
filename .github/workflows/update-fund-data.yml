@@ -2,7 +2,7 @@ name: Update Fund Data
 
 on:
     schedule:
-        - cron: '*/30 * * * 1-5' # Runs every 30 minutes on weekdays
+        - cron: '*/30 * * * 1-5' # Runs every 30 minutes on weekdays (fallback while Worker is validated)
     workflow_dispatch:
 
 concurrency:
