@@ -208,7 +208,9 @@ describe('imagePlugin', () => {
         try {
             // Remove the property entirely so typeof navigator === 'undefined'
             delete global.navigator;
-        } catch {}
+        } catch {
+            /* ignore */
+        }
         try {
             mockChart.data.datasets[0].images = [{ src: 'http://example.com/a.png' }];
             imagePlugin.afterDatasetsDraw(mockChart, {}, {});
@@ -220,7 +222,9 @@ describe('imagePlugin', () => {
             } else {
                 try {
                     delete global.navigator;
-                } catch {}
+                } catch {
+                    /* ignore */
+                }
             }
         }
     });
