@@ -48,7 +48,10 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
         response.raise_for_status()
         content = response.text
     except Exception as e:
-        print(f"  Error fetching {etf_ticker}: {e}")
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = error_msg.replace(scraper_api_key, "***")
+        print(f"  Error fetching {etf_ticker}: {error_msg}")
         return {}
 
     # StockAnalysis embeds country data in JavaScript
