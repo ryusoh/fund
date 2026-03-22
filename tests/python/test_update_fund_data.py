@@ -198,7 +198,7 @@ def test_get_prices_polygon_fallback(
     mock_yf_download.return_value = {}
 
     # Mock Alpaca to return nothing or fail
-    def mock_requests_get_side_effect(url, params=None, headers=None):
+    def mock_requests_get_side_effect(url, params=None, headers=None, timeout=None):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {}
         mock_resp.status_code = 200
