@@ -176,6 +176,68 @@ describe('calculations.js', () => {
         expect(result.totalRealizedGain).toBe(250); // (5 * 150) - (5 * 100) = 250
     });
 
+    // Regression: commit 271c6d1 replaced `new Date(a) > new Date(b)` with `a > b`
+    // but splitDate is YYYY-MM-DD and tradeDate from CSV is MM/DD/YYYY, so string
+    // comparison always returned true (e.g. "2021-07-20" > "06/25/2020" → "2" > "0").
+    describe('getSplitAdjustment with MM/DD/YYYY tradeDate (real CSV format)', () => {
+        const splitHistory = [
+            { symbol: 'NVDA', splitDate: '2021-07-20', splitMultiplier: 4 },
+            { symbol: 'NVDA', splitDate: '2024-06-10', splitMultiplier: 10 },
+        ];
+
+        test('applies both splits to pre-split transaction', () => {
+            // 06/25/2020 is before both splits → adjustment = 4 * 10 = 40
+            expect(getSplitAdjustment(splitHistory, 'NVDA', '06/25/2020')).toBe(40);
+        });
+
+        test('applies only later split to between-splits transaction', () => {
+            // 08/01/2021 is after the 2021-07-20 split but before the 2024 split → adjustment = 10
+            expect(getSplitAdjustment(splitHistory, 'NVDA', '08/01/2021')).toBe(10);
+        });
+
+        test('applies no splits to post-split transaction', () => {
+            // 07/01/2024 is after both splits → adjustment = 1
+            expect(getSplitAdjustment(splitHistory, 'NVDA', '07/01/2024')).toBe(1);
+        });
+
+        test('transaction on same day as split is not adjusted by that split', () => {
+            // 07/20/2021 is on the split date — split happened, so no adjustment for that day
+            expect(getSplitAdjustment(splitHistory, 'NVDA', '07/20/2021')).toBe(10);
+        });
+    });
+
+    test('applyTransactionFIFO correctly handles MM/DD/YYYY tradeDate with split', () => {
+        const splitHistory = [{ symbol: 'AAPL', splitDate: '2020-08-31', splitMultiplier: 4 }];
+
+        // Buy on 01/01/2020 (MM/DD/YYYY) — before the split, should apply 4x adjustment
+        const result = applyTransactionFIFO(
+            [],
+            {
+                orderType: 'buy',
+                security: 'AAPL',
+                quantity: '10',
+                price: '400',
+                tradeDate: '01/01/2020',
+            },
+            splitHistory
+        );
+        expect(result.lots).toEqual([{ qty: 40, price: 100 }]);
+
+        // Buy on 09/01/2020 (MM/DD/YYYY) — after the split, no adjustment
+        const resultAfter = applyTransactionFIFO(
+            [],
+            {
+                orderType: 'buy',
+                security: 'AAPL',
+                quantity: '10',
+                price: '120',
+                tradeDate: '09/01/2020',
+            },
+            splitHistory
+        );
+        expect(resultAfter.lots).toEqual([{ qty: 10, price: 120 }]);
+    });
+
     test('parseCSV parses simple CSV text', () => {
         const csvText = `Trade Date,Order Type,Security,Quantity,Price
 2021-01-01,Buy,AAPL,10,150
