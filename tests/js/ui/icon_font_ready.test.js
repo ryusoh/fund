@@ -52,6 +52,37 @@ describe('icon_font_ready', () => {
         expect(document.body.classList.contains('icon-font-ready')).toBe(true);
     });
 
+    test('adds ready class if ready promise rejects', async () => {
+        const loadPromise = Promise.resolve([]);
+        const readyPromise = Promise.reject(new Error('Ready failed'));
+
+        // Mock to suppress the unhandled rejection in test
+        readyPromise.catch(() => {});
+
+        mockDocumentFonts({
+            check: jest.fn().mockReturnValue(false),
+            load: jest.fn().mockReturnValue(loadPromise),
+            ready: readyPromise,
+        });
+
+        loadIconFontReady();
+
+        expect(document.body.classList.contains('icon-font-ready')).toBe(false);
+
+        await loadPromise;
+
+        try {
+            await readyPromise;
+        } catch {
+            /* ignore */
+        }
+
+        // Let promises resolve
+        jest.runAllTimers();
+
+        expect(document.body.classList.contains('icon-font-ready')).toBe(true);
+    });
+
     test('waits for font load and adds ready class', async () => {
         const loadPromise = Promise.resolve([]);
         const readyPromise = Promise.resolve();
