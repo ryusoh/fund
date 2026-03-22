@@ -11,3 +11,9 @@
 **Action:** Added context logging via `console.warn` to provide visibility into fallback failures.
 
 **Verification:** Linter checks pass and errors will now appear in console if vendor loading fails.
+
+## 2025-03-20 - Sentinel Resilience Audit
+
+**Vulnerability:** Generic error suppressions (// ignore) masking underlying issues
+**Learning:** Catch blocks that silently swallow exceptions without logging context can mask critical API failures (like PE ratio data fetch failures) or environment incompatibilities, creating significant debugging blind spots.
+**Prevention:** Ensure every caught exception intended to be suppressed logs a descriptive context string before suppression, and explicitly use '/* ignore */' syntax for linter-compliant empty blocks in test files where errors are intentionally provoked.
