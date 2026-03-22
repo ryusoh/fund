@@ -16,4 +16,4 @@
 
 **Vulnerability:** Generic error suppressions (// ignore) masking underlying issues
 **Learning:** Catch blocks that silently swallow exceptions without logging context can mask critical API failures (like PE ratio data fetch failures) or environment incompatibilities, creating significant debugging blind spots.
-**Prevention:** Ensure every caught exception intended to be suppressed logs a descriptive context string before suppression, and explicitly use '/* ignore */' syntax for linter-compliant empty blocks in test files where errors are intentionally provoked.
+**Prevention:** Ensure every caught exception intended to be suppressed logs a descriptive context string before suppression, and explicitly use `/* ignore */` syntax for linter-compliant empty blocks in test files where errors are intentionally provoked.
