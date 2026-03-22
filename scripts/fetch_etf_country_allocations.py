@@ -8,6 +8,7 @@ import json
 import os
 import re
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
@@ -179,9 +180,12 @@ def main():
     print(f"Fetching country allocations for {len(etfs_to_fetch)} ETFs...")
     print()
 
-    for etf in etfs_to_fetch:
-        country_data = fetch_etf_country_allocation(etf)
+    # Concurrent fetch using ThreadPoolExecutor
+    # Adjust max_workers as needed; 5 is a reasonable default for network I/O
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(fetch_etf_country_allocation, etfs_to_fetch))
 
+    for etf, country_data in zip(etfs_to_fetch, results):
         if country_data:
             # Normalize country names
             normalized = {}
