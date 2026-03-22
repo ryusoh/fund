@@ -44,7 +44,8 @@ function lightenHexToRgba(hex, lightenFactor, alpha) {
 // --- Private Functions ---
 
 async function fetchJSON(url) {
-    const response = await fetch(`${url}?t=${new Date().getTime()}`);
+    const separator = url.includes('?') ? '&' : '?';
+    const response = await fetch(`${url}${separator}t=${new Date().getTime()}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }

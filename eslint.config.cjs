@@ -109,6 +109,8 @@ module.exports = [
                 afterAll: 'readonly',
                 window: 'readonly',
                 document: 'readonly',
+                Buffer: 'readonly',
+                Request: 'readonly',
             },
         },
         rules: {
