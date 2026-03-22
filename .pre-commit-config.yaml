@@ -91,6 +91,17 @@ repos:
             pass_filenames: false
             stages: [pre-push]
 
+    # Remind to deploy Cloudflare Worker after commits that touch worker/
+    - repo: local
+      hooks:
+          - id: worker-deploy-reminder
+            name: worker deploy reminder
+            entry: bash -c "echo && echo 'worker/ changed -- remember to run make deploy-worker' && echo"
+            language: system
+            pass_filenames: false
+            stages: [post-commit]
+            files: '^worker/'
+
     # Optional: mypy type check on commit (adjust paths as needed)
     - repo: https://github.com/pre-commit/mirrors-mypy
       rev: v1.18.2

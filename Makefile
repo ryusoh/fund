@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -43,6 +43,7 @@ help:
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  fund          Show CLI help"
+	@echo "  deploy-worker Deploy Cloudflare Worker"
 
 install-dev:
 	$(PIP) install --upgrade pip
@@ -55,6 +56,7 @@ hooks:
 		echo "Note: core.hooksPath is set; skipping pre-commit hook installation."; \
 	else \
 		$(PY) -m pre_commit install; \
+		$(PY) -m pre_commit install --hook-type post-commit; \
 	fi
 
 precommit: hooks fmt-check
@@ -154,6 +156,10 @@ completion:
 
 update-hooks:
 	$(PY) -m pre_commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
+
+deploy-worker:
+	@echo "Deploying Cloudflare Worker..."
+	cd worker && wrangler deploy
 
 twrr-refresh:
 	@mkdir -p data/checkpoints data/output/figures
