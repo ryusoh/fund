@@ -221,3 +221,32 @@ def test_get_prices_polygon_fallback(
 
     assert prices == {"AAPL": 160.0, "TSLA": 210.0}
     mock_client_instance.get_snapshot_all.assert_called_once()
+
+
+@patch("scripts.data.update_fund_data.get_tickers_from_holdings")
+@patch("scripts.data.update_fund_data.get_prices")
+@patch("scripts.data.update_fund_data.Path.open")
+@patch("scripts.data.update_fund_data.Path.mkdir")
+@patch("scripts.data.update_fund_data.Path.exists")
+def test_main_with_and_without_args(
+    mock_exists, mock_mkdir, mock_open, mock_get_prices, mock_get_tickers, tmp_path
+):
+    from scripts.data.update_fund_data import (
+        DEFAULT_HOLDINGS_PATH,
+        DEFAULT_OUTPUT_PATH,
+        main,
+    )
+
+    mock_get_tickers.return_value = ["AAPL"]
+    mock_get_prices.return_value = {"AAPL": 150.0}
+    mock_exists.return_value = False
+
+    # Test without args (uses defaults)
+    main()
+    mock_get_tickers.assert_called_with(DEFAULT_HOLDINGS_PATH)
+
+    # Test with args
+    custom_holdings = tmp_path / "custom_holdings.json"
+    custom_output = tmp_path / "custom_output.json"
+    main(holdings_path=custom_holdings, output_path=custom_output)
+    mock_get_tickers.assert_called_with(custom_holdings)
