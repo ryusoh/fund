@@ -85,7 +85,7 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
         # Using Alpaca Snapshots endpoint for multiple tickers
         url = "https://data.alpaca.markets/v2/stocks/snapshots"
-        resp = requests.get(url, params=params, headers=headers, timeout=30)
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
         logging.info(f"Alpaca API Response Status: {resp.status_code}")
         resp.raise_for_status()
         snapshots = resp.json()

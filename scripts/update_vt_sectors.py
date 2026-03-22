@@ -35,7 +35,10 @@ def fetch_vt_sectors():
         response.raise_for_status()
         content = response.text
     except Exception as e:
-        print(f"Error fetching VT data: {e}")
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = error_msg.replace(scraper_api_key, "***")
+        print(f"Error fetching VT data: {error_msg}")
         return None
 
     # StockAnalysis embeds data in a script tag as JSON

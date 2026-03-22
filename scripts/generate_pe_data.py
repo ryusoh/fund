@@ -962,7 +962,10 @@ def scrape_wsj_forward_pe() -> Optional[float]:
 
         print("WSJ scrape failed: 'priceEarningsRatioEstimate' not found near 'P 500 Index'.")
     except Exception as e:
-        print(f"WSJ scrape failed: {e}")
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = error_msg.replace(scraper_api_key, "***")
+        print(f"WSJ scrape failed: {error_msg}")
     return None
 
 

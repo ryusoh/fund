@@ -44,7 +44,10 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
         response.raise_for_status()
         content = response.text
     except Exception as e:
-        print(f"Error fetching from ETFRC: {e}")
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = error_msg.replace(scraper_api_key, "***")
+        print(f"Error fetching from ETFRC: {error_msg}")
         return None
 
     # ETFRC shows HHI in the fund overview section
