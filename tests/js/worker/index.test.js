@@ -61,6 +61,9 @@ beforeEach(() => {
     mockFetch = jest.fn();
     global.fetch = mockFetch;
     jest.restoreAllMocks();
+    // Default to regular market hours so tests are not sensitive to when they run.
+    // Individual tests that check time-dependent behaviour override this spy.
+    jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 2:00:00 PM');
 });
 
 // ---------------------------------------------------------------------------
@@ -158,14 +161,49 @@ describe('Alpaca feed parameter', () => {
         expect(url).not.toContain('feed=');
     });
 
-    it('omits feed param during extended hours (e.g. pre-market 07:00 ET)', async () => {
+    it('skips Alpaca entirely during pre-market (07:00 ET) and calls Yahoo Finance', async () => {
         jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 7:00:00 AM');
-        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+        // Only one fetch call expected — Yahoo Finance, not Alpaca
+        mockFetch.mockResolvedValueOnce(
+            yahooOk([
+                {
+                    symbol: 'VT',
+                    regularMarketPrice: 139.49,
+                    regularMarketTime: 1000,
+                    preMarketPrice: 140.0,
+                    preMarketTime: 2000,
+                },
+            ])
+        );
 
-        await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
 
+        expect(mockFetch).toHaveBeenCalledTimes(1);
         const url = mockFetch.mock.calls[0][0];
-        expect(url).not.toContain('feed=');
+        expect(url).toContain('finance.yahoo.com');
+        expect((await res.json()).VT).toBe(140.0); // fresh pre-market price
+    });
+
+    it('skips Alpaca entirely during post-market (17:00 ET) and calls Yahoo Finance', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 5:00:00 PM');
+        mockFetch.mockResolvedValueOnce(
+            yahooOk([
+                {
+                    symbol: 'VT',
+                    regularMarketPrice: 139.49,
+                    regularMarketTime: 1000,
+                    postMarketPrice: 141.0,
+                    postMarketTime: 2000,
+                },
+            ])
+        );
+
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).toContain('finance.yahoo.com');
+        expect((await res.json()).VT).toBe(141.0); // fresh post-market price
     });
 
     it('uses latestTrade.p as the price from Alpaca', async () => {

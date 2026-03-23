@@ -63,6 +63,13 @@ function isOvernightET() {
 }
 
 async function fetchFromAlpaca(symbols, env) {
+    // During pre/post-market extended hours (04:00–09:30 and 16:00–20:00 ET),
+    // the Alpaca free-tier IEX feed only carries regular-session trades.
+    // latestTrade.p would be the stale last-close — skip Alpaca so Yahoo Finance
+    // can serve fresh preMarketPrice / postMarketPrice instead.
+    if (getTradingSession() === 'extended') {
+        throw new Error('Alpaca skipped: extended-hours session, using Yahoo Finance');
+    }
     const feed = isOvernightET() ? 'overnight' : '';
     const feedParam = feed ? `&feed=${feed}` : '';
     const url = `${ALPACA_SNAPSHOTS_URL}?symbols=${encodeURIComponent(symbols.join(','))}${feedParam}`;
