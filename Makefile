@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -67,6 +67,8 @@ precommit: hooks fmt-check
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
 
+# ⚠️ CI PARITY NOTE: This target is called by GitHub Actions CI (.github/workflows/ci.yml)
+# Any new checks added here must work in CI (no local-only tools/paths)
 precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(PY) -m ruff check --fix scripts tests
 	$(PY) -m pytest
@@ -156,6 +158,10 @@ completion:
 
 update-hooks:
 	$(PY) -m pre_commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
+
+ci-parity:
+	@echo "Checking CI parity..."
+	$(PY) scripts/ci_parity_check.py
 
 deploy-worker:
 	@echo "Deploying Cloudflare Worker..."
