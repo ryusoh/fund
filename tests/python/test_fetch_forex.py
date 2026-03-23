@@ -1,7 +1,6 @@
 """Tests for scripts/data/fetch_forex.py — focusing on the retry / fallback logic."""
 
 import json
-import os
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -14,7 +13,6 @@ from scripts.data.fetch_forex import (
     update_fx_daily_csv,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -22,7 +20,7 @@ from scripts.data.fetch_forex import (
 
 def _make_close_df(tickers: list[str], values: list[float]) -> pd.DataFrame:
     """Return a minimal DataFrame shaped like yfinance's 'Close' sub-frame."""
-    return pd.DataFrame([dict(zip(tickers, values))])
+    return pd.DataFrame([dict(zip(tickers, values, strict=False))])
 
 
 # ---------------------------------------------------------------------------
