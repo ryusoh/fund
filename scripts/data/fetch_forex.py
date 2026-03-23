@@ -70,11 +70,48 @@ def update_fx_daily_csv(rates: dict[str, float]) -> None:
     print(f"Forex daily rates updated in {FX_DAILY_RATES_FILE}")
 
 
+def _load_previous_rates() -> dict[str, float]:
+    """Return the last row of fx_daily_rates.csv as {CURRENCY: value}, skipping NaN."""
+    if not os.path.exists(FX_DAILY_RATES_FILE):
+        return {}
+    try:
+        df = pd.read_csv(FX_DAILY_RATES_FILE)
+        df.columns = ["date" if c.lower() == "date" else c.strip().upper() for c in df.columns]
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.dropna(subset=["date"]).sort_values("date")
+        if df.empty:
+            return {}
+        last = df.iloc[-1]
+        return {
+            col: float(last[col]) for col in df.columns if col != "date" and pd.notna(last[col])
+        }
+    except Exception as e:
+        print(f"Warning: could not read previous rates from CSV: {e}")
+        return {}
+
+
+def _fetch_single(currency: str) -> float | None:
+    """Fetch a single currency rate via yfinance; return the rate or None on failure."""
+    ticker = f"USD{currency}=X"
+    try:
+        data = yf.download(ticker, period="2d", progress=False)
+        if data.empty:
+            return None
+        close = data["Close"] if "Close" in data.columns else data
+        if isinstance(close, pd.DataFrame):
+            close = close.iloc[:, 0]
+        s = close.dropna()
+        return float(s.iloc[-1]) if not s.empty else None
+    except Exception as e:
+        print(f"Error fetching USD/{currency} individually: {e}")
+        return None
+
+
 def fetch_forex_data():
     print("Fetching forex data...")
     json_rates = {"USD": 1.0}
     csv_rates = {"USD": 1.0}
-    has_errors = False
+    failed_currencies: list[str] = []
     currencies_to_fetch = DEFAULT_CURRENCIES
 
     try:
@@ -118,20 +155,34 @@ def fetch_forex_data():
                         print(f"Fetched USD/{currency}: {json_rates[currency]}")
                     else:
                         print(f"Warning: No data for USD/{currency}")
-                        has_errors = True
+                        failed_currencies.append(currency)
                 except Exception as e:
                     print(f"Error processing USD/{currency}: {e}")
-                    has_errors = True
+                    failed_currencies.append(currency)
         else:
             print("Warning: 'Close' prices not found in fetched data.")
-            has_errors = True
+            failed_currencies.extend(currencies_to_fetch)
     except Exception as e:
         print(f"Error during batch fetching forex data: {e}")
-        has_errors = True
+        failed_currencies.extend(currencies_to_fetch)
 
-    if (
-        not has_errors or len(json_rates) > 1
-    ):  # Proceed if at least USD is there, or some rates fetched
+    # Retry failed currencies individually, then fall back to yesterday's value
+    if failed_currencies:
+        previous_rates = _load_previous_rates()
+        for currency in failed_currencies:
+            rate = _fetch_single(currency)
+            if rate is not None:
+                json_rates[currency] = round(rate, 4)
+                csv_rates[currency] = round(rate, 6)
+                print(f"Fetched USD/{currency} (retry): {json_rates[currency]}")
+            elif currency in previous_rates:
+                json_rates[currency] = round(previous_rates[currency], 4)
+                csv_rates[currency] = round(previous_rates[currency], 6)
+                print(f"USD/{currency}: retry failed, using previous value {json_rates[currency]}")
+            else:
+                print(f"USD/{currency}: no data and no previous value available")
+
+    if len(json_rates) > 1:  # Proceed if at least one non-USD rate was obtained
         output = {
             "base": "USD",
             "rates": json_rates,
