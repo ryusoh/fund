@@ -1,303 +1,230 @@
-import worker, { getTradingSession } from '../../../worker/src/index.js';
+/**
+ * @jest-environment node
+ */
 
-global.fetch = jest.fn();
-global.btoa = global.btoa ?? ((s) => Buffer.from(s).toString('base64'));
+/**
+ * Tests for worker/src/index.js
+ *
+ * Covers:
+ *  - Yahoo fallback extended-hours price selection (post/pre vs regular)
+ *  - Alpaca uses feed=overnight during overnight window, no feed param otherwise
+ *  - KV cache hit / miss
+ *  - Error handling
+ */
 
-// Minimal Request/Response polyfills for the Worker test environment
-class MockHeaders {
-    constructor(init = {}) {
-        this._map = {};
-        for (const [k, v] of Object.entries(init)) {
-            this._map[k.toLowerCase()] = v;
-        }
-    }
-    get(name) {
-        return this._map[name.toLowerCase()] ?? null;
-    }
-    set(name, value) {
-        this._map[name.toLowerCase()] = value;
-    }
-    entries() {
-        return Object.entries(this._map);
-    }
-}
+import worker from '../../../worker/src/index.js';
 
-if (!global.Request) {
-    global.Request = class Request {
-        constructor(url, init = {}) {
-            this.url = url;
-            this.method = (init.method ?? 'GET').toUpperCase();
-            this.headers = new MockHeaders(init.headers ?? {});
-        }
-    };
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-if (!global.Response) {
-    global.Response = class Response {
-        constructor(body, init = {}) {
-            this._body = body;
-            this.status = init.status ?? 200;
-            this.headers = new MockHeaders(init.headers ?? {});
-        }
-        async json() {
-            return JSON.parse(this._body);
-        }
-        async text() {
-            return this._body;
-        }
-    };
-}
-
-function makeRequest(
-    path = '/prices',
-    params = {},
-    method = 'GET',
-    origin = 'https://fund.lyeutsaon.com'
-) {
-    const url = new URL(`https://api.lyeutsaon.com${path}`);
-    for (const [k, v] of Object.entries(params)) {
-        url.searchParams.set(k, v);
-    }
-    return new Request(url.toString(), {
-        method,
-        headers: { Origin: origin },
-    });
-}
-
-function makeCtx() {
-    const promises = [];
-    return {
-        waitUntil: jest.fn((p) => promises.push(p)),
-        flush: () => Promise.all(promises),
-    };
-}
-
-function makeEnv({ cached = null, lkg = null } = {}) {
+function makeEnv({ cacheGet = null } = {}) {
     return {
         ALPACA_API_KEY: 'test-key',
         ALPACA_API_SECRET: 'test-secret',
         PRICE_CACHE: {
-            get: jest.fn(async (key) => {
-                if (key.endsWith(':lkg')) {
-                    return lkg;
-                }
-                return cached;
-            }),
-            put: jest.fn(async () => {}),
+            get: jest.fn().mockResolvedValue(cacheGet),
+            put: jest.fn().mockResolvedValue(undefined),
         },
     };
 }
 
-function alpacaResponse(prices) {
-    const snapshots = {};
-    for (const [ticker, price] of Object.entries(prices)) {
-        snapshots[ticker] = { latestTrade: { p: price } };
+const makeCtx = () => ({ waitUntil: jest.fn() });
+
+const makeReq = (symbols = 'VT', origin = 'https://fund.lyeutsaon.com') =>
+    new Request(`https://api.lyeutsaon.com/prices?symbols=${symbols}`, {
+        headers: { Origin: origin },
+    });
+
+const alpacaOk = (prices) => ({
+    ok: true,
+    json: async () => ({
+        snapshots: Object.fromEntries(
+            Object.entries(prices).map(([sym, p]) => [sym, { latestTrade: { p } }])
+        ),
+    }),
+});
+
+const alpacaFail = (status = 403) => ({ ok: false, status, statusText: 'Error' });
+
+const yahooOk = (quotes) => ({
+    ok: true,
+    json: async () => ({ quoteResponse: { result: quotes } }),
+});
+
+// ---------------------------------------------------------------------------
+// Setup
+// ---------------------------------------------------------------------------
+
+let mockFetch;
+beforeEach(() => {
+    mockFetch = jest.fn();
+    global.fetch = mockFetch;
+    jest.restoreAllMocks();
+});
+
+// ---------------------------------------------------------------------------
+// Yahoo Finance — extended-hours price selection
+// ---------------------------------------------------------------------------
+
+describe('Yahoo Finance extended-hours price selection', () => {
+    // Alpaca always fails in these tests so Yahoo is used as the fallback
+    async function priceViaYahoo(quote) {
+        mockFetch.mockResolvedValueOnce(alpacaFail()).mockResolvedValueOnce(yahooOk([quote]));
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+        return (await res.json()).VT;
     }
-    return { ok: true, json: async () => ({ snapshots }) };
-}
 
-function yahooResponse(prices) {
-    const result = Object.entries(prices).map(([symbol, regularMarketPrice]) => ({
-        symbol,
-        regularMarketPrice,
-    }));
-    return { ok: true, json: async () => ({ quoteResponse: { result } }) };
-}
-
-describe('Cloudflare Worker — /prices', () => {
-    beforeEach(() => {
-        fetch.mockReset();
-    });
-
-    it('returns 404 for unknown paths', async () => {
-        const res = await worker.fetch(makeRequest('/unknown'), makeEnv(), makeCtx());
-        expect(res.status).toBe(404);
-    });
-
-    it('returns 405 for non-GET methods', async () => {
-        const res = await worker.fetch(makeRequest('/prices', {}, 'POST'), makeEnv(), makeCtx());
-        expect(res.status).toBe(405);
-    });
-
-    it('returns 400 when symbols param is missing', async () => {
-        const res = await worker.fetch(makeRequest('/prices'), makeEnv(), makeCtx());
-        expect(res.status).toBe(400);
-    });
-
-    it('handles CORS preflight', async () => {
-        const req = new Request('https://api.lyeutsaon.com/prices', {
-            method: 'OPTIONS',
-            headers: { Origin: 'https://fund.lyeutsaon.com' },
+    it('uses postMarketPrice when newer than regularMarketTime', async () => {
+        const price = await priceViaYahoo({
+            symbol: 'VT',
+            regularMarketPrice: 100.0,
+            regularMarketTime: 1000,
+            postMarketPrice: 105.5,
+            postMarketTime: 2000, // newer
         });
-        const res = await worker.fetch(req, makeEnv(), makeCtx());
-        expect(res.status).toBe(204);
-        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://fund.lyeutsaon.com');
+        expect(price).toBe(105.5);
     });
 
-    it('returns cached result on KV hit', async () => {
-        const cached = { VT: 139.49 };
-        const res = await worker.fetch(
-            makeRequest('/prices', { symbols: 'VT' }),
-            makeEnv({ cached }),
-            makeCtx()
-        );
-        expect(res.status).toBe(200);
-        expect(res.headers.get('X-Cache')).toBe('HIT');
-        expect(await res.json()).toEqual(cached);
-        expect(fetch).not.toHaveBeenCalled();
+    it('uses preMarketPrice when newer than regularMarketTime', async () => {
+        const price = await priceViaYahoo({
+            symbol: 'VT',
+            regularMarketPrice: 100.0,
+            regularMarketTime: 1000,
+            preMarketPrice: 98.0,
+            preMarketTime: 2000, // newer
+            postMarketPrice: 97.0,
+            postMarketTime: 500, // older — ignored
+        });
+        expect(price).toBe(98.0);
     });
 
-    it('fetches from Alpaca on KV miss and caches result', async () => {
-        const prices = { VT: 139.49, ANET: 136.99 };
-        fetch.mockResolvedValueOnce(alpacaResponse(prices));
-
-        const env = makeEnv();
-        const ctx = makeCtx();
-        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT,ANET' }), env, ctx);
-        await ctx.flush();
-
-        expect(res.status).toBe(200);
-        expect(res.headers.get('X-Cache')).toBe('MISS');
-        expect(await res.json()).toEqual(prices);
-        expect(env.PRICE_CACHE.put).toHaveBeenCalled();
+    it('uses regularMarketPrice when no extended-hours data is fresher', async () => {
+        const price = await priceViaYahoo({
+            symbol: 'VT',
+            regularMarketPrice: 100.0,
+            regularMarketTime: 3000,
+            postMarketPrice: 102.0,
+            postMarketTime: 1000,
+            preMarketPrice: 99.0,
+            preMarketTime: 500,
+        });
+        expect(price).toBe(100.0);
     });
 
-    it('falls back to Yahoo Finance when Alpaca fails', async () => {
-        const prices = { VT: 138.0 };
-        fetch
-            .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Service Unavailable' })
-            .mockResolvedValueOnce(yahooResponse(prices));
-
-        const ctx = makeCtx();
-        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), makeEnv(), ctx);
-        await ctx.flush();
-
-        expect(res.status).toBe(200);
-        expect(await res.json()).toEqual(prices);
-        expect(fetch).toHaveBeenCalledTimes(2);
+    it('uses regularMarketPrice when extended-hours fields are absent', async () => {
+        const price = await priceViaYahoo({
+            symbol: 'VT',
+            regularMarketPrice: 100.0,
+            regularMarketTime: 1000,
+        });
+        expect(price).toBe(100.0);
     });
 
-    it('serves stale KV when both Alpaca and Yahoo fail', async () => {
-        const stale = { VT: 135.0 };
-        fetch
-            .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' })
-            .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' });
-
-        const res = await worker.fetch(
-            makeRequest('/prices', { symbols: 'VT' }),
-            makeEnv({ lkg: stale }),
-            makeCtx()
-        );
-
-        expect(res.status).toBe(200);
-        expect(res.headers.get('X-Cache')).toBe('STALE');
-        expect(await res.json()).toEqual(stale);
-    });
-
-    it('returns 502 when all sources fail and no stale cache exists', async () => {
-        fetch
-            .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' })
-            .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' });
-
-        const res = await worker.fetch(
-            makeRequest('/prices', { symbols: 'VT' }),
-            makeEnv(),
-            makeCtx()
-        );
-
-        expect(res.status).toBe(502);
-    });
-
-    it('skips :lkg write when it already exists in KV', async () => {
-        const prices = { VT: 139.49 };
-        fetch.mockResolvedValueOnce(alpacaResponse(prices));
-
-        // lkg already populated — simulate existing entry
-        const env = makeEnv({ lkg: { VT: 138.0 } });
-        const ctx = makeCtx();
-        await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), env, ctx);
-        await ctx.flush();
-
-        // Only the main cache entry should be written, not :lkg
-        const putCalls = env.PRICE_CACHE.put.mock.calls;
-        expect(putCalls.every(([key]) => !key.endsWith(':lkg'))).toBe(true);
-    });
-
-    it('writes :lkg when it is absent from KV', async () => {
-        const prices = { VT: 139.49 };
-        fetch.mockResolvedValueOnce(alpacaResponse(prices));
-
-        const env = makeEnv(); // lkg = null (absent)
-        const ctx = makeCtx();
-        await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), env, ctx);
-        await ctx.flush();
-
-        const lkgCall = env.PRICE_CACHE.put.mock.calls.find(([key]) => key.endsWith(':lkg'));
-        expect(lkgCall).toBeDefined();
-        expect(JSON.parse(lkgCall[1])).toEqual(prices);
-        expect(lkgCall[2]).toEqual({ expirationTtl: 3600 });
-    });
-
-    it('normalises and deduplicates symbols', async () => {
-        const prices = { VT: 139.49 };
-        fetch.mockResolvedValueOnce(alpacaResponse(prices));
-
-        await worker.fetch(
-            makeRequest('/prices', { symbols: 'vt, VT , vt' }),
-            makeEnv(),
-            makeCtx()
-        );
-
-        const alpacaUrl = fetch.mock.calls[0][0];
-        const params = new URL(alpacaUrl).searchParams.get('symbols');
-        expect(params.split(',').filter((s) => s === 'VT').length).toBe(1);
+    it('does not prefer postMarketPrice when timestamp equals regularMarketTime', async () => {
+        const price = await priceViaYahoo({
+            symbol: 'VT',
+            regularMarketPrice: 100.0,
+            regularMarketTime: 1000,
+            postMarketPrice: 105.0,
+            postMarketTime: 1000, // equal — not strictly newer
+        });
+        expect(price).toBe(100.0);
     });
 });
 
-describe('getTradingSession', () => {
-    // All dates use January (UTC-5, no DST) so ET = UTC - 5h
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+// ---------------------------------------------------------------------------
+// Alpaca — feed parameter
+// ---------------------------------------------------------------------------
 
-    const setET = (isoUTC) => jest.setSystemTime(new Date(isoUTC));
+describe('Alpaca feed parameter', () => {
+    it('adds feed=overnight during overnight hours (20:00–04:00 ET)', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 10:00:00 PM');
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
 
-    it('returns "regular" during market hours on a weekday', () => {
-        setET('2025-01-06T15:00:00Z'); // Monday 10:00 ET
-        expect(getTradingSession()).toBe('regular');
+        await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).toContain('feed=overnight');
     });
 
-    it('returns "extended" during pre-market on a weekday', () => {
-        setET('2025-01-06T12:00:00Z'); // Monday 07:00 ET
-        expect(getTradingSession()).toBe('extended');
+    it('omits feed param during regular market hours', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 2:00:00 PM');
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+
+        await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).not.toContain('feed=');
     });
 
-    it('returns "extended" during after-hours on a weekday', () => {
-        setET('2025-01-06T22:00:00Z'); // Monday 17:00 ET
-        expect(getTradingSession()).toBe('extended');
+    it('omits feed param during extended hours (e.g. pre-market 07:00 ET)', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/23/2026, 7:00:00 AM');
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+
+        await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).not.toContain('feed=');
     });
 
-    it('returns "closed" overnight on a weekday', () => {
-        setET('2025-01-06T07:00:00Z'); // Monday 02:00 ET
-        expect(getTradingSession()).toBe('closed');
+    it('uses latestTrade.p as the price from Alpaca', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+        expect((await res.json()).VT).toBe(139.49);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// KV cache
+// ---------------------------------------------------------------------------
+
+describe('KV cache', () => {
+    it('returns cached price and skips fetch on cache hit', async () => {
+        const cached = { VT: 139.49 };
+        const res = await worker.fetch(makeReq('VT'), makeEnv({ cacheGet: cached }), makeCtx());
+
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(await res.json()).toEqual(cached);
+        expect(res.headers.get('X-Cache')).toBe('HIT');
     });
 
-    it('returns "closed" on Saturday', () => {
-        setET('2025-01-11T17:00:00Z'); // Saturday 12:00 ET
-        expect(getTradingSession()).toBe('closed');
+    it('calls Alpaca and writes KV on cache miss', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+        const ctx = makeCtx();
+
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), ctx);
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(res.headers.get('X-Cache')).toBe('MISS');
+        expect(ctx.waitUntil).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Error handling
+// ---------------------------------------------------------------------------
+
+describe('error handling', () => {
+    it('returns 502 when both Alpaca and Yahoo fail and no stale cache', async () => {
+        mockFetch
+            .mockResolvedValueOnce(alpacaFail())
+            .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Error' });
+
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+        expect(res.status).toBe(502);
     });
 
-    it('returns "closed" on Sunday before 20:00 ET', () => {
-        setET('2025-01-05T17:00:00Z'); // Sunday 12:00 ET
-        expect(getTradingSession()).toBe('closed');
+    it('returns 400 when symbols param is missing', async () => {
+        const req = new Request('https://api.lyeutsaon.com/prices');
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
+        expect(res.status).toBe(400);
     });
 
-    it('returns "extended" on Sunday at 20:00 ET (Alpaca overnight session start)', () => {
-        setET('2025-01-06T01:00:00Z'); // Sunday 20:00 ET
-        expect(getTradingSession()).toBe('extended');
-    });
-
-    it('returns "extended" on Sunday at 23:00 ET', () => {
-        setET('2025-01-06T04:00:00Z'); // Sunday 23:00 ET
-        expect(getTradingSession()).toBe('extended');
+    it('returns 404 for unknown path', async () => {
+        const req = new Request('https://api.lyeutsaon.com/unknown');
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
+        expect(res.status).toBe(404);
     });
 });

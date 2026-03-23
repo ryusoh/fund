@@ -56,8 +56,16 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
     });
 }
 
+function isOvernightET() {
+    const etString = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const h = new Date(etString).getHours();
+    return h >= 20 || h < 4; // 20:00–04:00 ET
+}
+
 async function fetchFromAlpaca(symbols, env) {
-    const url = `${ALPACA_SNAPSHOTS_URL}?symbols=${encodeURIComponent(symbols.join(','))}`;
+    const feed = isOvernightET() ? 'overnight' : '';
+    const feedParam = feed ? `&feed=${feed}` : '';
+    const url = `${ALPACA_SNAPSHOTS_URL}?symbols=${encodeURIComponent(symbols.join(','))}${feedParam}`;
     const credentials = btoa(`${env.ALPACA_API_KEY}:${env.ALPACA_API_SECRET}`);
     const response = await fetch(url, {
         headers: {
@@ -74,7 +82,7 @@ async function fetchFromAlpaca(symbols, env) {
     const snapshots = data.snapshots ?? data; // API may return object directly
     const prices = {};
     for (const [ticker, snapshot] of Object.entries(snapshots)) {
-        const price = snapshot?.latestTrade?.p ?? snapshot?.minuteBar?.c ?? null;
+        const price = snapshot?.latestTrade?.p ?? null;
         if (price !== null) {
             prices[ticker] = price;
         }
@@ -101,7 +109,15 @@ async function fetchFromYahoo(symbols) {
     }
     const prices = {};
     for (const quote of results) {
-        const price = quote?.regularMarketPrice ?? null;
+        // Prefer the most recent extended-hours price when available and fresher
+        const regular = quote?.regularMarketPrice ?? null;
+        const post = quote?.postMarketPrice ?? null;
+        const postTime = quote?.postMarketTime ?? 0;
+        const pre = quote?.preMarketPrice ?? null;
+        const preTime = quote?.preMarketTime ?? 0;
+        const regularTime = quote?.regularMarketTime ?? 0;
+        const extendedPrice = postTime > regularTime ? post : preTime > regularTime ? pre : null;
+        const price = extendedPrice ?? regular;
         if (quote?.symbol && price !== null) {
             prices[quote.symbol] = price;
         }
