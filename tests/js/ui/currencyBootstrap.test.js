@@ -63,6 +63,25 @@ describe('currencyBootstrap', () => {
         expect(eurButton.classList.contains('active')).toBe(true);
     });
 
+    test('handles missing matching target gracefully', () => {
+        window.localStorage.setItem('fund.selectedCurrency', 'JPY');
+
+        document.body.innerHTML = `
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD">USD</button>
+                <button class="currency-toggle" data-currency="EUR">EUR</button>
+            </div>
+        `;
+
+        loadBootstrap();
+
+        const usdButton = document.querySelector('[data-currency="USD"]');
+        const eurButton = document.querySelector('[data-currency="EUR"]');
+
+        expect(usdButton.classList.contains('active')).toBe(false);
+        expect(eurButton.classList.contains('active')).toBe(false);
+    });
+
     test('handles multiple toggle containers', () => {
         window.localStorage.setItem('fund.selectedCurrency', 'GBP');
 

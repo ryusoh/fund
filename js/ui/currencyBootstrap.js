@@ -1,5 +1,6 @@
-(function bootstrapStoredCurrency() {
+function bootstrapStoredCurrency() {
     try {
+        /* istanbul ignore next */
         if (typeof window === 'undefined' || typeof document === 'undefined') {
             return;
         }
@@ -36,4 +37,5 @@
         console.warn('Caught exception:', error);
         // Ignore storage/DOM errors to avoid blocking page load
     }
-})();
+}
+bootstrapStoredCurrency();
