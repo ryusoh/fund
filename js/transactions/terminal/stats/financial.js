@@ -77,8 +77,7 @@ async function loadPeRatioData() {
             return peRatioCache;
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
-        // ignore
+        logger.warn('Caught exception loading PE ratio data:', error);
     }
     return null;
 }

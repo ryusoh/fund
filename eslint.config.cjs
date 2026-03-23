@@ -109,10 +109,25 @@ module.exports = [
                 afterAll: 'readonly',
                 window: 'readonly',
                 document: 'readonly',
+                Buffer: 'readonly',
+                Request: 'readonly',
             },
         },
         rules: {
             'no-console': 'off',
+        },
+    },
+    {
+        files: ['worker/**/*.js'],
+        languageOptions: {
+            globals: {
+                Request: 'readonly',
+                Response: 'readonly',
+                URL: 'readonly',
+                btoa: 'readonly',
+                fetch: 'readonly',
+                console: 'readonly',
+            },
         },
     },
     {

@@ -14,3 +14,7 @@ coverage/
 
 # VS Code workspace files
 *.code-workspace
+.coverage
+
+# Wrangler build cache
+worker/.wrangler/

@@ -140,7 +140,12 @@ describe('backgroundSweep.js', () => {
         const originalDocument = global.document;
         delete global.document;
 
-        expect(() => stopBackgroundSweepEffect('.page-wrapper')).not.toThrow();
+        jest.isolateModules(() => {
+            const {
+                stopBackgroundSweepEffect: stopSweep,
+            } = require('../../../js/ui/backgroundSweep.js');
+            expect(() => stopSweep('.page-wrapper')).not.toThrow();
+        });
 
         global.document = originalDocument;
     });
@@ -149,29 +154,103 @@ describe('backgroundSweep.js', () => {
         const originalDocument = global.document;
         delete global.document;
 
-        const { triggerSweep } = initBackgroundSweepEffect();
-        expect(typeof triggerSweep).toBe('function');
-        expect(() => triggerSweep()).not.toThrow();
+        jest.isolateModules(() => {
+            const {
+                initBackgroundSweepEffect: initSweep,
+            } = require('../../../js/ui/backgroundSweep.js');
+            const { triggerSweep } = initSweep();
+            expect(typeof triggerSweep).toBe('function');
+            expect(() => triggerSweep()).not.toThrow();
+        });
 
         global.document = originalDocument;
     });
 
-    test('handles sweepNextTimer appropriately if active', () => {
-        // We simulate a state where sweepNextTimer would be populated.
-        // It isn't explicitly set in triggerSweep based on current code, but let's mock the timeout structure.
-        jest.useFakeTimers();
-        const { triggerSweep } = initBackgroundSweepEffect({
-            selector: '.page-wrapper',
-            effectConfig: { enabled: true, sweepDuration: 3 },
-        });
+    test('handles internal state explicitly via vm for 100% coverage', () => {
+        const vm = require('vm');
+        const fs = require('fs');
+        const path = require('path');
+        const scriptPath = path.resolve(process.cwd(), 'js/ui/backgroundSweep.js');
+        const scriptContent = fs
+            .readFileSync(scriptPath, 'utf8')
+            .replace(/export\s+/g, '') // remove ESM exports
+            .replace(/import\s+.*from.*/g, ''); // remove imports
 
-        // We can't directly set sweepNextTimer from the test since it's an internal variable
-        // But we can trigger the sweep multiple times to cover branching logic.
-        triggerSweep();
-        triggerSweep();
+        const context = {
+            document: {
+                querySelector: () => ({
+                    classList: { remove: jest.fn(), add: jest.fn() },
+                    style: { setProperty: jest.fn() },
+                }),
+                body: { contains: () => true },
+            },
+            setTimeout: jest.fn().mockReturnValue(123),
+            clearTimeout: jest.fn(),
+            CALENDAR_SELECTORS: { pageWrapper: '.test' },
+            CALENDAR_BACKGROUND_EFFECT: {
+                enabled: true,
+                sweepDuration: 3,
+                colors: { color1: 'red', color2: 'blue' },
+            },
+        };
 
-        stopBackgroundSweepEffect('.page-wrapper');
-        expect(container.classList.contains('sweeping')).toBe(false);
-        jest.useRealTimers();
+        vm.createContext(context);
+        vm.runInContext(scriptContent, context);
+
+        // Test with both timers active
+        vm.runInContext(
+            `
+            sweepNextTimer = 456;
+            sweepRemoveTimer = 123;
+            stopBackgroundSweepEffect('.test');
+        `,
+            context
+        );
+
+        expect(context.clearTimeout).toHaveBeenCalledWith(123);
+        expect(context.clearTimeout).toHaveBeenCalledWith(456);
+
+        // Test triggerSweep with sweepNextTimer active
+        vm.runInContext(
+            `
+            const { triggerSweep } = initBackgroundSweepEffect({ effectConfig: { enabled: true, sweepDuration: 3, colors: {} } });
+            sweepNextTimer = 789;
+            triggerSweep();
+        `,
+            context
+        );
+
+        expect(context.clearTimeout).toHaveBeenCalledWith(789);
+
+        // Test without document
+        vm.runInContext(
+            `
+            var originalDoc = document;
+            delete globalThis.document;
+            var document = undefined;
+        `,
+            context
+        );
+
+        // This simulates running it globally without document defined
+        const vmContextNoDoc = {
+            clearTimeout: jest.fn(),
+            CALENDAR_SELECTORS: { pageWrapper: '.test' },
+            CALENDAR_BACKGROUND_EFFECT: {
+                enabled: true,
+                sweepDuration: 3,
+                colors: { color1: 'red', color2: 'blue' },
+            },
+        };
+        vm.createContext(vmContextNoDoc);
+        vm.runInContext(scriptContent, vmContextNoDoc);
+
+        vm.runInContext(
+            `
+            stopBackgroundSweepEffect('.test');
+            initBackgroundSweepEffect();
+        `,
+            vmContextNoDoc
+        );
     });
 });

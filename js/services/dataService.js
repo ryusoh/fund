@@ -4,9 +4,11 @@ import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { updatePieChart } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
 import { setThinkingHighlight } from '@ui/textHighlightManager.js';
+import { isLocalhost } from '@utils/host.js';
 import {
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
+    CF_WORKER_URL,
     COLORS,
     CHART_DEFAULTS,
     TICKER_TO_LOGO_MAP,
@@ -42,7 +44,8 @@ function lightenHexToRgba(hex, lightenFactor, alpha) {
 // --- Private Functions ---
 
 async function fetchJSON(url) {
-    const response = await fetch(`${url}?t=${new Date().getTime()}`);
+    const separator = url.includes('?') ? '&' : '?';
+    const response = await fetch(`${url}${separator}t=${new Date().getTime()}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }
@@ -50,11 +53,24 @@ async function fetchJSON(url) {
 }
 
 async function fetchPortfolioData() {
-    // ⚡ Bolt: Fetch data concurrently for better performance instead of sequentially
-    const [holdingsDetails, prices] = await Promise.all([
-        fetchJSON(HOLDINGS_DETAILS_URL),
-        fetchJSON(FUND_DATA_URL),
-    ]);
+    const holdingsDetails = await fetchJSON(HOLDINGS_DETAILS_URL);
+    const symbols = holdingsDetails ? Object.keys(holdingsDetails).join(',') : '';
+
+    const isLocal = typeof window === 'undefined' || isLocalhost(window.location.hostname);
+    let prices;
+    if (!isLocal) {
+        // Production: try Cloudflare Worker first, fall back to static file
+        try {
+            prices = await fetchJSON(
+                `${CF_WORKER_URL}/prices?symbols=${encodeURIComponent(symbols)}`
+            );
+        } catch {
+            logger.warn('Cloudflare Worker unavailable, falling back to static fund_data.json');
+            prices = await fetchJSON(FUND_DATA_URL);
+        }
+    } else {
+        prices = await fetchJSON(FUND_DATA_URL);
+    }
     return { holdingsDetails, prices };
 }
 

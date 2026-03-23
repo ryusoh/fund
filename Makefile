@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -43,6 +43,7 @@ help:
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  fund          Show CLI help"
+	@echo "  deploy-worker Deploy Cloudflare Worker"
 
 install-dev:
 	$(PIP) install --upgrade pip
@@ -55,6 +56,7 @@ hooks:
 		echo "Note: core.hooksPath is set; skipping pre-commit hook installation."; \
 	else \
 		$(PY) -m pre_commit install; \
+		$(PY) -m pre_commit install --hook-type post-commit; \
 	fi
 
 precommit: hooks fmt-check
@@ -65,6 +67,8 @@ precommit: hooks fmt-check
 		echo "No .pre-commit-config.yaml; skipping pre-commit."; \
 	fi
 
+# ⚠️ CI PARITY NOTE: This target is called by GitHub Actions CI (.github/workflows/ci.yml)
+# Any new checks added here must work in CI (no local-only tools/paths)
 precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(PY) -m ruff check --fix scripts tests
 	$(PY) -m pytest
@@ -78,13 +82,13 @@ perms:
 
 lint: js-lint
 	ruff check scripts tests
-	npx stylelint "**/*.css"
-	markdownlint "**/*.md" --ignore-path .gitignore
+	npx --yes stylelint "**/*.css"
+	npx --yes markdownlint "**/*.md" --ignore-path .gitignore
 
 fmt:
 	$(PY) -m black .
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -92,7 +96,7 @@ fmt:
 fmt-check:
 	@echo "Checking formatting..."
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -102,17 +106,18 @@ type:
 
 sec:
 	bandit -r scripts -lll
+	@echo "Note: For Python dependency security scanning, run: pip install pip-audit && pip-audit"
 
 js-lint:
-	eslint . --ext .js
+	npx --yes eslint . --ext .js
 
 lint-fix:
-	eslint . --ext .js --fix || true
+	npx --yes eslint . --ext .js --fix || true
 	@# Ensure stylistic plugin availability if needed
-	npx stylelint "**/*.css" --fix || true
+	npx --yes stylelint "**/*.css" --fix || true
 
 markdownlint-fix:
-	npx markdownlint --fix "**/*.md" --ignore-path .gitignore
+	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**"
 
 js-test:
 	npm test
@@ -155,7 +160,17 @@ completion:
 update-hooks:
 	$(PY) -m pre_commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
 
+ci-parity:
+	@echo "Checking CI parity..."
+	$(PY) -m pytest tests/python/test_ci_parity.py -v
+
+deploy-worker:
+	@echo "Deploying Cloudflare Worker..."
+	cd worker && npx --yes wrangler deploy
+
 twrr-refresh:
+	@# Note: Requires yfinance, polygon-api-client, pandas, numpy, matplotlib (see requirements.txt)
+	@# API keys needed: ALPACA_API_KEY, ALPACA_API_SECRET, POLYGON_KEY
 	@mkdir -p data/checkpoints data/output/figures
 	@echo 'Running TWRR pipeline...'
 	@for step in $(TWRR_STEPS); do \

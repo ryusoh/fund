@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Generate portfolio geography/country distribution data for stacked area chart."""
 
+import atexit
 import functools
 import json
+import shutil
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -10,7 +13,9 @@ import pandas as pd
 import yfinance as yf
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-yf.set_tz_cache_location("/tmp/yf-cache")
+_yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
+yf.set_tz_cache_location(_yf_cache_dir)
+atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 
 
 def load_data():

@@ -40,8 +40,8 @@ export async function loadMarketcapSnapshotData() {
         return null;
     }
 }
-import { parseCSV } from './calculations.js';
-import { parseCSVLine } from './utils.js';
+import { parseCSV, clearSplitAdjustmentCache } from './calculations.js';
+import { parseCSVLine, clearFxRateCache } from './utils.js';
 
 const SERIES_SYMBOL_ALIASES = {
     '^SSE': '^SSEC',
@@ -90,6 +90,8 @@ export async function loadSplitHistory() {
                 });
             }
         }
+        // Clear cache when split history is reloaded
+        clearSplitAdjustmentCache();
         return splits;
     } catch (error) {
         logger.error('Error loading split history:', error);
@@ -323,6 +325,8 @@ export async function loadFxDailyRates() {
         if (!payload || typeof payload !== 'object' || !payload.rates) {
             return null;
         }
+        // Clear FX cache when rates are reloaded
+        clearFxRateCache();
         return payload;
     } catch (error) {
         logger.warn('Failed to load FX daily rates:', error);

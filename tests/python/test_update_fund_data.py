@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -20,11 +19,12 @@ def mock_holdings_file(tmp_path):
 
 
 @patch("scripts.data.update_fund_data.yf.set_tz_cache_location")
-def test_set_tz_cache_location(mock_set_tz):
+@patch("scripts.data.update_fund_data.tempfile.mkdtemp")
+def test_set_tz_cache_location(mock_mkdtemp, mock_set_tz):
     # This basically asserts the module-level execution didn't crash
-    # and we can potentially reload the module to track the exact call if needed,
-    # but since it runs on import, we just check that importing the module doesn't
-    # raise any exceptions due to our logic depending on os.getuid().
+    # and we can potentially reload the module to track the exact call if needed.
+    mock_mkdtemp.return_value = "/mock/temp/dir/yf-cache-123"
+
     import importlib
 
     import scripts.data.update_fund_data as module
@@ -32,13 +32,7 @@ def test_set_tz_cache_location(mock_set_tz):
     # Reloading to trigger the top-level script code
     importlib.reload(module)
 
-    # If getuid exists
-    if hasattr(os, "getuid"):
-        expected_path = f"/tmp/yf-cache-{os.getuid()}"
-    else:
-        expected_path = "/tmp/yf-cache"
-
-    mock_set_tz.assert_called_with(expected_path)
+    mock_set_tz.assert_called_with("/mock/temp/dir/yf-cache-123")
 
 
 def test_get_tickers_from_holdings(mock_holdings_file):
@@ -204,7 +198,7 @@ def test_get_prices_polygon_fallback(
     mock_yf_download.return_value = {}
 
     # Mock Alpaca to return nothing or fail
-    def mock_requests_get_side_effect(url, params=None, headers=None):
+    def mock_requests_get_side_effect(url, params=None, headers=None, timeout=None):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {}
         mock_resp.status_code = 200
@@ -227,3 +221,31 @@ def test_get_prices_polygon_fallback(
 
     assert prices == {"AAPL": 160.0, "TSLA": 210.0}
     mock_client_instance.get_snapshot_all.assert_called_once()
+
+
+@patch("scripts.data.update_fund_data.get_tickers_from_holdings")
+@patch("scripts.data.update_fund_data.get_prices")
+@patch("scripts.data.update_fund_data.Path.open")
+@patch("scripts.data.update_fund_data.Path.mkdir")
+@patch("scripts.data.update_fund_data.Path.exists")
+def test_main_with_and_without_args(
+    mock_exists, mock_mkdir, mock_open, mock_get_prices, mock_get_tickers, tmp_path
+):
+    from scripts.data.update_fund_data import (
+        DEFAULT_HOLDINGS_PATH,
+        main,
+    )
+
+    mock_get_tickers.return_value = ["AAPL"]
+    mock_get_prices.return_value = {"AAPL": 150.0}
+    mock_exists.return_value = False
+
+    # Test without args (uses defaults)
+    main()
+    mock_get_tickers.assert_called_with(DEFAULT_HOLDINGS_PATH)
+
+    # Test with args
+    custom_holdings = tmp_path / "custom_holdings.json"
+    custom_output = tmp_path / "custom_output.json"
+    main(holdings_path=custom_holdings, output_path=custom_output)
+    mock_get_tickers.assert_called_with(custom_holdings)

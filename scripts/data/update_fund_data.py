@@ -1,7 +1,10 @@
 import argparse
+import atexit
 import json
 import logging
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -13,13 +16,17 @@ import yfinance as yf
 from polygon import RESTClient
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
-# By using a unique path per user, we avoid permission collisions in shared environments like /tmp
-cache_dir = Path(f"/tmp/yf-cache-{os.getuid()}") if hasattr(os, "getuid") else Path("/tmp/yf-cache")
-cache_dir.mkdir(parents=True, exist_ok=True)
+# Use a secure temporary directory to avoid security vulnerabilities
+cache_dir = Path(tempfile.mkdtemp(prefix="yf-cache-"))
 yf.set_tz_cache_location(str(cache_dir))
+atexit.register(shutil.rmtree, cache_dir, ignore_errors=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_HOLDINGS_PATH = BASE_DIR / "data" / "holdings_details.json"
+DEFAULT_OUTPUT_PATH = BASE_DIR / "data" / "fund_data.json"
 
 
 def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
@@ -78,7 +85,7 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
         # Using Alpaca Snapshots endpoint for multiple tickers
         url = "https://data.alpaca.markets/v2/stocks/snapshots"
-        resp = requests.get(url, params=params, headers=headers)
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
         logging.info(f"Alpaca API Response Status: {resp.status_code}")
         resp.raise_for_status()
         snapshots = resp.json()
@@ -200,8 +207,11 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     return data
 
 
-def main(holdings_path: Path, output_path: Path) -> None:
+def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = None) -> None:
     """Main function to fetch tickers and their prices, then save to a file."""
+    holdings_path = holdings_path or DEFAULT_HOLDINGS_PATH
+    output_path = output_path or DEFAULT_OUTPUT_PATH
+
     tickers_to_fetch = get_tickers_from_holdings(holdings_path)
     if not tickers_to_fetch:
         logging.warning("No tickers to fetch. Output file will not be updated/created.")
@@ -261,22 +271,20 @@ def main(holdings_path: Path, output_path: Path) -> None:
 
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parents[2]
-
     parser = argparse.ArgumentParser(
         description="Fetch market prices using yfinance with a Polygon.io fallback."
     )
     parser.add_argument(
         "--holdings",
         type=Path,
-        default=BASE_DIR / "data" / "holdings_details.json",
-        help="Path to the holdings JSON file.",
+        default=DEFAULT_HOLDINGS_PATH,
+        help=f"Path to the holdings JSON file (default: {DEFAULT_HOLDINGS_PATH}).",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=BASE_DIR / "data" / "fund_data.json",
-        help="Path to the output JSON file for fund data.",
+        default=DEFAULT_OUTPUT_PATH,
+        help=f"Path to the output JSON file for fund data (default: {DEFAULT_OUTPUT_PATH}).",
     )
     args = parser.parse_args()
 

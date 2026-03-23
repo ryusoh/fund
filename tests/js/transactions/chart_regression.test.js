@@ -1,4 +1,82 @@
 import { jest } from '@jest/globals';
+import { buildFilteredBalanceSeries } from '@js/transactions/chart/data/contribution.js';
+
+// Regression: buildFilteredBalanceSeries sorted MM/DD/YYYY tradeDate strings
+// lexicographically ("01/05/2024" < "06/01/2020") so firstDate was set to a later
+// January transaction instead of the true chronological start, truncating the series.
+describe('buildFilteredBalanceSeries - MM/DD/YYYY tradeDate sort regression', () => {
+    const splitHistory = [];
+
+    // Use lastKnownPrices fallback by providing empty historicalPrices.
+    // After each buy the transaction price becomes the fallback price for that symbol.
+    const historicalPrices = {};
+
+    test('series starts from the chronologically earliest transaction, not the lexicographically first MM/DD/YYYY string', () => {
+        const transactions = [
+            // Jan 5 2024 — lexicographically first as MM/DD/YYYY ("01/..." < "06/...")
+            // but chronologically LATER
+            {
+                transactionId: 2,
+                tradeDate: '01/05/2024',
+                orderType: 'Buy',
+                security: 'ANET',
+                quantity: '10',
+                price: '200',
+            },
+            // Jun 1 2020 — chronologically EARLIER, but lexicographically later
+            {
+                transactionId: 1,
+                tradeDate: '06/01/2020',
+                orderType: 'Buy',
+                security: 'ANET',
+                quantity: '5',
+                price: '50',
+            },
+        ];
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+        expect(series.length).toBeGreaterThan(0);
+
+        // First point should be on or before 2020-06-01, not 2024-01-05
+        const firstDate = new Date(series[0].date);
+        expect(firstDate.getFullYear()).toBe(2020);
+
+        // The series must contain a data point in 2020 with non-zero value
+        // (the day after the Jun 2020 buy, lastKnownPrices kicks in)
+        const has2020Value = series.some((p) => p.date.startsWith('2020') && p.value > 0);
+        expect(has2020Value).toBe(true);
+    });
+
+    test('series contains data for all years between first and last transaction', () => {
+        const transactions = [
+            {
+                transactionId: 1,
+                tradeDate: '06/01/2020',
+                orderType: 'Buy',
+                security: 'PDD',
+                quantity: '10',
+                price: '80',
+            },
+            {
+                transactionId: 2,
+                tradeDate: '03/15/2023',
+                orderType: 'Buy',
+                security: 'PDD',
+                quantity: '5',
+                price: '120',
+            },
+        ];
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+        const years = new Set(series.filter((p) => p.value > 0).map((p) => p.date.slice(0, 4)));
+        expect(years.has('2020')).toBe(true);
+        expect(years.has('2021')).toBe(true);
+        expect(years.has('2022')).toBe(true);
+        expect(years.has('2023')).toBe(true);
+    });
+});
 
 describe('Regression: Chart Date Range Fixes', () => {
     let injectSyntheticStartPoint;

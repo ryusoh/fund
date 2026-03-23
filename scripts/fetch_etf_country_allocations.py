@@ -8,6 +8,7 @@ import json
 import os
 import re
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
@@ -48,7 +49,10 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
         response.raise_for_status()
         content = response.text
     except Exception as e:
-        print(f"  Error fetching {etf_ticker}: {e}")
+        error_msg = str(e)
+        if scraper_api_key:
+            error_msg = error_msg.replace(scraper_api_key, "***")
+        print(f"  Error fetching {etf_ticker}: {error_msg}")
         return {}
 
     # StockAnalysis embeds country data in JavaScript
@@ -179,9 +183,12 @@ def main():
     print(f"Fetching country allocations for {len(etfs_to_fetch)} ETFs...")
     print()
 
-    for etf in etfs_to_fetch:
-        country_data = fetch_etf_country_allocation(etf)
+    # Concurrent fetch using ThreadPoolExecutor
+    # Adjust max_workers as needed; 5 is a reasonable default for network I/O
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(fetch_etf_country_allocation, etfs_to_fetch))
 
+    for etf, country_data in zip(etfs_to_fetch, results, strict=False):
         if country_data:
             # Normalize country names
             normalized = {}

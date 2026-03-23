@@ -1,0 +1,16 @@
+name = "fund"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "PRICE_CACHE"
+id = "eeee8ac92fed4bd3ac09f8ef14350bde"
+
+# Secrets (set via CLI, not stored here):
+#   wrangler secret put ALPACA_API_KEY
+#   wrangler secret put ALPACA_API_SECRET
+
+[[routes]]
+pattern = "api.lyeutsaon.com"
+custom_domain = true

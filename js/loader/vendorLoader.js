@@ -18,5 +18,8 @@
             'https://cdn.baomitu.com',
         ]);
         window.CDNLoader.loadCssWithFallback(fontAwesome);
-    } catch {}
+    } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('Vendor loader failed:', error);
+    }
 })();
