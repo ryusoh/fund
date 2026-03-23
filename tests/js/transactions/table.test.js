@@ -371,6 +371,205 @@ describe('asset class filters', () => {
     });
 });
 
+describe('sort indicator vs row order sync', () => {
+    let initTable;
+    let setAllTransactions;
+    let transactionState;
+
+    // Dates in MM/DD/YYYY format — exactly as they come out of parseCSV from transactions.csv.
+    // Without this format, the year-skipping sort bug is invisible (ISO strings sort correctly).
+    const transactions = [
+        {
+            transactionId: 1,
+            tradeDate: '01/01/2024',
+            orderType: 'Buy',
+            security: 'AAA',
+            quantity: '1',
+            price: '100',
+            netAmount: '100',
+        },
+        {
+            transactionId: 2,
+            tradeDate: '06/15/2024',
+            orderType: 'Buy',
+            security: 'BBB',
+            quantity: '1',
+            price: '200',
+            netAmount: '200',
+        },
+        {
+            transactionId: 3,
+            tradeDate: '12/31/2024',
+            orderType: 'Buy',
+            security: 'CCC',
+            quantity: '1',
+            price: '50',
+            netAmount: '50',
+        },
+        // Cross-year pair with the same month-day: 12/29/2025 and 12/26/2024.
+        // With MM/DD/YYYY string comparison, "12/29/2025" > "12/26/2024" so 2025-12-29
+        // comes first — CORRECT. But "12/26/2024" > "12/25/2025", so 2024-12-26 would
+        // appear before 2025-12-25 — that is the year-skipping bug.
+        {
+            transactionId: 4,
+            tradeDate: '12/25/2025',
+            orderType: 'Buy',
+            security: 'DDD',
+            quantity: '1',
+            price: '150',
+            netAmount: '150',
+        },
+        {
+            transactionId: 5,
+            tradeDate: '12/26/2024',
+            orderType: 'Buy',
+            security: 'EEE',
+            quantity: '1',
+            price: '120',
+            netAmount: '120',
+        },
+    ];
+
+    function setupDom() {
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="header-tradeDate" class="sortable"></th>
+                            <th id="header-security" class="sortable"></th>
+                            <th id="header-quantity" class="sortable"></th>
+                            <th id="header-price" class="sortable"></th>
+                            <th id="header-netAmount" class="sortable"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        setupDom();
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+        });
+
+        setAllTransactions(transactions);
+        transactionState.chartDateRange = { from: null, to: null };
+    });
+
+    function getTimestamps() {
+        return transactionState.filteredTransactions.map((t) => new Date(t.tradeDate).getTime());
+    }
+
+    it('indicator shows desc and rows are newest-first after initial filterAndSort', () => {
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        const header = document.getElementById('header-tradeDate');
+        expect(header.getAttribute('data-sort')).toBe('desc');
+
+        // Newest transaction (DDD, 2025-12-25) must appear before the 2024-12-26 one (EEE)
+        // This is the cross-year bug: MM/DD string comparison puts "12/26/2024" > "12/25/2025"
+        const securities = transactionState.filteredTransactions.map((t) => t.security);
+        const dddIdx = securities.indexOf('DDD'); // 2025-12-25
+        const eeeIdx = securities.indexOf('EEE'); // 2024-12-26
+        expect(dddIdx).toBeLessThan(eeeIdx); // 2025-12-25 must come before 2024-12-26 in desc order
+
+        // General invariant: timestamps are non-increasing
+        const ts = getTimestamps();
+        for (let i = 1; i < ts.length; i++) {
+            expect(ts[i]).toBeLessThanOrEqual(ts[i - 1]);
+        }
+    });
+
+    it('cross-year: 2025-12-25 appears before 2024-12-26 when sorted desc (the year-skipping bug)', () => {
+        // This test specifically targets the MM/DD/YYYY sort bug where "12/26/2024" sorts
+        // after "12/29/2025" but before "12/25/2025" because the month-day "12/26" > "12/25".
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        const sorted = transactionState.filteredTransactions;
+        const ddd = sorted.find((t) => t.security === 'DDD'); // 12/25/2025
+        const eee = sorted.find((t) => t.security === 'EEE'); // 12/26/2024
+
+        expect(new Date(ddd.tradeDate).getTime()).toBeGreaterThan(
+            new Date(eee.tradeDate).getTime()
+        );
+        expect(sorted.indexOf(ddd)).toBeLessThan(sorted.indexOf(eee));
+    });
+
+    it('after clicking date header, indicator flips to asc and rows are oldest-first', () => {
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        document.getElementById('header-tradeDate').click();
+
+        const header = document.getElementById('header-tradeDate');
+        expect(header.getAttribute('data-sort')).toBe('asc');
+
+        const ts = getTimestamps();
+        for (let i = 1; i < ts.length; i++) {
+            expect(ts[i]).toBeGreaterThanOrEqual(ts[i - 1]);
+        }
+    });
+
+    it('clicking date header twice returns to desc with newest-first rows', () => {
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        const header = document.getElementById('header-tradeDate');
+        header.click(); // → asc
+        header.click(); // → desc
+
+        expect(header.getAttribute('data-sort')).toBe('desc');
+
+        const ts = getTimestamps();
+        for (let i = 1; i < ts.length; i++) {
+            expect(ts[i]).toBeLessThanOrEqual(ts[i - 1]);
+        }
+    });
+
+    it('indicator and row order stay in sync after sort by security then back to date', () => {
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        document.getElementById('header-security').click();
+        expect(document.getElementById('header-security').getAttribute('data-sort')).toBe('asc');
+        expect(document.getElementById('header-tradeDate').getAttribute('data-sort')).toBeNull();
+
+        document.getElementById('header-tradeDate').click();
+        expect(document.getElementById('header-tradeDate').getAttribute('data-sort')).toBe('asc');
+        expect(document.getElementById('header-security').getAttribute('data-sort')).toBeNull();
+
+        const ts = getTimestamps();
+        for (let i = 1; i < ts.length; i++) {
+            expect(ts[i]).toBeGreaterThanOrEqual(ts[i - 1]);
+        }
+    });
+
+    it('rows remain sorted after filterAndSort is called again with no search term', () => {
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        document.getElementById('header-tradeDate').click(); // → asc
+        controller.filterAndSort('');
+
+        expect(transactionState.sortState.order).toBe('asc');
+        expect(document.getElementById('header-tradeDate').getAttribute('data-sort')).toBe('asc');
+
+        const ts = getTimestamps();
+        for (let i = 1; i < ts.length; i++) {
+            expect(ts[i]).toBeGreaterThanOrEqual(ts[i - 1]);
+        }
+    });
+});
+
 describe('ticker alias filtering', () => {
     let initTable;
     let setAllTransactions;

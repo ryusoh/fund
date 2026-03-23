@@ -392,8 +392,11 @@ function filterAndSort(searchTerm = '') {
             }
             case 'tradeDate':
             default: {
-                // Direct string comparison of ISO dates YYYY-MM-DD is significantly faster
-                const dateComparison = compareValues(a.tradeDate, b.tradeDate, order);
+                const dateComparison = compareValues(
+                    Date.parse(a.tradeDate),
+                    Date.parse(b.tradeDate),
+                    order
+                );
                 if (dateComparison !== 0) {
                     return dateComparison;
                 }
