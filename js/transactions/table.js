@@ -430,6 +430,7 @@ function handleSort(column) {
 function createFilterDropdown(column) {
     const dropdown = document.createElement('div');
     dropdown.className = 'filter-dropdown';
+    dropdown.setAttribute('role', 'menu');
     const options =
         column === 'orderType'
             ? ['All', 'Buy', 'Sell']
@@ -438,7 +439,10 @@ function createFilterDropdown(column) {
     options.forEach((option) => {
         const div = document.createElement('div');
         div.textContent = option;
-        div.addEventListener('click', (e) => {
+        div.setAttribute('role', 'menuitem');
+        div.setAttribute('tabindex', '0');
+
+        const applyFilter = (e) => {
             e.stopPropagation();
             const command =
                 option === 'All' ? '' : `${column === 'orderType' ? 'type' : 'security'}:${option}`;
@@ -448,7 +452,16 @@ function createFilterDropdown(column) {
             }
             filterAndSort(command);
             closeAllFilterDropdowns();
+        };
+
+        div.addEventListener('click', applyFilter);
+        div.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                applyFilter(e);
+            }
         });
+
         dropdown.appendChild(div);
     });
 
