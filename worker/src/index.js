@@ -97,16 +97,61 @@ async function fetchFromAlpaca(symbols, env) {
     return prices;
 }
 
-async function fetchFromYahoo(symbols) {
-    // Yahoo Finance v7 quote endpoint — same source yfinance uses
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`;
+const YAHOO_UA =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+const YAHOO_CRUMB_KV_KEY = 'yahoo:crumb:v1';
+
+// Fetches a Yahoo Finance session cookie + crumb, caching both in KV for 1 hour.
+async function getYahooCrumb(env) {
+    const cached = await env.PRICE_CACHE.get(YAHOO_CRUMB_KV_KEY);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+
+    // Step 1 — obtain session cookies from the consent/identity endpoint
+    const cookieRes = await fetch('https://fc.yahoo.com', {
+        headers: { 'User-Agent': YAHOO_UA },
+        redirect: 'follow',
+    });
+    const rawCookie = cookieRes.headers.get('set-cookie') ?? '';
+    // Keep only name=value pairs (strip attributes like Path, Domain, …)
+    const cookie = rawCookie
+        .split(',')
+        .map((c) => c.split(';')[0].trim())
+        .filter(Boolean)
+        .join('; ');
+
+    // Step 2 — exchange the cookie for a crumb
+    const crumbRes = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+        headers: { 'User-Agent': YAHOO_UA, Cookie: cookie },
+    });
+    if (!crumbRes.ok) {
+        throw new Error(`Yahoo crumb fetch failed: ${crumbRes.status}`);
+    }
+    const crumb = await crumbRes.text();
+    if (!crumb || crumb.includes('<')) {
+        throw new Error('Yahoo crumb fetch returned HTML (blocked)');
+    }
+
+    const result = { crumb, cookie };
+    // Cache for 55 minutes — crumbs are valid for ~1 hour
+    await env.PRICE_CACHE.put(YAHOO_CRUMB_KV_KEY, JSON.stringify(result), {
+        expirationTtl: 3300,
+    });
+    return result;
+}
+
+async function fetchFromYahoo(symbols, env) {
+    const { crumb, cookie } = await getYahooCrumb(env);
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}&crumb=${encodeURIComponent(crumb)}`;
     const response = await fetch(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0',
-            Accept: 'application/json',
-        },
+        headers: { 'User-Agent': YAHOO_UA, Cookie: cookie, Accept: 'application/json' },
     });
     if (!response.ok) {
+        // Crumb may have expired mid-session — evict cache so next request re-fetches
+        if (response.status === 401) {
+            await env.PRICE_CACHE.delete(YAHOO_CRUMB_KV_KEY);
+        }
         throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`);
     }
     const data = await response.json();
@@ -183,7 +228,7 @@ export default {
             prices = await fetchFromAlpaca(symbols, env);
         } catch {
             try {
-                prices = await fetchFromYahoo(symbols);
+                prices = await fetchFromYahoo(symbols, env);
             } catch (yahooErr) {
                 // 3. Both sources failed — serve last-known-good value (stale-on-error)
                 const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });

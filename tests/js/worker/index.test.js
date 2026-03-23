@@ -18,13 +18,23 @@ import worker from '../../../worker/src/index.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
+const CACHED_CRUMB = JSON.stringify({ crumb: 'test-crumb', cookie: 'A=B' });
+
 function makeEnv({ cacheGet = null } = {}) {
     return {
         ALPACA_API_KEY: 'test-key',
         ALPACA_API_SECRET: 'test-secret',
         PRICE_CACHE: {
-            get: jest.fn().mockResolvedValue(cacheGet),
+            get: jest.fn().mockImplementation((key) => {
+                // Return a pre-seeded crumb so Yahoo Finance tests don't need to mock
+                // the fc.yahoo.com + getcrumb round-trip.
+                if (key === 'yahoo:crumb:v1') {
+                    return Promise.resolve(CACHED_CRUMB);
+                }
+                return Promise.resolve(cacheGet);
+            }),
             put: jest.fn().mockResolvedValue(undefined),
+            delete: jest.fn().mockResolvedValue(undefined),
         },
     };
 }
@@ -180,7 +190,8 @@ describe('Alpaca feed parameter', () => {
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
         const url = mockFetch.mock.calls[0][0];
-        expect(url).toContain('finance.yahoo.com');
+        expect(url).toContain('yahoo.com');
+        expect(url).toContain('crumb=');
         expect((await res.json()).VT).toBe(140.0); // fresh pre-market price
     });
 
@@ -202,7 +213,8 @@ describe('Alpaca feed parameter', () => {
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
         const url = mockFetch.mock.calls[0][0];
-        expect(url).toContain('finance.yahoo.com');
+        expect(url).toContain('yahoo.com');
+        expect(url).toContain('crumb=');
         expect((await res.json()).VT).toBe(141.0); // fresh post-market price
     });
 
