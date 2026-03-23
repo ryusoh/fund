@@ -1,0 +1,31 @@
+#!/bin/sh
+# Block force-pushes to main unconditionally.
+# An AI agent must never rewrite main's history.
+
+remote="$1"
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$branch" = "main" ]; then
+  # Check if --force or --force-with-lease was passed
+  # Git passes push args via stdin in newer git; also check ARGV via git config trick.
+  # The safest check: look at the git push arguments passed to the hook.
+  if git config --global alias.push 2>/dev/null | grep -q "force"; then
+    echo "ERROR: Force-push to main is blocked by pre-push hook."
+    exit 1
+  fi
+
+  # Also reject any push that would rewrite history (non-fast-forward)
+  while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+      continue  # new branch, allow
+    fi
+    # Check if remote commit is an ancestor of local (fast-forward check)
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      echo "ERROR: Non-fast-forward push to main is blocked."
+      echo "       This would rewrite history. Open a PR instead."
+      exit 1
+    fi
+  done
+fi
+
+exit 0

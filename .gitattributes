@@ -1,0 +1,3 @@
+# All files under data/ are CI-generated. Always keep the base branch (main)
+# version during merges — never let a feature branch overwrite them.
+data/** merge=ours
