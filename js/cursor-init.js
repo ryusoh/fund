@@ -1,8 +1,11 @@
 // Custom cursor and UI enhancements
 import { initCursor } from './vendor/cursor.js';
 
-// Module scripts are deferred — DOM is already parsed and GSAP (blocking script) is loaded.
-if (window.gsap) {
+// Initialize cursor after DOM is ready and GSAP is loaded
+function initCursorOnce() {
+    if (!window.gsap) {
+        return;
+    }
     const { cursor } = initCursor({
         cursor: {
             hoverTargets: 'a, button, .container li',
@@ -12,4 +15,12 @@ if (window.gsap) {
         },
     });
     window.cursorInstances = { cursor };
+}
+
+// Module scripts are deferred, but we wait for DOMContentLoaded to ensure
+// GSAP (loaded via blocking script) is available and DOM is fully parsed
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCursorOnce);
+} else {
+    initCursorOnce();
 }
