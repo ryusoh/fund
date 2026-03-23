@@ -110,7 +110,7 @@ async function fetchFromYahoo(symbols) {
 }
 
 export default {
-    async fetch(request, env) {
+    async fetch(request, env, ctx) {
         const origin = request.headers.get('Origin') ?? '';
 
         // Handle CORS preflight
@@ -175,11 +175,21 @@ export default {
             }
         }
 
-        // 4. Write to KV (fire-and-forget, don't block response)
-        // Short-lived cache entry (respects market-hours TTL)
-        env.PRICE_CACHE.put(cacheKey, JSON.stringify(prices), { expirationTtl: ttl });
-        // Persistent last-known-good entry (no TTL) for stale-on-error fallback
-        env.PRICE_CACHE.put(`${cacheKey}:lkg`, JSON.stringify(prices));
+        // 4. Write to KV after response is sent
+        const pricesJson = JSON.stringify(prices);
+        const lkgKey = `${cacheKey}:lkg`;
+        ctx.waitUntil(
+            Promise.all([
+                // Short-lived cache entry (respects market-hours TTL)
+                env.PRICE_CACHE.put(cacheKey, pricesJson, { expirationTtl: ttl }),
+                // Last-known-good: only write when expired (1h TTL) — at most 24 writes/key/day
+                env.PRICE_CACHE.get(lkgKey).then((existing) => {
+                    if (!existing) {
+                        return env.PRICE_CACHE.put(lkgKey, pricesJson, { expirationTtl: 3600 });
+                    }
+                }),
+            ])
+        );
 
         return jsonResponse(prices, 200, origin, { 'X-Cache': 'MISS' });
     },

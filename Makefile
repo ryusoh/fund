@@ -161,7 +161,7 @@ update-hooks:
 
 ci-parity:
 	@echo "Checking CI parity..."
-	$(PY) scripts/ci_parity_check.py
+	$(PY) -m pytest tests/python/test_ci_parity.py -v
 
 deploy-worker:
 	@echo "Deploying Cloudflare Worker..."

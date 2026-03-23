@@ -64,6 +64,14 @@ function makeRequest(
     });
 }
 
+function makeCtx() {
+    const promises = [];
+    return {
+        waitUntil: jest.fn((p) => promises.push(p)),
+        flush: () => Promise.all(promises),
+    };
+}
+
 function makeEnv({ cached = null, lkg = null } = {}) {
     return {
         ALPACA_API_KEY: 'test-key',
@@ -102,17 +110,17 @@ describe('Cloudflare Worker — /prices', () => {
     });
 
     it('returns 404 for unknown paths', async () => {
-        const res = await worker.fetch(makeRequest('/unknown'), makeEnv());
+        const res = await worker.fetch(makeRequest('/unknown'), makeEnv(), makeCtx());
         expect(res.status).toBe(404);
     });
 
     it('returns 405 for non-GET methods', async () => {
-        const res = await worker.fetch(makeRequest('/prices', {}, 'POST'), makeEnv());
+        const res = await worker.fetch(makeRequest('/prices', {}, 'POST'), makeEnv(), makeCtx());
         expect(res.status).toBe(405);
     });
 
     it('returns 400 when symbols param is missing', async () => {
-        const res = await worker.fetch(makeRequest('/prices'), makeEnv());
+        const res = await worker.fetch(makeRequest('/prices'), makeEnv(), makeCtx());
         expect(res.status).toBe(400);
     });
 
@@ -121,7 +129,7 @@ describe('Cloudflare Worker — /prices', () => {
             method: 'OPTIONS',
             headers: { Origin: 'https://fund.lyeutsaon.com' },
         });
-        const res = await worker.fetch(req, makeEnv());
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
         expect(res.status).toBe(204);
         expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://fund.lyeutsaon.com');
     });
@@ -130,7 +138,8 @@ describe('Cloudflare Worker — /prices', () => {
         const cached = { VT: 139.49 };
         const res = await worker.fetch(
             makeRequest('/prices', { symbols: 'VT' }),
-            makeEnv({ cached })
+            makeEnv({ cached }),
+            makeCtx()
         );
         expect(res.status).toBe(200);
         expect(res.headers.get('X-Cache')).toBe('HIT');
@@ -143,7 +152,9 @@ describe('Cloudflare Worker — /prices', () => {
         fetch.mockResolvedValueOnce(alpacaResponse(prices));
 
         const env = makeEnv();
-        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT,ANET' }), env);
+        const ctx = makeCtx();
+        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT,ANET' }), env, ctx);
+        await ctx.flush();
 
         expect(res.status).toBe(200);
         expect(res.headers.get('X-Cache')).toBe('MISS');
@@ -157,7 +168,9 @@ describe('Cloudflare Worker — /prices', () => {
             .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Service Unavailable' })
             .mockResolvedValueOnce(yahooResponse(prices));
 
-        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), makeEnv());
+        const ctx = makeCtx();
+        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), makeEnv(), ctx);
+        await ctx.flush();
 
         expect(res.status).toBe(200);
         expect(await res.json()).toEqual(prices);
@@ -172,7 +185,8 @@ describe('Cloudflare Worker — /prices', () => {
 
         const res = await worker.fetch(
             makeRequest('/prices', { symbols: 'VT' }),
-            makeEnv({ lkg: stale })
+            makeEnv({ lkg: stale }),
+            makeCtx()
         );
 
         expect(res.status).toBe(200);
@@ -185,16 +199,54 @@ describe('Cloudflare Worker — /prices', () => {
             .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' })
             .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Down' });
 
-        const res = await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), makeEnv());
+        const res = await worker.fetch(
+            makeRequest('/prices', { symbols: 'VT' }),
+            makeEnv(),
+            makeCtx()
+        );
 
         expect(res.status).toBe(502);
+    });
+
+    it('skips :lkg write when it already exists in KV', async () => {
+        const prices = { VT: 139.49 };
+        fetch.mockResolvedValueOnce(alpacaResponse(prices));
+
+        // lkg already populated — simulate existing entry
+        const env = makeEnv({ lkg: { VT: 138.0 } });
+        const ctx = makeCtx();
+        await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), env, ctx);
+        await ctx.flush();
+
+        // Only the main cache entry should be written, not :lkg
+        const putCalls = env.PRICE_CACHE.put.mock.calls;
+        expect(putCalls.every(([key]) => !key.endsWith(':lkg'))).toBe(true);
+    });
+
+    it('writes :lkg when it is absent from KV', async () => {
+        const prices = { VT: 139.49 };
+        fetch.mockResolvedValueOnce(alpacaResponse(prices));
+
+        const env = makeEnv(); // lkg = null (absent)
+        const ctx = makeCtx();
+        await worker.fetch(makeRequest('/prices', { symbols: 'VT' }), env, ctx);
+        await ctx.flush();
+
+        const lkgCall = env.PRICE_CACHE.put.mock.calls.find(([key]) => key.endsWith(':lkg'));
+        expect(lkgCall).toBeDefined();
+        expect(JSON.parse(lkgCall[1])).toEqual(prices);
+        expect(lkgCall[2]).toEqual({ expirationTtl: 3600 });
     });
 
     it('normalises and deduplicates symbols', async () => {
         const prices = { VT: 139.49 };
         fetch.mockResolvedValueOnce(alpacaResponse(prices));
 
-        await worker.fetch(makeRequest('/prices', { symbols: 'vt, VT , vt' }), makeEnv());
+        await worker.fetch(
+            makeRequest('/prices', { symbols: 'vt, VT , vt' }),
+            makeEnv(),
+            makeCtx()
+        );
 
         const alpacaUrl = fetch.mock.calls[0][0];
         const params = new URL(alpacaUrl).searchParams.get('symbols');
