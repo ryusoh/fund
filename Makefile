@@ -82,13 +82,13 @@ perms:
 
 lint: js-lint
 	ruff check scripts tests
-	npx stylelint "**/*.css"
-	markdownlint "**/*.md" --ignore-path .gitignore
+	npx --yes stylelint "**/*.css"
+	npx --yes markdownlint "**/*.md" --ignore-path .gitignore
 
 fmt:
 	$(PY) -m black .
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -96,7 +96,7 @@ fmt:
 fmt-check:
 	@echo "Checking formatting..."
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -106,17 +106,18 @@ type:
 
 sec:
 	bandit -r scripts -lll
+	@echo "Note: For Python dependency security scanning, run: pip install pip-audit && pip-audit"
 
 js-lint:
-	eslint . --ext .js
+	npx --yes eslint . --ext .js
 
 lint-fix:
-	eslint . --ext .js --fix || true
+	npx --yes eslint . --ext .js --fix || true
 	@# Ensure stylistic plugin availability if needed
-	npx stylelint "**/*.css" --fix || true
+	npx --yes stylelint "**/*.css" --fix || true
 
 markdownlint-fix:
-	npx markdownlint --fix "**/*.md" --ignore-path .gitignore
+	npx --yes markdownlint --fix "**/*.md" --ignore-path .gitignore
 
 js-test:
 	npm test
@@ -165,9 +166,11 @@ ci-parity:
 
 deploy-worker:
 	@echo "Deploying Cloudflare Worker..."
-	cd worker && wrangler deploy
+	cd worker && npx --yes wrangler deploy
 
 twrr-refresh:
+	@# Note: Requires yfinance, polygon-api-client, pandas, numpy, matplotlib (see requirements.txt)
+	@# API keys needed: ALPACA_API_KEY, ALPACA_API_SECRET, POLYGON_KEY
 	@mkdir -p data/checkpoints data/output/figures
 	@echo 'Running TWRR pipeline...'
 	@for step in $(TWRR_STEPS); do \

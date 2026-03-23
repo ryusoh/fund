@@ -93,3 +93,27 @@ class TestCIParity:
         """Verify CI doesn't duplicate bandit."""
         content = get_ci_workflow_content()
         assert "bandit" not in content, "CI should not call 'bandit' directly - use Makefile"
+
+    def test_wrangler_in_package_json(self):
+        """Verify wrangler is in package.json for deploy-worker target."""
+        pkg_json = Path("package.json")
+        if not pkg_json.exists():
+            pytest.skip("package.json not found")
+
+        import json
+
+        data = json.loads(pkg_json.read_text())
+        dev_deps = data.get("devDependencies", {})
+
+        assert (
+            "wrangler" in dev_deps
+        ), "wrangler should be in devDependencies for deploy-worker target"
+
+    def test_makefile_uses_npx_yes_for_wrangler(self):
+        """Verify Makefile uses npx --yes for wrangler."""
+        content = get_makefile_content()
+        # Check that deploy-worker uses npx --yes wrangler or wrangler is in package.json
+        if "wrangler deploy" in content:
+            assert (
+                "npx --yes wrangler deploy" in content
+            ), "Makefile should use 'npx --yes wrangler deploy' for CI compatibility"
