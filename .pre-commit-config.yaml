@@ -27,11 +27,11 @@ repos:
             exclude: ^data/.*\.(csv|html|json|txt)$
           - id: detect-private-key
 
-    - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.45.0
+    - repo: https://github.com/DavidAnson/markdownlint-cli2
+      rev: v0.22.0
       hooks:
-          - id: markdownlint
-            args: ['--config', '.markdownlint.json']
+          - id: markdownlint-cli2
+            args: ['--config', '.markdownlint.json', '#**/node_modules/**', '#venv/**', '#.qwen/**']
 
     # JavaScript tooling (commit): format + lint
     - repo: local

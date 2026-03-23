@@ -117,7 +117,7 @@ lint-fix:
 	npx --yes stylelint "**/*.css" --fix || true
 
 markdownlint-fix:
-	npx --yes markdownlint --fix "**/*.md" --ignore-path .gitignore
+	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**"
 
 js-test:
 	npm test
