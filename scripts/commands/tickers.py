@@ -1,7 +1,7 @@
-import sys
 from __future__ import annotations
 
 import argparse
+import sys
 import json
 from pathlib import Path
 
