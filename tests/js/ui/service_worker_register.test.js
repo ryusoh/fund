@@ -12,7 +12,9 @@ describe('service_worker_register.js', () => {
         Object.defineProperty(window.navigator, 'serviceWorker', {
             configurable: true,
             value: {
-                register: jest.fn().mockResolvedValue(undefined),
+                register: jest
+                    .fn()
+                    .mockResolvedValue({ update: jest.fn().mockResolvedValue(undefined) }),
             },
         });
     });
@@ -64,6 +66,7 @@ describe('service_worker_register.js', () => {
 
         expect(window.navigator.serviceWorker.register).toHaveBeenCalledWith('../sw.js', {
             scope: '../',
+            updateViaCache: 'none',
         });
     });
 
@@ -75,6 +78,7 @@ describe('service_worker_register.js', () => {
 
         expect(window.navigator.serviceWorker.register).toHaveBeenCalledWith('./sw.js', {
             scope: './',
+            updateViaCache: 'none',
         });
     });
 

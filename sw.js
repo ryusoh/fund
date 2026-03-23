@@ -1,5 +1,5 @@
 /* Simple service worker for Fund */
-const CACHE_NAME = 'fund-cache-2026-03-22';
+const CACHE_NAME = 'fund-cache-2026-03-22b';
 const CORE_ASSETS = [
     './',
     './index.html',

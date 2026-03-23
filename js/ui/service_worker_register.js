@@ -48,10 +48,16 @@ function getHostname() {
         const scope = (script && script.getAttribute('data-sw-scope')) || './';
         window.addEventListener('load', function () {
             try {
-                navigator.serviceWorker.register(swPath, { scope }).catch(function (error) {
-                    // eslint-disable-next-line no-console
-                    console.warn('Service worker registration failed:', error);
-                });
+                navigator.serviceWorker
+                    .register(swPath, { scope, updateViaCache: 'none' })
+                    .then(function (registration) {
+                        // Force an immediate update check so iOS PWA always picks up new SW
+                        registration.update().catch(function () {});
+                    })
+                    .catch(function (error) {
+                        // eslint-disable-next-line no-console
+                        console.warn('Service worker registration failed:', error);
+                    });
             } catch (error) {
                 // eslint-disable-next-line no-console
                 console.warn('Caught exception calling service worker register:', error);

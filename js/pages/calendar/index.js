@@ -33,6 +33,7 @@ let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
 const touchNavigationState = { isNavigating: false }; // Shared touch navigation state
 let sweepLoopTimer = null;
+let lastFetchedAt = 0;
 
 const appState = {
     selectedCurrency: 'USD',
@@ -237,6 +238,7 @@ async function refreshCalendarData(domainStart) {
                 },
             };
             await calendarInstance.paint(repaintConfig);
+            lastFetchedAt = Date.now();
             schedulePostPaintUpdates(calendarInstance, calendarByDate, appState, CURRENCY_SYMBOLS);
         })
         .catch((err) => {
@@ -1133,6 +1135,7 @@ export async function initCalendar() {
         basePaintConfig = { ...paintConfig };
 
         await cal.paint(paintConfig);
+        lastFetchedAt = Date.now();
         schedulePostPaintUpdates(cal, calendarByDate, appState, CURRENCY_SYMBOLS);
         initCalendarResponsiveHandlers();
         const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
@@ -1265,6 +1268,20 @@ export function autoInitCalendar() {
 
 // Auto-initialize the calendar
 autoInitCalendar();
+
+// Refresh data when the app returns to foreground after 60+ seconds (iOS PWA resume)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastFetchedAt >= 60_000) {
+        refreshCalendarData(basePaintConfig?.date?.start);
+    }
+});
+
+// iOS PWA bfcache restore — more reliable than visibilitychange on iOS
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted && Date.now() - lastFetchedAt >= 60_000) {
+        refreshCalendarData(basePaintConfig?.date?.start);
+    }
+});
 
 window.addEventListener('beforeunload', () => {
     perlinBackgroundHandle?.dispose();

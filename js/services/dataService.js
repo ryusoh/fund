@@ -64,8 +64,11 @@ export async function fetchPortfolioData() {
             prices = await fetchJSON(
                 `${CF_WORKER_URL}/prices?symbols=${encodeURIComponent(symbols)}`
             );
-        } catch {
-            logger.warn('Cloudflare Worker unavailable, falling back to static fund_data.json');
+        } catch (err) {
+            logger.warn(
+                'Cloudflare Worker unavailable, falling back to static fund_data.json',
+                err
+            );
             prices = await fetchJSON(FUND_DATA_URL);
         }
     } else {
