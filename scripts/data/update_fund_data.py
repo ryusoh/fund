@@ -207,9 +207,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     return data
 
 
-def main(
-    holdings_path: Optional[Path] = None, output_path: Optional[Path] = None
-) -> None:
+def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = None) -> None:
     """Main function to fetch tickers and their prices, then save to a file."""
     holdings_path = holdings_path or DEFAULT_HOLDINGS_PATH
     output_path = output_path or DEFAULT_OUTPUT_PATH

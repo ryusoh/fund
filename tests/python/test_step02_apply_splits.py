@@ -8,18 +8,20 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+
 class TestStep02ApplySplits(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Mock numpy and pandas
         cls.mock_np = MagicMock()
-        cls.mock_np.isnan.side_effect = lambda x: x != x # Standard NaN check
+        cls.mock_np.isnan.side_effect = lambda x: x != x  # Standard NaN check
 
         cls.mock_pd = MagicMock()
 
         # Patch sys.modules to import the script with mocked dependencies
         with patch.dict(sys.modules, {"numpy": cls.mock_np, "pandas": cls.mock_pd}):
             from scripts.twrr.step02_apply_splits import parse_split_ratio
+
             cls.parse_split_ratio = staticmethod(parse_split_ratio)
 
     def test_parse_split_ratio_success(self):
@@ -66,6 +68,7 @@ class TestStep02ApplySplits(unittest.TestCase):
             parse_split_ratio("-1:1")
         with self.assertRaisesRegex(ValueError, "Split ratio must be positive"):
             parse_split_ratio("1:-1")
+
 
 if __name__ == "__main__":
     unittest.main()

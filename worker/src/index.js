@@ -14,10 +14,14 @@ function getTradingSession() {
     const etString = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
     const et = new Date(etString);
     const day = et.getDay(); // 0=Sun, 6=Sat
-    if (day === 0 || day === 6) {
+    const t = et.getHours() * 60 + et.getMinutes();
+    if (day === 6) {
         return 'closed';
     }
-    const t = et.getHours() * 60 + et.getMinutes();
+    // Sunday: Alpaca overnight session starts at 20:00 ET (beginning of Monday's week)
+    if (day === 0) {
+        return t >= 20 * 60 ? 'extended' : 'closed';
+    }
     if (t >= 9 * 60 + 30 && t < 16 * 60) {
         return 'regular';
     }

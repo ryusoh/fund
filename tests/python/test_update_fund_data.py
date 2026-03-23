@@ -233,7 +233,6 @@ def test_main_with_and_without_args(
 ):
     from scripts.data.update_fund_data import (
         DEFAULT_HOLDINGS_PATH,
-        DEFAULT_OUTPUT_PATH,
         main,
     )
 

@@ -234,8 +234,18 @@ describe('getTradingSession', () => {
         expect(getTradingSession()).toBe('closed');
     });
 
-    it('returns "closed" on Sunday', () => {
+    it('returns "closed" on Sunday before 20:00 ET', () => {
         setET('2025-01-05T17:00:00Z'); // Sunday 12:00 ET
         expect(getTradingSession()).toBe('closed');
+    });
+
+    it('returns "extended" on Sunday at 20:00 ET (Alpaca overnight session start)', () => {
+        setET('2025-01-06T01:00:00Z'); // Sunday 20:00 ET
+        expect(getTradingSession()).toBe('extended');
+    });
+
+    it('returns "extended" on Sunday at 23:00 ET', () => {
+        setET('2025-01-06T04:00:00Z'); // Sunday 23:00 ET
+        expect(getTradingSession()).toBe('extended');
     });
 });

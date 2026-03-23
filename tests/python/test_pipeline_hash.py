@@ -1,12 +1,13 @@
 import sys
-from pathlib import Path
 import unittest
-from unittest.mock import patch, MagicMock
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+from scripts.pipeline_hash import compute_hash, main, save_hash
 
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.pipeline_hash import compute_hash, save_hash, main
 
 class TestPipelineHash(unittest.TestCase):
     @patch('scripts.pipeline_hash.date')
@@ -63,6 +64,7 @@ class TestPipelineHash(unittest.TestCase):
         main()
         mock_compute.assert_called_once()
         mock_save.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

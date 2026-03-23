@@ -188,7 +188,7 @@ def main():
     with ThreadPoolExecutor(max_workers=5) as executor:
         results = list(executor.map(fetch_etf_country_allocation, etfs_to_fetch))
 
-    for etf, country_data in zip(etfs_to_fetch, results):
+    for etf, country_data in zip(etfs_to_fetch, results, strict=False):
         if country_data:
             # Normalize country names
             normalized = {}
