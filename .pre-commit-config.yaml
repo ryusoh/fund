@@ -27,18 +27,18 @@ repos:
             exclude: ^data/.*\.(csv|html|json|txt)$
           - id: detect-private-key
 
-    - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.45.0
+    - repo: https://github.com/DavidAnson/markdownlint-cli2
+      rev: v0.22.0
       hooks:
-          - id: markdownlint
-            args: ['--config', '.markdownlint.json']
+          - id: markdownlint-cli2
+            args: ['--config', '.markdownlint.json', '#**/node_modules/**', '#venv/**', '#.qwen/**']
 
     # JavaScript tooling (commit): format + lint
     - repo: local
       hooks:
           - id: prettier
             name: prettier (staged files)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx prettier --write --ignore-path .prettierignore --'
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Prettier"; exit 0; fi; npx --yes prettier --write --ignore-path .prettierignore --'
             language: system
             files: '\\.(js|css|json|yml|yaml|md|html)$'
             exclude: ^data/.*\.(html|json)$
@@ -48,7 +48,7 @@ repos:
       hooks:
           - id: eslint
             name: eslint (staged JS)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx eslint --max-warnings=0 --'
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping ESLint"; exit 0; fi; npx --yes eslint --max-warnings=0 --'
             language: system
             types_or: [javascript]
             pass_filenames: true
@@ -57,7 +57,7 @@ repos:
       hooks:
           - id: stylelint
             name: stylelint (staged CSS)
-            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Stylelint"; exit 0; fi; npx -y -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" --'
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping Stylelint"; exit 0; fi; npx --yes -p @stylistic/stylelint-plugin stylelint --formatter=unix --config-basedir "$(pwd)" --'
             language: system
             types_or: [css]
             pass_filenames: true
@@ -67,7 +67,7 @@ repos:
       hooks:
           - id: jest-related
             name: jest (related tests)
-            entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; if [ $# -gt 0 ]; then npx jest --findRelatedTests --passWithNoTests "$@"; else npx jest --passWithNoTests; fi'
+            entry: bash -lc 'if ! ls jest.config.* package.json >/dev/null 2>&1; then echo "No Jest config found, skipping"; exit 0; fi; if [ $# -gt 0 ]; then npx --yes jest --findRelatedTests --passWithNoTests "$@"; else npx --yes jest --passWithNoTests; fi'
             language: system
             types_or: [javascript]
             pass_filenames: true
@@ -77,7 +77,7 @@ repos:
       hooks:
           - id: jest-full
             name: jest (full, pre-push)
-            entry: bash -lc 'npx jest --ci --runInBand'
+            entry: bash -lc 'npx --yes jest --ci --runInBand'
             language: system
             pass_filenames: false
             stages: [pre-push]
@@ -90,6 +90,17 @@ repos:
             language: system
             pass_filenames: false
             stages: [pre-push]
+
+    # Remind to deploy Cloudflare Worker after commits that touch worker/
+    - repo: local
+      hooks:
+          - id: worker-deploy-reminder
+            name: worker deploy reminder
+            entry: bash -c "echo && echo 'worker/ changed -- remember to run make deploy-worker' && echo"
+            language: system
+            pass_filenames: false
+            stages: [post-commit]
+            files: '^worker/'
 
     # Optional: mypy type check on commit (adjust paths as needed)
     - repo: https://github.com/pre-commit/mirrors-mypy

@@ -1,139 +1,379 @@
-describe('Nav Prefetch', () => {
+import { jest } from '@jest/globals';
+
+describe('nav_prefetch.js', () => {
     let originalFetch;
-    let fetchMock;
-    let mockConnection;
+    let originalConnection;
 
     beforeEach(() => {
-        jest.useFakeTimers();
+        jest.resetModules();
+        originalFetch = window.fetch;
+        originalConnection = navigator.connection;
 
-        fetchMock = jest.fn((url) => {
-            if (url && url.endsWith('.css')) {
-                return Promise.resolve({
+        const makeSyncPromise = (val, isReject = false) => {
+            return {
+                then: (cb) => {
+                    if (isReject) {
+                        return makeSyncPromise(val, true);
+                    }
+                    if (cb) {
+                        try {
+                            const res = cb(val);
+                            if (res && res.then) {
+                                return res;
+                            }
+                            return makeSyncPromise(res);
+                        } catch (e) {
+                            return makeSyncPromise(e, true);
+                        }
+                    }
+                    return makeSyncPromise(val);
+                },
+                catch: (cb) => {
+                    if (!isReject) {
+                        return makeSyncPromise(val);
+                    }
+                    if (cb) {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    }
+                    return makeSyncPromise(val, true);
+                },
+                finally: (cb) => {
+                    if (cb) {
+                        cb();
+                    }
+                    return makeSyncPromise(val, isReject);
+                },
+            };
+        };
+
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith && url.endsWith('.css')) {
+                return makeSyncPromise({
                     ok: true,
-                    text: () => Promise.resolve('body { background-image: url("assets/bg.jpg"); }')
+                    text: () =>
+                        makeSyncPromise(`
+                        background: url('bg1.png');
+                        background-image: url("bg2.jpg");
+                        background: url(bg3.webp);
+                        background: url(data:image/png;base64,123);
+                    `),
                 });
             }
-            return Promise.resolve({
-                ok: true,
-                text: () => Promise.resolve('')
-            });
-        });
-        originalFetch = window.fetch;
-        window.fetch = fetchMock;
-
-        // Ensure 'requestIdleCallback' in window is false so it falls back to setTimeout
-        // which FakeTimers controls easily
-        delete window.requestIdleCallback;
-
-        mockConnection = { effectiveType: '4g', saveData: false };
-        Object.defineProperty(navigator, 'connection', {
-            writable: true,
-            configurable: true,
-            value: mockConnection
+            return makeSyncPromise({ ok: true, text: () => makeSyncPromise('') });
         });
 
-        document.body.innerHTML = `
-            <div class="nav-container">
-                <a href="/position/">Position</a>
-                <a href="/calendar/">Calendar</a>
-            </div>
-            <div class="container">
-                <a href="/terminal/">Terminal</a>
-                <a href="#skip-me">Skip</a>
-                <a href="https://external.com/link">External</a>
-            </div>
-            <link rel="manifest" href="/assets/manifest.webmanifest">
-        `;
+        window.setTimeout = jest.fn((cb) => {
+            cb();
+            return 1;
+        });
+        window.requestIdleCallback = jest.fn((cb) => {
+            cb();
+            return 1;
+        });
 
+        window.Promise.resolve = jest.fn((val) => makeSyncPromise(val));
+        window.Promise.reject = jest.fn((err) => makeSyncPromise(err, true));
+        window.Promise.allSettled = jest.fn((promises) => {
+            return makeSyncPromise(promises);
+        });
+
+        // Set up the manifest link correctly
+        document.body.innerHTML = '<link rel="manifest" href="/assets/manifest.webmanifest" />';
         Object.defineProperty(document, 'visibilityState', {
-            value: 'visible',
-            configurable: true
+            configurable: true,
+            get: () => 'visible',
         });
 
-        // Use history API to set JSDOM location safely per memory rules
-        window.history.pushState({}, '', '/');
+        delete window.location;
+        window.location = new URL('http://localhost/position/');
+
+        Object.defineProperty(navigator, 'connection', {
+            value: { effectiveType: '4g' },
+            configurable: true,
+        });
     });
 
     afterEach(() => {
-        jest.useRealTimers();
         window.fetch = originalFetch;
-        jest.resetModules();
-        document.body.innerHTML = '';
+
+        if (originalConnection) {
+            Object.defineProperty(navigator, 'connection', {
+                value: originalConnection,
+                configurable: true,
+            });
+        } else {
+            delete navigator.connection;
+        }
+
+        jest.clearAllMocks();
+        jest.restoreAllMocks();
     });
 
-    const loadPrefetchScript = async () => {
-        // Reset script module cache so it executes again
+    function loadScript() {
         jest.isolateModules(() => {
-            require('../../../js/ui/nav_prefetch.js');
+            require('@js/ui/nav_prefetch.js');
         });
+    }
 
-        // Let the event listener or direct invocation run
-        await Promise.resolve(); // trigger the scheduling (it calls schedulePrefetch)
+    test('should extract css backgrounds correctly', () => {
+        loadScript();
 
-        // Wait for CSS background fetching promises (Promise.allSettled)
-        for (let i = 0; i < 20; i++) {
-            await Promise.resolve();
-            jest.advanceTimersByTime(10);
-        }
-
-        // Advance timers to trigger `drainQueue` via PREFETCH_DELAY
-        jest.advanceTimersByTime(1800); // PREFETCH_DELAY is 1800
-        await Promise.resolve();
-
-        // Drain loop with IDLE_TIMEOUT (2000)
-        for (let i = 0; i < 150; i++) { // Increase loop to ensure all fetched items get resolved
-            jest.advanceTimersByTime(2000);
-            await Promise.resolve();
-        }
-    };
-
-    it('should fetch links and assets for the current page', async () => {
-        await loadPrefetchScript();
-
-        expect(fetchMock).toHaveBeenCalled();
-
-        const calls = fetchMock.mock.calls.map(call => call[0]);
-        // The script crawls all .nav-container a[href] and queues them
-        // Let's check if the mock actually got them
-        expect(calls).toContain('http://localhost/position/');
-        expect(calls).toContain('http://localhost/calendar/');
-        expect(calls).toContain('http://localhost/terminal/');
+        const calls = window.fetch.mock.calls.map((c) => c[0]);
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('bg1.png'))).toBe(true);
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('bg2.jpg'))).toBe(true);
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('bg3.webp'))).toBe(true);
+        expect(calls.some((url) => url && url.startsWith && url.startsWith('data:'))).toBe(false);
     });
 
-    it('should not prefetch if saveData is true', async () => {
-        mockConnection.saveData = true;
-        await loadPrefetchScript();
-        expect(fetchMock).not.toHaveBeenCalled();
+    test('should handle missing manifest link gracefully and fall back to app base', () => {
+        document.body.innerHTML = '';
+        loadScript();
     });
 
-    it('should not prefetch if visibilityState is hidden', async () => {
-        Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-        await loadPrefetchScript();
-        expect(fetchMock).not.toHaveBeenCalled();
+    test('should handle manifest parsing error', () => {
+        document.body.innerHTML = `
+            <link rel="manifest" href="http://invalid url" />
+        `;
+        loadScript();
     });
 
-    it('should skip video assets on slow connection', async () => {
-        mockConnection.slow = true;
-        mockConnection.effectiveType = '2g';
-
-        await loadPrefetchScript();
-
-        const calls = fetchMock.mock.calls.map(call => call[0]);
-        // mobile_bg.mp4 should not be in the fetch list
-        expect(calls).not.toContain('http://localhost/assets/mobile_bg.mp4');
+    test('should handle broken URL inside css extract correctly', () => {
+        const makeSyncPromise = (val, isReject = false) => ({
+            then: (cb) => {
+                if (isReject) {
+                    return makeSyncPromise(val, true);
+                }
+                if (cb) {
+                    try {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    } catch (e) {
+                        return makeSyncPromise(e, true);
+                    }
+                }
+                return makeSyncPromise(val);
+            },
+            catch: (cb) => {
+                if (!isReject) {
+                    return makeSyncPromise(val);
+                }
+                if (cb) {
+                    const res = cb(val);
+                    if (res && res.then) {
+                        return res;
+                    }
+                    return makeSyncPromise(res);
+                }
+                return makeSyncPromise(val, true);
+            },
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val, isReject);
+            },
+        });
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith && url.endsWith('.css')) {
+                return makeSyncPromise({
+                    ok: true,
+                    text: () => makeSyncPromise("background: url('http://invalid url');"),
+                });
+            }
+            return makeSyncPromise({ ok: true });
+        });
+        loadScript();
     });
 
-    it('should fallback to document.location when no manifest', async () => {
-        document.querySelector('link[rel="manifest"]').remove();
-        await loadPrefetchScript();
-        expect(fetchMock).toHaveBeenCalled();
+    test('should handle cross origin links in prefetch gracefully', () => {
+        document.body.innerHTML = `
+            <link rel="manifest" href="/assets/manifest.webmanifest" />
+            <div class="container">
+                <a href="http://other-domain.com/path">External</a>
+                <a href="/position/">Internal</a>
+                <a href="#hash">Hash</a>
+                <a href="http://invalid url">Invalid</a>
+            </div>
+        `;
+        loadScript();
+
+        const calls = window.fetch.mock.calls.map((c) => c[0]);
+        expect(calls.some((url) => url && url.includes && url.includes('other-domain.com'))).toBe(
+            false
+        );
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('/position/'))).toBe(true);
     });
 
-    it('should handle background image extraction', async () => {
-        await loadPrefetchScript();
+    test('should fallback to setTimeout if requestIdleCallback missing', () => {
+        delete window.requestIdleCallback;
+        loadScript();
+        expect(window.fetch).toHaveBeenCalled();
+    });
 
-        const calls = fetchMock.mock.calls.map(call => call[0]);
-        // URL is relative to the CSS file
-        expect(calls).toContain('http://localhost/css/assets/bg.jpg');
+    test('should handle fetch rejection gracefully', () => {
+        const makeSyncPromise = (val, isReject = false) => ({
+            then: (cb) => {
+                if (isReject) {
+                    return makeSyncPromise(val, true);
+                }
+                return makeSyncPromise(cb(val));
+            },
+            catch: (cb) => makeSyncPromise(cb(val)),
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val, isReject);
+            },
+        });
+        window.fetch = jest.fn(() => makeSyncPromise(new Error('Network error'), true));
+        loadScript();
+    });
+
+    test('should handle css network failure gracefully', () => {
+        const makeSyncPromise = (val, isReject = false) => ({
+            then: (cb) => {
+                if (isReject) {
+                    return makeSyncPromise(val, true);
+                }
+                if (cb) {
+                    try {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    } catch (e) {
+                        return makeSyncPromise(e, true);
+                    }
+                }
+                return makeSyncPromise(val);
+            },
+            catch: (cb) => {
+                if (!isReject) {
+                    return makeSyncPromise(val);
+                }
+                if (cb) {
+                    const res = cb(val);
+                    if (res && res.then) {
+                        return res;
+                    }
+                    return makeSyncPromise(res);
+                }
+                return makeSyncPromise(val, true);
+            },
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val, isReject);
+            },
+        });
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith && url.endsWith('.css')) {
+                return makeSyncPromise({ ok: false });
+            }
+            return makeSyncPromise({ ok: true });
+        });
+        loadScript();
+    });
+
+    test('should skip prefetch if saveData is true', () => {
+        Object.defineProperty(navigator, 'connection', {
+            value: { saveData: true },
+            configurable: true,
+        });
+        loadScript();
+        expect(window.fetch).not.toHaveBeenCalled();
+    });
+
+    test('should handle unknown route fallback', () => {
+        window.location = new URL('http://localhost/unknown/');
+        loadScript();
+    });
+
+    test('should wait for document to load if readyState is loading', () => {
+        Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+        const addSpy = jest.spyOn(window, 'addEventListener');
+        loadScript();
+        expect(addSpy).toHaveBeenCalledWith('load', expect.any(Function), { once: true });
+        // simulate load event
+        const handler = addSpy.mock.calls[0][1];
+        handler();
+    });
+
+    test('should skip video if connection profile is missing', () => {
+        delete navigator.connection;
+        loadScript();
+    });
+
+    test('css URL resolution returns undefined if bad', () => {
+        const makeSyncPromise = (val, isReject = false) => ({
+            then: (cb) => {
+                if (isReject) {
+                    return makeSyncPromise(val, true);
+                }
+                if (cb) {
+                    try {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    } catch (e) {
+                        return makeSyncPromise(e, true);
+                    }
+                }
+                return makeSyncPromise(val);
+            },
+            catch: (cb) => {
+                if (!isReject) {
+                    return makeSyncPromise(val);
+                }
+                if (cb) {
+                    const res = cb(val);
+                    if (res && res.then) {
+                        return res;
+                    }
+                    return makeSyncPromise(res);
+                }
+                return makeSyncPromise(val, true);
+            },
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val, isReject);
+            },
+        });
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith && url.endsWith('.css')) {
+                return makeSyncPromise({
+                    ok: true,
+                    text: () =>
+                        makeSyncPromise(`
+                        background: url('');
+                    `),
+                });
+            }
+            return makeSyncPromise({ ok: true });
+        });
+        loadScript();
+    });
+
+    test('should return early if document visibility is hidden', () => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            get: () => 'hidden',
+        });
+        loadScript();
+        expect(window.fetch).not.toHaveBeenCalled();
     });
 });

@@ -139,7 +139,6 @@
         };
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
-        // ignore
+        console.warn('Caught exception in ambient setup:', error);
     }
 })();

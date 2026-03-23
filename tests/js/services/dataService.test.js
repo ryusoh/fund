@@ -4,6 +4,7 @@ import {
     __testables,
 } from '@services/dataService.js';
 import * as chartManager from '@charts/allocationChartManager.js';
+import { isLocalhost } from '@utils/host.js';
 global.d3 = {
     csv: jest.fn(),
     json: jest.fn(),
@@ -24,6 +25,10 @@ jest.mock('@charts/allocationChartManager.js', () => ({
 // Mock responsive module
 jest.mock('@ui/responsive.js', () => ({
     checkAndToggleVerticalScroll: jest.fn(),
+}));
+
+jest.mock('@utils/host.js', () => ({
+    isLocalhost: jest.fn(() => true), // default: localhost (dev path)
 }));
 
 // Mock utils
@@ -1653,5 +1658,86 @@ describe('_calculateCurrencyChanges', () => {
 
         const result = __testables._calculateCurrencyChanges(baseEntry, lastEntry);
         expect(result).toBeNull();
+    });
+});
+
+describe('fetchPortfolioData — Cloudflare Worker integration', () => {
+    const mockHoldings = {
+        VT: { shares: '10', average_price: '100.00' },
+        ANET: { shares: '5', average_price: '50.00' },
+    };
+    const mockPrices = { VT: 139.49, ANET: 136.99 };
+
+    beforeEach(() => {
+        fetch.mockClear();
+        isLocalhost.mockReturnValue(false); // simulate production
+    });
+
+    afterEach(() => {
+        isLocalhost.mockReturnValue(true); // restore default for other tests
+    });
+
+    it('calls the Worker URL with symbols derived from holdings', async () => {
+        fetch.mockImplementation((url) => {
+            if (url.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+            }
+            if (url.includes('workers.dev') || url.includes('lyeutsaon.com')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+            }
+            return Promise.reject(new Error(`Unexpected URL: ${url}`));
+        });
+
+        await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+        const workerCall = fetch.mock.calls.find(
+            ([url]) => url.includes('workers.dev') || url.includes('lyeutsaon.com')
+        );
+        expect(workerCall).toBeDefined();
+        const workerUrl = workerCall[0];
+        expect(workerUrl).toContain('/prices');
+        expect(workerUrl).toContain('VT');
+        expect(workerUrl).toContain('ANET');
+    });
+
+    it('falls back to fund_data.json when the Worker call fails', async () => {
+        fetch.mockImplementation((url) => {
+            if (url.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+            }
+            if (url.includes('workers.dev') || url.includes('lyeutsaon.com')) {
+                return Promise.reject(new Error('Worker unavailable'));
+            }
+            if (url.includes('fund_data.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+            }
+            return Promise.reject(new Error(`Unexpected URL: ${url}`));
+        });
+
+        await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+        const fallbackCall = fetch.mock.calls.find(([url]) => url.includes('fund_data.json'));
+        expect(fallbackCall).toBeDefined();
+    });
+
+    it('uses fund_data.json directly when on localhost', async () => {
+        isLocalhost.mockReturnValue(true);
+
+        fetch.mockImplementation((url) => {
+            if (url.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+            }
+            if (url.includes('fund_data.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+            }
+            return Promise.reject(new Error(`Unexpected URL: ${url}`));
+        });
+
+        await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+        const workerCall = fetch.mock.calls.find(
+            ([url]) => url.includes('workers.dev') || url.includes('lyeutsaon.com')
+        );
+        expect(workerCall).toBeUndefined();
     });
 });

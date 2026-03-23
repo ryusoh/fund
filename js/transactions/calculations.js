@@ -1,12 +1,25 @@
 import { parseCSVLine } from './utils.js';
 
+// Cache for split adjustments to avoid O(N×M) Date object creation
+const splitAdjustmentCache = new Map();
+
 export function getSplitAdjustment(splitHistory, symbol, transactionDate) {
-    return splitHistory
-        .filter(
-            (split) =>
-                split.symbol === symbol && new Date(split.splitDate) > new Date(transactionDate)
-        )
+    const cacheKey = `${symbol}|${transactionDate}`;
+    if (splitAdjustmentCache.has(cacheKey)) {
+        return splitAdjustmentCache.get(cacheKey);
+    }
+
+    const txDate = new Date(transactionDate);
+    const result = splitHistory
+        .filter((split) => split.symbol === symbol && new Date(split.splitDate) > txDate)
         .reduce((cumulative, split) => cumulative * split.splitMultiplier, 1.0);
+
+    splitAdjustmentCache.set(cacheKey, result);
+    return result;
+}
+
+export function clearSplitAdjustmentCache() {
+    splitAdjustmentCache.clear();
 }
 
 export function applyTransactionFIFO(lots, transaction, splitHistory) {

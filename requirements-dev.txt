@@ -7,7 +7,6 @@ ruff
 black
 mypy
 bandit
-pip-audit
 pre-commit
 argcomplete
 types-pytz

@@ -66,7 +66,7 @@
     </head>
 
     <body class="body-terminal no-pull-to-refresh">
-        <div class="nav-container">
+        <nav class="nav-container" aria-label="Main Navigation">
             <ul>
                 <li>
                     <a href="../" aria-label="Main Site">
@@ -89,7 +89,7 @@
                     </a>
                 </li>
             </ul>
-        </div>
+        </nav>
         <div id="currencyToggleContainer" class="hide-on-mobile">
             <button
                 class="currency-toggle active"
@@ -131,6 +131,7 @@
                 <div class="terminal-output" id="terminalOutput" aria-live="polite"></div>
                 <div class="terminal-prompt">
                     <span class="prompt-user">lz@fund:~$</span>
+                    <label for="terminalInput" class="sr-only">Terminal input</label>
                     <input
                         type="text"
                         id="terminalInput"
@@ -147,6 +148,7 @@
                 class="chart-card is-hidden"
                 aria-labelledby="runningAmountTitle"
             >
+                <h2 id="runningAmountTitle" class="sr-only">Running Amount Chart</h2>
                 <div class="chart-container" role="img" aria-describedby="runningAmountTitle">
                     <canvas
                         id="runningAmountCanvas"

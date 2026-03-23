@@ -11,3 +11,15 @@
 **Action:** Added context logging via `console.warn` to provide visibility into fallback failures.
 
 **Verification:** Linter checks pass and errors will now appear in console if vendor loading fails.
+
+## 2025-03-20 - Sentinel Resilience Audit
+
+**Vulnerability:** Generic error suppressions (// ignore) masking underlying issues
+**Learning:** Catch blocks that silently swallow exceptions without logging context can mask critical API failures (like PE ratio data fetch failures) or environment incompatibilities, creating significant debugging blind spots.
+**Prevention:** Ensure every caught exception intended to be suppressed logs a descriptive context string before suppression, and explicitly use `/* ignore */` syntax for linter-compliant empty blocks in test files where errors are intentionally provoked.
+
+## 2026-03-20 - API Key Leak in Exception Logging
+
+**Vulnerability:** In multiple scripts (`fetch_etf_country_allocations.py`, `update_vt_sectors.py`, `update_vt_hhi.py`, and `generate_pe_data.py`), an API key (`scraper_api_key`) was appended to the URL query parameters. If the `requests` library encountered a failure (e.g., 401 Unauthorized or Timeout) and `raise_for_status()` threw an `HTTPError`, the default string representation of the exception `e` included the complete URL. Printing this exception directly to the console leaked the secret API key into plaintext CI logs.
+**Learning:** Developers often instinctively use `print(f"Error: {e}")` to log standard exceptions. However, network libraries like `requests` aggressively include full request context (like the URL) in exception messages for debugging purposes. This creates a severe credential leak vector when API keys are passed via URL query parameters rather than HTTP headers.
+**Prevention:** When making HTTP requests with credentials in the URL, either switch to passing credentials via HTTP Headers (if the API supports it), or proactively catch and scrub the exception string before logging (e.g., `str(e).replace(api_key, "***")`) to ensure the secret is masked.

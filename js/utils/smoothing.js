@@ -34,10 +34,13 @@ export function simpleMovingAverage(data, window = 3, preserveEnd = true) {
         // Calculate the average for the window
         const start = Math.max(0, i - Math.floor(window / 2));
         const end = Math.min(data.length, start + window);
-        const windowData = data.slice(start, end);
 
-        const sum = windowData.reduce((acc, point) => acc + point.y, 0);
-        const average = sum / windowData.length;
+        // Bolt: Optimized from O(W) reduce/slice to O(W) straight loop to avoid GC and slice overhead
+        let sum = 0;
+        for (let j = start; j < end; j++) {
+            sum += data[j].y;
+        }
+        const average = sum / (end - start);
 
         smoothed.push({
             x: data[i].x,
@@ -194,13 +197,14 @@ export function adaptiveSmoothing(data, preserveEnd = true) {
     }
 
     // Calculate volatility to determine smoothing strength
-    const returns = [];
+    // Bolt: Optimized to single pass instead of map/reduce to avoid array allocation
+    let sumVolatility = 0;
     for (let i = 1; i < data.length; i++) {
         const ret = (data[i].y - data[i - 1].y) / data[i - 1].y;
-        returns.push(Math.abs(ret));
+        sumVolatility += Math.abs(ret);
     }
 
-    const avgVolatility = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
+    const avgVolatility = sumVolatility / (data.length - 1);
 
     // Choose smoothing method based on volatility
     if (avgVolatility > 0.05) {
@@ -225,10 +229,18 @@ function polynomialFit(points, order, targetIndex) {
 
     // Simple linear regression for order 1, quadratic for order 2
     if (order === 1) {
-        const sumX = points.reduce((sum, p, i) => sum + i, 0);
-        const sumY = points.reduce((sum, p) => sum + p.y, 0);
-        const sumXY = points.reduce((sum, p, i) => sum + i * p.y, 0);
-        const sumXX = points.reduce((sum, p, i) => sum + i * i, 0);
+        // Bolt: Combine 4 reduce loops into a single O(N) loop to reduce functional overhead
+        let sumX = 0,
+            sumY = 0,
+            sumXY = 0,
+            sumXX = 0;
+        for (let i = 0; i < n; i++) {
+            const y = points[i].y;
+            sumX += i;
+            sumY += y;
+            sumXY += i * y;
+            sumXX += i * i;
+        }
 
         const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
         const intercept = (sumY - slope * sumX) / n;

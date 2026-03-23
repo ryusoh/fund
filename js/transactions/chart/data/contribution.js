@@ -256,10 +256,17 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         return [];
     }
 
+    const tsCache = new Map();
+    const getTs = (t) => {
+        let ts = tsCache.get(t);
+        if (ts === undefined) {
+            ts = new Date(t.tradeDate).getTime();
+            tsCache.set(t, ts);
+        }
+        return ts;
+    };
     const sortedTransactions = [...transactions].sort(
-        (a, b) =>
-            (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0) ||
-            (a.transactionId ?? 0) - (b.transactionId ?? 0)
+        (a, b) => getTs(a) - getTs(b) || (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
 
     const firstDate = new Date(sortedTransactions[0].tradeDate);

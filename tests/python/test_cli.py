@@ -1,3 +1,4 @@
+import os
 import sys  # noqa: E402
 import types
 import unittest
@@ -125,17 +126,20 @@ def test_tickers_success():
     subparsers = parser.add_subparsers()
     tickers.add_parser(subparsers)
 
-    with tempfile.NamedTemporaryFile("w", delete=True, suffix=".json") as f:
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".json") as f:
         json.dump({"AAPL": {}, "MSFT": {}}, f)
         temp_path = f.name
 
-    args = parser.parse_args(["tickers", "--file", temp_path])
+    try:
+        args = parser.parse_args(["tickers", "--file", temp_path])
 
-    with patch("builtins.print") as mock_print:
-        args.func(args)
+        with patch("builtins.print") as mock_print:
+            args.func(args)
 
-    mock_print.assert_any_call("AAPL")
-    mock_print.assert_any_call("MSFT")
+        mock_print.assert_any_call("AAPL")
+        mock_print.assert_any_call("MSFT")
+    finally:
+        os.unlink(temp_path)
 
 
 def test_tickers_file_not_found():
@@ -161,17 +165,20 @@ def test_tickers_read_error():
     subparsers = parser.add_subparsers()
     tickers.add_parser(subparsers)
 
-    with tempfile.NamedTemporaryFile("w", delete=True, suffix=".json") as f:
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".json") as f:
         f.write("invalid json")
         temp_path = f.name
 
-    args = parser.parse_args(["tickers", "--file", temp_path])
+    try:
+        args = parser.parse_args(["tickers", "--file", temp_path])
 
-    with patch("builtins.print") as mock_print:
-        args.func(args)
+        with patch("builtins.print") as mock_print:
+            args.func(args)
 
-    mock_print.assert_called_once()
-    assert "Failed to read" in mock_print.call_args[0][0]
+        mock_print.assert_called_once()
+        assert "Failed to read" in mock_print.call_args[0][0]
+    finally:
+        os.unlink(temp_path)
 
 
 def test_tickers_default_path():
@@ -360,17 +367,21 @@ def test_holdings_argcomplete():
     import json
     import tempfile
 
-    with tempfile.NamedTemporaryFile("w", delete=True, suffix=".json") as f:
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".json") as f:
         json.dump({"AAPL": {}, "MSFT": {}, "AMZN": {}}, f)
         temp_path = f.name
 
-    class DummyParsedArgs:
-        file = temp_path
+    try:
 
-    completions = ticker_action.completer("A", DummyParsedArgs())
-    assert "AAPL" in completions
-    assert "AMZN" in completions
-    assert "MSFT" not in completions
+        class DummyParsedArgs:
+            file = temp_path
+
+        completions = ticker_action.completer("A", DummyParsedArgs())
+        assert "AAPL" in completions
+        assert "AMZN" in completions
+        assert "MSFT" not in completions
+    finally:
+        os.unlink(temp_path)
 
     # Test exception path for completer
     class ErrorParsedArgs:
