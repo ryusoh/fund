@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-03-20T07:58:51.485515+00:00",
+        "asOf": "2026-03-23T08:07:01.757121+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,26 +29,26 @@
     },
     "market": {
         "forwardEps": 4.2632,
-        "pe": 49.5491,
-        "forwardPe": 31.9621,
+        "pe": 47.5435,
+        "forwardPe": 30.7799,
         "beta": 1.46,
-        "marketCap": 171590189056.0,
-        "enterpriseValue": 160494960640.0,
+        "marketCap": 165243387904.0,
+        "enterpriseValue": 154162003968.0,
         "ebitda": 3928699904.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 164.94,
         "fiftyTwoWeekLow": 59.43,
-        "marketDataUpdatedAt": "2026-03-20T07:58:51.322493+00:00",
-        "evToEbitda": 40.8519,
-        "eps": 2.75,
-        "price": 136.26,
-        "fiftyDayAverage": 134.7602,
-        "twoHundredDayAverage": 129.763,
-        "averageVolume": 7662032.0,
-        "averageDailyVolume10Day": 6094900.0
+        "marketDataUpdatedAt": "2026-03-23T08:07:01.624610+00:00",
+        "evToEbitda": 39.24,
+        "eps": 2.76,
+        "price": 131.22,
+        "fiftyDayAverage": 134.8566,
+        "twoHundredDayAverage": 130.179,
+        "averageVolume": 7786354.0,
+        "averageDailyVolume10Day": 6204900.0
     },
     "risk": {
-        "volatility": 0.5307,
+        "volatility": 0.5321,
         "estimateSource": "historical",
         "correlations": null
     },
