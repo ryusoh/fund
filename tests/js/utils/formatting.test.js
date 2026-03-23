@@ -216,6 +216,49 @@ describe('addCommas', () => {
     });
 });
 
+describe('formatCurrencyChange', () => {
+    it('should correctly format currency change without formatter provided', () => {
+        // Positive number
+        expect(formatting.formatCurrencyChange(1234.56)).toBe('+$1,234.56');
+
+        // Negative number
+        expect(formatting.formatCurrencyChange(-1234.56)).toBe('-$1,234.56');
+
+        // Zero
+        expect(formatting.formatCurrencyChange(0)).toBe('$0.00');
+
+        // Invalid number
+        expect(formatting.formatCurrencyChange('not-a-number')).toBe('n/a');
+        expect(formatting.formatCurrencyChange(NaN)).toBe('n/a');
+
+        // Default currency formatter fallback (simulating !Number.isFinite check)
+        // This is handled by defaultCurrencyFormatter if somehow called directly,
+        // but formatCurrencyChange catches !isFinite first. We test defaultCurrencyFormatter
+        // implicitly through formatSummaryBlock using non-finite values if possible,
+        // or by creating a mock summary that doesn't trigger formatCurrencyChange.
+    });
+
+    it('should handle custom formatter that returns un-prefixed values', () => {
+        expect(formatting.formatCurrencyChange(10, val => `VAL:${val}`)).toBe('+VAL:10');
+    });
+
+    it('should trigger defaultCurrencyFormatter with non-finite values via formatSummaryBlock', () => {
+        const summary = {
+            hasData: true,
+            startValue: NaN,
+            endValue: Infinity,
+            netChange: 10,
+            startDate: new Date('2024-01-01'),
+            endDate: new Date('2024-12-31')
+        };
+        const result = formatting.formatSummaryBlock('Test', summary, { from: '2024-01-01' });
+
+        // defaultCurrencyFormatter returns $0.00 for !isFinite
+        expect(result).toContain('Start: $0.00');
+        expect(result).toContain('End: $0.00');
+    });
+});
+
 describe('formatDate', () => {
     it('should format date correctly', () => {
         expect(formatting.formatDate('2025-08-24T12:00:00Z')).toBe('2025-08-24');
@@ -611,6 +654,50 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
         // Should not include percentage when start value is 0
         expect(result).toContain('Change: +¥1000.00');
         expect(result).not.toMatch(/Change:.*\(\+?\-?\d+\.\d+%\)/);
+    });
+
+    it('returns empty string for formatSummaryDateSuffix when given non-Date object', () => {
+        expect(formatting.formatSummaryDateSuffix(null, '2024-01-01')).toBe('');
+        expect(formatting.formatSummaryDateSuffix('2024-01-01', '2024-01-01')).toBe('');
+    });
+
+    it('returns correct suffix when actualDate differs from targetDateStr', () => {
+        const actualDate = new Date('2024-01-05T00:00:00Z');
+        expect(formatting.formatSummaryDateSuffix(actualDate, '2024-01-01')).toBe(' (2024-01-05)');
+    });
+
+    it('returns empty string from formatAppreciationBlock when missing hasData', () => {
+        const noDataSummary = { hasData: false };
+        const validSummary = { hasData: true, netChange: 10 };
+
+        expect(formatting.formatAppreciationBlock(noDataSummary, validSummary)).toBe('');
+        expect(formatting.formatAppreciationBlock(validSummary, noDataSummary)).toBe('');
+        expect(formatting.formatAppreciationBlock(null, validSummary)).toBe('');
+    });
+
+    it('returns empty string from formatAppreciationBlock when valueAdded is not finite', () => {
+        const balanceSummary = { hasData: true, netChange: NaN };
+        const contributionSummary = { hasData: true, netChange: 10 };
+
+        expect(formatting.formatAppreciationBlock(balanceSummary, contributionSummary)).toBe('');
+    });
+
+    it('handles formatSummaryBlock when summary.endDate is missing or not a date', () => {
+        const balanceSummary = {
+            hasData: true,
+            startValue: 1000,
+            endValue: 2000,
+            netChange: 1000,
+            startDate: new Date('2024-01-01'),
+            // Missing endDate
+        };
+        const result = formatting.formatSummaryBlock(
+            'Balance',
+            balanceSummary,
+            { from: '2024-01-01', to: '2024-12-31' },
+            { formatValue: formatter }
+        );
+        expect(result).not.toMatch(/End:.*\(.*\)/);
     });
 });
 
