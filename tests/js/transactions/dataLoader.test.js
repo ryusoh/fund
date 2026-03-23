@@ -53,11 +53,11 @@ describe('dataLoader real-time integration', () => {
 
     describe('loadPortfolioSeries with real-time data', () => {
         it('should append real-time balance to historical series', async () => {
-            // Mock responses in order:
-            // 1. balance_series.json (historical)
-            // 2. holdings_details.json (real-time)
-            // 3. fund_data.json (real-time)
-            // 4. fx_data.json (real-time)
+            // Actual fetch() call order inside fetchRealTimeData / fetchPortfolioData:
+            // 1. balance_series.json  (loadPortfolioSeries, sync)
+            // 2. holdings_details.json (fetchPortfolioData, sync)
+            // 3. fx_data.json          (fetchRealTimeData, parallel/sync with holdings)
+            // 4. fund_data.json        (fetchPortfolioData, async after holdings resolves)
             mockFetch
                 .mockResolvedValueOnce(
                     createMockResponse({
@@ -74,12 +74,12 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        VT: 110, // Current price
+                        rates: { USD: 1.0, CNY: 7.2 },
                     })
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0, CNY: 7.2 },
+                        VT: 110, // Current price
                     })
                 );
 
@@ -113,12 +113,12 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        VT: 110,
+                        rates: { USD: 1.0 },
                     })
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0 },
+                        VT: 110,
                     })
                 );
 
@@ -170,13 +170,13 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        VT: 100, // 100 * 100 = 10000
-                        GOOG: 100, // 10 * 100 = 1000
+                        rates: { USD: 1.0 },
                     })
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0 },
+                        VT: 100, // 100 * 100 = 10000
+                        GOOG: 100, // 10 * 100 = 1000
                     })
                 );
 
@@ -248,13 +248,13 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        VT: 100, // 100 * 100 = 10000
-                        GOOG: 100, // 10 * 100 = 1000
+                        rates: { USD: 1.0 },
                     })
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0 },
+                        VT: 100, // 100 * 100 = 10000
+                        GOOG: 100, // 10 * 100 = 1000
                     })
                 );
 
@@ -291,13 +291,13 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        'BRK-B': 200, // 10 * 200 = 2000
-                        VT: 80, // 100 * 80 = 8000
+                        rates: { USD: 1.0 },
                     })
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0 },
+                        'BRK-B': 200, // 10 * 200 = 2000
+                        VT: 80, // 100 * 80 = 8000
                     })
                 );
 
@@ -342,14 +342,14 @@ describe('dataLoader real-time integration', () => {
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        VT: 120, // 100 * 120 = 12000
-                        GOOG: 100, // 10 * 100 = 1000
+                        rates: { USD: 1.0 },
                     })
-                    // Total = 13000. VT% = 12/13 ~ 92.3%. GOOG% = 1/13 ~ 7.7%
                 )
                 .mockResolvedValueOnce(
                     createMockResponse({
-                        rates: { USD: 1.0 },
+                        VT: 120, // 100 * 120 = 12000
+                        GOOG: 100, // 10 * 100 = 1000
+                        // Total = 13000. VT% = 12/13 ~ 92.3%. GOOG% = 1/13 ~ 7.7%
                     })
                 );
 

@@ -52,7 +52,7 @@ async function fetchJSON(url) {
     return response.json();
 }
 
-async function fetchPortfolioData() {
+export async function fetchPortfolioData() {
     const holdingsDetails = await fetchJSON(HOLDINGS_DETAILS_URL);
     const symbols = holdingsDetails ? Object.keys(holdingsDetails).join(',') : '';
 
@@ -452,13 +452,12 @@ function updateTableAndPrepareChartData(
 
 async function fetchData(paths) {
     const timestamp = new Date().getTime();
-    const [historical, fx, holdings, fund] = await Promise.all([
+    const [historical, fx, { holdingsDetails, prices }] = await Promise.all([
         d3.csv(`${paths.historical}?t=${timestamp}`),
         d3.json(`${paths.fx}?t=${timestamp}`),
-        d3.json(`${paths.holdings}?t=${timestamp}`),
-        d3.json(`${paths.fund}?t=${timestamp}`),
+        fetchPortfolioData(),
     ]);
-    return { historical, fx, holdings, fund };
+    return { historical, fx, holdings: holdingsDetails, fund: prices };
 }
 
 function processHistoricalData(rawData) {

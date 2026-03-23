@@ -665,6 +665,21 @@ describe('dataService', () => {
     });
 
     describe('getCalendarData', () => {
+        beforeEach(() => {
+            // fetchPortfolioData() now calls fetch() directly (not d3.json) for
+            // holdings_details.json and fund_data.json.  Default to null so tests
+            // that only care about historical processing don't accidentally get a
+            // real-time entry from a previous test's leaked implementation.
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json') || url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
+                }
+                return Promise.reject(
+                    new Error(`Unexpected fetch call in getCalendarData test: ${url}`)
+                );
+            });
+        });
+
         it('should successfully process calendar data', async () => {
             // Arrange
             const mockHistoricalCsv = [
@@ -923,13 +938,16 @@ describe('dataService', () => {
                 if (url.includes('fx')) {
                     return Promise.resolve(mockFx);
                 }
-                if (url.includes('holdings')) {
-                    return Promise.resolve(mockHoldings);
-                }
-                if (url.includes('fund')) {
-                    return Promise.resolve(mockFund);
-                }
                 return Promise.reject(new Error('Unexpected URL'));
+            });
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockFund) });
+                }
+                return Promise.reject(new Error(`Unexpected fetch: ${url}`));
             });
 
             // Act
@@ -998,6 +1016,19 @@ describe('dataService', () => {
         });
     });
     describe('additional coverage: processAndEnrichHoldings / createHoldingRow / processHistoricalData / calculateRealtimePnl', () => {
+        beforeEach(() => {
+            // fetchPortfolioData() uses fetch() directly — provide null defaults so
+            // getCalendarData tests that don't care about real-time data are isolated.
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json') || url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
+                }
+                return Promise.reject(
+                    new Error(`Unexpected fetch call in additional coverage test: ${url}`)
+                );
+            });
+        });
+
         it('computes non-zero pnlPercentage and populates .pnl-percentage (lines 52,57,101)', async () => {
             const mockHoldings = { ZZZZ: { shares: '3', average_price: '100.00', name: 'Zeta' } };
             const mockPrices = { ZZZZ: '110.00' };
@@ -1101,13 +1132,23 @@ describe('dataService', () => {
                 if (url.includes('fx')) {
                     return Promise.resolve({ rates: { USD: 1.0 } });
                 }
-                if (url.includes('holdings')) {
-                    return Promise.resolve({ AAPL: { shares: '10' }, MSFT: { shares: '5' } });
-                }
-                if (url.includes('fund')) {
-                    return Promise.resolve({ AAPL: '100.00' });
-                }
                 return Promise.reject(new Error('Unexpected URL'));
+            });
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () =>
+                            Promise.resolve({ AAPL: { shares: '10' }, MSFT: { shares: '5' } }),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ AAPL: '100.00' }),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected fetch: ${url}`));
             });
             getNyDate.mockReturnValue(new Date('2024-01-15T12:00:00Z'));
 

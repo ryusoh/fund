@@ -1,9 +1,7 @@
 import { logger } from '@utils/logger.js';
 import { getNyDate, isTradingDay } from '@utils/date.js';
+import { fetchPortfolioData } from '@services/dataService.js';
 
-// URLs relative to the application root
-const HOLDINGS_DETAILS_URL = '../data/holdings_details.json';
-const FUND_DATA_URL = '../data/fund_data.json';
 const FX_DATA_URL = '../data/fx_data.json';
 
 async function fetchJSON(url) {
@@ -36,9 +34,8 @@ export async function fetchRealTimeData() {
             // Let's allow it for now, as isTradingDay might strict check weekends.
         }
 
-        const [holdings, prices, fx] = await Promise.all([
-            fetchJSON(HOLDINGS_DETAILS_URL),
-            fetchJSON(FUND_DATA_URL),
+        const [{ holdingsDetails: holdings, prices }, fx] = await Promise.all([
+            fetchPortfolioData(),
             fetchJSON(FX_DATA_URL),
         ]);
 

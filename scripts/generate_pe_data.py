@@ -14,12 +14,12 @@ Methodology (V5):
 
 from __future__ import annotations
 
-import sys
 import concurrent.futures
 import json
 import math
 import os
 import re
+import sys
 import tempfile
 import urllib.parse
 from datetime import datetime, timedelta
@@ -565,7 +565,10 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             try:
                 annual = stock.income_stmt
             except Exception as e:
-                print(f"Warning: Exception fetching annual income statement for {symbol}: {e}", file=sys.stderr)
+                print(
+                    f"Warning: Exception fetching annual income statement for {symbol}: {e}",
+                    file=sys.stderr,
+                )
                 annual = pd.DataFrame()
 
             if annual is not None and not annual.empty and "Basic EPS" in annual.index:
@@ -583,7 +586,10 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             try:
                 quarterly = stock.quarterly_income_stmt
             except Exception as e:
-                print(f"Warning: Exception fetching quarterly income statement for {symbol}: {e}", file=sys.stderr)
+                print(
+                    f"Warning: Exception fetching quarterly income statement for {symbol}: {e}",
+                    file=sys.stderr,
+                )
                 quarterly = pd.DataFrame()
 
             quarterly_anchors = {}
@@ -771,7 +777,10 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
         if pe is not None and math.isfinite(pe) and pe > 0:
             return pd.Series(float(pe), index=dates)
     except Exception as e:
-        print(f"Warning: Exception fetching fallback trailing PE for ETF {ticker}: {e}", file=sys.stderr)
+        print(
+            f"Warning: Exception fetching fallback trailing PE for ETF {ticker}: {e}",
+            file=sys.stderr,
+        )
     return None
 
 
