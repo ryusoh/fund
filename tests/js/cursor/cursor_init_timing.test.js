@@ -25,6 +25,13 @@ describe('Cursor Initialization Timing', () => {
         cursorVendorContent = fs.readFileSync(CURSOR_VENDOR_PATH, 'utf-8');
     });
 
+    beforeEach(() => {
+        // Clean up global state before each test
+        delete window.gsap;
+        delete window.cursorInstances;
+        jest.clearAllMocks();
+    });
+
     describe('cursor-init.js', () => {
         test('should wait for DOMContentLoaded before initializing', () => {
             // The file must listen for DOMContentLoaded to ensure GSAP is loaded
@@ -93,6 +100,97 @@ describe('Cursor Initialization Timing', () => {
         test('CustomCursor should check for touch devices', () => {
             // Should disable cursor on touch devices
             expect(cursorVendorContent).toContain('isTouchDevice');
+        });
+    });
+
+    describe('cursor-init.js execution', () => {
+        beforeEach(() => {
+            // Reset modules to allow re-importing cursor-init.js
+            jest.resetModules();
+        });
+
+        test('should initialize cursor when GSAP is available and DOM is ready', async () => {
+            // Mock GSAP
+            window.gsap = {
+                registerPlugin: jest.fn(),
+                to: jest.fn(),
+                timeline: jest.fn(),
+                utils: { clamp: jest.fn(), mapRange: jest.fn() },
+            };
+
+            // Mock document.readyState to simulate DOM already loaded
+            Object.defineProperty(document, 'readyState', {
+                value: 'complete',
+                configurable: true,
+            });
+
+            // Import the module - this will execute the code
+            await import('../../../js/cursor-init.js');
+
+            // Give it time to initialize
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            // Verify cursor was initialized
+            expect(window.cursorInstances).toBeDefined();
+            expect(window.cursorInstances.cursor).toBeDefined();
+        });
+
+        test('should wait for DOMContentLoaded when document is still loading', async () => {
+            // Reset modules first
+            jest.resetModules();
+
+            // Mock GSAP
+            window.gsap = {
+                registerPlugin: jest.fn(),
+                to: jest.fn(),
+                timeline: jest.fn(),
+                utils: { clamp: jest.fn(), mapRange: jest.fn() },
+            };
+
+            // Mock document.readyState to simulate loading state
+            Object.defineProperty(document, 'readyState', {
+                value: 'loading',
+                configurable: true,
+            });
+
+            // Import the module
+            await import('../../../js/cursor-init.js');
+
+            // Cursor should NOT be initialized yet
+            expect(window.cursorInstances).toBeUndefined();
+
+            // Trigger DOMContentLoaded event
+            document.dispatchEvent(new Event('DOMContentLoaded'));
+
+            // Give it time to initialize
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            // Now cursor should be initialized
+            expect(window.cursorInstances).toBeDefined();
+            expect(window.cursorInstances.cursor).toBeDefined();
+        });
+
+        test('should not initialize when GSAP is not available', async () => {
+            // Reset modules first
+            jest.resetModules();
+
+            // Ensure GSAP is NOT available
+            delete window.gsap;
+
+            // Mock document.readyState to simulate DOM already loaded
+            Object.defineProperty(document, 'readyState', {
+                value: 'complete',
+                configurable: true,
+            });
+
+            // Import the module
+            await import('../../../js/cursor-init.js');
+
+            // Give it time to potentially initialize
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            // Cursor should NOT be initialized because GSAP is missing
+            expect(window.cursorInstances).toBeUndefined();
         });
     });
 });
