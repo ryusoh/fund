@@ -239,7 +239,7 @@ describe('formatCurrencyChange', () => {
     });
 
     it('should handle custom formatter that returns un-prefixed values', () => {
-        expect(formatting.formatCurrencyChange(10, val => `VAL:${val}`)).toBe('+VAL:10');
+        expect(formatting.formatCurrencyChange(10, (val) => `VAL:${val}`)).toBe('+VAL:10');
     });
 
     it('should trigger defaultCurrencyFormatter with non-finite values via formatSummaryBlock', () => {
@@ -249,7 +249,7 @@ describe('formatCurrencyChange', () => {
             endValue: Infinity,
             netChange: 10,
             startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31')
+            endDate: new Date('2024-12-31'),
         };
         const result = formatting.formatSummaryBlock('Test', summary, { from: '2024-01-01' });
 
