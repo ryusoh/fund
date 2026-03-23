@@ -4,9 +4,7 @@ import {
     autocompleteState,
 } from '../../../../js/transactions/terminal/autocomplete.js';
 import {
-    COMMAND_ALIASES,
     STATS_SUBCOMMANDS,
-    PLOT_SUBCOMMANDS,
     HELP_SUBCOMMANDS,
 } from '../../../../js/transactions/terminal/constants.js';
 
