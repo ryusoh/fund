@@ -100,7 +100,14 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                     logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
 
     except Exception as e:
-        logging.error(f"Error fetching from Alpaca: {e}")
+        error_msg = str(e)
+        safe_api_key = os.environ.get("ALPACA_API_KEY")
+        safe_api_secret = os.environ.get("ALPACA_API_SECRET")
+        if safe_api_key:
+            error_msg = error_msg.replace(safe_api_key, "***")
+        if safe_api_secret:
+            error_msg = error_msg.replace(safe_api_secret, "***")
+        logging.error(f"Error fetching from Alpaca: {error_msg}")
 
     return data
 
@@ -196,13 +203,21 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                                     data[t] = float(p)
                                     logging.info(f"Fetched price for {t} from Polygon.io: {p}")
                 except Exception as e:
-                    logging.error(f"Error fetching snapshots from Polygon.io: {e}")
+                    error_msg = str(e)
+                    safe_api_key = os.environ.get("POLYGON_KEY")
+                    if safe_api_key:
+                        error_msg = error_msg.replace(safe_api_key, "***")
+                    logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
                 "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
             )
         except Exception as e:
-            logging.error(f"An error occurred with Polygon.io: {e}")
+            error_msg = str(e)
+            api_key_fallback = os.environ.get("POLYGON_KEY")
+            if api_key_fallback:
+                error_msg = error_msg.replace(api_key_fallback, "***")
+            logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data
 
