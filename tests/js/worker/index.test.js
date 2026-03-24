@@ -224,6 +224,17 @@ describe('Alpaca feed parameter', () => {
         const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
         expect((await res.json()).VT).toBe(139.49);
     });
+
+    it('authenticates with APCA header auth, not Basic auth', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+
+        await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        const [, options] = mockFetch.mock.calls[0];
+        expect(options.headers['APCA-API-KEY-ID']).toBe('test-key');
+        expect(options.headers['APCA-API-SECRET-KEY']).toBe('test-secret');
+        expect(options.headers['Authorization']).toBeUndefined();
+    });
 });
 
 // ---------------------------------------------------------------------------

@@ -73,10 +73,10 @@ async function fetchFromAlpaca(symbols, env) {
     const feed = isOvernightET() ? 'overnight' : '';
     const feedParam = feed ? `&feed=${feed}` : '';
     const url = `${ALPACA_SNAPSHOTS_URL}?symbols=${encodeURIComponent(symbols.join(','))}${feedParam}`;
-    const credentials = btoa(`${env.ALPACA_API_KEY}:${env.ALPACA_API_SECRET}`);
     const response = await fetch(url, {
         headers: {
-            Authorization: `Basic ${credentials}`,
+            'APCA-API-KEY-ID': env.ALPACA_API_KEY,
+            'APCA-API-SECRET-KEY': env.ALPACA_API_SECRET,
             Accept: 'application/json',
         },
     });
