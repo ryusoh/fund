@@ -96,14 +96,22 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         const volatilityData = [];
         const windowSize = 90;
 
+        // Bolt: Optimize O(N * W) slice allocations by iterating indices directly over dailyReturns array
         for (let i = windowSize - 1; i < dailyReturns.length; i++) {
-            const window = dailyReturns.slice(i - windowSize + 1, i + 1);
-            const values = window.map((d) => d.value);
+            let sum = 0;
+            const startIdx = i - windowSize + 1;
 
-            // Standard Deviation
-            const n = values.length;
-            const mean = values.reduce((a, b) => a + b, 0) / n;
-            const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
+            for (let j = startIdx; j <= i; j++) {
+                sum += dailyReturns[j].value;
+            }
+            const mean = sum / windowSize;
+
+            let varianceSum = 0;
+            for (let j = startIdx; j <= i; j++) {
+                varianceSum += Math.pow(dailyReturns[j].value - mean, 2);
+            }
+            const variance = varianceSum / (windowSize - 1);
+
             const dailyStdDev = Math.sqrt(variance);
 
             // Annualize (multiply by sqrt(252))
