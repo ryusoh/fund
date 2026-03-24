@@ -84,15 +84,27 @@ async function fetchFromAlpaca(symbols, env) {
         throw new Error(`Alpaca API error: ${response.status} ${response.statusText}`);
     }
     const data = await response.json();
-    // Transform { snapshots: { VT: { latestTrade: { p: 139.49, ... }, ... }, ... } }
+    // Transform { snapshots: { VT: { latestTrade: { p: 139.49, t: '...', ... }, ... }, ... } }
     // into { VT: 139.49, ... }
+    // During overnight, skip tickers whose last trade predates today (UTC) — they didn't
+    // trade in this overnight session and the caller will fill the gap via Yahoo Finance.
     const snapshots = data.snapshots ?? data; // API may return object directly
+    const todayUTC = new Date().toISOString().slice(0, 10);
     const prices = {};
     for (const [ticker, snapshot] of Object.entries(snapshots)) {
         const price = snapshot?.latestTrade?.p ?? null;
-        if (price !== null) {
-            prices[ticker] = price;
+        if (price === null) {
+            continue;
         }
+        if (isOvernightET()) {
+            const tradeDate = snapshot?.latestTrade?.t
+                ? new Date(snapshot.latestTrade.t).toISOString().slice(0, 10)
+                : null;
+            if (!tradeDate || tradeDate < todayUTC) {
+                continue;
+            }
+        }
+        prices[ticker] = price;
     }
     return prices;
 }
@@ -222,24 +234,34 @@ export default {
             return jsonResponse(cached, 200, origin, { 'X-Cache': 'HIT' });
         }
 
-        // 2. Fetch from Alpaca, fall back to Yahoo Finance
-        let prices;
+        // 2. Fetch prices: Alpaca first, Yahoo Finance for any gaps
+        let prices = {};
         try {
             prices = await fetchFromAlpaca(symbols, env);
         } catch {
+            // Alpaca failed or was skipped (extended session) — Yahoo handles everything
+        }
+
+        // Supplement any symbols Alpaca didn't return (no overnight trade, extended session, etc.)
+        const missingFromAlpaca = symbols.filter((s) => !(s in prices));
+        if (missingFromAlpaca.length > 0) {
             try {
-                prices = await fetchFromYahoo(symbols, env);
+                const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
+                Object.assign(prices, yahooPrices);
             } catch (yahooErr) {
-                // 3. Both sources failed — serve last-known-good value (stale-on-error)
-                const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
-                if (stale) {
-                    return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+                if (Object.keys(prices).length === 0) {
+                    // 3. Both sources failed entirely — serve last-known-good value (stale-on-error)
+                    const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+                    if (stale) {
+                        return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+                    }
+                    return jsonResponse(
+                        { error: 'Failed to fetch prices', detail: yahooErr.message },
+                        502,
+                        origin
+                    );
                 }
-                return jsonResponse(
-                    { error: 'Failed to fetch prices', detail: yahooErr.message },
-                    502,
-                    origin
-                );
+                // Partial: Alpaca got some tickers, Yahoo failed for the rest — serve what we have
             }
         }
 

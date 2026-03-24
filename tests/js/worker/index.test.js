@@ -225,6 +225,53 @@ describe('Alpaca feed parameter', () => {
         expect((await res.json()).VT).toBe(139.49);
     });
 
+    it('skips stale overnight tickers from Alpaca and fills them via Yahoo Finance', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/24/2026, 12:00:00 AM');
+        // VT has a fresh trade today; ANET's last trade is from yesterday → stale
+        const todayISO = new Date().toISOString().slice(0, 10);
+        const yesterdayISO = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        mockFetch
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    snapshots: {
+                        VT: { latestTrade: { p: 137.8, t: `${todayISO}T03:00:00Z` } },
+                        ANET: { latestTrade: { p: 128.14, t: `${yesterdayISO}T07:59:00Z` } },
+                    },
+                }),
+            })
+            .mockResolvedValueOnce(
+                yahooOk([{ symbol: 'ANET', regularMarketPrice: 135.88, regularMarketTime: 1000 }])
+            );
+
+        const res = await worker.fetch(makeReq('VT,ANET'), makeEnv(), makeCtx());
+        const json = await res.json();
+
+        expect(json.VT).toBe(137.8); // fresh overnight trade from Alpaca
+        expect(json.ANET).toBe(135.88); // stale on Alpaca → Yahoo fallback
+        const yahooUrl = mockFetch.mock.calls[1][0];
+        expect(yahooUrl).toContain('ANET');
+        expect(yahooUrl).not.toContain('VT');
+    });
+
+    it('keeps fresh overnight tickers from Alpaca and does not call Yahoo for them', async () => {
+        jest.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('3/24/2026, 12:00:00 AM');
+        const todayISO = new Date().toISOString().slice(0, 10);
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                snapshots: {
+                    VT: { latestTrade: { p: 137.8, t: `${todayISO}T03:00:00Z` } },
+                },
+            }),
+        });
+
+        const res = await worker.fetch(makeReq('VT'), makeEnv(), makeCtx());
+
+        expect(mockFetch).toHaveBeenCalledTimes(1); // no Yahoo call
+        expect((await res.json()).VT).toBe(137.8);
+    });
+
     it('authenticates with APCA header auth, not Basic auth', async () => {
         mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
 
