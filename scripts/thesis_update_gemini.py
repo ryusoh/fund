@@ -243,7 +243,11 @@ def main(argv: List[str]) -> int:
             args.allow_unsafe,
         )
     except Exception as exc:  # pragma: no cover - runtime error path
-        raise SystemExit(f"Gemini API call failed: {exc}") from exc
+        error_msg = str(exc)
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if api_key:
+            error_msg = error_msg.replace(api_key, "***")
+        raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
 
     print(output_text)
     if args.output:
