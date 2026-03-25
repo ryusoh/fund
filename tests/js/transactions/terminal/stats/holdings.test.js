@@ -68,7 +68,7 @@ describe('Holdings Stats Module', () => {
         test('uses cache if already loaded and falls back to USD if currency not found', async () => {
             const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
             // First call to populate cache
-            globalFetchSpy.mockImplementationOnce((url) => {
+            globalFetchSpy.mockImplementationOnce(() => {
                 return Promise.resolve({
                     ok: true,
                     json: async () => ({
