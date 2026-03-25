@@ -34,6 +34,85 @@ describe('Holdings Stats Module', () => {
     });
 
     describe('getHoldingsText', () => {
+        beforeEach(() => {
+            // reset cache
+            require('@js/transactions/terminal/stats/holdings.js').__holdingsDataCache = null;
+        });
+
+        test('handles invalid currency and empty average_price/total_cost', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            globalFetchSpy.mockImplementation((url) => {
+                if (url.includes('holdings.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: async () => ({
+                            USD: [
+                                {
+                                    security: 'MISSING',
+                                    shares: null,
+                                    average_price: null,
+                                    total_cost: undefined,
+                                },
+                            ],
+                        }),
+                    });
+                }
+            });
+            const result = await moduleLocal.getHoldingsText('   '); // Will trim and fallback to USD
+            expect(result).toContain('MISSING');
+            expect(result).toContain('0.00'); // shares fallbacks to 0
+            expect(result).toContain('N/A'); // avgPrice
+            expect(result).toContain('N/A'); // totalCost
+        });
+
+        test('uses cache if already loaded and falls back to USD if currency not found', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            // First call to populate cache
+            globalFetchSpy.mockImplementationOnce((url) => {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({
+                        USD: [{ security: 'CASH', shares: 100, average_price: 1, total_cost: 100 }],
+                    }),
+                });
+            });
+            await moduleLocal.getHoldingsText('USD');
+
+            // Second call with unknown currency GBP (falls back to USD)
+            globalFetchSpy.mockClear();
+            const result = await moduleLocal.getHoldingsText('GBP');
+            expect(globalFetchSpy).not.toHaveBeenCalled();
+            expect(result).toContain('CASH');
+        });
+
+        test('catches exception on json fetch and logs warning', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            globalFetchSpy.mockImplementation((url) => {
+                if (url.includes('holdings.json')) {
+                    return Promise.reject(new Error('JSON FETCH ERROR'));
+                }
+                if (url.includes('holdings.txt')) {
+                    return Promise.resolve({ ok: true, text: async () => 'TEXT FALLBACK' });
+                }
+            });
+            const result = await moduleLocal.getHoldingsText();
+            expect(result).toBe('TEXT FALLBACK');
+        });
+
+        test('catches exception on text fetch and returns error string', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            globalFetchSpy.mockImplementation((url) => {
+                if (url.includes('holdings.json')) {
+                    return Promise.resolve({ ok: false });
+                }
+                if (url.includes('holdings.txt')) {
+                    return Promise.reject(new Error('TEXT FETCH ERROR'));
+                }
+            });
+            const result = await moduleLocal.getHoldingsText();
+            expect(result).toBe('Error loading holdings data.');
+        });
+
         test('fetches and formats JSON holding data correctly for USD', async () => {
             // Arrange
             const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
@@ -140,6 +219,28 @@ describe('Holdings Stats Module', () => {
     });
 
     describe('getHoldingsDebugText', () => {
+        test('skips tickers with infinite shares', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const lotsByTicker = new Map([
+                ['INF_CORP', [{ qty: Infinity }]],
+                ['GOOD_CORP', [{ qty: 10 }]],
+            ]);
+            buildLotSnapshotsMock.mockReturnValue({ lotsByTicker });
+
+            const result = await moduleLocal.getHoldingsDebugText();
+            expect(result).not.toContain('INF_CORP');
+            expect(result).toContain('GOOD_CORP');
+        });
+
+        test('returns "No non-zero share balances" when all are zero', async () => {
+            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const lotsByTicker = new Map([['ZERO_CORP', [{ qty: 0 }]]]);
+            buildLotSnapshotsMock.mockReturnValue({ lotsByTicker });
+
+            const result = await moduleLocal.getHoldingsDebugText();
+            expect(result).toBe('No non-zero share balances derived from transactions.');
+        });
+
         test('returns error string if lotsByTicker is null or empty', async () => {
             // Arrange
             const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');

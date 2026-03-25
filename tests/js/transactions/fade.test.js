@@ -115,16 +115,22 @@ describe('Fade Effect Logic', () => {
     });
 
     test('updateOutputFade skips non-element nodes in mobile view', () => {
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: 500,
-        }); // Mobile width
+        Object.defineProperty(window, 'innerWidth', { value: 500, configurable: true });
 
         const textNode = document.createTextNode('test');
         outputContainer.appendChild(textNode);
 
+        const div = document.createElement('div');
+        outputContainer.appendChild(div);
+
+        // Falsy child mock
+        Object.defineProperty(outputContainer, 'children', {
+            get: () => [null, textNode, div],
+            configurable: true,
+        });
+
         requestFadeUpdate(outputContainer);
+        expect(div.style.opacity).toBe('1');
     });
 
     test('updateOutputFade bails if viewHeight is <= 0', () => {
@@ -169,6 +175,25 @@ describe('Fade Effect Logic', () => {
         requestFadeUpdate(outputContainer);
 
         expect(child0.style.opacity).toBe('');
+    });
+
+    test('updateOutputFade skips falsy children and non-element nodes in desktop view', () => {
+        const textNode = document.createTextNode('test');
+        outputContainer.appendChild(textNode);
+
+        const div = document.createElement('div');
+        outputContainer.appendChild(div);
+
+        // For falsy child, mock children getter
+        Object.defineProperty(outputContainer, 'children', {
+            get: () => [null, undefined, textNode, div],
+            configurable: true,
+        });
+
+        requestFadeUpdate(outputContainer);
+
+        // Assert div got opacity 1 since it's the last child
+        expect(div.style.opacity).toBe('1');
     });
 
     test('updateOutputFade skips non-element nodes in desktop view', () => {
