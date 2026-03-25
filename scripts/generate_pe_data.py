@@ -935,10 +935,10 @@ def scrape_msci_forward_pe() -> Optional[float]:
 
 def scrape_wsj_forward_pe() -> Optional[float]:
     """Scrape S&P 500 Forward P/E Estimate from WSJ Market Data."""
-    try:
-        target_url = "https://www.wsj.com/market-data/stocks/peyields"
-        scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+    target_url = "https://www.wsj.com/market-data/stocks/peyields"
+    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
 
+    try:
         if scraper_api_key:
             payload = {
                 'api_key': scraper_api_key,
