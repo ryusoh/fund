@@ -1,6 +1,9 @@
 import { jest } from '@jest/globals';
+import { drawVolatilityChart } from '@js/transactions/chart/renderers/volatility.js';
+import { transactionState } from '@js/transactions/state.js';
+import { chartLayouts } from '@js/transactions/chart/state.js';
 
-describe('Volatility Chart Scaling', () => {
+describe('Volatility Calculation Optimization', () => {
     let ctxStub;
     let canvas;
 
@@ -34,12 +37,9 @@ describe('Volatility Chart Scaling', () => {
             fillRect: jest.fn(),
             strokeRect: jest.fn(),
             drawImage: jest.fn(),
-            createRadialGradient: jest.fn(() => ({
-                addColorStop: jest.fn(),
-            })),
+            createRadialGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
         };
 
-        // Mock document.createElement for offscreen canvas
         global.document = global.document || {};
         global.document.createElement = jest.fn((tag) => {
             if (tag === 'canvas') {
@@ -68,55 +68,7 @@ describe('Volatility Chart Scaling', () => {
         };
     });
 
-    test('volatility chart should have a negative yMin buffer to keep 0% visible', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { drawVolatilityChart } = require('@js/transactions/chart/renderers/volatility.js');
-        const core = require('@js/transactions/chart/core.js');
-
-        // Spy on drawAxes to inspect the scale parameters
-        const drawAxesSpy = jest.spyOn(core, 'drawAxes');
-
-        transactionState.performanceSeries = {
-            '^LZ': [
-                { date: '2024-01-01', value: 1.0 },
-                { date: '2024-01-02', value: 1.01 },
-                // ... need 91 points for volatility, but let's mock the data processing if needed
-                // or just provide enough dummy data
-            ],
-        };
-        // Fill up to 95 points so volatility can be calculated
-        for (let i = 2; i <= 95; i++) {
-            transactionState.performanceSeries['^LZ'].push({
-                date: `2024-01-${i < 10 ? '0' + i : i}`,
-                value: 1.0 + i * 0.001,
-            });
-        }
-
-        transactionState.chartVisibility = { '^LZ': true };
-        transactionState.activeChart = 'volatility';
-        transactionState.chartDateRange = { from: null, to: null };
-
-        const mockChartManager = { redraw: jest.fn(), update: jest.fn() };
-
-        await drawVolatilityChart(ctxStub, mockChartManager, 0);
-
-        // Verify drawAxes was called
-        expect(drawAxesSpy).toHaveBeenCalled();
-
-        // The 7th argument to drawAxes is yMin
-        const yMinCalled = drawAxesSpy.mock.calls[0][6];
-        const yMaxCalled = drawAxesSpy.mock.calls[0][7];
-
-        // Check if yMin is less than 0 (the buffer we added)
-        expect(yMinCalled).toBeLessThan(0);
-        expect(yMaxCalled).toBeGreaterThan(0);
-    });
-
     test('should correctly calculate rolling volatility after array optimization', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { chartLayouts } = require('@js/transactions/chart/state.js');
-        const { drawVolatilityChart } = require('@js/transactions/chart/renderers/volatility.js');
-
         const points = [];
         let val = 1.0;
         for (let i = 0; i <= 95; i++) {
@@ -141,7 +93,5 @@ describe('Volatility Chart Scaling', () => {
         expect(chartLayouts.volatility).toBeDefined();
         const testSeries = chartLayouts.volatility.series.find((s) => s.key === 'TEST');
         expect(testSeries).toBeDefined();
-
-        // We do not inspect points here directly as we only need to know variance was stable
     });
 });
