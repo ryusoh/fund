@@ -178,9 +178,12 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                 : dates.map((_, idx) => Number(mappedValues[idx] ?? 0));
         percentSeriesMap[ticker] = percentValues;
         if (valueMode === 'absolute') {
-            chartData[ticker] = percentValues.map(
-                (pct, idx) => ((totalValuesConverted[idx] ?? 0) * pct) / 100
-            );
+            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
+            const absoluteValues = new Array(percentValues.length);
+            for (let i = 0; i < percentValues.length; i += 1) {
+                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * percentValues[i]) / 100;
+            }
+            chartData[ticker] = absoluteValues;
         } else {
             chartData[ticker] = percentValues;
         }
@@ -312,7 +315,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     );
 
     // 7. Render Stacked Areas
-    let cumulativeValues = new Array(dates.length).fill(0);
+    const cumulativeValues = new Array(dates.length).fill(0);
 
     activeTickerOrder.forEach((ticker, tickerIndex) => {
         const values =
@@ -345,7 +348,10 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fill();
         ctx.stroke();
 
-        cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
+        // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
+        for (let i = 0; i < cumulativeValues.length; i += 1) {
+            cumulativeValues[i] += values[i];
+        }
     });
 
     // 8. Prepare Legend and Crosshair Data
