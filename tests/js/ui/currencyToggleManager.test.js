@@ -170,7 +170,7 @@ describe('currencyToggleManager', () => {
     });
 
     it('handles empty currencyButtons array when activating currency', () => {
-        renderToggle(`<div id="currencyToggleContainer"></div>`);
+        renderToggle('<div id="currencyToggleContainer"></div>');
         loadModule();
         expect(() => applyCurrencySelection('JPY')).not.toThrow();
     });

@@ -374,7 +374,9 @@ describe('Responsive Utilities', () => {
             // Give it 0 height rect
             heatmapSvg.getBoundingClientRect = jest.fn().mockReturnValue({ top: 100, bottom: 100 });
             calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(null);
-            heatmapRoot.getBoundingClientRect = jest.fn().mockReturnValue({ top: 100, bottom: 100 });
+            heatmapRoot.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, bottom: 100 });
 
             // Ensure no domains exist to fall back to heatmap rects
             const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
@@ -417,7 +419,9 @@ describe('Responsive Utilities', () => {
 
             const singleDomain = document.createElement('div');
             singleDomain.setAttribute('data-ch-domain', 'true');
-            singleDomain.getBoundingClientRect = jest.fn().mockReturnValue({ top: 100, height: 50, bottom: 150 });
+            singleDomain.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, height: 50, bottom: 150 });
             heatmapRoot.appendChild(singleDomain);
 
             responsive.initCalendarResponsiveHandlers();

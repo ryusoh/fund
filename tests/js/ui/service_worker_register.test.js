@@ -112,14 +112,17 @@ describe('service_worker_register.js', () => {
             value: {
                 get register() {
                     throw new Error('Sync boom');
-                }
+                },
             },
         });
         triggerLoadImmediately();
         withCurrentScript({}, () => {
             loadScript();
         });
-        expect(consoleWarnSpy).toHaveBeenCalledWith('Caught exception calling service worker register:', expect.any(Error));
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Caught exception calling service worker register:',
+            expect.any(Error)
+        );
         consoleWarnSpy.mockRestore();
     });
 
@@ -133,20 +136,25 @@ describe('service_worker_register.js', () => {
                     // Mock isLocalHostname to throw, which is called at the top of the IIFE
                     const originalHostname = window.__SW_FORCE_SW_HOSTNAME__;
                     Object.defineProperty(window, '__SW_FORCE_SW_HOSTNAME__', {
-                        get: () => { throw new Error('Global IIFE error'); },
-                        configurable: true
+                        get: () => {
+                            throw new Error('Global IIFE error');
+                        },
+                        configurable: true,
                     });
 
                     require(SCRIPT_PATH);
 
                     Object.defineProperty(window, '__SW_FORCE_SW_HOSTNAME__', {
                         value: originalHostname,
-                        configurable: true
+                        configurable: true,
                     });
                 });
             }).not.toThrow();
         });
-        expect(consoleWarnSpy).toHaveBeenCalledWith('Caught exception initializing service worker:', expect.any(Error));
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Caught exception initializing service worker:',
+            expect.any(Error)
+        );
         consoleWarnSpy.mockRestore();
     });
 });
