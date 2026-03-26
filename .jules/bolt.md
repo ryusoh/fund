@@ -52,3 +52,8 @@
 
 **Learning:** In frontend chart rendering loops, using `slice()` and `map()` inside a rolling calculation (like volatility) creates O(N \* W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction.
 **Action:** Replace `slice()` and `map()` inside tight loops with direct index-based `for` loops over the original array to achieve O(1) space overhead per iteration.
+
+## $(date +%Y-%m-%d) - Optimize O(N \* W) slice allocations in rolling calculations
+
+**Learning:** In frontend chart rendering loops, using `slice()` and array allocations inside a rolling calculation (like Beta or Volatility) creates O(N \* W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction, especially as N (number of days) and W (window size) grow.
+**Action:** Replace `slice()` inside tight loops with direct index-based `for` loops over the original array to achieve O(1) space overhead per iteration and significantly faster execution times by avoiding intermediate array creations.
