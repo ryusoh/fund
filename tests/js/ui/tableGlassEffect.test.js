@@ -106,6 +106,30 @@ describe('TableGlassEffect', () => {
         jest.restoreAllMocks();
     });
 
+    test('pauseResize sets resizePaused to true', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        expect(effect.resizePaused).toBe(false);
+        effect.pauseResize();
+        expect(effect.resizePaused).toBe(true);
+    });
+
+    test('resumeResize sets resizePaused to false and calls resize', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.resize = jest.fn();
+        effect.resizePaused = true;
+        effect.resumeResize();
+        expect(effect.resizePaused).toBe(false);
+        expect(effect.resize).toHaveBeenCalled();
+    });
+
+    test('resize returns immediately if resizePaused is true', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.resizePaused = true;
+        effect.canvas.style.top = '123px';
+        effect.resize();
+        expect(effect.canvas.style.top).toBe('123px'); // Doesn't change
+    });
+
     it('should initialize and append canvas', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         const canvas = container.querySelector('canvas');
