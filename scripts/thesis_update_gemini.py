@@ -233,6 +233,7 @@ def main(argv: List[str]) -> int:
         evidence_sections,
     )
 
+    api_key = os.environ.get("GEMINI_API_KEY")
     try:
         print(f"[info] Calling Gemini model '{args.model}' (temperature={args.temperature})...")
         output_text = call_gemini(
@@ -244,7 +245,6 @@ def main(argv: List[str]) -> int:
         )
     except Exception as exc:  # pragma: no cover - runtime error path
         error_msg = str(exc)
-        api_key = os.environ.get("GEMINI_API_KEY")
         if api_key:
             error_msg = error_msg.replace(api_key, "***")
         raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
