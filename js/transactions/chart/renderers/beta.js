@@ -126,31 +126,36 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
 
             // Master timeline from market returns
             for (let i = windowSize - 1; i < marketReturns.length; i++) {
-                const mWindow = marketReturns.slice(i - windowSize + 1, i + 1);
-
                 if (key === MARKET_REF) {
                     betaData.push({ date: marketReturns[i].date, value: 1.0 });
                     continue;
                 }
 
+                // Bolt: Optimize O(N * W) slice allocations by iterating indices directly over marketReturns array
+                const startIdx = i - windowSize + 1;
                 const aValues = [];
                 const mValues = [];
+                let mSum = 0;
+                let aSum = 0;
 
-                mWindow.forEach((mR) => {
+                for (let k = startIdx; k <= i; k++) {
+                    const mR = marketReturns[k];
                     const aVal = assetReturnMap.get(mR.date);
                     if (aVal !== undefined) {
                         mValues.push(mR.val);
                         aValues.push(aVal);
+                        mSum += mR.val;
+                        aSum += aVal;
                     }
-                });
-
-                if (aValues.length < windowSize * 0.8) {
-                    continue;
                 }
 
                 const n = aValues.length;
-                const mMean = mValues.reduce((a, b) => a + b, 0) / n;
-                const aMean = aValues.reduce((a, b) => a + b, 0) / n;
+                if (n < windowSize * 0.8) {
+                    continue;
+                }
+
+                const mMean = mSum / n;
+                const aMean = aSum / n;
 
                 let cov = 0;
                 let mVar = 0;
