@@ -1,4 +1,5 @@
 ## 2025-03-28 - [CRITICAL] Fix Resource Leak in Temporary Directories
+
 **Vulnerability:** A temporary directory was being created via `tempfile.mkdtemp` in `scripts/generate_pe_data.py` to prevent symlink attacks, but it was not explicitly cleaned up after execution.
 **Learning:** Hardcoding `/tmp` paths was initially done to avoid permission errors in CI environments, but using predictable paths opens up security vulnerabilities. Furthermore, `os.getuid()` is not available on Windows, breaking cross-platform compatibility. Lastly, while `tempfile.mkdtemp` creates secure random directories, it requires explicit cleanup logic (unlike `TemporaryDirectory`) to prevent inode exhaustion, especially at the module level where contexts can't be easily managed. This was observed to be missing in certain scripts.
 **Prevention:** Instead of hardcoded paths, use `tempfile.mkdtemp` to generate unique, secure directories. To prevent resource leaks when used at the module level, register an `atexit` handler with `shutil.rmtree(path, ignore_errors=True)` to ensure cleanup on normal program termination.

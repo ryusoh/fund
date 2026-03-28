@@ -9,10 +9,17 @@ export function getSplitAdjustment(splitHistory, symbol, transactionDate) {
         return splitAdjustmentCache.get(cacheKey);
     }
 
-    const txDate = new Date(transactionDate);
-    const result = splitHistory
-        .filter((split) => split.symbol === symbol && new Date(split.splitDate) > txDate)
-        .reduce((cumulative, split) => cumulative * split.splitMultiplier, 1.0);
+    const txObj = new Date(transactionDate);
+    const txYYYYMMDD = `${txObj.getFullYear()}-${String(txObj.getMonth() + 1).padStart(2, '0')}-${String(txObj.getDate()).padStart(2, '0')}`;
+
+    let result = 1.0;
+
+    for (let i = 0; i < splitHistory.length; i++) {
+        const split = splitHistory[i];
+        if (split.symbol === symbol && split.splitDate > txYYYYMMDD) {
+            result *= split.splitMultiplier;
+        }
+    }
 
     splitAdjustmentCache.set(cacheKey, result);
     return result;
