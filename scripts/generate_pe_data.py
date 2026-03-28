@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import atexit
 import math
 import os
 import re
+import shutil
 import sys
 import tempfile
 import urllib.parse
@@ -35,6 +37,7 @@ try:
     # Configure yfinance to use a secure, user-specific temporary directory for timezone cache to avoid [Errno 17] in CI and prevent symlink attacks
     cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
     yf.set_tz_cache_location(cache_dir)
+    atexit.register(shutil.rmtree, cache_dir, ignore_errors=True)
 except ImportError as exc:
     raise SystemExit("yfinance is required. Install with: pip install yfinance") from exc
 
