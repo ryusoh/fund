@@ -485,6 +485,26 @@ class TestDoctorHelpers(unittest.TestCase):
             except Exception:
                 pass
 
+    @patch('scripts.commands.doctor._check_executable')
+    @patch('scripts.commands.doctor._ok')
+    @patch('scripts.commands.doctor._warn')
+    @patch('scripts.commands.doctor._info')
+    def test_doctor_argcomplete_exception(self, mock_info, mock_warn, mock_ok, mock_check_exec):
+        args = MagicMock()
+
+        # _ok is called twice: once for argcomplete importable, once for register-python-argcomplete
+        # We only want it to raise on the first call
+        def mock_ok_side_effect(msg):
+            if "argcomplete importable" in msg:
+                raise Exception("Mocked exception")
+
+        mock_ok.side_effect = mock_ok_side_effect
+
+        doctor._run(args)
+
+        # Verify that _warn was called indicating argcomplete was not importable
+        mock_warn.assert_any_call("argcomplete not importable: Mocked exception. Install with: pip install argcomplete")
+
 
 class TestCompleteDebug(unittest.TestCase):
     @patch('scripts.commands.complete_debug._get_top_commands')
@@ -576,6 +596,73 @@ class TestCompleteDebug(unittest.TestCase):
         complete_debug.add_parser(mock_subparsers)
         mock_subparsers.add_parser.assert_called_once()
 
+    def test_complete_debug_get_top_commands_match(self):
+        import argparse
+        mock_parser = MagicMock()
+        mock_action = MagicMock(spec=argparse._SubParsersAction)
+        mock_action.choices = {"holdings": MagicMock(), "fund-data": MagicMock()}
+        mock_parser._actions = [mock_action]
+        res = complete_debug._get_top_commands(mock_parser)
+        self.assertEqual(res, ["holdings", "fund-data"])
+
+
+class TestCLIEdgeCases(unittest.TestCase):
+    @patch('scripts.cli.pkgutil.iter_modules')
+    @patch('scripts.cli.importlib.import_module')
+    def test_cli_load_command_modules_exception(self, mock_import, mock_iter):
+        from scripts.cli import _load_command_modules
+        mock_iter.return_value = [MagicMock(name="mock_mod")]
+        mock_import.side_effect = Exception("Mocked exception")
+        names = _load_command_modules()
+        self.assertEqual(names, [])
+
+    @patch('scripts.cli.sys.exit')
+    @patch('scripts.cli.create_parser')
+    def test_cli_main_keyboard_interrupt(self, mock_create, mock_exit):
+        parser = MagicMock()
+        mock_create.return_value = parser
+        args = MagicMock()
+        args.command = "fund-data"
+        args.func.side_effect = KeyboardInterrupt()
+        parser.parse_args.return_value = args
+        cli_main()
+        mock_exit.assert_called_with(1)
+
+    @patch('scripts.cli.sys.exit')
+    @patch('scripts.cli.create_parser')
+    def test_cli_main_exception(self, mock_create, mock_exit):
+        parser = MagicMock()
+        mock_create.return_value = parser
+        args = MagicMock()
+        args.command = "fund-data"
+        args.func.side_effect = Exception("Mocked exception")
+        parser.parse_args.return_value = args
+        cli_main()
+        mock_exit.assert_called_with(1)
+
+    @patch('scripts.cli.create_parser')
+    def test_cli_main_argcomplete_exception(self, mock_create):
+        parser = MagicMock()
+        mock_create.return_value = parser
+        args = MagicMock()
+        args.command = "fund-data"
+        parser.parse_args.return_value = args
+        with patch.dict(sys.modules, {"argcomplete": None}):
+            cli_main()
+
+    def test_cli_module_execution(self):
+        import runpy
+        # To avoid the actual main executing and causing SystemExit, we just catch SystemExit
+        # Wait, if we mock scripts.cli.main we shouldn't execute the real one.
+        # run_module re-imports the code and executes it, which doesn't use the patched scripts.cli.main
+        # because runpy creates a new module namespace. Let's patch sys.exit instead of mock_main
+        # or better yet, mock main within the runpy context using a different approach.
+        with patch('sys.exit'):
+            with patch("sys.argv", ["fund"]):
+                try:
+                    runpy.run_module("scripts.cli", run_name="__main__")
+                except Exception:
+                    pass
 
 if __name__ == '__main__':
     unittest.main()
