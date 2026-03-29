@@ -1,0 +1,23 @@
+name: Claude PR Review
+
+on:
+    pull_request:
+        types: [opened, synchronize]
+
+jobs:
+    review:
+        if: github.actor != 'claude[bot]'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: write
+        steps:
+            - uses: anthropics/claude-code-action@v1
+              with:
+                  prompt: |
+                      Review this PR. Focus on:
+                      - Correctness and potential bugs
+                      - Performance concerns
+                      - Code style consistency with the rest of the codebase
+                      Be concise. Only comment on things that matter.
+                  anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
