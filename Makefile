@@ -71,7 +71,7 @@ precommit: hooks fmt-check
 # Any new checks added here must work in CI (no local-only tools/paths)
 precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(PY) -m ruff check --fix scripts tests
-	$(PY) -m pytest
+	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
 	git checkout data/transactions.csv 2>/dev/null || true; \
@@ -123,7 +123,7 @@ js-test:
 	npm test
 
 test: js-test
-	$(PY) -m pytest
+	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
 verify: lint type sec test
 
