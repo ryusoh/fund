@@ -503,7 +503,9 @@ class TestDoctorHelpers(unittest.TestCase):
         doctor._run(args)
 
         # Verify that _warn was called indicating argcomplete was not importable
-        mock_warn.assert_any_call("argcomplete not importable: Mocked exception. Install with: pip install argcomplete")
+        mock_warn.assert_any_call(
+            "argcomplete not importable: Mocked exception. Install with: pip install argcomplete"
+        )
 
 
 class TestCompleteDebug(unittest.TestCase):
@@ -598,6 +600,7 @@ class TestCompleteDebug(unittest.TestCase):
 
     def test_complete_debug_get_top_commands_match(self):
         import argparse
+
         mock_parser = MagicMock()
         mock_action = MagicMock(spec=argparse._SubParsersAction)
         mock_action.choices = {"holdings": MagicMock(), "fund-data": MagicMock()}
@@ -611,6 +614,7 @@ class TestCLIEdgeCases(unittest.TestCase):
     @patch('scripts.cli.importlib.import_module')
     def test_cli_load_command_modules_exception(self, mock_import, mock_iter):
         from scripts.cli import _load_command_modules
+
         mock_iter.return_value = [MagicMock(name="mock_mod")]
         mock_import.side_effect = Exception("Mocked exception")
         names = _load_command_modules()
@@ -652,6 +656,7 @@ class TestCLIEdgeCases(unittest.TestCase):
 
     def test_cli_module_execution(self):
         import runpy
+
         # To avoid the actual main executing and causing SystemExit, we just catch SystemExit
         # Wait, if we mock scripts.cli.main we shouldn't execute the real one.
         # run_module re-imports the code and executes it, which doesn't use the patched scripts.cli.main
@@ -663,6 +668,7 @@ class TestCLIEdgeCases(unittest.TestCase):
                     runpy.run_module("scripts.cli", run_name="__main__")
                 except Exception:
                     pass
+
 
 if __name__ == '__main__':
     unittest.main()
