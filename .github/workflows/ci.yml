@@ -14,10 +14,11 @@ jobs:
     web-ci:
         runs-on: ubuntu-latest
         env:
-            NODE_VERSION: '20'
+            NODE_VERSION: '24'
             PYTHON_VERSION: '3.12'
             RUN_PRECOMMIT: 'true'
             RUN_DEPLOY: 'false'
+            FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         steps:
             - name: Checkout repository
               uses: actions/checkout@v6
