@@ -14,9 +14,9 @@ Methodology (V5):
 
 from __future__ import annotations
 
+import atexit
 import concurrent.futures
 import json
-import atexit
 import math
 import os
 import re
