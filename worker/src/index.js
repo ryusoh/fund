@@ -238,7 +238,9 @@ export default {
         let prices = {};
         try {
             prices = await fetchFromAlpaca(symbols, env);
-        } catch {
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Error fetching from Alpaca:', err);
             // Alpaca failed or was skipped (extended session) — Yahoo handles everything
         }
 
@@ -249,6 +251,8 @@ export default {
                 const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
                 Object.assign(prices, yahooPrices);
             } catch (yahooErr) {
+                // eslint-disable-next-line no-console
+                console.error('Error fetching from Yahoo:', yahooErr);
                 if (Object.keys(prices).length === 0) {
                     // 3. Both sources failed entirely — serve last-known-good value (stale-on-error)
                     const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });

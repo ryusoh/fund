@@ -86,7 +86,10 @@
             credentials: 'same-origin',
             cache: 'force-cache',
             redirect: 'follow',
-        }).catch(() => undefined);
+        }).catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to pre-warm video source:', err);
+        });
     }
 
     function init() {
