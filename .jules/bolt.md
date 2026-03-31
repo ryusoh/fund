@@ -64,5 +64,6 @@
 **Action:** Extract loop-invariant array reductions (like finding a global `maxDistance` for a single `targetX`) outside the calculation loop. Use manual `for` loops instead of `.map()` or spread operators to prevent garbage collection pressure and drop complexity.
 
 ## 2025-05-18 - Math.min/max and Spread on Array Allocation
+
 **Learning:** Using `Math.min(...array.map(..))` and `Math.max(...array.map(..))` is a performance bottleneck in high-frequency loops (like `scroll` or `resize` via `ResizeObserver`), as it triggers multiple intermediate array allocations (`.map`) followed by maximum arguments limit risk and large spread parameter instantiation.
 **Action:** Always replace chained spread map iterations `Math.max(...array.map(x => x))` with a single, unified `for` loop that updates minimum/maximum trackers inline to zero out GC pressure and avoid call stack bounds errors.
