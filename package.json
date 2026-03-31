@@ -30,7 +30,7 @@
     "devDependencies": {
         "@babel/core": "^7.29.0",
         "@babel/preset-env": "^7.29.2",
-        "@stylistic/stylelint-plugin": "^5.0.0",
+        "@stylistic/stylelint-plugin": "^5.1.0",
         "@testing-library/jest-dom": "^6.9.1",
         "babel-jest": "^30.3.0",
         "eslint": "^10.1.0",
@@ -43,7 +43,7 @@
         "prettier": "^3.8.1",
         "stylelint": "^17.5.0",
         "stylelint-config-standard": "^40.0.0",
-        "wrangler": "^4.0.0"
+        "wrangler": "^4.78.0"
     },
     "lint-staged": {
         "*.js": [
