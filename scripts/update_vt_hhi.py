@@ -47,6 +47,7 @@ def fetch_vt_hhi_from_etfrc() -> int | None:
         error_msg = str(e)
         if scraper_api_key:
             error_msg = error_msg.replace(scraper_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(scraper_api_key), "***")
         print(f"Error fetching from ETFRC: {error_msg}")
         return None
 
