@@ -52,7 +52,10 @@ function getHostname() {
                     .register(swPath, { scope, updateViaCache: 'none' })
                     .then(function (registration) {
                         // Force an immediate update check so iOS PWA always picks up new SW
-                        registration.update().catch(function () {});
+                        registration.update().catch(function (error) {
+                            // eslint-disable-next-line no-console
+                            console.warn('Service worker update check failed:', error);
+                        });
                     })
                     .catch(function (error) {
                         // eslint-disable-next-line no-console
