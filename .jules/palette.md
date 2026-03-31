@@ -34,3 +34,9 @@
 
 **Learning:** Containers with `overflow-x: auto` (like `.table-responsive-container` used across `position/index.html` and `terminal/index.html`) must be explicitly focusable so keyboard-only users can scroll through wide tables. Without `tabindex="0"` and a `:focus-visible` ring, horizontal scrolling is impossible or invisible for keyboard navigation.
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to scrollable table containers. Ensure any `border-radius` visually matches the layout.
+
+## 2026-03-25 - Focus Ring Border Radius Polish
+
+**Learning:** Adding a `:focus-visible` outline to a container with rounded corners (`border-radius`, like 8px or 16px) results in a harsh, squared-off focus box that ignores the container's curved edges. This breaks the visual polish and fluidity of the UX during keyboard navigation.
+
+**Action:** Always explicitly set a matching `border-radius` on the `:focus-visible` state of rounded containers so the focus ring smoothly aligns with the container's curved edges.
