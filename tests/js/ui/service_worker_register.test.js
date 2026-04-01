@@ -262,9 +262,12 @@ describe('service_worker_register.js', () => {
         delete window.__SW_FORCE_SW_HOSTNAME__;
     });
 
-    it('logs warning when update check fails', async () => {
+    it('handles silent catch when update check fails', async () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
+
+        // Let's clear the spy array before test, because other tests might have leaked console.warn
         const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        consoleWarnSpy.mockClear();
 
         let rejectUpdate;
         const updatePromise = new Promise((_, reject) => {
