@@ -9,8 +9,16 @@ export function getSplitAdjustment(splitHistory, symbol, transactionDate) {
         return splitAdjustmentCache.get(cacheKey);
     }
 
-    const txObj = new Date(transactionDate);
-    const txYYYYMMDD = `${txObj.getFullYear()}-${String(txObj.getMonth() + 1).padStart(2, '0')}-${String(txObj.getDate()).padStart(2, '0')}`;
+    // Normalize transactionDate to YYYY-MM-DD without timezone shifts
+    let txYYYYMMDD;
+    if (transactionDate.includes('/')) {
+        // MM/DD/YYYY format
+        const parts = transactionDate.split('/');
+        txYYYYMMDD = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+    } else {
+        // Assume YYYY-MM-DD format
+        txYYYYMMDD = transactionDate;
+    }
 
     let result = 1.0;
 
