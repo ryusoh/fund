@@ -52,6 +52,7 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
         error_msg = str(e)
         if scraper_api_key:
             error_msg = error_msg.replace(scraper_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(scraper_api_key), "***")
         print(f"  Error fetching {etf_ticker}: {error_msg}")
         return {}
 

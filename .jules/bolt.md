@@ -48,12 +48,32 @@
 **Learning:** For data smoothing algorithms and math-heavy operations (like polynomial fits or moving averages), chained higher-order array methods (e.g., multiple `.reduce()` passes over the same array) and temporary allocations (e.g., `.slice()` inside a loop) introduce significant functional callback overhead and garbage collection pressure.
 **Action:** Replace these patterns with single `for` loops that compute multiple values simultaneously. This reliably reduces execution time and memory footprint without sacrificing readability for domain-specific math functions.
 
-## $(date +%Y-%m-%d) - Optimize rolling volatility array allocations
+## 2024-05-24 - Optimize rolling volatility array allocations
 
 **Learning:** In frontend chart rendering loops, using `slice()` and `map()` inside a rolling calculation (like volatility) creates O(N \* W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction.
 **Action:** Replace `slice()` and `map()` inside tight loops with direct index-based `for` loops over the original array to achieve O(1) space overhead per iteration.
 
-## $(date +%Y-%m-%d) - Optimize O(N \* W) slice allocations in rolling calculations
+## 2024-05-24 - Optimize rolling beta array allocations
 
-**Learning:** In frontend chart rendering loops, using `slice()` and array allocations inside a rolling calculation (like Beta or Volatility) creates O(N \* W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction, especially as N (number of days) and W (window size) grow.
-**Action:** Replace `slice()` inside tight loops with direct index-based `for` loops over the original array to achieve O(1) space overhead per iteration and significantly faster execution times by avoiding intermediate array creations.
+**Learning:** In frontend chart rendering loops, using `.slice()` in a sliding window loop `O(N * W)` times to extract subarrays (like in the rolling Beta calculation) creates significant unnecessary garbage collection pressure and allocation overhead. Furthermore, calling `.reduce()` to compute mean values inside that tight loop compounds the performance penalty.
+**Action:** Replace `.slice()` and `.forEach()` with a direct `for` loop that iterates over the original array using calculated start and end indices. Compute intermediate sums and variances/covariances directly without intermediate array allocations. This achieves O(1) space overhead per window and significantly reduces processing time and memory overhead.
+
+## 2026-03-29 - LOWESS map() loop overhead
+
+**Learning:** In the LOWESS smoothing algorithm (`weightedLocalRegression`), using `Math.max(...data.map(...))` inside a nested loop iterates over the array $N$ times per point, creating severe $O(N^3)$ complexity, causing massive allocation delays.
+**Action:** Extract loop-invariant array reductions (like finding a global `maxDistance` for a single `targetX`) outside the calculation loop. Use manual `for` loops instead of `.map()` or spread operators to prevent garbage collection pressure and drop complexity.
+
+## 2025-05-18 - Math.min/max and Spread on Array Allocation
+
+**Learning:** Using `Math.min(...array.map(..))` and `Math.max(...array.map(..))` is a performance bottleneck in high-frequency loops (like `scroll` or `resize` via `ResizeObserver`), as it triggers multiple intermediate array allocations (`.map`) followed by maximum arguments limit risk and large spread parameter instantiation.
+**Action:** Always replace chained spread map iterations `Math.max(...array.map(x => x))` with a single, unified `for` loop that updates minimum/maximum trackers inline to zero out GC pressure and avoid call stack bounds errors.
+
+## 2026-03-30 - Array Map and Reduce Inside Animation Loops
+
+**Learning:** Dynamically generating arrays of objects (such as path segments) and then iterating over them with `.reduce()` or `.map()` inside an animation loop (like a `requestAnimationFrame` drawing frame, or repeatedly inside an internal rendering method like `getPointAtProgress`) causes severe GC (Garbage Collection) pressure. This results in stutters and dropped frames in visual UI elements like the table glass effect.
+**Action:** Always inline array generation and mathematical reductions directly into plain conditional and arithmetic logic for high-frequency path-tracing methods.
+
+## 2026-03-07 - Optimize Split Adjustment Array Allocation and Date Parsing
+
+**Learning:** Using `.filter()` chained with `.reduce()` combined with `new Date(split.splitDate)` inside the iteration loop created significant memory allocations and GC pressure for large datasets with split adjustments.
+**Action:** Replace `.filter().reduce()` with a single `for` loop, and replace `new Date` comparison with direct string comparison by formatting `transactionDate` into `YYYY-MM-DD` outside the loop.

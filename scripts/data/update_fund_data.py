@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
+import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -63,6 +64,9 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         logging.error("Missing Alpaca API credentials. Cannot fetch from Alpaca.")
         return data
 
+    safe_api_key = os.environ.get("ALPACA_API_KEY")
+    safe_api_secret = os.environ.get("ALPACA_API_SECRET")
+
     try:
         symbols = ",".join(ticker_list)
         headers = {
@@ -101,12 +105,12 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
     except Exception as e:
         error_msg = str(e)
-        safe_api_key = os.environ.get("ALPACA_API_KEY")
-        safe_api_secret = os.environ.get("ALPACA_API_SECRET")
         if safe_api_key:
             error_msg = error_msg.replace(safe_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
         if safe_api_secret:
             error_msg = error_msg.replace(safe_api_secret, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(safe_api_secret), "***")
         logging.error(f"Error fetching from Alpaca: {error_msg}")
 
     return data
@@ -183,6 +187,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     tickers_for_polygon = [t for t in ticker_list if data[t] is None]
     if tickers_for_polygon:
         logging.info(f"Final fallback to Polygon.io for: {', '.join(tickers_for_polygon)}")
+        safe_api_key = os.environ.get("POLYGON_KEY")
         try:
             api_key = os.environ["POLYGON_KEY"]
             with RESTClient(api_key) as client:
@@ -204,9 +209,9 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                                     logging.info(f"Fetched price for {t} from Polygon.io: {p}")
                 except Exception as e:
                     error_msg = str(e)
-                    safe_api_key = os.environ.get("POLYGON_KEY")
                     if safe_api_key:
                         error_msg = error_msg.replace(safe_api_key, "***")
+                        error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
                     logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
@@ -214,9 +219,9 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             )
         except Exception as e:
             error_msg = str(e)
-            api_key_fallback = os.environ.get("POLYGON_KEY")
-            if api_key_fallback:
-                error_msg = error_msg.replace(api_key_fallback, "***")
+            if safe_api_key:
+                error_msg = error_msg.replace(safe_api_key, "***")
+                error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
             logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import List, Optional
 
@@ -233,6 +234,7 @@ def main(argv: List[str]) -> int:
         evidence_sections,
     )
 
+    api_key = os.environ.get("GEMINI_API_KEY")
     try:
         print(f"[info] Calling Gemini model '{args.model}' (temperature={args.temperature})...")
         output_text = call_gemini(
@@ -244,9 +246,9 @@ def main(argv: List[str]) -> int:
         )
     except Exception as exc:  # pragma: no cover - runtime error path
         error_msg = str(exc)
-        api_key = os.environ.get("GEMINI_API_KEY")
         if api_key:
             error_msg = error_msg.replace(api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
         raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
 
     print(output_text)

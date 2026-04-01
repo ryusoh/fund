@@ -114,6 +114,22 @@ describe('nav_current_page', () => {
         expect(analysisLink.getAttribute('aria-current')).toBe('page');
     });
 
+    test('handles variations when one of them is empty root', () => {
+        setupLocation('/index.html');
+        createContainer(`
+            <div class="nav-container">
+                <a href="/" id="home-link">Home</a>
+            </div>
+        `);
+
+        loadNavCurrentPage();
+
+        const homeLink = document.getElementById('home-link');
+
+        expect(homeLink.hasAttribute('href')).toBe(false);
+        expect(homeLink.getAttribute('aria-current')).toBe('page');
+    });
+
     test('ignores links from different origins', () => {
         setupLocation('/about');
         createContainer(`
