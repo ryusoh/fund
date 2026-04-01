@@ -662,6 +662,7 @@ btnRunMonteCarlo.addEventListener('click', () => {
 
     btnRunMonteCarlo.textContent = 'Running...';
     btnRunMonteCarlo.disabled = true;
+    btnRunMonteCarlo.setAttribute('aria-busy', 'true');
 
     state.monteCarloWorker.postMessage({
         type: 'RUN_SIMULATION',
@@ -682,6 +683,7 @@ state.monteCarloWorker.onmessage = function (e) {
         renderMonteCarloResults(result);
         btnRunMonteCarlo.textContent = 'Run 10k Paths';
         btnRunMonteCarlo.disabled = false;
+        btnRunMonteCarlo.removeAttribute('aria-busy');
     }
 };
 
