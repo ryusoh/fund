@@ -103,6 +103,12 @@ body {
     /* Limit ticker width */
 }
 
+.ticker-list:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
 .ticker-list::-webkit-scrollbar {
     display: none;
 }
@@ -164,6 +170,12 @@ body {
     overflow-x: auto;
     scrollbar-width: none;
     flex: 1;
+}
+
+.summary-stats:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
 }
 
 .stat-card {

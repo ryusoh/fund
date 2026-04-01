@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
+import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -106,8 +107,10 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         error_msg = str(e)
         if safe_api_key:
             error_msg = error_msg.replace(safe_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
         if safe_api_secret:
             error_msg = error_msg.replace(safe_api_secret, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(safe_api_secret), "***")
         logging.error(f"Error fetching from Alpaca: {error_msg}")
 
     return data
@@ -208,6 +211,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                     error_msg = str(e)
                     if safe_api_key:
                         error_msg = error_msg.replace(safe_api_key, "***")
+                        error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
                     logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
@@ -217,6 +221,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             error_msg = str(e)
             if safe_api_key:
                 error_msg = error_msg.replace(safe_api_key, "***")
+                error_msg = error_msg.replace(urllib.parse.quote(safe_api_key), "***")
             logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data

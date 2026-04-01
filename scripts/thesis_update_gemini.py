@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import List, Optional
 
@@ -247,6 +248,7 @@ def main(argv: List[str]) -> int:
         error_msg = str(exc)
         if api_key:
             error_msg = error_msg.replace(api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
         raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
 
     print(output_text)
