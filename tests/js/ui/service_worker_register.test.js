@@ -263,10 +263,6 @@ describe('service_worker_register.js', () => {
     it('handles silent catch when update check fails', async () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
 
-        // Let's clear the spy array before test, because other tests might have leaked console.warn
-        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        consoleWarnSpy.mockClear();
-
         let rejectUpdate;
         const updatePromise = new Promise((_, reject) => {
             rejectUpdate = reject;
@@ -299,15 +295,14 @@ describe('service_worker_register.js', () => {
 
         expect(mockRegistration.update).toHaveBeenCalled();
 
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
         // Reject the update
         rejectUpdate(new Error('Update failed'));
 
         // Wait a tick for catch
         await new Promise((resolve) => setTimeout(resolve, 0));
 
-        // Note: the catch for update() is empty in the implementation!
-        // `registration.update().catch(function () {});`
-        // So no console warn should happen for the update failure specifically.
         expect(consoleWarnSpy).not.toHaveBeenCalled();
 
         consoleWarnSpy.mockRestore();
