@@ -131,25 +131,23 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
                     continue;
                 }
 
-                // Bolt: Optimize O(N * W) slice allocations by iterating indices directly over marketReturns array
+                // Bolt: Optimize O(N * W) slice/array allocations by iterating indices directly over marketReturns array
                 const startIdx = i - windowSize + 1;
-                const aValues = [];
-                const mValues = [];
+                let n = 0;
                 let mSum = 0;
                 let aSum = 0;
 
-                for (let k = startIdx; k <= i; k++) {
-                    const mR = marketReturns[k];
+                // First pass to compute sum and valid counts directly
+                for (let j = startIdx; j <= i; j++) {
+                    const mR = marketReturns[j];
                     const aVal = assetReturnMap.get(mR.date);
                     if (aVal !== undefined) {
-                        mValues.push(mR.val);
-                        aValues.push(aVal);
+                        n++;
                         mSum += mR.val;
                         aSum += aVal;
                     }
                 }
 
-                const n = aValues.length;
                 if (n < windowSize * 0.8) {
                     continue;
                 }
@@ -159,10 +157,16 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
 
                 let cov = 0;
                 let mVar = 0;
-                for (let j = 0; j < n; j++) {
-                    const mDiff = mValues[j] - mMean;
-                    cov += (aValues[j] - aMean) * mDiff;
-                    mVar += mDiff * mDiff;
+
+                // Second pass to compute variance and covariance
+                for (let j = startIdx; j <= i; j++) {
+                    const mR = marketReturns[j];
+                    const aVal = assetReturnMap.get(mR.date);
+                    if (aVal !== undefined) {
+                        const mDiff = mR.val - mMean;
+                        cov += (aVal - aMean) * mDiff;
+                        mVar += mDiff * mDiff;
+                    }
                 }
 
                 const beta = mVar < 1e-12 ? 0 : cov / mVar;

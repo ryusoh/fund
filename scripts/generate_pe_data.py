@@ -979,6 +979,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
         error_msg = str(e)
         if scraper_api_key:
             error_msg = error_msg.replace(scraper_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(scraper_api_key), "***")
         print(f"WSJ scrape failed: {error_msg}")
     return None
 
