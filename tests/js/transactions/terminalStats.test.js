@@ -1,178 +1,85 @@
 import { jest } from '@jest/globals';
+import * as terminalStats from '../../../js/transactions/terminalStats.js';
+import * as formatting from '../../../js/transactions/terminal/stats/formatting.js';
+import * as transactions from '../../../js/transactions/terminal/stats/transactions.js';
+import * as holdings from '../../../js/transactions/terminal/stats/holdings.js';
+import * as financial from '../../../js/transactions/terminal/stats/financial.js';
+import * as staticStats from '../../../js/transactions/terminal/stats/static.js';
+import * as analysis from '../../../js/transactions/terminal/stats/analysis.js';
 
-function mockFetchResponse(payload) {
-    return Promise.resolve({
-        ok: true,
-        json: async () => payload,
-    });
-}
+jest.mock('../../../js/transactions/terminal/stats/formatting.js', () => ({
+    renderAsciiTable: jest.fn(() => 'ascii_table'),
+}));
 
-describe('getFinancialStatsText', () => {
-    afterEach(() => {
-        delete global.fetch;
-        jest.resetModules();
-    });
+jest.mock('../../../js/transactions/terminal/stats/transactions.js', () => ({
+    getDynamicStatsText: jest.fn(() => 'dynamic_stats'),
+    getStatsText: jest.fn(() => 'stats_text'),
+}));
 
-    test('renders financial snapshot table from analysis data', async () => {
-        const fixtures = {
-            '../data/analysis/index.json': {
-                tickers: [
-                    {
-                        symbol: 'ANET',
-                        name: 'Arista Networks',
-                        path: '../data/analysis/ANET.json',
-                    },
-                ],
-            },
-            '../data/analysis/ANET.json': {
-                symbol: 'ANET',
-                market: {
-                    price: 122.36,
-                    eps: 2.63,
-                    forwardEps: 3.3607,
-                    pe: 46.5247,
-                    forwardPe: 36.4096,
-                    pegRatio: 1.25,
-                    evToEbitda: 39.219,
-                    enterpriseValue: 210000000000.0,
-                    ebitda: 5000000000.0,
-                    marketCap: 154086129664.0,
-                    dividendYield: 1.25,
-                    beta: 1.11,
-                    volatility: 0.34,
-                    fiftyDayAverage: 118.5,
-                    twoHundredDayAverage: 102.25,
-                    averageVolume: 1250000,
-                    averageDailyVolume10Day: 950000,
-                    fiftyTwoWeekHigh: 164.94,
-                    fiftyTwoWeekLow: 59.43,
-                    marketDataUpdatedAt: '2025-12-18T07:50:20.219405+00:00',
-                    currency: 'USD',
-                },
-            },
-        };
+jest.mock('../../../js/transactions/terminal/stats/holdings.js', () => ({
+    getHoldingsText: jest.fn(() => 'holdings_text'),
+    getHoldingsDebugText: jest.fn(() => 'holdings_debug'),
+}));
 
-        global.fetch = jest.fn((url) => {
-            const normalized = url.split('?')[0];
-            const payload = fixtures[normalized];
-            if (!payload) {
-                return Promise.resolve({ ok: false, json: async () => ({}) });
-            }
-            return mockFetchResponse(payload);
-        });
+jest.mock('../../../js/transactions/terminal/stats/financial.js', () => ({
+    getFinancialStatsText: jest.fn(() => 'financial_stats'),
+    getTechnicalStatsText: jest.fn(() => 'technical_stats'),
+}));
 
-        const { getFinancialStatsText } = await import('@js/transactions/terminalStats.js');
-        const snapshot = await getFinancialStatsText();
+jest.mock('../../../js/transactions/terminal/stats/static.js', () => ({
+    getCagrText: jest.fn(() => 'cagr_text'),
+    getAnnualReturnText: jest.fn(() => 'annual_return'),
+    getRatioText: jest.fn(() => 'ratio_text'),
+}));
 
-        expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('../data/analysis/index.json')
-        );
-        expect(snapshot).toContain('FINANCIAL SNAPSHOT');
-        expect(snapshot).toContain('ANET');
-        expect(snapshot).toContain('2.63 / 3.36');
-        expect(snapshot).toContain('1.25');
-        expect(snapshot).toContain('1.25%');
+jest.mock('../../../js/transactions/terminal/stats/analysis.js', () => ({
+    getDurationStatsText: jest.fn(() => 'duration_stats'),
+    getLifespanStatsText: jest.fn(() => 'lifespan_stats'),
+    getConcentrationText: jest.fn(() => 'concentration_text'),
+}));
+
+describe('terminalStats index', () => {
+    it('exports formatting functions correctly', () => {
+        expect(terminalStats.renderAsciiTable()).toBe('ascii_table');
+        expect(formatting.renderAsciiTable).toHaveBeenCalled();
     });
 
-    test('falls back to pe_ratio.json for missing forwardPe (like VT)', async () => {
-        const fixtures = {
-            '../data/analysis/index.json': {
-                tickers: [
-                    {
-                        symbol: 'VT',
-                        name: 'Vanguard Total World Stock ETF',
-                        path: '../data/analysis/VT.json',
-                    },
-                ],
-            },
-            '../data/analysis/VT.json': {
-                symbol: 'VT',
-                market: {
-                    pe: 18.5,
-                    currency: 'USD',
-                },
-            },
-            '../data/output/figures/pe_ratio.json': {
-                forward_pe: {
-                    ticker_forward_pe: {
-                        VT: [16.5, 17.2],
-                    },
-                },
-            },
-        };
-
-        global.fetch = jest.fn((url) => {
-            const normalized = url.split('?')[0];
-            const payload = fixtures[normalized];
-            if (!payload) {
-                return Promise.resolve({ ok: false, json: async () => ({}) });
-            }
-            return mockFetchResponse(payload);
-        });
-
-        const { getFinancialStatsText } = await import('@js/transactions/terminalStats.js');
-        const snapshot = await getFinancialStatsText();
-
-        expect(snapshot).toContain('18.50 / 17.20');
+    it('exports transactions functions correctly', () => {
+        expect(terminalStats.getDynamicStatsText()).toBe('dynamic_stats');
+        expect(transactions.getDynamicStatsText).toHaveBeenCalled();
+        expect(terminalStats.getStatsText()).toBe('stats_text');
+        expect(transactions.getStatsText).toHaveBeenCalled();
     });
 
-    test('renders technical snapshot table from analysis data', async () => {
-        const fixtures = {
-            '../data/analysis/index.json': {
-                tickers: [
-                    {
-                        symbol: 'ANET',
-                        name: 'Arista Networks',
-                        path: '../data/analysis/ANET.json',
-                    },
-                ],
-            },
-            '../data/analysis/ANET.json': {
-                symbol: 'ANET',
-                market: {
-                    price: 122.36,
-                    beta: 1.11,
-                    volatility: 0.34,
-                    fiftyTwoWeekHigh: 164.94,
-                    fiftyTwoWeekLow: 59.43,
-                    fiftyDayAverage: 118.5,
-                    twoHundredDayAverage: 102.25,
-                    averageVolume: 1250000,
-                    averageDailyVolume10Day: 950000,
-                    currency: 'USD',
-                },
-            },
-        };
-
-        global.fetch = jest.fn((url) => {
-            const normalized = url.split('?')[0];
-            const payload = fixtures[normalized];
-            if (!payload) {
-                return Promise.resolve({ ok: false, json: async () => ({}) });
-            }
-            return mockFetchResponse(payload);
-        });
-
-        const { getTechnicalStatsText } = await import('@js/transactions/terminalStats.js');
-        const snapshot = await getTechnicalStatsText();
-
-        expect(snapshot).toContain('TECHNICAL SNAPSHOT');
-        expect(snapshot).toContain('ANET');
-        expect(snapshot).toContain('50D Avg');
-        expect(snapshot).toContain('1.11');
+    it('exports holdings functions correctly', () => {
+        expect(terminalStats.getHoldingsText()).toBe('holdings_text');
+        expect(holdings.getHoldingsText).toHaveBeenCalled();
+        expect(terminalStats.getHoldingsDebugText()).toBe('holdings_debug');
+        expect(holdings.getHoldingsDebugText).toHaveBeenCalled();
     });
 
-    test('handles fetch failures gracefully', async () => {
-        global.fetch = jest.fn(() =>
-            Promise.resolve({
-                ok: false,
-                json: async () => ({}),
-            })
-        );
+    it('exports financial functions correctly', () => {
+        expect(terminalStats.getFinancialStatsText()).toBe('financial_stats');
+        expect(financial.getFinancialStatsText).toHaveBeenCalled();
+        expect(terminalStats.getTechnicalStatsText()).toBe('technical_stats');
+        expect(financial.getTechnicalStatsText).toHaveBeenCalled();
+    });
 
-        const { getFinancialStatsText } = await import('@js/transactions/terminalStats.js');
-        const snapshot = await getFinancialStatsText();
+    it('exports static functions correctly', () => {
+        expect(terminalStats.getCagrText()).toBe('cagr_text');
+        expect(staticStats.getCagrText).toHaveBeenCalled();
+        expect(terminalStats.getAnnualReturnText()).toBe('annual_return');
+        expect(staticStats.getAnnualReturnText).toHaveBeenCalled();
+        expect(terminalStats.getRatioText()).toBe('ratio_text');
+        expect(staticStats.getRatioText).toHaveBeenCalled();
+    });
 
-        expect(snapshot).toBe('Error loading financial analysis data.');
+    it('exports analysis functions correctly', () => {
+        expect(terminalStats.getDurationStatsText()).toBe('duration_stats');
+        expect(analysis.getDurationStatsText).toHaveBeenCalled();
+        expect(terminalStats.getLifespanStatsText()).toBe('lifespan_stats');
+        expect(analysis.getLifespanStatsText).toHaveBeenCalled();
+        expect(terminalStats.getConcentrationText()).toBe('concentration_text');
+        expect(analysis.getConcentrationText).toHaveBeenCalled();
     });
 });

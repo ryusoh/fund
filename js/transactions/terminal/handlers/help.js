@@ -7,8 +7,8 @@ export function handleHelpCommand(args, { appendMessage }) {
             'Available commands:\n' +
             '  stats (s)          - Statistics commands\n' +
             '                       Use "stats" or "s" for subcommands\n' +
-            '                       Subcommands: transactions, holdings, financial, technical, duration, lifespan,\n' +
-            '                                    concentration, cagr, return, ratio\n' +
+            '                       Subcommands: transactions, holdings, financial, technical, duration,\n' +
+            '                                    lifespan, concentration, cagr, return, ratio, geography\n' +
             '                       Examples: stats lifespan, s cagr, stats concentration\n' +
             '  plot (p)           - Chart commands\n' +
             '                       Use "plot" or "p" for subcommands\n' +

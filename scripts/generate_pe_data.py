@@ -14,11 +14,13 @@ Methodology (V5):
 
 from __future__ import annotations
 
+import atexit
 import concurrent.futures
 import json
 import math
 import os
 import re
+import shutil
 import sys
 import tempfile
 import urllib.parse
@@ -35,6 +37,7 @@ try:
     # Configure yfinance to use a secure, user-specific temporary directory for timezone cache to avoid [Errno 17] in CI and prevent symlink attacks
     cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
     yf.set_tz_cache_location(cache_dir)
+    atexit.register(shutil.rmtree, cache_dir, ignore_errors=True)
 except ImportError as exc:
     raise SystemExit("yfinance is required. Install with: pip install yfinance") from exc
 
@@ -935,10 +938,10 @@ def scrape_msci_forward_pe() -> Optional[float]:
 
 def scrape_wsj_forward_pe() -> Optional[float]:
     """Scrape S&P 500 Forward P/E Estimate from WSJ Market Data."""
-    try:
-        target_url = "https://www.wsj.com/market-data/stocks/peyields"
-        scraper_api_key = os.environ.get("SCRAPER_API_KEY")
+    target_url = "https://www.wsj.com/market-data/stocks/peyields"
+    scraper_api_key = os.environ.get("SCRAPER_API_KEY")
 
+    try:
         if scraper_api_key:
             payload = {
                 'api_key': scraper_api_key,
@@ -976,6 +979,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
         error_msg = str(e)
         if scraper_api_key:
             error_msg = error_msg.replace(scraper_api_key, "***")
+            error_msg = error_msg.replace(urllib.parse.quote(scraper_api_key), "***")
         print(f"WSJ scrape failed: {error_msg}")
     return None
 

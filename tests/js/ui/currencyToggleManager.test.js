@@ -125,4 +125,115 @@ describe('currencyToggleManager', () => {
         expect(window.localStorage.getItem('fund.selectedCurrency')).toBe('KRW');
         expect(getStoredCurrency()).toBe('KRW');
     });
+
+    it('handles localStorage.getItem exceptions gracefully', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        window.localStorage.getItem = jest.fn(() => {
+            throw new Error('Storage disabled');
+        });
+        const stored = getStoredCurrency();
+        expect(stored).toBeNull();
+        expect(consoleWarnSpy).toHaveBeenCalled();
+        consoleWarnSpy.mockRestore();
+    });
+
+    it('handles localStorage.setItem exceptions gracefully', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        window.localStorage.setItem = jest.fn(() => {
+            throw new Error('Quota exceeded');
+        });
+        applyCurrencySelection('JPY', { persist: true });
+        expect(consoleWarnSpy).toHaveBeenCalled();
+        consoleWarnSpy.mockRestore();
+    });
+
+    it('returns false in activateCurrency when requested currency is not found', () => {
+        initCurrencyToggle();
+        applyCurrencySelection('EUR', { emitEvent: true });
+        const usdButton = document.querySelector('[data-currency="USD"]');
+        expect(usdButton.classList.contains('active')).toBe(true);
+    });
+
+    it('handles dispatchEvent exceptions gracefully', () => {
+        initCurrencyToggle();
+        document.dispatchEvent.mockImplementation(() => {
+            throw new Error('Dispatch failed');
+        });
+
+        // applyCurrencySelection does not catch the error, so we expect it to throw.
+        // But the internal `finally` block should reset `isDispatching = false`.
+        expect(() => applyCurrencySelection('KRW', { emitEvent: true })).toThrow('Dispatch failed');
+
+        // The currentCurrency should still update even if dispatch failed
+        const krwButton = document.querySelector('[data-currency="KRW"]');
+        expect(krwButton.classList.contains('active')).toBe(true);
+    });
+
+    it('handles empty currencyButtons array when activating currency', () => {
+        renderToggle('<div id="currencyToggleContainer"></div>');
+        loadModule();
+        expect(() => applyCurrencySelection('JPY')).not.toThrow();
+    });
+
+    it('handles CURRENCY_ICON_MAP missing or mismatch in applyCurrencyIcons', () => {
+        // Render a button with a currency that has no icon mapping (e.g. 'EUR')
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle" data-currency="EUR">€</button>
+            </div>
+        `);
+        // loadModule will call applyCurrencyIcons inside ensureToggleElements (if we call init)
+        loadModule();
+        initCurrencyToggle();
+
+        const eurButton = document.querySelector('[data-currency="EUR"]');
+        expect(eurButton.querySelector('i')).toBeNull(); // No icon should be generated
+    });
+
+    it('handles existing icon with correct currency in applyCurrencyIcons', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle" data-currency="USD">
+                    <i class="fa currency-icon fa-dollar-sign" data-icon-currency="USD" aria-hidden="true"></i>
+                </button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        const usdButton = document.querySelector('[data-currency="USD"]');
+        const icon = usdButton.querySelector('i');
+        expect(icon).not.toBeNull();
+        expect(icon.dataset.iconCurrency).toBe('USD');
+    });
+
+    it('handles empty data-currency when clicking', () => {
+        initCurrencyToggle();
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle" data-currency="">Empty</button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        const emptyButton = document.querySelector('[data-currency=""]');
+        emptyButton.click();
+
+        expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
+
+    it('returns when cycleCurrency is called but nextIndex is currentIndex', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD">$</button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+        document.dispatchEvent.mockClear();
+
+        cycleCurrency(1); // Modulo math: (0 + 1) % 1 = 0
+        expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
 });

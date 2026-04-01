@@ -172,6 +172,31 @@ describe('plot command chart toggling', () => {
     );
 });
 
+describe('plot command help strings', () => {
+    let session;
+
+    beforeEach(() => {
+        jest.resetModules();
+        session = initTerminalSession();
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    test('all subcommands in PLOT_SUBCOMMANDS must be documented in help output', async () => {
+        const { PLOT_SUBCOMMANDS } = require('@js/transactions/terminal/constants.js');
+        await session.submitCommand('plot');
+        const output = getLastTerminalMessage();
+
+        PLOT_SUBCOMMANDS.forEach((subcommand) => {
+            // Clean the subcommand (e.g., 'sectors-abs' -> 'sectors abs' for help string matching)
+            const documentedName = subcommand.replace('-', ' ');
+            expect(output).toContain(documentedName);
+        });
+    });
+});
+
 describe('plot command date range handling', () => {
     beforeEach(() => {
         jest.resetModules();

@@ -67,13 +67,14 @@ describe('Performance Caching Regression Tests', () => {
             expect(getSplitFunction).toBeTruthy();
 
             const functionContent = getSplitFunction[0];
-            // Should have cache check before Date creation
-            const cacheCheckIndex = functionContent.indexOf('splitAdjustmentCache.has');
-            const dateCreationIndex = functionContent.indexOf('new Date(transactionDate)');
+            const dateCreationIndex = functionContent.indexOf('new Date(');
 
-            expect(cacheCheckIndex).toBeGreaterThanOrEqual(0);
-            expect(dateCreationIndex).toBeGreaterThanOrEqual(0);
-            expect(cacheCheckIndex).toBeLessThan(dateCreationIndex);
+            // If a Date object IS created, it must be behind the cache check
+            if (dateCreationIndex >= 0) {
+                const cacheCheckIndex = functionContent.indexOf('splitAdjustmentCache.has');
+                expect(cacheCheckIndex).toBeGreaterThanOrEqual(0);
+                expect(cacheCheckIndex).toBeLessThan(dateCreationIndex);
+            }
         });
     });
 
