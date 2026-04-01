@@ -147,6 +147,43 @@ describe('nav_current_page', () => {
         expect(externalLink.style.pointerEvents).not.toBe('none');
     });
 
+    test('handles links without parent elements safely', () => {
+        setupLocation('/orphan');
+
+        // Use a detached container so that querySelectorAll can find it
+        // if we mock document.querySelectorAll. Wait, `document.querySelectorAll`
+        // searches the DOM tree. If it's in the DOM tree, it has a parent.
+        // Let's mock document.querySelectorAll directly.
+
+        const orphanLink = document.createElement('a');
+        orphanLink.href = '/orphan';
+
+        // By redefining href, `new URL(link.href, ...)` in nav_current_page.js gets the correct string
+        Object.defineProperty(orphanLink, 'href', {
+            get: () => {
+                return orphanLink.hasAttribute('href')
+                    ? `http://localhost${orphanLink.getAttribute('href')}`
+                    : '';
+            },
+            configurable: true,
+        });
+
+        // Ensure parentElement is null
+        expect(orphanLink.parentElement).toBeNull();
+
+        const originalQuerySelectorAll = document.querySelectorAll;
+        document.querySelectorAll = jest.fn(() => [orphanLink]);
+
+        loadNavCurrentPage();
+
+        expect(orphanLink.hasAttribute('href')).toBe(false);
+        expect(orphanLink.style.pointerEvents).toBe('none');
+        expect(orphanLink.getAttribute('aria-current')).toBe('page');
+
+        // Restore
+        document.querySelectorAll = originalQuerySelectorAll;
+    });
+
     test('adds ready listener if document.readyState is loading', () => {
         setupLocation('/test');
 
