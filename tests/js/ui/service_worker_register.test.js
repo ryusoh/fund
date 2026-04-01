@@ -163,7 +163,6 @@ describe('service_worker_register.js', () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
 
         // Save original properties
-        const originalLocation = window.location;
         const originalNavigator = global.navigator;
 
         // Mock `navigator` without `serviceWorker`
@@ -238,13 +237,12 @@ describe('service_worker_register.js', () => {
         // to cause `typeof window.__SW_FORCE_SW_HOSTNAME__ === 'string'` check to be bypassed,
         // Wait, if it's bypassed, it uses window.location.hostname.
         // We can throw from window.__SW_FORCE_SW_HOSTNAME__ getter directly.
-        const originalLocation = window.location;
 
         Object.defineProperty(window, '__SW_FORCE_SW_HOSTNAME__', {
             get: () => {
                 throw new Error('Outer sync error');
             },
-            configurable: true
+            configurable: true,
         });
 
         const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -275,12 +273,12 @@ describe('service_worker_register.js', () => {
         });
 
         const mockRegistration = {
-            update: jest.fn(() => updatePromise)
+            update: jest.fn(() => updatePromise),
         };
 
         Object.defineProperty(navigator, 'serviceWorker', {
             value: {
-                register: jest.fn().mockResolvedValue(mockRegistration)
+                register: jest.fn().mockResolvedValue(mockRegistration),
             },
             configurable: true,
         });
@@ -356,12 +354,12 @@ describe('service_worker_register.js', () => {
         });
 
         const mockRegistration = {
-            update: jest.fn(() => updatePromise)
+            update: jest.fn(() => updatePromise),
         };
 
         Object.defineProperty(navigator, 'serviceWorker', {
             value: {
-                register: jest.fn().mockResolvedValue(mockRegistration)
+                register: jest.fn().mockResolvedValue(mockRegistration),
             },
             configurable: true,
         });
@@ -398,14 +396,14 @@ describe('service_worker_register.js', () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
 
         const mockRegistration = {
-            update: jest.fn(() => Promise.resolve())
+            update: jest.fn(() => Promise.resolve()),
         };
 
         const registerSpy = jest.fn().mockResolvedValue(mockRegistration);
 
         Object.defineProperty(navigator, 'serviceWorker', {
             value: {
-                register: registerSpy
+                register: registerSpy,
             },
             configurable: true,
         });
@@ -424,7 +422,7 @@ describe('service_worker_register.js', () => {
 
         expect(registerSpy).toHaveBeenCalledWith('./sw.js', {
             scope: './',
-            updateViaCache: 'none'
+            updateViaCache: 'none',
         });
     });
 
@@ -432,14 +430,14 @@ describe('service_worker_register.js', () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
 
         const mockRegistration = {
-            update: jest.fn(() => Promise.resolve())
+            update: jest.fn(() => Promise.resolve()),
         };
 
         const registerSpy = jest.fn().mockResolvedValue(mockRegistration);
 
         Object.defineProperty(navigator, 'serviceWorker', {
             value: {
-                register: registerSpy
+                register: registerSpy,
             },
             configurable: true,
         });
@@ -460,7 +458,7 @@ describe('service_worker_register.js', () => {
 
         expect(registerSpy).toHaveBeenCalledWith('./sw.js', {
             scope: './',
-            updateViaCache: 'none'
+            updateViaCache: 'none',
         });
 
         document.body.removeChild(script);
