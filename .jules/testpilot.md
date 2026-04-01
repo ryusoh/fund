@@ -1,0 +1,1 @@
+To test web workers defined purely with `self.onmessage`, you can load the script as a string, use `eval()` to bind it within a mocked `global.self` environment, and then manually trigger `self.onmessage`.
