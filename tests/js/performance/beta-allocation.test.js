@@ -1,16 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 describe('Beta Chart Allocation Regression', () => {
     it('should NOT use slice() or temporary arrays in rolling calculation', () => {
-        const betaJsPath = path.resolve(
-            __dirname,
-            '../../../js/transactions/chart/renderers/beta.js'
-        );
+        // Use process.cwd() which is robust across CJS/ESM in this project's Jest setup
+        const betaJsPath = path.resolve(process.cwd(), 'js/transactions/chart/renderers/beta.js');
         const content = fs.readFileSync(betaJsPath, 'utf8');
 
         // Check for the optimization block specifically
