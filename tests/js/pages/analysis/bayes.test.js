@@ -1,4 +1,3 @@
-
 import { BayesianEngine } from '../../../../js/pages/analysis/bayes.js';
 
 describe('BayesianEngine', () => {
