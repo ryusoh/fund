@@ -50,7 +50,7 @@
 
 ## 2024-05-24 - Optimize rolling volatility array allocations
 
-**Learning:** In frontend chart rendering loops, using `slice()` and `map()` inside a rolling calculation (like volatility) creates O(N * W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction.
+**Learning:** In frontend chart rendering loops, using `slice()` and `map()` inside a rolling calculation (like volatility) creates O(N \* W) short-lived array allocations. This causes significant GC pressure and frame drops during user interaction.
 **Action:** Replace `slice()` and `map()` inside tight loops with direct index-based `for` loops over the original array to achieve O(1) space overhead per iteration.
 
 ## 2024-05-24 - Optimize rolling beta array allocations
