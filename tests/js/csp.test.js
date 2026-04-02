@@ -80,8 +80,12 @@ describe('CSP unsafe-eval regression', () => {
 
             const content = fs.readFileSync(absPath, 'utf8');
 
-            // Strip single-line comments to reduce false positives.
-            const stripped = content.replace(/\/\/.*$/gm, '');
+            // Remove lines that are purely single-line comments.
+            // We intentionally do NOT strip inline `//` from code lines because
+            // that regex also matches `//` inside strings (e.g., URLs like
+            // "http://..."), which in minified single-line files would erase
+            // all code after the first URL — hiding the patterns we need to catch.
+            const stripped = content.replace(/^\s*\/\/.*$/gm, '');
 
             for (const { regex, label } of UNSAFE_EVAL_PATTERNS) {
                 const found = regex.test(stripped);
