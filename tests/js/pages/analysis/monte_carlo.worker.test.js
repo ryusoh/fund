@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
+import vm from 'vm';
 
 describe('monte_carlo.worker', () => {
     let mockPostMessage;
@@ -15,11 +16,16 @@ describe('monte_carlo.worker', () => {
 
     beforeEach(() => {
         mockPostMessage = jest.fn();
-        global.self = {
+        const self = {
             postMessage: mockPostMessage,
         };
-        // evaluate the worker script in the current environment to attach global.self.onmessage
-        eval(workerContent);
+        // Run the worker script in a sandboxed V8 context that provides `self` and `Math`.
+        // This avoids jsdom's CSP 'unsafe-eval' restriction that blocks eval().
+        const script = new vm.Script(workerContent, { filename: 'monte_carlo.worker.js' });
+        const ctx = vm.createContext({ self, Math });
+        script.runInContext(ctx);
+        // Expose the attached onmessage on our mock self
+        global.self = ctx.self;
     });
 
     it('processes RUN_SIMULATION message correctly', () => {

@@ -1,9 +1,11 @@
+import atexit
 import os
 import shutil
 import tempfile
-import atexit
+from unittest.mock import patch
+
 import yfinance as yf
-from unittest.mock import patch, MagicMock
+
 
 def test_yfinance_cache_config_logic():
     """
@@ -15,23 +17,24 @@ def test_yfinance_cache_config_logic():
     try:
         # Set the location
         yf.set_tz_cache_location(_yf_cache_dir)
-        
+
         # Verify it's actually set by looking at yfinance internal state if possible
         # or by checking if files are created when we fetch something
         aapl = yf.Ticker("AAPL")
         # period="1d" is fast
         _ = aapl.history(period="1d")
-        
+
         # Check if files exist in our temp dir
         files = os.listdir(_yf_cache_dir)
         # Note: Depending on network/yfinance internals, it might not ALWAYS create files
         # but if it DOES, they should be here.
         # Given our verify script succeeded, we expect some files.
         assert len(files) >= 0
-        
+
     finally:
         # Cleanup
         shutil.rmtree(_yf_cache_dir, ignore_errors=True)
+
 
 def test_atexit_registration():
     """
@@ -42,5 +45,5 @@ def test_atexit_registration():
         # Simulate the pattern in scripts
         temp_dir = "/tmp/fake-yf-cache"
         atexit.register(shutil.rmtree, temp_dir, ignore_errors=True)
-        
+
         mock_register.assert_called_once_with(shutil.rmtree, temp_dir, ignore_errors=True)
