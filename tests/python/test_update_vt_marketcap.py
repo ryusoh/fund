@@ -10,7 +10,7 @@ import scripts.update_vt_marketcap as update_vt_marketcap
 
 class TestUpdateVTMarketcap(unittest.TestCase):
 
-    @patch('scripts.update_vt_marketcap.Path.exists')
+    @patch('pathlib.Path.exists')
     @patch('builtins.open', new_callable=mock_open, read_data='{"existing": "data"}')
     def test_load_fund_breakdowns_exists(self, mock_file, mock_exists):
         mock_exists.return_value = True
@@ -18,7 +18,7 @@ class TestUpdateVTMarketcap(unittest.TestCase):
         self.assertEqual(result, {"existing": "data"})
         mock_file.assert_called_once_with(Path('data/fund_marketcap_breakdown.json'), 'r')
 
-    @patch('scripts.update_vt_marketcap.Path.exists')
+    @patch('pathlib.Path.exists')
     def test_load_fund_breakdowns_not_exists(self, mock_exists):
         mock_exists.return_value = False
         result = update_vt_marketcap.load_fund_breakdowns()
