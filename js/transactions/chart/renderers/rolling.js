@@ -150,18 +150,36 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+    // Bolt: Replaced O(N) Array.map() + spread operator with a single inline loop for min/max
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const point = allPoints[i];
+        const time = parseLocalDate(point.date).getTime();
+        const value = point.value;
+
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+        if (value > dataMax) {
+            dataMax = value;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
 
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.1, 5);
     const yMin = dataMin - yPadding;
