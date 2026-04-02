@@ -317,7 +317,6 @@ class TestFetchForexDataFallback:
             patch("scripts.data.fetch_forex.yf.download") as mock_download,
         ):
             # Setup mock download to succeed
-            import numpy as np
             close_df = pd.DataFrame({
                 "USDCNY=X": [7.2],
                 "USDJPY=X": [150.0],
@@ -344,7 +343,6 @@ class TestFetchForexDataFallback:
             patch("scripts.data.fetch_forex.yf.download") as mock_download,
         ):
             # Setup mock download to succeed for default only
-            import numpy as np
             close_df = pd.DataFrame({
                 "USDCNY=X": [7.2],
                 "USDJPY=X": [150.0],
@@ -399,7 +397,6 @@ class TestFetchForexDataFallback:
         monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
 
         # We need an exception *inside* the currency loop when iterating close_data
-        close_df = pd.DataFrame({"USDCNY=X": [7.2]})
         # Mock close_data so that doing `ticker in close_data.columns` or similar raises Exception
         mock_close = MagicMock(spec=pd.DataFrame)
         # MagicMock fails nicely if we override its property
@@ -421,7 +418,7 @@ class TestFetchForexDataFallback:
     def test_main_block(self):
         import runpy
         with patch("sys.argv", ["fetch_forex.py"]):
-            with patch("scripts.data.fetch_forex.fetch_forex_data") as mock_fetch:
+            with patch("scripts.data.fetch_forex.fetch_forex_data"):
                 with patch("builtins.print"):
                     # We can't mock fetch_forex_data cleanly via patch when runpy re-imports
                     # So we instead let runpy run it, but mock yf.download to be safe

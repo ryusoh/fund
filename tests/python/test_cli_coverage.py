@@ -1,7 +1,10 @@
 import sys
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from scripts.cli import _load_command_modules, main
+
 
 def test_load_command_modules_import_error():
     """Test that modules raising an exception during import are gracefully skipped."""
