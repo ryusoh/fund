@@ -65,6 +65,17 @@ class TestPipelineHash(unittest.TestCase):
         mock_compute.assert_called_once()
         mock_save.assert_not_called()
 
+    def test_main_block(self):
+        import runpy
+        with patch("sys.argv", ["pipeline_hash.py"]):
+            with patch("argparse.ArgumentParser.parse_args") as mock_parse:
+                args = MagicMock()
+                args.write = False
+                mock_parse.return_value = args
+                with patch("builtins.print") as mock_print:
+                    runpy.run_module("scripts.pipeline_hash", run_name="__main__")
+                    # Should print some hash string
+                    self.assertTrue(len(mock_print.call_args[0][0]) > 0)
 
 if __name__ == '__main__':
     unittest.main()
