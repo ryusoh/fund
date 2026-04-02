@@ -8,3 +8,6 @@
 
 - **Issue:** Functions with high cyclomatic complexity found, e.g., `isLocalhost` in `js/utils/host.js`.
 - **Action:** Refactored `isLocalhost` to reduce complexity from 14 to below 10 by removing multiple returns and using logical operators.
+
+- **Issue:** Routine check for `TODO`s in the application logic.
+- **Action:** Scanned `js/` and `scripts/` directories. Only vendor scripts (e.g., `js/vendor/three.module.js`) contained `TODO`s. Confirmed no core logic modifications required.
