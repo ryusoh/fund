@@ -8,7 +8,7 @@ import os
 import sys
 import urllib.parse
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 try:
     import google.generativeai as genai
@@ -97,7 +97,7 @@ def call_gemini(
     temperature: float,
     max_output_tokens: int,
     allow_unsafe: bool,
-    safety_settings_override: Optional[List[genai.types.SafetySetting]] = None,
+    safety_settings_override: Optional[List[Any]] = None,
 ) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:

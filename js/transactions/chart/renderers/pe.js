@@ -231,6 +231,36 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         if (targetDate && !Number.isNaN(targetDate.getTime())) {
             forwardTargetTime = targetDate.getTime();
             forwardPEValue = forwardPE.portfolio_forward_pe;
+
+            // Recompute portfolio forward PE using MSCI ratio for VT
+            const msciRatio = forwardPE.msci_pe_ratio;
+            const lastPt = series[series.length - 1];
+            if (msciRatio?.ratio > 0 && lastPt?.tickerPEs?.VT > 0 && lastPt?.tickerWeights) {
+                const tickerFwdPE = forwardPE.ticker_forward_pe || {};
+                // Derive VT's current forward PE from its latest trailing PE
+                const vtDerivedFwdPE = lastPt.tickerPEs.VT / msciRatio.ratio;
+                // Recompute portfolio harmonic forward PE: 1 / Σ(w / fwdPE)
+                let weightedYieldSum = 0;
+                let weightSum = 0;
+                for (const [ticker, weight] of Object.entries(lastPt.tickerWeights)) {
+                    if (!Number.isFinite(weight) || weight <= 0) {
+                        continue;
+                    }
+                    let fwdPe = ticker === 'VT' ? vtDerivedFwdPE : tickerFwdPE[ticker];
+                    if (!Number.isFinite(fwdPe) || fwdPe <= 0) {
+                        // Fall back to trailing PE if no forward PE available
+                        fwdPe = lastPt.tickerPEs[ticker];
+                    }
+                    if (Number.isFinite(fwdPe) && fwdPe > 0) {
+                        weightedYieldSum += weight * (1 / fwdPe);
+                        weightSum += weight;
+                    }
+                }
+                if (weightedYieldSum > 0 && weightSum > 0) {
+                    forwardPEValue = 1 / (weightedYieldSum / weightSum);
+                }
+            }
+
             maxTime = Math.max(maxTime, forwardTargetTime);
         }
     }

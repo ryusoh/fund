@@ -119,7 +119,7 @@ def _fetch_single(currency: str) -> float | None:
         return None
 
 
-def fetch_forex_data():
+def fetch_forex_data() -> None:
     print("Fetching forex data...")
     json_rates = {"USD": 1.0}
     csv_rates = {"USD": 1.0}

@@ -1263,6 +1263,7 @@ export async function getPESnapshotLine() {
 
     const fwdPEData = data.forward_pe || {};
     const tickerFwdPE = fwdPEData.ticker_forward_pe || {};
+    const msciPeRatio = fwdPEData.msci_pe_ratio || null;
 
     if (lastPoint.tickerPEs) {
         const entries = Object.entries(lastPoint.tickerPEs)
@@ -1276,7 +1277,11 @@ export async function getPESnapshotLine() {
         if (entries.length > 0) {
             const breakdown = entries
                 .map(([t, pe]) => {
-                    const fwd = tickerFwdPE[t];
+                    let fwd = tickerFwdPE[t];
+                    // For VT: derive forward PE from trailing PE using MSCI ratio
+                    if (t === 'VT' && msciPeRatio?.ratio > 0 && Number.isFinite(pe) && pe > 0) {
+                        fwd = pe / msciPeRatio.ratio;
+                    }
                     const trailingStr = pe.toFixed(0);
                     if (fwd !== null && fwd !== undefined && Number.isFinite(fwd)) {
                         return `${t}:${trailingStr}/${fwd.toFixed(0)}`;
