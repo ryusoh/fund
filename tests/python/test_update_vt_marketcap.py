@@ -1,12 +1,12 @@
-import unittest
-from unittest.mock import patch, mock_open, MagicMock
-import json
 import sys
+import unittest
 from pathlib import Path
+from unittest.mock import mock_open, patch
 
 # Add scripts directory to path to import update_vt_marketcap
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 import scripts.update_vt_marketcap as update_vt_marketcap
+
 
 class TestUpdateVTMarketcap(unittest.TestCase):
 
@@ -65,6 +65,7 @@ class TestUpdateVTMarketcap(unittest.TestCase):
         mock_update.side_effect = Exception("Test Exception")
         update_vt_marketcap.main()
         mock_exit.assert_called_once_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

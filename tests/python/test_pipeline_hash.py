@@ -67,6 +67,7 @@ class TestPipelineHash(unittest.TestCase):
 
     def test_main_block(self):
         import runpy
+
         with patch("sys.argv", ["pipeline_hash.py"]):
             with patch("argparse.ArgumentParser.parse_args") as mock_parse:
                 args = MagicMock()
@@ -76,6 +77,7 @@ class TestPipelineHash(unittest.TestCase):
                     runpy.run_module("scripts.pipeline_hash", run_name="__main__")
                     # Should print some hash string
                     self.assertTrue(len(mock_print.call_args[0][0]) > 0)
+
 
 if __name__ == '__main__':
     unittest.main()

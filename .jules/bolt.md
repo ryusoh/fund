@@ -84,6 +84,7 @@
 **Action:** Replace `.filter().reduce()` with a single `for` loop, and replace `new Date` comparison with direct string comparison by formatting `transactionDate` into `YYYY-MM-DD` outside the loop.
 
 ## $(date +%Y-%m-%d) - Replaced Map and Spread with single index loop
+
 **Learning:** Found a common pattern combining `.map(...)` with `Math.min(...array)` and `Math.max(...array)` spreading. The spread operator can exceed the maximum call stack size on large datasets and also creates unnecessary O(N) array allocations causing high GC pressure in performance-sensitive high-frequency rendering methods.
 **Action:** Replace `Math.max(...array.map(x => x))` with a single simple `for` loop that records both min and max to keep operations O(N) and eliminate extra array allocations entirely.
 
