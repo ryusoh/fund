@@ -196,4 +196,72 @@ describe('ui controller', () => {
             expect(state.setChartVisibility).toHaveBeenCalledWith('testSeries', false);
         });
     });
+    describe('toggleTable edge cases', () => {
+        it('should handle missing transactionTable safely', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container is-hidden"></div>
+                <div id="runningAmountSection"></div>
+            `;
+            const chartManager = { update: jest.fn(), redraw: jest.fn() };
+            const controller = createUiController({ chartManager });
+            expect(() => controller.toggleTable()).not.toThrow();
+        });
+
+        it('should handle missing plotSection safely when showing table', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container is-hidden"></div>
+                <table id="transactionTable"></table>
+            `;
+            const chartManager = { update: jest.fn(), redraw: jest.fn() };
+            const controller = createUiController({ chartManager });
+            expect(() => controller.toggleTable()).not.toThrow();
+        });
+    });
+
+    describe('togglePlot edge cases', () => {
+        it('should handle missing tableContainer safely when showing plot', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const chartManager = { update: jest.fn(), redraw: jest.fn() };
+            const controller = createUiController({ chartManager });
+            controller.togglePlot();
+            const plotSection = document.getElementById('runningAmountSection');
+            expect(plotSection.classList.contains('is-hidden')).toBe(false);
+            expect(chartManager.update).toHaveBeenCalled();
+        });
+    });
+
+    describe('togglePerformanceChart edge cases', () => {
+        it('should handle missing table safely when showing performance chart', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const chartManager = { update: jest.fn(), redraw: jest.fn() };
+            const controller = createUiController({ chartManager });
+            controller.togglePerformanceChart();
+            const plotSection = document.getElementById('runningAmountSection');
+            expect(plotSection.classList.contains('is-hidden')).toBe(false);
+        });
+    });
+
+    describe('initLegendToggles branch coverage', () => {
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
+        it('should handle legend item with empty dataset.series string', () => {
+            const chartManagerNoRedraw = { update: jest.fn() };
+            document.body.innerHTML = `
+                <div class="chart-legend">
+                    <div class="legend-item" data-series=""></div>
+                </div>
+            `;
+            createUiController({ chartManager: chartManagerNoRedraw });
+            const legendItem = document.querySelector('.legend-item');
+
+            // Because data-series is empty, no event listener is attached since the key is falsy
+            legendItem.click();
+            expect(state.setChartVisibility).not.toHaveBeenCalled();
+        });
+    });
 });
