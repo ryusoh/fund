@@ -530,10 +530,19 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     }
     offCtx.fill();
 
-    const relativeYs = areaCoords.map((c) => c.y - bounds.top);
-    relativeYs.push(clampedBaselineY - bounds.top);
-    const minYRel = Math.min(...relativeYs);
-    const maxYRel = Math.max(...relativeYs);
+    // Optimize performance: use a single loop instead of map and spread
+    // to avoid array allocations and maximum call stack size exceeded errors
+    let minYRel = clampedBaselineY - bounds.top;
+    let maxYRel = clampedBaselineY - bounds.top;
+    for (let i = 0; i < areaCoords.length; i += 1) {
+        const relativeY = areaCoords[i].y - bounds.top;
+        if (relativeY < minYRel) {
+            minYRel = relativeY;
+        }
+        if (relativeY > maxYRel) {
+            maxYRel = relativeY;
+        }
+    }
     const gradientTop = Math.min(minYRel, maxYRel - 0.0001);
     const gradientBottom = Math.max(maxYRel, gradientTop + 0.0001);
 
