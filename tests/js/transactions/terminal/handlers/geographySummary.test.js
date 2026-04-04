@@ -1,70 +1,60 @@
 import { jest } from '@jest/globals';
+import { getGeographySummaryText } from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
+import { logger } from '../../../../../js/utils/logger.js';
 
-describe('Geography Summary Handler', () => {
+jest.mock('../../../../../js/utils/logger.js', () => ({
+    logger: {
+        warn: jest.fn(),
+    },
+}));
+
+describe('getGeographySummaryText', () => {
     let globalFetchSpy;
 
     beforeEach(() => {
-        jest.resetModules();
         global.fetch = jest.fn();
         globalFetchSpy = global.fetch;
+        jest.clearAllMocks();
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
         delete global.fetch;
     });
 
-    describe('getGeographySummaryText', () => {
-        test('returns formatted text on successful fetch', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
-
-            globalFetchSpy.mockResolvedValueOnce({
-                ok: true,
-                text: async () => 'North America: 60%\nEurope: 30%\nAsia: 10%',
-            });
-
-            const result = await getGeographySummaryText();
-
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe('North America: 60%\nEurope: 30%\nAsia: 10%');
+    it('returns text on successful fetch', async () => {
+        globalFetchSpy.mockResolvedValueOnce({
+            ok: true,
+            text: async () => 'Geography Summary Text',
         });
 
-        test('returns an error message when response is not OK', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
+        const result = await getGeographySummaryText();
 
-            globalFetchSpy.mockResolvedValueOnce({
-                ok: false,
-                status: 404,
-            });
+        expect(globalFetchSpy).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
+        expect(result).toBe('Geography Summary Text');
+    });
 
-            const result = await getGeographySummaryText();
-
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe(
-                'Error: Unable to load geography summary. Run data generation first.'
-            );
+    it('throws and catches error on failed fetch (not ok)', async () => {
+        globalFetchSpy.mockResolvedValueOnce({
+            ok: false,
+            status: 404,
         });
 
-        test('returns an error message when fetch throws an exception', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
+        const result = await getGeographySummaryText();
 
-            globalFetchSpy.mockRejectedValueOnce(new Error('Network error'));
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Caught exception:',
+            expect.any(Error)
+        );
+        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+    });
 
-            const result = await getGeographySummaryText();
+    it('catches network errors', async () => {
+        const error = new Error('Network error');
+        globalFetchSpy.mockRejectedValueOnce(error);
 
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe(
-                'Error: Unable to load geography summary. Run data generation first.'
-            );
-        });
+        const result = await getGeographySummaryText();
+
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', error);
+        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 });
