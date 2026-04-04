@@ -20,31 +20,25 @@ describe('ui controller', () => {
     let chartManager;
 
     beforeEach(() => {
-        document.body.innerHTML = `
-            <div class="table-responsive-container"></div>
-            <table id="transactionTable"></table>
-            <div id="runningAmountSection"></div>
-            <div class="chart-legend">
-                <div class="legend-item" data-series="testSeries"></div>
-                <div class="legend-item"></div>
-            </div>
-        `;
-
+        jest.clearAllMocks();
         chartManager = {
             update: jest.fn(),
             redraw: jest.fn(),
         };
-
+        document.body.innerHTML = '';
         jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb());
-        jest.clearAllMocks();
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        window.requestAnimationFrame.mockRestore();
     });
 
     describe('toggleTable', () => {
         it('should hide table if currently visible', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container"></div>
+                <div id="runningAmountSection"></div>
+            `;
             const controller = createUiController({ chartManager });
             const tableContainer = document.querySelector('.table-responsive-container');
 
@@ -55,9 +49,13 @@ describe('ui controller', () => {
         });
 
         it('should show table if currently hidden', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container is-hidden"></div>
+                <div id="runningAmountSection"></div>
+                <table id="transactionTable"></table>
+            `;
             const controller = createUiController({ chartManager });
             const tableContainer = document.querySelector('.table-responsive-container');
-            tableContainer.classList.add('is-hidden');
             const plotSection = document.getElementById('runningAmountSection');
             const transactionTable = document.getElementById('transactionTable');
 
@@ -75,6 +73,24 @@ describe('ui controller', () => {
 
             expect(() => controller.toggleTable()).not.toThrow();
         });
+
+        it('should handle missing plotSection safely when showing table', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container is-hidden"></div>
+                <table id="transactionTable"></table>
+            `;
+            const controller = createUiController({ chartManager });
+            expect(() => controller.toggleTable()).not.toThrow();
+        });
+
+        it('should handle missing transactionTable safely', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container is-hidden"></div>
+                <div id="runningAmountSection"></div>
+            `;
+            const controller = createUiController({ chartManager });
+            expect(() => controller.toggleTable()).not.toThrow();
+        });
     });
 
     describe('togglePlot', () => {
@@ -88,6 +104,9 @@ describe('ui controller', () => {
         });
 
         it('should hide plot if currently visible', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection"></div>
+            `;
             const controller = createUiController({ chartManager });
             const plotSection = document.getElementById('runningAmountSection');
 
@@ -100,9 +119,12 @@ describe('ui controller', () => {
         });
 
         it('should show plot if currently hidden and hide table', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+                <div class="table-responsive-container"></div>
+            `;
             const controller = createUiController({ chartManager });
             const plotSection = document.getElementById('runningAmountSection');
-            plotSection.classList.add('is-hidden');
             const tableContainer = document.querySelector('.table-responsive-container');
 
             controller.togglePlot();
@@ -117,6 +139,9 @@ describe('ui controller', () => {
 
         it('should switch to contribution without hiding if performance was active', () => {
             state.transactionState.activeChart = 'performance';
+            document.body.innerHTML = `
+                <div id="runningAmountSection"></div>
+            `;
             const controller = createUiController({ chartManager });
             const plotSection = document.getElementById('runningAmountSection');
 
@@ -128,6 +153,28 @@ describe('ui controller', () => {
             expect(chartManager.update).toHaveBeenCalled();
 
             state.transactionState.activeChart = 'contribution'; // reset
+        });
+
+        it('should handle missing tableContainer safely when showing plot', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const controller = createUiController({ chartManager });
+            controller.togglePlot();
+            const plotSection = document.getElementById('runningAmountSection');
+            expect(plotSection.classList.contains('is-hidden')).toBe(false);
+            expect(chartManager.update).toHaveBeenCalled();
+        });
+
+        it('should hide plot section correctly and adjust panels when currently visible without switching from performance chart', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection"></div>
+            `;
+            const controller = createUiController({ chartManager });
+            const plotSection = document.getElementById('runningAmountSection');
+            controller.togglePlot();
+            expect(plotSection.classList.contains('is-hidden')).toBe(true);
+            expect(layout.adjustMobilePanels).toHaveBeenCalled();
         });
     });
 
@@ -143,9 +190,12 @@ describe('ui controller', () => {
         });
 
         it('should show plot and hide table', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+                <div class="table-responsive-container"></div>
+            `;
             const controller = createUiController({ chartManager });
             const plotSection = document.getElementById('runningAmountSection');
-            plotSection.classList.add('is-hidden');
             const tableContainer = document.querySelector('.table-responsive-container');
 
             controller.togglePerformanceChart();
@@ -157,10 +207,37 @@ describe('ui controller', () => {
             expect(layout.adjustMobilePanels).toHaveBeenCalled();
             expect(chartManager.redraw).toHaveBeenCalled();
         });
+
+        it('should handle missing table safely when showing performance chart', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const controller = createUiController({ chartManager });
+            controller.togglePerformanceChart();
+            const plotSection = document.getElementById('runningAmountSection');
+            expect(plotSection.classList.contains('is-hidden')).toBe(false);
+        });
+
+        it('should call adjustMobilePanels and chartManager.redraw inside requestAnimationFrame', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const controller = createUiController({ chartManager });
+
+            controller.togglePerformanceChart();
+
+            expect(layout.adjustMobilePanels).toHaveBeenCalled();
+            expect(chartManager.redraw).toHaveBeenCalled();
+        });
     });
 
     describe('initLegendToggles', () => {
         it('should add click listeners to legend items with series data', () => {
+            document.body.innerHTML = `
+                <div class="chart-legend">
+                    <div class="legend-item" data-series="testSeries"></div>
+                </div>
+            `;
             createUiController({ chartManager });
             const legendItem = document.querySelector('.legend-item[data-series="testSeries"]');
 
@@ -178,6 +255,12 @@ describe('ui controller', () => {
         });
 
         it('should ignore legend items without series data', () => {
+            document.body.innerHTML = `
+                <div class="chart-legend">
+                    <div class="legend-item" data-series="testSeries"></div>
+                    <div class="legend-item"></div>
+                </div>
+            `;
             createUiController({ chartManager });
             const legendItem = document.querySelectorAll('.legend-item')[1];
 
@@ -188,6 +271,11 @@ describe('ui controller', () => {
         });
 
         it('should handle chartManager without redraw function', () => {
+            document.body.innerHTML = `
+                <div class="chart-legend">
+                    <div class="legend-item" data-series="testSeries"></div>
+                </div>
+            `;
             const chartManagerNoRedraw = { update: jest.fn() };
             createUiController({ chartManager: chartManagerNoRedraw });
             const legendItem = document.querySelector('.legend-item[data-series="testSeries"]');
@@ -195,71 +283,17 @@ describe('ui controller', () => {
             expect(() => legendItem.click()).not.toThrow();
             expect(state.setChartVisibility).toHaveBeenCalledWith('testSeries', false);
         });
-    });
-    describe('toggleTable edge cases', () => {
-        it('should handle missing transactionTable safely', () => {
-            document.body.innerHTML = `
-                <div class="table-responsive-container is-hidden"></div>
-                <div id="runningAmountSection"></div>
-            `;
-            const chartManager = { update: jest.fn(), redraw: jest.fn() };
-            const controller = createUiController({ chartManager });
-            expect(() => controller.toggleTable()).not.toThrow();
-        });
 
-        it('should handle missing plotSection safely when showing table', () => {
-            document.body.innerHTML = `
-                <div class="table-responsive-container is-hidden"></div>
-                <table id="transactionTable"></table>
-            `;
-            const chartManager = { update: jest.fn(), redraw: jest.fn() };
-            const controller = createUiController({ chartManager });
-            expect(() => controller.toggleTable()).not.toThrow();
-        });
-    });
-
-    describe('togglePlot edge cases', () => {
-        it('should handle missing tableContainer safely when showing plot', () => {
-            document.body.innerHTML = `
-                <div id="runningAmountSection" class="is-hidden"></div>
-            `;
-            const chartManager = { update: jest.fn(), redraw: jest.fn() };
-            const controller = createUiController({ chartManager });
-            controller.togglePlot();
-            const plotSection = document.getElementById('runningAmountSection');
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-            expect(chartManager.update).toHaveBeenCalled();
-        });
-    });
-
-    describe('togglePerformanceChart edge cases', () => {
-        it('should handle missing table safely when showing performance chart', () => {
-            document.body.innerHTML = `
-                <div id="runningAmountSection" class="is-hidden"></div>
-            `;
-            const chartManager = { update: jest.fn(), redraw: jest.fn() };
-            const controller = createUiController({ chartManager });
-            controller.togglePerformanceChart();
-            const plotSection = document.getElementById('runningAmountSection');
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-        });
-    });
-
-    describe('initLegendToggles branch coverage', () => {
-        beforeEach(() => {
-            jest.clearAllMocks();
-        });
         it('should handle legend item with empty dataset.series string', () => {
-            const chartManagerNoRedraw = { update: jest.fn() };
             document.body.innerHTML = `
                 <div class="chart-legend">
                     <div class="legend-item" data-series=""></div>
                 </div>
             `;
+            const chartManagerNoRedraw = { update: jest.fn() };
             createUiController({ chartManager: chartManagerNoRedraw });
             const legendItem = document.querySelector('.legend-item');
 
-            // Because data-series is empty, no event listener is attached since the key is falsy
             legendItem.click();
             expect(state.setChartVisibility).not.toHaveBeenCalled();
         });
