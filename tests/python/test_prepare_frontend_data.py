@@ -1,17 +1,18 @@
+import json
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-import pandas as pd
 import numpy as np
-import json
+import pandas as pd
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.prepare_frontend_data import prepare_historical_prices
+from scripts.prepare_frontend_data import prepare_historical_prices  # noqa: E402
+
 
 class TestPrepareFrontendData(unittest.TestCase):
 

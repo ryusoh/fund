@@ -1,13 +1,14 @@
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.test_wsj_scrape import scrape_wsj_forward_pe
+from scripts.test_wsj_scrape import scrape_wsj_forward_pe  # noqa: E402
+
 
 class TestWSJScrape(unittest.TestCase):
     @patch('scripts.test_wsj_scrape.requests.get')

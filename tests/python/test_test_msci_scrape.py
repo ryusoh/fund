@@ -1,13 +1,14 @@
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.test_msci_scrape import scrape_msci_pe_data
+from scripts.test_msci_scrape import scrape_msci_pe_data  # noqa: E402
+
 
 class TestMSCIScrape(unittest.TestCase):
     @patch('scripts.test_msci_scrape.requests.get')
@@ -47,7 +48,7 @@ class TestMSCIScrape(unittest.TestCase):
     def test_scrape_msci_pe_data_exception(self, mock_get):
         mock_get.side_effect = Exception("Test Exception")
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             scrape_msci_pe_data()
 
 if __name__ == '__main__':
