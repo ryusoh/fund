@@ -17,3 +17,7 @@
 import urllib.parse
 error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 ```
+## 2024-04-05 - Centralized Security Secrets Scrubbing Utility
+**Vulnerability:** Duplicate manual scrubbing of API keys and secrets within error exception blocks across multiple python scripts (`fetch_etf_country_allocations.py`, `thesis_update_gemini.py`, `update_vt_sectors.py`, `update_fund_data.py`, `generate_pe_data.py`, `update_vt_hhi.py`). The duplicate logic made it prone to human errors and incomplete masking (e.g. failing to replace `quote_plus` URL variations).
+**Learning:** Hardcoded manual replacement logic for secrets is brittle. Having scattered implementations leads to drift, technical debt, and inevitably leaked tokens when new URL-encoded types are introduced or missed.
+**Prevention:** Created a centralized utility function (`scripts/utils/security_utils.py:scrub_secrets`) that robustly strips standard, URL-quoted (`urllib.parse.quote`), and plus-quoted (`urllib.parse.quote_plus`) API secrets from error logs. Future scripts must import and use this utility rather than writing inline text replacements.
