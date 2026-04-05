@@ -41,7 +41,9 @@ describe('twrr.js', () => {
         document.dispatchEvent(new Event('DOMContentLoaded'));
         await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(mockFetch).toHaveBeenCalledWith('../data/output/figures/twrr.json', { cache: 'no-store' });
+        expect(mockFetch).toHaveBeenCalledWith('../data/output/figures/twrr.json', {
+            cache: 'no-store',
+        });
         expect(mockPlotlyReact).toHaveBeenCalledWith(
             container,
             fakeData,
