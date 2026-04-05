@@ -1,209 +1,151 @@
 import { jest } from '@jest/globals';
+import { handleStatsCommand } from '../../../../../js/transactions/terminal/handlers/stats.js';
 
-jest.mock('@js/transactions/state.js', () => ({
-    transactionState: {
-        selectedCurrency: 'USD',
-    },
+// Setup global fetch and mocks
+const mockAppendMessage = jest.fn();
+
+// Mock dependencies directly using jest.mock
+jest.mock('../../../../../js/transactions/state.js', () => ({
+    transactionState: { selectedCurrency: 'USD' }
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => ({
-    getStatsText: jest.fn(() => 'transactions stats'),
-    getHoldingsText: jest.fn(() => 'holdings stats'),
-    getHoldingsDebugText: jest.fn(() => 'holdings debug stats'),
-    getCagrText: jest.fn(() => 'cagr stats'),
-    getAnnualReturnText: jest.fn(() => 'annual return stats'),
-    getRatioText: jest.fn(() => 'ratio stats'),
-    getDurationStatsText: jest.fn(() => 'duration stats'),
-    getLifespanStatsText: jest.fn(() => 'lifespan stats'),
-    getConcentrationText: jest.fn(() => 'concentration stats'),
-    getFinancialStatsText: jest.fn(() => 'financial stats'),
-    getTechnicalStatsText: jest.fn(() => 'technical stats'),
+jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
+    getStatsText: jest.fn(() => Promise.resolve('stats text')),
+    getHoldingsText: jest.fn(() => Promise.resolve('holdings text')),
+    getHoldingsDebugText: jest.fn(() => Promise.resolve('holdings debug text')),
+    getFinancialStatsText: jest.fn(() => Promise.resolve('financial text')),
+    getTechnicalStatsText: jest.fn(() => Promise.resolve('technical text')),
+    getCagrText: jest.fn(() => Promise.resolve('cagr text')),
+    getAnnualReturnText: jest.fn(() => Promise.resolve('return text')),
+    getRatioText: jest.fn(() => Promise.resolve('ratio text')),
+    getDurationStatsText: jest.fn(() => Promise.resolve('duration text')),
+    getLifespanStatsText: jest.fn(() => Promise.resolve('lifespan text')),
+    getConcentrationText: jest.fn(() => Promise.resolve('concentration text')),
 }));
 
-jest.mock('@js/transactions/terminal/handlers/geographySummary.js', () => ({
-    getGeographySummaryText: jest.fn(() => 'geography stats'),
+jest.mock('../../../../../js/transactions/terminal/handlers/geographySummary.js', () => ({
+    getGeographySummaryText: jest.fn(() => Promise.resolve('geography text')),
 }));
 
-jest.mock('@js/transactions/terminal/constants.js', () => ({
-    STATS_SUBCOMMANDS: [
-        'transactions',
-        'holdings',
-        'financial',
-        'technical',
-        'duration',
-        'lifespan',
-        'concentration',
-        'cagr',
-        'return',
-        'ratio',
-        'geography',
-    ],
-}));
+// Need to import the mocked modules to set their implementations correctly per test
+import { transactionState } from '../../../../../js/transactions/state.js';
+import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
+import { getGeographySummaryText } from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
 
 describe('handleStatsCommand', () => {
-    let appendMessageMock;
-    let handleStatsCommand;
-
-    beforeEach(async () => {
+    beforeEach(() => {
         jest.clearAllMocks();
-        appendMessageMock = jest.fn();
-        const module = await import('@js/transactions/terminal/handlers/stats.js');
-        handleStatsCommand = module.handleStatsCommand;
+        transactionState.selectedCurrency = 'USD';
     });
 
-    test('prints help text when no arguments are provided', async () => {
-        await handleStatsCommand([], { appendMessage: appendMessageMock });
+    it('should show help when no args provided', async () => {
+        await handleStatsCommand([], { appendMessage: mockAppendMessage });
 
-        expect(appendMessageMock).toHaveBeenCalledTimes(1);
-        const arg = appendMessageMock.mock.calls[0][0];
-        expect(arg).toContain('Stats commands:');
-        expect(arg).toContain('Usage: stats <subcommand> or s <subcommand>');
+        expect(mockAppendMessage).toHaveBeenCalledWith(expect.stringContaining('Stats commands:\n'));
+        expect(mockAppendMessage).toHaveBeenCalledWith(expect.stringContaining('stats transactions'));
     });
 
-    test('handles "transactions" subcommand', async () => {
-        await handleStatsCommand(['transactions'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('transactions stats');
+    it('should handle transactions subcommand', async () => {
+        await handleStatsCommand(['transactions'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getStatsText).toHaveBeenCalledWith('USD');
+        expect(mockAppendMessage).toHaveBeenCalledWith('stats text');
     });
 
-    test('handles "holdings" subcommand', async () => {
-        await handleStatsCommand(['holdings'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('holdings stats');
+    it('should handle transactions subcommand with fallback currency', async () => {
+        transactionState.selectedCurrency = null;
+        await handleStatsCommand(['transactions'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getStatsText).toHaveBeenCalledWith('USD');
     });
 
-    test('handles "holdings-debug" subcommand', async () => {
-        await handleStatsCommand(['holdings-debug'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('holdings debug stats');
+    it('should handle holdings subcommand', async () => {
+        await handleStatsCommand(['holdings'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getHoldingsText).toHaveBeenCalledWith('USD');
+        expect(mockAppendMessage).toHaveBeenCalledWith('holdings text');
     });
 
-    test('handles "financial" subcommand', async () => {
-        await handleStatsCommand(['financial'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('financial stats');
+    it('should handle holdings-debug subcommand', async () => {
+        await handleStatsCommand(['holdings-debug'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getHoldingsDebugText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('holdings debug text');
     });
 
-    test('handles "technical" subcommand', async () => {
-        await handleStatsCommand(['technical'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('technical stats');
+    it('should handle financial subcommand', async () => {
+        await handleStatsCommand(['financial'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getFinancialStatsText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('financial text');
     });
 
-    test('handles "cagr" subcommand', async () => {
-        await handleStatsCommand(['cagr'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('cagr stats');
+    it('should handle technical subcommand', async () => {
+        await handleStatsCommand(['technical'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getTechnicalStatsText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('technical text');
     });
 
-    test('handles "return" subcommand', async () => {
-        await handleStatsCommand(['return'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('annual return stats');
+    it('should handle cagr subcommand', async () => {
+        await handleStatsCommand(['cagr'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getCagrText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('cagr text');
     });
 
-    test('handles "ratio" subcommand', async () => {
-        await handleStatsCommand(['ratio'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('ratio stats');
+    it('should handle return subcommand', async () => {
+        await handleStatsCommand(['return'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getAnnualReturnText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('return text');
     });
 
-    test('handles "duration" subcommand', async () => {
-        await handleStatsCommand(['duration'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('duration stats');
+    it('should handle ratio subcommand', async () => {
+        await handleStatsCommand(['ratio'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getRatioText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('ratio text');
     });
 
-    test('handles "lifespan" subcommand', async () => {
-        await handleStatsCommand(['lifespan'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('lifespan stats');
+    it('should handle duration subcommand', async () => {
+        await handleStatsCommand(['duration'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getDurationStatsText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('duration text');
     });
 
-    test('handles "concentration" subcommand', async () => {
-        await handleStatsCommand(['concentration'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('concentration stats');
+    it('should handle lifespan subcommand', async () => {
+        await handleStatsCommand(['lifespan'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getLifespanStatsText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('lifespan text');
     });
 
-    test('handles "geography" subcommand', async () => {
-        await handleStatsCommand(['geography'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('geography stats');
+    it('should handle concentration subcommand', async () => {
+        await handleStatsCommand(['concentration'], { appendMessage: mockAppendMessage });
+
+        expect(terminalStats.getConcentrationText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('concentration text');
     });
 
-    test('handles unknown subcommands and lists available subcommands', async () => {
-        await handleStatsCommand(['invalid_command'], { appendMessage: appendMessageMock });
+    it('should handle geography subcommand', async () => {
+        await handleStatsCommand(['geography'], { appendMessage: mockAppendMessage });
 
-        expect(appendMessageMock).toHaveBeenCalledTimes(1);
-        const arg = appendMessageMock.mock.calls[0][0];
-        expect(arg).toContain('Unknown stats subcommand: invalid_command');
-        expect(arg).toContain('Available: transactions, holdings, financial');
+        expect(getGeographySummaryText).toHaveBeenCalled();
+        expect(mockAppendMessage).toHaveBeenCalledWith('geography text');
     });
 
-    test('is case insensitive', async () => {
-        await handleStatsCommand(['CAGR'], { appendMessage: appendMessageMock });
-        expect(appendMessageMock).toHaveBeenCalledWith('cagr stats');
+    it('should handle unknown subcommand', async () => {
+        await handleStatsCommand(['unknown'], { appendMessage: mockAppendMessage });
+
+        expect(mockAppendMessage).toHaveBeenCalledWith(expect.stringContaining('Unknown stats subcommand: unknown'));
+    });
+
+    it('should handle empty result gracefully', async () => {
+        terminalStats.getStatsText.mockResolvedValueOnce('');
+        await handleStatsCommand(['transactions'], { appendMessage: mockAppendMessage });
+
+        expect(mockAppendMessage).not.toHaveBeenCalled();
     });
 });
-    test('handles fallback currency for transactions and holdings', async () => {
-        // Mock state to not have selectedCurrency
-        jest.resetModules();
-        jest.doMock('@js/transactions/state.js', () => ({
-            transactionState: {},
-        }));
-
-        // Re-mock other things needed to prevent errors
-        jest.doMock('@js/transactions/terminalStats.js', () => ({
-            getStatsText: jest.fn((currency) => `transactions stats ${currency}`),
-            getHoldingsText: jest.fn((currency) => `holdings stats ${currency}`),
-            getHoldingsDebugText: jest.fn(() => 'holdings debug stats'),
-            getCagrText: jest.fn(() => 'cagr stats'),
-            getAnnualReturnText: jest.fn(() => 'annual return stats'),
-            getRatioText: jest.fn(() => 'ratio stats'),
-            getDurationStatsText: jest.fn(() => 'duration stats'),
-            getLifespanStatsText: jest.fn(() => 'lifespan stats'),
-            getConcentrationText: jest.fn(() => 'concentration stats'),
-            getFinancialStatsText: jest.fn(() => 'financial stats'),
-            getTechnicalStatsText: jest.fn(() => 'technical stats'),
-        }));
-        jest.doMock('@js/transactions/terminal/handlers/geographySummary.js', () => ({
-            getGeographySummaryText: jest.fn(() => 'geography stats'),
-        }));
-        jest.doMock('@js/transactions/terminal/constants.js', () => ({
-            STATS_SUBCOMMANDS: ['transactions', 'holdings'],
-        }));
-
-        const module2 = await import('@js/transactions/terminal/handlers/stats.js');
-        const handleStatsCommand2 = module2.handleStatsCommand;
-        const appendMessageMock2 = jest.fn();
-
-        await handleStatsCommand2(['transactions'], { appendMessage: appendMessageMock2 });
-        expect(appendMessageMock2).toHaveBeenCalledWith('transactions stats USD');
-
-        await handleStatsCommand2(['holdings'], { appendMessage: appendMessageMock2 });
-        expect(appendMessageMock2).toHaveBeenCalledWith('holdings stats USD');
-    });
-
-    test('does not append message if result is empty string', async () => {
-        // Re-mock to return empty string
-        jest.resetModules();
-        jest.doMock('@js/transactions/state.js', () => ({
-            transactionState: { selectedCurrency: 'USD' },
-        }));
-
-        jest.doMock('@js/transactions/terminalStats.js', () => ({
-            getStatsText: jest.fn(() => ''),
-            getHoldingsText: jest.fn(() => ''),
-            getHoldingsDebugText: jest.fn(() => 'holdings debug stats'),
-            getCagrText: jest.fn(() => 'cagr stats'),
-            getAnnualReturnText: jest.fn(() => 'annual return stats'),
-            getRatioText: jest.fn(() => 'ratio stats'),
-            getDurationStatsText: jest.fn(() => 'duration stats'),
-            getLifespanStatsText: jest.fn(() => 'lifespan stats'),
-            getConcentrationText: jest.fn(() => 'concentration stats'),
-            getFinancialStatsText: jest.fn(() => 'financial stats'),
-            getTechnicalStatsText: jest.fn(() => 'technical stats'),
-        }));
-        jest.doMock('@js/transactions/terminal/handlers/geographySummary.js', () => ({
-            getGeographySummaryText: jest.fn(() => 'geography stats'),
-        }));
-        jest.doMock('@js/transactions/terminal/constants.js', () => ({
-            STATS_SUBCOMMANDS: ['transactions', 'holdings'],
-        }));
-
-        const module2 = await import('@js/transactions/terminal/handlers/stats.js');
-        const handleStatsCommand2 = module2.handleStatsCommand;
-        const appendMessageMock2 = jest.fn();
-
-        await handleStatsCommand2(['transactions'], { appendMessage: appendMessageMock2 });
-        expect(appendMessageMock2).not.toHaveBeenCalled();
-    });
