@@ -1,7 +1,8 @@
 import argparse
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from scripts.commands.fund_data import _run, add_parser
+
 
 def test_run():
     args = argparse.Namespace()

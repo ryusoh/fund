@@ -1,5 +1,7 @@
-from scripts.utils.security_utils import scrub_secrets
 import urllib.parse
+
+from scripts.utils.security_utils import scrub_secrets
+
 
 def test_scrub_secrets():
     secret1 = "my_secret_123!"
