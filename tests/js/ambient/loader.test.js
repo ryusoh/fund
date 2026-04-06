@@ -12,7 +12,7 @@ describe('Ambient Loader', () => {
         originalConsoleWarn = console.warn;
         console.warn = jest.fn();
 
-        window.matchMedia = jest.fn().mockImplementation(query => ({
+        window.matchMedia = jest.fn().mockImplementation((query) => ({
             matches: false,
             media: query,
             onchange: null,
@@ -44,7 +44,7 @@ describe('Ambient Loader', () => {
     });
 
     it('should abort if prefers-reduced-motion is true', () => {
-        window.matchMedia.mockImplementation(query => ({
+        window.matchMedia.mockImplementation((query) => ({
             matches: query === '(prefers-reduced-motion: reduce)',
         }));
 
@@ -67,12 +67,14 @@ describe('Ambient Loader', () => {
         expect(appendChildSpy).toHaveBeenCalled();
 
         // Find appended link
-        const linkCall = appendChildSpy.mock.calls.find(call => call[0].tagName === 'LINK');
+        const linkCall = appendChildSpy.mock.calls.find((call) => call[0].tagName === 'LINK');
         expect(linkCall).toBeTruthy();
         expect(linkCall[0].href).toContain('/css/ambient/ambient.css');
 
         // Find appended scripts
-        const scriptCalls = appendChildSpy.mock.calls.filter(call => call[0].tagName === 'SCRIPT');
+        const scriptCalls = appendChildSpy.mock.calls.filter(
+            (call) => call[0].tagName === 'SCRIPT'
+        );
         expect(scriptCalls.length).toBeGreaterThan(0);
         expect(scriptCalls[0][0].src).toContain('/js/ambient/sketch.js');
     });

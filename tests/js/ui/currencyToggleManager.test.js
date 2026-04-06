@@ -246,7 +246,9 @@ describe('currencyToggleManager', () => {
         document.dispatchEvent.mockImplementationOnce((event) => {
             if (event.type === 'currencyChangedGlobal') {
                 // Fire another one while the first is dispatching
-                document.dispatchEvent(new CustomEvent('currencyChangedGlobal', { detail: { currency: 'KRW' } }));
+                document.dispatchEvent(
+                    new CustomEvent('currencyChangedGlobal', { detail: { currency: 'KRW' } })
+                );
             }
             return true;
         });
@@ -264,7 +266,9 @@ describe('currencyToggleManager', () => {
         document.dispatchEvent.mockClear();
 
         // Trigger global event with USD (which is already active)
-        document.dispatchEvent(new CustomEvent('currencyChangedGlobal', { detail: { currency: 'USD' } }));
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'USD' } })
+        );
 
         // Ensure no state change occurred, currentCurrency remains USD
         const usdButton = document.querySelector('[data-currency="USD"]');

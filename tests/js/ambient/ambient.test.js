@@ -14,7 +14,7 @@ describe('Ambient Logic', () => {
                     height: 1080,
                     canvas: {
                         style: {},
-                        className: ''
+                        className: '',
                     },
                     start: jest.fn(),
                     stop: jest.fn(),
@@ -24,7 +24,7 @@ describe('Ambient Logic', () => {
                     beginPath: jest.fn(),
                     arc: jest.fn(),
                     fill: jest.fn(),
-                    fillRect: jest.fn()
+                    fillRect: jest.fn(),
                 };
                 return s;
             }),
@@ -58,7 +58,7 @@ describe('Ambient Logic', () => {
                     if (search.includes(`${key}=debug`)) return 'debug';
                     if (search.includes(`${key}=trace`)) return 'trace';
                     return null;
-                }
+                },
             })),
         });
 
@@ -142,7 +142,9 @@ describe('Ambient Logic', () => {
 
     it('should catch exceptions and log warning', () => {
         Object.defineProperty(window, 'URLSearchParams', {
-            get: () => { throw new Error('mock init error'); }
+            get: () => {
+                throw new Error('mock init error');
+            },
         });
 
         require('../../../js/ambient/ambient.js');

@@ -418,7 +418,9 @@ describe('nav_prefetch.js', () => {
 
         // Verify that video was skipped (assets/mobile_bg.mp4 should not be fetched)
         const calls = fetchSpy.mock.calls.map((c) => c[0]);
-        expect(calls.some((url) => url && url.endsWith && url.endsWith('mobile_bg.mp4'))).toBe(false);
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('mobile_bg.mp4'))).toBe(
+            false
+        );
     });
 
     test('should skip asset if connection is slow-2g and type is video', () => {
@@ -436,6 +438,8 @@ describe('nav_prefetch.js', () => {
         jest.runAllTimers();
 
         const calls = fetchSpy.mock.calls.map((c) => c[0]);
-        expect(calls.some((url) => url && url.endsWith && url.endsWith('mobile_bg.mp4'))).toBe(false);
+        expect(calls.some((url) => url && url.endsWith && url.endsWith('mobile_bg.mp4'))).toBe(
+            false
+        );
     });
 });
