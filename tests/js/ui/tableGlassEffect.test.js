@@ -171,7 +171,9 @@ describe('TableGlassEffect', () => {
         // Clear all tbody from the container
         container.querySelectorAll('tbody').forEach((el) => el.remove());
 
-        const effect = new TableGlassEffect('.table-responsive-container', { rowHoverEffect: { enabled: true } });
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
 
         // This should not throw and rows should remain empty or unpopulated
         effect.resize();

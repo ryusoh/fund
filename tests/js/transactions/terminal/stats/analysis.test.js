@@ -1,5 +1,4 @@
 describe('getConcentrationText', () => {
-
     beforeEach(() => {
         jest.resetModules();
         global.fetch = jest.fn().mockResolvedValue({
