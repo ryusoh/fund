@@ -10,6 +10,7 @@ def test_run():
         _run(args)
         mock_main.assert_called_once()
 
+
 def test_add_parser():
     subparsers = MagicMock()
     mock_parser = MagicMock()

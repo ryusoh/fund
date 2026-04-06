@@ -26,7 +26,9 @@ class TestWSJScrape(unittest.TestCase):
         # Padding content so direct regex match fails on distance
         # Need to put the match close to P 500 Index in the second occurrence
         padding = "X" * 1500
-        mock_response.text = f'P 500 Index {padding} P 500 Index "priceEarningsRatioEstimate": "21.5"'
+        mock_response.text = (
+            f'P 500 Index {padding} P 500 Index "priceEarningsRatioEstimate": "21.5"'
+        )
         mock_get.return_value = mock_response
 
         result = scrape_wsj_forward_pe()
@@ -47,6 +49,7 @@ class TestWSJScrape(unittest.TestCase):
 
         result = scrape_wsj_forward_pe()
         self.assertIsNone(result)
+
 
 if __name__ == '__main__':
     unittest.main()
