@@ -51,5 +51,6 @@ class TestMSCIScrape(unittest.TestCase):
         with self.assertRaises(Exception):  # noqa: B017
             scrape_msci_pe_data()
 
+
 if __name__ == '__main__':
     unittest.main()

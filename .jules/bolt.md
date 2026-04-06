@@ -92,3 +92,8 @@
 
 **Learning:** Using `Math.max(...array.map(x => x))` and `Math.min(...array.map(x => x))` inside rendering functions like `drawRollingChart` introduces O(N) array allocations from `.map` and risks exceeding the maximum call stack size from the spread operator `...`.
 **Action:** Replace `Math.max(...array.map(x => x))` with a single `for` loop that records both min and max inline to prevent garbage collection pressure and avoid call stack bounds errors.
+
+## 2026-04-06 - Replaced map().filter().map() chains with a single loop
+
+**Learning:** In frontend data processing layers (like chart renderers preparing filtered arrays), chaining array methods like `.map().filter().map()` creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead and garbage collection (GC) pressure.
+**Action:** Consolidate chained higher-order array methods into a single manual `for` loop. Iterate over the input array, process the data, apply the filter condition via `continue` statements, and push the valid results directly to a pre-allocated or newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.

@@ -72,24 +72,21 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredIndices = rawDates
-        .map((dateStr, index) => {
-            const date = parseLocalDate(dateStr);
-            return { index, date };
-        })
-        .filter(({ date }) => {
-            if (!date || Number.isNaN(date.getTime())) {
-                return false;
-            }
-            if (filterFrom && date < filterFrom) {
-                return false;
-            }
-            if (filterTo && date > filterTo) {
-                return false;
-            }
-            return true;
-        })
-        .map(({ index }) => index);
+    // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
+    const filteredIndices = [];
+    for (let i = 0; i < rawDates.length; i += 1) {
+        const date = parseLocalDate(rawDates[i]);
+        if (!date || Number.isNaN(date.getTime())) {
+            continue;
+        }
+        if (filterFrom && date < filterFrom) {
+            continue;
+        }
+        if (filterTo && date > filterTo) {
+            continue;
+        }
+        filteredIndices.push(i);
+    }
 
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();

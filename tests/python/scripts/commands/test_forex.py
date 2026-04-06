@@ -12,6 +12,7 @@ def test_run():
             mock_fetch.assert_called_once()
             mock_print.assert_called_once_with("Forex data updated successfully")
 
+
 def test_add_parser():
     subparsers = MagicMock()
     mock_parser = MagicMock()
