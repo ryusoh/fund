@@ -54,9 +54,9 @@ describe('Ambient Logic', () => {
             configurable: true,
             value: jest.fn().mockImplementation((search) => ({
                 get: (key) => {
-                    if (search.includes(`${key}=on`)) return 'on';
-                    if (search.includes(`${key}=debug`)) return 'debug';
-                    if (search.includes(`${key}=trace`)) return 'trace';
+                    if (search.includes(`${key}=on`)) {return 'on';}
+                    if (search.includes(`${key}=debug`)) {return 'debug';}
+                    if (search.includes(`${key}=trace`)) {return 'trace';}
                     return null;
                 },
             })),

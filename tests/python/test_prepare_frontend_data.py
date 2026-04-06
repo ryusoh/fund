@@ -32,7 +32,7 @@ class TestPrepareFrontendData(unittest.TestCase):
         # 1. prices_path exists
         # 2. output_path exists
         mock_exists.side_effect = [True, True]
-        mock_env_get.return_value = '0' # Not 1
+        mock_env_get.return_value = '0'  # Not 1
 
         with patch('builtins.print') as mock_print:
             prepare_historical_prices()
@@ -43,7 +43,9 @@ class TestPrepareFrontendData(unittest.TestCase):
     @patch('scripts.prepare_frontend_data.os.environ.get')
     @patch('scripts.prepare_frontend_data.pd.read_parquet')
     @patch('builtins.open', new_callable=unittest.mock.mock_open)
-    def test_prepare_historical_prices_success(self, mock_file, mock_read_parquet, mock_env_get, mock_exists):
+    def test_prepare_historical_prices_success(
+        self, mock_file, mock_read_parquet, mock_env_get, mock_exists
+    ):
         # path logic:
         # 1. prices_path -> True
         # 2. output_path -> False
@@ -51,12 +53,14 @@ class TestPrepareFrontendData(unittest.TestCase):
         mock_exists.side_effect = [True, False, False]
         mock_env_get.return_value = '0'
 
-        df_prices = pd.DataFrame({
-            'index': pd.to_datetime(['2023-01-01', '2023-01-02']),
-            'AAPL': [150.0, 151.0],
-            'BRKB': [300.0, 301.0], # Alias check
-            'MISSING': [np.nan, np.nan] # Null handling
-        }).set_index('index')
+        df_prices = pd.DataFrame(
+            {
+                'index': pd.to_datetime(['2023-01-01', '2023-01-02']),
+                'AAPL': [150.0, 151.0],
+                'BRKB': [300.0, 301.0],  # Alias check
+                'MISSING': [np.nan, np.nan],  # Null handling
+            }
+        ).set_index('index')
 
         mock_read_parquet.return_value = df_prices
 
@@ -81,6 +85,7 @@ class TestPrepareFrontendData(unittest.TestCase):
 
         # MISSING
         self.assertNotIn('MISSING', parsed)
+
 
 if __name__ == '__main__':
     unittest.main()
