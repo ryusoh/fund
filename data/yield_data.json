@@ -2517,7 +2517,7 @@
     "date": "2021-08-18",
     "forward_yield": 2.5304,
     "ttm_income": 1067.18,
-    "market_value": 63787.92
+    "market_value": 63787.91
   },
   {
     "date": "2021-08-19",
@@ -2763,7 +2763,7 @@
     "date": "2021-09-28",
     "forward_yield": 2.1923,
     "ttm_income": 1087.37,
-    "market_value": 87064.83
+    "market_value": 87064.82
   },
   {
     "date": "2021-09-29",
@@ -2799,7 +2799,7 @@
     "date": "2021-10-04",
     "forward_yield": 2.2406,
     "ttm_income": 1106.99,
-    "market_value": 87470.47
+    "market_value": 87470.48
   },
   {
     "date": "2021-10-05",
@@ -2853,13 +2853,13 @@
     "date": "2021-10-13",
     "forward_yield": 2.1368,
     "ttm_income": 1106.99,
-    "market_value": 91719.61
+    "market_value": 91719.6
   },
   {
     "date": "2021-10-14",
     "forward_yield": 2.103,
     "ttm_income": 1106.99,
-    "market_value": 93396.63
+    "market_value": 93396.62
   },
   {
     "date": "2021-10-15",
@@ -2901,7 +2901,7 @@
     "date": "2021-10-21",
     "forward_yield": 2.0995,
     "ttm_income": 1106.99,
-    "market_value": 95592.55
+    "market_value": 95592.56
   },
   {
     "date": "2021-10-22",
@@ -3075,19 +3075,19 @@
     "date": "2021-11-19",
     "forward_yield": 1.7811,
     "ttm_income": 1130.33,
-    "market_value": 122095.14
+    "market_value": 122095.13
   },
   {
     "date": "2021-11-20",
     "forward_yield": 1.7811,
     "ttm_income": 1130.33,
-    "market_value": 122095.14
+    "market_value": 122095.13
   },
   {
     "date": "2021-11-21",
     "forward_yield": 1.7811,
     "ttm_income": 1130.33,
-    "market_value": 122095.14
+    "market_value": 122095.13
   },
   {
     "date": "2021-11-22",
@@ -3141,7 +3141,7 @@
     "date": "2021-11-30",
     "forward_yield": 1.7114,
     "ttm_income": 1130.33,
-    "market_value": 134055.3
+    "market_value": 134055.29
   },
   {
     "date": "2021-12-01",
@@ -3315,7 +3315,7 @@
     "date": "2021-12-29",
     "forward_yield": 1.5624,
     "ttm_income": 1213.06,
-    "market_value": 149336.06
+    "market_value": 149336.05
   },
   {
     "date": "2021-12-30",
@@ -3327,19 +3327,19 @@
     "date": "2021-12-31",
     "forward_yield": 2.5994,
     "ttm_income": 3132.76,
-    "market_value": 152728.46
+    "market_value": 152728.45
   },
   {
     "date": "2022-01-01",
     "forward_yield": 2.5994,
     "ttm_income": 3132.76,
-    "market_value": 152728.46
+    "market_value": 152728.45
   },
   {
     "date": "2022-01-02",
     "forward_yield": 2.5994,
     "ttm_income": 3132.76,
-    "market_value": 152728.46
+    "market_value": 152728.45
   },
   {
     "date": "2022-01-03",
@@ -3357,7 +3357,7 @@
     "date": "2022-01-05",
     "forward_yield": 2.6731,
     "ttm_income": 3132.76,
-    "market_value": 149585.01
+    "market_value": 149585.0
   },
   {
     "date": "2022-01-06",
@@ -3369,19 +3369,19 @@
     "date": "2022-01-07",
     "forward_yield": 2.7477,
     "ttm_income": 3132.76,
-    "market_value": 148386.02
+    "market_value": 148386.01
   },
   {
     "date": "2022-01-08",
     "forward_yield": 2.7477,
     "ttm_income": 3132.76,
-    "market_value": 148386.02
+    "market_value": 148386.01
   },
   {
     "date": "2022-01-09",
     "forward_yield": 2.7477,
     "ttm_income": 3132.76,
-    "market_value": 148386.02
+    "market_value": 148386.01
   },
   {
     "date": "2022-01-10",
@@ -3411,31 +3411,31 @@
     "date": "2022-01-14",
     "forward_yield": 2.7503,
     "ttm_income": 3132.76,
-    "market_value": 148249.31
+    "market_value": 148249.32
   },
   {
     "date": "2022-01-15",
     "forward_yield": 2.7503,
     "ttm_income": 3132.76,
-    "market_value": 148249.31
+    "market_value": 148249.32
   },
   {
     "date": "2022-01-16",
     "forward_yield": 2.7503,
     "ttm_income": 3132.76,
-    "market_value": 148249.31
+    "market_value": 148249.32
   },
   {
     "date": "2022-01-17",
     "forward_yield": 2.7503,
     "ttm_income": 3132.76,
-    "market_value": 148249.31
+    "market_value": 148249.32
   },
   {
     "date": "2022-01-18",
     "forward_yield": 2.8093,
     "ttm_income": 3132.76,
-    "market_value": 145134.57
+    "market_value": 145134.56
   },
   {
     "date": "2022-01-19",
@@ -3555,7 +3555,7 @@
     "date": "2022-02-07",
     "forward_yield": 2.9473,
     "ttm_income": 3151.62,
-    "market_value": 144415.0
+    "market_value": 144415.01
   },
   {
     "date": "2022-02-08",
@@ -3597,19 +3597,19 @@
     "date": "2022-02-14",
     "forward_yield": 2.979,
     "ttm_income": 3151.62,
-    "market_value": 142878.67
+    "market_value": 142878.66
   },
   {
     "date": "2022-02-15",
     "forward_yield": 2.6618,
     "ttm_income": 3151.62,
-    "market_value": 159905.32
+    "market_value": 159905.31
   },
   {
     "date": "2022-02-16",
     "forward_yield": 2.6521,
     "ttm_income": 3165.88,
-    "market_value": 161024.15
+    "market_value": 161024.16
   },
   {
     "date": "2022-02-17",
@@ -3621,25 +3621,25 @@
     "date": "2022-02-18",
     "forward_yield": 2.7542,
     "ttm_income": 3165.88,
-    "market_value": 154587.72
+    "market_value": 154587.71
   },
   {
     "date": "2022-02-19",
     "forward_yield": 2.7542,
     "ttm_income": 3165.88,
-    "market_value": 154587.72
+    "market_value": 154587.71
   },
   {
     "date": "2022-02-20",
     "forward_yield": 2.7542,
     "ttm_income": 3165.88,
-    "market_value": 154587.72
+    "market_value": 154587.71
   },
   {
     "date": "2022-02-21",
     "forward_yield": 2.7542,
     "ttm_income": 3165.88,
-    "market_value": 154587.72
+    "market_value": 154587.71
   },
   {
     "date": "2022-02-22",
@@ -3681,7 +3681,7 @@
     "date": "2022-02-28",
     "forward_yield": 2.715,
     "ttm_income": 3165.88,
-    "market_value": 159898.44
+    "market_value": 159898.43
   },
   {
     "date": "2022-03-01",
@@ -3699,25 +3699,25 @@
     "date": "2022-03-03",
     "forward_yield": 2.7428,
     "ttm_income": 3166.64,
-    "market_value": 158790.96
+    "market_value": 158790.97
   },
   {
     "date": "2022-03-04",
     "forward_yield": 2.7844,
     "ttm_income": 3166.64,
-    "market_value": 156422.52
+    "market_value": 156422.51
   },
   {
     "date": "2022-03-05",
     "forward_yield": 2.7844,
     "ttm_income": 3166.64,
-    "market_value": 156422.52
+    "market_value": 156422.51
   },
   {
     "date": "2022-03-06",
     "forward_yield": 2.7844,
     "ttm_income": 3166.64,
-    "market_value": 156422.52
+    "market_value": 156422.51
   },
   {
     "date": "2022-03-07",
@@ -3729,7 +3729,7 @@
     "date": "2022-03-08",
     "forward_yield": 2.922,
     "ttm_income": 3166.64,
-    "market_value": 152098.5
+    "market_value": 152098.49
   },
   {
     "date": "2022-03-09",
@@ -3747,37 +3747,37 @@
     "date": "2022-03-11",
     "forward_yield": 2.8578,
     "ttm_income": 3166.64,
-    "market_value": 155485.38
+    "market_value": 155485.39
   },
   {
     "date": "2022-03-12",
     "forward_yield": 2.8578,
     "ttm_income": 3166.64,
-    "market_value": 155485.38
+    "market_value": 155485.39
   },
   {
     "date": "2022-03-13",
     "forward_yield": 2.8578,
     "ttm_income": 3166.64,
-    "market_value": 155485.38
+    "market_value": 155485.39
   },
   {
     "date": "2022-03-14",
     "forward_yield": 2.9237,
     "ttm_income": 3166.64,
-    "market_value": 151984.65
+    "market_value": 151984.66
   },
   {
     "date": "2022-03-15",
     "forward_yield": 2.8291,
     "ttm_income": 3166.64,
-    "market_value": 157063.16
+    "market_value": 157063.15
   },
   {
     "date": "2022-03-16",
     "forward_yield": 2.7479,
     "ttm_income": 3166.64,
-    "market_value": 161705.28
+    "market_value": 161705.27
   },
   {
     "date": "2022-03-17",
@@ -3861,31 +3861,31 @@
     "date": "2022-03-30",
     "forward_yield": 2.5711,
     "ttm_income": 3257.68,
-    "market_value": 176870.92
+    "market_value": 176870.91
   },
   {
     "date": "2022-03-31",
     "forward_yield": 2.5813,
     "ttm_income": 3257.68,
-    "market_value": 176733.87
+    "market_value": 176733.88
   },
   {
     "date": "2022-04-01",
     "forward_yield": 2.6102,
     "ttm_income": 3257.68,
-    "market_value": 177941.11
+    "market_value": 177941.1
   },
   {
     "date": "2022-04-02",
     "forward_yield": 2.6102,
     "ttm_income": 3257.68,
-    "market_value": 177941.11
+    "market_value": 177941.1
   },
   {
     "date": "2022-04-03",
     "forward_yield": 2.6102,
     "ttm_income": 3257.68,
-    "market_value": 177941.11
+    "market_value": 177941.1
   },
   {
     "date": "2022-04-04",
@@ -3993,7 +3993,7 @@
     "date": "2022-04-21",
     "forward_yield": 2.8887,
     "ttm_income": 3257.94,
-    "market_value": 164525.91
+    "market_value": 164525.92
   },
   {
     "date": "2022-04-22",
@@ -4059,7 +4059,7 @@
     "date": "2022-05-02",
     "forward_yield": 3.0225,
     "ttm_income": 3265.14,
-    "market_value": 160752.07
+    "market_value": 160752.08
   },
   {
     "date": "2022-05-03",
@@ -4101,19 +4101,19 @@
     "date": "2022-05-09",
     "forward_yield": 5.1495,
     "ttm_income": 5720.14,
-    "market_value": 147475.35
+    "market_value": 147475.34
   },
   {
     "date": "2022-05-10",
     "forward_yield": 5.0801,
     "ttm_income": 5720.14,
-    "market_value": 149490.54
+    "market_value": 149490.53
   },
   {
     "date": "2022-05-11",
     "forward_yield": 5.1908,
     "ttm_income": 5720.14,
-    "market_value": 146304.46
+    "market_value": 146304.47
   },
   {
     "date": "2022-05-12",
@@ -4155,7 +4155,7 @@
     "date": "2022-05-18",
     "forward_yield": 4.0489,
     "ttm_income": 4894.37,
-    "market_value": 146390.25
+    "market_value": 146390.26
   },
   {
     "date": "2022-05-19",
@@ -4167,25 +4167,25 @@
     "date": "2022-05-20",
     "forward_yield": 3.9232,
     "ttm_income": 4895.86,
-    "market_value": 150792.6
+    "market_value": 150792.61
   },
   {
     "date": "2022-05-21",
     "forward_yield": 3.9223,
     "ttm_income": 4895.86,
-    "market_value": 150792.6
+    "market_value": 150792.61
   },
   {
     "date": "2022-05-22",
     "forward_yield": 3.9223,
     "ttm_income": 4895.86,
-    "market_value": 150792.6
+    "market_value": 150792.61
   },
   {
     "date": "2022-05-23",
     "forward_yield": 3.8819,
     "ttm_income": 4895.86,
-    "market_value": 152358.41
+    "market_value": 152358.4
   },
   {
     "date": "2022-05-24",
@@ -4209,37 +4209,37 @@
     "date": "2022-05-27",
     "forward_yield": 3.7789,
     "ttm_income": 4895.86,
-    "market_value": 159382.25
+    "market_value": 159382.26
   },
   {
     "date": "2022-05-28",
     "forward_yield": 3.7789,
     "ttm_income": 4895.86,
-    "market_value": 159382.25
+    "market_value": 159382.26
   },
   {
     "date": "2022-05-29",
     "forward_yield": 3.7789,
     "ttm_income": 4895.86,
-    "market_value": 159382.25
+    "market_value": 159382.26
   },
   {
     "date": "2022-05-30",
     "forward_yield": 3.7789,
     "ttm_income": 4895.86,
-    "market_value": 159382.25
+    "market_value": 159382.26
   },
   {
     "date": "2022-05-31",
     "forward_yield": 3.8392,
     "ttm_income": 4895.86,
-    "market_value": 156878.04
+    "market_value": 156878.05
   },
   {
     "date": "2022-06-01",
     "forward_yield": 3.8555,
     "ttm_income": 4895.86,
-    "market_value": 156216.1
+    "market_value": 156216.09
   },
   {
     "date": "2022-06-02",
@@ -4275,7 +4275,7 @@
     "date": "2022-06-07",
     "forward_yield": 3.7674,
     "ttm_income": 4898.46,
-    "market_value": 160238.72
+    "market_value": 160238.73
   },
   {
     "date": "2022-06-08",
@@ -4287,25 +4287,25 @@
     "date": "2022-06-09",
     "forward_yield": 3.9227,
     "ttm_income": 4899.26,
-    "market_value": 153892.85
+    "market_value": 153892.84
   },
   {
     "date": "2022-06-10",
     "forward_yield": 4.1097,
     "ttm_income": 4899.26,
-    "market_value": 149664.0
+    "market_value": 149664.01
   },
   {
     "date": "2022-06-11",
     "forward_yield": 4.1097,
     "ttm_income": 4899.26,
-    "market_value": 149664.0
+    "market_value": 149664.01
   },
   {
     "date": "2022-06-12",
     "forward_yield": 4.1097,
     "ttm_income": 4899.26,
-    "market_value": 149664.0
+    "market_value": 149664.01
   },
   {
     "date": "2022-06-13",
@@ -4365,7 +4365,7 @@
     "date": "2022-06-22",
     "forward_yield": 4.2581,
     "ttm_income": 4975.66,
-    "market_value": 145286.94
+    "market_value": 145286.95
   },
   {
     "date": "2022-06-23",
@@ -4491,7 +4491,7 @@
     "date": "2022-07-13",
     "forward_yield": 4.2408,
     "ttm_income": 5013.78,
-    "market_value": 151804.76
+    "market_value": 151804.77
   },
   {
     "date": "2022-07-14",
@@ -4575,7 +4575,7 @@
     "date": "2022-07-27",
     "forward_yield": 3.9842,
     "ttm_income": 5014.16,
-    "market_value": 164825.06
+    "market_value": 164825.07
   },
   {
     "date": "2022-07-28",
@@ -4587,19 +4587,19 @@
     "date": "2022-07-29",
     "forward_yield": 3.8267,
     "ttm_income": 5021.36,
-    "market_value": 171637.35
+    "market_value": 171637.36
   },
   {
     "date": "2022-07-30",
     "forward_yield": 3.8267,
     "ttm_income": 5021.36,
-    "market_value": 171637.35
+    "market_value": 171637.36
   },
   {
     "date": "2022-07-31",
     "forward_yield": 3.8267,
     "ttm_income": 5021.36,
-    "market_value": 171637.35
+    "market_value": 171637.36
   },
   {
     "date": "2022-08-01",
@@ -4653,13 +4653,13 @@
     "date": "2022-08-09",
     "forward_yield": 3.8186,
     "ttm_income": 5034.27,
-    "market_value": 175607.53
+    "market_value": 175607.52
   },
   {
     "date": "2022-08-10",
     "forward_yield": 3.6914,
     "ttm_income": 5034.27,
-    "market_value": 181655.23
+    "market_value": 181655.24
   },
   {
     "date": "2022-08-11",
@@ -4701,7 +4701,7 @@
     "date": "2022-08-17",
     "forward_yield": 3.4276,
     "ttm_income": 5048.53,
-    "market_value": 196054.3
+    "market_value": 196054.31
   },
   {
     "date": "2022-08-18",
@@ -4731,7 +4731,7 @@
     "date": "2022-08-22",
     "forward_yield": 3.4638,
     "ttm_income": 5050.04,
-    "market_value": 197293.96
+    "market_value": 197293.95
   },
   {
     "date": "2022-08-23",
@@ -4785,7 +4785,7 @@
     "date": "2022-08-31",
     "forward_yield": 3.6345,
     "ttm_income": 5050.04,
-    "market_value": 188331.59
+    "market_value": 188331.6
   },
   {
     "date": "2022-09-01",
@@ -4827,7 +4827,7 @@
     "date": "2022-09-07",
     "forward_yield": 3.6907,
     "ttm_income": 5050.84,
-    "market_value": 188933.75
+    "market_value": 188933.76
   },
   {
     "date": "2022-09-08",
@@ -4875,7 +4875,7 @@
     "date": "2022-09-15",
     "forward_yield": 3.7776,
     "ttm_income": 5061.08,
-    "market_value": 184737.11
+    "market_value": 184737.12
   },
   {
     "date": "2022-09-16",
@@ -4905,13 +4905,13 @@
     "date": "2022-09-20",
     "forward_yield": 3.8976,
     "ttm_income": 5099.3,
-    "market_value": 182652.04
+    "market_value": 182652.05
   },
   {
     "date": "2022-09-21",
     "forward_yield": 3.9354,
     "ttm_income": 5099.3,
-    "market_value": 180897.96
+    "market_value": 180897.95
   },
   {
     "date": "2022-09-22",
@@ -4959,7 +4959,7 @@
     "date": "2022-09-29",
     "forward_yield": 4.0041,
     "ttm_income": 5141.21,
-    "market_value": 178198.84
+    "market_value": 178198.83
   },
   {
     "date": "2022-09-30",
@@ -5073,7 +5073,7 @@
     "date": "2022-10-18",
     "forward_yield": 4.2166,
     "ttm_income": 5141.21,
-    "market_value": 176021.46
+    "market_value": 176021.45
   },
   {
     "date": "2022-10-19",
@@ -5121,7 +5121,7 @@
     "date": "2022-10-26",
     "forward_yield": 4.1124,
     "ttm_income": 5142.12,
-    "market_value": 180504.92
+    "market_value": 180504.91
   },
   {
     "date": "2022-10-27",
@@ -5133,19 +5133,19 @@
     "date": "2022-10-28",
     "forward_yield": 4.9299,
     "ttm_income": 5148.64,
-    "market_value": 153329.16
+    "market_value": 153329.15
   },
   {
     "date": "2022-10-29",
     "forward_yield": 4.9299,
     "ttm_income": 5148.64,
-    "market_value": 153329.16
+    "market_value": 153329.15
   },
   {
     "date": "2022-10-30",
     "forward_yield": 4.9299,
     "ttm_income": 5148.64,
-    "market_value": 153329.16
+    "market_value": 153329.15
   },
   {
     "date": "2022-10-31",
@@ -5163,7 +5163,7 @@
     "date": "2022-11-02",
     "forward_yield": 5.0146,
     "ttm_income": 5148.64,
-    "market_value": 150739.92
+    "market_value": 150739.91
   },
   {
     "date": "2022-11-03",
@@ -5175,19 +5175,19 @@
     "date": "2022-11-04",
     "forward_yield": 4.9398,
     "ttm_income": 5162.67,
-    "market_value": 153305.56
+    "market_value": 153305.57
   },
   {
     "date": "2022-11-05",
     "forward_yield": 4.931,
     "ttm_income": 5151.45,
-    "market_value": 153305.56
+    "market_value": 153305.57
   },
   {
     "date": "2022-11-06",
     "forward_yield": 4.931,
     "ttm_income": 5151.45,
-    "market_value": 153305.56
+    "market_value": 153305.57
   },
   {
     "date": "2022-11-07",
@@ -5241,13 +5241,13 @@
     "date": "2022-11-15",
     "forward_yield": 4.7272,
     "ttm_income": 5151.45,
-    "market_value": 162654.63
+    "market_value": 162654.62
   },
   {
     "date": "2022-11-16",
     "forward_yield": 4.7911,
     "ttm_income": 5167.09,
-    "market_value": 160810.33
+    "market_value": 160810.32
   },
   {
     "date": "2022-11-17",
@@ -5403,7 +5403,7 @@
     "date": "2022-12-12",
     "forward_yield": 4.7864,
     "ttm_income": 5166.01,
-    "market_value": 163517.38
+    "market_value": 163517.37
   },
   {
     "date": "2022-12-13",
@@ -5427,37 +5427,37 @@
     "date": "2022-12-16",
     "forward_yield": 5.0133,
     "ttm_income": 5203.69,
-    "market_value": 159743.42
+    "market_value": 159743.43
   },
   {
     "date": "2022-12-17",
     "forward_yield": 4.9951,
     "ttm_income": 5184.09,
-    "market_value": 159743.42
+    "market_value": 159743.43
   },
   {
     "date": "2022-12-18",
     "forward_yield": 4.9951,
     "ttm_income": 5184.09,
-    "market_value": 159743.42
+    "market_value": 159743.43
   },
   {
     "date": "2022-12-19",
     "forward_yield": 5.0564,
     "ttm_income": 5209.64,
-    "market_value": 158309.71
+    "market_value": 158309.72
   },
   {
     "date": "2022-12-20",
     "forward_yield": 5.0755,
     "ttm_income": 5236.51,
-    "market_value": 158128.31
+    "market_value": 158128.32
   },
   {
     "date": "2022-12-21",
     "forward_yield": 5.0089,
     "ttm_income": 5240.74,
-    "market_value": 160255.23
+    "market_value": 160255.24
   },
   {
     "date": "2022-12-22",
@@ -5571,25 +5571,25 @@
     "date": "2023-01-09",
     "forward_yield": 3.7581,
     "ttm_income": 4676.42,
-    "market_value": 159377.25
+    "market_value": 159377.24
   },
   {
     "date": "2023-01-10",
     "forward_yield": 3.7359,
     "ttm_income": 4670.61,
-    "market_value": 160472.08
+    "market_value": 160472.07
   },
   {
     "date": "2023-01-11",
     "forward_yield": 3.694,
     "ttm_income": 4670.61,
-    "market_value": 162291.85
+    "market_value": 162291.84
   },
   {
     "date": "2023-01-12",
     "forward_yield": 3.6651,
     "ttm_income": 4670.61,
-    "market_value": 163657.41
+    "market_value": 163657.4
   },
   {
     "date": "2023-01-13",
@@ -5673,25 +5673,25 @@
     "date": "2023-01-26",
     "forward_yield": 3.536,
     "ttm_income": 4672.85,
-    "market_value": 172142.76
+    "market_value": 172142.77
   },
   {
     "date": "2023-01-27",
     "forward_yield": 3.5109,
     "ttm_income": 4672.85,
-    "market_value": 173376.16
+    "market_value": 173376.17
   },
   {
     "date": "2023-01-28",
     "forward_yield": 3.5109,
     "ttm_income": 4672.85,
-    "market_value": 173376.16
+    "market_value": 173376.17
   },
   {
     "date": "2023-01-29",
     "forward_yield": 3.5109,
     "ttm_income": 4672.85,
-    "market_value": 173376.16
+    "market_value": 173376.17
   },
   {
     "date": "2023-01-30",
@@ -5757,7 +5757,7 @@
     "date": "2023-02-09",
     "forward_yield": 3.4368,
     "ttm_income": 4664.79,
-    "market_value": 178912.78
+    "market_value": 178912.77
   },
   {
     "date": "2023-02-10",
@@ -5841,7 +5841,7 @@
     "date": "2023-02-23",
     "forward_yield": 3.4996,
     "ttm_income": 4685.3,
-    "market_value": 179582.51
+    "market_value": 179582.5
   },
   {
     "date": "2023-02-24",
@@ -5865,7 +5865,7 @@
     "date": "2023-02-27",
     "forward_yield": 3.5047,
     "ttm_income": 4685.3,
-    "market_value": 179791.49
+    "market_value": 179791.48
   },
   {
     "date": "2023-02-28",
@@ -5991,7 +5991,7 @@
     "date": "2023-03-20",
     "forward_yield": 3.3661,
     "ttm_income": 4745.79,
-    "market_value": 194850.78
+    "market_value": 194850.77
   },
   {
     "date": "2023-03-21",
@@ -6015,19 +6015,19 @@
     "date": "2023-03-24",
     "forward_yield": 3.3089,
     "ttm_income": 4748.1,
-    "market_value": 197972.74
+    "market_value": 197972.73
   },
   {
     "date": "2023-03-25",
     "forward_yield": 3.3089,
     "ttm_income": 4748.1,
-    "market_value": 197972.74
+    "market_value": 197972.73
   },
   {
     "date": "2023-03-26",
     "forward_yield": 3.3089,
     "ttm_income": 4748.1,
-    "market_value": 197972.74
+    "market_value": 197972.73
   },
   {
     "date": "2023-03-27",
@@ -6135,7 +6135,7 @@
     "date": "2023-04-13",
     "forward_yield": 3.2759,
     "ttm_income": 4748.1,
-    "market_value": 202584.85
+    "market_value": 202584.86
   },
   {
     "date": "2023-04-14",
@@ -6159,7 +6159,7 @@
     "date": "2023-04-17",
     "forward_yield": 3.3191,
     "ttm_income": 4747.85,
-    "market_value": 202697.02
+    "market_value": 202697.03
   },
   {
     "date": "2023-04-18",
@@ -6171,7 +6171,7 @@
     "date": "2023-04-19",
     "forward_yield": 3.349,
     "ttm_income": 4747.85,
-    "market_value": 201135.65
+    "market_value": 201135.66
   },
   {
     "date": "2023-04-20",
@@ -6201,7 +6201,7 @@
     "date": "2023-04-24",
     "forward_yield": 3.3702,
     "ttm_income": 4750.61,
-    "market_value": 200260.85
+    "market_value": 200260.86
   },
   {
     "date": "2023-04-25",
@@ -6243,7 +6243,7 @@
     "date": "2023-05-01",
     "forward_yield": 3.3809,
     "ttm_income": 4743.41,
-    "market_value": 202026.37
+    "market_value": 202026.36
   },
   {
     "date": "2023-05-02",
@@ -6291,13 +6291,13 @@
     "date": "2023-05-09",
     "forward_yield": 1.4173,
     "ttm_income": 2300.65,
-    "market_value": 193636.73
+    "market_value": 193636.72
   },
   {
     "date": "2023-05-10",
     "forward_yield": 1.4045,
     "ttm_income": 2300.65,
-    "market_value": 196226.23
+    "market_value": 196226.24
   },
   {
     "date": "2023-05-11",
@@ -6339,7 +6339,7 @@
     "date": "2023-05-17",
     "forward_yield": 1.6885,
     "ttm_income": 2781.06,
-    "market_value": 194728.94
+    "market_value": 194728.93
   },
   {
     "date": "2023-05-18",
@@ -6381,37 +6381,37 @@
     "date": "2023-05-24",
     "forward_yield": 1.648,
     "ttm_income": 2779.83,
-    "market_value": 199974.03
+    "market_value": 199974.04
   },
   {
     "date": "2023-05-25",
     "forward_yield": 1.6236,
     "ttm_income": 2779.83,
-    "market_value": 202164.24
+    "market_value": 202164.25
   },
   {
     "date": "2023-05-26",
     "forward_yield": 1.5823,
     "ttm_income": 2779.83,
-    "market_value": 206735.87
+    "market_value": 206735.88
   },
   {
     "date": "2023-05-27",
     "forward_yield": 1.5823,
     "ttm_income": 2779.83,
-    "market_value": 206735.87
+    "market_value": 206735.88
   },
   {
     "date": "2023-05-28",
     "forward_yield": 1.5823,
     "ttm_income": 2779.83,
-    "market_value": 206735.87
+    "market_value": 206735.88
   },
   {
     "date": "2023-05-29",
     "forward_yield": 1.5823,
     "ttm_income": 2779.83,
-    "market_value": 206735.87
+    "market_value": 206735.88
   },
   {
     "date": "2023-05-30",
@@ -6423,7 +6423,7 @@
     "date": "2023-05-31",
     "forward_yield": 1.6079,
     "ttm_income": 2779.83,
-    "market_value": 206587.92
+    "market_value": 206587.93
   },
   {
     "date": "2023-06-01",
@@ -6453,7 +6453,7 @@
     "date": "2023-06-05",
     "forward_yield": 1.608,
     "ttm_income": 2719.8,
-    "market_value": 202839.25
+    "market_value": 202839.26
   },
   {
     "date": "2023-06-06",
@@ -6471,7 +6471,7 @@
     "date": "2023-06-08",
     "forward_yield": 1.605,
     "ttm_income": 2719.64,
-    "market_value": 203208.36
+    "market_value": 203208.37
   },
   {
     "date": "2023-06-09",
@@ -6507,7 +6507,7 @@
     "date": "2023-06-14",
     "forward_yield": 1.5743,
     "ttm_income": 2746.17,
-    "market_value": 208743.45
+    "market_value": 208743.44
   },
   {
     "date": "2023-06-15",
@@ -6519,991 +6519,991 @@
     "date": "2023-06-16",
     "forward_yield": 1.6187,
     "ttm_income": 2753.55,
-    "market_value": 206127.37
+    "market_value": 206127.28
   },
   {
     "date": "2023-06-17",
     "forward_yield": 1.6097,
     "ttm_income": 2751.47,
-    "market_value": 206127.37
+    "market_value": 206127.28
   },
   {
     "date": "2023-06-18",
     "forward_yield": 1.6097,
     "ttm_income": 2751.47,
-    "market_value": 206127.37
+    "market_value": 206127.28
   },
   {
     "date": "2023-06-19",
     "forward_yield": 1.6097,
     "ttm_income": 2751.47,
-    "market_value": 206127.37
+    "market_value": 206127.28
   },
   {
     "date": "2023-06-20",
     "forward_yield": 1.6314,
     "ttm_income": 2751.54,
-    "market_value": 206592.82
+    "market_value": 206592.72
   },
   {
     "date": "2023-06-21",
     "forward_yield": 1.6789,
     "ttm_income": 2802.11,
-    "market_value": 205298.96
+    "market_value": 205298.86
   },
   {
     "date": "2023-06-22",
     "forward_yield": 1.6461,
     "ttm_income": 2777.86,
-    "market_value": 207118.9
+    "market_value": 207118.8
   },
   {
     "date": "2023-06-23",
     "forward_yield": 1.6636,
     "ttm_income": 2777.86,
-    "market_value": 208832.71
+    "market_value": 208832.31
   },
   {
     "date": "2023-06-24",
     "forward_yield": 1.6636,
     "ttm_income": 2777.86,
-    "market_value": 208834.01
+    "market_value": 208833.61
   },
   {
     "date": "2023-06-25",
     "forward_yield": 1.6636,
     "ttm_income": 2777.86,
-    "market_value": 208832.84
+    "market_value": 208832.44
   },
   {
     "date": "2023-06-26",
     "forward_yield": 1.6564,
     "ttm_income": 2777.86,
-    "market_value": 209997.82
+    "market_value": 209997.42
   },
   {
     "date": "2023-06-27",
     "forward_yield": 1.6298,
     "ttm_income": 2678.57,
-    "market_value": 212397.69
+    "market_value": 212397.26
   },
   {
     "date": "2023-06-28",
     "forward_yield": 1.625,
     "ttm_income": 2678.57,
-    "market_value": 214713.69
+    "market_value": 214713.26
   },
   {
     "date": "2023-06-29",
     "forward_yield": 1.6118,
     "ttm_income": 2648.93,
-    "market_value": 216119.85
+    "market_value": 216119.41
   },
   {
     "date": "2023-06-30",
     "forward_yield": 1.5899,
     "ttm_income": 2533.13,
-    "market_value": 217958.97
+    "market_value": 217958.53
   },
   {
     "date": "2023-07-01",
     "forward_yield": 1.5887,
     "ttm_income": 2533.13,
-    "market_value": 217958.14
+    "market_value": 217957.7
   },
   {
     "date": "2023-07-02",
     "forward_yield": 1.5887,
     "ttm_income": 2533.13,
-    "market_value": 217956.89
+    "market_value": 217956.45
   },
   {
     "date": "2023-07-03",
     "forward_yield": 1.5943,
     "ttm_income": 2534.56,
-    "market_value": 217278.66
+    "market_value": 217278.22
   },
   {
     "date": "2023-07-04",
     "forward_yield": 1.5943,
     "ttm_income": 2534.56,
-    "market_value": 217279.58
+    "market_value": 217279.14
   },
   {
     "date": "2023-07-05",
     "forward_yield": 1.6053,
     "ttm_income": 2650.5,
-    "market_value": 218100.11
+    "market_value": 218100.01
   },
   {
     "date": "2023-07-06",
     "forward_yield": 1.6221,
     "ttm_income": 2534.7,
-    "market_value": 220416.11
+    "market_value": 220416.02
   },
   {
     "date": "2023-07-07",
     "forward_yield": 1.6263,
     "ttm_income": 2534.7,
-    "market_value": 220178.57
+    "market_value": 220178.47
   },
   {
     "date": "2023-07-08",
     "forward_yield": 1.6263,
     "ttm_income": 2534.7,
-    "market_value": 220178.57
+    "market_value": 220178.47
   },
   {
     "date": "2023-07-09",
     "forward_yield": 1.6263,
     "ttm_income": 2534.7,
-    "market_value": 220178.57
+    "market_value": 220178.47
   },
   {
     "date": "2023-07-10",
     "forward_yield": 1.614,
     "ttm_income": 2534.7,
-    "market_value": 221917.77
+    "market_value": 221917.66
   },
   {
     "date": "2023-07-11",
-    "forward_yield": 1.6086,
+    "forward_yield": 1.6087,
     "ttm_income": 2534.7,
-    "market_value": 224371.8
+    "market_value": 224371.71
   },
   {
     "date": "2023-07-12",
     "forward_yield": 1.5864,
     "ttm_income": 2607.95,
-    "market_value": 228272.39
+    "market_value": 228272.28
   },
   {
     "date": "2023-07-13",
     "forward_yield": 1.5629,
     "ttm_income": 2608.08,
-    "market_value": 231881.63
+    "market_value": 231881.52
   },
   {
     "date": "2023-07-14",
     "forward_yield": 1.5734,
     "ttm_income": 2608.08,
-    "market_value": 231380.18
+    "market_value": 231380.08
   },
   {
     "date": "2023-07-15",
     "forward_yield": 1.5715,
     "ttm_income": 2607.69,
-    "market_value": 231380.09
+    "market_value": 231379.99
   },
   {
     "date": "2023-07-16",
     "forward_yield": 1.5715,
     "ttm_income": 2607.69,
-    "market_value": 231378.45
+    "market_value": 231378.36
   },
   {
     "date": "2023-07-17",
     "forward_yield": 0.5649,
     "ttm_income": 2607.69,
-    "market_value": 234987.29
+    "market_value": 234987.18
   },
   {
     "date": "2023-07-18",
     "forward_yield": 0.5605,
     "ttm_income": 2607.69,
-    "market_value": 237977.54
+    "market_value": 237977.44
   },
   {
     "date": "2023-07-19",
     "forward_yield": 0.5584,
     "ttm_income": 2607.69,
-    "market_value": 239413.38
+    "market_value": 239413.28
   },
   {
     "date": "2023-07-20",
     "forward_yield": 0.5674,
     "ttm_income": 2608.43,
-    "market_value": 236738.08
+    "market_value": 236737.97
   },
   {
     "date": "2023-07-21",
     "forward_yield": 0.5708,
     "ttm_income": 2617.83,
-    "market_value": 237381.2
+    "market_value": 237381.09
   },
   {
     "date": "2023-07-22",
     "forward_yield": 0.5708,
     "ttm_income": 2617.83,
-    "market_value": 237380.46
+    "market_value": 237380.35
   },
   {
     "date": "2023-07-23",
     "forward_yield": 0.5708,
     "ttm_income": 2617.83,
-    "market_value": 237381.44
+    "market_value": 237381.33
   },
   {
     "date": "2023-07-24",
     "forward_yield": 0.571,
     "ttm_income": 2617.83,
-    "market_value": 238120.06
+    "market_value": 238119.95
   },
   {
     "date": "2023-07-25",
     "forward_yield": 0.5662,
     "ttm_income": 2618.79,
-    "market_value": 240309.33
+    "market_value": 240309.22
   },
   {
     "date": "2023-07-26",
     "forward_yield": 0.5803,
     "ttm_income": 2618.79,
-    "market_value": 236517.71
+    "market_value": 236517.61
   },
   {
     "date": "2023-07-27",
     "forward_yield": 0.5919,
     "ttm_income": 2619.04,
-    "market_value": 235641.87
+    "market_value": 235641.77
   },
   {
     "date": "2023-07-28",
     "forward_yield": 0.5922,
     "ttm_income": 2611.84,
-    "market_value": 234108.84
+    "market_value": 234108.73
   },
   {
     "date": "2023-07-29",
     "forward_yield": 0.5922,
     "ttm_income": 2611.84,
-    "market_value": 234109.71
+    "market_value": 234109.6
   },
   {
     "date": "2023-07-30",
     "forward_yield": 0.5922,
     "ttm_income": 2611.84,
-    "market_value": 234110.15
+    "market_value": 234110.04
   },
   {
     "date": "2023-07-31",
     "forward_yield": 0.5838,
     "ttm_income": 2611.84,
-    "market_value": 236002.26
+    "market_value": 236002.15
   },
   {
     "date": "2023-08-01",
     "forward_yield": 0.5617,
     "ttm_income": 2613.0,
-    "market_value": 247301.31
+    "market_value": 247301.2
   },
   {
     "date": "2023-08-02",
     "forward_yield": 0.5772,
     "ttm_income": 2613.0,
-    "market_value": 240861.05
+    "market_value": 240860.94
   },
   {
     "date": "2023-08-03",
     "forward_yield": 0.6294,
     "ttm_income": 2616.08,
-    "market_value": 250393.65
+    "market_value": 250393.54
   },
   {
     "date": "2023-08-04",
     "forward_yield": 0.6283,
     "ttm_income": 2619.24,
-    "market_value": 251052.68
+    "market_value": 251052.57
   },
   {
     "date": "2023-08-05",
     "forward_yield": 0.621,
     "ttm_income": 2605.67,
-    "market_value": 251058.81
+    "market_value": 251058.71
   },
   {
     "date": "2023-08-06",
     "forward_yield": 0.621,
     "ttm_income": 2605.67,
-    "market_value": 251060.94
+    "market_value": 251060.84
   },
   {
     "date": "2023-08-07",
     "forward_yield": 0.6183,
     "ttm_income": 2605.67,
-    "market_value": 252139.07
+    "market_value": 252138.96
   },
   {
     "date": "2023-08-08",
     "forward_yield": 0.6397,
     "ttm_income": 2605.67,
-    "market_value": 243720.35
+    "market_value": 243720.24
   },
   {
     "date": "2023-08-09",
     "forward_yield": 0.6468,
     "ttm_income": 2605.67,
-    "market_value": 241046.49
+    "market_value": 241046.39
   },
   {
     "date": "2023-08-10",
     "forward_yield": 0.6523,
     "ttm_income": 2610.05,
-    "market_value": 236976.62
+    "market_value": 236976.53
   },
   {
     "date": "2023-08-11",
     "forward_yield": 0.6583,
     "ttm_income": 2625.69,
-    "market_value": 238464.77
+    "market_value": 238464.66
   },
   {
     "date": "2023-08-12",
     "forward_yield": 0.6554,
     "ttm_income": 2625.69,
-    "market_value": 238474.18
+    "market_value": 238474.08
   },
   {
     "date": "2023-08-13",
     "forward_yield": 0.6554,
     "ttm_income": 2625.69,
-    "market_value": 238477.31
+    "market_value": 238477.2
   },
   {
     "date": "2023-08-14",
     "forward_yield": 0.9435,
     "ttm_income": 2616.29,
-    "market_value": 259524.68
+    "market_value": 259524.58
   },
   {
     "date": "2023-08-15",
     "forward_yield": 0.7906,
     "ttm_income": 2615.82,
-    "market_value": 259796.66
+    "market_value": 259796.39
   },
   {
     "date": "2023-08-16",
     "forward_yield": 0.8927,
     "ttm_income": 2630.71,
-    "market_value": 233481.86
+    "market_value": 233481.59
   },
   {
     "date": "2023-08-17",
     "forward_yield": 0.8907,
     "ttm_income": 2616.55,
-    "market_value": 232758.93
+    "market_value": 232758.67
   },
   {
     "date": "2023-08-18",
     "forward_yield": 0.8953,
     "ttm_income": 2634.95,
-    "market_value": 233978.45
+    "market_value": 233978.19
   },
   {
     "date": "2023-08-19",
     "forward_yield": 0.8852,
     "ttm_income": 2632.33,
-    "market_value": 233978.45
+    "market_value": 233978.19
   },
   {
     "date": "2023-08-20",
     "forward_yield": 0.8852,
     "ttm_income": 2632.33,
-    "market_value": 233978.45
+    "market_value": 233978.19
   },
   {
     "date": "2023-08-21",
     "forward_yield": 0.857,
     "ttm_income": 2632.33,
-    "market_value": 245137.2
+    "market_value": 245136.94
   },
   {
     "date": "2023-08-22",
     "forward_yield": 0.9041,
     "ttm_income": 2632.33,
-    "market_value": 242223.87
+    "market_value": 242223.62
   },
   {
     "date": "2023-08-23",
     "forward_yield": 0.9282,
     "ttm_income": 2632.33,
-    "market_value": 235809.66
+    "market_value": 235809.41
   },
   {
     "date": "2023-08-24",
     "forward_yield": 0.9796,
     "ttm_income": 2637.96,
-    "market_value": 237387.04
+    "market_value": 237386.78
   },
   {
     "date": "2023-08-25",
     "forward_yield": 0.9982,
     "ttm_income": 2639.96,
-    "market_value": 242361.06
+    "market_value": 242360.8
   },
   {
     "date": "2023-08-26",
     "forward_yield": 0.9982,
     "ttm_income": 2639.96,
-    "market_value": 242361.06
+    "market_value": 242360.8
   },
   {
     "date": "2023-08-27",
     "forward_yield": 0.9982,
     "ttm_income": 2639.96,
-    "market_value": 242361.06
+    "market_value": 242360.8
   },
   {
     "date": "2023-08-28",
     "forward_yield": 0.9879,
     "ttm_income": 2639.96,
-    "market_value": 244205.9
+    "market_value": 244205.63
   },
   {
     "date": "2023-08-29",
     "forward_yield": 0.9777,
     "ttm_income": 2639.96,
-    "market_value": 246945.7
+    "market_value": 246945.43
   },
   {
     "date": "2023-08-30",
     "forward_yield": 0.9717,
     "ttm_income": 2639.96,
-    "market_value": 248479.64
+    "market_value": 248479.37
   },
   {
     "date": "2023-08-31",
     "forward_yield": 1.1101,
     "ttm_income": 2643.06,
-    "market_value": 285245.43
+    "market_value": 285245.17
   },
   {
     "date": "2023-09-01",
     "forward_yield": 1.1013,
     "ttm_income": 2644.41,
-    "market_value": 287389.57
+    "market_value": 287389.31
   },
   {
     "date": "2023-09-02",
     "forward_yield": 1.1013,
     "ttm_income": 2644.41,
-    "market_value": 287389.57
+    "market_value": 287389.31
   },
   {
     "date": "2023-09-03",
     "forward_yield": 1.1013,
     "ttm_income": 2644.41,
-    "market_value": 287389.57
+    "market_value": 287389.31
   },
   {
     "date": "2023-09-04",
     "forward_yield": 1.1013,
     "ttm_income": 2644.41,
-    "market_value": 287389.57
+    "market_value": 287389.31
   },
   {
     "date": "2023-09-05",
     "forward_yield": 1.1054,
     "ttm_income": 2645.85,
-    "market_value": 286879.88
+    "market_value": 286879.62
   },
   {
     "date": "2023-09-06",
     "forward_yield": 1.1131,
     "ttm_income": 2646.87,
-    "market_value": 285222.04
+    "market_value": 285221.77
   },
   {
     "date": "2023-09-07",
     "forward_yield": 1.1356,
     "ttm_income": 2696.42,
-    "market_value": 283993.93
+    "market_value": 283993.68
   },
   {
     "date": "2023-09-08",
     "forward_yield": 1.1535,
     "ttm_income": 2793.26,
-    "market_value": 284396.93
+    "market_value": 284396.68
   },
   {
     "date": "2023-09-09",
     "forward_yield": 1.1535,
     "ttm_income": 2793.26,
-    "market_value": 284396.93
+    "market_value": 284396.68
   },
   {
     "date": "2023-09-10",
     "forward_yield": 1.1535,
     "ttm_income": 2793.26,
-    "market_value": 284396.93
+    "market_value": 284396.68
   },
   {
     "date": "2023-09-11",
-    "forward_yield": 1.1504,
+    "forward_yield": 1.1505,
     "ttm_income": 2793.26,
-    "market_value": 285181.59
+    "market_value": 285181.34
   },
   {
     "date": "2023-09-12",
     "forward_yield": 1.1447,
     "ttm_income": 2793.26,
-    "market_value": 380656.77
+    "market_value": 380656.52
   },
   {
     "date": "2023-09-13",
     "forward_yield": 1.1435,
     "ttm_income": 2793.26,
-    "market_value": 380581.79
+    "market_value": 380581.54
   },
   {
     "date": "2023-09-14",
     "forward_yield": 1.14,
     "ttm_income": 2838.15,
-    "market_value": 382512.97
+    "market_value": 382512.7
   },
   {
     "date": "2023-09-15",
     "forward_yield": 1.2672,
     "ttm_income": 2870.58,
-    "market_value": 428639.21
+    "market_value": 428638.94
   },
   {
     "date": "2023-09-16",
     "forward_yield": 1.2604,
     "ttm_income": 2842.52,
-    "market_value": 428639.21
+    "market_value": 428638.94
   },
   {
     "date": "2023-09-17",
     "forward_yield": 1.2604,
     "ttm_income": 2842.52,
-    "market_value": 428639.21
+    "market_value": 428638.94
   },
   {
     "date": "2023-09-18",
     "forward_yield": 1.4129,
     "ttm_income": 3490.81,
-    "market_value": 429653.5
+    "market_value": 429653.24
   },
   {
     "date": "2023-09-19",
     "forward_yield": 1.2771,
     "ttm_income": 3471.78,
-    "market_value": 434286.58
+    "market_value": 434286.33
   },
   {
     "date": "2023-09-20",
     "forward_yield": 1.374,
     "ttm_income": 3852.33,
-    "market_value": 431247.89
+    "market_value": 431247.61
   },
   {
     "date": "2023-09-21",
     "forward_yield": 1.5653,
     "ttm_income": 3750.29,
-    "market_value": 437585.98
+    "market_value": 437585.71
   },
   {
     "date": "2023-09-22",
     "forward_yield": 1.5649,
     "ttm_income": 3750.29,
-    "market_value": 437913.57
+    "market_value": 437913.3
   },
   {
     "date": "2023-09-23",
     "forward_yield": 1.5649,
     "ttm_income": 3750.29,
-    "market_value": 437913.57
+    "market_value": 437913.3
   },
   {
     "date": "2023-09-24",
     "forward_yield": 1.5649,
     "ttm_income": 3750.29,
-    "market_value": 437913.57
+    "market_value": 437913.3
   },
   {
     "date": "2023-09-25",
     "forward_yield": 1.6105,
     "ttm_income": 3750.29,
-    "market_value": 438816.23
+    "market_value": 438815.96
   },
   {
     "date": "2023-09-26",
     "forward_yield": 1.6332,
     "ttm_income": 3752.61,
-    "market_value": 439308.59
+    "market_value": 439308.32
   },
   {
     "date": "2023-09-27",
     "forward_yield": 1.6316,
     "ttm_income": 3752.61,
-    "market_value": 439716.96
+    "market_value": 439716.72
   },
   {
     "date": "2023-09-28",
     "forward_yield": 1.6251,
     "ttm_income": 3753.16,
-    "market_value": 442216.31
+    "market_value": 442216.06
   },
   {
     "date": "2023-09-29",
     "forward_yield": 1.6273,
     "ttm_income": 3753.16,
-    "market_value": 446709.97
+    "market_value": 446709.71
   },
   {
     "date": "2023-09-30",
     "forward_yield": 1.6273,
     "ttm_income": 3753.16,
-    "market_value": 446709.97
+    "market_value": 446709.71
   },
   {
     "date": "2023-10-01",
     "forward_yield": 1.6273,
     "ttm_income": 3753.16,
-    "market_value": 446709.97
+    "market_value": 446709.71
   },
   {
     "date": "2023-10-02",
     "forward_yield": 1.6347,
     "ttm_income": 3754.61,
-    "market_value": 449038.93
+    "market_value": 449038.65
   },
   {
     "date": "2023-10-03",
     "forward_yield": 1.6573,
     "ttm_income": 3754.34,
-    "market_value": 451975.23
+    "market_value": 451974.98
   },
   {
     "date": "2023-10-04",
     "forward_yield": 1.653,
     "ttm_income": 3754.34,
-    "market_value": 454581.73
+    "market_value": 454581.45
   },
   {
     "date": "2023-10-05",
     "forward_yield": 1.6483,
     "ttm_income": 3754.82,
-    "market_value": 459466.37
+    "market_value": 459466.11
   },
   {
     "date": "2023-10-06",
     "forward_yield": 1.6324,
     "ttm_income": 3755.73,
-    "market_value": 463988.39
+    "market_value": 463988.16
   },
   {
     "date": "2023-10-07",
     "forward_yield": 1.6322,
     "ttm_income": 3755.73,
-    "market_value": 463988.39
+    "market_value": 463988.16
   },
   {
     "date": "2023-10-08",
     "forward_yield": 1.6322,
     "ttm_income": 3755.73,
-    "market_value": 463988.39
+    "market_value": 463988.16
   },
   {
     "date": "2023-10-09",
     "forward_yield": 1.6271,
     "ttm_income": 3755.73,
-    "market_value": 466726.55
+    "market_value": 466726.27
   },
   {
     "date": "2023-10-10",
     "forward_yield": 1.6193,
     "ttm_income": 3755.73,
-    "market_value": 468959.26
+    "market_value": 468959.01
   },
   {
     "date": "2023-10-11",
     "forward_yield": 1.6203,
     "ttm_income": 3755.73,
-    "market_value": 472590.4
+    "market_value": 472590.15
   },
   {
     "date": "2023-10-12",
     "forward_yield": 1.6497,
     "ttm_income": 3756.25,
-    "market_value": 475636.48
+    "market_value": 475636.22
   },
   {
     "date": "2023-10-13",
     "forward_yield": 1.7072,
     "ttm_income": 3630.46,
-    "market_value": 478039.76
+    "market_value": 478039.47
   },
   {
     "date": "2023-10-14",
     "forward_yield": 1.7072,
     "ttm_income": 3630.46,
-    "market_value": 478039.76
+    "market_value": 478039.47
   },
   {
     "date": "2023-10-15",
     "forward_yield": 1.7072,
     "ttm_income": 3630.46,
-    "market_value": 478039.76
+    "market_value": 478039.47
   },
   {
     "date": "2023-10-16",
     "forward_yield": 1.6906,
     "ttm_income": 3756.25,
-    "market_value": 482767.05
+    "market_value": 482766.77
   },
   {
     "date": "2023-10-17",
     "forward_yield": 1.6914,
     "ttm_income": 3630.46,
-    "market_value": 483675.66
+    "market_value": 483675.39
   },
   {
     "date": "2023-10-18",
     "forward_yield": 1.7185,
     "ttm_income": 3630.46,
-    "market_value": 485068.11
+    "market_value": 485067.81
   },
   {
     "date": "2023-10-19",
     "forward_yield": 1.7356,
     "ttm_income": 3635.2,
-    "market_value": 484299.27
+    "market_value": 484299.0
   },
   {
     "date": "2023-10-20",
     "forward_yield": 1.758,
     "ttm_income": 3635.49,
-    "market_value": 485127.26
+    "market_value": 485126.98
   },
   {
     "date": "2023-10-21",
     "forward_yield": 1.7579,
     "ttm_income": 3635.49,
-    "market_value": 485127.26
+    "market_value": 485126.98
   },
   {
     "date": "2023-10-22",
     "forward_yield": 1.7579,
     "ttm_income": 3635.49,
-    "market_value": 485127.26
+    "market_value": 485126.98
   },
   {
     "date": "2023-10-23",
     "forward_yield": 1.7596,
     "ttm_income": 3635.49,
-    "market_value": 484670.11
+    "market_value": 484669.9
   },
   {
     "date": "2023-10-24",
     "forward_yield": 1.7486,
     "ttm_income": 3636.26,
-    "market_value": 487745.55
+    "market_value": 487745.35
   },
   {
     "date": "2023-10-25",
     "forward_yield": 1.7686,
     "ttm_income": 3636.26,
-    "market_value": 489585.4
+    "market_value": 489585.1
   },
   {
     "date": "2023-10-26",
     "forward_yield": 1.7952,
     "ttm_income": 3636.97,
-    "market_value": 491474.8
+    "market_value": 491474.51
   },
   {
     "date": "2023-10-27",
     "forward_yield": 1.7983,
     "ttm_income": 3628.87,
-    "market_value": 494395.0
+    "market_value": 494394.77
   },
   {
     "date": "2023-10-28",
     "forward_yield": 1.7983,
     "ttm_income": 3628.87,
-    "market_value": 494395.0
+    "market_value": 494394.77
   },
   {
     "date": "2023-10-29",
     "forward_yield": 1.7983,
     "ttm_income": 3628.87,
-    "market_value": 494395.0
+    "market_value": 494394.77
   },
   {
     "date": "2023-10-30",
     "forward_yield": 1.8049,
     "ttm_income": 3628.87,
-    "market_value": 499989.39
+    "market_value": 499989.12
   },
   {
     "date": "2023-10-31",
     "forward_yield": 1.7803,
     "ttm_income": 3695.94,
-    "market_value": 506994.93
+    "market_value": 506994.7
   },
   {
     "date": "2023-11-01",
     "forward_yield": 1.7624,
     "ttm_income": 3697.38,
-    "market_value": 512312.76
+    "market_value": 512312.51
   },
   {
     "date": "2023-11-02",
     "forward_yield": 1.7328,
     "ttm_income": 3700.92,
-    "market_value": 521269.37
+    "market_value": 521269.13
   },
   {
     "date": "2023-11-03",
     "forward_yield": 1.7188,
     "ttm_income": 3700.92,
-    "market_value": 525508.94
+    "market_value": 525508.67
   },
   {
     "date": "2023-11-04",
     "forward_yield": 1.7161,
     "ttm_income": 3686.89,
-    "market_value": 525508.94
+    "market_value": 525508.67
   },
   {
     "date": "2023-11-05",
     "forward_yield": 1.7161,
     "ttm_income": 3686.89,
-    "market_value": 525508.94
+    "market_value": 525508.67
   },
   {
     "date": "2023-11-06",
     "forward_yield": 2.0014,
     "ttm_income": 3685.58,
-    "market_value": 523626.76
+    "market_value": 523626.47
   },
   {
     "date": "2023-11-07",
     "forward_yield": 1.9984,
     "ttm_income": 3677.96,
-    "market_value": 523845.66
+    "market_value": 523845.38
   },
   {
     "date": "2023-11-08",
     "forward_yield": 2.0,
     "ttm_income": 3678.21,
-    "market_value": 523429.99
+    "market_value": 523429.69
   },
   {
     "date": "2023-11-09",
     "forward_yield": 2.0078,
     "ttm_income": 3679.09,
-    "market_value": 521396.42
+    "market_value": 521396.21
   },
   {
     "date": "2023-11-10",
     "forward_yield": 1.9967,
     "ttm_income": 3693.73,
-    "market_value": 526045.12
+    "market_value": 526044.88
   },
   {
     "date": "2023-11-11",
     "forward_yield": 1.9967,
     "ttm_income": 3693.73,
-    "market_value": 526045.12
+    "market_value": 526044.88
   },
   {
     "date": "2023-11-12",
     "forward_yield": 1.9967,
     "ttm_income": 3693.73,
-    "market_value": 526045.12
+    "market_value": 526044.88
   },
   {
     "date": "2023-11-13",
     "forward_yield": 1.9951,
     "ttm_income": 3694.14,
-    "market_value": 526475.44
+    "market_value": 526475.15
   },
   {
     "date": "2023-11-14",
     "forward_yield": 1.8625,
     "ttm_income": 3548.06,
-    "market_value": 517455.82
+    "market_value": 517455.53
   },
   {
     "date": "2023-11-15",
     "forward_yield": 1.8634,
     "ttm_income": 3564.85,
-    "market_value": 518097.92
+    "market_value": 518097.65
   },
   {
     "date": "2023-11-16",
     "forward_yield": 1.8606,
     "ttm_income": 3549.43,
-    "market_value": 518291.17
+    "market_value": 518290.92
   },
   {
     "date": "2023-11-17",
     "forward_yield": 1.8536,
     "ttm_income": 3549.43,
-    "market_value": 520203.11
+    "market_value": 520202.82
   },
   {
     "date": "2023-11-18",
     "forward_yield": 1.8536,
     "ttm_income": 3549.43,
-    "market_value": 520203.11
+    "market_value": 520202.82
   },
   {
     "date": "2023-11-19",
     "forward_yield": 1.8536,
     "ttm_income": 3549.43,
-    "market_value": 520203.11
+    "market_value": 520202.82
   },
   {
     "date": "2023-11-20",
     "forward_yield": 1.8201,
     "ttm_income": 3548.96,
-    "market_value": 537097.7
+    "market_value": 537097.39
   },
   {
     "date": "2023-11-21",
     "forward_yield": 1.8233,
     "ttm_income": 3548.96,
-    "market_value": 536063.55
+    "market_value": 536063.32
   },
   {
     "date": "2023-11-22",
     "forward_yield": 1.8534,
     "ttm_income": 3451.63,
-    "market_value": 525378.81
+    "market_value": 525378.84
   },
   {
     "date": "2023-11-23",
     "forward_yield": 1.8534,
     "ttm_income": 3451.63,
-    "market_value": 525378.81
+    "market_value": 525378.84
   },
   {
     "date": "2023-11-24",
     "forward_yield": 1.8494,
     "ttm_income": 3451.63,
-    "market_value": 527587.79
+    "market_value": 527587.78
   },
   {
     "date": "2023-11-25",
     "forward_yield": 1.8494,
     "ttm_income": 3451.63,
-    "market_value": 527587.79
+    "market_value": 527587.78
   },
   {
     "date": "2023-11-26",
     "forward_yield": 1.8494,
     "ttm_income": 3451.63,
-    "market_value": 527587.79
+    "market_value": 527587.78
   },
   {
     "date": "2023-11-27",
     "forward_yield": 1.8549,
     "ttm_income": 3451.63,
-    "market_value": 535812.76
+    "market_value": 535812.77
   },
   {
     "date": "2023-11-28",
@@ -7515,31 +7515,31 @@
     "date": "2023-11-29",
     "forward_yield": 1.8489,
     "ttm_income": 3430.14,
-    "market_value": 536562.66
+    "market_value": 536562.69
   },
   {
     "date": "2023-11-30",
     "forward_yield": 1.8544,
     "ttm_income": 3547.84,
-    "market_value": 537864.33
+    "market_value": 537864.34
   },
   {
     "date": "2023-12-01",
     "forward_yield": 1.8411,
     "ttm_income": 3665.4,
-    "market_value": 540629.89
+    "market_value": 540629.92
   },
   {
     "date": "2023-12-02",
     "forward_yield": 1.8411,
     "ttm_income": 3665.4,
-    "market_value": 540629.89
+    "market_value": 540629.92
   },
   {
     "date": "2023-12-03",
     "forward_yield": 1.8411,
     "ttm_income": 3665.4,
-    "market_value": 540629.89
+    "market_value": 540629.92
   },
   {
     "date": "2023-12-04",
@@ -7551,37 +7551,37 @@
     "date": "2023-12-05",
     "forward_yield": 1.849,
     "ttm_income": 3665.52,
-    "market_value": 538328.48
+    "market_value": 538328.46
   },
   {
     "date": "2023-12-06",
     "forward_yield": 1.8857,
     "ttm_income": 3837.13,
-    "market_value": 537136.65
+    "market_value": 537136.62
   },
   {
     "date": "2023-12-07",
     "forward_yield": 1.8505,
     "ttm_income": 3853.69,
-    "market_value": 541455.48
+    "market_value": 541455.5
   },
   {
     "date": "2023-12-08",
     "forward_yield": 1.8431,
     "ttm_income": 3861.49,
-    "market_value": 545095.97
+    "market_value": 545095.99
   },
   {
     "date": "2023-12-09",
     "forward_yield": 1.841,
     "ttm_income": 3861.49,
-    "market_value": 545095.97
+    "market_value": 545095.99
   },
   {
     "date": "2023-12-10",
     "forward_yield": 1.841,
     "ttm_income": 3861.49,
-    "market_value": 545095.97
+    "market_value": 545095.99
   },
   {
     "date": "2023-12-11",
@@ -7593,85 +7593,85 @@
     "date": "2023-12-12",
     "forward_yield": 1.8257,
     "ttm_income": 3861.49,
-    "market_value": 549983.79
+    "market_value": 549983.78
   },
   {
     "date": "2023-12-13",
     "forward_yield": 1.8022,
     "ttm_income": 3861.49,
-    "market_value": 557182.08
+    "market_value": 557182.09
   },
   {
     "date": "2023-12-14",
     "forward_yield": 1.792,
     "ttm_income": 3920.93,
-    "market_value": 560581.16
+    "market_value": 560581.14
   },
   {
     "date": "2023-12-15",
     "forward_yield": 2.0728,
     "ttm_income": 5447.18,
-    "market_value": 559657.97
+    "market_value": 559657.95
   },
   {
     "date": "2023-12-16",
     "forward_yield": 1.8346,
     "ttm_income": 5447.18,
-    "market_value": 559657.97
+    "market_value": 559657.95
   },
   {
     "date": "2023-12-17",
     "forward_yield": 1.8345,
     "ttm_income": 5447.18,
-    "market_value": 559662.27
+    "market_value": 559662.25
   },
   {
     "date": "2023-12-18",
     "forward_yield": 2.1977,
     "ttm_income": 7531.09,
-    "market_value": 562073.04
+    "market_value": 562073.02
   },
   {
     "date": "2023-12-19",
     "forward_yield": 1.8924,
     "ttm_income": 7531.09,
-    "market_value": 565028.14
+    "market_value": 565028.12
   },
   {
     "date": "2023-12-20",
     "forward_yield": 1.9159,
     "ttm_income": 7531.09,
-    "market_value": 558119.83
+    "market_value": 558119.81
   },
   {
     "date": "2023-12-21",
     "forward_yield": 1.8979,
     "ttm_income": 7531.09,
-    "market_value": 563393.03
+    "market_value": 563393.05
   },
   {
     "date": "2023-12-22",
     "forward_yield": 2.0363,
     "ttm_income": 8336.23,
-    "market_value": 565616.04
+    "market_value": 565616.07
   },
   {
     "date": "2023-12-23",
     "forward_yield": 2.0045,
     "ttm_income": 8336.23,
-    "market_value": 565616.1
+    "market_value": 565616.13
   },
   {
     "date": "2023-12-24",
     "forward_yield": 2.0045,
     "ttm_income": 8336.23,
-    "market_value": 565616.16
+    "market_value": 565616.19
   },
   {
     "date": "2023-12-25",
     "forward_yield": 2.0045,
     "ttm_income": 8336.23,
-    "market_value": 565616.22
+    "market_value": 565616.25
   },
   {
     "date": "2023-12-26",
@@ -7683,13 +7683,13 @@
     "date": "2023-12-27",
     "forward_yield": 2.0024,
     "ttm_income": 8395.09,
-    "market_value": 569154.05
+    "market_value": 569154.07
   },
   {
     "date": "2023-12-28",
     "forward_yield": 2.002,
     "ttm_income": 8395.09,
-    "market_value": 569260.24
+    "market_value": 569260.28
   },
   {
     "date": "2023-12-29",
@@ -7719,13 +7719,13 @@
     "date": "2024-01-02",
     "forward_yield": 2.0194,
     "ttm_income": 6864.21,
-    "market_value": 564479.45
+    "market_value": 564479.47
   },
   {
     "date": "2024-01-03",
     "forward_yield": 2.0325,
     "ttm_income": 6864.21,
-    "market_value": 560837.84
+    "market_value": 560837.85
   },
   {
     "date": "2024-01-04",
@@ -7737,85 +7737,85 @@
     "date": "2024-01-05",
     "forward_yield": 2.0344,
     "ttm_income": 6864.21,
-    "market_value": 560318.53
+    "market_value": 560318.56
   },
   {
     "date": "2024-01-06",
     "forward_yield": 2.0344,
     "ttm_income": 6864.21,
-    "market_value": 560318.59
+    "market_value": 560318.62
   },
   {
     "date": "2024-01-07",
     "forward_yield": 2.0344,
     "ttm_income": 6864.21,
-    "market_value": 560318.47
+    "market_value": 560318.5
   },
   {
     "date": "2024-01-08",
     "forward_yield": 2.0045,
     "ttm_income": 6864.21,
-    "market_value": 568669.45
+    "market_value": 568669.43
   },
   {
     "date": "2024-01-09",
     "forward_yield": 2.0122,
     "ttm_income": 6864.21,
-    "market_value": 566505.69
+    "market_value": 566505.71
   },
   {
     "date": "2024-01-10",
     "forward_yield": 2.0032,
     "ttm_income": 6864.21,
-    "market_value": 569039.82
+    "market_value": 569039.83
   },
   {
     "date": "2024-01-11",
     "forward_yield": 2.0028,
     "ttm_income": 6864.21,
-    "market_value": 569162.21
+    "market_value": 569162.22
   },
   {
     "date": "2024-01-12",
     "forward_yield": 1.9984,
     "ttm_income": 6864.21,
-    "market_value": 570414.7
+    "market_value": 570414.71
   },
   {
     "date": "2024-01-13",
     "forward_yield": 1.9984,
     "ttm_income": 6864.21,
-    "market_value": 570414.58
+    "market_value": 570414.59
   },
   {
     "date": "2024-01-14",
     "forward_yield": 1.9984,
     "ttm_income": 6864.21,
-    "market_value": 570414.64
+    "market_value": 570414.65
   },
   {
     "date": "2024-01-15",
     "forward_yield": 1.9984,
     "ttm_income": 6864.21,
-    "market_value": 570414.58
+    "market_value": 570414.59
   },
   {
     "date": "2024-01-16",
     "forward_yield": 2.0121,
     "ttm_income": 6864.21,
-    "market_value": 566532.63
+    "market_value": 566532.65
   },
   {
     "date": "2024-01-17",
     "forward_yield": 2.0285,
     "ttm_income": 6864.21,
-    "market_value": 562027.09
+    "market_value": 562027.12
   },
   {
     "date": "2024-01-18",
     "forward_yield": 2.0093,
     "ttm_income": 6864.21,
-    "market_value": 567395.25
+    "market_value": 567395.24
   },
   {
     "date": "2024-01-19",
@@ -7839,151 +7839,151 @@
     "date": "2024-01-22",
     "forward_yield": 1.9825,
     "ttm_income": 6864.21,
-    "market_value": 575063.75
+    "market_value": 575063.74
   },
   {
     "date": "2024-01-23",
     "forward_yield": 1.9812,
     "ttm_income": 6864.21,
-    "market_value": 575420.34
+    "market_value": 575420.33
   },
   {
     "date": "2024-01-24",
     "forward_yield": 1.9781,
     "ttm_income": 6864.21,
-    "market_value": 576322.59
+    "market_value": 576322.56
   },
   {
     "date": "2024-01-25",
     "forward_yield": 1.9673,
     "ttm_income": 6864.21,
-    "market_value": 579509.67
+    "market_value": 579509.68
   },
   {
     "date": "2024-01-26",
     "forward_yield": 1.9659,
     "ttm_income": 6864.21,
-    "market_value": 579916.92
+    "market_value": 579916.89
   },
   {
     "date": "2024-01-27",
     "forward_yield": 1.9659,
     "ttm_income": 6864.21,
-    "market_value": 579917.04
+    "market_value": 579917.01
   },
   {
     "date": "2024-01-28",
     "forward_yield": 1.9659,
     "ttm_income": 6864.21,
-    "market_value": 579917.16
+    "market_value": 579917.13
   },
   {
     "date": "2024-01-29",
     "forward_yield": 1.9536,
     "ttm_income": 6864.21,
-    "market_value": 583565.94
+    "market_value": 583565.95
   },
   {
     "date": "2024-01-30",
     "forward_yield": 1.9538,
     "ttm_income": 6864.21,
-    "market_value": 583497.64
+    "market_value": 583497.68
   },
   {
     "date": "2024-01-31",
     "forward_yield": 1.9829,
     "ttm_income": 6931.54,
-    "market_value": 575040.01
+    "market_value": 575040.03
   },
   {
     "date": "2024-02-01",
     "forward_yield": 1.9654,
     "ttm_income": 7060.66,
-    "market_value": 581614.13
+    "market_value": 581614.16
   },
   {
     "date": "2024-02-02",
     "forward_yield": 1.954,
     "ttm_income": 7049.86,
-    "market_value": 584847.04
+    "market_value": 584847.03
   },
   {
     "date": "2024-02-03",
     "forward_yield": 1.954,
     "ttm_income": 7049.86,
-    "market_value": 584847.04
+    "market_value": 584847.03
   },
   {
     "date": "2024-02-04",
     "forward_yield": 1.954,
     "ttm_income": 7049.86,
-    "market_value": 584847.1
+    "market_value": 584847.09
   },
   {
     "date": "2024-02-05",
     "forward_yield": 1.9623,
     "ttm_income": 7049.86,
-    "market_value": 582377.74
+    "market_value": 582377.77
   },
   {
     "date": "2024-02-06",
     "forward_yield": 1.9587,
     "ttm_income": 7049.86,
-    "market_value": 583468.12
+    "market_value": 583468.13
   },
   {
     "date": "2024-02-07",
     "forward_yield": 1.9493,
     "ttm_income": 7049.86,
-    "market_value": 586276.12
+    "market_value": 586276.14
   },
   {
     "date": "2024-02-08",
     "forward_yield": 1.9418,
     "ttm_income": 7049.86,
-    "market_value": 588519.79
+    "market_value": 588519.78
   },
   {
     "date": "2024-02-09",
     "forward_yield": 1.9334,
     "ttm_income": 7064.5,
-    "market_value": 591856.48
+    "market_value": 591856.46
   },
   {
     "date": "2024-02-10",
     "forward_yield": 1.931,
     "ttm_income": 7049.78,
-    "market_value": 591856.48
+    "market_value": 591856.46
   },
   {
     "date": "2024-02-11",
     "forward_yield": 1.931,
     "ttm_income": 7049.78,
-    "market_value": 591856.36
+    "market_value": 591856.34
   },
   {
     "date": "2024-02-12",
     "forward_yield": 1.9302,
     "ttm_income": 7049.78,
-    "market_value": 592091.4
+    "market_value": 592091.36
   },
   {
     "date": "2024-02-13",
     "forward_yield": 1.9912,
     "ttm_income": 7049.78,
-    "market_value": 587162.67
+    "market_value": 587162.68
   },
   {
     "date": "2024-02-14",
     "forward_yield": 2.0133,
     "ttm_income": 7066.35,
-    "market_value": 595045.04
+    "market_value": 595045.01
   },
   {
     "date": "2024-02-15",
     "forward_yield": 1.9579,
     "ttm_income": 7050.71,
-    "market_value": 611115.08
+    "market_value": 611115.07
   },
   {
     "date": "2024-02-16",
@@ -8013,187 +8013,187 @@
     "date": "2024-02-20",
     "forward_yield": 1.9573,
     "ttm_income": 7050.71,
-    "market_value": 611435.61
+    "market_value": 611435.59
   },
   {
     "date": "2024-02-21",
     "forward_yield": 1.9594,
     "ttm_income": 7050.71,
-    "market_value": 610765.96
+    "market_value": 610765.98
   },
   {
     "date": "2024-02-22",
     "forward_yield": 1.8969,
     "ttm_income": 7050.71,
-    "market_value": 621725.02
+    "market_value": 621725.06
   },
   {
     "date": "2024-02-23",
     "forward_yield": 1.8955,
     "ttm_income": 7050.71,
-    "market_value": 622157.97
+    "market_value": 622157.95
   },
   {
     "date": "2024-02-24",
     "forward_yield": 1.8955,
     "ttm_income": 7050.71,
-    "market_value": 622157.97
+    "market_value": 622157.95
   },
   {
     "date": "2024-02-25",
     "forward_yield": 1.8955,
     "ttm_income": 7050.71,
-    "market_value": 622157.97
+    "market_value": 622157.95
   },
   {
     "date": "2024-02-26",
     "forward_yield": 1.9004,
     "ttm_income": 7050.71,
-    "market_value": 621288.48
+    "market_value": 621288.42
   },
   {
     "date": "2024-02-27",
     "forward_yield": 1.8987,
     "ttm_income": 7050.71,
-    "market_value": 621857.41
+    "market_value": 621857.4
   },
   {
     "date": "2024-02-28",
     "forward_yield": 1.8902,
     "ttm_income": 7050.71,
-    "market_value": 621101.44
+    "market_value": 621101.45
   },
   {
     "date": "2024-02-29",
     "forward_yield": 1.8781,
     "ttm_income": 7118.04,
-    "market_value": 623709.4
+    "market_value": 623709.42
   },
   {
     "date": "2024-03-01",
     "forward_yield": 1.8806,
     "ttm_income": 7240.94,
-    "market_value": 629416.91
+    "market_value": 629416.96
   },
   {
     "date": "2024-03-02",
     "forward_yield": 1.8806,
     "ttm_income": 7240.94,
-    "market_value": 629416.85
+    "market_value": 629416.9
   },
   {
     "date": "2024-03-03",
     "forward_yield": 1.8806,
     "ttm_income": 7240.94,
-    "market_value": 629416.85
+    "market_value": 629416.9
   },
   {
     "date": "2024-03-04",
     "forward_yield": 1.8837,
     "ttm_income": 7240.94,
-    "market_value": 628392.48
+    "market_value": 628392.52
   },
   {
     "date": "2024-03-05",
     "forward_yield": 1.8999,
     "ttm_income": 7241.06,
-    "market_value": 623054.45
+    "market_value": 623054.46
   },
   {
     "date": "2024-03-06",
     "forward_yield": 1.8858,
     "ttm_income": 7240.42,
-    "market_value": 627721.02
+    "market_value": 627720.99
   },
   {
     "date": "2024-03-07",
     "forward_yield": 1.8769,
     "ttm_income": 7264.62,
-    "market_value": 632361.98
+    "market_value": 632361.94
   },
   {
     "date": "2024-03-08",
     "forward_yield": 1.8803,
     "ttm_income": 7249.22,
-    "market_value": 627435.89
+    "market_value": 627435.9
   },
   {
     "date": "2024-03-09",
     "forward_yield": 1.8803,
     "ttm_income": 7249.22,
-    "market_value": 627435.95
+    "market_value": 627435.96
   },
   {
     "date": "2024-03-10",
     "forward_yield": 1.8803,
     "ttm_income": 7249.22,
-    "market_value": 627436.01
+    "market_value": 627436.02
   },
   {
     "date": "2024-03-11",
     "forward_yield": 1.8832,
     "ttm_income": 7249.22,
-    "market_value": 626450.07
+    "market_value": 626450.1
   },
   {
     "date": "2024-03-12",
     "forward_yield": 1.8641,
     "ttm_income": 7249.22,
-    "market_value": 632861.36
+    "market_value": 632861.37
   },
   {
     "date": "2024-03-13",
     "forward_yield": 1.8564,
     "ttm_income": 7236.48,
-    "market_value": 632218.61
+    "market_value": 632218.63
   },
   {
     "date": "2024-03-14",
     "forward_yield": 1.8809,
     "ttm_income": 7358.98,
-    "market_value": 630508.06
+    "market_value": 630508.1
   },
   {
     "date": "2024-03-15",
     "forward_yield": 2.0646,
     "ttm_income": 8454.27,
-    "market_value": 628130.68
+    "market_value": 628130.72
   },
   {
     "date": "2024-03-16",
     "forward_yield": 2.0646,
     "ttm_income": 8454.27,
-    "market_value": 628130.56
+    "market_value": 628130.6
   },
   {
     "date": "2024-03-17",
     "forward_yield": 2.0646,
     "ttm_income": 8454.27,
-    "market_value": 628130.56
+    "market_value": 628130.6
   },
   {
     "date": "2024-03-18",
     "forward_yield": 2.0508,
     "ttm_income": 8454.27,
-    "market_value": 632632.02
+    "market_value": 632632.07
   },
   {
     "date": "2024-03-19",
     "forward_yield": 1.9281,
     "ttm_income": 8454.27,
-    "market_value": 634449.1
+    "market_value": 634449.06
   },
   {
     "date": "2024-03-20",
     "forward_yield": 1.9273,
     "ttm_income": 8597.04,
-    "market_value": 642113.95
+    "market_value": 642113.96
   },
   {
     "date": "2024-03-21",
     "forward_yield": 1.897,
     "ttm_income": 8585.1,
-    "market_value": 645007.88
+    "market_value": 645007.89
   },
   {
     "date": "2024-03-22",
@@ -8223,163 +8223,163 @@
     "date": "2024-03-26",
     "forward_yield": 1.9133,
     "ttm_income": 8585.1,
-    "market_value": 640018.83
+    "market_value": 640018.82
   },
   {
     "date": "2024-03-27",
     "forward_yield": 1.9058,
     "ttm_income": 8585.1,
-    "market_value": 642521.86
+    "market_value": 642521.88
   },
   {
     "date": "2024-03-28",
     "forward_yield": 1.9127,
     "ttm_income": 8652.43,
-    "market_value": 643716.66
+    "market_value": 643716.64
   },
   {
     "date": "2024-03-29",
     "forward_yield": 1.9127,
     "ttm_income": 8652.43,
-    "market_value": 643716.72
+    "market_value": 643716.7
   },
   {
     "date": "2024-03-30",
     "forward_yield": 1.9023,
     "ttm_income": 8652.43,
-    "market_value": 643716.78
+    "market_value": 643716.76
   },
   {
     "date": "2024-03-31",
     "forward_yield": 1.9023,
     "ttm_income": 8652.43,
-    "market_value": 643716.66
+    "market_value": 643716.64
   },
   {
     "date": "2024-04-01",
     "forward_yield": 1.9215,
     "ttm_income": 8783.99,
-    "market_value": 645609.44
+    "market_value": 645609.46
   },
   {
     "date": "2024-04-02",
     "forward_yield": 1.9203,
     "ttm_income": 8783.99,
-    "market_value": 640363.41
+    "market_value": 640363.39
   },
   {
     "date": "2024-04-03",
     "forward_yield": 1.9119,
     "ttm_income": 8783.99,
-    "market_value": 643157.32
+    "market_value": 643157.38
   },
   {
     "date": "2024-04-04",
     "forward_yield": 1.9343,
     "ttm_income": 8783.99,
-    "market_value": 635722.55
+    "market_value": 635722.61
   },
   {
     "date": "2024-04-05",
     "forward_yield": 1.9155,
     "ttm_income": 8783.99,
-    "market_value": 641969.52
+    "market_value": 641969.54
   },
   {
     "date": "2024-04-06",
     "forward_yield": 1.9155,
     "ttm_income": 8783.99,
-    "market_value": 641969.52
+    "market_value": 641969.54
   },
   {
     "date": "2024-04-07",
     "forward_yield": 1.9155,
     "ttm_income": 8783.99,
-    "market_value": 641969.46
+    "market_value": 641969.48
   },
   {
     "date": "2024-04-08",
     "forward_yield": 1.914,
     "ttm_income": 8783.99,
-    "market_value": 642448.01
+    "market_value": 642448.04
   },
   {
     "date": "2024-04-09",
     "forward_yield": 1.9133,
     "ttm_income": 8783.99,
-    "market_value": 642708.15
+    "market_value": 642708.12
   },
   {
     "date": "2024-04-10",
     "forward_yield": 1.9383,
     "ttm_income": 8783.99,
-    "market_value": 634406.92
+    "market_value": 634406.89
   },
   {
     "date": "2024-04-11",
     "forward_yield": 1.9245,
     "ttm_income": 8783.99,
-    "market_value": 638970.89
+    "market_value": 638970.92
   },
   {
     "date": "2024-04-12",
     "forward_yield": 1.9845,
     "ttm_income": 8905.5,
-    "market_value": 626223.51
+    "market_value": 626223.53
   },
   {
     "date": "2024-04-13",
     "forward_yield": 1.9681,
     "ttm_income": 8905.5,
-    "market_value": 626223.45
+    "market_value": 626223.47
   },
   {
     "date": "2024-04-14",
     "forward_yield": 1.9681,
     "ttm_income": 8905.5,
-    "market_value": 626223.33
+    "market_value": 626223.35
   },
   {
     "date": "2024-04-15",
     "forward_yield": 1.9901,
     "ttm_income": 8905.5,
-    "market_value": 619295.0
+    "market_value": 619295.02
   },
   {
     "date": "2024-04-16",
     "forward_yield": 2.0028,
     "ttm_income": 8905.5,
-    "market_value": 615383.8
+    "market_value": 615383.78
   },
   {
     "date": "2024-04-17",
     "forward_yield": 2.011,
     "ttm_income": 8905.5,
-    "market_value": 613195.19
+    "market_value": 613195.21
   },
   {
     "date": "2024-04-18",
     "forward_yield": 2.0235,
     "ttm_income": 8905.5,
-    "market_value": 614204.42
+    "market_value": 614204.43
   },
   {
     "date": "2024-04-19",
     "forward_yield": 2.0341,
     "ttm_income": 8905.5,
-    "market_value": 611005.12
+    "market_value": 611005.08
   },
   {
     "date": "2024-04-20",
     "forward_yield": 2.0341,
     "ttm_income": 8905.5,
-    "market_value": 611005.12
+    "market_value": 611005.08
   },
   {
     "date": "2024-04-21",
     "forward_yield": 2.0341,
     "ttm_income": 8905.5,
-    "market_value": 611005.06
+    "market_value": 611005.02
   },
   {
     "date": "2024-04-22",
@@ -8391,7 +8391,7 @@
     "date": "2024-04-23",
     "forward_yield": 1.9986,
     "ttm_income": 8905.5,
-    "market_value": 621863.72
+    "market_value": 621863.71
   },
   {
     "date": "2024-04-24",
@@ -8403,85 +8403,85 @@
     "date": "2024-04-25",
     "forward_yield": 2.0019,
     "ttm_income": 8908.99,
-    "market_value": 625022.34
+    "market_value": 625022.33
   },
   {
     "date": "2024-04-26",
     "forward_yield": 1.9918,
     "ttm_income": 8908.99,
-    "market_value": 630807.54
+    "market_value": 630807.51
   },
   {
     "date": "2024-04-27",
     "forward_yield": 1.9812,
     "ttm_income": 8908.99,
-    "market_value": 630807.42
+    "market_value": 630807.39
   },
   {
     "date": "2024-04-28",
     "forward_yield": 1.9812,
     "ttm_income": 8908.99,
-    "market_value": 630807.42
+    "market_value": 630807.39
   },
   {
     "date": "2024-04-29",
     "forward_yield": 1.9741,
     "ttm_income": 8908.99,
-    "market_value": 633099.42
+    "market_value": 633099.39
   },
   {
     "date": "2024-04-30",
     "forward_yield": 1.9973,
     "ttm_income": 8976.33,
-    "market_value": 623306.83
+    "market_value": 623306.85
   },
   {
     "date": "2024-05-01",
     "forward_yield": 2.0225,
     "ttm_income": 9118.02,
-    "market_value": 622544.46
+    "market_value": 622544.43
   },
   {
     "date": "2024-05-02",
     "forward_yield": 2.0008,
     "ttm_income": 9118.02,
-    "market_value": 629340.17
+    "market_value": 629340.15
   },
   {
     "date": "2024-05-03",
     "forward_yield": 1.9744,
     "ttm_income": 9105.78,
-    "market_value": 637586.87
+    "market_value": 637586.89
   },
   {
     "date": "2024-05-04",
     "forward_yield": 1.9744,
     "ttm_income": 9105.78,
-    "market_value": 637586.93
+    "market_value": 637586.95
   },
   {
     "date": "2024-05-05",
     "forward_yield": 1.9744,
     "ttm_income": 9105.78,
-    "market_value": 637586.99
+    "market_value": 637587.01
   },
   {
     "date": "2024-05-06",
     "forward_yield": 1.9578,
     "ttm_income": 9105.78,
-    "market_value": 642994.58
+    "market_value": 642994.6
   },
   {
     "date": "2024-05-07",
     "forward_yield": 1.9633,
     "ttm_income": 9105.78,
-    "market_value": 641639.61
+    "market_value": 641639.59
   },
   {
     "date": "2024-05-08",
     "forward_yield": 1.9505,
     "ttm_income": 9105.78,
-    "market_value": 645932.63
+    "market_value": 645932.62
   },
   {
     "date": "2024-05-09",
@@ -8517,55 +8517,55 @@
     "date": "2024-05-14",
     "forward_yield": 1.9115,
     "ttm_income": 8655.57,
-    "market_value": 662126.12
+    "market_value": 662126.16
   },
   {
     "date": "2024-05-15",
     "forward_yield": 1.8896,
     "ttm_income": 8672.14,
-    "market_value": 670672.52
+    "market_value": 670672.53
   },
   {
     "date": "2024-05-16",
     "forward_yield": 1.8959,
     "ttm_income": 8657.18,
-    "market_value": 669674.45
+    "market_value": 669674.4
   },
   {
     "date": "2024-05-17",
     "forward_yield": 1.8618,
     "ttm_income": 8657.18,
-    "market_value": 671521.2
+    "market_value": 671521.21
   },
   {
     "date": "2024-05-18",
     "forward_yield": 1.8618,
     "ttm_income": 8657.18,
-    "market_value": 671521.38
+    "market_value": 671521.39
   },
   {
     "date": "2024-05-19",
     "forward_yield": 1.8618,
     "ttm_income": 8657.18,
-    "market_value": 671521.2
+    "market_value": 671521.21
   },
   {
     "date": "2024-05-20",
     "forward_yield": 1.864,
     "ttm_income": 8657.18,
-    "market_value": 670748.04
+    "market_value": 670748.02
   },
   {
     "date": "2024-05-21",
     "forward_yield": 1.8642,
     "ttm_income": 8657.18,
-    "market_value": 670657.17
+    "market_value": 670657.16
   },
   {
     "date": "2024-05-22",
     "forward_yield": 1.8704,
     "ttm_income": 8657.18,
-    "market_value": 668448.56
+    "market_value": 668448.55
   },
   {
     "date": "2024-05-23",
@@ -8577,31 +8577,31 @@
     "date": "2024-05-24",
     "forward_yield": 1.8815,
     "ttm_income": 8657.18,
-    "market_value": 667668.76
+    "market_value": 667668.75
   },
   {
     "date": "2024-05-25",
     "forward_yield": 1.8815,
     "ttm_income": 8657.18,
-    "market_value": 667668.76
+    "market_value": 667668.75
   },
   {
     "date": "2024-05-26",
     "forward_yield": 1.8815,
     "ttm_income": 8657.18,
-    "market_value": 667668.36
+    "market_value": 667668.35
   },
   {
     "date": "2024-05-27",
     "forward_yield": 1.8815,
     "ttm_income": 8657.18,
-    "market_value": 667668.56
+    "market_value": 667668.55
   },
   {
     "date": "2024-05-28",
     "forward_yield": 1.8858,
     "ttm_income": 8657.18,
-    "market_value": 666430.47
+    "market_value": 666430.5
   },
   {
     "date": "2024-05-29",
@@ -8613,25 +8613,25 @@
     "date": "2024-05-30",
     "forward_yield": 1.8971,
     "ttm_income": 8657.18,
-    "market_value": 663449.13
+    "market_value": 663449.09
   },
   {
     "date": "2024-05-31",
     "forward_yield": 1.8594,
     "ttm_income": 8631.28,
-    "market_value": 667068.68
+    "market_value": 667068.69
   },
   {
     "date": "2024-06-01",
     "forward_yield": 1.8594,
     "ttm_income": 8631.28,
-    "market_value": 667069.22
+    "market_value": 667069.23
   },
   {
     "date": "2024-06-02",
     "forward_yield": 1.8594,
     "ttm_income": 8631.28,
-    "market_value": 667068.68
+    "market_value": 667068.69
   },
   {
     "date": "2024-06-03",
@@ -8649,37 +8649,37 @@
     "date": "2024-06-05",
     "forward_yield": 1.8822,
     "ttm_income": 8859.09,
-    "market_value": 671088.7
+    "market_value": 671088.71
   },
   {
     "date": "2024-06-06",
     "forward_yield": 1.8833,
     "ttm_income": 8858.45,
-    "market_value": 670921.94
+    "market_value": 670921.93
   },
   {
     "date": "2024-06-07",
     "forward_yield": 1.8948,
     "ttm_income": 8913.55,
-    "market_value": 672001.81
+    "market_value": 672001.84
   },
   {
     "date": "2024-06-08",
     "forward_yield": 1.8948,
     "ttm_income": 8913.55,
-    "market_value": 672001.81
+    "market_value": 672001.84
   },
   {
     "date": "2024-06-09",
     "forward_yield": 1.8948,
     "ttm_income": 8913.55,
-    "market_value": 672002.61
+    "market_value": 672002.64
   },
   {
     "date": "2024-06-10",
     "forward_yield": 1.8968,
     "ttm_income": 8937.75,
-    "market_value": 672616.5
+    "market_value": 672616.52
   },
   {
     "date": "2024-06-11",
@@ -8691,31 +8691,31 @@
     "date": "2024-06-12",
     "forward_yield": 1.8743,
     "ttm_income": 8938.05,
-    "market_value": 680706.0
+    "market_value": 680705.98
   },
   {
     "date": "2024-06-13",
     "forward_yield": 1.855,
     "ttm_income": 8907.99,
-    "market_value": 684498.58
+    "market_value": 684498.54
   },
   {
     "date": "2024-06-14",
     "forward_yield": 1.8698,
     "ttm_income": 8975.38,
-    "market_value": 682731.24
+    "market_value": 682731.25
   },
   {
     "date": "2024-06-15",
     "forward_yield": 1.8674,
     "ttm_income": 8975.38,
-    "market_value": 682732.34
+    "market_value": 682732.35
   },
   {
     "date": "2024-06-16",
     "forward_yield": 1.8674,
     "ttm_income": 8975.38,
-    "market_value": 682731.79
+    "market_value": 682731.8
   },
   {
     "date": "2024-06-17",
@@ -8727,145 +8727,145 @@
     "date": "2024-06-18",
     "forward_yield": 1.8472,
     "ttm_income": 8975.38,
-    "market_value": 690229.74
+    "market_value": 690229.71
   },
   {
     "date": "2024-06-19",
     "forward_yield": 1.6022,
     "ttm_income": 8975.38,
-    "market_value": 690229.19
+    "market_value": 690229.16
   },
   {
     "date": "2024-06-20",
     "forward_yield": 1.5819,
     "ttm_income": 8905.44,
-    "market_value": 689277.77
+    "market_value": 689277.78
   },
   {
     "date": "2024-06-21",
     "forward_yield": 1.8065,
     "ttm_income": 10429.27,
-    "market_value": 691059.17
+    "market_value": 691059.15
   },
   {
     "date": "2024-06-22",
     "forward_yield": 1.8065,
     "ttm_income": 10429.27,
-    "market_value": 691058.07
+    "market_value": 691058.05
   },
   {
     "date": "2024-06-23",
     "forward_yield": 1.8065,
     "ttm_income": 10429.27,
-    "market_value": 691058.62
+    "market_value": 691058.6
   },
   {
     "date": "2024-06-24",
     "forward_yield": 1.8077,
     "ttm_income": 10429.27,
-    "market_value": 690694.01
+    "market_value": 690693.98
   },
   {
     "date": "2024-06-25",
     "forward_yield": 1.7909,
     "ttm_income": 10429.27,
-    "market_value": 697502.58
+    "market_value": 697502.56
   },
   {
     "date": "2024-06-26",
     "forward_yield": 1.8291,
     "ttm_income": 10621.81,
-    "market_value": 699718.41
+    "market_value": 699718.43
   },
   {
     "date": "2024-06-27",
     "forward_yield": 1.8134,
     "ttm_income": 10623.5,
-    "market_value": 703088.96
+    "market_value": 703088.94
   },
   {
     "date": "2024-06-28",
     "forward_yield": 1.8234,
     "ttm_income": 10680.41,
-    "market_value": 702367.81
+    "market_value": 702367.85
   },
   {
     "date": "2024-06-29",
     "forward_yield": 1.8139,
     "ttm_income": 10680.41,
-    "market_value": 702368.46
+    "market_value": 702368.5
   },
   {
     "date": "2024-06-30",
     "forward_yield": 1.8139,
     "ttm_income": 10680.41,
-    "market_value": 702367.81
+    "market_value": 702367.85
   },
   {
     "date": "2024-07-01",
     "forward_yield": 1.8445,
     "ttm_income": 10910.02,
-    "market_value": 703305.66
+    "market_value": 703305.63
   },
   {
     "date": "2024-07-02",
     "forward_yield": 1.8177,
     "ttm_income": 10910.02,
-    "market_value": 706512.9
+    "market_value": 706512.89
   },
   {
     "date": "2024-07-03",
     "forward_yield": 1.804,
     "ttm_income": 10910.02,
-    "market_value": 711863.65
+    "market_value": 711863.62
   },
   {
     "date": "2024-07-04",
     "forward_yield": 1.804,
     "ttm_income": 10910.02,
-    "market_value": 711863.65
+    "market_value": 711863.62
   },
   {
     "date": "2024-07-05",
     "forward_yield": 1.7973,
     "ttm_income": 10910.02,
-    "market_value": 718327.47
+    "market_value": 718327.46
   },
   {
     "date": "2024-07-06",
     "forward_yield": 1.7973,
     "ttm_income": 10910.02,
-    "market_value": 718328.25
+    "market_value": 718328.24
   },
   {
     "date": "2024-07-07",
     "forward_yield": 1.7973,
     "ttm_income": 10910.02,
-    "market_value": 718327.47
+    "market_value": 718327.46
   },
   {
     "date": "2024-07-08",
     "forward_yield": 1.7973,
     "ttm_income": 10923.07,
-    "market_value": 719107.3
+    "market_value": 719107.28
   },
   {
     "date": "2024-07-09",
     "forward_yield": 1.7992,
     "ttm_income": 10923.07,
-    "market_value": 718337.09
+    "market_value": 718337.11
   },
   {
     "date": "2024-07-10",
     "forward_yield": 1.7817,
     "ttm_income": 10923.07,
-    "market_value": 725402.92
+    "market_value": 725402.94
   },
   {
     "date": "2024-07-11",
     "forward_yield": 1.7824,
     "ttm_income": 10923.07,
-    "market_value": 725113.96
+    "market_value": 725113.97
   },
   {
     "date": "2024-07-12",
@@ -8889,25 +8889,25 @@
     "date": "2024-07-15",
     "forward_yield": 1.7672,
     "ttm_income": 10922.94,
-    "market_value": 731338.33
+    "market_value": 731338.34
   },
   {
     "date": "2024-07-16",
     "forward_yield": 1.7524,
     "ttm_income": 10922.94,
-    "market_value": 737676.05
+    "market_value": 737676.04
   },
   {
     "date": "2024-07-17",
     "forward_yield": 1.7746,
     "ttm_income": 10922.94,
-    "market_value": 728474.54
+    "market_value": 728474.52
   },
   {
     "date": "2024-07-18",
     "forward_yield": 1.7889,
     "ttm_income": 10922.94,
-    "market_value": 722627.14
+    "market_value": 722627.15
   },
   {
     "date": "2024-07-19",
@@ -8931,43 +8931,43 @@
     "date": "2024-07-22",
     "forward_yield": 1.777,
     "ttm_income": 10922.94,
-    "market_value": 730933.32
+    "market_value": 730933.27
   },
   {
     "date": "2024-07-23",
     "forward_yield": 1.7755,
     "ttm_income": 10922.94,
-    "market_value": 731531.99
+    "market_value": 731531.97
   },
   {
     "date": "2024-07-24",
     "forward_yield": 1.8163,
     "ttm_income": 10922.94,
-    "market_value": 718905.1
+    "market_value": 718905.14
   },
   {
     "date": "2024-07-25",
     "forward_yield": 1.8254,
     "ttm_income": 10922.94,
-    "market_value": 715455.96
+    "market_value": 715455.97
   },
   {
     "date": "2024-07-26",
     "forward_yield": 1.8052,
     "ttm_income": 10926.18,
-    "market_value": 723666.01
+    "market_value": 723666.04
   },
   {
     "date": "2024-07-27",
     "forward_yield": 1.8052,
     "ttm_income": 10926.18,
-    "market_value": 723664.87
+    "market_value": 723664.9
   },
   {
     "date": "2024-07-28",
     "forward_yield": 1.8052,
     "ttm_income": 10926.18,
-    "market_value": 723666.01
+    "market_value": 723666.04
   },
   {
     "date": "2024-07-29",
@@ -8979,85 +8979,85 @@
     "date": "2024-07-30",
     "forward_yield": 1.8013,
     "ttm_income": 10926.18,
-    "market_value": 721495.25
+    "market_value": 721495.26
   },
   {
     "date": "2024-07-31",
     "forward_yield": 1.7445,
     "ttm_income": 10926.18,
-    "market_value": 736639.61
+    "market_value": 736639.64
   },
   {
     "date": "2024-08-01",
     "forward_yield": 1.8054,
     "ttm_income": 11168.07,
-    "market_value": 725212.41
+    "market_value": 725212.39
   },
   {
     "date": "2024-08-02",
     "forward_yield": 1.8396,
     "ttm_income": 11168.07,
-    "market_value": 715114.57
+    "market_value": 715114.59
   },
   {
     "date": "2024-08-03",
     "forward_yield": 1.8396,
     "ttm_income": 11168.07,
-    "market_value": 715116.89
+    "market_value": 715116.91
   },
   {
     "date": "2024-08-04",
     "forward_yield": 1.8396,
     "ttm_income": 11168.07,
-    "market_value": 715115.73
+    "market_value": 715115.75
   },
   {
     "date": "2024-08-05",
     "forward_yield": 1.8822,
     "ttm_income": 11168.07,
-    "market_value": 698922.14
+    "market_value": 698922.11
   },
   {
     "date": "2024-08-06",
     "forward_yield": 1.8656,
     "ttm_income": 11168.07,
-    "market_value": 705238.85
+    "market_value": 705238.87
   },
   {
     "date": "2024-08-07",
     "forward_yield": 1.8744,
     "ttm_income": 11168.07,
-    "market_value": 701923.3
+    "market_value": 701923.32
   },
   {
     "date": "2024-08-08",
     "forward_yield": 1.8347,
     "ttm_income": 11168.07,
-    "market_value": 717103.3
+    "market_value": 717103.31
   },
   {
     "date": "2024-08-09",
     "forward_yield": 1.8289,
     "ttm_income": 11168.07,
-    "market_value": 719362.25
+    "market_value": 719362.24
   },
   {
     "date": "2024-08-10",
     "forward_yield": 1.8269,
     "ttm_income": 11152.43,
-    "market_value": 719359.63
+    "market_value": 719359.62
   },
   {
     "date": "2024-08-11",
     "forward_yield": 1.8269,
     "ttm_income": 11152.43,
-    "market_value": 719360.94
+    "market_value": 719360.93
   },
   {
     "date": "2024-08-12",
     "forward_yield": 1.8314,
     "ttm_income": 11167.68,
-    "market_value": 717624.69
+    "market_value": 717624.71
   },
   {
     "date": "2024-08-13",
@@ -9069,7 +9069,7 @@
     "date": "2024-08-14",
     "forward_yield": 1.8,
     "ttm_income": 11167.68,
-    "market_value": 730146.2
+    "market_value": 730146.21
   },
   {
     "date": "2024-08-15",
@@ -9081,121 +9081,121 @@
     "date": "2024-08-16",
     "forward_yield": 1.7252,
     "ttm_income": 11169.54,
-    "market_value": 744642.59
+    "market_value": 744642.61
   },
   {
     "date": "2024-08-17",
     "forward_yield": 1.7256,
     "ttm_income": 11169.54,
-    "market_value": 744836.92
+    "market_value": 744836.94
   },
   {
     "date": "2024-08-18",
     "forward_yield": 1.7256,
     "ttm_income": 11169.54,
-    "market_value": 744838.65
+    "market_value": 744838.67
   },
   {
     "date": "2024-08-19",
     "forward_yield": 1.713,
     "ttm_income": 11169.54,
-    "market_value": 748674.12
+    "market_value": 748674.13
   },
   {
     "date": "2024-08-20",
     "forward_yield": 1.7158,
     "ttm_income": 11169.54,
-    "market_value": 747459.85
+    "market_value": 747459.83
   },
   {
     "date": "2024-08-21",
     "forward_yield": 1.7085,
     "ttm_income": 11169.54,
-    "market_value": 750651.08
+    "market_value": 750651.07
   },
   {
     "date": "2024-08-22",
     "forward_yield": 1.7215,
     "ttm_income": 11169.54,
-    "market_value": 744990.32
+    "market_value": 744990.36
   },
   {
     "date": "2024-08-23",
     "forward_yield": 1.6993,
     "ttm_income": 11164.03,
-    "market_value": 754527.31
+    "market_value": 754527.27
   },
   {
     "date": "2024-08-24",
     "forward_yield": 1.6993,
     "ttm_income": 11164.03,
-    "market_value": 754527.31
+    "market_value": 754527.27
   },
   {
     "date": "2024-08-25",
     "forward_yield": 1.6942,
     "ttm_income": 11164.03,
-    "market_value": 756989.82
+    "market_value": 756989.78
   },
   {
     "date": "2024-08-26",
     "forward_yield": 1.7044,
     "ttm_income": 11164.03,
-    "market_value": 752452.78
+    "market_value": 752452.8
   },
   {
     "date": "2024-08-27",
     "forward_yield": 1.701,
     "ttm_income": 11164.03,
-    "market_value": 753952.47
+    "market_value": 753952.5
   },
   {
     "date": "2024-08-28",
     "forward_yield": 1.7089,
     "ttm_income": 11164.03,
-    "market_value": 750467.04
+    "market_value": 750467.08
   },
   {
     "date": "2024-08-29",
     "forward_yield": 1.7036,
     "ttm_income": 11164.03,
-    "market_value": 752774.12
+    "market_value": 752774.13
   },
   {
     "date": "2024-08-30",
     "forward_yield": 1.6818,
     "ttm_income": 11164.03,
-    "market_value": 762070.97
+    "market_value": 762071.01
   },
   {
     "date": "2024-08-31",
     "forward_yield": 1.6628,
     "ttm_income": 11164.03,
-    "market_value": 762072.7
+    "market_value": 762072.74
   },
   {
     "date": "2024-09-01",
     "forward_yield": 1.6628,
     "ttm_income": 11164.03,
-    "market_value": 762072.7
+    "market_value": 762072.74
   },
   {
     "date": "2024-09-02",
     "forward_yield": 1.6628,
     "ttm_income": 11164.03,
-    "market_value": 762074.43
+    "market_value": 762074.47
   },
   {
     "date": "2024-09-03",
     "forward_yield": 1.7303,
     "ttm_income": 11403.22,
-    "market_value": 746193.01
+    "market_value": 746192.97
   },
   {
     "date": "2024-09-04",
     "forward_yield": 1.7308,
     "ttm_income": 11403.22,
-    "market_value": 745986.22
+    "market_value": 745986.24
   },
   {
     "date": "2024-09-05",
@@ -9207,43 +9207,43 @@
     "date": "2024-09-06",
     "forward_yield": 1.7472,
     "ttm_income": 11353.28,
-    "market_value": 730077.85
+    "market_value": 730077.87
   },
   {
     "date": "2024-09-07",
     "forward_yield": 1.7472,
     "ttm_income": 11353.28,
-    "market_value": 730077.85
+    "market_value": 730077.87
   },
   {
     "date": "2024-09-08",
     "forward_yield": 1.7472,
     "ttm_income": 11353.28,
-    "market_value": 730077.85
+    "market_value": 730077.87
   },
   {
     "date": "2024-09-09",
     "forward_yield": 1.7111,
     "ttm_income": 11369.62,
-    "market_value": 738410.12
+    "market_value": 738410.08
   },
   {
     "date": "2024-09-10",
     "forward_yield": 1.7041,
     "ttm_income": 11413.18,
-    "market_value": 740481.3
+    "market_value": 740481.32
   },
   {
     "date": "2024-09-11",
     "forward_yield": 1.6687,
     "ttm_income": 11413.18,
-    "market_value": 747655.25
+    "market_value": 747655.29
   },
   {
     "date": "2024-09-12",
     "forward_yield": 1.6534,
     "ttm_income": 11413.48,
-    "market_value": 754607.24
+    "market_value": 754607.22
   },
   {
     "date": "2024-09-13",
@@ -9267,25 +9267,25 @@
     "date": "2024-09-16",
     "forward_yield": 1.6403,
     "ttm_income": 11488.18,
-    "market_value": 765418.22
+    "market_value": 765418.21
   },
   {
     "date": "2024-09-17",
     "forward_yield": 1.5009,
     "ttm_income": 10841.42,
-    "market_value": 766120.99
+    "market_value": 766120.98
   },
   {
     "date": "2024-09-18",
     "forward_yield": 1.5044,
     "ttm_income": 10841.42,
-    "market_value": 764317.06
+    "market_value": 764317.07
   },
   {
     "date": "2024-09-19",
     "forward_yield": 1.4603,
     "ttm_income": 10606.96,
-    "market_value": 776660.73
+    "market_value": 776660.75
   },
   {
     "date": "2024-09-20",
@@ -9309,43 +9309,43 @@
     "date": "2024-09-23",
     "forward_yield": 1.6006,
     "ttm_income": 11709.21,
-    "market_value": 777460.09
+    "market_value": 777460.13
   },
   {
     "date": "2024-09-24",
     "forward_yield": 1.5856,
     "ttm_income": 11709.21,
-    "market_value": 779474.11
+    "market_value": 779474.13
   },
   {
     "date": "2024-09-25",
     "forward_yield": 1.6083,
     "ttm_income": 11885.62,
-    "market_value": 780573.79
+    "market_value": 780573.8
   },
   {
     "date": "2024-09-26",
     "forward_yield": 1.5815,
     "ttm_income": 11889.67,
-    "market_value": 785222.34
+    "market_value": 785222.33
   },
   {
     "date": "2024-09-27",
     "forward_yield": 1.6015,
     "ttm_income": 12007.01,
-    "market_value": 789154.95
+    "market_value": 789154.98
   },
   {
     "date": "2024-09-28",
     "forward_yield": 1.593,
     "ttm_income": 12007.01,
-    "market_value": 789154.95
+    "market_value": 789154.98
   },
   {
     "date": "2024-09-29",
     "forward_yield": 1.593,
     "ttm_income": 12007.01,
-    "market_value": 789154.95
+    "market_value": 789154.98
   },
   {
     "date": "2024-09-30",
@@ -9363,7 +9363,7 @@
     "date": "2024-10-02",
     "forward_yield": 1.5942,
     "ttm_income": 12200.1,
-    "market_value": 789101.66
+    "market_value": 789101.69
   },
   {
     "date": "2024-10-03",
@@ -9375,67 +9375,67 @@
     "date": "2024-10-04",
     "forward_yield": 1.5843,
     "ttm_income": 12200.1,
-    "market_value": 794036.75
+    "market_value": 794036.77
   },
   {
     "date": "2024-10-05",
     "forward_yield": 1.5843,
     "ttm_income": 12200.1,
-    "market_value": 794036.75
+    "market_value": 794036.77
   },
   {
     "date": "2024-10-06",
     "forward_yield": 1.5843,
     "ttm_income": 12200.1,
-    "market_value": 794036.75
+    "market_value": 794036.77
   },
   {
     "date": "2024-10-07",
     "forward_yield": 1.5972,
     "ttm_income": 12200.1,
-    "market_value": 787837.79
+    "market_value": 787837.74
   },
   {
     "date": "2024-10-08",
     "forward_yield": 1.5628,
     "ttm_income": 12200.1,
-    "market_value": 791152.78
+    "market_value": 791152.77
   },
   {
     "date": "2024-10-09",
     "forward_yield": 1.5545,
     "ttm_income": 12200.1,
-    "market_value": 794314.23
+    "market_value": 794314.17
   },
   {
     "date": "2024-10-10",
     "forward_yield": 1.5533,
     "ttm_income": 12200.1,
-    "market_value": 794897.08
+    "market_value": 794897.06
   },
   {
     "date": "2024-10-11",
     "forward_yield": 1.5423,
     "ttm_income": 12199.58,
-    "market_value": 804225.59
+    "market_value": 804225.56
   },
   {
     "date": "2024-10-12",
     "forward_yield": 1.5423,
     "ttm_income": 12199.58,
-    "market_value": 804225.59
+    "market_value": 804225.56
   },
   {
     "date": "2024-10-13",
     "forward_yield": 1.5423,
     "ttm_income": 12199.58,
-    "market_value": 804225.59
+    "market_value": 804225.56
   },
   {
     "date": "2024-10-14",
     "forward_yield": 1.5367,
     "ttm_income": 12199.58,
-    "market_value": 807165.8
+    "market_value": 807165.81
   },
   {
     "date": "2024-10-15",
@@ -9447,31 +9447,31 @@
     "date": "2024-10-16",
     "forward_yield": 1.54,
     "ttm_income": 12199.58,
-    "market_value": 804661.54
+    "market_value": 804661.5
   },
   {
     "date": "2024-10-17",
     "forward_yield": 1.5418,
     "ttm_income": 12199.58,
-    "market_value": 803717.17
+    "market_value": 803717.15
   },
   {
     "date": "2024-10-18",
     "forward_yield": 1.5387,
     "ttm_income": 12199.58,
-    "market_value": 805333.13
+    "market_value": 805333.11
   },
   {
     "date": "2024-10-19",
     "forward_yield": 1.5387,
     "ttm_income": 12199.58,
-    "market_value": 805333.13
+    "market_value": 805333.11
   },
   {
     "date": "2024-10-20",
     "forward_yield": 1.5387,
     "ttm_income": 12199.58,
-    "market_value": 805333.13
+    "market_value": 805333.11
   },
   {
     "date": "2024-10-21",
@@ -9483,7 +9483,7 @@
     "date": "2024-10-22",
     "forward_yield": 1.5496,
     "ttm_income": 12199.58,
-    "market_value": 799675.73
+    "market_value": 799675.77
   },
   {
     "date": "2024-10-23",
@@ -9495,25 +9495,25 @@
     "date": "2024-10-24",
     "forward_yield": 1.5596,
     "ttm_income": 12199.58,
-    "market_value": 794534.07
+    "market_value": 794534.08
   },
   {
     "date": "2024-10-25",
     "forward_yield": 1.5602,
     "ttm_income": 12198.86,
-    "market_value": 799330.51
+    "market_value": 799330.53
   },
   {
     "date": "2024-10-26",
     "forward_yield": 1.5602,
     "ttm_income": 12198.86,
-    "market_value": 799330.51
+    "market_value": 799330.53
   },
   {
     "date": "2024-10-27",
     "forward_yield": 1.5602,
     "ttm_income": 12198.86,
-    "market_value": 799330.51
+    "market_value": 799330.53
   },
   {
     "date": "2024-10-28",
@@ -9525,103 +9525,103 @@
     "date": "2024-10-29",
     "forward_yield": 1.5491,
     "ttm_income": 12198.86,
-    "market_value": 805593.11
+    "market_value": 805593.12
   },
   {
     "date": "2024-10-30",
     "forward_yield": 1.5466,
     "ttm_income": 12131.79,
-    "market_value": 802593.34
+    "market_value": 802593.32
   },
   {
     "date": "2024-10-31",
     "forward_yield": 1.5545,
     "ttm_income": 12131.79,
-    "market_value": 792842.29
+    "market_value": 792842.3
   },
   {
     "date": "2024-11-01",
     "forward_yield": 1.5701,
     "ttm_income": 12298.53,
-    "market_value": 795620.63
+    "market_value": 795620.61
   },
   {
     "date": "2024-11-02",
     "forward_yield": 1.5701,
     "ttm_income": 12298.53,
-    "market_value": 795620.63
+    "market_value": 795620.61
   },
   {
     "date": "2024-11-03",
     "forward_yield": 1.5701,
     "ttm_income": 12298.53,
-    "market_value": 795620.63
+    "market_value": 795620.61
   },
   {
     "date": "2024-11-04",
     "forward_yield": 1.5707,
     "ttm_income": 12298.53,
-    "market_value": 795333.94
+    "market_value": 795333.92
   },
   {
     "date": "2024-11-05",
     "forward_yield": 1.5509,
     "ttm_income": 12298.53,
-    "market_value": 805483.67
+    "market_value": 805483.66
   },
   {
     "date": "2024-11-06",
     "forward_yield": 1.5171,
     "ttm_income": 12298.53,
-    "market_value": 823514.97
+    "market_value": 823514.96
   },
   {
     "date": "2024-11-07",
     "forward_yield": 1.5025,
     "ttm_income": 12298.53,
-    "market_value": 831361.27
+    "market_value": 831361.23
   },
   {
     "date": "2024-11-08",
     "forward_yield": 1.5189,
     "ttm_income": 12313.78,
-    "market_value": 827019.8
+    "market_value": 827019.82
   },
   {
     "date": "2024-11-09",
     "forward_yield": 1.5171,
     "ttm_income": 12299.14,
-    "market_value": 827019.8
+    "market_value": 827019.82
   },
   {
     "date": "2024-11-10",
     "forward_yield": 1.5171,
     "ttm_income": 12299.14,
-    "market_value": 827019.8
+    "market_value": 827019.82
   },
   {
     "date": "2024-11-11",
     "forward_yield": 1.4982,
     "ttm_income": 12299.14,
-    "market_value": 827281.7
+    "market_value": 827281.69
   },
   {
     "date": "2024-11-12",
     "forward_yield": 1.5072,
     "ttm_income": 12299.14,
-    "market_value": 822313.5
+    "market_value": 822313.49
   },
   {
     "date": "2024-11-13",
     "forward_yield": 1.4964,
     "ttm_income": 12299.14,
-    "market_value": 820929.31
+    "market_value": 820929.32
   },
   {
     "date": "2024-11-14",
     "forward_yield": 1.4996,
     "ttm_income": 12282.35,
-    "market_value": 815590.78
+    "market_value": 815590.81
   },
   {
     "date": "2024-11-15",
@@ -9645,7 +9645,7 @@
     "date": "2024-11-18",
     "forward_yield": 1.4826,
     "ttm_income": 12282.35,
-    "market_value": 812245.66
+    "market_value": 812245.67
   },
   {
     "date": "2024-11-19",
@@ -9657,37 +9657,37 @@
     "date": "2024-11-20",
     "forward_yield": 1.4751,
     "ttm_income": 12282.35,
-    "market_value": 816398.91
+    "market_value": 816398.94
   },
   {
     "date": "2024-11-21",
     "forward_yield": 1.3646,
     "ttm_income": 9968.01,
-    "market_value": 826791.98
+    "market_value": 826791.96
   },
   {
     "date": "2024-11-22",
     "forward_yield": 1.3614,
     "ttm_income": 9968.01,
-    "market_value": 834407.89
+    "market_value": 834407.91
   },
   {
     "date": "2024-11-23",
     "forward_yield": 1.3614,
     "ttm_income": 9968.01,
-    "market_value": 834407.89
+    "market_value": 834407.91
   },
   {
     "date": "2024-11-24",
     "forward_yield": 1.3614,
     "ttm_income": 9968.01,
-    "market_value": 834407.89
+    "market_value": 834407.91
   },
   {
     "date": "2024-11-25",
     "forward_yield": 1.3552,
     "ttm_income": 9968.01,
-    "market_value": 838703.82
+    "market_value": 838703.81
   },
   {
     "date": "2024-11-26",
@@ -9699,43 +9699,43 @@
     "date": "2024-11-27",
     "forward_yield": 1.3303,
     "ttm_income": 9968.01,
-    "market_value": 841364.67
+    "market_value": 841364.63
   },
   {
     "date": "2024-11-28",
     "forward_yield": 1.3303,
     "ttm_income": 9968.01,
-    "market_value": 841364.67
+    "market_value": 841364.63
   },
   {
     "date": "2024-11-29",
     "forward_yield": 1.2939,
     "ttm_income": 9849.51,
-    "market_value": 842663.12
+    "market_value": 842663.13
   },
   {
     "date": "2024-11-30",
     "forward_yield": 1.2939,
     "ttm_income": 9849.51,
-    "market_value": 842663.12
+    "market_value": 842663.13
   },
   {
     "date": "2024-12-01",
     "forward_yield": 1.2939,
     "ttm_income": 9849.51,
-    "market_value": 842663.12
+    "market_value": 842663.13
   },
   {
     "date": "2024-12-02",
     "forward_yield": 1.2956,
     "ttm_income": 9918.68,
-    "market_value": 846856.73
+    "market_value": 846856.72
   },
   {
     "date": "2024-12-03",
     "forward_yield": 1.295,
     "ttm_income": 9918.68,
-    "market_value": 847253.72
+    "market_value": 847253.7
   },
   {
     "date": "2024-12-04",
@@ -9747,7 +9747,7 @@
     "date": "2024-12-05",
     "forward_yield": 1.2969,
     "ttm_income": 9747.24,
-    "market_value": 850703.96
+    "market_value": 850703.98
   },
   {
     "date": "2024-12-06",
@@ -9777,121 +9777,121 @@
     "date": "2024-12-10",
     "forward_yield": 1.3179,
     "ttm_income": 9947.71,
-    "market_value": 851560.15
+    "market_value": 851560.12
   },
   {
     "date": "2024-12-11",
     "forward_yield": 1.3273,
     "ttm_income": 10133.47,
-    "market_value": 859506.91
+    "market_value": 859506.9
   },
   {
     "date": "2024-12-12",
     "forward_yield": 1.3348,
     "ttm_income": 10133.47,
-    "market_value": 854638.28
+    "market_value": 854638.25
   },
   {
     "date": "2024-12-13",
     "forward_yield": 1.1583,
     "ttm_income": 8618.45,
-    "market_value": 859928.08
+    "market_value": 859928.11
   },
   {
     "date": "2024-12-14",
     "forward_yield": 1.143,
     "ttm_income": 7092.21,
-    "market_value": 859928.08
+    "market_value": 859928.11
   },
   {
     "date": "2024-12-15",
     "forward_yield": 1.143,
     "ttm_income": 7092.21,
-    "market_value": 859928.08
+    "market_value": 859928.11
   },
   {
     "date": "2024-12-16",
     "forward_yield": 1.1392,
     "ttm_income": 7111.71,
-    "market_value": 864569.09
+    "market_value": 864569.12
   },
   {
     "date": "2024-12-17",
     "forward_yield": 0.8291,
     "ttm_income": 5027.79,
-    "market_value": 860981.14
+    "market_value": 860981.17
   },
   {
     "date": "2024-12-18",
     "forward_yield": 0.8314,
     "ttm_income": 4933.32,
-    "market_value": 815198.42
+    "market_value": 815198.39
   },
   {
     "date": "2024-12-19",
     "forward_yield": 0.8226,
     "ttm_income": 4933.32,
-    "market_value": 816422.97
+    "market_value": 816422.95
   },
   {
     "date": "2024-12-20",
     "forward_yield": 1.1956,
     "ttm_income": 8089.74,
-    "market_value": 829679.56
+    "market_value": 829679.62
   },
   {
     "date": "2024-12-21",
     "forward_yield": 1.1956,
     "ttm_income": 8089.74,
-    "market_value": 829679.56
+    "market_value": 829679.62
   },
   {
     "date": "2024-12-22",
     "forward_yield": 1.1956,
     "ttm_income": 8089.74,
-    "market_value": 829679.56
+    "market_value": 829679.62
   },
   {
     "date": "2024-12-23",
     "forward_yield": 1.2074,
     "ttm_income": 8236.17,
-    "market_value": 836271.55
+    "market_value": 836271.56
   },
   {
     "date": "2024-12-24",
     "forward_yield": 1.1985,
     "ttm_income": 8236.17,
-    "market_value": 842491.84
+    "market_value": 842491.82
   },
   {
     "date": "2024-12-25",
     "forward_yield": 1.1954,
     "ttm_income": 8236.17,
-    "market_value": 845413.5
+    "market_value": 845413.47
   },
   {
     "date": "2024-12-26",
     "forward_yield": 1.1892,
     "ttm_income": 8177.3,
-    "market_value": 846498.94
+    "market_value": 846498.92
   },
   {
     "date": "2024-12-27",
     "forward_yield": 1.2003,
     "ttm_income": 8177.3,
-    "market_value": 838677.83
+    "market_value": 838677.8
   },
   {
     "date": "2024-12-28",
     "forward_yield": 1.2003,
     "ttm_income": 8177.3,
-    "market_value": 838677.83
+    "market_value": 838677.8
   },
   {
     "date": "2024-12-29",
     "forward_yield": 1.2003,
     "ttm_income": 8177.3,
-    "market_value": 838677.83
+    "market_value": 838677.8
   },
   {
     "date": "2024-12-30",
@@ -9903,19 +9903,19 @@
     "date": "2024-12-31",
     "forward_yield": 1.2151,
     "ttm_income": 8177.3,
-    "market_value": 828473.31
+    "market_value": 828473.32
   },
   {
     "date": "2025-01-01",
     "forward_yield": 1.2151,
     "ttm_income": 8177.3,
-    "market_value": 828473.31
+    "market_value": 828473.32
   },
   {
     "date": "2025-01-02",
     "forward_yield": 1.2167,
     "ttm_income": 8177.3,
-    "market_value": 827366.93
+    "market_value": 827366.9
   },
   {
     "date": "2025-01-03",
@@ -9951,49 +9951,49 @@
     "date": "2025-01-08",
     "forward_yield": 1.2058,
     "ttm_income": 8177.3,
-    "market_value": 841600.11
+    "market_value": 841600.14
   },
   {
     "date": "2025-01-09",
     "forward_yield": 1.2058,
     "ttm_income": 8177.3,
-    "market_value": 841600.11
+    "market_value": 841600.14
   },
   {
     "date": "2025-01-10",
     "forward_yield": 1.2221,
     "ttm_income": 8130.19,
-    "market_value": 826174.8
+    "market_value": 826174.81
   },
   {
     "date": "2025-01-11",
     "forward_yield": 1.2221,
     "ttm_income": 8130.19,
-    "market_value": 826174.8
+    "market_value": 826174.81
   },
   {
     "date": "2025-01-12",
     "forward_yield": 1.2221,
     "ttm_income": 8130.19,
-    "market_value": 826174.8
+    "market_value": 826174.81
   },
   {
     "date": "2025-01-13",
     "forward_yield": 1.2217,
     "ttm_income": 8130.19,
-    "market_value": 826426.69
+    "market_value": 826426.71
   },
   {
     "date": "2025-01-14",
     "forward_yield": 1.2139,
     "ttm_income": 8130.19,
-    "market_value": 831762.88
+    "market_value": 831762.91
   },
   {
     "date": "2025-01-15",
     "forward_yield": 1.1929,
     "ttm_income": 8130.19,
-    "market_value": 846362.78
+    "market_value": 846362.77
   },
   {
     "date": "2025-01-16",
@@ -10005,37 +10005,37 @@
     "date": "2025-01-17",
     "forward_yield": 1.1772,
     "ttm_income": 8130.19,
-    "market_value": 861717.1
+    "market_value": 861717.09
   },
   {
     "date": "2025-01-18",
     "forward_yield": 1.1772,
     "ttm_income": 8130.19,
-    "market_value": 861717.1
+    "market_value": 861717.09
   },
   {
     "date": "2025-01-19",
     "forward_yield": 1.1772,
     "ttm_income": 8130.19,
-    "market_value": 861717.1
+    "market_value": 861717.09
   },
   {
     "date": "2025-01-20",
     "forward_yield": 1.1772,
     "ttm_income": 8130.19,
-    "market_value": 861717.1
+    "market_value": 861717.09
   },
   {
     "date": "2025-01-21",
     "forward_yield": 1.169,
     "ttm_income": 8130.19,
-    "market_value": 868580.97
+    "market_value": 868581.0
   },
   {
     "date": "2025-01-22",
     "forward_yield": 1.1597,
     "ttm_income": 8130.19,
-    "market_value": 875549.63
+    "market_value": 875549.64
   },
   {
     "date": "2025-01-23",
@@ -10047,25 +10047,25 @@
     "date": "2025-01-24",
     "forward_yield": 1.1516,
     "ttm_income": 8130.19,
-    "market_value": 881697.84
+    "market_value": 881697.87
   },
   {
     "date": "2025-01-25",
     "forward_yield": 1.1487,
     "ttm_income": 8130.19,
-    "market_value": 884693.78
+    "market_value": 884693.81
   },
   {
     "date": "2025-01-26",
     "forward_yield": 1.1487,
     "ttm_income": 8130.19,
-    "market_value": 884693.78
+    "market_value": 884693.81
   },
   {
     "date": "2025-01-27",
     "forward_yield": 1.1955,
     "ttm_income": 8130.19,
-    "market_value": 850037.78
+    "market_value": 850037.72
   },
   {
     "date": "2025-01-28",
@@ -10077,13 +10077,13 @@
     "date": "2025-01-29",
     "forward_yield": 1.1818,
     "ttm_income": 8130.19,
-    "market_value": 859912.84
+    "market_value": 859912.81
   },
   {
     "date": "2025-01-30",
     "forward_yield": 1.1626,
     "ttm_income": 8130.19,
-    "market_value": 874111.1
+    "market_value": 874111.13
   },
   {
     "date": "2025-01-31",
@@ -10107,13 +10107,13 @@
     "date": "2025-02-03",
     "forward_yield": 1.1915,
     "ttm_income": 8130.19,
-    "market_value": 860576.44
+    "market_value": 860576.45
   },
   {
     "date": "2025-02-04",
     "forward_yield": 1.1738,
     "ttm_income": 8130.19,
-    "market_value": 873613.8
+    "market_value": 873613.79
   },
   {
     "date": "2025-02-05",
@@ -10125,37 +10125,37 @@
     "date": "2025-02-06",
     "forward_yield": 1.1708,
     "ttm_income": 8130.19,
-    "market_value": 875842.23
+    "market_value": 875842.25
   },
   {
     "date": "2025-02-07",
     "forward_yield": 1.1693,
     "ttm_income": 8059.67,
-    "market_value": 872920.56
+    "market_value": 872920.55
   },
   {
     "date": "2025-02-08",
     "forward_yield": 1.1677,
     "ttm_income": 8045.03,
-    "market_value": 872920.56
+    "market_value": 872920.55
   },
   {
     "date": "2025-02-09",
     "forward_yield": 1.1677,
     "ttm_income": 8045.03,
-    "market_value": 872920.56
+    "market_value": 872920.55
   },
   {
     "date": "2025-02-10",
     "forward_yield": 1.1573,
     "ttm_income": 8060.28,
-    "market_value": 882060.43
+    "market_value": 882060.44
   },
   {
     "date": "2025-02-11",
     "forward_yield": 1.1597,
     "ttm_income": 8060.28,
-    "market_value": 880207.44
+    "market_value": 880207.42
   },
   {
     "date": "2025-02-12",
@@ -10167,37 +10167,37 @@
     "date": "2025-02-13",
     "forward_yield": 1.1563,
     "ttm_income": 8060.28,
-    "market_value": 882828.26
+    "market_value": 882828.28
   },
   {
     "date": "2025-02-14",
     "forward_yield": 1.1593,
     "ttm_income": 8060.28,
-    "market_value": 882601.09
+    "market_value": 882601.14
   },
   {
     "date": "2025-02-15",
     "forward_yield": 1.1593,
     "ttm_income": 8060.28,
-    "market_value": 882601.09
+    "market_value": 882601.14
   },
   {
     "date": "2025-02-16",
     "forward_yield": 1.1593,
     "ttm_income": 8060.28,
-    "market_value": 882601.09
+    "market_value": 882601.14
   },
   {
     "date": "2025-02-17",
     "forward_yield": 1.1593,
     "ttm_income": 8060.28,
-    "market_value": 882601.09
+    "market_value": 882601.14
   },
   {
     "date": "2025-02-18",
     "forward_yield": 1.1455,
     "ttm_income": 8060.28,
-    "market_value": 893251.25
+    "market_value": 893251.28
   },
   {
     "date": "2025-02-19",
@@ -10209,25 +10209,25 @@
     "date": "2025-02-20",
     "forward_yield": 1.1055,
     "ttm_income": 7570.29,
-    "market_value": 885895.07
+    "market_value": 885895.08
   },
   {
     "date": "2025-02-21",
     "forward_yield": 1.1327,
     "ttm_income": 7509.29,
-    "market_value": 872788.98
+    "market_value": 872789.0
   },
   {
     "date": "2025-02-22",
     "forward_yield": 1.1327,
     "ttm_income": 7509.29,
-    "market_value": 872788.98
+    "market_value": 872789.0
   },
   {
     "date": "2025-02-23",
     "forward_yield": 1.1327,
     "ttm_income": 7509.29,
-    "market_value": 872788.98
+    "market_value": 872789.0
   },
   {
     "date": "2025-02-24",
@@ -10239,37 +10239,37 @@
     "date": "2025-02-25",
     "forward_yield": 1.1532,
     "ttm_income": 7509.29,
-    "market_value": 858071.69
+    "market_value": 858071.66
   },
   {
     "date": "2025-02-26",
     "forward_yield": 1.1544,
     "ttm_income": 7509.29,
-    "market_value": 861016.78
+    "market_value": 861016.75
   },
   {
     "date": "2025-02-27",
     "forward_yield": 1.1713,
     "ttm_income": 7509.29,
-    "market_value": 848729.51
+    "market_value": 848729.49
   },
   {
     "date": "2025-02-28",
     "forward_yield": 1.0891,
     "ttm_income": 7509.29,
-    "market_value": 857046.47
+    "market_value": 857046.49
   },
   {
     "date": "2025-03-01",
     "forward_yield": 1.0894,
     "ttm_income": 7509.29,
-    "market_value": 857170.08
+    "market_value": 857170.1
   },
   {
     "date": "2025-03-02",
     "forward_yield": 1.0894,
     "ttm_income": 7509.29,
-    "market_value": 857170.08
+    "market_value": 857170.1
   },
   {
     "date": "2025-03-03",
@@ -10287,73 +10287,73 @@
     "date": "2025-03-05",
     "forward_yield": 1.0911,
     "ttm_income": 7509.29,
-    "market_value": 848890.24
+    "market_value": 848890.26
   },
   {
     "date": "2025-03-06",
     "forward_yield": 1.1063,
     "ttm_income": 7509.29,
-    "market_value": 837184.44
+    "market_value": 837184.41
   },
   {
     "date": "2025-03-07",
     "forward_yield": 1.0497,
     "ttm_income": 7485.09,
-    "market_value": 841748.11
+    "market_value": 841748.13
   },
   {
     "date": "2025-03-08",
     "forward_yield": 1.0497,
     "ttm_income": 7485.09,
-    "market_value": 841748.11
+    "market_value": 841748.13
   },
   {
     "date": "2025-03-09",
     "forward_yield": 1.0497,
     "ttm_income": 7485.09,
-    "market_value": 841748.11
+    "market_value": 841748.13
   },
   {
     "date": "2025-03-10",
     "forward_yield": 1.1295,
     "ttm_income": 7857.28,
-    "market_value": 815218.36
+    "market_value": 815218.35
   },
   {
     "date": "2025-03-11",
     "forward_yield": 1.1291,
     "ttm_income": 7857.28,
-    "market_value": 815496.69
+    "market_value": 815496.72
   },
   {
     "date": "2025-03-12",
     "forward_yield": 1.1212,
     "ttm_income": 7857.28,
-    "market_value": 821288.29
+    "market_value": 821288.32
   },
   {
     "date": "2025-03-13",
     "forward_yield": 1.1303,
     "ttm_income": 7857.28,
-    "market_value": 814670.02
+    "market_value": 814670.05
   },
   {
     "date": "2025-03-14",
     "forward_yield": 1.1046,
     "ttm_income": 7857.28,
-    "market_value": 837462.81
+    "market_value": 837462.84
   },
   {
     "date": "2025-03-15",
     "forward_yield": 0.9557,
     "ttm_income": 6761.99,
-    "market_value": 837462.81
+    "market_value": 837462.84
   },
   {
     "date": "2025-03-16",
     "forward_yield": 0.9557,
     "ttm_income": 6761.99,
-    "market_value": 837462.81
+    "market_value": 837462.84
   },
   {
     "date": "2025-03-17",
@@ -10365,19 +10365,19 @@
     "date": "2025-03-18",
     "forward_yield": 0.864,
     "ttm_income": 6433.78,
-    "market_value": 835334.63
+    "market_value": 835334.64
   },
   {
     "date": "2025-03-19",
     "forward_yield": 0.8572,
     "ttm_income": 6433.78,
-    "market_value": 842000.8
+    "market_value": 842000.79
   },
   {
     "date": "2025-03-20",
     "forward_yield": 0.843,
     "ttm_income": 6330.0,
-    "market_value": 837390.39
+    "market_value": 837390.41
   },
   {
     "date": "2025-03-21",
@@ -10401,7 +10401,7 @@
     "date": "2025-03-24",
     "forward_yield": 0.9597,
     "ttm_income": 7466.99,
-    "market_value": 854137.67
+    "market_value": 854137.68
   },
   {
     "date": "2025-03-25",
@@ -10413,13 +10413,13 @@
     "date": "2025-03-26",
     "forward_yield": 0.8754,
     "ttm_income": 7466.99,
-    "market_value": 847282.72
+    "market_value": 847282.75
   },
   {
     "date": "2025-03-27",
     "forward_yield": 0.8819,
     "ttm_income": 7466.99,
-    "market_value": 844237.27
+    "market_value": 844237.26
   },
   {
     "date": "2025-03-28",
@@ -10443,13 +10443,13 @@
     "date": "2025-03-31",
     "forward_yield": 0.9018,
     "ttm_income": 7466.99,
-    "market_value": 825585.8
+    "market_value": 825585.81
   },
   {
     "date": "2025-04-01",
     "forward_yield": 0.8921,
     "ttm_income": 7466.99,
-    "market_value": 834608.99
+    "market_value": 834609.0
   },
   {
     "date": "2025-04-02",
@@ -10467,19 +10467,19 @@
     "date": "2025-04-04",
     "forward_yield": 1.0137,
     "ttm_income": 7466.99,
-    "market_value": 734521.02
+    "market_value": 734521.0
   },
   {
     "date": "2025-04-05",
     "forward_yield": 1.0137,
     "ttm_income": 7466.99,
-    "market_value": 734521.02
+    "market_value": 734521.0
   },
   {
     "date": "2025-04-06",
     "forward_yield": 1.0137,
     "ttm_income": 7466.99,
-    "market_value": 734521.02
+    "market_value": 734521.0
   },
   {
     "date": "2025-04-07",
@@ -10491,7 +10491,7 @@
     "date": "2025-04-08",
     "forward_yield": 1.0246,
     "ttm_income": 7466.99,
-    "market_value": 728951.93
+    "market_value": 728951.94
   },
   {
     "date": "2025-04-09",
@@ -10503,37 +10503,37 @@
     "date": "2025-04-10",
     "forward_yield": 0.9889,
     "ttm_income": 7466.99,
-    "market_value": 755219.1
+    "market_value": 755219.08
   },
   {
     "date": "2025-04-11",
     "forward_yield": 0.9712,
     "ttm_income": 7466.99,
-    "market_value": 769006.05
+    "market_value": 769006.02
   },
   {
     "date": "2025-04-12",
     "forward_yield": 0.9712,
     "ttm_income": 7345.48,
-    "market_value": 769006.05
+    "market_value": 769006.02
   },
   {
     "date": "2025-04-13",
     "forward_yield": 0.9712,
     "ttm_income": 7345.48,
-    "market_value": 769006.05
+    "market_value": 769006.02
   },
   {
     "date": "2025-04-14",
     "forward_yield": 0.9566,
     "ttm_income": 7345.48,
-    "market_value": 782433.34
+    "market_value": 782433.33
   },
   {
     "date": "2025-04-15",
     "forward_yield": 0.9606,
     "ttm_income": 7345.48,
-    "market_value": 779165.44
+    "market_value": 779165.46
   },
   {
     "date": "2025-04-16",
@@ -10545,73 +10545,73 @@
     "date": "2025-04-17",
     "forward_yield": 0.9738,
     "ttm_income": 7345.48,
-    "market_value": 768686.23
+    "market_value": 768686.24
   },
   {
     "date": "2025-04-18",
     "forward_yield": 0.9738,
     "ttm_income": 7345.48,
-    "market_value": 768686.23
+    "market_value": 768686.24
   },
   {
     "date": "2025-04-19",
     "forward_yield": 0.9738,
     "ttm_income": 7345.48,
-    "market_value": 768686.23
+    "market_value": 768686.24
   },
   {
     "date": "2025-04-20",
     "forward_yield": 0.9738,
     "ttm_income": 7345.48,
-    "market_value": 768686.23
+    "market_value": 768686.24
   },
   {
     "date": "2025-04-21",
     "forward_yield": 0.9964,
     "ttm_income": 7345.48,
-    "market_value": 751282.05
+    "market_value": 751282.07
   },
   {
     "date": "2025-04-22",
     "forward_yield": 0.973,
     "ttm_income": 7345.48,
-    "market_value": 769313.47
+    "market_value": 769313.48
   },
   {
     "date": "2025-04-23",
     "forward_yield": 0.9561,
     "ttm_income": 7345.48,
-    "market_value": 782918.82
+    "market_value": 782918.8
   },
   {
     "date": "2025-04-24",
     "forward_yield": 0.9287,
     "ttm_income": 7345.48,
-    "market_value": 806051.21
+    "market_value": 806051.17
   },
   {
     "date": "2025-04-25",
     "forward_yield": 0.9156,
     "ttm_income": 7345.48,
-    "market_value": 819089.92
+    "market_value": 819089.9
   },
   {
     "date": "2025-04-26",
     "forward_yield": 0.9156,
     "ttm_income": 7345.48,
-    "market_value": 819089.92
+    "market_value": 819089.9
   },
   {
     "date": "2025-04-27",
     "forward_yield": 0.9156,
     "ttm_income": 7345.48,
-    "market_value": 819089.92
+    "market_value": 819089.9
   },
   {
     "date": "2025-04-28",
     "forward_yield": 0.9154,
     "ttm_income": 7345.48,
-    "market_value": 820796.92
+    "market_value": 820796.93
   },
   {
     "date": "2025-04-29",
@@ -10629,43 +10629,43 @@
     "date": "2025-05-01",
     "forward_yield": 0.8842,
     "ttm_income": 7345.48,
-    "market_value": 852313.79
+    "market_value": 852313.8
   },
   {
     "date": "2025-05-02",
     "forward_yield": 0.8628,
     "ttm_income": 7345.48,
-    "market_value": 873448.22
+    "market_value": 873448.23
   },
   {
     "date": "2025-05-03",
     "forward_yield": 0.8628,
     "ttm_income": 7345.48,
-    "market_value": 873448.22
+    "market_value": 873448.23
   },
   {
     "date": "2025-05-04",
     "forward_yield": 0.8628,
     "ttm_income": 7345.48,
-    "market_value": 873448.22
+    "market_value": 873448.23
   },
   {
     "date": "2025-05-05",
     "forward_yield": 0.8703,
     "ttm_income": 7345.48,
-    "market_value": 865992.88
+    "market_value": 865992.87
   },
   {
     "date": "2025-05-06",
     "forward_yield": 0.8712,
     "ttm_income": 7345.48,
-    "market_value": 865107.02
+    "market_value": 865107.04
   },
   {
     "date": "2025-05-07",
     "forward_yield": 0.8941,
     "ttm_income": 7345.48,
-    "market_value": 842942.76
+    "market_value": 842942.79
   },
   {
     "date": "2025-05-08",
@@ -10677,37 +10677,37 @@
     "date": "2025-05-09",
     "forward_yield": 0.8887,
     "ttm_income": 7345.48,
-    "market_value": 848076.4
+    "market_value": 848076.39
   },
   {
     "date": "2025-05-10",
     "forward_yield": 0.8887,
     "ttm_income": 7345.48,
-    "market_value": 848076.4
+    "market_value": 848076.39
   },
   {
     "date": "2025-05-11",
     "forward_yield": 0.8887,
     "ttm_income": 7345.48,
-    "market_value": 848076.4
+    "market_value": 848076.39
   },
   {
     "date": "2025-05-12",
     "forward_yield": 0.8542,
     "ttm_income": 7345.48,
-    "market_value": 885953.68
+    "market_value": 885953.72
   },
   {
     "date": "2025-05-13",
     "forward_yield": 0.8373,
     "ttm_income": 7345.48,
-    "market_value": 903868.59
+    "market_value": 903868.61
   },
   {
     "date": "2025-05-14",
     "forward_yield": 0.8334,
     "ttm_income": 7345.48,
-    "market_value": 908132.24
+    "market_value": 908132.26
   },
   {
     "date": "2025-05-15",
@@ -10719,25 +10719,25 @@
     "date": "2025-05-16",
     "forward_yield": 0.8337,
     "ttm_income": 7345.48,
-    "market_value": 907716.0
+    "market_value": 907716.04
   },
   {
     "date": "2025-05-17",
     "forward_yield": 0.8337,
     "ttm_income": 7345.48,
-    "market_value": 907716.0
+    "market_value": 907716.04
   },
   {
     "date": "2025-05-18",
     "forward_yield": 0.8337,
     "ttm_income": 7345.48,
-    "market_value": 907716.0
+    "market_value": 907716.04
   },
   {
     "date": "2025-05-19",
     "forward_yield": 0.8317,
     "ttm_income": 7345.48,
-    "market_value": 909944.21
+    "market_value": 909944.22
   },
   {
     "date": "2025-05-20",
@@ -10755,37 +10755,37 @@
     "date": "2025-05-22",
     "forward_yield": 0.8436,
     "ttm_income": 7345.48,
-    "market_value": 897079.46
+    "market_value": 897079.47
   },
   {
     "date": "2025-05-23",
     "forward_yield": 0.8501,
     "ttm_income": 7345.48,
-    "market_value": 891352.9
+    "market_value": 891352.89
   },
   {
     "date": "2025-05-24",
     "forward_yield": 0.8501,
     "ttm_income": 7345.48,
-    "market_value": 891352.9
+    "market_value": 891352.89
   },
   {
     "date": "2025-05-25",
     "forward_yield": 0.849,
     "ttm_income": 7345.48,
-    "market_value": 893873.79
+    "market_value": 893873.78
   },
   {
     "date": "2025-05-26",
     "forward_yield": 0.849,
     "ttm_income": 7345.48,
-    "market_value": 893873.79
+    "market_value": 893873.78
   },
   {
     "date": "2025-05-27",
     "forward_yield": 0.8489,
     "ttm_income": 7345.48,
-    "market_value": 894121.73
+    "market_value": 894121.71
   },
   {
     "date": "2025-05-28",
@@ -10797,25 +10797,25 @@
     "date": "2025-05-29",
     "forward_yield": 0.8704,
     "ttm_income": 7345.48,
-    "market_value": 871977.29
+    "market_value": 871977.3
   },
   {
     "date": "2025-05-30",
     "forward_yield": 0.8729,
     "ttm_income": 7345.48,
-    "market_value": 869460.05
+    "market_value": 869460.06
   },
   {
     "date": "2025-05-31",
     "forward_yield": 0.8729,
     "ttm_income": 7345.48,
-    "market_value": 869460.05
+    "market_value": 869460.06
   },
   {
     "date": "2025-06-01",
     "forward_yield": 0.8729,
     "ttm_income": 7345.48,
-    "market_value": 869460.05
+    "market_value": 869460.06
   },
   {
     "date": "2025-06-02",
@@ -10827,7 +10827,7 @@
     "date": "2025-06-03",
     "forward_yield": 0.8519,
     "ttm_income": 7345.48,
-    "market_value": 890911.61
+    "market_value": 890911.62
   },
   {
     "date": "2025-06-04",
@@ -10839,43 +10839,43 @@
     "date": "2025-06-05",
     "forward_yield": 0.8504,
     "ttm_income": 7345.48,
-    "market_value": 892505.63
+    "market_value": 892505.64
   },
   {
     "date": "2025-06-06",
     "forward_yield": 0.837,
     "ttm_income": 7345.48,
-    "market_value": 906815.43
+    "market_value": 906815.44
   },
   {
     "date": "2025-06-07",
     "forward_yield": 0.837,
     "ttm_income": 7345.48,
-    "market_value": 906815.43
+    "market_value": 906815.44
   },
   {
     "date": "2025-06-08",
     "forward_yield": 0.837,
     "ttm_income": 7345.48,
-    "market_value": 906815.43
+    "market_value": 906815.44
   },
   {
     "date": "2025-06-09",
     "forward_yield": 0.8474,
     "ttm_income": 7499.44,
-    "market_value": 913901.35
+    "market_value": 913901.32
   },
   {
     "date": "2025-06-10",
     "forward_yield": 0.8364,
     "ttm_income": 7777.18,
-    "market_value": 911436.26
+    "market_value": 911436.27
   },
   {
     "date": "2025-06-11",
     "forward_yield": 0.8356,
     "ttm_income": 7777.18,
-    "market_value": 912340.26
+    "market_value": 912340.25
   },
   {
     "date": "2025-06-12",
@@ -10905,7 +10905,7 @@
     "date": "2025-06-16",
     "forward_yield": 0.8343,
     "ttm_income": 7777.18,
-    "market_value": 913717.86
+    "market_value": 913717.84
   },
   {
     "date": "2025-06-17",
@@ -10917,31 +10917,31 @@
     "date": "2025-06-18",
     "forward_yield": 0.8519,
     "ttm_income": 7777.18,
-    "market_value": 894829.88
+    "market_value": 894829.91
   },
   {
     "date": "2025-06-19",
     "forward_yield": 0.8519,
     "ttm_income": 7777.18,
-    "market_value": 894829.88
+    "market_value": 894829.91
   },
   {
     "date": "2025-06-20",
     "forward_yield": 1.0433,
     "ttm_income": 9325.16,
-    "market_value": 879038.44
+    "market_value": 879038.43
   },
   {
     "date": "2025-06-21",
     "forward_yield": 0.8723,
     "ttm_income": 7821.41,
-    "market_value": 879038.44
+    "market_value": 879038.43
   },
   {
     "date": "2025-06-22",
     "forward_yield": 0.8723,
     "ttm_income": 7821.41,
-    "market_value": 879038.44
+    "market_value": 879038.43
   },
   {
     "date": "2025-06-23",
@@ -10959,73 +10959,73 @@
     "date": "2025-06-25",
     "forward_yield": 0.8364,
     "ttm_income": 7821.41,
-    "market_value": 922169.93
+    "market_value": 922169.92
   },
   {
     "date": "2025-06-26",
     "forward_yield": 0.8208,
     "ttm_income": 7821.41,
-    "market_value": 939592.27
+    "market_value": 939592.28
   },
   {
     "date": "2025-06-27",
     "forward_yield": 0.8227,
     "ttm_income": 7821.41,
-    "market_value": 937450.31
+    "market_value": 937450.33
   },
   {
     "date": "2025-06-28",
     "forward_yield": 0.8227,
     "ttm_income": 7821.41,
-    "market_value": 937450.31
+    "market_value": 937450.33
   },
   {
     "date": "2025-06-29",
     "forward_yield": 0.8227,
     "ttm_income": 7821.41,
-    "market_value": 937450.31
+    "market_value": 937450.33
   },
   {
     "date": "2025-06-30",
     "forward_yield": 0.817,
     "ttm_income": 7821.41,
-    "market_value": 944001.26
+    "market_value": 944001.24
   },
   {
     "date": "2025-07-01",
     "forward_yield": 0.8221,
     "ttm_income": 7821.41,
-    "market_value": 938172.29
+    "market_value": 938172.3
   },
   {
     "date": "2025-07-02",
     "forward_yield": 0.8154,
     "ttm_income": 7821.41,
-    "market_value": 945909.0
+    "market_value": 945909.02
   },
   {
     "date": "2025-07-03",
     "forward_yield": 0.8102,
     "ttm_income": 7821.41,
-    "market_value": 951893.48
+    "market_value": 951893.52
   },
   {
     "date": "2025-07-04",
     "forward_yield": 0.8102,
     "ttm_income": 7821.41,
-    "market_value": 951893.48
+    "market_value": 951893.52
   },
   {
     "date": "2025-07-05",
     "forward_yield": 0.8102,
     "ttm_income": 7821.41,
-    "market_value": 951893.48
+    "market_value": 951893.52
   },
   {
     "date": "2025-07-06",
     "forward_yield": 0.8102,
     "ttm_income": 7821.41,
-    "market_value": 951893.48
+    "market_value": 951893.52
   },
   {
     "date": "2025-07-07",
@@ -11055,67 +11055,67 @@
     "date": "2025-07-11",
     "forward_yield": 0.7954,
     "ttm_income": 7821.41,
-    "market_value": 969608.67
+    "market_value": 969608.66
   },
   {
     "date": "2025-07-12",
     "forward_yield": 0.7954,
     "ttm_income": 7821.41,
-    "market_value": 969608.67
+    "market_value": 969608.66
   },
   {
     "date": "2025-07-13",
     "forward_yield": 0.7954,
     "ttm_income": 7821.41,
-    "market_value": 969608.67
+    "market_value": 969608.66
   },
   {
     "date": "2025-07-14",
     "forward_yield": 0.7975,
     "ttm_income": 7821.41,
-    "market_value": 967782.42
+    "market_value": 967782.44
   },
   {
     "date": "2025-07-15",
     "forward_yield": 0.802,
     "ttm_income": 7821.41,
-    "market_value": 962391.6
+    "market_value": 962391.59
   },
   {
     "date": "2025-07-16",
     "forward_yield": 0.7987,
     "ttm_income": 7821.41,
-    "market_value": 967131.92
+    "market_value": 967131.9
   },
   {
     "date": "2025-07-17",
     "forward_yield": 0.786,
     "ttm_income": 7821.41,
-    "market_value": 982763.15
+    "market_value": 982763.16
   },
   {
     "date": "2025-07-18",
     "forward_yield": 0.7878,
     "ttm_income": 7821.41,
-    "market_value": 985789.61
+    "market_value": 985789.65
   },
   {
     "date": "2025-07-19",
     "forward_yield": 0.7878,
     "ttm_income": 7821.41,
-    "market_value": 985789.61
+    "market_value": 985789.65
   },
   {
     "date": "2025-07-20",
     "forward_yield": 0.7878,
     "ttm_income": 7821.41,
-    "market_value": 985789.61
+    "market_value": 985789.65
   },
   {
     "date": "2025-07-21",
     "forward_yield": 0.7828,
     "ttm_income": 7821.41,
-    "market_value": 992035.89
+    "market_value": 992035.9
   },
   {
     "date": "2025-07-22",
@@ -11127,37 +11127,37 @@
     "date": "2025-07-23",
     "forward_yield": 0.7685,
     "ttm_income": 7821.41,
-    "market_value": 1010602.02
+    "market_value": 1010602.06
   },
   {
     "date": "2025-07-24",
     "forward_yield": 0.7662,
     "ttm_income": 7821.41,
-    "market_value": 1013610.7
+    "market_value": 1013610.74
   },
   {
     "date": "2025-07-25",
     "forward_yield": 0.7625,
     "ttm_income": 7821.41,
-    "market_value": 1020057.24
+    "market_value": 1020057.23
   },
   {
     "date": "2025-07-26",
     "forward_yield": 0.7625,
     "ttm_income": 7821.41,
-    "market_value": 1020057.24
+    "market_value": 1020057.23
   },
   {
     "date": "2025-07-27",
     "forward_yield": 0.7625,
     "ttm_income": 7821.41,
-    "market_value": 1020057.24
+    "market_value": 1020057.23
   },
   {
     "date": "2025-07-28",
     "forward_yield": 0.7591,
     "ttm_income": 7821.41,
-    "market_value": 1024704.94
+    "market_value": 1024704.98
   },
   {
     "date": "2025-07-29",
@@ -11175,7 +11175,7 @@
     "date": "2025-07-31",
     "forward_yield": 0.7584,
     "ttm_income": 7821.41,
-    "market_value": 1028530.21
+    "market_value": 1028530.22
   },
   {
     "date": "2025-08-01",
@@ -11199,7 +11199,7 @@
     "date": "2025-08-04",
     "forward_yield": 0.7651,
     "ttm_income": 7821.41,
-    "market_value": 1019532.97
+    "market_value": 1019532.94
   },
   {
     "date": "2025-08-05",
@@ -11211,37 +11211,37 @@
     "date": "2025-08-06",
     "forward_yield": 0.7303,
     "ttm_income": 7821.41,
-    "market_value": 1068062.17
+    "market_value": 1068062.21
   },
   {
     "date": "2025-08-07",
     "forward_yield": 0.7288,
     "ttm_income": 7821.41,
-    "market_value": 1070277.21
+    "market_value": 1070277.2
   },
   {
     "date": "2025-08-08",
     "forward_yield": 0.7242,
     "ttm_income": 7821.41,
-    "market_value": 1077082.83
+    "market_value": 1077082.8
   },
   {
     "date": "2025-08-09",
     "forward_yield": 0.7242,
     "ttm_income": 7821.41,
-    "market_value": 1077082.83
+    "market_value": 1077082.8
   },
   {
     "date": "2025-08-10",
     "forward_yield": 0.7242,
     "ttm_income": 7821.41,
-    "market_value": 1077082.83
+    "market_value": 1077082.8
   },
   {
     "date": "2025-08-11",
     "forward_yield": 0.7295,
     "ttm_income": 7821.41,
-    "market_value": 1069308.94
+    "market_value": 1069308.9
   },
   {
     "date": "2025-08-12",
@@ -11259,37 +11259,37 @@
     "date": "2025-08-14",
     "forward_yield": 0.7234,
     "ttm_income": 7821.41,
-    "market_value": 1078272.62
+    "market_value": 1078272.66
   },
   {
     "date": "2025-08-15",
     "forward_yield": 0.7187,
     "ttm_income": 7821.41,
-    "market_value": 1085410.55
+    "market_value": 1085410.6
   },
   {
     "date": "2025-08-16",
     "forward_yield": 0.7187,
     "ttm_income": 7821.41,
-    "market_value": 1085410.55
+    "market_value": 1085410.6
   },
   {
     "date": "2025-08-17",
     "forward_yield": 0.7187,
     "ttm_income": 7821.41,
-    "market_value": 1085410.55
+    "market_value": 1085410.6
   },
   {
     "date": "2025-08-18",
     "forward_yield": 0.7184,
     "ttm_income": 7821.41,
-    "market_value": 1085782.92
+    "market_value": 1085782.88
   },
   {
     "date": "2025-08-19",
     "forward_yield": 0.7278,
     "ttm_income": 7821.41,
-    "market_value": 1071812.69
+    "market_value": 1071812.67
   },
   {
     "date": "2025-08-20",
@@ -11325,7 +11325,7 @@
     "date": "2025-08-25",
     "forward_yield": 0.7131,
     "ttm_income": 7821.41,
-    "market_value": 1095467.8
+    "market_value": 1095467.78
   },
   {
     "date": "2025-08-26",
@@ -11337,55 +11337,55 @@
     "date": "2025-08-27",
     "forward_yield": 0.7158,
     "ttm_income": 7821.41,
-    "market_value": 1091321.06
+    "market_value": 1091321.11
   },
   {
     "date": "2025-08-28",
     "forward_yield": 0.7056,
     "ttm_income": 7821.41,
-    "market_value": 1107295.7
+    "market_value": 1107295.75
   },
   {
     "date": "2025-08-29",
     "forward_yield": 0.7068,
     "ttm_income": 7821.41,
-    "market_value": 1105401.03
+    "market_value": 1105401.08
   },
   {
     "date": "2025-08-30",
     "forward_yield": 0.7068,
     "ttm_income": 7821.41,
-    "market_value": 1105401.03
+    "market_value": 1105401.08
   },
   {
     "date": "2025-08-31",
     "forward_yield": 0.7068,
     "ttm_income": 7821.41,
-    "market_value": 1105401.03
+    "market_value": 1105401.08
   },
   {
     "date": "2025-09-01",
     "forward_yield": 0.7068,
     "ttm_income": 7821.41,
-    "market_value": 1105401.03
+    "market_value": 1105401.08
   },
   {
     "date": "2025-09-02",
     "forward_yield": 0.7088,
     "ttm_income": 7821.41,
-    "market_value": 1102278.63
+    "market_value": 1102278.64
   },
   {
     "date": "2025-09-03",
     "forward_yield": 0.6959,
     "ttm_income": 7821.41,
-    "market_value": 1122713.21
+    "market_value": 1122713.2
   },
   {
     "date": "2025-09-04",
     "forward_yield": 0.6877,
     "ttm_income": 7821.41,
-    "market_value": 1136014.92
+    "market_value": 1136014.91
   },
   {
     "date": "2025-09-05",
@@ -11427,25 +11427,25 @@
     "date": "2025-09-11",
     "forward_yield": 0.6654,
     "ttm_income": 8255.29,
-    "market_value": 1179449.03
+    "market_value": 1179448.99
   },
   {
     "date": "2025-09-12",
     "forward_yield": 0.6859,
     "ttm_income": 8255.29,
-    "market_value": 1147535.72
+    "market_value": 1147535.68
   },
   {
     "date": "2025-09-13",
     "forward_yield": 0.6859,
     "ttm_income": 8255.29,
-    "market_value": 1147535.72
+    "market_value": 1147535.68
   },
   {
     "date": "2025-09-14",
     "forward_yield": 0.6859,
     "ttm_income": 8255.29,
-    "market_value": 1147535.72
+    "market_value": 1147535.68
   },
   {
     "date": "2025-09-15",
@@ -11463,13 +11463,13 @@
     "date": "2025-09-17",
     "forward_yield": 0.6694,
     "ttm_income": 8255.29,
-    "market_value": 1176246.34
+    "market_value": 1176246.3
   },
   {
     "date": "2025-09-18",
     "forward_yield": 0.6633,
     "ttm_income": 8255.29,
-    "market_value": 1187183.83
+    "market_value": 1187183.87
   },
   {
     "date": "2025-09-19",
@@ -12670,5 +12670,11 @@
     "forward_yield": 0.5088,
     "ttm_income": 7162.6,
     "market_value": 1228908.35
+  },
+  {
+    "date": "2026-04-07",
+    "forward_yield": 0.5008,
+    "ttm_income": 7162.6,
+    "market_value": 1248517.21
   }
 ]
