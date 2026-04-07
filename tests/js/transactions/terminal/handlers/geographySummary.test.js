@@ -1,70 +1,61 @@
 import { jest } from '@jest/globals';
 
-describe('Geography Summary Handler', () => {
-    let globalFetchSpy;
+jest.mock('@js/utils/logger.js', () => ({
+    logger: {
+        warn: jest.fn(),
+    },
+}));
 
-    beforeEach(() => {
-        jest.resetModules();
-        global.fetch = jest.fn();
-        globalFetchSpy = global.fetch;
+describe('getGeographySummaryText', () => {
+    let getGeographySummaryText;
+    let originalFetch;
+    let loggerWarnMock;
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        originalFetch = global.fetch;
+        const module = await import('@js/utils/logger.js');
+        loggerWarnMock = module.logger.warn;
+
+        const geoModule = await import('@js/transactions/terminal/handlers/geographySummary.js');
+        getGeographySummaryText = geoModule.getGeographySummaryText;
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
-        delete global.fetch;
+        global.fetch = originalFetch;
     });
 
-    describe('getGeographySummaryText', () => {
-        test('returns formatted text on successful fetch', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
-
-            globalFetchSpy.mockResolvedValueOnce({
+    test('returns text on success', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
                 ok: true,
-                text: async () => 'North America: 60%\nEurope: 30%\nAsia: 10%',
-            });
+                text: () => Promise.resolve('Geography Summary Data'),
+            })
+        );
+        const result = await getGeographySummaryText();
+        expect(result).toBe('Geography Summary Data');
+        expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
+    });
 
-            const result = await getGeographySummaryText();
-
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe('North America: 60%\nEurope: 30%\nAsia: 10%');
-        });
-
-        test('returns an error message when response is not OK', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
-
-            globalFetchSpy.mockResolvedValueOnce({
+    test('throws and returns error on non-ok response', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
                 ok: false,
                 status: 404,
-            });
+            })
+        );
+        const result = await getGeographySummaryText();
+        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(loggerWarnMock).toHaveBeenCalled();
+        expect(loggerWarnMock.mock.calls[0][0]).toBe('Caught exception:');
+        expect(loggerWarnMock.mock.calls[0][1].message).toBe('Failed to fetch geography summary: 404');
+    });
 
-            const result = await getGeographySummaryText();
-
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe(
-                'Error: Unable to load geography summary. Run data generation first.'
-            );
-        });
-
-        test('returns an error message when fetch throws an exception', async () => {
-            const { getGeographySummaryText } =
-                await import('@js/transactions/terminal/handlers/geographySummary.js');
-
-            globalFetchSpy.mockRejectedValueOnce(new Error('Network error'));
-
-            const result = await getGeographySummaryText();
-
-            expect(globalFetchSpy).toHaveBeenCalledWith(
-                '/data/output/figures/geography_summary.txt'
-            );
-            expect(result).toBe(
-                'Error: Unable to load geography summary. Run data generation first.'
-            );
-        });
+    test('returns error on exception', async () => {
+        const error = new Error('Network error');
+        global.fetch = jest.fn(() => Promise.reject(error));
+        const result = await getGeographySummaryText();
+        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(loggerWarnMock).toHaveBeenCalledWith('Caught exception:', error);
     });
 });
