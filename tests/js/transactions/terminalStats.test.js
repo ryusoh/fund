@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import * as formatting from '../../../js/transactions/terminal/stats/formatting.js';
 import * as transactions from '../../../js/transactions/terminal/stats/transactions.js';
 import * as holdings from '../../../js/transactions/terminal/stats/holdings.js';
