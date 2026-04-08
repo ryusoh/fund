@@ -64,27 +64,33 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
 
     // Transform cumulative TWRR into rolling 1Y returns
     const allPossibleSeries = orderedKeys.map((key) => {
-        const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
+        // Pre-parse dates to avoid repeated Date object creation
+        const points = rawPoints.map(p => ({
+            ...p,
+            parsedDate: parseLocalDate(p.date)
+        })).filter(p => p.parsedDate !== null);
+
         const rollingData = [];
+
+        // Use a sliding window approach to find the start point (closest to 1 year ago)
+        let j = 0;
+
         for (let i = 0; i < points.length; i++) {
             const currentPoint = points[i];
-            const currentDate = parseLocalDate(currentPoint.date);
+            const currentDate = currentPoint.parsedDate;
             const oneYearAgo = new Date(currentDate);
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-            // Finding point closest to 1 year ago
-            let startPoint = null;
-            // Optimistic search: points are chronological.
-            // We can search backwards from current index.
-            for (let j = i - 1; j >= 0; j--) {
-                const d = parseLocalDate(points[j].date);
-                if (d <= oneYearAgo) {
-                    startPoint = points[j];
-                    break;
-                }
+            // Advance the start pointer 'j' to find the closest point <= oneYearAgo
+            // Since points are chronological, 'j' will never need to go backwards
+            while (j < i && points[j + 1].parsedDate <= oneYearAgo) {
+                j++;
             }
+
+            const startPoint = (points[j] && points[j].parsedDate <= oneYearAgo) ? points[j] : null;
 
             if (startPoint && startPoint.value !== 0) {
                 const startVal = convertBetweenCurrencies(
