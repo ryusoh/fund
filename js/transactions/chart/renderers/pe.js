@@ -213,13 +213,22 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     }
 
     // --- Scales ---
-    const dateTimes = series.map((p) => p.date.getTime());
-    let minTime = Math.min(...dateTimes);
-    let maxTime = Math.max(...dateTimes);
+    // Bolt: Optimized time min/max calculations to avoid map and spread allocations
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    for (let i = 0; i < series.length; i += 1) {
+        const time = series[i].date.getTime();
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
-    if (Number.isFinite(filterFromTime)) {
-        minTime = Math.max(minTime, filterFromTime);
+    if (Number.isFinite(filterFromTime) && filterFromTime > minTime) {
+        minTime = filterFromTime;
     }
 
     // Check for forward PE data and extend maxTime if present
@@ -231,15 +240,54 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         if (targetDate && !Number.isNaN(targetDate.getTime())) {
             forwardTargetTime = targetDate.getTime();
             forwardPEValue = forwardPE.portfolio_forward_pe;
+
+            // Recompute portfolio forward PE using MSCI ratio for VT
+            const msciRatio = forwardPE.msci_pe_ratio;
+            const lastPt = series[series.length - 1];
+            if (msciRatio?.ratio > 0 && lastPt?.tickerPEs?.VT > 0 && lastPt?.tickerWeights) {
+                const tickerFwdPE = forwardPE.ticker_forward_pe || {};
+                // Derive VT's current forward PE from its latest trailing PE
+                const vtDerivedFwdPE = lastPt.tickerPEs.VT / msciRatio.ratio;
+                // Recompute portfolio harmonic forward PE: 1 / Σ(w / fwdPE)
+                let weightedYieldSum = 0;
+                let weightSum = 0;
+                for (const [ticker, weight] of Object.entries(lastPt.tickerWeights)) {
+                    if (!Number.isFinite(weight) || weight <= 0) {
+                        continue;
+                    }
+                    let fwdPe = ticker === 'VT' ? vtDerivedFwdPE : tickerFwdPE[ticker];
+                    if (!Number.isFinite(fwdPe) || fwdPe <= 0) {
+                        // Fall back to trailing PE if no forward PE available
+                        fwdPe = lastPt.tickerPEs[ticker];
+                    }
+                    if (Number.isFinite(fwdPe) && fwdPe > 0) {
+                        weightedYieldSum += weight * (1 / fwdPe);
+                        weightSum += weight;
+                    }
+                }
+                if (weightedYieldSum > 0 && weightSum > 0) {
+                    forwardPEValue = 1 / (weightedYieldSum / weightSum);
+                }
+            }
+
             maxTime = Math.max(maxTime, forwardTargetTime);
         }
     }
 
-    const peValues = series.map((p) => p.pe);
-    const dataMin = Math.min(...peValues);
-    let dataMax = Math.max(...peValues);
-    if (forwardPEValue !== null) {
-        dataMax = Math.max(dataMax, forwardPEValue);
+    // Bolt: Optimized PE value min/max calculations to avoid map and spread allocations
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+    for (let i = 0; i < series.length; i += 1) {
+        const pe = series[i].pe;
+        if (pe < dataMin) {
+            dataMin = pe;
+        }
+        if (pe > dataMax) {
+            dataMax = pe;
+        }
+    }
+    if (forwardPEValue !== null && forwardPEValue > dataMax) {
+        dataMax = forwardPEValue;
     }
 
     // Build benchmark PE series
@@ -270,13 +318,18 @@ export function drawPEChart(ctx, chartManager, timestamp) {
 
     if (visibleBenchmarkKey && benchmarkSeriesMap[visibleBenchmarkKey]) {
         const bmkSeries = benchmarkSeriesMap[visibleBenchmarkKey];
-        const bmkValues = bmkSeries.map((p) => p.pe);
-        dataMax = Math.max(dataMax, ...bmkValues);
+        // Bolt: Optimized benchmark value max calculations to avoid map and spread allocations
+        for (let i = 0; i < bmkSeries.length; i += 1) {
+            const pe = bmkSeries[i].pe;
+            if (pe > dataMax) {
+                dataMax = pe;
+            }
+        }
 
         // Include benchmark forward PE
         const bmkFwdVal = benchmarkFwdPE[visibleBenchmarkKey];
-        if (typeof bmkFwdVal === 'number') {
-            dataMax = Math.max(dataMax, bmkFwdVal);
+        if (typeof bmkFwdVal === 'number' && bmkFwdVal > dataMax) {
+            dataMax = bmkFwdVal;
         }
     }
 
@@ -769,10 +822,19 @@ export function getPESnapshotText() {
         return 'No PE data in range';
     }
 
-    const values = visiblePoints.map((p) => p.pe);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const current = values[values.length - 1];
+    // Bolt: Optimized value min/max calculations to avoid map and spread allocations
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < visiblePoints.length; i += 1) {
+        const pe = visiblePoints[i].pe;
+        if (pe < min) {
+            min = pe;
+        }
+        if (pe > max) {
+            max = pe;
+        }
+    }
+    const current = visiblePoints[visiblePoints.length - 1].pe;
 
     const fwd = chartLayouts.pe.forwardPE;
     let fwdText = '';

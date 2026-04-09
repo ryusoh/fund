@@ -168,17 +168,31 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
     // ========== COMMON RENDERING LOGIC ==========
     const allPoints = seriesToDraw.flatMap((s) => s.data);
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+
+    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const time = parseLocalDate(allPoints[i].date).getTime();
+        const value = allPoints[i].value;
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+    }
 
     // Ensure minTime aligns with filter start for correct x-axis labels
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
     // dataMax not needed since yMax is fixed at 0
 
     // Y-axis: 0 at top, most negative at bottom

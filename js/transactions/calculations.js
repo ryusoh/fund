@@ -9,10 +9,25 @@ export function getSplitAdjustment(splitHistory, symbol, transactionDate) {
         return splitAdjustmentCache.get(cacheKey);
     }
 
-    const txDate = new Date(transactionDate);
-    const result = splitHistory
-        .filter((split) => split.symbol === symbol && new Date(split.splitDate) > txDate)
-        .reduce((cumulative, split) => cumulative * split.splitMultiplier, 1.0);
+    // Normalize transactionDate to YYYY-MM-DD without timezone shifts
+    let txYYYYMMDD;
+    if (transactionDate.includes('/')) {
+        // MM/DD/YYYY format
+        const parts = transactionDate.split('/');
+        txYYYYMMDD = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+    } else {
+        // Assume YYYY-MM-DD format
+        txYYYYMMDD = transactionDate;
+    }
+
+    let result = 1.0;
+
+    for (let i = 0; i < splitHistory.length; i++) {
+        const split = splitHistory[i];
+        if (split.symbol === symbol && split.splitDate > txYYYYMMDD) {
+            result *= split.splitMultiplier;
+        }
+    }
 
     splitAdjustmentCache.set(cacheKey, result);
     return result;

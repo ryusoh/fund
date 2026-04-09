@@ -11,8 +11,11 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-sys.path.append(str(Path(__file__).parent))
-from utils import append_changelog_entry
+sys.path.append(str(Path(__file__).resolve().parent))
+try:
+    from utils import append_changelog_entry
+except ImportError:
+    from scripts.twrr.utils import append_changelog_entry
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
@@ -106,8 +109,8 @@ def apply_split_adjustments(transactions: pd.DataFrame, splits: pd.DataFrame) ->
         factors = np.ones(len(trade_idx), dtype='float64')
 
         sec_splits = sec_splits.sort_values('split_date')
-        date_idx = sec_splits.columns.get_loc('split_date') + 1
-        factor_idx = sec_splits.columns.get_loc('split_factor') + 1
+        date_idx = int(sec_splits.columns.get_loc('split_date')) + 1  # type: ignore[arg-type]
+        factor_idx = int(sec_splits.columns.get_loc('split_factor')) + 1  # type: ignore[arg-type]
 
         for split_row in sec_splits.itertuples(index=True, name=None):
             split_date = split_row[date_idx]

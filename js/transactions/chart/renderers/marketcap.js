@@ -72,24 +72,21 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredIndices = rawDates
-        .map((dateStr, index) => {
-            const date = parseLocalDate(dateStr);
-            return { index, date };
-        })
-        .filter(({ date }) => {
-            if (!date || Number.isNaN(date.getTime())) {
-                return false;
-            }
-            if (filterFrom && date < filterFrom) {
-                return false;
-            }
-            if (filterTo && date > filterTo) {
-                return false;
-            }
-            return true;
-        })
-        .map(({ index }) => index);
+    // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
+    const filteredIndices = [];
+    for (let i = 0; i < rawDates.length; i += 1) {
+        const date = parseLocalDate(rawDates[i]);
+        if (!date || Number.isNaN(date.getTime())) {
+            continue;
+        }
+        if (filterFrom && date < filterFrom) {
+            continue;
+        }
+        if (filterTo && date > filterTo) {
+            continue;
+        }
+        filteredIndices.push(i);
+    }
 
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
@@ -134,9 +131,12 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
 
         percentSeriesMap[category] = mappedValues;
         if (valueMode === 'absolute') {
-            chartData[category] = mappedValues.map(
-                (pct, idx) => ((totalValuesConverted[idx] ?? 0) * pct) / 100
-            );
+            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
+            const absoluteValues = new Array(mappedValues.length);
+            for (let i = 0; i < mappedValues.length; i += 1) {
+                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * mappedValues[i]) / 100;
+            }
+            chartData[category] = absoluteValues;
         } else {
             chartData[category] = mappedValues;
         }
@@ -223,7 +223,7 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         valueMode !== 'absolute'
     );
 
-    let cumulativeValues = new Array(dates.length).fill(0);
+    const cumulativeValues = new Array(dates.length).fill(0);
     baseCategoryOrder.forEach((category) => {
         const values = chartData[category] || [];
         const color = resolveCategoryColor(category);
@@ -251,7 +251,10 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fill();
         ctx.stroke();
 
-        cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
+        // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
+        for (let i = 0; i < cumulativeValues.length; i += 1) {
+            cumulativeValues[i] += values[i];
+        }
     });
 
     const latestIndex = dates.length - 1;

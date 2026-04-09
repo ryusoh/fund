@@ -16,6 +16,7 @@ original_read_parquet = pd.read_parquet
 
 
 def mock_read_parquet(path):
+    # type: ignore
     # Generate 10000 rows of dummy data for transactions
     n = 10000
     np.random.seed(42)
@@ -32,7 +33,7 @@ def mock_read_parquet(path):
     )
 
 
-pd.read_parquet = mock_read_parquet
+pd.read_parquet = mock_read_parquet  # type: ignore[assignment]
 
 # Mock fx rates
 mock_rates = {'USD': 1.0, 'CNY': 7.0, 'JPY': 150.0, 'KRW': 1300.0}

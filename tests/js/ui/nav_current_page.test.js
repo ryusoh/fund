@@ -268,5 +268,31 @@ describe('nav_current_page', () => {
         expect(true).toBe(true);
 
         document.querySelectorAll = origQSA;
+
+    test('handles nav link without parent element gracefully', () => {
+        // Create a standalone link, disconnected from DOM tree.
+        const standaloneLink = document.createElement('a');
+        standaloneLink.className = 'nav-link';
+        standaloneLink.href = 'http://localhost/standalone';
+
+        setupLocation('/standalone');
+
+        // Temporarily intercept document.querySelectorAll so it returns our link.
+        const originalQuerySelectorAll = document.querySelectorAll.bind(document);
+        document.querySelectorAll = jest.fn((sel) => {
+            if (sel === '.container a, .nav-container a') {
+                return [standaloneLink];
+            }
+            return originalQuerySelectorAll(sel);
+        });
+
+        try {
+            loadNavCurrentPage();
+            // Expected to disable it, but NOT throw when setting parentElement.classList
+            expect(standaloneLink.hasAttribute('href')).toBe(false);
+            expect(standaloneLink.getAttribute('aria-current')).toBe('page');
+        } finally {
+            document.querySelectorAll = originalQuerySelectorAll;
+        }
     });
 });
