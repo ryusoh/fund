@@ -119,11 +119,9 @@ async function fetchMarketRatiosForTickers(tickers = []) {
 
         // Load global PE ratio data as fallback for forward PE
         let globalForwardPeMap = {};
-        let msciPeRatio = null;
         try {
             const peData = await fetchJSON(PE_RATIO_URL);
             globalForwardPeMap = (peData?.forward_pe && peData.forward_pe.ticker_forward_pe) || {};
-            msciPeRatio = peData?.forward_pe?.msci_pe_ratio || null;
         } catch (error) {
             logger.warn('Failed to load global PE ratio data for fallback:', error);
         }
@@ -176,33 +174,15 @@ async function fetchMarketRatiosForTickers(tickers = []) {
 
                 forwardPe = _getMarketFallback(forwardPe, globalFwdPe);
 
-                // For VT: derive forward PE from trailing PE using MSCI ratio
-                if (
-                    symbol === 'VT' &&
-                    !Number.isFinite(forwardPe) &&
-                    Number.isFinite(trailingPe) &&
-                    trailingPe > 0 &&
-                    msciPeRatio?.ratio > 0
-                ) {
-                    forwardPe = trailingPe / msciPeRatio.ratio;
-                }
-
                 const eps = Number(market.eps);
                 const forwardEps = Number(market.forwardEps);
 
-                const snapshot = {
+                ratiosByTicker.set(symbol, {
                     pe: Number.isFinite(trailingPe) ? trailingPe : null,
                     forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
                     eps: Number.isFinite(eps) ? eps : null,
                     forwardEps: Number.isFinite(forwardEps) ? forwardEps : null,
-                };
-
-                // Attach MSCI ratio for VT so _calculateDynamicPeValues can use it
-                if (symbol === 'VT' && msciPeRatio?.ratio > 0) {
-                    snapshot.msciPeRatio = msciPeRatio.ratio;
-                }
-
-                ratiosByTicker.set(symbol, snapshot);
+                });
             } catch (error) {
                 logger.warn(`Failed to load analysis market data for ${symbol}:`, error);
                 setFallbackRatio(symbol, globalFwdPe);
@@ -274,18 +254,6 @@ function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
             forwardValue = currentPrice / ratioSnapshot.forwardEps;
         }
     }
-
-    // For VT: derive forward PE from trailing PE using MSCI ratio
-    // This provides a daily-updated forward PE when forwardEps is unavailable
-    if (
-        ratioSnapshot.msciPeRatio > 0 &&
-        Number.isFinite(trailingValue) &&
-        trailingValue > 0 &&
-        !Number.isFinite(ratioSnapshot.forwardEps)
-    ) {
-        forwardValue = trailingValue / ratioSnapshot.msciPeRatio;
-    }
-
     return { trailingValue, forwardValue };
 }
 

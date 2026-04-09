@@ -419,53 +419,15 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             ? computeAppreciationSeries(finalBalanceData, finalContributionData)
             : [];
 
-    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
-    const combinedValues = [];
-    let rawMin = Infinity;
-    let rawMax = -Infinity;
-
-    for (let i = 0; i < finalContributionData.length; i++) {
-        const val = finalContributionData[i].amount;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-    for (let i = 0; i < finalBalanceData.length; i++) {
-        const val = finalBalanceData[i].value;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-    for (let i = 0; i < appreciationData.length; i++) {
-        const val = appreciationData[i].value;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-
+    const contributionValues = finalContributionData.map((item) => item.amount);
+    const balanceValues = finalBalanceData.map((item) => item.value);
+    const appreciationValues = appreciationData.map((item) => item.value);
+    const combinedValues = [...contributionValues, ...balanceValues, ...appreciationValues].filter(
+        (value) => Number.isFinite(value)
+    );
     const hasValues = combinedValues.length > 0;
-    if (!hasValues) {
-        rawMin = 0;
-        rawMax = 0;
-    }
+    const rawMin = hasValues ? Math.min(...combinedValues) : 0;
+    const rawMax = hasValues ? Math.max(...combinedValues) : 0;
 
     const {
         startYAxisAtZero = true,

@@ -26,13 +26,10 @@ import tempfile
 import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent))
 from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 import requests
-from utils.security_utils import scrub_secrets
 
 try:
     import yfinance as yf
@@ -480,7 +477,7 @@ def get_split_adjustment(symbol: str, date: pd.Timestamp, split_df: pd.DataFrame
     if relevant.empty:
         return 1.0
     total_multiplier = relevant["Split Multiplier"].prod()
-    return 1.0 / float(total_multiplier)  # type: ignore[arg-type]
+    return 1.0 / float(total_multiplier)
 
 
 def cumulative_forward_split_factor(date: pd.Timestamp, splits_series: pd.Series) -> float:
@@ -494,7 +491,7 @@ def cumulative_forward_split_factor(date: pd.Timestamp, splits_series: pd.Series
     if splits_series is None or splits_series.empty:
         return factor
     for split_date, ratio in splits_series.items():
-        sd = pd.Timestamp(str(split_date)).tz_localize(None)
+        sd = pd.Timestamp(split_date).tz_localize(None)
         if sd > date:
             factor *= ratio
     return factor
@@ -667,7 +664,7 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                         q_ttm = q_eps_series.rolling(4).sum().dropna()
                         for d_val, ttm_v in q_ttm.items():
                             add_point(
-                                pd.Timestamp(str(d_val)).strftime("%Y-%m-%d"),
+                                pd.Timestamp(d_val).strftime("%Y-%m-%d"),
                                 float(ttm_v),
                                 fx_series,
                                 currency,
@@ -764,7 +761,7 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
 
         for dt, val in ts_points.items():
             if dt in dates:
-                s.loc[dt] = float(val)  # type: ignore[call-overload]
+                s.loc[dt] = val
             else:
                 # Map to nearest date in index
                 idx = dates.get_indexer([dt], method="nearest")[0]
@@ -790,7 +787,7 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     return None
 
 
-def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd.Series[Any]:
+def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd.Series:
     points = stock_data["points"]
     current_ttm = stock_data["current_ttm"]
     known_data = {p["date"]: p["eps"] for p in points}
@@ -805,7 +802,7 @@ def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd
     s_points = s_points[~s_points.index.duplicated(keep='last')]
     full_series = s_points.reindex(s_points.index.union(date_index))
     interpolated = full_series.interpolate(method='time')
-    return interpolated.reindex(date_index).ffill().bfill()  # type: ignore[no-any-return]
+    return interpolated.reindex(date_index).ffill().bfill()
 
 
 def load_data():
@@ -858,9 +855,6 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
     fwd_pe_map: Dict[str, float] = {}
     ticker_fwd_pe: Dict[str, float] = {}
 
-    # Scrape MSCI data once, share across threads
-    msci_data = scrape_msci_pe_data()
-
     def fetch_single_forward_pe(ticker: str, details: dict) -> Optional[dict]:
         shares = float(details.get("shares", 0))
         if shares <= 0:
@@ -876,16 +870,11 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
             price = info.get("currentPrice") or info.get("regularMarketPrice")
             fwd_pe = info.get("forwardPE")
 
-            if ticker == "VT":
-                # For VT, prefer MSCI-derived forward PE over yfinance
-                if msci_data and "forward_pe" in msci_data:
-                    fwd_pe = msci_data["forward_pe"]
-                    print(f"    VT: Using Forward PE {fwd_pe} from MSCI")
-                elif not fwd_pe or not math.isfinite(fwd_pe) or fwd_pe <= 0:
-                    msci_pe = scrape_msci_forward_pe()
-                    if msci_pe:
-                        fwd_pe = msci_pe
-                        print(f"    VT: Fetched Forward PE {fwd_pe} from MSCI proxy (fallback)")
+            if ticker == "VT" and (not fwd_pe or not math.isfinite(fwd_pe) or fwd_pe <= 0):
+                msci_pe = scrape_msci_forward_pe()
+                if msci_pe:
+                    fwd_pe = msci_pe
+                    print(f"    VT: Fetched Forward PE {fwd_pe} from MSCI proxy")
 
             return {"ticker": ticker, "shares": shares, "price": price, "fwd_pe": fwd_pe}
         except Exception as e:
@@ -897,12 +886,12 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
             executor.submit(fetch_single_forward_pe, t, det): t for t, det in holdings.items()
         }
         for future in concurrent.futures.as_completed(future_to_ticker):
-            fetch_result = future.result()
-            if fetch_result:
-                ticker = fetch_result["ticker"]
-                shares = fetch_result["shares"]
-                price = fetch_result["price"]
-                fwd_pe = fetch_result["fwd_pe"]
+            result = future.result()
+            if result:
+                ticker = result["ticker"]
+                shares = result["shares"]
+                price = result["price"]
+                fwd_pe = result["fwd_pe"]
 
                 if price and price > 0:
                     mv_map[ticker] = shares * price
@@ -921,34 +910,15 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
     # Target date: 12 months from today (NTM convention)
     target_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
 
-    result: Dict[str, Any] = {
+    return {
         "target_date": target_date,
         "portfolio_forward_pe": round(portfolio_fwd_pe, 2),
         "ticker_forward_pe": ticker_fwd_pe,
     }
 
-    # Store MSCI PE ratio for frontend daily derivation
-    if msci_data and "ratio" in msci_data:
-        result["msci_pe_ratio"] = {
-            "trailing_pe": float(msci_data["trailing_pe"]),
-            "forward_pe": float(msci_data["forward_pe"]),
-            "ratio": float(msci_data["ratio"]),
-        }
-        print(
-            f"  MSCI PE Ratio: trailing={msci_data['trailing_pe']}, "
-            f"fwd={msci_data['forward_pe']}, ratio={msci_data['ratio']:.4f}"
-        )
 
-    return result
-
-
-def scrape_msci_pe_data() -> Optional[Dict[str, float]]:
-    """Scrape both trailing P/E and forward P/E from MSCI World Index page.
-
-    Returns a dict with trailing_pe, forward_pe, and ratio (trailing/forward).
-    The ratio enables daily forward PE derivation on the frontend:
-        fwd_PE_daily = trailing_PE_daily / ratio
-    """
+def scrape_msci_forward_pe() -> Optional[float]:
+    """Scrape Forward P/E for VT from MSCI ACWI Index factsheet."""
     try:
         url = "https://www.msci.com/indexes/index/990100"
         headers = {
@@ -958,42 +928,11 @@ def scrape_msci_pe_data() -> Optional[Dict[str, float]]:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         content = response.text
-
-        result: Dict[str, float] = {}
-
-        # Extract forward PE (labeled "P/E Fwd")
-        fwd_match = re.search(
-            r"P/E Fwd.{0,200}?([0-9]+\.[0-9]+)", content, re.IGNORECASE | re.DOTALL
-        )
-        if fwd_match:
-            result["forward_pe"] = float(fwd_match.group(1))
-
-        # Extract trailing PE (labeled "P/E" but NOT "P/E Fwd")
-        # Use negative lookahead to avoid matching "P/E Fwd"
-        trailing_match = re.search(
-            r"P/E(?!\s*Fwd).{0,200}?([0-9]+\.[0-9]+)", content, re.IGNORECASE | re.DOTALL
-        )
-        if trailing_match:
-            result["trailing_pe"] = float(trailing_match.group(1))
-
-        if "trailing_pe" in result and "forward_pe" in result and result["forward_pe"] > 0:
-            result["ratio"] = round(result["trailing_pe"] / result["forward_pe"], 4)
-
-        if result:
-            return result
+        match = re.search(r"P/E Fwd.{0,200}?([0-9]+\.[0-9]+)", content, re.IGNORECASE | re.DOTALL)
+        if match:
+            return float(match.group(1))
     except Exception as e:
         print(f"MSCI scrape failed: {e}")
-    return None
-
-
-def scrape_msci_forward_pe() -> Optional[float]:
-    """Scrape Forward P/E for VT from MSCI ACWI Index factsheet.
-
-    Thin wrapper around scrape_msci_pe_data() for backward compatibility.
-    """
-    data = scrape_msci_pe_data()
-    if data and "forward_pe" in data:
-        return data["forward_pe"]
     return None
 
 
@@ -1039,7 +978,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
     except Exception as e:
         error_msg = str(e)
         if scraper_api_key:
-            error_msg = scrub_secrets(error_msg, [scraper_api_key])
+            error_msg = error_msg.replace(scraper_api_key, "***")
         print(f"WSJ scrape failed: {error_msg}")
     return None
 

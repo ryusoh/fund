@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import shutil
-import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -15,9 +14,6 @@ import pytz
 import requests
 import yfinance as yf
 from polygon import RESTClient
-
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-from scripts.utils.security_utils import scrub_secrets
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
 # Use a secure temporary directory to avoid security vulnerabilities
@@ -108,7 +104,10 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
     except Exception as e:
         error_msg = str(e)
-        error_msg = scrub_secrets(error_msg, [safe_api_key, safe_api_secret])
+        if safe_api_key:
+            error_msg = error_msg.replace(safe_api_key, "***")
+        if safe_api_secret:
+            error_msg = error_msg.replace(safe_api_secret, "***")
         logging.error(f"Error fetching from Alpaca: {error_msg}")
 
     return data
@@ -208,7 +207,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                 except Exception as e:
                     error_msg = str(e)
                     if safe_api_key:
-                        error_msg = scrub_secrets(error_msg, [safe_api_key])
+                        error_msg = error_msg.replace(safe_api_key, "***")
                     logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
@@ -217,7 +216,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         except Exception as e:
             error_msg = str(e)
             if safe_api_key:
-                error_msg = scrub_secrets(error_msg, [safe_api_key])
+                error_msg = error_msg.replace(safe_api_key, "***")
             logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data

@@ -18,6 +18,3 @@ coverage/
 
 # Wrangler build cache
 worker/.wrangler/
-
-# Coverage artifacts
-.coverage*

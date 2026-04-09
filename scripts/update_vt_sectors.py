@@ -8,9 +8,6 @@ from pathlib import Path
 
 import requests
 
-sys.path.append(str(Path(__file__).resolve().parent))
-from utils.security_utils import scrub_secrets
-
 
 def fetch_vt_sectors():
     """Fetch VT sector breakdown from StockAnalysis using ScraperAPI if available."""
@@ -40,7 +37,7 @@ def fetch_vt_sectors():
     except Exception as e:
         error_msg = str(e)
         if scraper_api_key:
-            error_msg = scrub_secrets(error_msg, [scraper_api_key])
+            error_msg = error_msg.replace(scraper_api_key, "***")
         print(f"Error fetching VT data: {error_msg}")
         return None
 

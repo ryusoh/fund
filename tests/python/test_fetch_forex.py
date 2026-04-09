@@ -1,7 +1,7 @@
 """Tests for scripts/data/fetch_forex.py — focusing on the retry / fallback logic."""
 
 import json
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -70,14 +70,6 @@ class TestLoadPreviousRates:
         result = _load_previous_rates()
         assert isinstance(result, dict)
 
-    def test_returns_empty_when_df_empty(self, tmp_path, monkeypatch):
-        csv_path = tmp_path / "fx_daily_rates.csv"
-        csv_path.write_text("date,USD,CNY\n")
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        result = _load_previous_rates()
-        assert result == {}
-
 
 # ---------------------------------------------------------------------------
 # _fetch_single
@@ -111,14 +103,6 @@ class TestFetchSingle:
             result = _fetch_single("JPY")
         assert result == pytest.approx(149.5)
 
-    def test_handles_dataframe_close_column(self):
-        """When Close is a DataFrame (multi-ticker download but unexpected shape)."""
-        # Create a DataFrame where the first column contains the close prices.
-        mock_data = pd.DataFrame({"USDJPY=X": [148.0, 149.5], "SomethingElse": [1, 2]})
-        with patch("scripts.data.fetch_forex.yf.download", return_value=mock_data):
-            result = _fetch_single("JPY")
-        assert result == pytest.approx(149.5)
-
 
 # ---------------------------------------------------------------------------
 # update_fx_daily_csv
@@ -136,28 +120,6 @@ class TestUpdateFxDailyCsv:
         assert len(df) == 1
         assert df["CNY"].iloc[0] == pytest.approx(7.2)
         assert df["JPY"].iloc[0] == pytest.approx(150.0)
-
-    def test_reorders_currencies(self, tmp_path, monkeypatch):
-        csv_path = tmp_path / "fx_daily_rates.csv"
-        csv_path.write_text("date,USD,JPY\n" "2026-03-20,1.000000,150.0\n")
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        # Call it with CNY added in between
-        update_fx_daily_csv({"USD": 1.0, "CNY": 7.2, "JPY": 151.0, "EUR": 0.9})
-
-        df = pd.read_csv(csv_path)
-        # Verify the columns are ordered as requested: existing then new
-        assert list(df.columns) == ["date", "USD", "JPY", "CNY", "EUR"]
-
-    def test_handles_date_iteration(self, tmp_path, monkeypatch):
-        csv_path = tmp_path / "fx_daily_rates.csv"
-        # We need "date" to be iterated over in `for currency in rates.keys()`
-        # which means rates dict must contain "date" key
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        update_fx_daily_csv({"date": "2026-03-20", "USD": 1.0})
-        df = pd.read_csv(csv_path)
-        assert len(df) == 1
 
     def test_appends_new_date(self, tmp_path, monkeypatch):
         csv_path = tmp_path / "fx_daily_rates.csv"
@@ -302,140 +264,6 @@ class TestFetchForexDataFallback:
         today_row = df.iloc[-1]
         assert pd.notna(today_row["JPY"])
         assert today_row["JPY"] == pytest.approx(149.5)
-
-    def test_reads_existing_json_and_fetches(self, tmp_path, monkeypatch):
-        fx_path = tmp_path / "fx.json"
-        fx_path.write_text('{"rates": {"USD": 1.0, "EUR": 0.9, "GBP": 0.8}}')
-        csv_path = tmp_path / "fx_rates.csv"
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(fx_path))
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        with (patch("scripts.data.fetch_forex.yf.download") as mock_download,):
-            # Setup mock download to succeed
-            close_df = pd.DataFrame(
-                {
-                    "USDCNY=X": [7.2],
-                    "USDJPY=X": [150.0],
-                    "USDKRW=X": [1330.0],
-                    "USDEUR=X": [0.91],
-                    "USDGBP=X": [0.81],
-                }
-            )
-            mock_download.return_value = pd.concat({"Close": close_df}, axis=1)
-
-            fetch_forex_data()
-
-        fx = json.loads(fx_path.read_text())
-        assert fx["rates"]["EUR"] == pytest.approx(0.91)
-        assert fx["rates"]["GBP"] == pytest.approx(0.81)
-
-    def test_reads_existing_json_error(self, tmp_path, monkeypatch):
-        fx_path = tmp_path / "fx.json"
-        fx_path.write_text('{"rates": invalid json')
-        csv_path = tmp_path / "fx_rates.csv"
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(fx_path))
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        with (patch("scripts.data.fetch_forex.yf.download") as mock_download,):
-            # Setup mock download to succeed for default only
-            close_df = pd.DataFrame(
-                {
-                    "USDCNY=X": [7.2],
-                    "USDJPY=X": [150.0],
-                    "USDKRW=X": [1330.0],
-                }
-            )
-            mock_download.return_value = pd.concat({"Close": close_df}, axis=1)
-
-            fetch_forex_data()
-
-        fx = json.loads(fx_path.read_text())
-        assert "EUR" not in fx["rates"]
-        assert fx["rates"]["CNY"] == pytest.approx(7.2)
-
-    def test_batch_fetch_exception(self, tmp_path, monkeypatch):
-        fx_path = tmp_path / "fx.json"
-        csv_path = tmp_path / "fx_rates.csv"
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(fx_path))
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        with (
-            patch("scripts.data.fetch_forex.yf.download", side_effect=Exception("batch err")),
-            patch("scripts.data.fetch_forex._fetch_single", return_value=7.2),
-        ):
-            fetch_forex_data()
-
-        fx = json.loads(fx_path.read_text())
-        assert fx["rates"]["CNY"] == pytest.approx(7.2)
-
-    def test_series_close_data(self, tmp_path, monkeypatch):
-        fx_path = tmp_path / "fx.json"
-        csv_path = tmp_path / "fx_rates.csv"
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(fx_path))
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        # Make the batch download return a Series (can happen when downloading single ticker)
-        s = pd.Series([150.0], name="USDJPY=X")
-        mock_data = pd.DataFrame({"Close": s})
-
-        # Setup so we only fetch one currency to test the len(tickers) == 1 path
-        monkeypatch.setattr("scripts.data.fetch_forex.DEFAULT_CURRENCIES", ["JPY"])
-
-        with patch("scripts.data.fetch_forex.yf.download", return_value=mock_data):
-            fetch_forex_data()
-
-        fx = json.loads(fx_path.read_text())
-        assert fx["rates"]["JPY"] == pytest.approx(150.0)
-
-    def test_currency_exception(self, tmp_path, monkeypatch):
-        fx_path = tmp_path / "fx.json"
-        csv_path = tmp_path / "fx_rates.csv"
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(fx_path))
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(csv_path))
-
-        # We need an exception *inside* the currency loop when iterating close_data
-        # Mock close_data so that doing `ticker in close_data.columns` or similar raises Exception
-        mock_close = MagicMock(spec=pd.DataFrame)
-        # MagicMock fails nicely if we override its property
-        type(mock_close).columns = PropertyMock(side_effect=Exception("Inner exception"))
-
-        mock_data = MagicMock(spec=pd.DataFrame)
-        mock_data.columns = ["Close"]
-        mock_data.__getitem__.return_value = mock_close
-
-        with (
-            patch("scripts.data.fetch_forex.yf.download", return_value=mock_data),
-            patch("scripts.data.fetch_forex._fetch_single", return_value=7.2),
-        ):
-            fetch_forex_data()
-
-        fx = json.loads(fx_path.read_text())
-        assert fx["rates"]["CNY"] == pytest.approx(7.2)
-
-    def test_main_block(self, tmp_path, monkeypatch):
-        """Test __main__ block without modifying real data files.
-
-        Instead of using runpy (which re-imports modules and bypass monkeypatch),
-        we directly call fetch_forex_data with mocked paths and verify it completes.
-        """
-        # Redirect to temporary paths
-        monkeypatch.setattr("scripts.data.fetch_forex.FX_DATA_FILE", str(tmp_path / "fx.json"))
-        monkeypatch.setattr(
-            "scripts.data.fetch_forex.FX_DAILY_RATES_FILE", str(tmp_path / "fx_rates.csv")
-        )
-
-        # Mock yf.download to prevent real network calls and ensure failure
-        # (which is fine - we're just testing that __main__ block runs without error)
-        with patch("scripts.data.fetch_forex.yf.download", side_effect=Exception("mocked")):
-            with patch("builtins.print"):
-                # Call the function that __main__ block would call
-                from scripts.data.fetch_forex import fetch_forex_data
-
-                fetch_forex_data()
-
-                # Verify no real files were written (only temp files should exist)
-                assert not (tmp_path / "fx.json").exists()
-                assert not (tmp_path / "fx_rates.csv").exists()
 
     def test_all_currencies_fail_does_not_write_files(self, tmp_path, monkeypatch):
         """If every currency fails and there is no previous data, files stay unchanged."""

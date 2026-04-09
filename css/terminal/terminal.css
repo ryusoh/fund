@@ -28,12 +28,6 @@
     overflow-x: hidden;
 }
 
-.terminal-output:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
-    border-radius: 4px;
-}
-
 .terminal-output div {
     line-height: 1.5;
 }

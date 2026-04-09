@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Tuple, cast
 
 import numpy as np
 import pandas as pd
@@ -290,9 +290,9 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
         if not splits_df.empty:
             splits_df['Split Date'] = pd.to_datetime(splits_df['Split Date'])
 
-            sym_idx = int(splits_df.columns.get_loc('Symbol')) + 1  # type: ignore[arg-type]
-            mul_idx = int(splits_df.columns.get_loc('Split Multiplier')) + 1  # type: ignore[arg-type]
-            date_idx = int(splits_df.columns.get_loc('Split Date')) + 1  # type: ignore[arg-type]
+            sym_idx = splits_df.columns.get_loc('Symbol') + 1
+            mul_idx = splits_df.columns.get_loc('Split Multiplier') + 1
+            date_idx = splits_df.columns.get_loc('Split Date') + 1
 
             for row in splits_df.itertuples(index=True, name=None):
                 symbol = str(row[sym_idx])
@@ -303,10 +303,10 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
 
     share_totals: dict[str, Decimal] = {}
 
-    sec_idx = int(transactions_df.columns.get_loc('Security')) + 1  # type: ignore[arg-type]
-    qty_idx = int(transactions_df.columns.get_loc('Quantity')) + 1  # type: ignore[arg-type]
-    date_idx = int(transactions_df.columns.get_loc('Trade Date')) + 1  # type: ignore[arg-type]
-    type_idx = int(transactions_df.columns.get_loc('Order Type')) + 1  # type: ignore[arg-type]
+    sec_idx = transactions_df.columns.get_loc('Security') + 1
+    qty_idx = transactions_df.columns.get_loc('Quantity') + 1
+    date_idx = transactions_df.columns.get_loc('Trade Date') + 1
+    type_idx = transactions_df.columns.get_loc('Order Type') + 1
 
     for row in transactions_df.itertuples(index=True, name=None):
         symbol = str(row[sec_idx])
@@ -371,23 +371,22 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
     holdings_data: List[Dict[str, Any]] = []
     for row in holdings_frame.itertuples(index=True):
         symbol = str(row.Index)
-        avg_price = float(row.average_price)  # type: ignore[arg-type]
-        total_cost = row.total_cost if avg_price > 0 else np.nan
+        total_cost = row.total_cost if row.average_price > 0 else np.nan
         display_symbol = getattr(row, 'display_symbol', symbol)
         holdings_data.append(
             {
                 'security': str(display_symbol),
-                'shares': float(row.shares),  # type: ignore[arg-type]
-                'average_price_usd': avg_price if avg_price > 0 else None,
-                'total_cost_usd': float(total_cost) if np.isfinite(total_cost) else None,  # type: ignore[arg-type]
+                'shares': float(row.shares),
+                'average_price_usd': (float(row.average_price) if row.average_price > 0 else None),
+                'total_cost_usd': float(total_cost) if np.isfinite(total_cost) else None,
             }
         )
         data_rows.append(
             [
                 display_symbol,
                 f"{row.shares:,.2f}",
-                f"${avg_price:.2f}" if avg_price > 0 else 'N/A',
-                format_currency(total_cost) if np.isfinite(total_cost) else 'N/A',  # type: ignore[arg-type]
+                f"${row.average_price:.2f}" if row.average_price > 0 else 'N/A',
+                format_currency(total_cost) if np.isfinite(total_cost) else 'N/A',
             ]
         )
 
@@ -402,7 +401,7 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
         rate = float(latest_fx_rates.get(currency, 1.0))
         converted_rows = []
         for item in holdings_data:
-            avg_price_conv: Optional[float] = (
+            avg_price = (
                 float(item['average_price_usd'] * rate)
                 if item['average_price_usd'] is not None
                 else None
@@ -414,7 +413,7 @@ def calculate_holdings(latest_fx_rates: Dict[str, float]) -> Tuple[str, Dict[str
                 {
                     'security': item['security'],
                     'shares': item['shares'],
-                    'average_price': avg_price_conv,
+                    'average_price': avg_price,
                     'total_cost': total_cost_value,
                 }
             )
@@ -702,10 +701,10 @@ def main() -> None:
             }
         )
 
-    date_idx = int(transactions_df.columns.get_loc('trade_date')) + 1  # type: ignore[arg-type]
-    type_idx = int(transactions_df.columns.get_loc('order_type')) + 1  # type: ignore[arg-type]
-    qty_idx = int(transactions_df.columns.get_loc('quantity')) + 1  # type: ignore[arg-type]
-    px_idx = int(transactions_df.columns.get_loc('executed_price')) + 1  # type: ignore[arg-type]
+    date_idx = transactions_df.columns.get_loc('trade_date') + 1
+    type_idx = transactions_df.columns.get_loc('order_type') + 1
+    qty_idx = transactions_df.columns.get_loc('quantity') + 1
+    px_idx = transactions_df.columns.get_loc('executed_price') + 1
 
     for txn in transactions_df.itertuples(index=True, name=None):
         trade_date = pd.to_datetime(txn[date_idx]).date()
@@ -771,10 +770,10 @@ def main() -> None:
             converted_df = converted_df.reset_index()
             converted_df['tradeDate'] = converted_df['tradeDate'].dt.strftime('%Y-%m-%d')
 
-            date_idx = int(converted_df.columns.get_loc('tradeDate')) + 1  # type: ignore[arg-type]
-            amt_idx = int(converted_df.columns.get_loc('amount')) + 1  # type: ignore[arg-type]
-            type_idx = int(converted_df.columns.get_loc('orderType')) + 1  # type: ignore[arg-type]
-            net_idx = int(converted_df.columns.get_loc('netAmount')) + 1  # type: ignore[arg-type]
+            date_idx = converted_df.columns.get_loc('tradeDate') + 1
+            amt_idx = converted_df.columns.get_loc('amount') + 1
+            type_idx = converted_df.columns.get_loc('orderType') + 1
+            net_idx = converted_df.columns.get_loc('netAmount') + 1
 
             contribution_series_by_currency[currency] = [
                 {

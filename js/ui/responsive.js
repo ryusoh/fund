@@ -80,27 +80,15 @@ export function initCalendarResponsiveHandlers() {
             return normalizeRect(element.getBoundingClientRect());
         };
 
-        // Bolt: Replaced Math.min/max with spread operator over mapped arrays (O(N) allocations + O(N) iteration)
-        // with a single index-based for loop.
-        // Impact: Eliminates intermediate array allocations per scroll/resize frame, significantly reducing GC pressure
-        // in high-frequency event handlers.
         const mergeRects = (rects) => {
-            if (!rects || !rects.length) {
+            if (!rects.length) {
                 return null;
             }
             if (rects.length === 1) {
                 return rects[0];
             }
-            let top = rects[0].top;
-            let bottom = rects[0].bottom;
-            for (let i = 1; i < rects.length; i++) {
-                if (rects[i].top < top) {
-                    top = rects[i].top;
-                }
-                if (rects[i].bottom > bottom) {
-                    bottom = rects[i].bottom;
-                }
-            }
+            const top = Math.min(...rects.map((rect) => rect.top));
+            const bottom = Math.max(...rects.map((rect) => rect.bottom));
             return { top, bottom, height: bottom - top };
         };
 

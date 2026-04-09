@@ -4,7 +4,7 @@
     "description": "Frontend for the fund project",
     "main": "js/main.js",
     "scripts": {
-        "test": "NODE_NO_WARNINGS=1 jest --coverage",
+        "test": "jest --coverage",
         "dev": "python3 -m http.server 8000 --bind 127.0.0.1",
         "lint:js": "eslint .",
         "lint:css": "stylelint \"**/*.css\"",
@@ -30,10 +30,10 @@
     "devDependencies": {
         "@babel/core": "^7.29.0",
         "@babel/preset-env": "^7.29.2",
-        "@stylistic/stylelint-plugin": "^5.1.0",
+        "@stylistic/stylelint-plugin": "^5.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "babel-jest": "^30.3.0",
-        "eslint": "^10.2.0",
+        "eslint": "^10.1.0",
         "husky": "^9.1.6",
         "jest": "^30.3.0",
         "jest-environment-jsdom": "^30.3.0",
@@ -43,7 +43,7 @@
         "prettier": "^3.8.1",
         "stylelint": "^17.5.0",
         "stylelint-config-standard": "^40.0.0",
-        "wrangler": "^4.80.0"
+        "wrangler": "^4.0.0"
     },
     "lint-staged": {
         "*.js": [
@@ -93,7 +93,7 @@
         }
     },
     "dependencies": {
-        "canvas": "^3.2.3"
+        "canvas": "^3.2.2"
     },
     "overrides": {
         "js-yaml": "^4.1.1",

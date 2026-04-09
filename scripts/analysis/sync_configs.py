@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-import atexit
 import json
-import shutil
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, cast
 
 try:
     import yfinance as yf
-
-    # Configure yfinance to use a temporary directory for timezone cache
-    _yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
-    yf.set_tz_cache_location(_yf_cache_dir)
-    atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 except Exception:  # pragma: no cover
     yf = None
 

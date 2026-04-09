@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 """Fetch ticker metadata (sector, industry, name) using yfinance."""
 
-import atexit
 import json
 import logging
-import shutil
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 import yfinance as yf
-
-# Configure yfinance to use a temporary directory for timezone cache
-_yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
-yf.set_tz_cache_location(_yf_cache_dir)
-atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

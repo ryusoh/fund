@@ -507,10 +507,7 @@ class TestGeneratePEData(unittest.TestCase):
                 mock_stock = unittest.mock.MagicMock()
                 mock_stock.info = {"currentPrice": 150.0, "forwardPE": None}
                 mock_ticker.return_value = mock_stock
-                with patch(
-                    "scripts.generate_pe_data.scrape_msci_pe_data",
-                    return_value={"forward_pe": 15.0, "trailing_pe": 20.0, "ratio": 1.33},
-                ):
+                with patch("scripts.generate_pe_data.scrape_msci_forward_pe", return_value=15.0):
                     res = fetch_forward_pe()
                     self.assertIsNotNone(res)
                     self.assertEqual(res["ticker_forward_pe"]["VT"], 15.0)

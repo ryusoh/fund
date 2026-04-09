@@ -191,10 +191,8 @@ function formatNumberWithSign(absNum, symbol) {
         formattedVal = val.toFixed(0);
     } else if (val >= 10) {
         formattedVal = val.toFixed(1);
-    } else if (val >= 0.01) {
+    } else if (val >= 1) {
         formattedVal = val.toFixed(2);
-    } else if (val === 0) {
-        formattedVal = '0';
     } else {
         formattedVal = val.toPrecision(3);
     }
@@ -210,9 +208,6 @@ function calculatePrecision(val, suffix) {
             precision = 4 - Math.floor(Math.log10(val)) - 1;
             if (precision < 0) {
                 precision = 0;
-            }
-            if (suffix === '' && val >= 0.01) {
-                precision = Math.min(precision, 2);
             }
             if (suffix === 'k' && precision > 2) {
                 precision = 2;

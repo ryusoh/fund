@@ -7,15 +7,11 @@ Similar to update_vt_sectors.py but for country breakdowns.
 import json
 import os
 import re
-import sys
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
-
-sys.path.append(str(Path(__file__).resolve().parent))
-from utils.security_utils import scrub_secrets
 
 
 def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
@@ -55,7 +51,7 @@ def fetch_etf_country_allocation(etf_ticker: str) -> dict[str, float]:
     except Exception as e:
         error_msg = str(e)
         if scraper_api_key:
-            error_msg = scrub_secrets(error_msg, [scraper_api_key])
+            error_msg = error_msg.replace(scraper_api_key, "***")
         print(f"  Error fetching {etf_ticker}: {error_msg}")
         return {}
 

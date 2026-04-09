@@ -131,23 +131,25 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
                     continue;
                 }
 
-                // Bolt: Optimize O(N * W) slice/array allocations by iterating indices directly over marketReturns array
+                // Bolt: Optimize O(N * W) slice allocations by iterating indices directly over marketReturns array
                 const startIdx = i - windowSize + 1;
-                let n = 0;
+                const aValues = [];
+                const mValues = [];
                 let mSum = 0;
                 let aSum = 0;
 
-                // First pass to compute sum and valid counts directly
-                for (let j = startIdx; j <= i; j++) {
-                    const mR = marketReturns[j];
+                for (let k = startIdx; k <= i; k++) {
+                    const mR = marketReturns[k];
                     const aVal = assetReturnMap.get(mR.date);
                     if (aVal !== undefined) {
-                        n++;
+                        mValues.push(mR.val);
+                        aValues.push(aVal);
                         mSum += mR.val;
                         aSum += aVal;
                     }
                 }
 
+                const n = aValues.length;
                 if (n < windowSize * 0.8) {
                     continue;
                 }
@@ -157,16 +159,10 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
 
                 let cov = 0;
                 let mVar = 0;
-
-                // Second pass to compute variance and covariance
-                for (let j = startIdx; j <= i; j++) {
-                    const mR = marketReturns[j];
-                    const aVal = assetReturnMap.get(mR.date);
-                    if (aVal !== undefined) {
-                        const mDiff = mR.val - mMean;
-                        cov += (aVal - aMean) * mDiff;
-                        mVar += mDiff * mDiff;
-                    }
+                for (let j = 0; j < n; j++) {
+                    const mDiff = mValues[j] - mMean;
+                    cov += (aValues[j] - aMean) * mDiff;
+                    mVar += mDiff * mDiff;
                 }
 
                 const beta = mVar < 1e-12 ? 0 : cov / mVar;
@@ -220,33 +216,18 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-    let dataMin = Infinity;
-    let dataMax = -Infinity;
-
-    for (let i = 0; i < allPoints.length; i++) {
-        const time = parseLocalDate(allPoints[i].date).getTime();
-        const value = allPoints[i].value;
-        if (time < minTime) {
-            minTime = time;
-        }
-        if (time > maxTime) {
-            maxTime = time;
-        }
-        if (value < dataMin) {
-            dataMin = value;
-        }
-        if (value > dataMax) {
-            dataMax = value;
-        }
-    }
+    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
+    let minTime = Math.min(...allTimes);
+    const maxTime = Math.max(...allTimes);
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
+
+    const allValues = allPoints.map((p) => p.value);
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.1, 0.2);
     const yMin = Math.max(0, dataMin - yPadding);

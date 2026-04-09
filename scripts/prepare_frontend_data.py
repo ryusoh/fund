@@ -52,7 +52,7 @@ def prepare_historical_prices():
     prices_df['symbol'] = prices_df['symbol'].replace(SYMBOL_ALIASES)
 
     # 3. Handle price NaN/nulls
-    prices_df['price'] = prices_df['price'].replace({np.nan: None})
+    prices_df['price'].replace({np.nan: None}, inplace=True)
     prices_df.dropna(
         subset=['price'], inplace=True
     )  # Drop rows where price is None/NaN after conversion

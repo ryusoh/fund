@@ -39,12 +39,14 @@ describe('formatNumber', () => {
         expect(formatting.formatNumber(1234567, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
             '+$1.23m'
         );
-        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('+$0.12');
+        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
+            '+$0.123'
+        );
         expect(formatting.formatNumber(0.000123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
             '+$0.000123'
         );
         expect(formatting.formatNumber(0.0123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
-            '+$0.01'
+            '+$0.0123'
         );
         expect(formatting.formatNumber(0.00123, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe(
             '+$0.00123'
@@ -62,9 +64,10 @@ describe('formatNumber', () => {
     });
 
     it('should format small numbers correctly', () => {
-        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('$0.12');
-        expect(formatting.formatNumber(-0.5, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('-$0.50');
-        expect(formatting.formatNumber(-0.06, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('-$0.06');
+        expect(formatting.formatNumber(0.123, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe(
+            '$0.1230'
+        );
+        expect(formatting.formatNumber(-0.5, CURRENCY_SYMBOLS, true, 'USD', rates)).toBe('-$0.500');
     });
 
     it('should handle unknown currency gracefully', () => {

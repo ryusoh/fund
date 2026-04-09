@@ -220,5 +220,4 @@ footer {
 .table-responsive-container:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: -2px;
-    border-radius: 16px;
 }

@@ -21,16 +21,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
 try:
-    import atexit
-    import shutil
-    import tempfile
-
     import yfinance as yf
-
-    # Configure yfinance to use a temporary directory for timezone cache
-    _yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
-    yf.set_tz_cache_location(_yf_cache_dir)
-    atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 except ImportError as exc:  # pragma: no cover - guidance for users
     raise SystemExit("Please install yfinance (pip install yfinance)") from exc
 

@@ -33,12 +33,6 @@ body.body-calendar {
     /* Allow horizontal scroll if needed */
 }
 
-.cal-heatmap-container:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
-    border-radius: 8px;
-}
-
 /* Calendar heatmap responsive sizing */
 #cal-heatmap {
     width: auto;

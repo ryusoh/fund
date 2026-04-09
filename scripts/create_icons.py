@@ -4,17 +4,12 @@ Create PWA icons from existing avatar image
 Resize and optimize the existing icon for different sizes
 """
 
-import sys
 from pathlib import Path
+
+from PIL import Image
 
 
 def generate_icons_from_source():
-    try:
-        from PIL import Image
-    except ImportError:
-        print("Pillow is not installed. Please run: pip install Pillow")
-        sys.exit(1)
-
     """Create different sized icons using the local source image."""
     repo_root = Path(__file__).resolve().parents[1]
     source_path = repo_root / "assets" / "icons" / "icon-src.png"
