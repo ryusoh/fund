@@ -7,6 +7,9 @@ function scrubSecrets(text, secrets) {
         if (secret) {
             scrubbed = scrubbed.split(secret).join('***');
             scrubbed = scrubbed.split(encodeURIComponent(secret)).join('***');
+            // Also scrub form-encoded variants (spaces as +)
+            const formEncoded = encodeURIComponent(secret).replace(/%20/g, '+');
+            scrubbed = scrubbed.split(formEncoded).join('***');
         }
     }
     return scrubbed;
