@@ -11,8 +11,11 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-sys.path.append(str(Path(__file__).parent))
-from utils import append_changelog_entry
+sys.path.append(str(Path(__file__).resolve().parent))
+try:
+    from utils import append_changelog_entry
+except ImportError:
+    from scripts.twrr.utils import append_changelog_entry
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'

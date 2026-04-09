@@ -220,18 +220,33 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         return;
     }
 
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const time = parseLocalDate(allPoints[i].date).getTime();
+        const value = allPoints[i].value;
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+        if (value > dataMax) {
+            dataMax = value;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.1, 0.2);
     const yMin = Math.max(0, dataMin - yPadding);
