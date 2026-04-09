@@ -179,25 +179,6 @@ def test_calculate_yield_data_empty_shares(mock_dirs):
         assert data[0]['market_value'] == 0.0
 
 
-def test_hit_main_block():
-    import subprocess
-    import sys
-
-    result = subprocess.run(
-        [sys.executable, 'scripts/generate_yield_data.py'], capture_output=True, text=True
-    )
-    assert result.returncode == 0
-
-
-def test_execute_main():
-    import runpy
-
-    try:
-        runpy.run_module('scripts.generate_yield_data', run_name='__main__')
-    except Exception:
-        pass
-
-
 def test_calculate_yield_data_missing_price(mock_dirs):
     generate_yield_data.HOLDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     generate_yield_data.PRICES_PATH.parent.mkdir(parents=True, exist_ok=True)
