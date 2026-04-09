@@ -217,3 +217,66 @@ describe('Fade Effect Logic', () => {
         });
     });
 });
+
+describe('fade.js early returns', () => {
+    let outputContainer;
+
+    beforeEach(() => {
+        global.requestAnimationFrame = (cb) => cb();
+        Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+
+        outputContainer = document.createElement('div');
+        Object.defineProperty(outputContainer, 'clientHeight', { value: 500, writable: true });
+        Object.defineProperty(outputContainer, 'scrollTop', { value: 0, writable: true });
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+        outputContainer.innerHTML = '';
+    });
+
+    test('skips update if child node is falsy', async () => {
+        const mod = await import('@js/transactions/fade.js');
+        // create a fake children list where one is explicitly falsy
+        Object.defineProperty(outputContainer, 'children', {
+            get: () => [null, undefined],
+            configurable: true
+        });
+        mod.requestFadeUpdate(outputContainer);
+        // Should not throw
+    });
+
+    test('preserves third-last child', async () => {
+        const mod = await import('@js/transactions/fade.js');
+
+        const child0 = document.createElement('div');
+        Object.defineProperty(child0, 'offsetTop', { value: 0, writable: true });
+        Object.defineProperty(child0, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child0);
+
+        const child1 = document.createElement('div');
+        Object.defineProperty(child1, 'offsetTop', { value: 50, writable: true });
+        Object.defineProperty(child1, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child1);
+
+        const child2 = document.createElement('div');
+        Object.defineProperty(child2, 'offsetTop', { value: 100, writable: true });
+        Object.defineProperty(child2, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child2);
+
+        const child3 = document.createElement('div');
+        Object.defineProperty(child3, 'offsetTop', { value: 150, writable: true });
+        Object.defineProperty(child3, 'offsetHeight', { value: 50, writable: true });
+        outputContainer.appendChild(child3);
+
+        Object.defineProperty(outputContainer, 'scrollTop', { value: 25, writable: true });
+
+        mod.setFadePreserveSecondLast(true);
+        mod.requestFadeUpdate(outputContainer);
+
+        expect(child0.style.opacity).not.toBe('1');
+        expect(child1.style.opacity).toBe('1'); // third last
+        expect(child2.style.opacity).toBe('1'); // second last
+        expect(child3.style.opacity).toBe('1'); // last
+    });
+});

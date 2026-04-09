@@ -1,99 +1,105 @@
 import { jest } from '@jest/globals';
 
+const mockGlowAnimator = {
+    isEnabledFor: jest.fn(),
+    stop: jest.fn(),
+    schedule: jest.fn(),
+    advance: jest.fn(),
+    drawSeriesGlow: jest.fn(),
+};
+
+jest.mock('../../../js/plugins/glowTrailAnimator.js', () => ({
+    createGlowTrailAnimator: jest.fn(() => mockGlowAnimator),
+}));
+
 describe('Chart animation integration', () => {
     let animation;
+    let transactionState;
 
     beforeEach(async () => {
-        jest.resetModules();
-        animation = await import('@js/transactions/chart/animation.js');
+        jest.clearAllMocks();
+
+        // Mock state module completely
+        jest.mock('../../../js/transactions/state.js', () => ({
+            transactionState: { activeChart: 'performance' }
+        }));
+
+        const stateMod = await import('../../../js/transactions/state.js');
+        transactionState = stateMod.transactionState;
+
+        animation = await import('../../../js/transactions/chart/animation.js');
     });
 
-    describe('PE animation channel', () => {
-        test('stopPeAnimation is exported', () => {
-            expect(typeof animation.stopPeAnimation).toBe('function');
-        });
+    const charts = ['Performance', 'Contribution', 'Fx', 'Pe', 'Concentration', 'Yield'];
 
-        test('schedulePeAnimation is exported', () => {
-            expect(typeof animation.schedulePeAnimation).toBe('function');
-        });
-
-        test('advancePeAnimation is exported', () => {
-            expect(typeof animation.advancePeAnimation).toBe('function');
-        });
-
-        test('advancePeAnimation returns a number', () => {
-            const result = animation.advancePeAnimation(Date.now());
-            expect(typeof result).toBe('number');
-        });
-
-        test('stopPeAnimation does not throw', () => {
-            expect(() => animation.stopPeAnimation()).not.toThrow();
+    describe('stop functions', () => {
+        charts.forEach(chart => {
+            test(`stop${chart}Animation stops correct chart`, () => {
+                animation[`stop${chart}Animation`]();
+                expect(mockGlowAnimator.stop).toHaveBeenCalledWith(chart.toLowerCase());
+            });
         });
     });
 
-    describe('Concentration animation channel', () => {
-        test('stopConcentrationAnimation is exported', () => {
-            expect(typeof animation.stopConcentrationAnimation).toBe('function');
-        });
+    describe('schedule functions', () => {
+        charts.forEach(chart => {
+            describe(`schedule${chart}Animation`, () => {
+                it('stops when animation is not enabled', () => {
+                    mockGlowAnimator.isEnabledFor.mockReturnValue(false);
+                    animation[`schedule${chart}Animation`]({});
+                    expect(mockGlowAnimator.stop).toHaveBeenCalledWith(chart.toLowerCase());
+                    expect(mockGlowAnimator.schedule).not.toHaveBeenCalled();
+                });
 
-        test('scheduleConcentrationAnimation is exported', () => {
-            expect(typeof animation.scheduleConcentrationAnimation).toBe('function');
-        });
+                it('schedules when animation is enabled and isActive callback works', () => {
+                    mockGlowAnimator.isEnabledFor.mockReturnValue(true);
+                    const chartManager = { mock: true };
+                    animation[`schedule${chart}Animation`](chartManager);
 
-        test('advanceConcentrationAnimation is exported', () => {
-            expect(typeof animation.advanceConcentrationAnimation).toBe('function');
-        });
+                    expect(mockGlowAnimator.schedule).toHaveBeenCalledWith(
+                        chart.toLowerCase(),
+                        chartManager,
+                        expect.any(Object)
+                    );
 
-        test('advanceConcentrationAnimation returns a number', () => {
-            const result = animation.advanceConcentrationAnimation(Date.now());
-            expect(typeof result).toBe('number');
-        });
+                    // Test isActive callback
+                    const { isActive } = mockGlowAnimator.schedule.mock.calls[0][2];
+                    transactionState.activeChart = chart.toLowerCase();
+                    expect(isActive()).toBe(true);
 
-        test('stopConcentrationAnimation does not throw', () => {
-            expect(() => animation.stopConcentrationAnimation()).not.toThrow();
+                    transactionState.activeChart = 'other';
+                    expect(isActive()).toBe(false);
+                });
+            });
+        });
+    });
+
+    describe('advance functions', () => {
+        charts.forEach(chart => {
+            describe(`advance${chart}Animation`, () => {
+                it('returns 0 when animation is not enabled', () => {
+                    mockGlowAnimator.isEnabledFor.mockReturnValue(false);
+                    expect(animation[`advance${chart}Animation`](123)).toBe(0);
+                    expect(mockGlowAnimator.advance).not.toHaveBeenCalled();
+                });
+
+                it('calls advance when animation is enabled', () => {
+                    mockGlowAnimator.isEnabledFor.mockReturnValue(true);
+                    mockGlowAnimator.advance.mockReturnValue(42);
+                    expect(animation[`advance${chart}Animation`](123)).toBe(42);
+                    expect(mockGlowAnimator.advance).toHaveBeenCalledWith(chart.toLowerCase(), 123);
+                });
+            });
         });
     });
 
     describe('drawSeriesGlow', () => {
-        test('is exported as a function', () => {
-            expect(typeof animation.drawSeriesGlow).toBe('function');
+        it('delegates to animator', () => {
+            const ctx = {};
+            const series = {};
+            const options = {};
+            animation.drawSeriesGlow(ctx, series, options);
+            expect(mockGlowAnimator.drawSeriesGlow).toHaveBeenCalledWith(ctx, series, options);
         });
-    });
-
-    describe('Cross-chart stop behavior', () => {
-        test('all stop functions are exported', () => {
-            expect(typeof animation.stopPerformanceAnimation).toBe('function');
-            expect(typeof animation.stopContributionAnimation).toBe('function');
-            expect(typeof animation.stopFxAnimation).toBe('function');
-            expect(typeof animation.stopPeAnimation).toBe('function');
-            expect(typeof animation.stopConcentrationAnimation).toBe('function');
-        });
-
-        test('each chart type has matching schedule/advance/stop', () => {
-            const channels = ['Performance', 'Contribution', 'Fx', 'Pe', 'Concentration'];
-            for (const ch of channels) {
-                expect(typeof animation[`stop${ch}Animation`]).toBe('function');
-                expect(typeof animation[`schedule${ch}Animation`]).toBe('function');
-                expect(typeof animation[`advance${ch}Animation`]).toBe('function');
-            }
-        });
-    });
-});
-
-describe('PE chart accepts timestamp', () => {
-    test('drawPEChart function accepts 3 parameters', async () => {
-        jest.resetModules();
-        const mod = await import('@js/transactions/chart/renderers/pe.js');
-        // drawPEChart(ctx, chartManager, timestamp) should accept 3 params
-        expect(mod.drawPEChart.length).toBeGreaterThanOrEqual(2);
-    });
-});
-
-describe('Concentration chart accepts timestamp', () => {
-    test('drawConcentrationChart function accepts 3 parameters', async () => {
-        jest.resetModules();
-        const mod = await import('@js/transactions/chart/renderers/concentration.js');
-        // drawConcentrationChart(ctx, chartManager, timestamp) should accept 3 params
-        expect(mod.drawConcentrationChart.length).toBeGreaterThanOrEqual(2);
     });
 });
