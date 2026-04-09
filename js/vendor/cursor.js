@@ -21,7 +21,9 @@ const getSessionStorage = () => {
     if (typeof window === 'undefined') return null;
     try {
         return window.sessionStorage;
-    } catch {
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to access sessionStorage:', e);
         return null;
     }
 };
@@ -36,8 +38,9 @@ const readStoredCursorPosition = () => {
         if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
             return parsed;
         }
-    } catch {
-        // ignore malformed data
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to parse cursor position from sessionStorage:', e);
     }
     return null;
 };
@@ -53,8 +56,9 @@ const persistCursorPosition = (x, y) => {
                 y,
             })
         );
-    } catch {
-        // ignore storage quota / access issues
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to write cursor position to sessionStorage:', e);
     }
 };
 
@@ -70,8 +74,9 @@ const applyInlineCursorToElement = (element) => {
     try {
         element.style.setProperty('cursor', HIDDEN_CURSOR_VALUE, 'important');
         overriddenElements.add(element);
-    } catch {
-        // ignore elements that do not expose style setters (e.g., SVG defs)
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to apply inline cursor style to element:', e);
     }
 };
 
@@ -81,8 +86,9 @@ const clearInlineCursorOverrides = () => {
             if (element.style?.cursor === HIDDEN_CURSOR_VALUE) {
                 element.style.removeProperty('cursor');
             }
-        } catch {
-            // ignore
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to remove inline cursor style from element:', e);
         }
     });
     overriddenElements.clear();

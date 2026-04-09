@@ -4,16 +4,16 @@ export function adjustMobilePanels() {
     const chartContainer = plotSection ? plotSection.querySelector('.chart-container') : null;
     const legend = plotSection ? plotSection.querySelector('.chart-legend') : null;
 
+    const clearStyle = (el) => {
+        if (el) {
+            el.style.height = '';
+        }
+    };
+
     if (window.innerWidth > 768) {
-        if (tableContainer) {
-            tableContainer.style.height = '';
-        }
-        if (plotSection) {
-            plotSection.style.height = '';
-        }
-        if (chartContainer) {
-            chartContainer.style.height = '';
-        }
+        clearStyle(tableContainer);
+        clearStyle(plotSection);
+        clearStyle(chartContainer);
         return;
     }
 
@@ -21,10 +21,9 @@ export function adjustMobilePanels() {
     const bottomSpacing = 16;
 
     const setPanelHeight = (panel) => {
-        if (!panel || panel.classList.contains('is-hidden')) {
-            if (panel) {
-                panel.style.height = '';
-            }
+        const isHidden = !panel || panel.classList.contains('is-hidden');
+        if (isHidden) {
+            clearStyle(panel);
             return null;
         }
         const rect = panel.getBoundingClientRect();
@@ -35,26 +34,31 @@ export function adjustMobilePanels() {
 
     setPanelHeight(tableContainer);
 
-    if (plotSection && !plotSection.classList.contains('is-hidden')) {
+    const handlePlotSection = (cardHeight) => {
+        if (!chartContainer || cardHeight === null) {
+            return;
+        }
+        const cardStyles = window.getComputedStyle(plotSection);
+        const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
+        const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
+        const legendHeight = legend ? legend.offsetHeight : 0;
+        const legendMargin = legend
+            ? parseFloat(window.getComputedStyle(legend).marginTop) || 0
+            : 0;
+        const innerAvailable = Math.max(
+            160,
+            cardHeight - paddingTop - paddingBottom - legendHeight - legendMargin - 8
+        );
+        chartContainer.style.height = `${innerAvailable}px`;
+    };
+
+    const isPlotHidden = !plotSection || plotSection.classList.contains('is-hidden');
+
+    if (!isPlotHidden) {
         const cardHeight = setPanelHeight(plotSection);
-        if (chartContainer && cardHeight !== null) {
-            const cardStyles = window.getComputedStyle(plotSection);
-            const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
-            const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
-            const legendHeight = legend ? legend.offsetHeight : 0;
-            const legendMargin = legend
-                ? parseFloat(window.getComputedStyle(legend).marginTop) || 0
-                : 0;
-            const innerAvailable = Math.max(
-                160,
-                cardHeight - paddingTop - paddingBottom - legendHeight - legendMargin - 8
-            );
-            chartContainer.style.height = `${innerAvailable}px`;
-        }
-    } else if (chartContainer) {
-        chartContainer.style.height = '';
-        if (plotSection) {
-            plotSection.style.height = '';
-        }
+        handlePlotSection(cardHeight);
+    } else {
+        clearStyle(chartContainer);
+        clearStyle(plotSection);
     }
 }
