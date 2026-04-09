@@ -428,24 +428,36 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         const val = finalContributionData[i].amount;
         if (Number.isFinite(val)) {
             combinedValues.push(val);
-            if (val < rawMin) {rawMin = val;}
-            if (val > rawMax) {rawMax = val;}
+            if (val < rawMin) {
+                rawMin = val;
+            }
+            if (val > rawMax) {
+                rawMax = val;
+            }
         }
     }
     for (let i = 0; i < finalBalanceData.length; i++) {
         const val = finalBalanceData[i].value;
         if (Number.isFinite(val)) {
             combinedValues.push(val);
-            if (val < rawMin) {rawMin = val;}
-            if (val > rawMax) {rawMax = val;}
+            if (val < rawMin) {
+                rawMin = val;
+            }
+            if (val > rawMax) {
+                rawMax = val;
+            }
         }
     }
     for (let i = 0; i < appreciationData.length; i++) {
         const val = appreciationData[i].value;
         if (Number.isFinite(val)) {
             combinedValues.push(val);
-            if (val < rawMin) {rawMin = val;}
-            if (val > rawMax) {rawMax = val;}
+            if (val < rawMin) {
+                rawMin = val;
+            }
+            if (val > rawMax) {
+                rawMax = val;
+            }
         }
     }
 

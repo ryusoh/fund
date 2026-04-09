@@ -175,10 +175,18 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
     for (let i = 0; i < allPoints.length; i++) {
         const time = parseLocalDate(allPoints[i].date).getTime();
         const value = allPoints[i].value;
-        if (time < minTime) {minTime = time;}
-        if (time > maxTime) {maxTime = time;}
-        if (value < dataMin) {dataMin = value;}
-        if (value > dataMax) {dataMax = value;}
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+        if (value > dataMax) {
+            dataMax = value;
+        }
     }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;

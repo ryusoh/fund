@@ -250,7 +250,10 @@ export default {
         try {
             prices = await fetchFromAlpaca(symbols, env);
         } catch (err) {
-            const safeMsg = scrubSecrets(err.message || String(err), [env.ALPACA_API_KEY, env.ALPACA_API_SECRET]);
+            const safeMsg = scrubSecrets(err.message || String(err), [
+                env.ALPACA_API_KEY,
+                env.ALPACA_API_SECRET,
+            ]);
             // eslint-disable-next-line no-console
             console.error('Error fetching from Alpaca:', safeMsg);
             // Alpaca failed or was skipped (extended session) — Yahoo handles everything
@@ -263,7 +266,10 @@ export default {
                 const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
                 Object.assign(prices, yahooPrices);
             } catch (yahooErr) {
-                const safeYahooMsg = scrubSecrets(yahooErr.message || String(yahooErr), [env.ALPACA_API_KEY, env.ALPACA_API_SECRET]);
+                const safeYahooMsg = scrubSecrets(yahooErr.message || String(yahooErr), [
+                    env.ALPACA_API_KEY,
+                    env.ALPACA_API_SECRET,
+                ]);
                 // eslint-disable-next-line no-console
                 console.error('Error fetching from Yahoo:', safeYahooMsg);
                 if (Object.keys(prices).length === 0) {

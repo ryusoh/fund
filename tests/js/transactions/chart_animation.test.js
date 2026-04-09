@@ -21,7 +21,7 @@ describe('Chart animation integration', () => {
 
         // Mock state module completely
         jest.mock('../../../js/transactions/state.js', () => ({
-            transactionState: { activeChart: 'performance' }
+            transactionState: { activeChart: 'performance' },
         }));
 
         const stateMod = await import('../../../js/transactions/state.js');
@@ -33,7 +33,7 @@ describe('Chart animation integration', () => {
     const charts = ['Performance', 'Contribution', 'Fx', 'Pe', 'Concentration', 'Yield'];
 
     describe('stop functions', () => {
-        charts.forEach(chart => {
+        charts.forEach((chart) => {
             test(`stop${chart}Animation stops correct chart`, () => {
                 animation[`stop${chart}Animation`]();
                 expect(mockGlowAnimator.stop).toHaveBeenCalledWith(chart.toLowerCase());
@@ -42,7 +42,7 @@ describe('Chart animation integration', () => {
     });
 
     describe('schedule functions', () => {
-        charts.forEach(chart => {
+        charts.forEach((chart) => {
             describe(`schedule${chart}Animation`, () => {
                 it('stops when animation is not enabled', () => {
                     mockGlowAnimator.isEnabledFor.mockReturnValue(false);
@@ -75,7 +75,7 @@ describe('Chart animation integration', () => {
     });
 
     describe('advance functions', () => {
-        charts.forEach(chart => {
+        charts.forEach((chart) => {
             describe(`advance${chart}Animation`, () => {
                 it('returns 0 when animation is not enabled', () => {
                     mockGlowAnimator.isEnabledFor.mockReturnValue(false);

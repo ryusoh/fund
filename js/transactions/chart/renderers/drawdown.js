@@ -177,9 +177,15 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     for (let i = 0; i < allPoints.length; i++) {
         const time = parseLocalDate(allPoints[i].date).getTime();
         const value = allPoints[i].value;
-        if (time < minTime) {minTime = time;}
-        if (time > maxTime) {maxTime = time;}
-        if (value < dataMin) {dataMin = value;}
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
     }
 
     // Ensure minTime aligns with filter start for correct x-axis labels

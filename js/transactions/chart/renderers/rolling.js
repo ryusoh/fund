@@ -68,10 +68,12 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
         // Pre-parse dates to avoid repeated Date object creation
-        const points = rawPoints.map(p => ({
-            ...p,
-            parsedDate: parseLocalDate(p.date)
-        })).filter(p => p.parsedDate !== null);
+        const points = rawPoints
+            .map((p) => ({
+                ...p,
+                parsedDate: parseLocalDate(p.date),
+            }))
+            .filter((p) => p.parsedDate !== null);
 
         const rollingData = [];
 
@@ -90,7 +92,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
                 j++;
             }
 
-            const startPoint = (points[j] && points[j].parsedDate <= oneYearAgo) ? points[j] : null;
+            const startPoint = points[j] && points[j].parsedDate <= oneYearAgo ? points[j] : null;
 
             if (startPoint && startPoint.value !== 0) {
                 const startVal = convertBetweenCurrencies(

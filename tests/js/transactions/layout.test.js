@@ -38,7 +38,7 @@ describe('adjustMobilePanels', () => {
         window.getComputedStyle = jest.fn().mockReturnValue({
             paddingTop: '10px',
             paddingBottom: '10px',
-            marginTop: '5px'
+            marginTop: '5px',
         });
 
         // Mock offsetHeight

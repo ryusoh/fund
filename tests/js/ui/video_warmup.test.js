@@ -333,7 +333,7 @@ describe('video_warmup.js', () => {
                 require('@ui/video_warmup.js');
             });
             expect(true).toBe(true);
-        } catch (e) {
+        } catch {
             // It will throw because video_warmup.js accesses `window.location.href`, etc.
             // But we hit line 4
         } finally {

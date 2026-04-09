@@ -193,7 +193,7 @@ describe('nav_current_page', () => {
         // Temporarily intercept document.querySelectorAll so it returns our link.
         const originalQuerySelectorAll = document.querySelectorAll.bind(document);
         document.querySelectorAll = jest.fn((sel) => {
-            if (sel === '.nav-link') {
+            if (sel === '.container a, .nav-container a') {
                 return [standaloneLink];
             }
             return originalQuerySelectorAll(sel);

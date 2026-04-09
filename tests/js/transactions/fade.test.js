@@ -240,7 +240,7 @@ describe('fade.js early returns', () => {
         // create a fake children list where one is explicitly falsy
         Object.defineProperty(outputContainer, 'children', {
             get: () => [null, undefined],
-            configurable: true
+            configurable: true,
         });
         mod.requestFadeUpdate(outputContainer);
         // Should not throw
