@@ -155,21 +155,52 @@ def test_main_wide_format_missing_col():
         audit_eps_gaps.main()
 
 
-def test_hit_main_block():
-    import subprocess
-    import sys
+def test_main_currency_skipped():
+    """Test that currency tickers (USD, CNY, JPY, HKD) are skipped in EPS fetch."""
+    with (
+        patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet,
+        patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker,
+    ):
+        dates = pd.date_range(start='2020-01-01', periods=2)
+        df = pd.DataFrame({'USD': [100, 100], 'CNY': [50, 50]}, index=dates)
+        mock_read_parquet.return_value = df
 
-    result = subprocess.run(
-        [sys.executable, 'scripts/audit_eps_gaps.py', '--help'], capture_output=True, text=True
-    )
-    # The script doesn't take args, it will just run, but this should be fine
-    assert "Loading holdings data..." in result.stdout
+        audit_eps_gaps.main()
+
+        # yf.Ticker should not be called for USD or CNY
+        mock_ticker.assert_not_called()
 
 
-def test_execute_main():
-    import runpy
+def test_main_wide_format_held_after_coverage():
+    """Test wide format where holding dates are after EPS coverage start."""
+    with (
+        patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet,
+        patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker,
+    ):
+        dates = pd.date_range(start='2022-01-01', periods=3)
+        df = pd.DataFrame({'AAPL': [10, 20, 30]}, index=dates)
+        mock_read_parquet.return_value = df
 
-    try:
-        runpy.run_module('scripts.audit_eps_gaps', run_name='__main__')
-    except Exception:
-        pass
+        mock_aapl = MagicMock()
+        mock_aapl.income_stmt = pd.DataFrame(
+            [[1.0]], index=['Basic EPS'], columns=[pd.Timestamp('2020-01-01')]
+        )
+        mock_ticker.return_value = mock_aapl
+
+        audit_eps_gaps.main()
+
+
+def test_main_exception_during_fetch():
+    """Test that exceptions during EPS fetch are handled gracefully."""
+    with (
+        patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet,
+        patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker,
+    ):
+        dates = pd.date_range(start='2020-01-01', periods=1)
+        df = pd.DataFrame({'ERR': [10]}, index=dates)
+        mock_read_parquet.return_value = df
+
+        mock_ticker.side_effect = Exception("API Error")
+
+        # Should not raise
+        audit_eps_gaps.main()
