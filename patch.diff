@@ -1,0 +1,12 @@
+<<<<<<< SEARCH
+        const result3 = engine.update('bullish', -1.0); // clamped to 0
+        // it updates the priors in place!
+        // So engine state was already updated.
+    });
+});
+=======
+        const result3 = engine.update('bullish', -1.0); // clamped to 0
+        expect(result3).toBeDefined();
+    });
+});
+>>>>>>> REPLACE

@@ -167,7 +167,6 @@ describe('BayesianEngine', () => {
         expect(result1[0].prob).toBeCloseTo(result2[0].prob);
 
         const result3 = engine.update('bullish', -1.0); // clamped to 0
-        // it updates the priors in place!
-        // So engine state was already updated.
+        expect(result3).toBeDefined();
     });
 });
