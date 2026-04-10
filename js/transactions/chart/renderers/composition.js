@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import {
     transactionState,
     getCompositionFilterTickers,
@@ -518,7 +519,8 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             compositionDataCache = data;
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {
