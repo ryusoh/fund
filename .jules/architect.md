@@ -33,3 +33,5 @@
 - **Action:** Decomposed the 36-complexity formatNumber into targeted functional blocks (resolveSuffixAndValue, calculatePrecision, formatNumberWithSign, formatWithoutSign) allowing the main entry point to drop to a complexity of 9, dramatically improving testability and readability.
 - **Issue:** High cyclomatic complexity in `isLocalhost` function in `js/utils/host.js`.
 - **Action:** Refactored conditional logic to combine `if` statements and used a `Set` for loopback domains, reducing cyclomatic complexity from 14 to under 10.
+- Refactored `handlePlotCommand` in `js/transactions/terminal/handlers/plot.js` to reduce cyclomatic complexity from 167 to under 10 by extracting the massive switch statement into a dictionary of handler functions.
+- Ensured 100% test passage by preserving exact string matching for expected output formats.
