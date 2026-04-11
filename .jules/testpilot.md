@@ -11,3 +11,9 @@ Result: `pnpm run verify:all` passes successfully, pushing overall coverage clos
 What: Improved test coverage for `js/ui/nav_current_page.js`, `js/ui/service_worker_register.js`, and `js/ui/video_warmup.js`.
 Coverage: Brought all three files to 100% test coverage using JSDOM environment overrides.
 Result: Expanded coverage metrics safely. Added tests correctly intercepting mocked variables (`navigator.serviceWorker`, `window.location`, and `document.querySelectorAll`).
+
+## 2024-05-20
+
+What: Improved test coverage for `js/pages/analysis/bayes.js`, `js/pages/calendar/displayCache.js`, and `js/config/assetClasses.js`.
+Coverage: Brought all three files to 100% test coverage using Jest tests.
+Result: Targeted 5 edge cases for 'bayes', 'displayCache' and 'assetClasses' functions. Hit 100% missing coverages on displayCache and assetClasses, and increased bayes testing for edge cases to reach 100% coverage.
