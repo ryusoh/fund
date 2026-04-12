@@ -258,11 +258,20 @@ function weightedLocalRegression(data, index, bandwidth) {
     const n = data.length;
     const targetX = data[index].x;
 
+    // Bolt: Calculate max distance once outside the loop to avoid O(N^2) allocations
+    // and reduce the algorithm's overall complexity from O(N^3) to O(N^2).
+    let maxDistance = 0;
+    for (let i = 0; i < n; i++) {
+        const dist = Math.abs(data[i].x - targetX);
+        if (dist > maxDistance) {
+            maxDistance = dist;
+        }
+    }
+
     // Calculate weights using tricube function
     const weights = [];
     for (let i = 0; i < n; i++) {
         const distance = Math.abs(data[i].x - targetX);
-        const maxDistance = Math.max(...data.map((p) => Math.abs(p.x - targetX)));
         const normalizedDistance = distance / (bandwidth * maxDistance);
 
         if (normalizedDistance < 1) {

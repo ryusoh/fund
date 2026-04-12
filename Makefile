@@ -17,6 +17,8 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 		 scripts/twrr/step04_compute_holdings.py \
 	 scripts/data/fetch_ticker_metadata.py \
 	 scripts/generate_composition_data.py \
+	 scripts/generate_geography_data.py \
+	 scripts/generate_marketcap_from_composition.py \
 	 scripts/generate_pe_data.py \
 	 scripts/generate_yield_data.py \
 	 scripts/twrr/step05_cashflows.py \
@@ -71,7 +73,7 @@ precommit: hooks fmt-check
 # Any new checks added here must work in CI (no local-only tools/paths)
 precommit-fix: fmt lint-fix markdownlint-fix js-test
 	$(PY) -m ruff check --fix scripts tests
-	$(PY) -m pytest
+	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
 	git checkout data/transactions.csv 2>/dev/null || true; \
@@ -123,7 +125,7 @@ js-test:
 	npm test
 
 test: js-test
-	$(PY) -m pytest
+	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
 verify: lint type sec test
 

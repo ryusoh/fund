@@ -112,6 +112,28 @@ class TestCommands(unittest.TestCase):
         holdings._run(args)
         self.assertTrue(mock_main.called)
 
+    @patch('scripts.commands.holdings.sys')
+    def test_holdings_run_buy_missing_args(self, mock_sys):
+        args = MagicMock()
+        args.action = 'buy'
+        args.ticker = 'AAPL'
+        args.shares = '10'
+        args.price = None
+        with self.assertRaises(SystemExit) as cm:
+            holdings._run(args)
+        self.assertIn("buy requires ticker, shares, and price", str(cm.exception))
+
+    @patch('scripts.commands.holdings.sys')
+    def test_holdings_run_sell_missing_args(self, mock_sys):
+        args = MagicMock()
+        args.action = 'sell'
+        args.ticker = 'AAPL'
+        args.shares = None
+        args.price = None
+        with self.assertRaises(SystemExit) as cm:
+            holdings._run(args)
+        self.assertIn("sell requires ticker, shares, and price", str(cm.exception))
+
     @patch('scripts.commands.tickers.Path')
     def test_tickers_run(self, mock_path):
         args = MagicMock()
@@ -159,6 +181,21 @@ class TestCommands(unittest.TestCase):
         mock_action = MagicMock()
         mock_action.option_strings = ['--file']
         mock_parser._actions = [mock_action]
+
+        class MockFilesCompleter:
+            pass
+
+        with patch.dict(
+            sys.modules, {'argcomplete.completers': MagicMock(FilesCompleter=MockFilesCompleter)}
+        ):
+            tickers.add_parser(mock_subparsers)
+
+    @patch('scripts.commands.tickers.argparse._SubParsersAction')
+    def test_tickers_add_parser_exception_setup(self, mock_subparsers):
+        mock_parser = MagicMock()
+        mock_subparsers.add_parser.return_value = mock_parser
+        mock_parser._actions = MagicMock()
+        mock_parser._actions.__iter__.side_effect = Exception("test")
         tickers.add_parser(mock_subparsers)
 
     @patch('scripts.portfolio.manage_holdings.main', side_effect=SystemExit(0))
@@ -188,6 +225,56 @@ class TestCommands(unittest.TestCase):
         mock_parser = MagicMock()
         mock_subparsers.add_parser.return_value = mock_parser
         holdings.add_parser(mock_subparsers)
+
+    @patch('scripts.commands.holdings.argparse._SubParsersAction')
+    def test_holdings_add_parser_has_completer(self, mock_subparsers):
+        mock_parser = MagicMock()
+        mock_subparsers.add_parser.return_value = mock_parser
+        mock_action1 = MagicMock()
+        mock_action1.option_strings = ["--file"]
+        mock_action2 = MagicMock()
+        mock_action2.dest = "ticker"
+        mock_action3 = MagicMock()
+        mock_action3.dest = "action"
+        mock_action3.__dict__ = {'choices': ['buy', 'sell']}
+        mock_parser._actions = [mock_action1, mock_action2, mock_action3]
+
+        # In python, the import inside the try block actually evaluates if argcomplete is installed.
+        # If it's not, it skips this block. We must mock the import of argcomplete so it succeeds.
+        class MockFilesCompleter:
+            pass
+
+        class MockChoicesCompleter:
+            def __init__(self, choices):
+                self.choices = choices
+
+        with patch.dict(
+            sys.modules,
+            {
+                'argcomplete.completers': MagicMock(
+                    FilesCompleter=MockFilesCompleter, ChoicesCompleter=MockChoicesCompleter
+                )
+            },
+        ):
+            # We also need to inject FilesCompleter locally into the module since we patch sys.modules,
+            # or we can just let `import` find our patch.
+            holdings.add_parser(mock_subparsers)
+
+    @patch('scripts.commands.holdings.argparse._SubParsersAction')
+    def test_holdings_add_parser_has_completer_none(self, mock_subparsers):
+        mock_parser = MagicMock()
+        mock_subparsers.add_parser.return_value = mock_parser
+        mock_action1 = MagicMock()
+        mock_action1.option_strings = ["--file"]
+        mock_parser._actions = [mock_action1]
+
+        # We need to simulate FilesCompleter being None.
+        # But FilesCompleter is an optional dependency, so it's not None by default in tests.
+        # So we mock it in the import.
+        import sys
+
+        with patch.dict(sys.modules, {'argcomplete.completers': None}):
+            holdings.add_parser(mock_subparsers)
 
     def test_holdings_ticker_completer(self):
         # get the completer from the parser
@@ -291,6 +378,37 @@ class TestCommands(unittest.TestCase):
         args.file = 'test.json'
         args.transactions = 'test.csv'
         holdings._run(args)
+
+    @patch('scripts.portfolio.manage_holdings.main')
+    @patch('scripts.commands.holdings.sys')
+    def test_holdings_args_passed_missing_file_and_transactions(self, mock_sys, mock_main):
+        args = MagicMock()
+        args.action = 'list'
+        args.file = None
+        args.transactions = None
+        holdings._run(args)
+
+    @patch('scripts.commands.holdings.sys')
+    @patch('scripts.commands.holdings.json.load')
+    @patch('scripts.commands.holdings.Path')
+    def test_holdings_ticker_completer_exception_catch(self, mock_path, mock_json, mock_sys):
+        # We need to cover the `except Exception as e:` block inside `ticker_completer`.
+        parser = create_parser()
+        args = MagicMock()
+        args.file = None
+
+        mock_file = MagicMock()
+        mock_file.exists.return_value = True
+        mock_file.open.return_value.__enter__.return_value = MagicMock()
+        mock_path.return_value = mock_file
+
+        # Make json.load throw an exception to hit the except block inside the completer
+        mock_json.side_effect = Exception("json load error")
+
+        for act in parser._subparsers._group_actions[0].choices['holdings']._actions:
+            if getattr(act, "dest", "") == "ticker":
+                res = act.completer("a", args)
+                self.assertEqual(res, [])
 
 
 class TestDoctorHelpers(unittest.TestCase):
@@ -503,7 +621,9 @@ class TestDoctorHelpers(unittest.TestCase):
         doctor._run(args)
 
         # Verify that _warn was called indicating argcomplete was not importable
-        mock_warn.assert_any_call("argcomplete not importable: Mocked exception. Install with: pip install argcomplete")
+        mock_warn.assert_any_call(
+            "argcomplete not importable: Mocked exception. Install with: pip install argcomplete"
+        )
 
 
 class TestCompleteDebug(unittest.TestCase):
@@ -598,6 +718,7 @@ class TestCompleteDebug(unittest.TestCase):
 
     def test_complete_debug_get_top_commands_match(self):
         import argparse
+
         mock_parser = MagicMock()
         mock_action = MagicMock(spec=argparse._SubParsersAction)
         mock_action.choices = {"holdings": MagicMock(), "fund-data": MagicMock()}
@@ -611,6 +732,7 @@ class TestCLIEdgeCases(unittest.TestCase):
     @patch('scripts.cli.importlib.import_module')
     def test_cli_load_command_modules_exception(self, mock_import, mock_iter):
         from scripts.cli import _load_command_modules
+
         mock_iter.return_value = [MagicMock(name="mock_mod")]
         mock_import.side_effect = Exception("Mocked exception")
         names = _load_command_modules()
@@ -652,6 +774,7 @@ class TestCLIEdgeCases(unittest.TestCase):
 
     def test_cli_module_execution(self):
         import runpy
+
         # To avoid the actual main executing and causing SystemExit, we just catch SystemExit
         # Wait, if we mock scripts.cli.main we shouldn't execute the real one.
         # run_module re-imports the code and executes it, which doesn't use the patched scripts.cli.main
@@ -663,6 +786,7 @@ class TestCLIEdgeCases(unittest.TestCase):
                     runpy.run_module("scripts.cli", run_name="__main__")
                 except Exception:
                     pass
+
 
 if __name__ == '__main__':
     unittest.main()

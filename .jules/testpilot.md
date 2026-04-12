@@ -1,15 +1,19 @@
-## 2024-05-30 - Testing Asynchronous Imports and Global Properties in Jest
+To test web workers defined purely with `self.onmessage`, you can load the script as a string, use `eval()` to bind it within a mocked `global.self` environment, and then manually trigger `self.onmessage`.
 
-**Learning:** When using dynamic imports (\`import(...)\`) in Jest tests, the returned promise must be either \`await\`ed or explicitly returned from the test block. Failing to do so causes floating promises, where Jest finishes synchronous execution prematurely and results in false-positive test passes. Additionally, when mocking global \`window\` properties like \`window.innerWidth\` in Jest/JSDOM tests, use \`Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: X });\` instead of direct assignment, as direct assignment either fails silently or throws an error depending on strict mode.
+## 2024-05-18
 
-**Action:** Always use \`await\` or \`return\` when dealing with dynamic imports inside test cases. Use \`Object.defineProperty\` for mocking global browser objects.
+What: Added 100% code coverage to `js/utils/formatting.js`, `scripts/commands/holdings.py`, and `scripts/commands/tickers.py`.
+Coverage: +3 previously missing coverage points addressed and covered in edge cases and unhandled exception branches.
+Result: `pnpm run verify:all` passes successfully, pushing overall coverage closer to 100%. No production logic was modified.
 
-## 2024-05-31 - Testing Global DOM Event Listeners
+## 2024-05-19
 
-**Learning:** When testing global DOM event listeners in Jest, if `document.dispatchEvent` is mocked globally (e.g., in a `beforeEach` block with `jest.spyOn(document, 'dispatchEvent')`), custom events dispatched manually (e.g., `document.dispatchEvent(new CustomEvent(...))`) will be intercepted and the actual listener callbacks will not fire. This prevents testing internal event handler logic.
-**Action:** Use `document.dispatchEvent.mockRestore()` within the specific test blocks where the actual execution of the global event listener logic needs to be verified.
+What: Improved test coverage for `js/ui/nav_current_page.js`, `js/ui/service_worker_register.js`, and `js/ui/video_warmup.js`.
+Coverage: Brought all three files to 100% test coverage using JSDOM environment overrides.
+Result: Expanded coverage metrics safely. Added tests correctly intercepting mocked variables (`navigator.serviceWorker`, `window.location`, and `document.querySelectorAll`).
 
-## 2024-11-13 - Handling Async Microtasks with Fake Timers
+## 2024-05-20
 
-**Learning:** When testing asynchronous `Promise` chains (like `fetch().then().finally()`) that are tightly coupled with macroscopic timer functions (like `setTimeout` or `requestIdleCallback`) inside an IIFE, using standard `jest.useFakeTimers()` can cause test hangs or timeouts if `jest.advanceTimersByTime` is called before microtasks resolve. The microtask queue (Promises) must be explicitly awaited using `await jest.advanceTimersByTimeAsync(ms)` or `await Promise.resolve()` inside a loop to ensure callbacks are executed properly without deadlocking the Jest environment.
-**Action:** Do not use custom synchronous `Promise` mock implementations. Instead, use `await jest.advanceTimersByTimeAsync()` to properly progress both fake timers and the microtask queue simultaneously.
+What: Improved test coverage for `js/pages/analysis/bayes.js`, `js/pages/calendar/displayCache.js`, and `js/config/assetClasses.js`.
+Coverage: Brought all three files to 100% test coverage using Jest tests.
+Result: Targeted 5 edge cases for 'bayes', 'displayCache' and 'assetClasses' functions. Hit 100% missing coverages on displayCache and assetClasses, and increased bayes testing for edge cases to reach 100% coverage.

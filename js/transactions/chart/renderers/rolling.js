@@ -64,27 +64,35 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
 
     // Transform cumulative TWRR into rolling 1Y returns
     const allPossibleSeries = orderedKeys.map((key) => {
-        const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
+        // Pre-parse dates to avoid repeated Date object creation
+        const points = rawPoints
+            .map((p) => ({
+                ...p,
+                parsedDate: parseLocalDate(p.date),
+            }))
+            .filter((p) => p.parsedDate !== null);
+
         const rollingData = [];
+
+        // Use a sliding window approach to find the start point (closest to 1 year ago)
+        let j = 0;
+
         for (let i = 0; i < points.length; i++) {
             const currentPoint = points[i];
-            const currentDate = parseLocalDate(currentPoint.date);
+            const currentDate = currentPoint.parsedDate;
             const oneYearAgo = new Date(currentDate);
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-            // Finding point closest to 1 year ago
-            let startPoint = null;
-            // Optimistic search: points are chronological.
-            // We can search backwards from current index.
-            for (let j = i - 1; j >= 0; j--) {
-                const d = parseLocalDate(points[j].date);
-                if (d <= oneYearAgo) {
-                    startPoint = points[j];
-                    break;
-                }
+            // Advance the start pointer 'j' to find the closest point <= oneYearAgo
+            // Since points are chronological, 'j' will never need to go backwards
+            while (j < i && points[j + 1].parsedDate <= oneYearAgo) {
+                j++;
             }
+
+            const startPoint = points[j] && points[j].parsedDate <= oneYearAgo ? points[j] : null;
 
             if (startPoint && startPoint.value !== 0) {
                 const startVal = convertBetweenCurrencies(
@@ -136,32 +144,56 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredSeries = seriesToDraw.map((s) => ({
-        ...s,
-        data: s.data.filter((d) => {
+    const filteredSeries = [];
+    const allPoints = [];
+    for (let i = 0; i < seriesToDraw.length; i++) {
+        const s = seriesToDraw[i];
+        const validData = [];
+        for (let j = 0; j < s.data.length; j++) {
+            const d = s.data[j];
             const dt = parseLocalDate(d.date);
-            return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
-        }),
-    }));
-
-    const allPoints = filteredSeries.flatMap((s) => s.data);
+            if ((!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo)) {
+                validData.push(d);
+                allPoints.push(d);
+            }
+        }
+        filteredSeries.push({ ...s, data: validData });
+    }
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;
     }
 
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+    // Bolt: Replaced O(N) Array.map() + spread operator with a single inline loop for min/max
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const point = allPoints[i];
+        const time = parseLocalDate(point.date).getTime();
+        const value = point.value;
+
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+        if (value > dataMax) {
+            dataMax = value;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
 
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.1, 5);
     const yMin = dataMin - yPadding;

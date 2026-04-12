@@ -32,7 +32,7 @@ def build_fx_json_optimized(fx_df: pd.DataFrame) -> dict[str, Any]:
 
     # We need to convert the index to string format %Y-%m-%d
     df_copy = fx_df[SUPPORTED_CURRENCIES].copy()
-    df_copy.index = df_copy.index.strftime('%Y-%m-%d')
+    df_copy.index = pd.DatetimeIndex(df_copy.index).strftime('%Y-%m-%d')
     rates = df_copy.to_dict(orient='index')
 
     return {

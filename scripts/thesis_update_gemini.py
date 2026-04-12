@@ -7,7 +7,10 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from utils.security_utils import scrub_secrets
 
 try:
     import google.generativeai as genai
@@ -96,7 +99,7 @@ def call_gemini(
     temperature: float,
     max_output_tokens: int,
     allow_unsafe: bool,
-    safety_settings_override: Optional[List[genai.types.SafetySetting]] = None,
+    safety_settings_override: Optional[List[Any]] = None,
 ) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -246,7 +249,7 @@ def main(argv: List[str]) -> int:
     except Exception as exc:  # pragma: no cover - runtime error path
         error_msg = str(exc)
         if api_key:
-            error_msg = error_msg.replace(api_key, "***")
+            error_msg = scrub_secrets(error_msg, [api_key])
         raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
 
     print(output_text)

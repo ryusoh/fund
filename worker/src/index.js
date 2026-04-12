@@ -1,6 +1,20 @@
 const ALPACA_SNAPSHOTS_URL = 'https://data.alpaca.markets/v2/stocks/snapshots';
 const ALLOWED_ORIGIN = 'https://fund.lyeutsaon.com';
 
+function scrubSecrets(text, secrets) {
+    let scrubbed = String(text);
+    for (const secret of secrets) {
+        if (secret) {
+            scrubbed = scrubbed.split(secret).join('***');
+            scrubbed = scrubbed.split(encodeURIComponent(secret)).join('***');
+            // Also scrub form-encoded variants (spaces as +)
+            const formEncoded = encodeURIComponent(secret).replace(/%20/g, '+');
+            scrubbed = scrubbed.split(formEncoded).join('***');
+        }
+    }
+    return scrubbed;
+}
+
 // TTL in seconds per trading session
 const TTL = {
     regular: 60, // 09:30–16:00 ET Mon–Fri
@@ -238,7 +252,13 @@ export default {
         let prices = {};
         try {
             prices = await fetchFromAlpaca(symbols, env);
-        } catch {
+        } catch (err) {
+            const safeMsg = scrubSecrets(err.message || String(err), [
+                env.ALPACA_API_KEY,
+                env.ALPACA_API_SECRET,
+            ]);
+            // eslint-disable-next-line no-console
+            console.error('Error fetching from Alpaca:', safeMsg);
             // Alpaca failed or was skipped (extended session) — Yahoo handles everything
         }
 
@@ -249,6 +269,12 @@ export default {
                 const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
                 Object.assign(prices, yahooPrices);
             } catch (yahooErr) {
+                const safeYahooMsg = scrubSecrets(yahooErr.message || String(yahooErr), [
+                    env.ALPACA_API_KEY,
+                    env.ALPACA_API_SECRET,
+                ]);
+                // eslint-disable-next-line no-console
+                console.error('Error fetching from Yahoo:', safeYahooMsg);
                 if (Object.keys(prices).length === 0) {
                     // 3. Both sources failed entirely — serve last-known-good value (stale-on-error)
                     const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
@@ -256,7 +282,7 @@ export default {
                         return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
                     }
                     return jsonResponse(
-                        { error: 'Failed to fetch prices', detail: yahooErr.message },
+                        { error: 'Failed to fetch prices', detail: safeYahooMsg },
                         502,
                         origin
                     );
