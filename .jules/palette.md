@@ -40,3 +40,15 @@
 **Learning:** Adding a `:focus-visible` outline to a container with rounded corners (`border-radius`, like 8px or 16px) results in a harsh, squared-off focus box that ignores the container's curved edges. This breaks the visual polish and fluidity of the UX during keyboard navigation.
 
 **Action:** Always explicitly set a matching `border-radius` on the `:focus-visible` state of rounded containers so the focus ring smoothly aligns with the container's curved edges.
+
+## 2026-03-26 - Scrollable Text Containers Need tabindex
+
+**Learning:** Text containers with `overflow-y: auto` (like the terminal output window) must be explicitly focusable so keyboard-only users can scroll through the content history. Without `tabindex="0"`, arrow keys will scroll the whole page instead of the specific container, making long logs inaccessible.
+
+**Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to internally scrollable text areas or log outputs to enable keyboard scrolling.
+
+## 2026-04-11 - Footer Navigation Focus Accessibility
+
+**Learning:** The application explicitly stripped custom cursor attributes (`cursor: none !important;`) from footer links (`footer a`) to override default pointer styling, but simultaneously forgot to provide keyboard focus states (`:focus-visible`). This makes the GitHub profile link in the footer inaccessible for keyboard-only users who cannot perceive their tab position.
+
+**Action:** Always complement navigational footer links with explicit `:focus-visible` styling (`outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 4px;`) whenever interfering with default browser interactive styling, ensuring the links remain identifiable for keyboard navigation.

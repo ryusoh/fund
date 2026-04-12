@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import urllib.parse
 from pathlib import Path
 from typing import Any, List, Optional
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from utils.security_utils import scrub_secrets
 
 try:
     import google.generativeai as genai
@@ -247,8 +249,7 @@ def main(argv: List[str]) -> int:
     except Exception as exc:  # pragma: no cover - runtime error path
         error_msg = str(exc)
         if api_key:
-            error_msg = error_msg.replace(api_key, "***")
-            error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
+            error_msg = scrub_secrets(error_msg, [api_key])
         raise SystemExit(f"Gemini API call failed: {error_msg}") from exc
 
     print(output_text)

@@ -26,10 +26,13 @@ import tempfile
 import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent))
 from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 import requests
+from utils.security_utils import scrub_secrets
 
 try:
     import yfinance as yf
@@ -1036,8 +1039,7 @@ def scrape_wsj_forward_pe() -> Optional[float]:
     except Exception as e:
         error_msg = str(e)
         if scraper_api_key:
-            error_msg = error_msg.replace(scraper_api_key, "***")
-            error_msg = error_msg.replace(urllib.parse.quote(scraper_api_key), "***")
+            error_msg = scrub_secrets(error_msg, [scraper_api_key])
         print(f"WSJ scrape failed: {error_msg}")
     return None
 

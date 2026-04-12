@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import {
     transactionState,
     getCompositionFilterTickers,
@@ -55,14 +56,18 @@ function buildCompositionDisplayOrder(
     if (!Array.isArray(baseOrder) || baseOrder.length === 0) {
         return { order: [], filteredOthers: null };
     }
-    const normalizedFilter = Array.isArray(filterTickers)
-        ? filterTickers.map((ticker) => ticker.toUpperCase()).filter(Boolean)
-        : [];
-    if (normalizedFilter.length === 0) {
+    const filterSet = new Set();
+    if (Array.isArray(filterTickers)) {
+        for (let i = 0; i < filterTickers.length; i += 1) {
+            const ticker = filterTickers[i];
+            if (ticker) {
+                filterSet.add(ticker.toUpperCase());
+            }
+        }
+    }
+    if (filterSet.size === 0) {
         return { order: [...baseOrder], filteredOthers: null };
     }
-
-    const filterSet = new Set(normalizedFilter);
     const selectedOrder = baseOrder.filter((ticker) => filterSet.has(ticker.toUpperCase()));
     if (selectedOrder.length === 0) {
         return { order: [...baseOrder], filteredOthers: null };
@@ -115,24 +120,21 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredIndices = rawDates
-        .map((dateStr, index) => {
-            const date = parseLocalDate(dateStr);
-            return { index, date };
-        })
-        .filter(({ date }) => {
-            if (!date || Number.isNaN(date.getTime())) {
-                return false;
-            }
-            if (filterFrom && date < filterFrom) {
-                return false;
-            }
-            if (filterTo && date > filterTo) {
-                return false;
-            }
-            return true;
-        })
-        .map(({ index }) => index);
+    // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
+    const filteredIndices = [];
+    for (let i = 0; i < rawDates.length; i += 1) {
+        const date = parseLocalDate(rawDates[i]);
+        if (!date || Number.isNaN(date.getTime())) {
+            continue;
+        }
+        if (filterFrom && date < filterFrom) {
+            continue;
+        }
+        if (filterTo && date > filterTo) {
+            continue;
+        }
+        filteredIndices.push(i);
+    }
 
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
@@ -517,7 +519,8 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             compositionDataCache = data;
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {
