@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import { transactionState } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import { loadGeographySnapshotData } from '../../dataLoader.js';
@@ -351,7 +352,8 @@ function drawGeographyChartLoader(ctx, chartManager, valueMode) {
             geographyDataCache = data;
             renderGeographyChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

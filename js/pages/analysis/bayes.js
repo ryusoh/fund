@@ -24,7 +24,7 @@ export class BayesianEngine {
 
         let marginalLikelihood = 0;
         const posteriors = this.priors.map((prior) => {
-            const likelihood = likelihoods[prior.id] || 0.5; // Default to uninformative
+            const likelihood = likelihoods[prior.id] !== undefined ? likelihoods[prior.id] : 0.5; // Default to uninformative
             const unnormalized = prior.prob * likelihood;
             marginalLikelihood += unnormalized;
             return { ...prior, unnormalized };

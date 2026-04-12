@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import { transactionState } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import {
@@ -384,7 +385,8 @@ function drawMarketcapChartLoader(ctx, chartManager, valueMode) {
             marketcapDataCache = data;
             renderMarketcapChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

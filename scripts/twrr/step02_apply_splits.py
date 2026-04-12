@@ -109,14 +109,20 @@ def apply_split_adjustments(transactions: pd.DataFrame, splits: pd.DataFrame) ->
         factors = np.ones(len(trade_idx), dtype='float64')
 
         sec_splits = sec_splits.sort_values('split_date')
-        date_idx = int(sec_splits.columns.get_loc('split_date')) + 1  # type: ignore[arg-type]
-        factor_idx = int(sec_splits.columns.get_loc('split_factor')) + 1  # type: ignore[arg-type]
+        split_dates = sec_splits['split_date'].to_numpy()
+        split_factors = sec_splits['split_factor'].to_numpy()
 
-        for split_row in sec_splits.itertuples(index=True, name=None):
-            split_date = split_row[date_idx]
-            split_factor = split_row[factor_idx]
-            mask = trade_dates < np.datetime64(split_date)
-            factors[mask] *= split_factor
+        # Cumulative product of factors from latest to earliest.
+        # A trade before the Nth split date is adjusted by factors of splits N, N+1, ... M.
+        rev_cum_factors = np.cumprod(split_factors[::-1])[::-1]
+
+        # Find which splits each trade is subject to.
+        # side='right' finds index i such that split_dates[i-1] <= trade_date < split_dates[i].
+        # All splits from index i onwards are applied to the trade.
+        split_indices = np.searchsorted(split_dates, trade_dates, side='right')
+
+        valid_mask = split_indices < len(rev_cum_factors)
+        factors[valid_mask] = rev_cum_factors[split_indices[valid_mask]]
 
         transactions.loc[trade_idx, 'split_adjustment_factor'] = factors
 

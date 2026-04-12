@@ -61,7 +61,8 @@ describe('getFinancialStatsText', () => {
             return mockFetchResponse(payload);
         });
 
-        const { getFinancialStatsText } = await import('@js/transactions/terminal/stats/financial.js');
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
         const snapshot = await getFinancialStatsText();
 
         expect(global.fetch).toHaveBeenCalledWith(
@@ -110,7 +111,8 @@ describe('getFinancialStatsText', () => {
             return mockFetchResponse(payload);
         });
 
-        const { getFinancialStatsText } = await import('@js/transactions/terminal/stats/financial.js');
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
         const snapshot = await getFinancialStatsText();
 
         expect(snapshot).toContain('18.50 / 17.20');
@@ -153,7 +155,8 @@ describe('getFinancialStatsText', () => {
             return mockFetchResponse(payload);
         });
 
-        const { getTechnicalStatsText } = await import('@js/transactions/terminal/stats/financial.js');
+        const { getTechnicalStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
         const snapshot = await getTechnicalStatsText();
 
         expect(snapshot).toContain('TECHNICAL SNAPSHOT');
@@ -170,7 +173,8 @@ describe('getFinancialStatsText', () => {
             })
         );
 
-        const { getFinancialStatsText } = await import('@js/transactions/terminal/stats/financial.js');
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
         const snapshot = await getFinancialStatsText();
 
         expect(snapshot).toBe('Error loading financial analysis data.');

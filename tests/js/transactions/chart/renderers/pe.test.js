@@ -66,9 +66,9 @@ describe('getPESnapshotText', () => {
     it('returns formatted stats', async () => {
         mockState.chartLayouts.pe = {
             rawSeries: [
-                { date: new Date('2023-01-01'), pe: 15 },
-                { date: new Date('2023-01-02'), pe: 20 },
-                { date: new Date('2023-01-03'), pe: 10 },
+                { date: new Date(2023, 0, 1), pe: 15 },
+                { date: new Date(2023, 0, 2), pe: 20 },
+                { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
         const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
@@ -81,9 +81,9 @@ describe('getPESnapshotText', () => {
         mockState.transactionState.chartDateRange = { from: '2023-01-02', to: '2023-01-02' };
         mockState.chartLayouts.pe = {
             rawSeries: [
-                { date: new Date('2023-01-01'), pe: 15 },
-                { date: new Date('2023-01-02'), pe: 20 },
-                { date: new Date('2023-01-03'), pe: 10 },
+                { date: new Date(2023, 0, 1), pe: 15 },
+                { date: new Date(2023, 0, 2), pe: 20 },
+                { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
         const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
@@ -94,7 +94,7 @@ describe('getPESnapshotText', () => {
 
     it('handles forward PE formatting', async () => {
         mockState.chartLayouts.pe = {
-            rawSeries: [{ date: new Date('2023-01-01'), pe: 15 }],
+            rawSeries: [{ date: new Date(2023, 0, 1), pe: 15 }],
             forwardPE: {
                 portfolio_forward_pe: 18,
                 benchmark_forward_pe: { '^GSPC': 22 },

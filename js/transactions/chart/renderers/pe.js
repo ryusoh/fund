@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import { transactionState } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import { mountainFill, CHART_LINE_WIDTHS } from '../../../config.js';
@@ -136,7 +137,8 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 peDataCache = data;
                 chartManager.redraw();
             })
-            .catch(() => {
+            .catch((error) => {
+                logger.warn('Caught exception:', error);
                 chartLayouts.pe = null;
                 updateCrosshairUI(null, null);
                 if (emptyState) {

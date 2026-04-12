@@ -270,6 +270,103 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should handle startLoop and multiple frames', () => {
+        jest.useFakeTimers();
+        const effect = new TableGlassEffect('.table-responsive-container');
+
+        effect.draw = jest.fn();
+        effect.update = jest.fn();
+
+        // Advance timers to trigger recursive loop
+        jest.advanceTimersByTime(100);
+
+        expect(effect.update).toHaveBeenCalled();
+        expect(effect.draw).toHaveBeenCalled();
+
+        effect.dispose();
+        jest.useRealTimers();
+    });
+
+    it('should resolve point at progress for rounded rectangle', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.width = 100;
+        effect.height = 50;
+
+        const p1 = effect.getPointAtProgress(0.1, 10); // dist = 0.1 * 300 = 30
+        expect(p1.x).toBeGreaterThan(0);
+
+        // Cover bottom-right curve
+        const p2 = effect.getPointAtProgress(0.6, 10);
+        expect(p2).toBeDefined();
+
+        // Cover left border
+        const p3 = effect.getPointAtProgress(0.9, 10);
+        expect(p3.x).toBeDefined();
+
+        // Progress zero radius fallbacks
+        const p4 = effect.getPointAtProgressZeroRadius(0.1);
+        expect(p4.x).toBeCloseTo(30);
+
+        const p5 = effect.getPointAtProgressZeroRadius(0.4); // dist = 120 (100 + 20)
+        expect(p5.x).toBeCloseTo(100);
+        expect(p5.y).toBeCloseTo(20);
+
+        const p6 = effect.getPointAtProgressZeroRadius(0.6); // dist = 180 (100+50 + 30) -> leftwards
+        expect(p6.x).toBeCloseTo(70);
+        expect(p6.y).toBeCloseTo(50);
+
+        const p7 = effect.getPointAtProgressZeroRadius(0.9); // dist = 270 (250 + 20) -> upwards
+        expect(p7.x).toBeCloseTo(0);
+        expect(p7.y).toBeCloseTo(30);
+
+        // progress < 0
+        const p8 = effect.getPointAtProgress(-0.1, 10);
+        expect(p8).toBeDefined();
+
+        effect.dispose();
+    });
+
+    it('should handle missing target in elementFromPoint during mousemove', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+        document.elementFromPoint.mockReturnValue(null);
+        effect.handleMouseMove({ clientX: 0, clientY: 0 });
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        document.elementFromPoint.mockReturnValue({ closest: () => null });
+        effect.handleMouseMove({ clientX: 0, clientY: 0 });
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        effect.dispose();
+    });
+
+    it('should draw particles but skip those with life property', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { particlesEnabled: true } },
+        });
+
+        effect.state.energyParticles = [
+            { progress: 0.1, size: 2, flickerOffset: 0 },
+            { progress: 0.5, size: 2, flickerOffset: 1, life: 10 }, // Should skip
+        ];
+
+        const mockCtx = effect.ctx;
+        mockCtx.fill = jest.fn();
+
+        effect.drawParticles(8);
+        expect(mockCtx.fill).toHaveBeenCalledTimes(1);
+
+        effect.dispose();
+    });
+
+    it('should fix static container positioning', () => {
+        container.style.position = 'static';
+        const effect = new TableGlassEffect('.table-responsive-container');
+        expect(container.style.position).toBe('relative');
+        effect.dispose();
+    });
+
     it('should clean up on dispose', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         expect(container.querySelector('canvas')).toBeTruthy();

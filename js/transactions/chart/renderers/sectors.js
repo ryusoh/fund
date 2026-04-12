@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import { transactionState } from '../../state.js';
 import { chartLayouts } from '../state.js';
 import { loadSectorsSnapshotData } from '../../dataLoader.js';
@@ -329,7 +330,8 @@ function drawSectorsChartLoader(ctx, chartManager, valueMode) {
             sectorsDataCache = data;
             renderSectorsChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

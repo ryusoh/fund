@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import {
     transactionState,
     getCompositionFilterTickers,
@@ -55,14 +56,18 @@ function buildCompositionDisplayOrder(
     if (!Array.isArray(baseOrder) || baseOrder.length === 0) {
         return { order: [], filteredOthers: null };
     }
-    const normalizedFilter = Array.isArray(filterTickers)
-        ? filterTickers.map((ticker) => ticker.toUpperCase()).filter(Boolean)
-        : [];
-    if (normalizedFilter.length === 0) {
+    const filterSet = new Set();
+    if (Array.isArray(filterTickers)) {
+        for (let i = 0; i < filterTickers.length; i += 1) {
+            const ticker = filterTickers[i];
+            if (ticker) {
+                filterSet.add(ticker.toUpperCase());
+            }
+        }
+    }
+    if (filterSet.size === 0) {
         return { order: [...baseOrder], filteredOthers: null };
     }
-
-    const filterSet = new Set(normalizedFilter);
     const selectedOrder = baseOrder.filter((ticker) => filterSet.has(ticker.toUpperCase()));
     if (selectedOrder.length === 0) {
         return { order: [...baseOrder], filteredOthers: null };
@@ -514,7 +519,8 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             compositionDataCache = data;
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {
