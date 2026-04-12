@@ -206,15 +206,21 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredSeries = seriesToDraw.map((s) => ({
-        ...s,
-        data: s.data.filter((d) => {
+    const filteredSeries = [];
+    const allPoints = [];
+    for (let i = 0; i < seriesToDraw.length; i++) {
+        const s = seriesToDraw[i];
+        const validData = [];
+        for (let j = 0; j < s.data.length; j++) {
+            const d = s.data[j];
             const dt = parseLocalDate(d.date);
-            return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
-        }),
-    }));
-
-    const allPoints = filteredSeries.flatMap((s) => s.data);
+            if ((!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo)) {
+                validData.push(d);
+                allPoints.push(d);
+            }
+        }
+        filteredSeries.push({ ...s, data: validData });
+    }
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;

@@ -149,17 +149,24 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     }
 
     // Filter by date range
-    seriesToDraw = seriesToDraw
-        .map((series) => {
-            const filteredData = series.data.filter((d) => {
-                const pointDate = d.date;
-                return (
-                    (!filterFrom || pointDate >= filterFrom) && (!filterTo || pointDate <= filterTo)
-                );
-            });
-            return { ...series, data: filteredData };
-        })
-        .filter((s) => s.data.length > 0);
+    const filteredSeries = [];
+    const allPoints = [];
+    for (let i = 0; i < seriesToDraw.length; i++) {
+        const s = seriesToDraw[i];
+        const validData = [];
+        for (let j = 0; j < s.data.length; j++) {
+            const d = s.data[j];
+            const pointDate = d.date;
+            if ((!filterFrom || pointDate >= filterFrom) && (!filterTo || pointDate <= filterTo)) {
+                validData.push(d);
+                allPoints.push(d);
+            }
+        }
+        if (validData.length > 0) {
+            filteredSeries.push({ ...s, data: validData });
+        }
+    }
+    seriesToDraw = filteredSeries;
 
     if (seriesToDraw.length === 0) {
         stopPerformanceAnimation();
@@ -167,7 +174,6 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     }
 
     // ========== COMMON RENDERING LOGIC ==========
-    const allPoints = seriesToDraw.flatMap((s) => s.data);
 
     // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
     let minTime = Infinity;
