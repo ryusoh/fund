@@ -142,6 +142,7 @@ th.filterable {
 .header-action-button:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
+    border-radius: 4px;
 }
 
 /* Ensure padding matches what TH had when it was clickable */
@@ -220,4 +221,10 @@ th.sortable[data-sort='desc'] .sort-indicator::after {
 
 .filter-dropdown div:hover {
     background-color: var(--hover-bg);
+}
+
+.table-responsive-container:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 16px;
 }

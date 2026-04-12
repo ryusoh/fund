@@ -114,6 +114,22 @@ describe('nav_current_page', () => {
         expect(analysisLink.getAttribute('aria-current')).toBe('page');
     });
 
+    test('handles variations when one of them is empty root', () => {
+        setupLocation('/index.html');
+        createContainer(`
+            <div class="nav-container">
+                <a href="/" id="home-link">Home</a>
+            </div>
+        `);
+
+        loadNavCurrentPage();
+
+        const homeLink = document.getElementById('home-link');
+
+        expect(homeLink.hasAttribute('href')).toBe(false);
+        expect(homeLink.getAttribute('aria-current')).toBe('page');
+    });
+
     test('ignores links from different origins', () => {
         setupLocation('/about');
         createContainer(`
@@ -164,5 +180,32 @@ describe('nav_current_page', () => {
             writable: true,
             configurable: true,
         });
+    });
+
+    test('handles nav link without parent element gracefully', () => {
+        // Create a standalone link, disconnected from DOM tree.
+        const standaloneLink = document.createElement('a');
+        standaloneLink.className = 'nav-link';
+        standaloneLink.href = 'http://localhost/standalone';
+
+        setupLocation('/standalone');
+
+        // Temporarily intercept document.querySelectorAll so it returns our link.
+        const originalQuerySelectorAll = document.querySelectorAll.bind(document);
+        document.querySelectorAll = jest.fn((sel) => {
+            if (sel === '.container a, .nav-container a') {
+                return [standaloneLink];
+            }
+            return originalQuerySelectorAll(sel);
+        });
+
+        try {
+            loadNavCurrentPage();
+            // Expected to disable it, but NOT throw when setting parentElement.classList
+            expect(standaloneLink.hasAttribute('href')).toBe(false);
+            expect(standaloneLink.getAttribute('aria-current')).toBe('page');
+        } finally {
+            document.querySelectorAll = originalQuerySelectorAll;
+        }
     });
 });

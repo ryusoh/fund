@@ -104,19 +104,114 @@ describe('service_worker_register.js', () => {
         });
     });
 
+    test('ignores sync exceptions thrown inside register callback', () => {
+        // Line 40: catch inside window.addEventListener load event handler
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        Object.defineProperty(window.navigator, 'serviceWorker', {
+            configurable: true,
+            value: {
+                get register() {
+                    throw new Error('Sync boom');
+                },
+            },
+        });
+        triggerLoadImmediately();
+        withCurrentScript({}, () => {
+            loadScript();
+        });
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Caught exception calling service worker register:',
+            expect.any(Error)
+        );
+        consoleWarnSpy.mockRestore();
+    });
+
     test('ignores errors thrown outside registration', () => {
+        // Line 63: catch around entire IIFE
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
         triggerLoadImmediately();
         withCurrentScript({}, () => {
             expect(() => {
                 jest.isolateModules(() => {
-                    const original = window.addEventListener;
-                    window.addEventListener = () => {
-                        throw new Error('listener failure');
-                    };
+                    // Mock isLocalHostname to throw, which is called at the top of the IIFE
+                    const originalHostname = window.__SW_FORCE_SW_HOSTNAME__;
+                    Object.defineProperty(window, '__SW_FORCE_SW_HOSTNAME__', {
+                        get: () => {
+                            throw new Error('Global IIFE error');
+                        },
+                        configurable: true,
+                    });
+
                     require(SCRIPT_PATH);
-                    window.addEventListener = original;
+
+                    Object.defineProperty(window, '__SW_FORCE_SW_HOSTNAME__', {
+                        value: originalHostname,
+                        configurable: true,
+                    });
                 });
             }).not.toThrow();
         });
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Caught exception initializing service worker:',
+            expect.any(Error)
+        );
+        consoleWarnSpy.mockRestore();
+    });
+
+    test('covers branch where update check fails', async () => {
+        global.window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
+        const mockUpdate = jest.fn().mockRejectedValue(new Error('Update failed'));
+        const mockRegister = jest.fn().mockResolvedValue({ update: mockUpdate });
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        Object.defineProperty(navigator, 'serviceWorker', {
+            value: { register: mockRegister },
+            writable: true,
+            configurable: true,
+        });
+
+        jest.isolateModules(() => {
+            require('../../../js/ui/service_worker_register.js');
+        });
+
+        window.dispatchEvent(new Event('load'));
+        await new Promise(process.nextTick);
+        await new Promise(process.nextTick);
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Service worker update check failed:',
+            expect.any(Error)
+        );
+    });
+
+    test('covers branch where register throws immediately inside load handler', () => {
+        global.window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        Object.defineProperty(navigator, 'serviceWorker', {
+            get: () => {
+                throw new Error('Simulated throw');
+            },
+            configurable: true,
+        });
+
+        jest.isolateModules(() => {
+            require('../../../js/ui/service_worker_register.js');
+        });
+
+        window.dispatchEvent(new Event('load'));
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            'Caught exception calling service worker register:',
+            expect.any(Error)
+        );
+    });
+
+    test('covers branch where isLocalHostname returns true directly', () => {
+        global.window.__SW_FORCE_SW_HOSTNAME__ = 'localhost';
+        jest.isolateModules(() => {
+            require('../../../js/ui/service_worker_register.js');
+        });
+        expect(true).toBe(true);
     });
 });

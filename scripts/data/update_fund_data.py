@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import shutil
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +15,9 @@ import pytz
 import requests
 import yfinance as yf
 from polygon import RESTClient
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+from scripts.utils.security_utils import scrub_secrets
 
 # Configure yfinance to use a temporary directory for timezone cache to avoid [Errno 17] in CI
 # Use a secure temporary directory to avoid security vulnerabilities
@@ -63,6 +67,9 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         logging.error("Missing Alpaca API credentials. Cannot fetch from Alpaca.")
         return data
 
+    safe_api_key = os.environ.get("ALPACA_API_KEY")
+    safe_api_secret = os.environ.get("ALPACA_API_SECRET")
+
     try:
         symbols = ",".join(ticker_list)
         headers = {
@@ -100,7 +107,9 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                     logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
 
     except Exception as e:
-        logging.error(f"Error fetching from Alpaca: {e}")
+        error_msg = str(e)
+        error_msg = scrub_secrets(error_msg, [safe_api_key, safe_api_secret])
+        logging.error(f"Error fetching from Alpaca: {error_msg}")
 
     return data
 
@@ -176,6 +185,7 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     tickers_for_polygon = [t for t in ticker_list if data[t] is None]
     if tickers_for_polygon:
         logging.info(f"Final fallback to Polygon.io for: {', '.join(tickers_for_polygon)}")
+        safe_api_key = os.environ.get("POLYGON_KEY")
         try:
             api_key = os.environ["POLYGON_KEY"]
             with RESTClient(api_key) as client:
@@ -196,13 +206,19 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                                     data[t] = float(p)
                                     logging.info(f"Fetched price for {t} from Polygon.io: {p}")
                 except Exception as e:
-                    logging.error(f"Error fetching snapshots from Polygon.io: {e}")
+                    error_msg = str(e)
+                    if safe_api_key:
+                        error_msg = scrub_secrets(error_msg, [safe_api_key])
+                    logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
                 "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
             )
         except Exception as e:
-            logging.error(f"An error occurred with Polygon.io: {e}")
+            error_msg = str(e)
+            if safe_api_key:
+                error_msg = scrub_secrets(error_msg, [safe_api_key])
+            logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data
 

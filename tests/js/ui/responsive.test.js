@@ -242,6 +242,85 @@ describe('Responsive Utilities', () => {
     });
 
     describe('initCalendarResponsiveHandlers', () => {
+        it('should handle scheduleAlign with animation frame debouncing', () => {
+            jest.useFakeTimers();
+
+            // initCalendarResponsiveHandlers() does NOT directly use scheduleAlign but sets up other things.
+            // responsive.js runs align logic directly when parsed via module load.
+            // Let's test the alignment wrapper indirectly by triggering the resize event
+            // since `setupResizeListener` also adds an event, but `calendarResponsiveHandlers`
+            // also triggers the shared `scheduleAlign` instance for its own internal module listener.
+
+            const rafSpy = jest.spyOn(window, 'requestAnimationFrame');
+
+            // Force reset of mock to ignore the initial module load calls to rAF
+            rafSpy.mockClear();
+
+            // The module added its own listeners when it was imported. We can just dispatch directly.
+            window.dispatchEvent(new Event('resize'));
+            window.dispatchEvent(new Event('resize'));
+            window.dispatchEvent(new Event('scroll'));
+            window.dispatchEvent(new Event('calendar-zoom-end'));
+
+            // Verify rAF was only called once despite multiple events due to debouncing
+            expect(rafSpy).toHaveBeenCalledTimes(1);
+
+            // Advance timers to trigger the callback
+            jest.runAllTimers();
+
+            // The align function inside rAF should have executed, clearing the raf ID
+            // so a new event will trigger a new rAF.
+            window.dispatchEvent(new Event('resize'));
+            expect(rafSpy).toHaveBeenCalledTimes(2);
+
+            rafSpy.mockRestore();
+            jest.useRealTimers();
+        });
+
+        it('should accurately merge rects and pick minimum top and maximum bottom', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach((el) => el.remove());
+
+            // Create multiple domains out of order to ensure min/max logic is hit
+            const d1 = document.createElement('div');
+            d1.setAttribute('data-ch-domain', 'true');
+            d1.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 150, bottom: 200, height: 50 }); // middle
+
+            const d2 = document.createElement('div');
+            d2.setAttribute('data-ch-domain', 'true');
+            d2.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, bottom: 150, height: 50 }); // highest
+
+            const d3 = document.createElement('div');
+            d3.setAttribute('data-ch-domain', 'true');
+            d3.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 200, bottom: 300, height: 100 }); // lowest
+
+            heatmapRoot.appendChild(d1);
+            heatmapRoot.appendChild(d2);
+            heatmapRoot.appendChild(d3);
+
+            // Give nav element a rect to combine with
+            const navElement = document.getElementById('calendar-navigation-controls');
+            if (navElement) {
+                navElement.getBoundingClientRect = jest
+                    .fn()
+                    .mockReturnValue({ top: 300, bottom: 400, height: 100 });
+            }
+
+            responsive.initCalendarResponsiveHandlers();
+
+            // Expected merged rect: top=100 (d2), bottom=400 (navElement), height=300
+            // Target center = 100 + 300/2 = 250px
+            expect(toggleContainer.style.getPropertyValue('top')).toBe('250px');
+        });
+
         it('should return early if toggleContainer or calendarContainer is null', () => {
             document.body.innerHTML = '';
             const result = responsive.initCalendarResponsiveHandlers();
@@ -366,6 +445,76 @@ describe('Responsive Utilities', () => {
 
             // Restore original
             window.dispatchEvent = originalDispatch;
+        });
+
+        it('should skip alignment if heatmap rect height is 0', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+
+            // Give it 0 height rect
+            heatmapSvg.getBoundingClientRect = jest.fn().mockReturnValue({ top: 100, bottom: 100 });
+            calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(null);
+            heatmapRoot.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, bottom: 100 });
+
+            // Ensure no domains exist to fall back to heatmap rects
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach((el) => el.remove());
+
+            responsive.initCalendarResponsiveHandlers();
+
+            // Because rect is null (due to height 0), it should return early and not set top
+            expect(toggleContainer.style.getPropertyValue('top')).toBe('');
+        });
+
+        it('should skip alignment if targetRect is ultimately null after merging with navRect', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach((el) => el.remove());
+            heatmapSvg.remove();
+
+            // Heatmap Root getBoundingClientRect returns null to simulate resolveHeatmapRect returning null
+            heatmapRoot.getBoundingClientRect = jest.fn().mockReturnValue(null);
+            calendarContainer.getBoundingClientRect = jest.fn().mockReturnValue(null);
+
+            // Let the nav element exist but have no bounding rect to not break things
+            const navElement = document.getElementById('calendar-navigation-controls');
+            if (navElement) {
+                navElement.getBoundingClientRect = jest.fn().mockReturnValue(null);
+            }
+
+            responsive.initCalendarResponsiveHandlers();
+
+            expect(toggleContainer.style.getPropertyValue('top')).toBe('');
+        });
+
+        it('handles single rect in mergeRects gracefully via resolveHeatmapRect', () => {
+            window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
+
+            // Give only 1 domain
+            const domains = heatmapRoot.querySelectorAll('[data-ch-domain]');
+            domains.forEach((el) => el.remove());
+
+            const singleDomain = document.createElement('div');
+            singleDomain.setAttribute('data-ch-domain', 'true');
+            singleDomain.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, height: 50, bottom: 150 });
+            heatmapRoot.appendChild(singleDomain);
+
+            responsive.initCalendarResponsiveHandlers();
+
+            // center is 125.
+            // When combined with navRect (which doesn't exist or we mock it), targetRect should still exist.
+            const navElement = document.getElementById('calendar-navigation-controls');
+            if (navElement) {
+                navElement.getBoundingClientRect = jest.fn().mockReturnValue(null);
+            }
+
+            responsive.initCalendarResponsiveHandlers();
+            // Expected top = 100 + 50/2 = 125px
+            expect(toggleContainer.style.getPropertyValue('top')).toBe('125px');
         });
     });
 });
