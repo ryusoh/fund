@@ -96,14 +96,22 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         const volatilityData = [];
         const windowSize = 90;
 
+        // Bolt: Optimize O(N * W) slice allocations by iterating indices directly over dailyReturns array
         for (let i = windowSize - 1; i < dailyReturns.length; i++) {
-            const window = dailyReturns.slice(i - windowSize + 1, i + 1);
-            const values = window.map((d) => d.value);
+            let sum = 0;
+            const startIdx = i - windowSize + 1;
 
-            // Standard Deviation
-            const n = values.length;
-            const mean = values.reduce((a, b) => a + b, 0) / n;
-            const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
+            for (let j = startIdx; j <= i; j++) {
+                sum += dailyReturns[j].value;
+            }
+            const mean = sum / windowSize;
+
+            let varianceSum = 0;
+            for (let j = startIdx; j <= i; j++) {
+                varianceSum += Math.pow(dailyReturns[j].value - mean, 2);
+            }
+            const variance = varianceSum / (windowSize - 1);
+
             const dailyStdDev = Math.sqrt(variance);
 
             // Annualize (multiply by sqrt(252))
@@ -144,32 +152,53 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredSeries = seriesToDraw.map((s) => ({
-        ...s,
-        data: s.data.filter((d) => {
+    const filteredSeries = [];
+    const allPoints = [];
+    for (let i = 0; i < seriesToDraw.length; i++) {
+        const s = seriesToDraw[i];
+        const validData = [];
+        for (let j = 0; j < s.data.length; j++) {
+            const d = s.data[j];
             const dt = parseLocalDate(d.date);
-            return (!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo);
-        }),
-    }));
-
-    const allPoints = filteredSeries.flatMap((s) => s.data);
+            if ((!filterFrom || dt >= filterFrom) && (!filterTo || dt <= filterTo)) {
+                validData.push(d);
+                allPoints.push(d);
+            }
+        }
+        filteredSeries.push({ ...s, data: validData });
+    }
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;
     }
 
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const time = parseLocalDate(allPoints[i].date).getTime();
+        const value = allPoints[i].value;
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (value < dataMin) {
+            dataMin = value;
+        }
+        if (value > dataMax) {
+            dataMax = value;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPaddingTop = Math.max(valueRange * 0.1, 5);
     // Add small buffer to bottom so 0 is not on the axis

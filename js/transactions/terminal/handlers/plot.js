@@ -59,6 +59,10 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  plot composition abs - Show composition chart with absolute values\n' +
             '  plot sectors         - Show sector allocation chart (percent view)\n' +
             '  plot sectors abs     - Show sector allocation chart with absolute values\n' +
+            '  plot geography       - Show geography allocation chart (percent view)\n' +
+            '  plot geography abs   - Show geography allocation chart with absolute values\n' +
+            '  plot marketcap       - Show market cap composition chart (percent view)\n' +
+            '  plot marketcap abs   - Show market cap composition chart with absolute values\n' +
             '  plot concentration   - Show portfolio concentration (HHI) chart\n' +
             '  plot pe              - Show weighted average P/E ratio chart\n' +
             '  plot fx              - Show FX rate chart for the selected base currency\n\n' +
@@ -68,6 +72,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  drawdown      [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  composition   [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  sectors       [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  geography     [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
+            '  marketcap     [abs] [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  concentration [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  pe            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +
             '  fx            [year|quarter|qN] | [from <...>] | [<...> to <...>]\n' +

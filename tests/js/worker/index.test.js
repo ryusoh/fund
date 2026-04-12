@@ -335,4 +335,17 @@ describe('error handling', () => {
         const res = await worker.fetch(req, makeEnv(), makeCtx());
         expect(res.status).toBe(404);
     });
+
+    it('scrubs API keys from error messages', async () => {
+        const env = makeEnv();
+        mockFetch.mockRejectedValueOnce(
+            new Error(`Failed with key ${env.ALPACA_API_KEY} and secret ${env.ALPACA_API_SECRET}`)
+        );
+        mockFetch.mockRejectedValueOnce(new Error('Yahoo fail'));
+
+        const res = await worker.fetch(makeReq('VT'), env, makeCtx());
+        const json = await res.json();
+        expect(json.detail).not.toContain(env.ALPACA_API_KEY);
+        expect(json.detail).not.toContain(env.ALPACA_API_SECRET);
+    });
 });

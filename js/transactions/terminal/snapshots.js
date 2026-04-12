@@ -588,7 +588,12 @@ export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
 
         if (startIndex !== -1 && endIndex !== -1) {
             const windowPoints = rawPoints.slice(startIndex, endIndex + 1);
-            const dailyReturns = [];
+
+            // Bolt: Replaced O(N) array allocation and double array reduction with Welford's online variance calculation algorithm.
+            // Impact: Computes variance in a single O(1) space, O(N) time pass, significantly reducing GC pressure.
+            let count = 0;
+            let mean = 0;
+            let m2 = 0;
 
             for (let i = 1; i < windowPoints.length; i++) {
                 const startVal = convertBetweenCurrencies(
@@ -605,15 +610,17 @@ export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
                 );
 
                 if (startVal !== 0) {
-                    dailyReturns.push(endVal / startVal - 1);
+                    const ret = endVal / startVal - 1;
+                    count += 1;
+                    const delta = ret - mean;
+                    mean += delta / count;
+                    const delta2 = ret - mean;
+                    m2 += delta * delta2;
                 }
             }
 
-            if (dailyReturns.length >= 2) {
-                const n = dailyReturns.length;
-                const mean = dailyReturns.reduce((a, b) => a + b, 0) / n;
-                const variance =
-                    dailyReturns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
+            if (count >= 2) {
+                const variance = m2 / (count - 1);
                 const dailyStdDev = Math.sqrt(variance);
                 const annualizedVol = dailyStdDev * Math.sqrt(252) * 100;
 
@@ -1263,6 +1270,7 @@ export async function getPESnapshotLine() {
 
     const fwdPEData = data.forward_pe || {};
     const tickerFwdPE = fwdPEData.ticker_forward_pe || {};
+    const msciPeRatio = fwdPEData.msci_pe_ratio || null;
 
     if (lastPoint.tickerPEs) {
         const entries = Object.entries(lastPoint.tickerPEs)
@@ -1276,7 +1284,11 @@ export async function getPESnapshotLine() {
         if (entries.length > 0) {
             const breakdown = entries
                 .map(([t, pe]) => {
-                    const fwd = tickerFwdPE[t];
+                    let fwd = tickerFwdPE[t];
+                    // For VT: derive forward PE from trailing PE using MSCI ratio
+                    if (t === 'VT' && msciPeRatio?.ratio > 0 && Number.isFinite(pe) && pe > 0) {
+                        fwd = pe / msciPeRatio.ratio;
+                    }
                     const trailingStr = pe.toFixed(0);
                     if (fwd !== null && fwd !== undefined && Number.isFinite(fwd)) {
                         return `${t}:${trailingStr}/${fwd.toFixed(0)}`;

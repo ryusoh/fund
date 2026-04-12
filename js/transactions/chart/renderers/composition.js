@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger.js';
 import {
     transactionState,
     getCompositionFilterTickers,
@@ -55,14 +56,18 @@ function buildCompositionDisplayOrder(
     if (!Array.isArray(baseOrder) || baseOrder.length === 0) {
         return { order: [], filteredOthers: null };
     }
-    const normalizedFilter = Array.isArray(filterTickers)
-        ? filterTickers.map((ticker) => ticker.toUpperCase()).filter(Boolean)
-        : [];
-    if (normalizedFilter.length === 0) {
+    const filterSet = new Set();
+    if (Array.isArray(filterTickers)) {
+        for (let i = 0; i < filterTickers.length; i += 1) {
+            const ticker = filterTickers[i];
+            if (ticker) {
+                filterSet.add(ticker.toUpperCase());
+            }
+        }
+    }
+    if (filterSet.size === 0) {
         return { order: [...baseOrder], filteredOthers: null };
     }
-
-    const filterSet = new Set(normalizedFilter);
     const selectedOrder = baseOrder.filter((ticker) => filterSet.has(ticker.toUpperCase()));
     if (selectedOrder.length === 0) {
         return { order: [...baseOrder], filteredOthers: null };
@@ -115,24 +120,21 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredIndices = rawDates
-        .map((dateStr, index) => {
-            const date = parseLocalDate(dateStr);
-            return { index, date };
-        })
-        .filter(({ date }) => {
-            if (!date || Number.isNaN(date.getTime())) {
-                return false;
-            }
-            if (filterFrom && date < filterFrom) {
-                return false;
-            }
-            if (filterTo && date > filterTo) {
-                return false;
-            }
-            return true;
-        })
-        .map(({ index }) => index);
+    // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
+    const filteredIndices = [];
+    for (let i = 0; i < rawDates.length; i += 1) {
+        const date = parseLocalDate(rawDates[i]);
+        if (!date || Number.isNaN(date.getTime())) {
+            continue;
+        }
+        if (filterFrom && date < filterFrom) {
+            continue;
+        }
+        if (filterTo && date > filterTo) {
+            continue;
+        }
+        filteredIndices.push(i);
+    }
 
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
@@ -178,9 +180,12 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                 : dates.map((_, idx) => Number(mappedValues[idx] ?? 0));
         percentSeriesMap[ticker] = percentValues;
         if (valueMode === 'absolute') {
-            chartData[ticker] = percentValues.map(
-                (pct, idx) => ((totalValuesConverted[idx] ?? 0) * pct) / 100
-            );
+            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
+            const absoluteValues = new Array(percentValues.length);
+            for (let i = 0; i < percentValues.length; i += 1) {
+                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * percentValues[i]) / 100;
+            }
+            chartData[ticker] = absoluteValues;
         } else {
             chartData[ticker] = percentValues;
         }
@@ -312,7 +317,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     );
 
     // 7. Render Stacked Areas
-    let cumulativeValues = new Array(dates.length).fill(0);
+    const cumulativeValues = new Array(dates.length).fill(0);
 
     activeTickerOrder.forEach((ticker, tickerIndex) => {
         const values =
@@ -345,7 +350,10 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fill();
         ctx.stroke();
 
-        cumulativeValues = cumulativeValues.map((val, index) => val + values[index]);
+        // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
+        for (let i = 0; i < cumulativeValues.length; i += 1) {
+            cumulativeValues[i] += values[i];
+        }
     });
 
     // 8. Prepare Legend and Crosshair Data
@@ -511,7 +519,8 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             compositionDataCache = data;
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
-        .catch(() => {
+        .catch((error) => {
+            logger.warn('Caught exception:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {

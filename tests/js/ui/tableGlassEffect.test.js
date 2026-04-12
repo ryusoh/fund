@@ -106,6 +106,30 @@ describe('TableGlassEffect', () => {
         jest.restoreAllMocks();
     });
 
+    test('pauseResize sets resizePaused to true', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        expect(effect.resizePaused).toBe(false);
+        effect.pauseResize();
+        expect(effect.resizePaused).toBe(true);
+    });
+
+    test('resumeResize sets resizePaused to false and calls resize', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.resize = jest.fn();
+        effect.resizePaused = true;
+        effect.resumeResize();
+        expect(effect.resizePaused).toBe(false);
+        expect(effect.resize).toHaveBeenCalled();
+    });
+
+    test('resize returns immediately if resizePaused is true', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.resizePaused = true;
+        effect.canvas.style.top = '123px';
+        effect.resize();
+        expect(effect.canvas.style.top).toBe('123px'); // Doesn't change
+    });
+
     it('should initialize and append canvas', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         const canvas = container.querySelector('canvas');
@@ -134,6 +158,212 @@ describe('TableGlassEffect', () => {
         // x: (200 - 0) / 800 - 0.5 = 0.25 - 0.5 = -0.25. * 2 = -0.5
         expect(effect.state.pointer.x).toBeCloseTo(-0.5);
 
+        effect.dispose();
+    });
+
+    it('should abort init if options.enabled is false', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', { enabled: false });
+        expect(effect.canvas).toBeUndefined(); // canvas is created in init(), which is skipped
+        expect(container.querySelector('canvas')).toBeFalsy();
+    });
+
+    it('should handle missing tbody in resize', () => {
+        // Clear all tbody from the container
+        container.querySelectorAll('tbody').forEach((el) => el.remove());
+
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+
+        // This should not throw and rows should remain empty or unpopulated
+        effect.resize();
+
+        // No error thrown and hover tracking does not crash
+        expect(effect.rows).toEqual([]);
+        effect.dispose();
+    });
+
+    it('should reset pointer and hoveredRowIndex on mouseleave', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+
+        // First simulate mouse enter
+        effect.handleMouseMove({ clientX: 200, clientY: 100 });
+        expect(effect.state.pointer.x).not.toBe(0);
+
+        // Then simulate mouse leave
+        effect.handleMouseLeave();
+        expect(effect.state.pointer.x).toBe(0);
+        expect(effect.state.pointer.y).toBe(0);
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        effect.dispose();
+    });
+
+    it('should not draw electric trails if electric.enabled is false', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { enabled: false } },
+        });
+
+        const mockCtx = effect.ctx;
+        // override stroke just in case
+        mockCtx.stroke = jest.fn();
+
+        effect.drawElectricTrails(8);
+
+        // because it's disabled, nothing should have been drawn
+        expect(mockCtx.stroke).not.toHaveBeenCalled();
+        effect.dispose();
+    });
+
+    it('should not draw particles if particlesEnabled is false', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { particlesEnabled: false } },
+        });
+
+        const mockCtx = effect.ctx;
+        mockCtx.fill = jest.fn();
+
+        effect.drawParticles(8);
+
+        expect(mockCtx.fill).not.toHaveBeenCalled();
+        effect.dispose();
+    });
+
+    it('should draw electric trails with default palette fallback if palette is empty', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { colors: {} } },
+        });
+
+        const mockCtx = effect.ctx;
+        mockCtx.stroke = jest.fn();
+
+        effect.drawElectricTrails(8);
+
+        // Ensure stroke was called, meaning the fallback palette color was used
+        expect(mockCtx.stroke).toHaveBeenCalled();
+        effect.dispose();
+    });
+
+    it('should use default threeD options for reflection and glow', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { ambientGlow: {}, reflection: {} },
+        });
+
+        const mockCtx = effect.ctx;
+        mockCtx.createLinearGradient = jest.fn(() => ({
+            addColorStop: jest.fn(),
+        }));
+
+        // Both these calls use fallbacks for missing config properties
+        effect.drawAmbientGlow(8);
+        effect.drawReflection(8);
+
+        expect(mockCtx.createLinearGradient).toHaveBeenCalledTimes(2);
+
+        // Let's do an update step to ensure speed fallbacks are hit
+        // Need to provide a valid time sequence to advance delta correctly
+        effect.update(1000); // Set lastTime = 1000
+        effect.update(2000); // delta = 1, should advance phase
+
+        expect(effect.state.phase).not.toBe(0);
+
+        effect.dispose();
+    });
+
+    it('should handle startLoop and multiple frames', () => {
+        jest.useFakeTimers();
+        const effect = new TableGlassEffect('.table-responsive-container');
+
+        effect.draw = jest.fn();
+        effect.update = jest.fn();
+
+        // Advance timers to trigger recursive loop
+        jest.advanceTimersByTime(100);
+
+        expect(effect.update).toHaveBeenCalled();
+        expect(effect.draw).toHaveBeenCalled();
+
+        effect.dispose();
+        jest.useRealTimers();
+    });
+
+    it('should resolve point at progress for rounded rectangle', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.width = 100;
+        effect.height = 50;
+
+        const p1 = effect.getPointAtProgress(0.1, 10); // dist = 0.1 * 300 = 30
+        expect(p1.x).toBeGreaterThan(0);
+
+        // Cover bottom-right curve
+        const p2 = effect.getPointAtProgress(0.6, 10);
+        expect(p2).toBeDefined();
+
+        // Cover left border
+        const p3 = effect.getPointAtProgress(0.9, 10);
+        expect(p3.x).toBeDefined();
+
+        // Progress zero radius fallbacks
+        const p4 = effect.getPointAtProgressZeroRadius(0.1);
+        expect(p4.x).toBeCloseTo(30);
+
+        const p5 = effect.getPointAtProgressZeroRadius(0.4); // dist = 120 (100 + 20)
+        expect(p5.x).toBeCloseTo(100);
+        expect(p5.y).toBeCloseTo(20);
+
+        const p6 = effect.getPointAtProgressZeroRadius(0.6); // dist = 180 (100+50 + 30) -> leftwards
+        expect(p6.x).toBeCloseTo(70);
+        expect(p6.y).toBeCloseTo(50);
+
+        const p7 = effect.getPointAtProgressZeroRadius(0.9); // dist = 270 (250 + 20) -> upwards
+        expect(p7.x).toBeCloseTo(0);
+        expect(p7.y).toBeCloseTo(30);
+
+        // progress < 0
+        const p8 = effect.getPointAtProgress(-0.1, 10);
+        expect(p8).toBeDefined();
+
+        effect.dispose();
+    });
+
+    it('should handle missing target in elementFromPoint during mousemove', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+        document.elementFromPoint.mockReturnValue(null);
+        effect.handleMouseMove({ clientX: 0, clientY: 0 });
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        document.elementFromPoint.mockReturnValue({ closest: () => null });
+        effect.handleMouseMove({ clientX: 0, clientY: 0 });
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        effect.dispose();
+    });
+
+    it('should draw particles but skip those with life property', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { particlesEnabled: true } },
+        });
+
+        effect.state.energyParticles = [
+            { progress: 0.1, size: 2, flickerOffset: 0 },
+            { progress: 0.5, size: 2, flickerOffset: 1, life: 10 }, // Should skip
+        ];
+
+        const mockCtx = effect.ctx;
+        mockCtx.fill = jest.fn();
+
+        effect.drawParticles(8);
+        expect(mockCtx.fill).toHaveBeenCalledTimes(1);
+
+        effect.dispose();
+    });
+
+    it('should fix static container positioning', () => {
+        container.style.position = 'static';
+        const effect = new TableGlassEffect('.table-responsive-container');
+        expect(container.style.position).toBe('relative');
         effect.dispose();
     });
 

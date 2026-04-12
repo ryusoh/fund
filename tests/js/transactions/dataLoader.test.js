@@ -7,6 +7,221 @@ import { jest } from '@jest/globals';
 // Regex to verify date format YYYY-MM-DD
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
+describe('dataLoader basic history loaders', () => {
+    let loadSplitHistory;
+    let loadTransactionData;
+    let loadContributionSeries;
+    let mockFetch;
+
+    beforeEach(() => {
+        jest.resetModules();
+
+        mockFetch = jest.fn();
+        global.fetch = mockFetch;
+
+        // Mock logger
+        jest.unstable_mockModule('@utils/logger.js', () => ({
+            logger: {
+                warn: jest.fn(),
+                error: jest.fn(),
+                log: jest.fn(),
+            },
+        }));
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    async function loadModule() {
+        const mod = await import('../../../js/transactions/dataLoader.js');
+        loadSplitHistory = mod.loadSplitHistory;
+        loadTransactionData = mod.loadTransactionData;
+        loadContributionSeries = mod.loadContributionSeries;
+    }
+
+    function createMockResponse(data, ok = true, isText = false) {
+        return {
+            ok,
+            [isText ? 'text' : 'json']: () => Promise.resolve(data),
+        };
+    }
+
+    describe('loadSplitHistory', () => {
+        it('should correctly fetch and parse split history CSV', async () => {
+            const csvData = `Symbol,SplitDate,Ratio,Multiplier
+AAPL,2020-08-31,4:1,0.25
+TSLA,2020-08-31,5:1,0.2
+INVALID_ROW`;
+            mockFetch.mockResolvedValueOnce(createMockResponse(csvData, true, true));
+
+            await loadModule();
+            const result = await loadSplitHistory();
+
+            expect(mockFetch).toHaveBeenCalledWith('../data/split_history.csv');
+            expect(result).toHaveLength(2);
+            expect(result[0]).toEqual({
+                symbol: 'AAPL',
+                splitDate: '2020-08-31',
+                splitRatio: '4:1',
+                splitMultiplier: 0.25,
+            });
+            expect(result[1]).toEqual({
+                symbol: 'TSLA',
+                splitDate: '2020-08-31',
+                splitRatio: '5:1',
+                splitMultiplier: 0.2,
+            });
+        });
+
+        it('should return empty array and log warning on non-ok response', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+            const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+            await loadModule();
+            const result = await loadSplitHistory();
+
+            expect(result).toEqual([]);
+            expect(mockWarn).toHaveBeenCalledWith(
+                'Split history file not found, continuing without split adjustments'
+            );
+            mockWarn.mockRestore();
+        });
+
+        it('should return empty array and log error on fetch rejection', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('Network failure'));
+            const mockError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            await loadModule();
+            const result = await loadSplitHistory();
+
+            expect(result).toEqual([]);
+            expect(mockError).toHaveBeenCalledWith(
+                'Error loading split history:',
+                expect.any(Error)
+            );
+            mockError.mockRestore();
+        });
+    });
+
+    describe('loadTransactionData', () => {
+        it('should correctly fetch and parse transaction data', async () => {
+            const mockCsvText = `TradeDate,OrderType,Security,Quantity,Price
+2024-01-01,Buy,AAPL,10,150
+2024-01-02,Sell,GOOG,5,2800
+INVALID_ROW`;
+            mockFetch.mockResolvedValueOnce(createMockResponse(mockCsvText, true, true));
+
+            await loadModule();
+            const result = await loadTransactionData();
+
+            expect(mockFetch).toHaveBeenCalledWith('../data/transactions.csv');
+            expect(result).toEqual([
+                {
+                    tradeDate: '2024-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '10',
+                    price: '150',
+                    netAmount: '1500',
+                    transactionId: 0,
+                },
+                {
+                    tradeDate: '2024-01-02',
+                    orderType: 'Sell',
+                    security: 'GOOG',
+                    quantity: '5',
+                    price: '2800',
+                    netAmount: '-14000',
+                    transactionId: 1,
+                },
+            ]);
+        });
+
+        it('should throw an error on non-ok response', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+            await loadModule();
+
+            await expect(loadTransactionData()).rejects.toThrow('Failed to load transactions.csv');
+        });
+    });
+
+    describe('loadContributionSeries', () => {
+        it('should correctly fetch and normalize array payload', async () => {
+            const payload = [
+                { tradeDate: '2024-01-01', amount: '1000', orderType: 'Buy', netAmount: '1000' },
+                { tradeDate: '2024-01-02', amount: 500, orderType: 'Sell', netAmount: -500 },
+                { amount: 'invalid' }, // Missing tradeDate, will be filtered out
+            ];
+            mockFetch.mockResolvedValueOnce(createMockResponse(payload));
+
+            await loadModule();
+            const result = await loadContributionSeries();
+
+            expect(mockFetch).toHaveBeenCalledWith('../data/output/contribution_series.json');
+            expect(result).toEqual({
+                USD: [
+                    { tradeDate: '2024-01-01', amount: 1000, orderType: 'Buy', netAmount: 1000 },
+                    { tradeDate: '2024-01-02', amount: 500, orderType: 'Sell', netAmount: -500 },
+                ],
+            });
+        });
+
+        it('should correctly fetch and normalize object payload', async () => {
+            const payload = {
+                USD: [{ tradeDate: '2024-01-01', amount: 1000, orderType: 'Buy', netAmount: 1000 }],
+                EUR: [{ tradeDate: '2024-01-01', amount: 800, orderType: 'Buy', netAmount: 800 }],
+            };
+            mockFetch.mockResolvedValueOnce(createMockResponse(payload));
+
+            await loadModule();
+            const result = await loadContributionSeries();
+
+            expect(result).toEqual({
+                USD: [{ tradeDate: '2024-01-01', amount: 1000, orderType: 'Buy', netAmount: 1000 }],
+                EUR: [{ tradeDate: '2024-01-01', amount: 800, orderType: 'Buy', netAmount: 800 }],
+            });
+        });
+
+        it('should return empty USD array and log warning on non-ok response', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+            const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+            await loadModule();
+            const result = await loadContributionSeries();
+
+            expect(result).toEqual({ USD: [] });
+            expect(mockWarn).toHaveBeenCalledWith(
+                'contribution_series.json not found; contribution chart disabled'
+            );
+            mockWarn.mockRestore();
+        });
+
+        it('should return empty USD array and log warning on fetch error', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('Network failure'));
+            const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+            await loadModule();
+            const result = await loadContributionSeries();
+
+            expect(result).toEqual({ USD: [] });
+            expect(mockWarn).toHaveBeenCalledWith(
+                'Failed to load contribution series:',
+                expect.any(Error)
+            );
+            mockWarn.mockRestore();
+        });
+
+        it('should return empty USD array if payload is invalid', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse(null));
+            await loadModule();
+            const result = await loadContributionSeries();
+            expect(result).toEqual({ USD: [] });
+        });
+    });
+});
+
 describe('dataLoader real-time integration', () => {
     let loadPortfolioSeries;
     let loadCompositionSnapshotData;
@@ -44,10 +259,10 @@ describe('dataLoader real-time integration', () => {
         loadCompositionSnapshotData = mod.loadCompositionSnapshotData;
     }
 
-    function createMockResponse(data, ok = true) {
+    function createMockResponse(data, ok = true, isText = false) {
         return {
             ok,
-            json: () => Promise.resolve(data),
+            [isText ? 'text' : 'json']: () => Promise.resolve(data),
         };
     }
 

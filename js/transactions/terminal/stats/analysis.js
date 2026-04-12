@@ -647,8 +647,15 @@ export async function getConcentrationText() {
         0
     );
     const effectiveHoldings = hhi > 0 ? 1 / hhi : null;
-    const top3Weight = normalized.slice(0, 3).reduce((sum, item) => sum + item.normalizedWeight, 0);
-    const top5Weight = normalized.slice(0, 5).reduce((sum, item) => sum + item.normalizedWeight, 0);
+    let top3Weight = 0;
+    let top5Weight = 0;
+    const len = Math.min(normalized.length, 5);
+    for (let i = 0; i < len; i += 1) {
+        if (i < 3) {
+            top3Weight += normalized[i].normalizedWeight;
+        }
+        top5Weight += normalized[i].normalizedWeight;
+    }
     const topHolding = normalized[0];
 
     const summaryRows = [
