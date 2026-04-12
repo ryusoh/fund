@@ -56,9 +56,44 @@
 ## 2024-05-24 - Optimize rolling beta array allocations
 
 **Learning:** In frontend chart rendering loops, using `.slice()` in a sliding window loop `O(N * W)` times to extract subarrays (like in the rolling Beta calculation) creates significant unnecessary garbage collection pressure and allocation overhead. Furthermore, calling `.reduce()` to compute mean values inside that tight loop compounds the performance penalty.
-**Action:** Replace `.slice()` and `.forEach()` with a direct `for` loop that iterates over the original array using calculated start and end indices. Compute intermediate sums inside the loop to avoid subsequent `.reduce()` calls. This significantly reduces processing time and memory overhead.
+**Action:** Replace `.slice()` and `.forEach()` with a direct `for` loop that iterates over the original array using calculated start and end indices. Compute intermediate sums and variances/covariances directly without intermediate array allocations. This achieves O(1) space overhead per window and significantly reduces processing time and memory overhead.
+
+## 2025-03-07 - Optimizing tight loops in canvas charting renderers
+
+**Learning:** In `js/transactions/chart/renderers/sectors.js` and `js/transactions/chart/renderers/marketcap.js`, using `.map` to iteratively update `cumulativeValues` array inside the active category drawing loop `(cumulativeValues = cumulativeValues.map((val, index) => val + values[index]))` generates a new array on every iteration of every sector, creating massive GC pressure on high frame rates.
+**Action:** Always replace `.map()` with an in-place mutation `for` loop `for (let i = 0; i < cumulativeValues.length; i += 1) { cumulativeValues[i] += values[i]; }` to prevent memory allocations entirely.
 
 ## 2026-03-29 - LOWESS map() loop overhead
 
 **Learning:** In the LOWESS smoothing algorithm (`weightedLocalRegression`), using `Math.max(...data.map(...))` inside a nested loop iterates over the array $N$ times per point, creating severe $O(N^3)$ complexity, causing massive allocation delays.
 **Action:** Extract loop-invariant array reductions (like finding a global `maxDistance` for a single `targetX`) outside the calculation loop. Use manual `for` loops instead of `.map()` or spread operators to prevent garbage collection pressure and drop complexity.
+
+## 2025-05-18 - Math.min/max and Spread on Array Allocation
+
+**Learning:** Using `Math.min(...array.map(..))` and `Math.max(...array.map(..))` is a performance bottleneck in high-frequency loops (like `scroll` or `resize` via `ResizeObserver`), as it triggers multiple intermediate array allocations (`.map`) followed by maximum arguments limit risk and large spread parameter instantiation.
+**Action:** Always replace chained spread map iterations `Math.max(...array.map(x => x))` with a single, unified `for` loop that updates minimum/maximum trackers inline to zero out GC pressure and avoid call stack bounds errors.
+
+## 2026-03-30 - Array Map and Reduce Inside Animation Loops
+
+**Learning:** Dynamically generating arrays of objects (such as path segments) and then iterating over them with `.reduce()` or `.map()` inside an animation loop (like a `requestAnimationFrame` drawing frame, or repeatedly inside an internal rendering method like `getPointAtProgress`) causes severe GC (Garbage Collection) pressure. This results in stutters and dropped frames in visual UI elements like the table glass effect.
+**Action:** Always inline array generation and mathematical reductions directly into plain conditional and arithmetic logic for high-frequency path-tracing methods.
+
+## 2026-03-07 - Optimize Split Adjustment Array Allocation and Date Parsing
+
+**Learning:** Using `.filter()` chained with `.reduce()` combined with `new Date(split.splitDate)` inside the iteration loop created significant memory allocations and GC pressure for large datasets with split adjustments.
+**Action:** Replace `.filter().reduce()` with a single `for` loop, and replace `new Date` comparison with direct string comparison by formatting `transactionDate` into `YYYY-MM-DD` outside the loop.
+
+## $(date +%Y-%m-%d) - Replaced Map and Spread with single index loop
+
+**Learning:** Found a common pattern combining `.map(...)` with `Math.min(...array)` and `Math.max(...array)` spreading. The spread operator can exceed the maximum call stack size on large datasets and also creates unnecessary O(N) array allocations causing high GC pressure in performance-sensitive high-frequency rendering methods.
+**Action:** Replace `Math.max(...array.map(x => x))` with a single simple `for` loop that records both min and max to keep operations O(N) and eliminate extra array allocations entirely.
+
+## 2024-04-02 - Optimize Map and Spread for Array Allocations
+
+**Learning:** Using `Math.max(...array.map(x => x))` and `Math.min(...array.map(x => x))` inside rendering functions like `drawRollingChart` introduces O(N) array allocations from `.map` and risks exceeding the maximum call stack size from the spread operator `...`.
+**Action:** Replace `Math.max(...array.map(x => x))` with a single `for` loop that records both min and max inline to prevent garbage collection pressure and avoid call stack bounds errors.
+
+## 2026-04-06 - Replaced map().filter().map() chains with a single loop
+
+**Learning:** In frontend data processing layers (like chart renderers preparing filtered arrays), chaining array methods like `.map().filter().map()` creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead and garbage collection (GC) pressure.
+**Action:** Consolidate chained higher-order array methods into a single manual `for` loop. Iterate over the input array, process the data, apply the filter condition via `continue` statements, and push the valid results directly to a pre-allocated or newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.

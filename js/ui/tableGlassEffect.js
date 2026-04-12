@@ -187,9 +187,14 @@ export class TableGlassEffect {
 
                 if (rowElement && this.container.contains(rowElement)) {
                     // Find the index of this row in our stored rows array
-                    this.state.hoveredRowIndex = this.rows.findIndex(
-                        (r) => r.element === rowElement
-                    );
+                    let foundIndex = -1;
+                    for (let i = 0; i < this.rows.length; i++) {
+                        if (this.rows[i].element === rowElement) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+                    this.state.hoveredRowIndex = foundIndex;
                 } else {
                     this.state.hoveredRowIndex = -1;
                 }
@@ -234,9 +239,11 @@ export class TableGlassEffect {
             (this.state.pointer.y - this.state.pointerSmoothed.y) * damping;
 
         // Update particles
-        this.state.energyParticles.forEach((p) => {
+        const particles = this.state.energyParticles;
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             p.progress = (p.progress + delta * p.speed * 0.5) % 1;
-        });
+        }
     }
 
     draw() {
@@ -355,60 +362,6 @@ export class TableGlassEffect {
         return { x: 0, y: h - (dist - (2 * w + h)) };
     }
 
-    getSegments(w, h, radius) {
-        const cornerLen = 0.5 * Math.PI * radius;
-        return [
-            { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: radius + d, y: 0 }) },
-            {
-                type: 'arc',
-                len: cornerLen,
-                calc: (d) => {
-                    const angle = -Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
-                    return {
-                        x: w - radius + Math.cos(angle) * radius,
-                        y: radius + Math.sin(angle) * radius,
-                    };
-                },
-            },
-            { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: w, y: radius + d }) },
-            {
-                type: 'arc',
-                len: cornerLen,
-                calc: (d) => {
-                    const angle = (d / cornerLen) * (Math.PI / 2);
-                    return {
-                        x: w - radius + Math.cos(angle) * radius,
-                        y: h - radius + Math.sin(angle) * radius,
-                    };
-                },
-            },
-            { type: 'line', len: w - 2 * radius, calc: (d) => ({ x: w - radius - d, y: h }) },
-            {
-                type: 'arc',
-                len: cornerLen,
-                calc: (d) => {
-                    const angle = Math.PI / 2 + (d / cornerLen) * (Math.PI / 2);
-                    return {
-                        x: radius + Math.cos(angle) * radius,
-                        y: h - radius + Math.sin(angle) * radius,
-                    };
-                },
-            },
-            { type: 'line', len: h - 2 * radius, calc: (d) => ({ x: 0, y: h - radius - d }) },
-            {
-                type: 'arc',
-                len: cornerLen,
-                calc: (d) => {
-                    const angle = Math.PI + (d / cornerLen) * (Math.PI / 2);
-                    return {
-                        x: radius + Math.cos(angle) * radius,
-                        y: radius + Math.sin(angle) * radius,
-                    };
-                },
-            },
-        ];
-    }
-
     getPointAtProgress(progress, radius) {
         progress = progress % 1;
         if (progress < 0) {
@@ -419,19 +372,69 @@ export class TableGlassEffect {
             return this.getPointAtProgressZeroRadius(progress);
         }
 
-        const segments = this.getSegments(this.width, this.height, radius);
-        const perimeter = segments.reduce((sum, seg) => sum + seg.len, 0);
-        const dist = progress * perimeter;
+        // ⚡ Bolt: Inline mathematical calculations inside high-frequency
+        // animation loops to eliminate Array.reduce and object generation GC pressure.
+        const w = this.width;
+        const h = this.height;
+        const cornerLen = 0.5 * Math.PI * radius;
+        const lineW = w - 2 * radius;
+        const lineH = h - 2 * radius;
+        const perimeter = 2 * lineW + 2 * lineH + 4 * cornerLen;
 
-        let currentDist = 0;
-        for (let i = 0; i < segments.length; i++) {
-            const seg = segments[i];
-            if (dist <= currentDist + seg.len || i === segments.length - 1) {
-                return seg.calc(dist - currentDist);
-            }
-            currentDist += seg.len;
+        let dist = progress * perimeter;
+
+        if (dist <= lineW) {
+            return { x: radius + dist, y: 0 };
         }
-        return { x: 0, y: 0 };
+        dist -= lineW;
+
+        if (dist <= cornerLen) {
+            const angle = -Math.PI / 2 + (dist / cornerLen) * (Math.PI / 2);
+            return {
+                x: w - radius + Math.cos(angle) * radius,
+                y: radius + Math.sin(angle) * radius,
+            };
+        }
+        dist -= cornerLen;
+
+        if (dist <= lineH) {
+            return { x: w, y: radius + dist };
+        }
+        dist -= lineH;
+
+        if (dist <= cornerLen) {
+            const angle = (dist / cornerLen) * (Math.PI / 2);
+            return {
+                x: w - radius + Math.cos(angle) * radius,
+                y: h - radius + Math.sin(angle) * radius,
+            };
+        }
+        dist -= cornerLen;
+
+        if (dist <= lineW) {
+            return { x: w - radius - dist, y: h };
+        }
+        dist -= lineW;
+
+        if (dist <= cornerLen) {
+            const angle = Math.PI / 2 + (dist / cornerLen) * (Math.PI / 2);
+            return {
+                x: radius + Math.cos(angle) * radius,
+                y: h - radius + Math.sin(angle) * radius,
+            };
+        }
+        dist -= cornerLen;
+
+        if (dist <= lineH) {
+            return { x: 0, y: h - radius - dist };
+        }
+        dist -= lineH;
+
+        const angle = Math.PI + (dist / cornerLen) * (Math.PI / 2);
+        return {
+            x: radius + Math.cos(angle) * radius,
+            y: radius + Math.sin(angle) * radius,
+        };
     }
 
     // Better path follower that respects corners
@@ -475,9 +478,20 @@ export class TableGlassEffect {
         }
 
         const colors = electric.colors || {};
-        const palette = [colors.primary, colors.secondary, colors.tertiary].filter(Boolean);
-        if (!palette.length) {
-            palette.push('rgba(255, 255, 255, 0.4)');
+        const rawPalette = [colors.primary, colors.secondary, colors.tertiary];
+        let validPaletteCount = 0;
+        for (let i = 0; i < rawPalette.length; i++) {
+            if (rawPalette[i]) {
+                validPaletteCount++;
+            }
+        }
+
+        let activePalette = rawPalette;
+        let activePaletteLength = validPaletteCount;
+
+        if (validPaletteCount === 0) {
+            activePalette = ['rgba(255, 255, 255, 0.4)'];
+            activePaletteLength = 1;
         }
 
         this.ctx.save();
@@ -488,9 +502,15 @@ export class TableGlassEffect {
         const trailWidth = electric.width || 0.1;
         const segments = 30; // More segments for smoother gradient
 
-        palette.forEach((color, i) => {
+        let paletteIdx = 0;
+        for (let i = 0; i < activePalette.length; i++) {
+            const color = activePalette[i];
+            if (!color) {
+                continue;
+            }
+
             const offset =
-                i / palette.length +
+                paletteIdx / activePaletteLength +
                 this.state.continuousPhase * (electric.streakSpeedMultiplier || 1);
             const headProgress = offset % 1;
 
@@ -524,7 +544,8 @@ export class TableGlassEffect {
                 this.ctx.lineTo(point2.x, point2.y);
                 this.ctx.stroke();
             }
-        });
+            paletteIdx++;
+        }
 
         this.ctx.restore();
     }
@@ -538,10 +559,12 @@ export class TableGlassEffect {
         this.ctx.save();
         this.ctx.globalCompositeOperation = 'screen';
 
-        this.state.energyParticles.forEach((p) => {
+        const particles = this.state.energyParticles;
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             // Only draw path particles (those without 'life' property)
             if (p.life !== undefined) {
-                return;
+                continue;
             }
 
             const pos = this.getPointAtProgress(p.progress, radius);
@@ -556,7 +579,7 @@ export class TableGlassEffect {
             this.ctx.beginPath();
             this.ctx.arc(pos.x, pos.y, p.size * flicker, 0, Math.PI * 2);
             this.ctx.fill();
-        });
+        }
 
         this.ctx.restore();
     }

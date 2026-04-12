@@ -232,7 +232,10 @@ export async function loadPerformanceSeries() {
     try {
         const [response, realtime] = await Promise.all([
             fetch('../data/output/performance_series.json'),
-            fetchRealTimeData().catch(() => null),
+            fetchRealTimeData().catch((error) => {
+                logger.warn('Caught exception:', error);
+                return null;
+            }),
         ]);
 
         if (!response.ok) {
@@ -338,7 +341,10 @@ export async function loadCompositionSnapshotData() {
     try {
         const [response, realtime] = await Promise.all([
             fetch('../data/output/figures/composition.json'),
-            fetchRealTimeData().catch(() => null),
+            fetchRealTimeData().catch((error) => {
+                logger.warn('Caught exception:', error);
+                return null;
+            }),
         ]);
 
         if (!response.ok) {

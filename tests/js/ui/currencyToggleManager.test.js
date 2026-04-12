@@ -236,4 +236,82 @@ describe('currencyToggleManager', () => {
         cycleCurrency(1); // Modulo math: (0 + 1) % 1 = 0
         expect(document.dispatchEvent).not.toHaveBeenCalled();
     });
+
+    it('returns early from attachGlobalListener if isDispatching is true', () => {
+        initCurrencyToggle();
+        document.dispatchEvent.mockClear();
+        // applyCurrencySelection triggers dispatch which sets isDispatching = true
+        // But since dispatch is synchronous, we need to mock it in a way that
+        // fires another global event while it's dispatching.
+        document.dispatchEvent.mockImplementationOnce((event) => {
+            if (event.type === 'currencyChangedGlobal') {
+                // Fire another one while the first is dispatching
+                document.dispatchEvent(
+                    new CustomEvent('currencyChangedGlobal', { detail: { currency: 'KRW' } })
+                );
+            }
+            return true;
+        });
+
+        applyCurrencySelection('JPY', { emitEvent: true });
+
+        // Since the inner dispatch was ignored (isDispatching was true),
+        // the currency should be JPY (the outer one), not KRW.
+        const jpyButton = document.querySelector('[data-currency="JPY"]');
+        expect(jpyButton.classList.contains('active')).toBe(true);
+    });
+
+    it('returns early from attachGlobalListener if event currency matches currentCurrency', () => {
+        initCurrencyToggle();
+        document.dispatchEvent.mockClear();
+
+        // Trigger global event with USD (which is already active)
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'USD' } })
+        );
+
+        // Ensure no state change occurred, currentCurrency remains USD
+        const usdButton = document.querySelector('[data-currency="USD"]');
+        expect(usdButton.classList.contains('active')).toBe(true);
+    });
+
+    it('returns early from cycleCurrency if there are no buttons', () => {
+        renderToggle('<div id="currencyToggleContainer"></div>');
+        loadModule();
+        expect(() => cycleCurrency(1)).not.toThrow();
+    });
+
+    it('returns early from cycleCurrency if container is missing', () => {
+        document.body.innerHTML = '';
+        loadModule();
+        expect(() => cycleCurrency(1)).not.toThrow();
+    });
+
+    it('ignores clicks outside of currency buttons', () => {
+        initCurrencyToggle();
+        document.dispatchEvent.mockClear();
+
+        // Render something inside the container that is not a currency-toggle
+        const nonButton = document.createElement('span');
+        nonButton.textContent = 'Not a button';
+        document.getElementById('currencyToggleContainer').appendChild(nonButton);
+
+        nonButton.click();
+
+        expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
+
+    it('ignores clicks when currency button dataset is invalid/empty', () => {
+        initCurrencyToggle();
+        document.dispatchEvent.mockClear();
+
+        // Add a button with no data-currency
+        const invalidButton = document.createElement('button');
+        invalidButton.className = 'currency-toggle';
+        document.getElementById('currencyToggleContainer').appendChild(invalidButton);
+
+        invalidButton.click();
+
+        expect(document.dispatchEvent).not.toHaveBeenCalled();
+    });
 });
