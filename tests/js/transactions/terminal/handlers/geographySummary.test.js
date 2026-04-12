@@ -41,10 +41,7 @@ describe('getGeographySummaryText', () => {
         const result = await getGeographySummaryText();
 
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
-        expect(logger.warn).toHaveBeenCalledWith(
-            'Caught exception:',
-            expect.any(Error)
-        );
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
         expect(logger.warn.mock.calls[0][1].message).toBe('Failed to fetch geography summary: 404');
     });
 

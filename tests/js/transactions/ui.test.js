@@ -28,7 +28,9 @@ describe('ui controller', () => {
     });
 
     afterEach(() => {
-        global.requestAnimationFrame.mockRestore();
+        if (global.requestAnimationFrame.mockRestore) {
+            global.requestAnimationFrame.mockRestore();
+        }
     });
 
     describe('toggleTable', () => {
@@ -156,6 +158,17 @@ describe('ui controller', () => {
 
             state.transactionState.activeChart = 'contribution'; // reset
         });
+
+        it('handles missing tableContainer safely when showing plot', () => {
+            document.body.innerHTML = `
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const controller = createUiController({ chartManager });
+            controller.togglePlot();
+            const plotSection = document.getElementById('runningAmountSection');
+            expect(plotSection.classList.contains('is-hidden')).toBe(false);
+            expect(chartManager.update).toHaveBeenCalled();
+        });
     });
 
     describe('togglePerformanceChart', () => {
@@ -271,15 +284,5 @@ describe('ui controller', () => {
             expect(() => legendItem.click()).not.toThrow();
             expect(state.setChartVisibility).toHaveBeenCalledWith('testSeries', false);
         });
-    });
-});
-
-describe('ui controller early returns', () => {
-    it('returns early when plotSection is null in togglePlot', () => {
-        document.body.innerHTML = '';
-        const chartManager = { update: jest.fn() };
-        const controller = createUiController({ chartManager });
-        controller.togglePlot();
-        // Since it returned early, setActiveChart is not called
     });
 });
