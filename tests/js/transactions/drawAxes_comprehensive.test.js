@@ -18,11 +18,12 @@ describe('drawAxes', () => {
         jest.resetModules();
 
         // Mock helpers.js using the alias path
-        jest.mock('@js/transactions/chart/helpers.js', () => ({
-            niceNumber: jest.fn((r) => r),
-            getMonoFontFamily: jest.fn(() => 'Monospace'),
-            colorWithAlpha: jest.fn((c, a) => `rgba(0,0,0,${a})`),
-            clamp01: jest.fn((v) => v),
+        // Using doMock to avoid hoisting issues and referencing global jest inside factory
+        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+            niceNumber: (r) => r,
+            getMonoFontFamily: () => 'Monospace',
+            colorWithAlpha: (c, a) => `rgba(0,0,0,${a})`,
+            clamp01: (v) => v,
         }));
 
         // Load the module using the alias
