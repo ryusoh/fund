@@ -187,9 +187,14 @@ export class TableGlassEffect {
 
                 if (rowElement && this.container.contains(rowElement)) {
                     // Find the index of this row in our stored rows array
-                    this.state.hoveredRowIndex = this.rows.findIndex(
-                        (r) => r.element === rowElement
-                    );
+                    let foundIndex = -1;
+                    for (let i = 0; i < this.rows.length; i++) {
+                        if (this.rows[i].element === rowElement) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+                    this.state.hoveredRowIndex = foundIndex;
                 } else {
                     this.state.hoveredRowIndex = -1;
                 }
@@ -234,9 +239,11 @@ export class TableGlassEffect {
             (this.state.pointer.y - this.state.pointerSmoothed.y) * damping;
 
         // Update particles
-        this.state.energyParticles.forEach((p) => {
+        const particles = this.state.energyParticles;
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             p.progress = (p.progress + delta * p.speed * 0.5) % 1;
-        });
+        }
     }
 
     draw() {
@@ -471,9 +478,18 @@ export class TableGlassEffect {
         }
 
         const colors = electric.colors || {};
-        const palette = [colors.primary, colors.secondary, colors.tertiary].filter(Boolean);
-        if (!palette.length) {
-            palette.push('rgba(255, 255, 255, 0.4)');
+        const rawPalette = [colors.primary, colors.secondary, colors.tertiary];
+        let validPaletteCount = 0;
+        for (let i = 0; i < rawPalette.length; i++) {
+            if (rawPalette[i]) {validPaletteCount++;}
+        }
+
+        let activePalette = rawPalette;
+        let activePaletteLength = validPaletteCount;
+
+        if (validPaletteCount === 0) {
+            activePalette = ['rgba(255, 255, 255, 0.4)'];
+            activePaletteLength = 1;
         }
 
         this.ctx.save();
@@ -484,9 +500,13 @@ export class TableGlassEffect {
         const trailWidth = electric.width || 0.1;
         const segments = 30; // More segments for smoother gradient
 
-        palette.forEach((color, i) => {
+        let paletteIdx = 0;
+        for (let i = 0; i < activePalette.length; i++) {
+            const color = activePalette[i];
+            if (!color) {continue;}
+
             const offset =
-                i / palette.length +
+                paletteIdx / activePaletteLength +
                 this.state.continuousPhase * (electric.streakSpeedMultiplier || 1);
             const headProgress = offset % 1;
 
@@ -520,7 +540,8 @@ export class TableGlassEffect {
                 this.ctx.lineTo(point2.x, point2.y);
                 this.ctx.stroke();
             }
-        });
+            paletteIdx++;
+        }
 
         this.ctx.restore();
     }
@@ -534,10 +555,12 @@ export class TableGlassEffect {
         this.ctx.save();
         this.ctx.globalCompositeOperation = 'screen';
 
-        this.state.energyParticles.forEach((p) => {
+        const particles = this.state.energyParticles;
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             // Only draw path particles (those without 'life' property)
             if (p.life !== undefined) {
-                return;
+                continue;
             }
 
             const pos = this.getPointAtProgress(p.progress, radius);
@@ -552,7 +575,7 @@ export class TableGlassEffect {
             this.ctx.beginPath();
             this.ctx.arc(pos.x, pos.y, p.size * flicker, 0, Math.PI * 2);
             this.ctx.fill();
-        });
+        }
 
         this.ctx.restore();
     }
