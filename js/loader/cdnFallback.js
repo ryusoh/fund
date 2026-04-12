@@ -59,7 +59,9 @@
                             document.head.appendChild(style);
                             resolve();
                         })
-                        .catch(function () {
+                        .catch(function (error) {
+                            // eslint-disable-next-line no-console
+                            console.warn('Caught exception:', error);
                             resolve();
                         });
                     return;

@@ -97,16 +97,33 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
 
     // Y-Axis 1: Forward Yield (%)
-    const yields = filteredData.map((d) => d.forward_yield);
-    const minY = 0;
-    const maxY = Math.max(...yields, 1) * 1.1;
+    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
+    const yields = [];
+    const incomes = [];
+    let rawMaxY = 1;
+    let rawMaxIncome = 100;
 
-    // Convert income to selected currency
-    const incomes = filteredData.map((d) =>
-        convertValueToCurrency(d.ttm_income, d.date, selectedCurrency)
-    );
+    for (let i = 0; i < filteredData.length; i += 1) {
+        const d = filteredData[i];
+
+        const yieldVal = d.forward_yield;
+        yields.push(yieldVal);
+        if (yieldVal > rawMaxY) {
+            rawMaxY = yieldVal;
+        }
+
+        const incomeVal = convertValueToCurrency(d.ttm_income, d.date, selectedCurrency);
+        incomes.push(incomeVal);
+        if (incomeVal > rawMaxIncome) {
+            rawMaxIncome = incomeVal;
+        }
+    }
+
+    const minY = 0;
+    const maxY = rawMaxY * 1.1;
+
     const minIncome = 0;
-    const maxIncome = Math.max(...incomes, 100) * 1.1;
+    const maxIncome = rawMaxIncome * 1.1;
 
     const xScale = (t) => margin.left + ((t - minTime) / (maxTime - minTime || 1)) * chartWidth;
     const yScale = (y) => margin.top + chartHeight - ((y - minY) / (maxY - minY)) * chartHeight;

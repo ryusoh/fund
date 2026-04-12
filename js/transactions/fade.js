@@ -12,10 +12,6 @@ export function setFadePreserveSecondLast(preserve) {
 }
 
 function updateOutputFade(outputContainer) {
-    if (!outputContainer) {
-        return;
-    }
-
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
         Array.from(outputContainer.children).forEach((child) => {
