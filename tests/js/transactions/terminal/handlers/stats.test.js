@@ -14,7 +14,6 @@ import {
     getTechnicalStatsText,
 } from '@js/transactions/terminalStats.js';
 import { getGeographySummaryText } from '@js/transactions/terminal/handlers/geographySummary.js';
-import { STATS_SUBCOMMANDS } from '@js/transactions/terminal/constants.js';
 
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {
