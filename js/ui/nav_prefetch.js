@@ -144,11 +144,7 @@
                 options.mode = 'no-cors';
             }
 
-            return fetch(fetchUrl.href, options).catch((error) => {
-                // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
-                return undefined;
-            });
+            return fetch(fetchUrl.href, options).catch(() => undefined);
         });
     }
 
@@ -219,9 +215,7 @@
             });
 
             tasks.push(
-                discoveryTask.catch((error) => {
-                    // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', error);
+                discoveryTask.catch(() => {
                     return undefined;
                 })
             );
@@ -240,11 +234,7 @@
                 }
                 return res.text().then((text) => extractBackgroundUrls(text, cssUrl));
             })
-            .catch((error) => {
-                // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
-                return [];
-            });
+            .catch(() => []);
     }
 
     function extractBackgroundUrls(cssText, cssUrl) {
