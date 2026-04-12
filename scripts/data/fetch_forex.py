@@ -1,9 +1,17 @@
+import atexit
 import json
 import os
+import shutil
+import tempfile
 from datetime import datetime, timezone
 
 import pandas as pd
 import yfinance as yf
+
+# Configure yfinance to use a temporary directory for timezone cache
+_yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
+yf.set_tz_cache_location(_yf_cache_dir)
+atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 
 BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, "..", "..", "data")
@@ -111,7 +119,7 @@ def _fetch_single(currency: str) -> float | None:
         return None
 
 
-def fetch_forex_data():
+def fetch_forex_data() -> None:
     print("Fetching forex data...")
     json_rates = {"USD": 1.0}
     csv_rates = {"USD": 1.0}

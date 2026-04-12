@@ -109,6 +109,27 @@ class TestCIParity:
             "wrangler" in dev_deps
         ), "wrangler should be in devDependencies for deploy-worker target"
 
+    def test_twrr_steps_include_all_figure_generators(self):
+        """Verify TWRR_STEPS includes all figure data generators.
+
+        Regression: geography and marketcap plots were stale because their
+        generation scripts were only in the weekly VT workflow, not in the
+        main TWRR pipeline.  All generate_*_data.py / generate_*_from_*.py
+        scripts that produce figures must run on every twrr-refresh.
+        """
+        content = get_makefile_content()
+
+        required_scripts = [
+            "scripts/generate_composition_data.py",
+            "scripts/generate_geography_data.py",
+            "scripts/generate_marketcap_from_composition.py",
+        ]
+        for script in required_scripts:
+            assert script in content, (
+                f"TWRR_STEPS missing {script} — "
+                "figure data will be stale between weekly VT updates"
+            )
+
     def test_makefile_uses_npx_yes_for_wrangler(self):
         """Verify Makefile uses npx --yes for wrangler."""
         content = get_makefile_content()

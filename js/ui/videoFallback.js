@@ -30,14 +30,10 @@ export function initVideoFallback() {
     const playPromise = video.play();
 
     if (playPromise !== undefined) {
-        playPromise
-            .then(() => {
-                // Video playing successfully
-            })
-            .catch(() => {
-                // Autoplay failed, use fallback
-                fallbackToStaticImage();
-            });
+        playPromise.catch(() => {
+            // Autoplay failed, use fallback
+            fallbackToStaticImage();
+        });
     } else {
         // Older browsers without play() promise support
         // Set up event listeners for fallback

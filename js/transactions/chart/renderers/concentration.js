@@ -206,7 +206,8 @@ export async function drawConcentrationChart(ctx, chartManager, timestamp) {
                 concentrationDataCache = data;
                 chartManager.redraw();
             })
-            .catch(() => {
+            .catch((error) => {
+                logger.warn('Caught exception:', error);
                 chartLayouts.concentration = null;
                 updateCrosshairUI(null, null);
                 if (emptyState) {

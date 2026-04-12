@@ -148,39 +148,63 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         });
     }
 
-    const percentSeriesToDraw = normalizedSeriesToDraw.map((series) => {
+    const percentSeriesToDraw = [];
+    const allPoints = [];
+    for (let i = 0; i < normalizedSeriesToDraw.length; i++) {
+        const series = normalizedSeriesToDraw[i];
         if (!Array.isArray(series.data) || series.data.length === 0) {
-            return { ...series, data: [] };
+            percentSeriesToDraw.push({ ...series, data: [] });
+            continue;
         }
+
         const baseValue = series.data[0].value;
         const safeBase = Number.isFinite(baseValue) && baseValue !== 0 ? baseValue : 1;
-        return {
-            ...series,
-            data: series.data.map((point) => ({
+        const validData = [];
+        for (let j = 0; j < series.data.length; j++) {
+            const point = series.data[j];
+            const newPoint = {
                 ...point,
                 value: (point.value / safeBase - 1) * 100,
-            })),
-        };
-    });
-
-    const allPoints = percentSeriesToDraw.flatMap((s) => s.data);
+            };
+            validData.push(newPoint);
+            allPoints.push(newPoint);
+        }
+        percentSeriesToDraw.push({ ...series, data: validData });
+    }
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;
     }
 
-    const allTimes = allPoints.map((p) => parseLocalDate(p.date).getTime());
-    let minTime = Math.min(...allTimes);
-    const maxTime = Math.max(...allTimes);
+    // Bolt: Replaced O(N) Array.map() + spread operator with a single inline loop for min/max
+    // Impact: Eliminates large intermediate array allocations and prevents Maximum Call Stack size exceeded errors on large datasets, reducing GC pressure during chart renders.
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        const time = parseLocalDate(allPoints[i].date).getTime();
+        const val = allPoints[i].value;
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+        if (val < dataMin) {
+            dataMin = val;
+        }
+        if (val > dataMax) {
+            dataMax = val;
+        }
+    }
 
     // Ensure minTime aligns with filter start for correct x-axis labels
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-    const allValues = allPoints.map((p) => p.value);
-    const dataMin = Math.min(...allValues);
-    const dataMax = Math.max(...allValues);
     const valueRange = dataMax - dataMin;
     const yPadding = Math.max(valueRange * 0.05, 5);
     const yMin = dataMin - yPadding;

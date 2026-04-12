@@ -1,188 +1,182 @@
 import { jest } from '@jest/globals';
 
-// Mock the formatters to pass through predictability
-jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
-    renderAsciiTable: jest.fn(({ rows }) => rows.map((r) => r.join(',')).join('\n')), // Return a string representation
-    formatNumeric: jest.fn((val) => `NUM_${val}`),
-    formatNumericPair: jest.fn((val1, val2) => `PAIR_${val1}_${val2}`),
-    formatMarketCap: jest.fn((val, currency) => `MCAP_${val}_${currency}`),
-    formatPercentageValue: jest.fn((val) => `PCT_${val}`),
-}));
+function mockFetchResponse(payload) {
+    return Promise.resolve({
+        ok: true,
+        json: async () => payload,
+    });
+}
 
 describe('getFinancialStatsText', () => {
-    let globalFetchSpy;
-
-    beforeEach(() => {
-        jest.resetModules();
-        global.fetch = jest.fn();
-        globalFetchSpy = global.fetch;
-    });
-
     afterEach(() => {
-        jest.restoreAllMocks();
+        delete global.fetch;
+        jest.resetModules();
     });
 
-    test('returns error message if analysis index fetch fails', async () => {
-        const financialModule = require('@js/transactions/terminal/stats/financial.js');
+    test('renders financial snapshot table from analysis data', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    {
+                        symbol: 'ANET',
+                        name: 'Arista Networks',
+                        path: '../data/analysis/ANET.json',
+                    },
+                ],
+            },
+            '../data/analysis/ANET.json': {
+                symbol: 'ANET',
+                market: {
+                    price: 122.36,
+                    eps: 2.63,
+                    forwardEps: 3.3607,
+                    pe: 46.5247,
+                    forwardPe: 36.4096,
+                    pegRatio: 1.25,
+                    evToEbitda: 39.219,
+                    enterpriseValue: 210000000000.0,
+                    ebitda: 5000000000.0,
+                    marketCap: 154086129664.0,
+                    dividendYield: 1.25,
+                    beta: 1.11,
+                    volatility: 0.34,
+                    fiftyDayAverage: 118.5,
+                    twoHundredDayAverage: 102.25,
+                    averageVolume: 1250000,
+                    averageDailyVolume10Day: 950000,
+                    fiftyTwoWeekHigh: 164.94,
+                    fiftyTwoWeekLow: 59.43,
+                    marketDataUpdatedAt: '2025-12-18T07:50:20.219405+00:00',
+                    currency: 'USD',
+                },
+            },
+        };
 
-        // Arrange
-        globalFetchSpy.mockResolvedValueOnce({ ok: false }); // Fails index load
+        global.fetch = jest.fn((url) => {
+            const normalized = url.split('?')[0];
+            const payload = fixtures[normalized];
+            if (!payload) {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
+            }
+            return mockFetchResponse(payload);
+        });
 
-        // Act
-        const result = await financialModule.getFinancialStatsText();
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
 
-        // Assert
-        expect(result).toBe('Error loading financial analysis data.');
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('../data/analysis/index.json')
+        );
+        expect(snapshot).toContain('FINANCIAL SNAPSHOT');
+        expect(snapshot).toContain('ANET');
+        expect(snapshot).toContain('2.63 / 3.36');
+        expect(snapshot).toContain('1.25');
+        expect(snapshot).toContain('1.25%');
     });
 
-    test('returns "No financial data available" if index has no tickers', async () => {
-        const financialModule = require('@js/transactions/terminal/stats/financial.js');
+    test('falls back to pe_ratio.json for missing forwardPe (like VT)', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    {
+                        symbol: 'VT',
+                        name: 'Vanguard Total World Stock ETF',
+                        path: '../data/analysis/VT.json',
+                    },
+                ],
+            },
+            '../data/analysis/VT.json': {
+                symbol: 'VT',
+                market: {
+                    pe: 18.5,
+                    currency: 'USD',
+                },
+            },
+            '../data/output/figures/pe_ratio.json': {
+                forward_pe: {
+                    ticker_forward_pe: {
+                        VT: [16.5, 17.2],
+                    },
+                },
+            },
+        };
 
-        // Arrange
-        globalFetchSpy.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ tickers: [] }),
+        global.fetch = jest.fn((url) => {
+            const normalized = url.split('?')[0];
+            const payload = fixtures[normalized];
+            if (!payload) {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
+            }
+            return mockFetchResponse(payload);
         });
 
-        globalFetchSpy.mockResolvedValueOnce({
-            // pe_ratio load (could succeed or fail)
-            ok: true,
-            json: async () => ({}),
-        });
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
 
-        // Act
-        const result = await financialModule.getFinancialStatsText();
-
-        // Assert
-        expect(result).toBe('No financial data available for holdings.');
+        expect(snapshot).toContain('18.50 / 17.20');
     });
 
-    test('resolves and formats financial data for valid tickers', async () => {
-        const financialModule = require('@js/transactions/terminal/stats/financial.js');
+    test('renders technical snapshot table from analysis data', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    {
+                        symbol: 'ANET',
+                        name: 'Arista Networks',
+                        path: '../data/analysis/ANET.json',
+                    },
+                ],
+            },
+            '../data/analysis/ANET.json': {
+                symbol: 'ANET',
+                market: {
+                    price: 122.36,
+                    beta: 1.11,
+                    volatility: 0.34,
+                    fiftyTwoWeekHigh: 164.94,
+                    fiftyTwoWeekLow: 59.43,
+                    fiftyDayAverage: 118.5,
+                    twoHundredDayAverage: 102.25,
+                    averageVolume: 1250000,
+                    averageDailyVolume10Day: 950000,
+                    currency: 'USD',
+                },
+            },
+        };
 
-        // Arrange
-        globalFetchSpy.mockImplementation((url) => {
-            if (url.includes('analysis/index.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({
-                        tickers: [
-                            { symbol: 'AAPL', path: '../data/aapl.json' },
-                            { symbol: 'MSFT', path: '../data/msft.json' },
-                        ],
-                    }),
-                });
+        global.fetch = jest.fn((url) => {
+            const normalized = url.split('?')[0];
+            const payload = fixtures[normalized];
+            if (!payload) {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
             }
-            if (url.includes('pe_ratio.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({
-                        forward_pe: {
-                            ticker_forward_pe: { AAPL: [10, 15] }, // Test getFallbackValue logic
-                        },
-                    }),
-                });
-            }
-            if (url.includes('aapl.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({
-                        symbol: 'AAPL',
-                        market: {
-                            eps: 5,
-                            forwardEps: 6,
-                            pe: 20,
-                            forwardPe: undefined, // Will use fallback when mapped to NaN by Number()
-                            pegRatio: 1.5,
-                            evToEbitda: 15.5, // Direct value present
-                            enterpriseValue: 3000,
-                            ebitda: 200,
-                            dividendYield: 0.05,
-                            marketCap: 2800,
-                            currency: 'USD',
-                        },
-                    }),
-                });
-            }
-            if (url.includes('msft.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({
-                        symbol: 'MSFT',
-                        market: {
-                            eps: 8,
-                            forwardEps: 9,
-                            pe: 30,
-                            forwardPe: 28,
-                            pegRatio: 2.0,
-                            // No direct evToEbitda, should calculate from EV and EBITDA
-                            enterpriseValue: 4000,
-                            ebitda: 400,
-                            dividendYield: 0.08,
-                            marketCap: 3800,
-                            currency: 'eur ', // tests currency trim and uppercase
-                        },
-                    }),
-                });
-            }
-            return Promise.resolve({ ok: true, json: async () => ({}) }); // Mock unknown requests to prevent breaking
+            return mockFetchResponse(payload);
         });
 
-        // Act
-        const result = await financialModule.getFinancialStatsText();
+        const { getTechnicalStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getTechnicalStatsText();
 
-        // Assert
-        expect(typeof result).toBe('string');
-
-        expect(result).toContain('AAPL');
-        expect(result).toContain('PAIR_5_6');
-        expect(result).toContain('PAIR_20_15'); // 15 came from the global fallback
-        expect(result).toContain('NUM_1.5');
-        expect(result).toContain('NUM_15.5'); // used direct evToEbitda
-        expect(result).toContain('MCAP_3000_USD');
-        expect(result).toContain('MCAP_200_USD');
-        expect(result).toContain('PCT_0.05');
-        expect(result).toContain('MCAP_2800_USD');
-
-        // MSFT assertions
-        expect(result).toContain('MSFT');
-        expect(result).toContain('PAIR_8_9');
-        expect(result).toContain('PAIR_30_28');
-        expect(result).toContain('NUM_2');
-        expect(result).toContain('NUM_10'); // Calculated 4000 / 400
-        expect(result).toContain('MCAP_4000_EUR');
-        expect(result).toContain('MCAP_400_EUR');
-        expect(result).toContain('PCT_0.08');
-        expect(result).toContain('MCAP_3800_EUR');
+        expect(snapshot).toContain('TECHNICAL SNAPSHOT');
+        expect(snapshot).toContain('ANET');
+        expect(snapshot).toContain('50D Avg');
+        expect(snapshot).toContain('1.11');
     });
 
-    test('handles missing market data gracefully', async () => {
-        const financialModule = require('@js/transactions/terminal/stats/financial.js');
+    test('handles fetch failures gracefully', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: false,
+                json: async () => ({}),
+            })
+        );
 
-        // Arrange
-        globalFetchSpy.mockImplementation((url) => {
-            if (url.includes('index.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({ tickers: [{ symbol: 'BAD', path: 'bad.json' }] }),
-                });
-            }
-            if (url.includes('pe_ratio.json')) {
-                return Promise.resolve({ ok: false });
-            }
-            if (url.includes('bad.json')) {
-                return Promise.resolve({
-                    ok: true,
-                    json: async () => ({ symbol: 'BAD' }), // missing market object
-                });
-            }
-            return Promise.reject(new Error(`Unhandled request: ${url}`));
-        });
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
 
-        // Act
-        const result = await financialModule.getFinancialStatsText();
-
-        // Assert
-        expect(result).toBe('No financial data available for holdings.');
+        expect(snapshot).toBe('Error loading financial analysis data.');
     });
 });
