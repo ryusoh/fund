@@ -286,15 +286,21 @@ describe('Responsive Utilities', () => {
             // Create multiple domains out of order to ensure min/max logic is hit
             const d1 = document.createElement('div');
             d1.setAttribute('data-ch-domain', 'true');
-            d1.getBoundingClientRect = jest.fn().mockReturnValue({ top: 150, bottom: 200, height: 50 }); // middle
+            d1.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 150, bottom: 200, height: 50 }); // middle
 
             const d2 = document.createElement('div');
             d2.setAttribute('data-ch-domain', 'true');
-            d2.getBoundingClientRect = jest.fn().mockReturnValue({ top: 100, bottom: 150, height: 50 }); // highest
+            d2.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 100, bottom: 150, height: 50 }); // highest
 
             const d3 = document.createElement('div');
             d3.setAttribute('data-ch-domain', 'true');
-            d3.getBoundingClientRect = jest.fn().mockReturnValue({ top: 200, bottom: 300, height: 100 }); // lowest
+            d3.getBoundingClientRect = jest
+                .fn()
+                .mockReturnValue({ top: 200, bottom: 300, height: 100 }); // lowest
 
             heatmapRoot.appendChild(d1);
             heatmapRoot.appendChild(d2);
@@ -303,7 +309,9 @@ describe('Responsive Utilities', () => {
             // Give nav element a rect to combine with
             const navElement = document.getElementById('calendar-navigation-controls');
             if (navElement) {
-                navElement.getBoundingClientRect = jest.fn().mockReturnValue({ top: 300, bottom: 400, height: 100 });
+                navElement.getBoundingClientRect = jest
+                    .fn()
+                    .mockReturnValue({ top: 300, bottom: 400, height: 100 });
             }
 
             responsive.initCalendarResponsiveHandlers();

@@ -327,7 +327,9 @@ describe('TableGlassEffect', () => {
     });
 
     it('should handle missing target in elementFromPoint during mousemove', () => {
-        const effect = new TableGlassEffect('.table-responsive-container', { rowHoverEffect: { enabled: true } });
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
         document.elementFromPoint.mockReturnValue(null);
         effect.handleMouseMove({ clientX: 0, clientY: 0 });
         expect(effect.state.hoveredRowIndex).toBe(-1);
@@ -341,12 +343,12 @@ describe('TableGlassEffect', () => {
 
     it('should draw particles but skip those with life property', () => {
         const effect = new TableGlassEffect('.table-responsive-container', {
-            threeD: { electric: { particlesEnabled: true } }
+            threeD: { electric: { particlesEnabled: true } },
         });
 
         effect.state.energyParticles = [
             { progress: 0.1, size: 2, flickerOffset: 0 },
-            { progress: 0.5, size: 2, flickerOffset: 1, life: 10 } // Should skip
+            { progress: 0.5, size: 2, flickerOffset: 1, life: 10 }, // Should skip
         ];
 
         const mockCtx = effect.ctx;
