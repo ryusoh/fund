@@ -238,5 +238,18 @@ describe('UI Controller', () => {
             }
             expect(mockSetChartVisibility).not.toHaveBeenCalled();
         });
+
+        it('handles legend items with empty series string', () => {
+            document.body.innerHTML = `
+                <div class="chart-legend">
+                    <div class="legend-item" data-series=""></div>
+                </div>
+            `;
+            createUiController({ chartManager });
+            const legendItem = document.querySelector('.legend-item');
+            legendItem.click();
+            expect(mockSetChartVisibility).not.toHaveBeenCalled();
+            expect(chartManager.redraw).not.toHaveBeenCalled();
+        });
     });
 });
