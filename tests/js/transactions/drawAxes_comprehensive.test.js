@@ -13,8 +13,7 @@ describe('drawAxes', () => {
     let yLabelFormatter;
 
     // Helper to create scales that respect current test parameters
-    const getXScale = (t, start, end, width, left) =>
-        ((t - start) / (end - start)) * width + left;
+    const getXScale = (t, start, end, width, left) => ((t - start) / (end - start)) * width + left;
     const getYScale = (v, min, max, height, top) =>
         top + height - ((v - min) / (max - min)) * height;
 

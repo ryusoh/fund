@@ -481,7 +481,9 @@ export class TableGlassEffect {
         const rawPalette = [colors.primary, colors.secondary, colors.tertiary];
         let validPaletteCount = 0;
         for (let i = 0; i < rawPalette.length; i++) {
-            if (rawPalette[i]) {validPaletteCount++;}
+            if (rawPalette[i]) {
+                validPaletteCount++;
+            }
         }
 
         let activePalette = rawPalette;
@@ -503,7 +505,9 @@ export class TableGlassEffect {
         let paletteIdx = 0;
         for (let i = 0; i < activePalette.length; i++) {
             const color = activePalette[i];
-            if (!color) {continue;}
+            if (!color) {
+                continue;
+            }
 
             const offset =
                 paletteIdx / activePaletteLength +
