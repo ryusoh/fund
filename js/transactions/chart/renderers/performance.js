@@ -148,22 +148,29 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         });
     }
 
-    const percentSeriesToDraw = normalizedSeriesToDraw.map((series) => {
+    const percentSeriesToDraw = [];
+    const allPoints = [];
+    for (let i = 0; i < normalizedSeriesToDraw.length; i++) {
+        const series = normalizedSeriesToDraw[i];
         if (!Array.isArray(series.data) || series.data.length === 0) {
-            return { ...series, data: [] };
+            percentSeriesToDraw.push({ ...series, data: [] });
+            continue;
         }
+
         const baseValue = series.data[0].value;
         const safeBase = Number.isFinite(baseValue) && baseValue !== 0 ? baseValue : 1;
-        return {
-            ...series,
-            data: series.data.map((point) => ({
+        const validData = [];
+        for (let j = 0; j < series.data.length; j++) {
+            const point = series.data[j];
+            const newPoint = {
                 ...point,
                 value: (point.value / safeBase - 1) * 100,
-            })),
-        };
-    });
-
-    const allPoints = percentSeriesToDraw.flatMap((s) => s.data);
+            };
+            validData.push(newPoint);
+            allPoints.push(newPoint);
+        }
+        percentSeriesToDraw.push({ ...series, data: validData });
+    }
     if (allPoints.length === 0) {
         stopPerformanceAnimation();
         return;
