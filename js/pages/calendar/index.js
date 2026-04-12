@@ -311,12 +311,12 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                     .ease(d3.easeCubicInOut)
                     .style('opacity', 0)
                     .on('end', function () {
-                        d3.select(this).html('');
+                        d3.select(this).text('');
                         state.isAnimating = false;
                     });
             } else {
                 // Fallback for test environment
-                fadeOutSelection.html('');
+                fadeOutSelection.text('');
                 state.isAnimating = false;
             }
         } else {
@@ -324,7 +324,7 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
             const textNodes = d3
                 .select(CALENDAR_SELECTORS.heatmap)
                 .selectAll('text.ch-subdomain-text');
-            textNodes.html('');
+            textNodes.text('');
         }
         return;
     }

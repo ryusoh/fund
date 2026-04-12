@@ -9,11 +9,8 @@ jest.mock('../../../../../js/utils/logger.js', () => ({
 }));
 
 describe('getGeographySummaryText', () => {
-    let globalFetchSpy;
-
     beforeEach(() => {
         global.fetch = jest.fn();
-        globalFetchSpy = global.fetch;
         jest.clearAllMocks();
     });
 
@@ -21,40 +18,40 @@ describe('getGeographySummaryText', () => {
         delete global.fetch;
     });
 
-    it('returns text on successful fetch', async () => {
-        globalFetchSpy.mockResolvedValueOnce({
+    it('should fetch and return text content successfully', async () => {
+        const mockText = 'Europe: 40%\nNorth America: 60%';
+        global.fetch.mockResolvedValueOnce({
             ok: true,
-            text: async () => 'Geography Summary Text',
+            text: async () => mockText,
         });
 
         const result = await getGeographySummaryText();
 
-        expect(globalFetchSpy).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
-        expect(result).toBe('Geography Summary Text');
+        expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
+        expect(result).toBe(mockText);
+        expect(logger.warn).not.toHaveBeenCalled();
     });
 
-    it('throws and catches error on failed fetch (not ok)', async () => {
-        globalFetchSpy.mockResolvedValueOnce({
+    it('should handle fetch errors (response not ok)', async () => {
+        global.fetch.mockResolvedValueOnce({
             ok: false,
             status: 404,
         });
 
         const result = await getGeographySummaryText();
 
-        expect(logger.warn).toHaveBeenCalledWith(
-            'Caught exception:',
-            expect.any(Error)
-        );
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
+        expect(logger.warn.mock.calls[0][1].message).toBe('Failed to fetch geography summary: 404');
     });
 
-    it('catches network errors', async () => {
-        const error = new Error('Network error');
-        globalFetchSpy.mockRejectedValueOnce(error);
+    it('should handle network errors', async () => {
+        const networkError = new Error('Network error');
+        global.fetch.mockRejectedValueOnce(networkError);
 
         const result = await getGeographySummaryText();
 
-        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', error);
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', networkError);
     });
 });

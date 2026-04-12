@@ -22,9 +22,16 @@
 
 **Verification:** Unit tests continue to pass. Verified cyclomatic complexity is <= 10.
 
+## 2025-04-18 - Architect Routine Code Refactoring
+
+- **Issue:** High cyclomatic complexity in `adjustMobilePanels` function in `js/transactions/layout.js`.
+- **Action:** Refactored the function by extracting logic into smaller, focused helpers (`clearStyle`, `setPanelHeight`, `handlePlotSection`), reducing cyclomatic complexity from 18 to under 10.
+
 ## 2025-03-20 - Architect Routine Code Refactoring
 
 - **Learning:** High cyclomatic complexity in formatting utilities (e.g., formatNumber) can often be traced to intertwined responsibilities: data conversion, sign resolution, string padding/suffixing, and precision calculation.
 - **Action:** Decomposed the 36-complexity formatNumber into targeted functional blocks (resolveSuffixAndValue, calculatePrecision, formatNumberWithSign, formatWithoutSign) allowing the main entry point to drop to a complexity of 9, dramatically improving testability and readability.
 - **Issue:** High cyclomatic complexity in `isLocalhost` function in `js/utils/host.js`.
 - **Action:** Refactored conditional logic to combine `if` statements and used a `Set` for loopback domains, reducing cyclomatic complexity from 14 to under 10.
+- Refactored `handlePlotCommand` in `js/transactions/terminal/handlers/plot.js` to reduce cyclomatic complexity from 167 to under 10 by extracting the massive switch statement into a dictionary of handler functions.
+- Ensured 100% test passage by preserving exact string matching for expected output formats.

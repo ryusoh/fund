@@ -1,6 +1,6 @@
 import { formatNumber } from '@utils/formatting.js';
 
-function computeEntryDisplay(entry, currency, rates, currencySymbols) {
+export function computeEntryDisplay(entry, currency, rates, currencySymbols) {
     if (!entry || typeof entry !== 'object') {
         return { changeText: '', totalText: '', showDetails: false };
     }
@@ -33,7 +33,7 @@ function computeEntryDisplay(entry, currency, rates, currencySymbols) {
 }
 
 export function ensureEntryDisplay(entry, currency, rates, currencySymbols) {
-    if (!entry) {
+    if (!entry || typeof entry !== 'object') {
         return { changeText: '', totalText: '', showDetails: false };
     }
     if (!entry.__displayCache) {
@@ -59,7 +59,7 @@ export function precomputeDisplayCaches(entries, currencySymbols, rates) {
         return;
     }
     const hydrate = (entry) => {
-        if (!entry) {
+        if (!entry || typeof entry !== 'object') {
             return;
         }
         entry.__displayCache = entry.__displayCache || {};
