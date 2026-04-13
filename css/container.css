@@ -144,10 +144,10 @@
     /* Hover Interaction */
     .container a:hover,
     .nav-container a:hover {
-        color: rgba(200, 200, 200, 0.85);
+        color: #e4ff00;
         transform: none;
         /* Remove scale */
-        text-shadow: none;
+        text-shadow: 0 0 8px rgba(228, 255, 0, 0.6);
         background-color: transparent;
         /* Toggle buttons don't have hover bg unless active usually? Toggle css says: background-color: transparent default. Hover not explicit in toggle.css shared. */
     }
@@ -238,10 +238,10 @@
     .container a:hover,
     .nav-container a:hover {
         opacity: 1;
-        color: #fff;
+        color: #e4ff00;
         transform: none;
         /* No scale on mobile */
-        text-shadow: none;
+        text-shadow: 0 0 8px rgba(228, 255, 0, 0.6);
     }
 
     .container .fa-chevron-right::before,
