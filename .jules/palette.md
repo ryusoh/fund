@@ -52,3 +52,9 @@
 **Learning:** The application explicitly stripped custom cursor attributes (`cursor: none !important;`) from footer links (`footer a`) to override default pointer styling, but simultaneously forgot to provide keyboard focus states (`:focus-visible`). This makes the GitHub profile link in the footer inaccessible for keyboard-only users who cannot perceive their tab position.
 
 **Action:** Always complement navigational footer links with explicit `:focus-visible` styling (`outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 4px;`) whenever interfering with default browser interactive styling, ensuring the links remain identifiable for keyboard navigation.
+
+## 2026-04-13 - Terminal Input Focus Accessibility
+
+**Learning:** Text inputs that rely on placeholder or minimalist styling (like `.terminal-input` acting as a custom command line) often explicitly strip default outlines (`outline: none;`) to look sleek. Without a `:focus-visible` state, keyboard users cannot visually confirm that the input field is active and ready to receive commands.
+
+**Action:** Always complement text inputs that use `outline: none;` with explicit `:focus-visible` styling (`outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: -2px;`) to ensure the interactive input field remains identifiable for keyboard navigation.
