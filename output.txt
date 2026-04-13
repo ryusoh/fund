@@ -1,9 +1,0 @@
-Coverage increased to 100% for the following files:
- js/transactions                   |     100 |      100 |     100 |     100 |
-  terminalStats.js                 |     100 |      100 |     100 |     100 |
-  ui.js                            |     100 |      100 |     100 |     100 |
- js/transactions/terminal/handlers |     100 |      100 |     100 |     100 |
-  geographySummary.js              |     100 |      100 |     100 |     100 |
-  stats.js                         |     100 |      100 |     100 |     100 |
- js/transactions/terminal/stats    |     100 |      100 |     100 |     100 |
-  static.js                        |     100 |      100 |     100 |     100 |
