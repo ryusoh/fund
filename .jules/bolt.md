@@ -100,5 +100,5 @@
 
 ## 2024-04-13 - Optimize Savitzky-Golay array allocations
 
-**Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N*W) allocations resulting in garbage collection pressure.
+**Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N\*W) allocations resulting in garbage collection pressure.
 **Action:** Avoid `.slice()` and pass the original array with start/end indices to helper functions to compute values in O(1) space per iteration.
