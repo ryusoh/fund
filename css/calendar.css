@@ -150,6 +150,11 @@ body.body-calendar {
     position: relative;
 }
 
+/* Make the circle icon visually bolder to match the chevron visual weight */
+.cal-nav-btn .fa-circle-o {
+    -webkit-text-stroke: 0.8px currentColor;
+}
+
 .cal-nav-btn:hover:not(:disabled) {
     color: rgba(180, 180, 185, 1);
     filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5)) drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4))

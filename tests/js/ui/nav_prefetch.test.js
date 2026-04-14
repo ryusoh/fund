@@ -142,7 +142,10 @@ describe('nav_prefetch.js', () => {
 
         it('should handle paths not ending in slash', () => {
             const fakeUrl = new URL('http://localhost');
-            Object.defineProperty(fakeUrl, 'pathname', { get: () => '/calendar', configurable: true });
+            Object.defineProperty(fakeUrl, 'pathname', {
+                get: () => '/calendar',
+                configurable: true,
+            });
             window.location = fakeUrl;
             loadScript();
             expect(document.head.innerHTML).not.toBeNull();
