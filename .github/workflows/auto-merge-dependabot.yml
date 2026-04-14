@@ -22,7 +22,7 @@ jobs:
         steps:
             - name: Auto-label + auto-merge single PR (pull_request_target)
               if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
-              uses: actions/github-script@v9
+              uses: actions/github-script@v8
               with:
                   script: |
                       const pr = context.payload.pull_request;
@@ -150,7 +150,7 @@ jobs:
 
             - name: Auto-approve with PAT (single)
               if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]' && env.AUTO_APPROVE_TOKEN != ''
-              uses: actions/github-script@v9
+              uses: actions/github-script@v8
               with:
                   github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
                   script: |
@@ -169,7 +169,7 @@ jobs:
 
             - name: Sweep open Dependabot PRs (dispatch/schedule)
               if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-              uses: actions/github-script@v9
+              uses: actions/github-script@v8
               with:
                   script: |
                       const { data: pulls } = await github.rest.pulls.list({
@@ -290,7 +290,7 @@ jobs:
 
             - name: Sweep approvals with PAT (dispatch/schedule)
               if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && env.AUTO_APPROVE_TOKEN != ''
-              uses: actions/github-script@v9
+              uses: actions/github-script@v8
               with:
                   github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
                   script: |

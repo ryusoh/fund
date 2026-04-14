@@ -126,16 +126,15 @@ export function savitzkyGolay(data, window = 5, order = 2, preserveEnd = true) {
         // Calculate the window boundaries
         const start = Math.max(0, i - halfWindow);
         const end = Math.min(data.length, i + halfWindow + 1);
-        // Bolt: Optimize O(N * W) slice allocations by using original array and indices
-        const windowLength = end - start;
+        const windowData = data.slice(start, end);
 
-        if (windowLength < 3) {
+        if (windowData.length < 3) {
             smoothed.push({ ...data[i] });
             continue;
         }
 
         // Simple polynomial fitting for small windows
-        const smoothedValue = polynomialFit(data, start, end, order, i - start);
+        const smoothedValue = polynomialFit(windowData, order, i - start);
         smoothed.push({
             x: data[i].x,
             y: smoothedValue,
@@ -222,10 +221,10 @@ export function adaptiveSmoothing(data, preserveEnd = true) {
 /**
  * Helper function for polynomial fitting in Savitzky-Golay
  */
-function polynomialFit(data, start, end, order, targetIndex) {
-    const n = end - start;
+function polynomialFit(points, order, targetIndex) {
+    const n = points.length;
     if (n <= order) {
-        return data[start + targetIndex]?.y || 0;
+        return points[targetIndex]?.y || 0;
     }
 
     // Simple linear regression for order 1, quadratic for order 2
@@ -236,7 +235,7 @@ function polynomialFit(data, start, end, order, targetIndex) {
             sumXY = 0,
             sumXX = 0;
         for (let i = 0; i < n; i++) {
-            const y = data[start + i].y;
+            const y = points[i].y;
             sumX += i;
             sumY += y;
             sumXY += i * y;
@@ -249,7 +248,7 @@ function polynomialFit(data, start, end, order, targetIndex) {
         return slope * targetIndex + intercept;
     }
     // For higher orders, use a simplified approach
-    return data[start + targetIndex]?.y || 0;
+    return points[targetIndex]?.y || 0;
 }
 
 /**
