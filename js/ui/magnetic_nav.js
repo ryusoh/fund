@@ -11,7 +11,7 @@ export function initMagneticNav() {
 
     // Target nav elements and footer icons
     const magneticElements = document.querySelectorAll(
-        '.container li, .nav-container li, #currencyToggleContainer .currency-toggle, footer a'
+        '.container li, .nav-container li, #currencyToggleContainer .currency-toggle, #calendar-navigation-controls .cal-nav-btn, footer a'
     );
 
     magneticElements.forEach((el) => {

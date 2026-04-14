@@ -18,6 +18,11 @@ describe('Magnetic Nav', () => {
                 <button class="currency-toggle active" data-currency="USD">$</button>
                 <button class="currency-toggle" data-currency="CNY">¥</button>
             </div>
+            <div id="calendar-navigation-controls">
+                <button class="cal-nav-btn" id="cal-prev"><i class="fa fa-chevron-left"></i></button>
+                <button class="cal-nav-btn" id="cal-today"><i class="fa fa-circle-o"></i></button>
+                <button class="cal-nav-btn" id="cal-next"><i class="fa fa-chevron-right"></i></button>
+            </div>
             <footer><a href="#">Footer</a></footer>
         `;
 
@@ -94,6 +99,43 @@ describe('Magnetic Nav', () => {
         currencyBtn.dispatchEvent(mouseLeaveEvent);
         expect(mockGsap.to).toHaveBeenCalledWith(
             currencyBtn,
+            expect.objectContaining({
+                x: 0,
+                y: 0,
+                ease: 'elastic.out(1, 0.3)',
+            })
+        );
+    });
+
+    it('should apply magnetic effect to calendar navigation buttons', () => {
+        initMagneticNav();
+        const calBtn = document.querySelector('#calendar-navigation-controls .cal-nav-btn');
+
+        calBtn.getBoundingClientRect = jest.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 30,
+            height: 30,
+        }));
+
+        const mouseMoveEvent = new MouseEvent('mousemove', {
+            clientX: 20,
+            clientY: 20,
+        });
+
+        calBtn.dispatchEvent(mouseMoveEvent);
+        expect(mockGsap.to).toHaveBeenCalled();
+
+        // Verify child <i> gets parallax effect too
+        const icon = calBtn.querySelector('i');
+        const callArgs = mockGsap.to.mock.calls.map((c) => c[0]);
+        expect(callArgs).toContain(icon);
+
+        mockGsap.to.mockClear();
+        const mouseLeaveEvent = new MouseEvent('mouseleave');
+        calBtn.dispatchEvent(mouseLeaveEvent);
+        expect(mockGsap.to).toHaveBeenCalledWith(
+            calBtn,
             expect.objectContaining({
                 x: 0,
                 y: 0,
