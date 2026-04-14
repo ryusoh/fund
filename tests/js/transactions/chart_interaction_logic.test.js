@@ -114,6 +114,61 @@ describe('Chart Interaction Logic', () => {
         // 20 series, all valid. Should have 20 dots.
         expect(ctx.arc).toHaveBeenCalledTimes(20);
     });
+
+    test('drawCrosshairOverlay should exclude appreciation series from range summary', () => {
+        const {
+            setCrosshairExternalUpdate,
+        } = require('../../../js/transactions/chart/interaction.js');
+        const mockUpdate = jest.fn();
+        setCrosshairExternalUpdate(mockUpdate);
+
+        // Define a layout with an appreciation series and another valid series
+        const rangeLayout = {
+            key: 'contribution',
+            chartBounds: { left: 0, right: 100, top: 0, bottom: 100 },
+            xScale: jest.fn().mockReturnValue(50),
+            yScale: jest.fn().mockReturnValue(50),
+            minTime: 0,
+            maxTime: 1000,
+            series: [
+                {
+                    key: 'appreciation',
+                    label: 'Appreciation',
+                    getValueAtTime: jest.fn((time) => (time === 10 ? 5 : 10)), // Delta = 5
+                },
+                {
+                    key: 'balance',
+                    label: 'Balance',
+                    getValueAtTime: jest.fn((time) => (time === 10 ? 100 : 150)), // Delta = 50
+                },
+            ],
+            valueType: 'currency',
+        };
+
+        // Enable range logic in state
+        crosshairState.active = false;
+        crosshairState.rangeStart = 10;
+        crosshairState.rangeEnd = 20;
+
+        drawCrosshairOverlay(ctx, rangeLayout);
+
+        expect(mockUpdate).toHaveBeenCalled();
+        const callArgs = mockUpdate.mock.calls[0];
+        const rangeSummary = callArgs[1]; // The second argument is rangeSummary
+
+        expect(rangeSummary).toBeDefined();
+        expect(rangeSummary.entries).toBeDefined();
+
+        // Assert that the 'appreciation' series isn't in entries
+        const keys = rangeSummary.entries.map((e) => e.key);
+        expect(keys).toContain('balance');
+        expect(keys).not.toContain('appreciation');
+
+        // Cleanup
+        setCrosshairExternalUpdate(null);
+        crosshairState.rangeStart = null;
+        crosshairState.rangeEnd = null;
+    });
 });
 
 describe('findHoveredHolding', () => {

@@ -443,6 +443,9 @@ function buildRangeSummary(layout, rawStart, rawEnd) {
         if (series && series.includeInRangeSummary === false) {
             return;
         }
+        if (series && series.key === 'appreciation') {
+            return;
+        }
         if (typeof series.getValueAtTime !== 'function') {
             return;
         }
