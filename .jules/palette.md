@@ -52,3 +52,9 @@
 **Learning:** The application explicitly stripped custom cursor attributes (`cursor: none !important;`) from footer links (`footer a`) to override default pointer styling, but simultaneously forgot to provide keyboard focus states (`:focus-visible`). This makes the GitHub profile link in the footer inaccessible for keyboard-only users who cannot perceive their tab position.
 
 **Action:** Always complement navigational footer links with explicit `:focus-visible` styling (`outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 4px;`) whenever interfering with default browser interactive styling, ensuring the links remain identifiable for keyboard navigation.
+
+## 2026-04-12 - Disabled Interactive Elements Hover Polish
+
+**Learning:** When adding hover states (`:hover`) to interactive elements like buttons, failing to scope the selector can result in disabled buttons continuing to show hover effects (like background color or shadow changes). This provides misleading visual cues to users, implying the element is interactive when it is not.
+
+**Action:** Always append `:not(:disabled)` to `:hover` pseudo-classes on interactive elements (e.g., `.btn:hover:not(:disabled)`) to ensure hover styling is only applied when the element is actually usable.

@@ -127,7 +127,7 @@ body {
     white-space: nowrap;
 }
 
-.ticker-btn:hover {
+.ticker-btn:hover:not(:disabled) {
     background: var(--accent-dim);
     color: var(--text-main);
     border-color: var(--text-main);

@@ -97,3 +97,8 @@
 
 **Learning:** In frontend data processing layers (like chart renderers preparing filtered arrays), chaining array methods like `.map().filter().map()` creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead and garbage collection (GC) pressure.
 **Action:** Consolidate chained higher-order array methods into a single manual `for` loop. Iterate over the input array, process the data, apply the filter condition via `continue` statements, and push the valid results directly to a pre-allocated or newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.
+
+## 2024-04-13 - Optimize Savitzky-Golay array allocations
+
+**Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N\*W) allocations resulting in garbage collection pressure.
+**Action:** Avoid `.slice()` and pass the original array with start/end indices to helper functions to compute values in O(1) space per iteration.
