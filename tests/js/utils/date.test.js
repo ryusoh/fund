@@ -330,6 +330,15 @@ describe('Date Utils', () => {
         });
     });
 
+    it('should return null if parsed year is somehow not finite', () => {
+        const spy = jest.spyOn(Number, 'isFinite').mockReturnValue(false);
+        try {
+            expect(parseYearFromDate('2024')).toBe(null);
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
     describe('parseQuarterToken', () => {
         it('should parse an explicit quarter token', () => {
             expect(parseQuarterToken('2024q1')).toEqual({ year: 2024, quarter: 1 });
