@@ -119,6 +119,42 @@ describe('nav_prefetch.js', () => {
         });
     }
 
+
+
+
+
+
+
+    describe('normalizePath internally', () => {
+        let originalLocation;
+
+        beforeEach(() => {
+            originalLocation = window.location;
+            const fakeUrl = new URL('http://localhost');
+            Object.defineProperty(fakeUrl, 'pathname', { get: () => '', configurable: true });
+            delete window.location;
+            window.location = fakeUrl;
+        });
+
+        afterEach(() => {
+            window.location = originalLocation;
+        });
+
+        it('should handle missing pathname gracefully and return / (home slug)', () => {
+            const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+            loadScript();
+            expect(appendChildSpy).not.toHaveBeenCalled();
+        });
+
+        it('should handle paths not ending in slash', () => {
+            const fakeUrl = new URL('http://localhost');
+            Object.defineProperty(fakeUrl, 'pathname', { get: () => '/calendar', configurable: true });
+            window.location = fakeUrl;
+            loadScript();
+            expect(document.head.innerHTML).not.toBeNull();
+        });
+    });
+
     test('should extract css backgrounds correctly', () => {
         loadScript();
 

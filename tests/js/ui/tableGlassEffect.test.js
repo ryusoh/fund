@@ -138,6 +138,44 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should not draw spotlight effect if hoveredRowIndex is -1', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+
+        effect.state.hoveredRowIndex = -1;
+        const mockCtx = effect.ctx;
+        mockCtx.fillRect = jest.fn();
+
+        effect.drawRowHoverEffect();
+        expect(mockCtx.fillRect).not.toHaveBeenCalled();
+    });
+
+    it('should calculate getPointAtProgress correctly for different distances', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.width = 100;
+        effect.height = 50;
+        const radius = 10;
+
+        const w = 100,
+            h = 50,
+            r = 10;
+        const lineW = w - 2 * r; // 80
+        const lineH = h - 2 * r; // 30
+        const cornerLen = (Math.PI * r) / 2; // ~15.7
+        const perimeter = 2 * lineW + 2 * lineH + 4 * cornerLen;
+
+        const distRightEdge = lineW + cornerLen + lineH / 2;
+        const progressRight = distRightEdge / perimeter;
+        const ptRightEdge = effect.getPointAtProgress(progressRight, radius);
+        expect(ptRightEdge.x).toBe(100);
+
+        const distBottomEdge = lineW + cornerLen + lineH + cornerLen + lineW / 2;
+        const progressBottom = distBottomEdge / perimeter;
+        const ptBottomEdge = effect.getPointAtProgress(progressBottom, radius);
+        expect(ptBottomEdge.y).toBe(50);
+    });
+
     it('should resize canvas on init', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         // Logic: Math.max(container.clientWidth, contentWidth + 2) => Math.max(800, 800 + 2) = 802
