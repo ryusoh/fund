@@ -41,7 +41,10 @@ html.force-hide-cursor .custom-cursor {
     height: 20px;
     border: 2px solid #e4ff00;
     border-radius: 50%;
-    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
     transform: scale(1);
     will-change: transform, background-color, box-shadow;
     background: transparent;
