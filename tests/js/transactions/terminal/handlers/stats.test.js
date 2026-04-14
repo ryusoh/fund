@@ -2,7 +2,6 @@ import { handleStatsCommand } from '@js/transactions/terminal/handlers/stats.js'
 import { transactionState } from '@js/transactions/state.js';
 import * as terminalStats from '@js/transactions/terminalStats.js';
 import * as geographySummary from '@js/transactions/terminal/handlers/geographySummary.js';
-import { STATS_SUBCOMMANDS } from '@js/transactions/terminal/constants.js';
 
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {},
