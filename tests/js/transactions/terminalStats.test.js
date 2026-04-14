@@ -1,7 +1,7 @@
 import { _coverage_dummy } from '@js/transactions/terminalStats.js';
 
-describe('terminalStats.js exports', () => {
-    it('should export the _coverage_dummy to enable statement coverage tracking', () => {
+describe('terminalStats.js', () => {
+    it('should export _coverage_dummy as true', () => {
         expect(_coverage_dummy).toBe(true);
     });
 });
