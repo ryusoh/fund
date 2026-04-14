@@ -23,3 +23,12 @@ Result: Targeted 5 edge cases for 'bayes', 'displayCache' and 'assetClasses' fun
 What: Added missing test coverage in `tests/js/ui/tableGlassEffect.test.js`, `tests/js/ui/nav_prefetch.test.js`, and `tests/js/utils/date.test.js`.
 Coverage: +3 previously missing coverage points addressed and covered edge cases.
 Result: `npm run verify:all` passes successfully, pushing overall coverage closer to 100%. No production logic was modified.
+
+## 2024-05-22
+
+What: Improved test coverage for `js/transactions/table/filter.js`, `js/transactions/table/sort.js`, and `js/transactions/table/parser.js`.
+Coverage: Brought all three files to nearly 100% test coverage using newly added Jest test suites targeting edge cases, empty/null states, and logic paths.
+Result: Targeted `js/transactions/table` component directory which had significantly low coverage, expanding coverage without modifying any production code.
+
+## 2024-05-22 - Transaction Table Parsing & Sorting
+**Learning:** For standalone user input parsing matching ticker logic (e.g., `js/transactions/table/parser.js`), test cases must account for edge cases where general standalone text happens to mimic a cleaned ticker format (e.g. `123AAPL` resolving into a valid ticker token even if unintended), ensuring strict deterministic parsing without crashing.
