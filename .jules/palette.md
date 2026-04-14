@@ -58,3 +58,8 @@
 **Learning:** When adding hover states (`:hover`) to interactive elements like buttons, failing to scope the selector can result in disabled buttons continuing to show hover effects (like background color or shadow changes). This provides misleading visual cues to users, implying the element is interactive when it is not.
 
 **Action:** Always append `:not(:disabled)` to `:hover` pseudo-classes on interactive elements (e.g., `.btn:hover:not(:disabled)`) to ensure hover styling is only applied when the element is actually usable.
+
+## 2026-04-14 - Interactive Container Scroll Accessibility
+
+**Learning:** Vertical scrolling containers (like `.left-col` and `.right-col` in analysis or `.chart-card` in terminal) with `overflow-y: auto` cannot be scrolled via keyboard unless they are explicitly focusable. Arrow keys will scroll the whole page instead of the container content.
+**Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling matching the container's `border-radius` to scrollable containers.
