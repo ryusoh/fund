@@ -131,10 +131,12 @@ export function computeRunningTotals(transactions, splitHistory) {
         });
     });
 
-    const totalRealizedGain = Array.from(securityStates.values()).reduce(
-        (sum, s) => sum + s.totalRealizedGain,
-        0
-    );
+    // Bolt: Use direct for...of loop over Map.values() instead of Array.from().reduce()
+    // to avoid intermediate array allocation and reduce garbage collection overhead
+    let totalRealizedGain = 0;
+    for (const s of securityStates.values()) {
+        totalRealizedGain += s.totalRealizedGain;
+    }
     runningTotalsById.totalRealizedGain = totalRealizedGain;
 
     return runningTotalsById;
