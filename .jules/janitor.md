@@ -12,3 +12,8 @@
 - **Issue:** Routine check for `TODO`s in the application logic.
 - **Action:** Scanned `js/` and `scripts/` directories. Only vendor scripts (e.g., `js/vendor/three.module.js`) contained `TODO`s. Confirmed no core logic modifications required.
 - Audited codebase for dead code and TODO items. Did not find core application dead code or TODOs needing resolution in this pass that wouldn't violate the NO BREAKING CHANGES rule.
+
+## 2025-02-27 - Modularization of filterAndSort
+- **Issue:** Function `filterAndSort` in `js/transactions/table.js` had high cyclomatic complexity (25) due to monolithic filter, parsing, and sort logic.
+- **Action:** Refactored into smaller sub-modules (`js/transactions/table/filter.js`, `js/transactions/table/parser.js`, `js/transactions/table/sort.js`), isolating logic into testable components. The new structure drops `filterAndSort` complexity to 11.
+- **Verification:** Unit tests passing successfully with no regression in `table.js` behavior.
