@@ -8,7 +8,7 @@ export function initIntroAnimation() {
         if (window.sessionStorage.getItem('introPlayed')) {
             return;
         }
-    } catch (e) {
+    } catch {
         // Ignore storage errors
     }
 
@@ -50,7 +50,7 @@ export function initIntroAnimation() {
             overlay.remove();
             try {
                 window.sessionStorage.setItem('introPlayed', 'true');
-            } catch (e) {
+            } catch {
                 // Ignore
             }
         },

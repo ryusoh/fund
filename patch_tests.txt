@@ -1,0 +1,10 @@
+<<<<<<< SEARCH
+import { initIntroAnimation } from '@ui/intro_animation.js';
+=======
+import { initIntroAnimation } from '../../../js/ui/intro_animation.js';
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+import { initMagneticNav } from '@ui/magnetic_nav.js';
+=======
+import { initMagneticNav } from '../../../js/ui/magnetic_nav.js';
+>>>>>>> REPLACE

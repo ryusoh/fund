@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { initIntroAnimation } from '@ui/intro_animation.js';
+import { initIntroAnimation } from '../../../js/ui/intro_animation.js';
 
 describe('Intro Animation', () => {
     let mockGsap;

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { initMagneticNav } from '@ui/magnetic_nav.js';
+import { initMagneticNav } from '../../../js/ui/magnetic_nav.js';
 
 describe('Magnetic Nav', () => {
     let mockGsap;
