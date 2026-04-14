@@ -15,6 +15,12 @@
     box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
 }
 
+.chart-card:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 18px;
+}
+
 .chart-card.chart-zoomed-out {
     pointer-events: none;
     opacity: 0;
