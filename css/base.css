@@ -33,16 +33,6 @@ html {
     background-color: #000;
 }
 
-/* Custom text selection styling */
-::selection {
-    background: #e4ff00;
-    color: #000;
-}
-::-moz-selection {
-    background: #e4ff00;
-    color: #000;
-}
-
 body::before,
 body::after {
     content: '';
