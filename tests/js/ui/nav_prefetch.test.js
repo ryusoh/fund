@@ -119,12 +119,6 @@ describe('nav_prefetch.js', () => {
         });
     }
 
-
-
-
-
-
-
     describe('normalizePath internally', () => {
         let originalLocation;
 
