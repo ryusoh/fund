@@ -74,7 +74,9 @@ export function applyValueFilters(transactions, commands, currentCurrency) {
 }
 
 export function applyTextFilter(transactions, term) {
-    if (!term) return transactions;
+    if (!term) {
+        return transactions;
+    }
 
     return transactions.filter(
         (t) =>
