@@ -55,9 +55,22 @@
         <link rel="stylesheet" href="./css/container.css" />
         <link rel="stylesheet" href="./css/perf.css" />
         <link rel="stylesheet" href="./css/cursor.css" />
+        <link rel="stylesheet" href="./css/marquee.css" />
     </head>
 
     <body class="body-main no-pull-to-refresh">
+        <div class="marquee-wrapper" aria-hidden="true">
+            <div class="marquee-container marquee-left">
+                <div class="marquee-content">
+                    <span>PERFORMANCE &bull; ALPHA &bull; RETURNS &bull; ANALYTICS &bull;&nbsp;</span>
+                </div>
+            </div>
+            <div class="marquee-container marquee-right">
+                <div class="marquee-content">
+                    <span>STRATEGY &bull; RISK &bull; MANAGEMENT &bull; EXECUTION &bull;&nbsp;</span>
+                </div>
+            </div>
+        </div>
         <nav class="container" aria-label="Main Navigation">
             <ul>
                 <li>
@@ -141,5 +154,7 @@
         <script type="module" src="./js/ui/magnetic_nav.js"></script>
         <!-- Custom cursor initialization -->
         <script type="module" src="./js/cursor-init.js"></script>
+        <script type="module" src="./js/ui/marquee.js"></script>
+        <script type="module" src="./js/ui/tilt_effect.js"></script>
     </body>
 </html>

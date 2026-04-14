@@ -1,0 +1,40 @@
+.marquee-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    mix-blend-mode: overlay;
+    opacity: 0.15;
+}
+.marquee-container {
+    display: flex;
+    white-space: nowrap;
+    will-change: transform;
+    margin: 10px 0;
+}
+.marquee-container.marquee-left {
+    transform: rotate(-3deg) scale(1.1);
+}
+.marquee-container.marquee-right {
+    transform: rotate(3deg) scale(1.1);
+}
+.marquee-content {
+    display: inline-flex;
+}
+.marquee-content span {
+    font-size: clamp(5rem, 10vw, 12rem);
+    font-weight: 900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.9);
+    padding: 0 30px;
+    letter-spacing: 0.02em;
+}
