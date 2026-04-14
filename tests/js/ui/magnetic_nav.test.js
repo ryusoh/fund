@@ -14,6 +14,10 @@ describe('Magnetic Nav', () => {
                 <li><a href="#">Link 1</a></li>
                 <li><a href="#">Link 2</a></li>
             </nav>
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD">$</button>
+                <button class="currency-toggle" data-currency="CNY">¥</button>
+            </div>
             <footer><a href="#">Footer</a></footer>
         `;
 
@@ -64,5 +68,37 @@ describe('Magnetic Nav', () => {
         firstLi.dispatchEvent(mouseMoveEvent);
 
         expect(mockGsap.to).not.toHaveBeenCalled();
+    });
+
+    it('should apply magnetic effect to currency toggle buttons', () => {
+        initMagneticNav();
+        const currencyBtn = document.querySelector('#currencyToggleContainer .currency-toggle');
+
+        currencyBtn.getBoundingClientRect = jest.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 30,
+            height: 30,
+        }));
+
+        const mouseMoveEvent = new MouseEvent('mousemove', {
+            clientX: 20,
+            clientY: 20,
+        });
+
+        currencyBtn.dispatchEvent(mouseMoveEvent);
+        expect(mockGsap.to).toHaveBeenCalled();
+
+        mockGsap.to.mockClear();
+        const mouseLeaveEvent = new MouseEvent('mouseleave');
+        currencyBtn.dispatchEvent(mouseLeaveEvent);
+        expect(mockGsap.to).toHaveBeenCalledWith(
+            currencyBtn,
+            expect.objectContaining({
+                x: 0,
+                y: 0,
+                ease: 'elastic.out(1, 0.3)',
+            })
+        );
     });
 });

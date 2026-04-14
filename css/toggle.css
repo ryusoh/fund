@@ -6,7 +6,7 @@
     background-color: rgba(50, 50, 50, 0.4); /* Dark grey, half-transparent for dark theme */
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Adjusted shadow for dark background */
-    overflow: hidden; /* Ensures rounded corners clip children */
+    overflow: visible; /* Allow magnetic pull movement beyond container bounds */
     padding: 3px; /* Small padding around buttons */
     -webkit-backdrop-filter: blur(10px); /* For Safari */
     backdrop-filter: blur(10px); /* Frosted glass effect */
