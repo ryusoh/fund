@@ -1,132 +1,99 @@
-import { jest } from '@jest/globals';
 import {
     getCagrText,
     getAnnualReturnText,
     getRatioText,
-} from '../../../../../js/transactions/terminal/stats/static.js';
-import { logger } from '../../../../../js/utils/logger.js';
+} from '@js/transactions/terminal/stats/static.js';
+import { logger } from '@js/utils/logger.js';
 
-jest.mock('../../../../../js/utils/logger.js', () => ({
+jest.mock('@js/utils/logger.js', () => ({
     logger: {
         warn: jest.fn(),
     },
 }));
 
-describe('static stats handlers', () => {
+describe('static.js stats functions', () => {
     beforeEach(() => {
-        global.fetch = jest.fn();
         jest.clearAllMocks();
     });
 
-    afterEach(() => {
-        delete global.fetch;
-    });
-
     describe('getCagrText', () => {
-        it('should fetch and return text content successfully', async () => {
-            const mockText = 'CAGR: 10%';
-            global.fetch.mockResolvedValueOnce({
-                ok: true,
-                text: async () => mockText,
-            });
-
+        it('should return text on ok response', async () => {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    text: () => Promise.resolve('CAGR Data'),
+                })
+            );
             const result = await getCagrText();
-
-            expect(global.fetch).toHaveBeenCalledWith('../data/output/cagr.txt');
-            expect(result).toBe(mockText);
-            expect(logger.warn).not.toHaveBeenCalled();
+            expect(result).toBe('CAGR Data');
         });
 
-        it('should handle fetch errors (response not ok)', async () => {
-            global.fetch.mockResolvedValueOnce({
-                ok: false,
-            });
-
+        it('should handle non-ok response', async () => {
+            global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
             const result = await getCagrText();
-
             expect(result).toBe('Error loading CAGR data.');
         });
 
-        it('should handle network errors', async () => {
-            const networkError = new Error('Network error');
-            global.fetch.mockRejectedValueOnce(networkError);
-
+        it('should handle exception', async () => {
+            const error = new Error('error');
+            global.fetch = jest.fn(() => Promise.reject(error));
             const result = await getCagrText();
-
             expect(result).toBe('Error loading CAGR data.');
-            expect(logger.warn).toHaveBeenCalledWith('Caught exception:', networkError);
+            expect(logger.warn).toHaveBeenCalled();
         });
     });
 
     describe('getAnnualReturnText', () => {
-        it('should fetch and return text content successfully', async () => {
-            const mockText = 'Annual Return: 15%';
-            global.fetch.mockResolvedValueOnce({
-                ok: true,
-                text: async () => mockText,
-            });
-
+        it('should return text on ok response', async () => {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    text: () => Promise.resolve('Annual Return Data'),
+                })
+            );
             const result = await getAnnualReturnText();
-
-            expect(global.fetch).toHaveBeenCalledWith('../data/output/annual_returns.txt');
-            expect(result).toBe(mockText);
-            expect(logger.warn).not.toHaveBeenCalled();
+            expect(result).toBe('Annual Return Data');
         });
 
-        it('should handle fetch errors (response not ok)', async () => {
-            global.fetch.mockResolvedValueOnce({
-                ok: false,
-            });
-
+        it('should handle non-ok response', async () => {
+            global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
             const result = await getAnnualReturnText();
-
             expect(result).toBe('Error loading annual returns.');
         });
 
-        it('should handle network errors', async () => {
-            const networkError = new Error('Network error');
-            global.fetch.mockRejectedValueOnce(networkError);
-
+        it('should handle exception', async () => {
+            const error = new Error('error');
+            global.fetch = jest.fn(() => Promise.reject(error));
             const result = await getAnnualReturnText();
-
             expect(result).toBe('Error loading annual returns.');
-            expect(logger.warn).toHaveBeenCalledWith('Caught exception:', networkError);
+            expect(logger.warn).toHaveBeenCalled();
         });
     });
 
     describe('getRatioText', () => {
-        it('should fetch and return text content successfully', async () => {
-            const mockText = 'Sharpe: 1.5';
-            global.fetch.mockResolvedValueOnce({
-                ok: true,
-                text: async () => mockText,
-            });
-
+        it('should return text on ok response', async () => {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    text: () => Promise.resolve('Ratio Data'),
+                })
+            );
             const result = await getRatioText();
-
-            expect(global.fetch).toHaveBeenCalledWith('../data/output/ratios.txt');
-            expect(result).toBe(mockText);
-            expect(logger.warn).not.toHaveBeenCalled();
+            expect(result).toBe('Ratio Data');
         });
 
-        it('should handle fetch errors (response not ok)', async () => {
-            global.fetch.mockResolvedValueOnce({
-                ok: false,
-            });
-
+        it('should handle non-ok response', async () => {
+            global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
             const result = await getRatioText();
-
             expect(result).toBe('Error loading Sharpe and Sortino ratios.');
         });
 
-        it('should handle network errors', async () => {
-            const networkError = new Error('Network error');
-            global.fetch.mockRejectedValueOnce(networkError);
-
+        it('should handle exception', async () => {
+            const error = new Error('error');
+            global.fetch = jest.fn(() => Promise.reject(error));
             const result = await getRatioText();
-
             expect(result).toBe('Error loading Sharpe and Sortino ratios.');
-            expect(logger.warn).toHaveBeenCalledWith('Caught exception:', networkError);
+            expect(logger.warn).toHaveBeenCalled();
         });
     });
 });

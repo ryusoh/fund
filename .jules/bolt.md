@@ -99,5 +99,11 @@
 **Action:** Consolidate chained higher-order array methods into a single manual `for` loop. Iterate over the input array, process the data, apply the filter condition via `continue` statements, and push the valid results directly to a pre-allocated or newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.
 
 ## 2024-05-24 - Avoid intermediate array allocations for summations
+
 **Learning:** In `js/transactions/calculations.js`, using `Array.from(securityStates.values()).reduce(...)` to calculate a sum creates an unnecessary intermediate array, which forces an extra iteration and increases garbage collection pressure, especially for high-frequency or large data calculations.
 **Action:** Replace `Array.from(iterable).reduce(...)` with a direct `for...of` loop over the iterable to prevent memory allocation and reduce garbage collection overhead.
+
+## 2024-04-13 - Optimize Savitzky-Golay array allocations
+
+**Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N*W) allocations resulting in garbage collection pressure.
+**Action:** Avoid `.slice()` and pass the original array with start/end indices to helper functions to compute values in O(1) space per iteration.
