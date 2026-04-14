@@ -17,3 +17,9 @@ Result: Expanded coverage metrics safely. Added tests correctly intercepting moc
 What: Improved test coverage for `js/pages/analysis/bayes.js`, `js/pages/calendar/displayCache.js`, and `js/config/assetClasses.js`.
 Coverage: Brought all three files to 100% test coverage using Jest tests.
 Result: Targeted 5 edge cases for 'bayes', 'displayCache' and 'assetClasses' functions. Hit 100% missing coverages on displayCache and assetClasses, and increased bayes testing for edge cases to reach 100% coverage.
+
+## 2024-05-21
+
+What: Added missing test coverage in `tests/js/ui/tableGlassEffect.test.js`, `tests/js/ui/nav_prefetch.test.js`, and `tests/js/utils/date.test.js`.
+Coverage: +3 previously missing coverage points addressed and covered edge cases.
+Result: `npm run verify:all` passes successfully, pushing overall coverage closer to 100%. No production logic was modified.
