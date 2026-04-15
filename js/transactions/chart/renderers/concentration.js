@@ -280,17 +280,24 @@ export async function drawConcentrationChart(ctx, chartManager, timestamp) {
     }
 
     // --- Scales ---
-    const dateTimes = series.map((p) => p.date.getTime());
-    let minTime = Math.min(...dateTimes);
-    const maxTime = Math.max(...dateTimes);
+    const dateTimes = new Array(series.length);
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let dataMax = -Infinity;
+    for (let i = 0; i < series.length; i++) {
+        const time = series[i].date.getTime();
+        dateTimes[i] = time;
+        if (time < minTime) {minTime = time;}
+        if (time > maxTime) {maxTime = time;}
+
+        const eh = series[i].effectiveHoldings;
+        if (eh > dataMax) {dataMax = eh;}
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
-    const ehValues = series.map((p) => p.effectiveHoldings);
-    const dataMax = Math.max(...ehValues);
 
     // Y range: start from 0 (most concentrated), extend to max effective holdings
     const yMin = 0;

@@ -717,7 +717,10 @@ function renderMonteCarloResults(result) {
     ctx.clearRect(0, 0, width, height);
 
     const { counts } = result.histogram;
-    const maxCount = Math.max(...counts);
+    let maxCount = -Infinity;
+    for (let i = 0; i < counts.length; i++) {
+        if (counts[i] > maxCount) {maxCount = counts[i];}
+    }
     const barWidth = width / counts.length;
 
     ctx.fillStyle = '#ff3300'; // Safety Orange
