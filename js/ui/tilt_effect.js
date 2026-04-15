@@ -1,13 +1,20 @@
+import { TILT_EFFECT } from '../config.js';
+
 export function initTiltEffect() {
-    if (typeof window === 'undefined' || !window.gsap) {
+    if (!TILT_EFFECT.enabled || typeof window === 'undefined' || !window.gsap) {
         return;
     }
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (isTouchDevice) {
+    const isTouchOnly =
+        ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+        !window.matchMedia('(pointer: fine)').matches;
+    if (isTouchOnly) {
         return;
     }
-    const tiltContainers = document.querySelectorAll('nav.container, .quantum-widget');
-    tiltContainers.forEach(container => {
+    const tiltContainers = document.querySelectorAll(
+        'nav.container, .quantum-widget, .marquee-container'
+    );
+    tiltContainers.forEach((container) => {
+        window.gsap.set(container, { transformPerspective: 1000, transformStyle: 'preserve-3d' });
         container.addEventListener('mousemove', (e) => {
             const rect = container.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -19,9 +26,9 @@ export function initTiltEffect() {
             window.gsap.to(container, {
                 rotateX: rotateX,
                 rotateY: rotateY,
-                transformPerspective: 1000,
                 duration: 0.5,
-                ease: 'power2.out'
+                ease: 'power2.out',
+                overwrite: true,
             });
         });
         container.addEventListener('mouseleave', () => {
@@ -29,7 +36,8 @@ export function initTiltEffect() {
                 rotateX: 0,
                 rotateY: 0,
                 duration: 1,
-                ease: 'elastic.out(1, 0.3)'
+                ease: 'elastic.out(1, 0.3)',
+                overwrite: true,
             });
         });
     });
