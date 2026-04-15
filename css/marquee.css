@@ -35,7 +35,7 @@
 .marquee-content span {
     font-size: clamp(5rem, 10vw, 12rem);
     font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono ExtraBold', monospace;
     text-transform: uppercase;
     color: transparent;
     -webkit-text-stroke: 2px rgba(255, 255, 255, 0.9);
