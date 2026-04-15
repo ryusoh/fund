@@ -165,8 +165,11 @@ export function updatePieChart(data) {
                         chart.glassPointerTarget = { x: 0, y: 0 };
                     }
 
+                    chart._cursorPos = { x: mouseX, y: mouseY };
+
                     // If table is persisting due to a click (on desktop), hover logic should not alter table visibility
                     if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                        chart.update();
                         return;
                     }
 
@@ -253,6 +256,7 @@ export function updatePieChart(data) {
         if (fundChartInstance.canvas && !fundChartInstance._glassMouseLeaveBound) {
             fundChartInstance.canvas.addEventListener('mouseleave', () => {
                 fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+                fundChartInstance._cursorPos = null;
             });
             fundChartInstance._glassMouseLeaveBound = true;
         }
