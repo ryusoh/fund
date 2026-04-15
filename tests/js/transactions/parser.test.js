@@ -1,4 +1,9 @@
-import { normalizeTickerToken, parseCommandPalette, deriveCompositionTickerFilters, matchesAssetClass } from '@js/transactions/table/parser.js';
+import {
+    normalizeTickerToken,
+    parseCommandPalette,
+    deriveCompositionTickerFilters,
+    matchesAssetClass,
+} from '@js/transactions/table/parser.js';
 import * as config from '@js/config.js';
 
 jest.mock('@js/config.js');

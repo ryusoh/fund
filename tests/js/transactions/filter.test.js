@@ -1,4 +1,9 @@
-import { applyDateRangeFilter, applySecurityFilter, applyValueFilters, applyTextFilter } from '@js/transactions/table/filter.js';
+import {
+    applyDateRangeFilter,
+    applySecurityFilter,
+    applyValueFilters,
+    applyTextFilter,
+} from '@js/transactions/table/filter.js';
 import * as utils from '@js/transactions/utils.js';
 import * as parser from '@js/transactions/table/parser.js';
 import * as dateUtils from '@utils/date.js';
@@ -67,15 +72,11 @@ describe('applyDateRangeFilter', () => {
 });
 
 describe('applySecurityFilter', () => {
-    const transactions = [
-        { security: 'AAPL' },
-        { security: 'MSFT' },
-        { security: 'GOOGL' },
-    ];
+    const transactions = [{ security: 'AAPL' }, { security: 'MSFT' }, { security: 'GOOGL' }];
 
     beforeEach(() => {
         jest.resetAllMocks();
-        parser.normalizeTickerToken.mockImplementation(t => t ? t.toUpperCase() : null);
+        parser.normalizeTickerToken.mockImplementation((t) => (t ? t.toUpperCase() : null));
     });
 
     it('returns all transactions when no security or multiTickerSet is provided', () => {
@@ -132,14 +133,20 @@ describe('applyValueFilters', () => {
         jest.resetAllMocks();
         utils.convertValueToCurrency.mockImplementation((val) => val);
         parser.matchesAssetClass.mockImplementation((sec, cls) => {
-            if (cls === 'etf') {return sec === 'VOO';}
-            if (cls === 'stock') {return sec !== 'VOO';}
+            if (cls === 'etf') {
+                return sec === 'VOO';
+            }
+            if (cls === 'stock') {
+                return sec !== 'VOO';
+            }
             return true;
         });
     });
 
     it('returns all transactions when no filters are applied', () => {
-        expect(applyValueFilters(transactions, { min: null, max: null }, 'USD')).toEqual(transactions);
+        expect(applyValueFilters(transactions, { min: null, max: null }, 'USD')).toEqual(
+            transactions
+        );
     });
 
     it('filters by min net amount absolute value', () => {
@@ -163,7 +170,9 @@ describe('applyValueFilters', () => {
     });
 
     it('filters by order type ignoring case', () => {
-        expect(applyValueFilters(transactions, { min: null, max: null, type: 'buy' }, 'USD')).toEqual([
+        expect(
+            applyValueFilters(transactions, { min: null, max: null, type: 'buy' }, 'USD')
+        ).toEqual([
             { orderType: 'Buy', netAmount: 100, tradeDate: '2023-01-01', security: 'AAPL' },
             { orderType: 'Buy', netAmount: 200, tradeDate: '2023-01-03', security: 'GOOGL' },
         ]);
@@ -180,7 +189,9 @@ describe('applyValueFilters', () => {
     });
 
     it('ignores invalid min max', () => {
-        expect(applyValueFilters(transactions, { min: NaN, max: NaN }, 'USD')).toEqual(transactions);
+        expect(applyValueFilters(transactions, { min: NaN, max: NaN }, 'USD')).toEqual(
+            transactions
+        );
     });
 });
 

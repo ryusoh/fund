@@ -31,4 +31,5 @@ Coverage: Brought all three files to nearly 100% test coverage using newly added
 Result: Targeted `js/transactions/table` component directory which had significantly low coverage, expanding coverage without modifying any production code.
 
 ## 2024-05-22 - Transaction Table Parsing & Sorting
+
 **Learning:** For standalone user input parsing matching ticker logic (e.g., `js/transactions/table/parser.js`), test cases must account for edge cases where general standalone text happens to mimic a cleaned ticker format (e.g. `123AAPL` resolving into a valid ticker token even if unintended), ensuring strict deterministic parsing without crashing.
