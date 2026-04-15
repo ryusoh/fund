@@ -268,14 +268,18 @@ function initialize() {
         perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
     }
 
-    // Initialize table glass effect for terminal pane
-    try {
-        new TableGlassEffect('.terminal', {
-            ...TABLE_GLASS_EFFECT,
-            excludeHeader: false, // Terminal pane doesn't have a header to exclude
-        });
-    } catch (e) {
-        logger.error('Failed to initialize table glass effect:', e);
+    // Initialize glass effects for terminal pane, chart card, and transaction table
+    const glassTargets = [
+        { selector: '.terminal', opts: { excludeHeader: false } },
+        { selector: '.chart-card', opts: { excludeHeader: false } },
+        { selector: '.table-responsive-container', opts: { excludeHeader: true } },
+    ];
+    for (const { selector, opts } of glassTargets) {
+        try {
+            new TableGlassEffect(selector, { ...TABLE_GLASS_EFFECT, ...opts });
+        } catch (e) {
+            logger.error(`Failed to initialize glass effect for ${selector}:`, e);
+        }
     }
 
     chartManager = createChartManager({

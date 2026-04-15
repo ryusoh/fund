@@ -51,25 +51,22 @@ export class TableGlassEffect {
     }
 
     init() {
-        this.canvas.style.position = 'absolute';
         this.canvas.style.left = '0';
         this.canvas.style.width = '100%';
         this.canvas.style.pointerEvents = 'none'; // Let clicks pass through
         this.canvas.style.zIndex = '-1'; // Behind content
-        this.canvas.style.borderRadius = '8px'; // Match container radius
+        this.canvas.style.display = 'block';
 
         // Handle header exclusion
+        this._headerHeight = 0;
         if (this.options.excludeHeader) {
-            // Try to find the header height
             const thead = this.container.querySelector('thead');
-            const headerHeight = thead ? thead.offsetHeight : 0;
-            this.canvas.style.top = `${headerHeight}px`;
-            this.canvas.style.height = `calc(100% - ${headerHeight}px)`;
-            this.canvas.style.borderRadius = '0'; // Sharp corners when confined to body
+            this._headerHeight = thead ? thead.offsetHeight : 0;
+            this.canvas.style.top = `${this._headerHeight}px`;
+            this.canvas.style.borderRadius = '0';
         } else {
             this.canvas.style.top = '0';
-            this.canvas.style.height = '100%';
-            this.canvas.style.borderRadius = '8px'; // Match container radius
+            this.canvas.style.borderRadius = '8px';
         }
 
         // Ensure container is relative so canvas is positioned correctly
@@ -78,7 +75,21 @@ export class TableGlassEffect {
             this.container.style.position = 'relative';
         }
 
-        this.container.appendChild(this.canvas);
+        // Use sticky only when content actually overflows the container,
+        // so the canvas stays pinned during scroll with zero lag.
+        // Just checking overflow CSS is not enough — containers like .chart-card
+        // have overflow:auto but content never exceeds the viewport.
+        this._scrollable =
+            /auto|scroll/.test(computedStyle.overflow + computedStyle.overflowY) &&
+            this.container.scrollHeight > this.container.clientHeight + 1;
+
+        if (this._scrollable) {
+            this.canvas.style.position = 'sticky';
+            this.container.insertBefore(this.canvas, this.container.firstChild);
+        } else {
+            this.canvas.style.position = 'absolute';
+            this.container.appendChild(this.canvas);
+        }
 
         // Find the table element to observe its full width
         this.table = this.container.querySelector('table');
@@ -116,11 +127,34 @@ export class TableGlassEffect {
         }
 
         // Re-check header height on resize if needed
+        let headerHeight = 0;
         if (this.options.excludeHeader) {
             const thead = this.container.querySelector('thead');
-            const headerHeight = thead ? thead.offsetHeight : 0;
+            headerHeight = thead ? thead.offsetHeight : 0;
+            this._headerHeight = headerHeight;
             this.canvas.style.top = `${headerHeight}px`;
-            this.canvas.style.height = `calc(100% - ${headerHeight}px)`;
+        }
+
+        // Re-evaluate whether content actually overflows and update positioning
+        const overflowStyle =
+            window.getComputedStyle(this.container).overflow +
+            window.getComputedStyle(this.container).overflowY;
+        const nowScrollable =
+            /auto|scroll/.test(overflowStyle) &&
+            this.container.scrollHeight > this.container.clientHeight + 1;
+
+        if (nowScrollable !== this._scrollable) {
+            this._scrollable = nowScrollable;
+            if (this._scrollable) {
+                this.canvas.style.position = 'sticky';
+                // Move canvas to first child for sticky to work
+                if (this.canvas !== this.container.firstChild) {
+                    this.container.insertBefore(this.canvas, this.container.firstChild);
+                }
+            } else {
+                this.canvas.style.position = 'absolute';
+                this.canvas.style.marginBottom = '';
+            }
         }
 
         // Use the table's full scroll width if available, otherwise container width
@@ -132,10 +166,15 @@ export class TableGlassEffect {
         // Explicitly set style width to match the full content width
         this.canvas.style.width = `${this.width}px`;
 
-        // Calculate height from the actual computed style of the canvas
-        // This handles the case where excludeHeader reduces the canvas height via CSS
-        const rect = this.canvas.getBoundingClientRect();
-        this.height = rect.height;
+        // Keep canvas at visible viewport size (avoids exceeding browser canvas limits)
+        // Sticky positioning keeps it pinned during scroll with zero lag
+        const visibleHeight = this.container.clientHeight - headerHeight;
+        this.height = Math.max(1, visibleHeight);
+        this.canvas.style.height = `${this.height}px`;
+        // For sticky canvas, negative margin pulls content up so the canvas doesn't consume layout space
+        if (this._scrollable) {
+            this.canvas.style.marginBottom = `-${this.height}px`;
+        }
 
         // Handle high DPI displays
         const dpr = window.devicePixelRatio || 1;
