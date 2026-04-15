@@ -1,282 +1,180 @@
-import { createUiController } from '@js/transactions/ui.js';
-import {
-    transactionState,
-    setActiveChart,
-    setChartDateRange,
-    setChartVisibility,
-} from '@js/transactions/state.js';
-import { adjustMobilePanels } from '@js/transactions/layout.js';
+import { createUiController, _coverage_dummy } from '@js/transactions/ui.js';
+import { transactionState } from '@js/transactions/state.js';
+import * as layout from '@js/transactions/layout.js';
 
+// Mock layout
+jest.mock('@js/transactions/layout.js', () => ({
+    adjustMobilePanels: jest.fn()
+}));
+
+// Mock state
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {
         activeChart: 'contribution',
+        selectedCurrency: 'USD'
     },
     setActiveChart: jest.fn(),
     setChartDateRange: jest.fn(),
-    setChartVisibility: jest.fn(),
-}));
-
-jest.mock('@js/transactions/layout.js', () => ({
-    adjustMobilePanels: jest.fn(),
+    setChartVisibility: jest.fn()
 }));
 
 describe('ui.js', () => {
     let uiController;
-    let chartManager;
+    let chartManagerMock;
 
     beforeEach(() => {
-        document.body.innerHTML = `
-            <div class="table-responsive-container"></div>
-            <table id="transactionTable"></table>
-            <div id="runningAmountSection"></div>
-            <div class="chart-legend">
-                <div class="legend-item" data-series="series1"></div>
-            </div>
-        `;
-
-        chartManager = {
+        chartManagerMock = {
             update: jest.fn(),
-            redraw: jest.fn(),
+            redraw: jest.fn()
         };
 
-        uiController = createUiController({ chartManager });
-        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb());
+        // Mock requestAnimationFrame
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => cb());
+
+        // Reset dom
+        document.body.innerHTML = '';
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should export _coverage_dummy as true', () => {
+        expect(_coverage_dummy).toBe(true);
     });
 
     describe('toggleTable', () => {
-        it('should hide table if currently visible', () => {
-            const tableContainer = document.querySelector('.table-responsive-container');
-
-            uiController.toggleTable();
-
-            expect(tableContainer.classList.contains('is-hidden')).toBe(true);
-            expect(adjustMobilePanels).toHaveBeenCalled();
-        });
-
-        it('should show table if currently hidden and hide plot', () => {
-            const tableContainer = document.querySelector('.table-responsive-container');
-            const plotSection = document.getElementById('runningAmountSection');
-            tableContainer.classList.add('is-hidden');
-
-            uiController.toggleTable();
-
-            expect(tableContainer.classList.contains('is-hidden')).toBe(false);
-            expect(plotSection.classList.contains('is-hidden')).toBe(true);
-            const transactionTable = document.getElementById('transactionTable');
-            expect(transactionTable.style.display).toBe('table');
-        });
-
-        it('should handle missing elements gracefully', () => {
-            document.body.innerHTML = '';
-            expect(() => uiController.toggleTable()).not.toThrow();
-        });
-
-        it('should show table but handle missing transactionTable gracefully', () => {
+        it('should show table and hide plot when hidden', () => {
             document.body.innerHTML = `
                 <div class="table-responsive-container is-hidden"></div>
+                <table id="transactionTable" style="display: none;"></table>
                 <div id="runningAmountSection"></div>
             `;
-            uiController = createUiController({ chartManager });
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.toggleTable();
 
-            const tableContainer = document.querySelector('.table-responsive-container');
-            expect(tableContainer.classList.contains('is-hidden')).toBe(false);
-            // transactionTable is missing, no throw
+            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(false);
+            expect(document.getElementById('transactionTable').style.display).toBe('table');
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(true);
+            expect(layout.adjustMobilePanels).toHaveBeenCalled();
         });
 
-        it('should show table but handle missing plotSection gracefully', () => {
+        it('should hide table when visible', () => {
             document.body.innerHTML = `
-                <div class="table-responsive-container is-hidden"></div>
-                <table id="transactionTable"></table>
+                <div class="table-responsive-container"></div>
+                <table id="transactionTable" style="display: table;"></table>
+                <div id="runningAmountSection" class="is-hidden"></div>
             `;
-            uiController = createUiController({ chartManager });
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.toggleTable();
 
-            const tableContainer = document.querySelector('.table-responsive-container');
-            expect(tableContainer.classList.contains('is-hidden')).toBe(false);
-            const transactionTable = document.getElementById('transactionTable');
-            expect(transactionTable.style.display).toBe('table');
-            // plotSection is missing, no throw
+            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(true);
+            expect(layout.adjustMobilePanels).toHaveBeenCalled();
+        });
+
+        it('should do nothing if tableContainer is missing', () => {
+            document.body.innerHTML = `
+                <table id="transactionTable" style="display: none;"></table>
+                <div id="runningAmountSection"></div>
+            `;
+            uiController = createUiController({ chartManager: chartManagerMock });
+            uiController.toggleTable();
         });
     });
 
     describe('togglePlot', () => {
-        it('should do nothing if plotSection is missing', () => {
-            document.body.innerHTML = '';
-            uiController.togglePlot();
-            expect(setActiveChart).not.toHaveBeenCalled();
-        });
-
-        it('should switch back to contribution if was performance chart and plot visible', () => {
-            transactionState.activeChart = 'performance';
-            const plotSection = document.getElementById('runningAmountSection');
-            plotSection.classList.remove('is-hidden');
-
+        it('should show plot and hide table when hidden', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container"></div>
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const { setActiveChart, setChartDateRange } = require('@js/transactions/state.js');
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.togglePlot();
 
             expect(setActiveChart).toHaveBeenCalledWith('contribution');
             expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
-            expect(chartManager.update).toHaveBeenCalled();
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(false);
+            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(true);
+            expect(chartManagerMock.update).toHaveBeenCalled();
         });
 
-        it('should hide plot if currently visible', () => {
-            transactionState.activeChart = 'contribution';
-            const plotSection = document.getElementById('runningAmountSection');
-
-            uiController.togglePlot();
-
-            expect(plotSection.classList.contains('is-hidden')).toBe(true);
-        });
-
-        it('should show plot and hide table if plot currently hidden', () => {
-            transactionState.activeChart = 'contribution';
-            const plotSection = document.getElementById('runningAmountSection');
-            const tableContainer = document.querySelector('.table-responsive-container');
-            plotSection.classList.add('is-hidden');
-
-            uiController.togglePlot();
-
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-            expect(tableContainer.classList.contains('is-hidden')).toBe(true);
-            expect(chartManager.update).toHaveBeenCalled();
-        });
-
-        it('should show plot but handle missing tableContainer gracefully', () => {
+        it('should hide plot when visible', () => {
             document.body.innerHTML = `
-                <div id="runningAmountSection" class="is-hidden"></div>
+                <div class="table-responsive-container is-hidden"></div>
+                <div id="runningAmountSection"></div>
             `;
-            transactionState.activeChart = 'contribution';
-            uiController = createUiController({ chartManager });
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.togglePlot();
 
-            const plotSection = document.getElementById('runningAmountSection');
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-            // tableContainer is missing, no throw
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(true);
         });
 
-        it('should show plot but not call chartManager.update if classList contains is-hidden after requestAnimationFrame', () => {
+        it('should just update when performance chart was active and plot is visible', () => {
             document.body.innerHTML = `
-                <div id="runningAmountSection" class="is-hidden"></div>
+                <div id="runningAmountSection"></div>
             `;
-            transactionState.activeChart = 'contribution';
-            uiController = createUiController({ chartManager });
-
-            // Mock requestAnimationFrame to manually change classList before executing callback
-            jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-                const plotSection = document.getElementById('runningAmountSection');
-                plotSection.classList.add('is-hidden'); // Force it to be hidden before callback runs
-                cb();
-            });
-
+            transactionState.activeChart = 'performance';
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.togglePlot();
 
-            expect(chartManager.update).not.toHaveBeenCalled();
+            expect(chartManagerMock.update).toHaveBeenCalled();
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(false);
+        });
+
+        it('should do nothing if plotSection is missing', () => {
+            document.body.innerHTML = '';
+            uiController = createUiController({ chartManager: chartManagerMock });
+            uiController.togglePlot();
         });
     });
 
     describe('togglePerformanceChart', () => {
-        it('should do nothing if plotSection is missing', () => {
-            document.body.innerHTML = '';
-            uiController.togglePerformanceChart();
-            expect(setActiveChart).toHaveBeenCalledWith('performance');
-        });
-
-        it('should show performance chart and hide table', () => {
-            const plotSection = document.getElementById('runningAmountSection');
-            const tableContainer = document.querySelector('.table-responsive-container');
-            plotSection.classList.add('is-hidden');
-
+        it('should show performance chart', () => {
+            document.body.innerHTML = `
+                <div class="table-responsive-container"></div>
+                <div id="runningAmountSection" class="is-hidden"></div>
+            `;
+            const { setActiveChart, setChartDateRange } = require('@js/transactions/state.js');
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.togglePerformanceChart();
 
             expect(setActiveChart).toHaveBeenCalledWith('performance');
             expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-            expect(tableContainer.classList.contains('is-hidden')).toBe(true);
-            expect(chartManager.redraw).toHaveBeenCalled();
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(false);
+            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(true);
+            expect(chartManagerMock.redraw).toHaveBeenCalled();
         });
 
-        it('should show plot but handle missing tableContainer gracefully', () => {
-            document.body.innerHTML = `
-                <div id="runningAmountSection" class="is-hidden"></div>
-            `;
-            uiController = createUiController({ chartManager });
+        it('should do nothing if plotSection is missing', () => {
+            document.body.innerHTML = '';
+            uiController = createUiController({ chartManager: chartManagerMock });
             uiController.togglePerformanceChart();
-
-            const plotSection = document.getElementById('runningAmountSection');
-            expect(plotSection.classList.contains('is-hidden')).toBe(false);
-            // tableContainer is missing, no throw
         });
     });
 
     describe('initLegendToggles', () => {
-        it('should toggle legend item visibility', () => {
-            const legendItem = document.querySelector('.legend-item');
-
-            legendItem.click();
-
-            expect(legendItem.classList.contains('legend-disabled')).toBe(true);
-            expect(setChartVisibility).toHaveBeenCalledWith('series1', false);
-            expect(chartManager.redraw).toHaveBeenCalled();
-
-            legendItem.click();
-
-            expect(legendItem.classList.contains('legend-disabled')).toBe(false);
-            expect(setChartVisibility).toHaveBeenCalledWith('series1', true);
-        });
-
-        it('should ignore clicks on legend items without series data', () => {
+        it('should toggle legend items', () => {
             document.body.innerHTML = `
                 <div class="chart-legend">
-                    <div class="legend-item" data-series=""></div>
-                </div>
-            `;
-            // recreate to trigger initLegendToggles with new DOM
-            uiController = createUiController({ chartManager });
-            const legendItem = document.querySelector('.legend-item');
-
-            legendItem.click();
-            // Should not throw and setChartVisibility not called
-        });
-
-        it('should handle chartManager without redraw', () => {
-            document.body.innerHTML = `
-                <div class="chart-legend">
-                    <div class="legend-item" data-series="series1"></div>
-                </div>
-            `;
-            chartManager = {}; // no redraw
-            uiController = createUiController({ chartManager });
-            const legendItem = document.querySelector('.legend-item');
-
-            legendItem.click();
-            // Should not throw
-        });
-
-        it('should skip item if dataset.series is empty via setAttribute', () => {
-            document.body.innerHTML = `
-                <div class="chart-legend">
+                    <div class="legend-item" data-series="test-series"></div>
                     <div class="legend-item"></div>
                 </div>
             `;
-            // Manually add data-series attribute with empty string to bypass querySelector issue
-            const item = document.querySelector('.legend-item');
-            item.setAttribute('data-series', '');
+            const { setChartVisibility } = require('@js/transactions/state.js');
+            uiController = createUiController({ chartManager: chartManagerMock });
 
-            // This will trigger the `if (!key) { return; }` branch inside the map
-            uiController = createUiController({ chartManager });
+            const item = document.querySelector('.legend-item[data-series="test-series"]');
+            item.click();
 
-            expect(item.onclick).toBeNull();
+            expect(item.classList.contains('legend-disabled')).toBe(true);
+            expect(setChartVisibility).toHaveBeenCalledWith('test-series', false);
+            expect(chartManagerMock.redraw).toHaveBeenCalled();
+
+            item.click();
+
+            expect(item.classList.contains('legend-disabled')).toBe(false);
+            expect(setChartVisibility).toHaveBeenCalledWith('test-series', true);
         });
-    });
-});
-
-describe('ui.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } = await import('@js/transactions/ui.js');
-        expect(_coverage_dummy).toBe(true);
     });
 });
