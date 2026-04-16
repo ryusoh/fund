@@ -1,0 +1,79 @@
+/* Film grain noise overlay */
+.cinematic-noise-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9998; /* Just below cursor */
+    opacity: 0.08; /* Subtle grain */
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Staggered Column Transition */
+.transition-columns-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9997;
+    pointer-events: none;
+    display: flex;
+}
+
+.transition-column {
+    flex: 1;
+    height: 100%;
+    background-color: #050505; /* Deep cinematic black */
+    transform-origin: top;
+    transform: scaleY(0); /* Hidden by default */
+}
+
+/* Mobile Landscape Orientation Blocker */
+.mob-landscape-block {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    z-index: 10000;
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+/* Only show blocker on small devices in landscape orientation */
+@media screen and (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+    .mob-landscape-block {
+        display: flex;
+    }
+    body.body-main {
+        overflow: hidden !important;
+    }
+}
+
+.mob-landscape-block .rotate-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    animation: rotatePhone 2s ease-in-out infinite alternate;
+}
+
+@keyframes rotatePhone {
+    0% { transform: rotate(-90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.text-title-reg-brier {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9em;
+}
