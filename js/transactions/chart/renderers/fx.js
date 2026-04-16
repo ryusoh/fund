@@ -262,27 +262,47 @@ export function drawFxChart(ctx, chartManager, timestamp) {
         }
 
         const smoothingConfig = getSmoothingConfig('performance');
-        const rawPoints = series.data.map((point) => ({
-            x: point.date.getTime(),
-            y: point.percent,
-            raw: point.rawValue,
-        }));
+
+        // Bolt: Eliminate chained Array map allocations in render loops
+        const nData = series.data.length;
+        const rawPoints = new Array(nData);
+        for (let i = 0; i < nData; i++) {
+            const point = series.data[i];
+            rawPoints[i] = {
+                x: point.date.getTime(),
+                y: point.percent,
+                raw: point.rawValue,
+            };
+        }
+
         const smoothed = smoothingConfig
             ? smoothFinancialData(rawPoints, smoothingConfig, true)
             : rawPoints;
 
-        const coords = smoothed.map((point, index) => {
-            const source = rawPoints[index] || rawPoints[rawPoints.length - 1];
-            return {
+        const nSmoothed = smoothed.length;
+        if (nSmoothed === 0) {
+            return;
+        }
+
+        const coords = new Array(nSmoothed);
+        const seriesPoints = new Array(nSmoothed);
+        const rawSeriesPoints = new Array(nSmoothed);
+        for (let i = 0; i < nSmoothed; i++) {
+            const point = smoothed[i];
+            const source = rawPoints[i] || rawPoints[rawPoints.length - 1];
+
+            const rawVal = source?.raw ?? source?.y ?? point.y;
+
+            coords[i] = {
                 x: xScale(point.x),
                 y: yScale(point.y),
                 time: point.x,
                 value: point.y,
-                rawValue: source?.raw ?? source?.y ?? point.y,
+                rawValue: rawVal,
             };
-        });
-        if (!coords.length) {
-            return;
+
+            seriesPoints[i] = { time: point.x, value: point.y };
+            rawSeriesPoints[i] = { time: point.x, value: rawVal };
         }
 
         const baseColor = series.color;
@@ -346,8 +366,8 @@ export function drawFxChart(ctx, chartManager, timestamp) {
             key: series.key,
             label: series.label,
             color: resolvedColor,
-            points: coords.map((coord) => ({ time: coord.time, value: coord.value })),
-            rawPoints: coords.map((coord) => ({ time: coord.time, value: coord.rawValue })),
+            points: seriesPoints,
+            rawPoints: rawSeriesPoints,
         });
 
         if (fxAnimationEnabled) {
