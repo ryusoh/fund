@@ -209,10 +209,6 @@ def test_main_long_format_empty_holding_dates(capsys):
     with patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet, \
          patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker:
 
-        dates = pd.date_range(start='2020-01-01', periods=1)
-        # Create a DataFrame where filter will result in empty
-        df = pd.DataFrame({'date': dates, 'ticker': ['AAPL'], 'value': [10]})
-
         # We need a custom mock for df[df['ticker'] == t]['date'] to be empty
         df_mock = MagicMock(spec=pd.DataFrame)
         df_mock.columns = ['date', 'ticker', 'value']
