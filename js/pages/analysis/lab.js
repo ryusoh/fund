@@ -660,7 +660,8 @@ btnRunMonteCarlo.addEventListener('click', () => {
         return;
     }
 
-    btnRunMonteCarlo.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Running...';
+    btnRunMonteCarlo.innerHTML =
+        '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Running...';
     btnRunMonteCarlo.disabled = true;
     btnRunMonteCarlo.setAttribute('aria-busy', 'true');
 
@@ -719,7 +720,9 @@ function renderMonteCarloResults(result) {
     const { counts } = result.histogram;
     let maxCount = -Infinity;
     for (let i = 0; i < counts.length; i++) {
-        if (counts[i] > maxCount) {maxCount = counts[i];}
+        if (counts[i] > maxCount) {
+            maxCount = counts[i];
+        }
     }
     const barWidth = width / counts.length;
 
