@@ -66,7 +66,7 @@ describe('tilt_effect', () => {
             value: 1,
             configurable: true,
         });
-        window.matchMedia.mockImplementation((query) => ({
+        window.matchMedia.mockImplementation(() => ({
             matches: false, // pointer: fine is false
         }));
         initTiltEffect();
@@ -79,7 +79,7 @@ describe('tilt_effect', () => {
             value: 1,
             configurable: true,
         });
-        window.matchMedia.mockImplementation((query) => ({
+        window.matchMedia.mockImplementation(() => ({
             matches: true, // pointer: fine is true
         }));
         initTiltEffect();
