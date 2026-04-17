@@ -103,6 +103,60 @@ describe('realtimeData', () => {
             expect(result).toBeNull();
         });
 
+        it('should handle fetchJSON throwing error due to !response.ok', async () => {
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: { VT: { shares: '100', average_price: '100' } },
+                prices: { VT: 100 },
+            });
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+            });
+
+            await loadModule();
+            const result = await fetchRealTimeData();
+
+            expect(result).toBeNull();
+        });
+
+        it('should handle weekend case logic correctly', async () => {
+            const { isTradingDay } = require('@utils/date.js');
+            isTradingDay.mockReturnValueOnce(false);
+
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: {
+                    VT: { shares: '100', average_price: '100' },
+                },
+                prices: { VT: 110 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            const result = await fetchRealTimeData();
+
+            expect(result).not.toBeNull();
+            expect(result.balance).toBe(11000);
+        });
+
+        it('should handle prices or shares being 0', async () => {
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: {
+                    VT: { shares: '100', average_price: '100' },
+                    GOOG: { shares: '0', average_price: '150' },
+                    AAPL: { shares: '10', average_price: '100' },
+                },
+                prices: { VT: 0, GOOG: 100, AAPL: -10 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            const result = await fetchRealTimeData();
+
+            expect(result).not.toBeNull();
+            expect(result.balance).toBe(0);
+        });
+
         it('should return null if holdings data is missing', async () => {
             mockFetchPortfolioData.mockResolvedValueOnce({
                 holdingsDetails: null,
