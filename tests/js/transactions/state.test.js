@@ -30,7 +30,6 @@ import {
     getCompositionAssetClassFilter,
     setZoomed,
     isZoomed,
-    hasActiveTransactionFilters,
 } from '@js/transactions/state.js';
 
 describe('state.js', () => {
