@@ -314,4 +314,94 @@ describe('currencyToggleManager', () => {
 
         expect(document.dispatchEvent).not.toHaveBeenCalled();
     });
+
+
+    it('handles activateCurrency logic early returns', () => {
+        // mock to test activateCurrency returning false
+        renderToggle('<div id="currencyToggleContainer"></div>');
+        loadModule();
+        expect(() => applyCurrencySelection('JPY')).not.toThrow();
+    });
+
+    it('handles normalizeCurrency empty branches', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle" data-currency="   "></button>
+            </div>
+        `);
+        loadModule();
+
+        let eventDispatched = false;
+        document.addEventListener('currencyChangedGlobal', () => { eventDispatched = true; });
+
+        initCurrencyToggle();
+        const btn = document.querySelector('.currency-toggle');
+        btn.click();
+
+        expect(eventDispatched).toBe(false);
+    });
+
+    it('handles empty currency missing in global listener', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD"></button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', { detail: { currency: 'EUR' } })
+        );
+        const btn = document.querySelector('[data-currency="USD"]');
+        expect(btn.classList.contains('active')).toBe(true);
+    });
+
+    it('cycleCurrency wraps backward correctly', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD"></button>
+                <button class="currency-toggle" data-currency="CNY"></button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        cycleCurrency(-1); // from 0 to length-1 (1)
+        const btn = document.querySelector('[data-currency="CNY"]');
+        expect(btn.classList.contains('active')).toBe(true);
+    });
+
+    it('handles empty icon arrays in applyCurrencyIcons fallback', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD"></button>
+                <button class="currency-toggle" data-currency="XXX"></button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        const btn = document.querySelector('[data-currency="XXX"]');
+        expect(btn.querySelector('i')).toBeNull();
+    });
+
+    it('handles activating target button that is currentCurrency but missing class', () => {
+        renderToggle(`
+            <div id="currencyToggleContainer">
+                <button class="currency-toggle active" data-currency="USD"></button>
+                <button class="currency-toggle" data-currency="CNY"></button>
+            </div>
+        `);
+        loadModule();
+        initCurrencyToggle();
+
+        const btn = document.querySelector('[data-currency="USD"]');
+        btn.classList.remove('active');
+
+        // This forces activateCurrency loop through its internal state comparison check
+        applyCurrencySelection('USD');
+        expect(btn.classList.contains('active')).toBe(true);
+    });
+
 });
