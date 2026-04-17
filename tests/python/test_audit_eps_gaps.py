@@ -204,3 +204,39 @@ def test_main_exception_during_fetch():
 
         # Should not raise
         audit_eps_gaps.main()
+
+def test_main_long_format_empty_holding_dates(capsys):
+    with patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet, \
+         patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker:
+
+        # We need a custom mock for df[df['ticker'] == t]['date'] to be empty
+        df_mock = MagicMock(spec=pd.DataFrame)
+        df_mock.columns = ['date', 'ticker', 'value']
+
+        ticker_series = MagicMock()
+        ticker_series.unique.return_value = ['AAPL']
+
+        def mock_getitem(key):
+            if isinstance(key, str) and key == 'ticker':
+                return ticker_series
+            else:
+                # This is what's returned by df[df['ticker'] == t]
+                # It needs to behave like a DataFrame where ['date'] returns an empty series
+                filtered_df_mock = MagicMock()
+                filtered_df_mock.__getitem__.return_value = pd.Series([], dtype='datetime64[ns]')
+                return filtered_df_mock
+
+        df_mock.__getitem__.side_effect = mock_getitem
+
+        mock_read_parquet.return_value = df_mock
+
+        mock_aapl = MagicMock()
+        mock_aapl.income_stmt = pd.DataFrame(
+            [[1.0]], index=['Basic EPS'], columns=[pd.Timestamp('2021-01-01')]
+        )
+        mock_ticker.return_value = mock_aapl
+
+        audit_eps_gaps.main()
+        captured = capsys.readouterr()
+        # Make sure no gap is reported for AAPL since holding_dates is empty
+        assert "Total tickers with gaps: 0" in captured.out
