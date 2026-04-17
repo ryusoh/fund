@@ -66,6 +66,15 @@ class TestUpdateVTMarketcap(unittest.TestCase):
         update_vt_marketcap.main()
         mock_exit.assert_called_once_with(0)
 
+    def test_module_execution(self):
+        with patch('sys.exit'):
+            with open('scripts/update_vt_marketcap.py', 'r') as f:
+                code = f.read()
+            # use a local dict with mocked name and the module's actual contents
+            exec_globals = update_vt_marketcap.__dict__.copy()
+            exec_globals['__name__'] = '__main__'
+            exec(code, exec_globals)
+
 
 if __name__ == '__main__':
     unittest.main()

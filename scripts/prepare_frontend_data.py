@@ -75,4 +75,4 @@ def prepare_historical_prices():
 
 
 if __name__ == "__main__":
-    prepare_historical_prices()
+    prepare_historical_prices()  # pragma: no cover
