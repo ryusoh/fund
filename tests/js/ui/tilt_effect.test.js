@@ -12,11 +12,11 @@ describe('tilt_effect.js', () => {
         // Mock gsap
         global.window.gsap = {
             set: jest.fn(),
-            to: jest.fn()
+            to: jest.fn(),
         };
 
         // Mock window matchMedia
-        global.window.matchMedia = jest.fn().mockImplementation(query => ({
+        global.window.matchMedia = jest.fn().mockImplementation((query) => ({
             matches: false,
             media: query,
         }));
@@ -91,54 +91,68 @@ describe('tilt_effect.js', () => {
 
         // Mock getBoundingClientRect
         container.getBoundingClientRect = () => ({
-            left: 100, top: 100, width: 200, height: 200
+            left: 100,
+            top: 100,
+            width: 200,
+            height: 200,
         });
 
         // Trigger mousemove (center)
         const mouseMoveEvent = new MouseEvent('mousemove', {
-            clientX: 150, clientY: 150
+            clientX: 150,
+            clientY: 150,
         });
         container.dispatchEvent(mouseMoveEvent);
 
-        expect(global.window.gsap.to).toHaveBeenCalledWith(container, expect.objectContaining({
-            rotateX: 5,
-            rotateY: -5,
-            duration: 0.5,
-            ease: 'power2.out',
-            overwrite: true,
-        }));
+        expect(global.window.gsap.to).toHaveBeenCalledWith(
+            container,
+            expect.objectContaining({
+                rotateX: 5,
+                rotateY: -5,
+                duration: 0.5,
+                ease: 'power2.out',
+                overwrite: true,
+            })
+        );
 
         // Trigger another mousemove with offset
         const mouseMoveEventOffset = new MouseEvent('mousemove', {
-            clientX: 200, clientY: 50
+            clientX: 200,
+            clientY: 50,
         });
         container.dispatchEvent(mouseMoveEventOffset);
 
-        expect(global.window.gsap.to).toHaveBeenCalledWith(container, expect.objectContaining({
-            rotateX: 15,
-            rotateY: 0,
-        }));
+        expect(global.window.gsap.to).toHaveBeenCalledWith(
+            container,
+            expect.objectContaining({
+                rotateX: 15,
+                rotateY: 0,
+            })
+        );
 
         // Trigger mouseleave
         const mouseLeaveEvent = new MouseEvent('mouseleave');
         container.dispatchEvent(mouseLeaveEvent);
 
-        expect(global.window.gsap.to).toHaveBeenCalledWith(container, expect.objectContaining({
-            rotateX: 0,
-            rotateY: 0,
-            duration: 1,
-            ease: 'elastic.out(1, 0.3)',
-            overwrite: true,
-        }));
+        expect(global.window.gsap.to).toHaveBeenCalledWith(
+            container,
+            expect.objectContaining({
+                rotateX: 0,
+                rotateY: 0,
+                duration: 1,
+                ease: 'elastic.out(1, 0.3)',
+                overwrite: true,
+            })
+        );
 
         TILT_EFFECT.enabled = originalEnabled;
     });
 
     test('initTiltEffect logic when document is complete vs loading', () => {
-        const originalReadyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
+        const originalReadyState = Object.getOwnPropertyDescriptor(document, 'readyState');
 
         // Test loading state
-        Object.defineProperty(Document.prototype, 'readyState', { get: () => 'loading', configurable: true });
+        Object.defineProperty(document, 'readyState', { get: () => 'loading', configurable: true });
         const addEventListenerSpy1 = jest.spyOn(document, 'addEventListener');
 
         jest.isolateModules(() => {
@@ -149,33 +163,41 @@ describe('tilt_effect.js', () => {
         addEventListenerSpy1.mockRestore();
 
         // Test complete state
-        Object.defineProperty(Document.prototype, 'readyState', { get: () => 'complete', configurable: true });
+        Object.defineProperty(document, 'readyState', {
+            get: () => 'complete',
+            configurable: true,
+        });
         const addEventListenerSpy2 = jest.spyOn(document, 'addEventListener');
 
         jest.isolateModules(() => {
             require('@js/ui/tilt_effect.js');
         });
 
-        expect(addEventListenerSpy2).not.toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
+        expect(addEventListenerSpy2).not.toHaveBeenCalledWith(
+            'DOMContentLoaded',
+            expect.any(Function)
+        );
         addEventListenerSpy2.mockRestore();
 
         if (originalReadyState) {
-            Object.defineProperty(Document.prototype, 'readyState', originalReadyState);
+            Object.defineProperty(document, 'readyState', originalReadyState);
         } else {
-            delete Document.prototype.readyState;
+            delete document.readyState;
         }
     });
 
     test('initTiltEffect logic DOMContentLoaded listener with loading state but no matches', () => {
-        const originalReadyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
-        Object.defineProperty(Document.prototype, 'readyState', { get: () => 'loading', configurable: true });
+        const originalReadyState = Object.getOwnPropertyDescriptor(document, 'readyState');
+        Object.defineProperty(document, 'readyState', { get: () => 'loading', configurable: true });
 
         let domContentLoadedCallback = null;
-        const addEventListenerSpy = jest.spyOn(document, 'addEventListener').mockImplementation((event, cb) => {
-            if (event === 'DOMContentLoaded') {
-                domContentLoadedCallback = cb;
-            }
-        });
+        const addEventListenerSpy = jest
+            .spyOn(document, 'addEventListener')
+            .mockImplementation((event, cb) => {
+                if (event === 'DOMContentLoaded') {
+                    domContentLoadedCallback = cb;
+                }
+            });
 
         jest.isolateModules(() => {
             require('@js/ui/tilt_effect.js');
@@ -187,25 +209,27 @@ describe('tilt_effect.js', () => {
         expect(global.window.gsap.set).not.toHaveBeenCalled();
 
         if (originalReadyState) {
-            Object.defineProperty(Document.prototype, 'readyState', originalReadyState);
+            Object.defineProperty(document, 'readyState', originalReadyState);
         } else {
-            delete Document.prototype.readyState;
+            delete document.readyState;
         }
         addEventListenerSpy.mockRestore();
     });
 
     test('initTiltEffect logic DOMContentLoaded listener with loading state and matching container', () => {
-        const originalReadyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
-        Object.defineProperty(Document.prototype, 'readyState', { get: () => 'loading', configurable: true });
+        const originalReadyState = Object.getOwnPropertyDescriptor(document, 'readyState');
+        Object.defineProperty(document, 'readyState', { get: () => 'loading', configurable: true });
 
         document.body.innerHTML = `<div class="quantum-widget"></div>`;
 
         let domContentLoadedCallback = null;
-        const addEventListenerSpy = jest.spyOn(document, 'addEventListener').mockImplementation((event, cb) => {
-            if (event === 'DOMContentLoaded') {
-                domContentLoadedCallback = cb;
-            }
-        });
+        const addEventListenerSpy = jest
+            .spyOn(document, 'addEventListener')
+            .mockImplementation((event, cb) => {
+                if (event === 'DOMContentLoaded') {
+                    domContentLoadedCallback = cb;
+                }
+            });
 
         jest.isolateModules(() => {
             require('@js/ui/tilt_effect.js');
@@ -216,9 +240,9 @@ describe('tilt_effect.js', () => {
         expect(global.window.gsap.set).not.toHaveBeenCalled();
 
         if (originalReadyState) {
-            Object.defineProperty(Document.prototype, 'readyState', originalReadyState);
+            Object.defineProperty(document, 'readyState', originalReadyState);
         } else {
-            delete Document.prototype.readyState;
+            delete document.readyState;
         }
         addEventListenerSpy.mockRestore();
         document.body.innerHTML = '';

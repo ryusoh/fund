@@ -3,7 +3,6 @@ import { MARQUEE_CONFIG } from '@js/config.js';
 
 describe('marquee.js', () => {
     let originalWindow;
-    let container;
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -13,11 +12,11 @@ describe('marquee.js', () => {
         global.window.gsap = {
             to: jest.fn(),
             ticker: {
-                add: jest.fn()
+                add: jest.fn(),
             },
             utils: {
-                wrap: jest.fn()
-            }
+                wrap: jest.fn(),
+            },
         };
 
         // Create DOM
@@ -30,7 +29,7 @@ describe('marquee.js', () => {
                 </div>
             </div>
         `;
-        container = document.querySelector('.quantum-widget');
+        const container = document.querySelector('.quantum-widget');
     });
 
     afterEach(() => {
@@ -225,8 +224,11 @@ describe('marquee.js', () => {
     });
 
     test('initMarquee runs immediately if document is not loading', () => {
-        const originalReadyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
-        Object.defineProperty(Document.prototype, 'readyState', { get: () => 'complete', configurable: true });
+        const originalReadyState = Object.getOwnPropertyDescriptor(document, 'readyState');
+        Object.defineProperty(document, 'readyState', {
+            get: () => 'complete',
+            configurable: true,
+        });
 
         const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
 
@@ -235,12 +237,15 @@ describe('marquee.js', () => {
             initMarquee();
         });
 
-        expect(addEventListenerSpy).not.toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
+        expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+            'DOMContentLoaded',
+            expect.any(Function)
+        );
 
         if (originalReadyState) {
-            Object.defineProperty(Document.prototype, 'readyState', originalReadyState);
+            Object.defineProperty(document, 'readyState', originalReadyState);
         } else {
-            delete Document.prototype.readyState;
+            delete document.readyState;
         }
         addEventListenerSpy.mockRestore();
     });

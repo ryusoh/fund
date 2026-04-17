@@ -514,8 +514,12 @@ export async function getYieldSnapshotLine() {
     let maxYield = -Infinity;
     for (let i = 0; i < filtered.length; i++) {
         const y = filtered[i].forward_yield;
-        if (y < minYield) {minYield = y;}
-        if (y > maxYield) {maxYield = y;}
+        if (y < minYield) {
+            minYield = y;
+        }
+        if (y > maxYield) {
+            maxYield = y;
+        }
     }
 
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
@@ -1270,8 +1274,12 @@ export async function getPESnapshotLine() {
     let max = -Infinity;
     for (let i = 0; i < series.length; i++) {
         const v = series[i].pe;
-        if (v < min) {min = v;}
-        if (v > max) {max = v;}
+        if (v < min) {
+            min = v;
+        }
+        if (v > max) {
+            max = v;
+        }
     }
 
     let text = `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;

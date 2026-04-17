@@ -286,14 +286,22 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     for (let i = 0; i < contributionData.length; i++) {
         const t = contributionData[i].date.getTime();
         allTimes[allTimesIndex++] = t;
-        if (t < allTimesMin) {allTimesMin = t;}
-        if (t > allTimesMax) {allTimesMax = t;}
+        if (t < allTimesMin) {
+            allTimesMin = t;
+        }
+        if (t > allTimesMax) {
+            allTimesMax = t;
+        }
     }
     for (let i = 0; i < balanceData.length; i++) {
         const t = balanceData[i].date.getTime();
         allTimes[allTimesIndex++] = t;
-        if (t < allTimesMin) {allTimesMin = t;}
-        if (t > allTimesMax) {allTimesMax = t;}
+        if (t < allTimesMin) {
+            allTimesMin = t;
+        }
+        if (t > allTimesMax) {
+            allTimesMax = t;
+        }
     }
 
     // Calculate effective min times based on actual data within filter range
@@ -302,13 +310,17 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     if (rawContributionData.length > 0) {
         // Use the first point (including synthetic start point) for consistency with balance data
         const t = rawContributionData[0].date.getTime();
-        if (t < minEffectiveTime) {minEffectiveTime = t;}
+        if (t < minEffectiveTime) {
+            minEffectiveTime = t;
+        }
         hasEffectiveTime = true;
     }
 
     if (showBalance && rawBalanceData.length > 0) {
         const t = rawBalanceData[0].date.getTime();
-        if (t < minEffectiveTime) {minEffectiveTime = t;}
+        if (t < minEffectiveTime) {
+            minEffectiveTime = t;
+        }
         hasEffectiveTime = true;
     }
 

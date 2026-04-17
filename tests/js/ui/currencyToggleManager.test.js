@@ -315,7 +315,6 @@ describe('currencyToggleManager', () => {
         expect(document.dispatchEvent).not.toHaveBeenCalled();
     });
 
-
     it('handles activateCurrency logic early returns', () => {
         // mock to test activateCurrency returning false
         renderToggle('<div id="currencyToggleContainer"></div>');
@@ -332,7 +331,9 @@ describe('currencyToggleManager', () => {
         loadModule();
 
         let eventDispatched = false;
-        document.addEventListener('currencyChangedGlobal', () => { eventDispatched = true; });
+        document.addEventListener('currencyChangedGlobal', () => {
+            eventDispatched = true;
+        });
 
         initCurrencyToggle();
         const btn = document.querySelector('.currency-toggle');
@@ -403,5 +404,4 @@ describe('currencyToggleManager', () => {
         applyCurrencySelection('USD');
         expect(btn.classList.contains('active')).toBe(true);
     });
-
 });
