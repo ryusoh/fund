@@ -112,3 +112,8 @@
 
 **Learning:** Combining \`.map(...)\` with \`Math.max(...array)\` and \`Math.min(...array)\` spreading creates unnecessary array allocations. The spread operator can exceed the maximum call stack size on large datasets.
 **Action:** Replaced \`Math.max(...array.map(x => x))\` and similar combinations with a single, simple \`for\` loop that tracks the min and max inline. This eliminates the intermediate array allocations and prevents \`Maximum call stack size exceeded\` errors, dropping complexity to O(N) with O(1) space.
+
+## $(date +%Y-%m-%d) - Pre-sizing Map Array Allocations
+
+**Learning:** When refactoring chained `.map()` calls in rendering loops (like generating `coords`, `points`, and `rawPoints` in `fx.js`), dynamically generating mapping points dynamically grows arrays and places pressure on Garbage Collection.
+**Action:** When replacing `.map()` calls inside high-frequency loops with explicit iterations, pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(nSmoothed);`) and assign items by index (`coords[i] = ...`) rather than `push` or map. This removes dynamic array resizing overhead and reduces total GC pauses in charting frames.

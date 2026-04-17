@@ -86,6 +86,29 @@ class TestPrepareFrontendData(unittest.TestCase):
         # MISSING
         self.assertNotIn('MISSING', parsed)
 
+    @patch('scripts.prepare_frontend_data.os.path.exists')
+    @patch('scripts.prepare_frontend_data.os.environ.get')
+    @patch('scripts.prepare_frontend_data.pd.read_parquet')
+    @patch('builtins.open', new_callable=unittest.mock.mock_open)
+    def test_overrides_path_exists(self, mock_file, mock_read_parquet, mock_env_get, mock_exists):
+        mock_exists.side_effect = lambda x: 'historical_prices.json' not in str(x)
+        mock_env_get.return_value = '1'
+
+        df_prices = pd.DataFrame(
+            {
+                'index': pd.to_datetime(['2023-01-01']),
+                'AAPL': [150.0],
+            }
+        ).set_index('index')
+
+        df_overrides = pd.DataFrame(
+            {'date': pd.to_datetime(['2023-01-01']), 'ticker': ['AAPL'], 'adj_close': [155.0]}
+        )
+
+        mock_read_parquet.side_effect = [df_prices, df_overrides]
+
+        prepare_historical_prices()
+
 
 if __name__ == '__main__':
     unittest.main()
