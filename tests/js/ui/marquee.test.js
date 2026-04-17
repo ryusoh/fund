@@ -29,7 +29,6 @@ describe('marquee.js', () => {
                 </div>
             </div>
         `;
-        const container = document.querySelector('.quantum-widget');
     });
 
     afterEach(() => {

@@ -204,7 +204,9 @@ describe('tilt_effect.js', () => {
         });
 
         expect(domContentLoadedCallback).not.toBeNull();
-        if (domContentLoadedCallback) domContentLoadedCallback();
+        if (domContentLoadedCallback) {
+            domContentLoadedCallback();
+        }
 
         expect(global.window.gsap.set).not.toHaveBeenCalled();
 
@@ -220,7 +222,7 @@ describe('tilt_effect.js', () => {
         const originalReadyState = Object.getOwnPropertyDescriptor(document, 'readyState');
         Object.defineProperty(document, 'readyState', { get: () => 'loading', configurable: true });
 
-        document.body.innerHTML = `<div class="quantum-widget"></div>`;
+        document.body.innerHTML = '<div class="quantum-widget"></div>';
 
         let domContentLoadedCallback = null;
         const addEventListenerSpy = jest
@@ -235,7 +237,9 @@ describe('tilt_effect.js', () => {
             require('@js/ui/tilt_effect.js');
         });
 
-        if (domContentLoadedCallback) domContentLoadedCallback();
+        if (domContentLoadedCallback) {
+            domContentLoadedCallback();
+        }
 
         expect(global.window.gsap.set).not.toHaveBeenCalled();
 
