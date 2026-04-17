@@ -206,6 +206,7 @@ def test_calculate_yield_data_missing_price(mock_dirs):
             data = json.load(f)
         assert data[0]['market_value'] == 0.0
 
+
 def test_load_dividend_cache_exception(tmp_path):
     with patch('scripts.generate_yield_data.DIVIDEND_CACHE_PATH', tmp_path / "dividend_cache.json"):
         with open(tmp_path / "dividend_cache.json", "w") as f:

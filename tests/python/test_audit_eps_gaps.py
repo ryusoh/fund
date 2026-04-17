@@ -205,9 +205,12 @@ def test_main_exception_during_fetch():
         # Should not raise
         audit_eps_gaps.main()
 
+
 def test_main_long_format_empty_holding_dates(capsys):
-    with patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet, \
-         patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker:
+    with (
+        patch('scripts.audit_eps_gaps.pd.read_parquet') as mock_read_parquet,
+        patch('scripts.audit_eps_gaps.yf.Ticker') as mock_ticker,
+    ):
 
         # We need a custom mock for df[df['ticker'] == t]['date'] to be empty
         df_mock = MagicMock(spec=pd.DataFrame)
