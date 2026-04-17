@@ -58,3 +58,9 @@
 **Learning:** When adding hover states (`:hover`) to interactive elements like buttons, failing to scope the selector can result in disabled buttons continuing to show hover effects (like background color or shadow changes). This provides misleading visual cues to users, implying the element is interactive when it is not.
 
 **Action:** Always append `:not(:disabled)` to `:hover` pseudo-classes on interactive elements (e.g., `.btn:hover:not(:disabled)`) to ensure hover styling is only applied when the element is actually usable.
+
+## 2026-04-18 - Nested Grid Layout Scrollable Columns Accessibility
+
+**Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
+
+**Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.

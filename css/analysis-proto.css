@@ -236,6 +236,13 @@ body {
     padding-right: 5px;
 }
 
+.left-col:focus-visible,
+.right-col:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
 .right-col {
     display: flex;
     flex-direction: column;
