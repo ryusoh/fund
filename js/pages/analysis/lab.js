@@ -660,7 +660,10 @@ btnRunMonteCarlo.addEventListener('click', () => {
         return;
     }
 
-    btnRunMonteCarlo.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Running...';
+    const icon = document.createElement('i');
+    icon.className = 'fa fa-spinner fa-spin';
+    icon.setAttribute('aria-hidden', 'true');
+    btnRunMonteCarlo.replaceChildren(icon, document.createTextNode(' Running...'));
     btnRunMonteCarlo.disabled = true;
     btnRunMonteCarlo.setAttribute('aria-busy', 'true');
 
