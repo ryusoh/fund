@@ -24,3 +24,4 @@ export {
     getLifespanStatsText,
     getConcentrationText,
 };
+export const _coverage_dummy = true;
