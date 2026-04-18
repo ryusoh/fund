@@ -115,6 +115,3 @@ export function initFade(outputContainer) {
     // if we closure the container.
     outputContainer.addEventListener('scroll', () => requestFadeUpdate(outputContainer));
 }
-
-// Dummy variable to enable statement coverage tracking for this file.
-export const _coverage_dummy = true;

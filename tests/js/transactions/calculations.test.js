@@ -352,10 +352,3 @@ describe('calculations.js', () => {
         });
     });
 });
-
-describe('calculations.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } = await import('@js/transactions/calculations.js');
-        expect(_coverage_dummy).toBe(true);
-    });
-});

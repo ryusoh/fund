@@ -199,6 +199,3 @@ export function hasActiveTransactionFilters() {
         filteredTransactions.length > 0 && filteredTransactions.length !== allTransactions.length
     );
 }
-
-// Dummy variable to enable statement coverage tracking for this file.
-export const _coverage_dummy = true;

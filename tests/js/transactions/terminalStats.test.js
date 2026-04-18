@@ -1,7 +1,0 @@
-import { _coverage_dummy } from '@js/transactions/terminalStats.js';
-
-describe('terminalStats.js', () => {
-    it('should export _coverage_dummy as true', () => {
-        expect(_coverage_dummy).toBe(true);
-    });
-});

@@ -273,10 +273,3 @@ describe('ui.js', () => {
         });
     });
 });
-
-describe('ui.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } = await import('@js/transactions/ui.js');
-        expect(_coverage_dummy).toBe(true);
-    });
-});

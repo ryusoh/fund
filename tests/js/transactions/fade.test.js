@@ -280,10 +280,3 @@ describe('fade.js early returns', () => {
         expect(child3.style.opacity).toBe('1'); // last
     });
 });
-
-describe('fade.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } = await import('@js/transactions/fade.js');
-        expect(_coverage_dummy).toBe(true);
-    });
-});

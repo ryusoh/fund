@@ -280,10 +280,3 @@ describe('state.js', () => {
         expect(hasActiveTransactionFilters()).toBe(false);
     });
 });
-
-describe('state.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } = await import('@js/transactions/state.js');
-        expect(_coverage_dummy).toBe(true);
-    });
-});

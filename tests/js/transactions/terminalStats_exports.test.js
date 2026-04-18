@@ -37,8 +37,4 @@ describe('terminalStats exports', () => {
         expect(terminalStats.getLifespanStatsText).toBe(analysis.getLifespanStatsText);
         expect(terminalStats.getConcentrationText).toBe(analysis.getConcentrationText);
     });
-
-    it('should have _coverage_dummy set to true', () => {
-        expect(terminalStats._coverage_dummy).toBe(true);
-    });
 });

@@ -37,6 +37,3 @@ export async function getRatioText() {
         return 'Error loading Sharpe and Sortino ratios.';
     }
 }
-
-// Dummy variable to enable statement coverage tracking for this file.
-export const _coverage_dummy = true;

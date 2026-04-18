@@ -46,11 +46,3 @@ describe('getGeographySummaryText', () => {
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 });
-
-describe('geographySummary.js coverage dummy', () => {
-    it('should export _coverage_dummy as true', async () => {
-        const { _coverage_dummy } =
-            await import('@js/transactions/terminal/handlers/geographySummary.js');
-        expect(_coverage_dummy).toBe(true);
-    });
-});
