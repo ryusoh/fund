@@ -118,3 +118,109 @@ footer a:focus-visible {
     outline-offset: 4px;
     border-radius: 4px;
 }
+
+/* Global scrollbar hiding for app-like feel */
+::-webkit-scrollbar {
+    display: none !important;
+}
+* {
+    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important; /* Firefox */
+}
+/* Custom selection color */
+::selection {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+::-moz-selection {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+/* Antialiasing for all text */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Organic shapes: Mask and clip, don't box */
+.container,
+nav.container {
+    clip-path: polygon(0 0, 100% 2%, 98% 100%, 2% 98%);
+}
+.marquee-container {
+    clip-path: ellipse(150% 150% at 50% 50%);
+}
+img.mobile-banner {
+    clip-path: polygon(5% 0, 95% 0, 100% 90%, 0% 100%);
+}
+
+/* Two-font contrast system */
+:root {
+    --font-sans:
+        'JetBrains Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+        sans-serif;
+    --font-serif: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+}
+
+body {
+    font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+.marquee-content span,
+.total-pnl {
+    font-family: var(--font-serif);
+    font-weight: 800;
+    font-style: italic;
+    letter-spacing: -0.02em;
+}
+
+/* Dramatic serif interrupting sans */
+.emphasis-serif {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: bold;
+}
+
+/* Theme transitions using one curve */
+:root {
+    --text-color: #fff;
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='start'] {
+    --text-color: #fff;
+    --bg-overlay: rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='middle'] {
+    --text-color: #f0f0f0;
+    --bg-overlay: rgba(20, 20, 30, 0.6);
+}
+
+:root[data-theme='end'] {
+    --text-color: #e0e0e0;
+    --bg-overlay: rgba(40, 20, 20, 0.8);
+}
+
+body {
+    color: var(--text-color);
+    transition:
+        color 0.3s cubic-bezier(0.65, 0.05, 0, 1),
+        background-color 0.3s cubic-bezier(0.65, 0.05, 0, 1);
+}
+
+.video-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-overlay);
+    transition: background 0.3s cubic-bezier(0.65, 0.05, 0, 1);
+    pointer-events: none;
+}
