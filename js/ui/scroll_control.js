@@ -37,3 +37,31 @@
         { passive: false }
     ); // Use passive: false to allow preventDefault
 })();
+
+// Scroll narrative: shift themes based on scroll position
+function initNarrativeScroll() {
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+        if (maxScroll <= 0) {
+            return;
+        }
+
+        const scrollPercent = scrollY / maxScroll;
+
+        // Use data-theme to shift colors
+        if (scrollPercent < 0.3) {
+            document.documentElement.setAttribute('data-theme', 'start');
+        } else if (scrollPercent < 0.7) {
+            document.documentElement.setAttribute('data-theme', 'middle');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'end');
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNarrativeScroll);
+} else {
+    initNarrativeScroll();
+}
