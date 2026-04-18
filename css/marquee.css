@@ -26,11 +26,6 @@
 .marquee-container.marquee-left {
     transform: perspective(1000px) rotate(-3deg) scale(1.1);
 }
-.marquee-container.marquee-left span {
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    font-weight: 400;
-}
 .marquee-container.marquee-right {
     transform: perspective(1000px) rotate(3deg) scale(1.1);
 }
