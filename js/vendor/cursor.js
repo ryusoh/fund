@@ -181,6 +181,11 @@ export class CustomCursor {
         this.core = document.createElement('div');
         this.core.className = `${className}__core`;
         this.core.style.transformOrigin = '50% 50%';
+
+        this.text = document.createElement('div');
+        this.text.className = `${className}__text`;
+        this.core.appendChild(this.text);
+
         this.element.appendChild(this.core);
 
         const storedPosition = readStoredCursorPosition();
@@ -239,13 +244,24 @@ export class CustomCursor {
         }
     }
 
-    onMouseEnter() {
+    onMouseEnter(event) {
         this.core.classList.add(this.hoverClass);
-        this.coords.scale.current = this.hoverScale;
+        let text = event.currentTarget ? event.currentTarget.getAttribute('data-cursor-text') : null;
+        if (!text && event.currentTarget && event.currentTarget.tagName.toLowerCase() === 'a') text = 'GO';
+        if (text) {
+            this.core.classList.add('has-text');
+            this.text.textContent = text;
+            this.coords.scale.current = 4;
+        } else {
+            this.core.classList.remove('has-text');
+            this.text.textContent = '';
+            this.coords.scale.current = this.hoverScale;
+        }
     }
 
     onMouseLeave() {
         this.core.classList.remove(this.hoverClass);
+        this.core.classList.remove('has-text');
         this.coords.scale.current = 1;
     }
 
