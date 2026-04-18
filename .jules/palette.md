@@ -64,3 +64,9 @@
 **Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
 
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.
+
+## 2026-04-18 - Helpful Empty States for Charts
+
+**Learning:** When a chart (like the running amount chart) has no data available for the selected filters, leaving the canvas empty creates confusion as users might think the application is loading or broken. Providing an explicit empty state with an icon and clear message ("No transaction data available...") reassures the user.
+
+**Action:** Always provide visual empty states (`.chart-empty`) over canvas elements when the dataset is empty to improve user context and reassure them that the lack of data is expected.
