@@ -1,7 +1,7 @@
 /* Overrides for table.css */
 .table-responsive-container {
     position: relative;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: auto;
     overflow-y: overlay;
     height: auto;
