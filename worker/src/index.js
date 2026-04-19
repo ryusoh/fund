@@ -48,10 +48,15 @@ function getTradingSession() {
 export { getTradingSession };
 
 function corsHeaders(origin) {
-    const allowed =
-        origin === ALLOWED_ORIGIN ||
-        (origin && origin.endsWith('.lyeutsaon.com')) ||
-        origin === 'https://fund.zhuangliulz.workers.dev';
+    let allowed = origin === ALLOWED_ORIGIN || origin === 'https://fund.zhuangliulz.workers.dev';
+    if (!allowed && origin) {
+        try {
+            const url = new URL(origin);
+            allowed = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
+        } catch (e) {
+            allowed = false;
+        }
+    }
     return {
         'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGIN,
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
