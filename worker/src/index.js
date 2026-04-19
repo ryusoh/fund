@@ -53,7 +53,7 @@ function corsHeaders(origin) {
         try {
             const url = new URL(origin);
             allowed = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
-        } catch (e) {
+        } catch {
             allowed = false;
         }
     }
