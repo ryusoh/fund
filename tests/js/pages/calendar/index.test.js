@@ -1000,6 +1000,43 @@ describe('calendar page', () => {
         window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
     });
 
+    it('should highlight today as a UTC date matching NY calendar date', async () => {
+        // Simulate 10 PM California (PST) = 1 AM next day in NYC
+        // getNyDate returns a local Date whose fields represent April 19 (NYC time)
+        // but whose UTC timestamp would be different due to timezone offset.
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date(2025, 3, 19, 1, 0, 0)); // April 19 1AM local
+
+        const mockData = createCalendarData([
+            {
+                date: '2025-04-19',
+                value: 0.01,
+                valueUSD: 0.01,
+                total: 1000,
+                totalUSD: 1000,
+                dailyChange: 10,
+                dailyChangeUSD: 10,
+            },
+        ]);
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        const highlightDate = paintArg.date.highlight[0];
+
+        // The highlight date must be UTC midnight on April 19, so Cal-Heatmap
+        // (which uses UTC internally) highlights the correct cell.
+        expect(highlightDate.getUTCFullYear()).toBe(2025);
+        expect(highlightDate.getUTCMonth()).toBe(3); // April (0-based)
+        expect(highlightDate.getUTCDate()).toBe(19);
+        expect(highlightDate.getUTCHours()).toBe(0);
+        expect(highlightDate.getUTCMinutes()).toBe(0);
+
+        nyDateSpy.mockRestore();
+    });
+
     it('should handle touch swipe navigation on mobile', async () => {
         // Create calendar container in DOM for test
         const calendarContainer = document.createElement('div');
