@@ -235,7 +235,7 @@ th.sortable[data-sort='desc'] .sort-indicator::after {
 }
 
 .filter-dropdown div:hover {
-    background-color: var(--hover-bg);
+    background-color: rgba(255, 255, 255, 0.06);
 }
 
 .table-responsive-container:focus-visible {
