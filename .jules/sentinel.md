@@ -36,3 +36,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 - Identified and fixed multiple empty `catch` blocks or generic error suppressions across the frontend application.
 - Targeted missing error logs in `js/transactions/chart/renderers/marketcap.js`, `sectors.js`, `concentration.js`, `composition.js`, `geography.js`, `pe.js`, `dataLoader.js`, `cdnFallback.js`, `twrr.js`, and `nav_prefetch.js` where exceptions were caught but silenced.
 - Injected `logger.warn('Caught exception:', error)` (or `console.warn` where appropriate) to ensure resilience and trackable debugging without failing the user experience.
+
+## 2025-05-15 - Insecure CORS Origin Validation
+
+**Vulnerability:** CORS origin validation in `worker/src/index.js` used a naive string `.endsWith()` check, allowing arbitrary domains like `attacker.com/bypass.lyeutsaon.com` or `malicious-lyeutsaon.com` to pass origin validation, and didn't enforce the `https:` protocol.
+**Learning:** Naive string manipulation for URL parsing in security-critical contexts easily leads to bypasses.
+**Prevention:** Always use the `URL` constructor to securely parse origins and explicitly validate the `hostname` and `protocol` properties.
