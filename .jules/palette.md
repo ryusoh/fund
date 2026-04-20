@@ -64,3 +64,6 @@
 **Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
 
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.
+## 2024-05-19 - Chart empty state visualization
+**Learning:** JS dynamically toggles `emptyState.style.display` for data visualizations but the empty state container had no inherent visual representation or UI design defined, leaving users staring at an uncommunicative layout.
+**Action:** Always provide explicit visual empty states with helpful guidance (like an icon and a text) and apply a frosted glass overlay (using backdrop-filter) to empty containers to prevent users from assuming the application is broken or stuck loading.
