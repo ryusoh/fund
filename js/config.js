@@ -476,7 +476,7 @@ export const CALENDAR_MONTH_LABEL_BACKGROUND = {
     opacity: 1,
     blurStdDeviation: 8,
     alphaSlope: 0.65,
-    transitionDuration: 220,
+    transitionDuration: 300,
     maxWidth: undefined,
     enabled: false,
 };
