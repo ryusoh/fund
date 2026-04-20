@@ -48,9 +48,19 @@ function getTradingSession() {
 export { getTradingSession };
 
 function corsHeaders(origin) {
+    let isSubdomain = false;
+    try {
+        if (origin) {
+            const url = new URL(origin);
+            isSubdomain = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
+        }
+    } catch {
+        // Invalid URL
+    }
+
     const allowed =
         origin === ALLOWED_ORIGIN ||
-        (origin && origin.endsWith('.lyeutsaon.com')) ||
+        isSubdomain ||
         origin === 'https://fund.zhuangliulz.workers.dev';
     return {
         'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGIN,
