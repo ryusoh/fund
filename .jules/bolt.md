@@ -122,3 +122,8 @@
 
 **Learning:** In performance-critical interactive functions, such as those fired repeatedly by UI interactions (`mousemove` handlers for crosshairs), using `Array.prototype.forEach` allocates an implicit closure per iteration. Over many executions, this causes closure allocation overhead, adding to JavaScript garbage collection pressure which can eventually result in micro-stutters.
 **Action:** Always replace `.forEach` array iteration loops inside hot paths (such as `interaction.js` event handlers) with index-based `for` loops or `for...of` loops, as these avoid closure allocations entirely and execute more deterministically.
+
+## 2026-04-22 - Array mapping and filtering overhead
+
+**Learning:** Chaining array methods like `Array.from(nodeList).map().filter()` inside high-frequency scroll and resize handlers creates massive garbage collection pressure by allocating and immediately discarding multiple intermediate arrays.
+**Action:** Always replace chained higher-order array methods in rendering or event loops with a single, simple `for` loop to process node lists in O(N) iterations with zero intermediate array allocation overhead.
