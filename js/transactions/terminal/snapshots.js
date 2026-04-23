@@ -670,16 +670,13 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -820,16 +817,13 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -910,16 +904,13 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -1000,16 +991,13 @@ export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = 
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
