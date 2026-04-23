@@ -44,7 +44,6 @@ const YIELD_EXPLANATION =
 
 export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     if (args.length === 0) {
-        // Show plot help
         const result =
             'Plot commands:\n' +
             '  plot balance         - Show contribution/balance chart\n' +
@@ -84,22 +83,29 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
         return;
     }
 
-    // Auto-unzoom if zoomed
     if (getZoomState()) {
         await toggleZoom();
     }
 
     const subcommand = args[0].toLowerCase();
     const rawArgs = args.slice(1);
-    let dateRange = { from: null, to: null };
-    let result = '';
+
+    const isAbsoluteSubcommand = (subcmd) => {
+        return subcmd.endsWith('-abs') || subcmd.endsWith('abs') || subcmd.endsWith('absolute');
+    };
+
+    const getBaseSubcommand = (subcmd) => {
+        if (subcmd.startsWith('composition')) {return 'composition';}
+        if (subcmd.startsWith('sectors')) {return 'sectors';}
+        if (subcmd.startsWith('geography')) {return 'geography';}
+        if (subcmd.startsWith('marketcap')) {return 'marketcap';}
+        if (subcmd.startsWith('drawdown')) {return 'drawdown';}
+        return subcmd;
+    };
 
     const getExistingChartRange = () => {
         const current = transactionState.chartDateRange || {};
-        return {
-            from: current.from || null,
-            to: current.to || null,
-        };
+        return { from: current.from || null, to: current.to || null };
     };
 
     const applyDateArgs = (tokens) => {
@@ -108,9 +114,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             .filter((token) => token.length > 0);
 
         if (normalizedTokens.length === 0) {
-            // Keep current range if one is already applied when simply switching charts.
-            const existing = getExistingChartRange();
-            return existing;
+            return getExistingChartRange();
         }
 
         if (normalizedTokens.length === 1) {
@@ -136,582 +140,206 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
         return range;
     };
 
-    switch (subcommand) {
-        case 'balance':
-            dateRange = applyDateArgs(rawArgs);
-            const contributionSection = document.getElementById('runningAmountSection');
-            const contributionTableContainer = document.querySelector(
-                '.table-responsive-container'
-            );
-
-            // Check if contribution chart is already active and visible
-            const isContributionActive = transactionState.activeChart === 'contribution';
-            const isChartVisible =
-                contributionSection && !contributionSection.classList.contains('is-hidden');
-
-            if (isContributionActive && isChartVisible) {
-                // Toggle off if contribution chart is already visible
-                setActiveChart(null);
-                if (contributionSection) {
-                    contributionSection.classList.add('is-hidden');
-                }
-                result = 'Hidden contribution chart.';
-            } else {
-                // Show contribution chart
-                setActiveChart('contribution');
-                if (contributionSection) {
-                    contributionSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (contributionTableContainer) {
-                    contributionTableContainer.classList.add('is-hidden');
-                }
-                const summaryText = await getContributionSummaryText(
-                    transactionState.chartDateRange
-                );
-                result = `Showing contribution chart for ${formatDateRange(dateRange)}.`;
-                if (summaryText) {
-                    result += `\n${summaryText}`;
-                }
+    const handleCompositionStyleChart = async (baseChartKey) => {
+        let useAbsolute = isAbsoluteSubcommand(subcommand);
+        let rangeTokens = [...rawArgs];
+        if (!useAbsolute && rangeTokens.length > 0) {
+            const maybeMode = rangeTokens[0].toLowerCase();
+            if (maybeMode === 'abs' || maybeMode === 'absolute') {
+                useAbsolute = true;
+                rangeTokens = rangeTokens.slice(1);
             }
-            break;
-        case 'performance':
-            dateRange = applyDateArgs(rawArgs);
-            const perfSection = document.getElementById('runningAmountSection');
-            const perfTableContainer = document.querySelector('.table-responsive-container');
-
-            // Check if performance chart is already active and visible
-            const isPerformanceActive = transactionState.activeChart === 'performance';
-            const isPerfChartVisible = perfSection && !perfSection.classList.contains('is-hidden');
-
-            if (isPerformanceActive && isPerfChartVisible) {
-                // Toggle off if performance chart is already visible
-                setActiveChart(null);
-                if (perfSection) {
-                    perfSection.classList.add('is-hidden');
-                }
-                result = 'Hidden performance chart.';
-            } else {
-                // Show performance chart
-                setActiveChart('performance');
-                if (perfSection) {
-                    perfSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (perfTableContainer) {
-                    perfTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing performance chart for ${formatDateRange(
-                    dateRange
-                )}.\n\n${TWRR_MESSAGE}`;
-                const performanceSnapshot = getPerformanceSnapshotLine({
-                    includeHidden: true,
-                });
-                if (performanceSnapshot) {
-                    result += `\n\n${performanceSnapshot}`;
-                }
-            }
-            break;
-        case 'composition':
-        case 'composition-abs':
-        case 'compositionabs':
-        case 'compositionabsolute': {
-            let useAbsolute = subcommand !== 'composition';
-            let rangeTokens = [...rawArgs];
-            if (!useAbsolute && rangeTokens.length > 0) {
-                const maybeMode = rangeTokens[0].toLowerCase();
-                if (maybeMode === 'abs' || maybeMode === 'absolute') {
-                    useAbsolute = true;
-                    rangeTokens = rangeTokens.slice(1);
-                }
-            }
-            dateRange = applyDateArgs(rangeTokens);
-            const compSection = document.getElementById('runningAmountSection');
-            const compTableContainer = document.querySelector('.table-responsive-container');
-
-            // Check if composition chart is already active and visible
-            const targetChart = useAbsolute ? 'compositionAbs' : 'composition';
-            const isCompositionActive = transactionState.activeChart === targetChart;
-            const isCompChartVisible = compSection && !compSection.classList.contains('is-hidden');
-
-            // If chart is already active and no date args provided, toggle off
-            // If date args are provided, always apply them and re-render
-            const hasDateArgs = rangeTokens.length > 0;
-
-            if (isCompositionActive && isCompChartVisible && !hasDateArgs) {
-                // Toggle off if composition chart is already visible and no date filter
-                setActiveChart(null);
-                if (compSection) {
-                    compSection.classList.add('is-hidden');
-                }
-                result = 'Hidden composition chart.';
-            } else {
-                // Show composition chart
-                setActiveChart(targetChart);
-                if (compSection) {
-                    compSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (compTableContainer) {
-                    compTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing composition${
-                    useAbsolute ? ' (absolute)' : ''
-                } chart for ${formatDateRange(dateRange)}.`;
-                const compositionSnapshot = await getCompositionSnapshotLine({
-                    labelPrefix: useAbsolute ? 'Composition Abs' : 'Composition',
-                });
-                if (compositionSnapshot) {
-                    result += `\n${compositionSnapshot}`;
-                }
-            }
-            break;
         }
-        case 'sectors':
-        case 'sectors-abs':
-        case 'sectorsabs':
-        case 'sectorsabsolute': {
-            let useAbsolute = subcommand !== 'sectors';
-            let rangeTokens = [...rawArgs];
-            if (!useAbsolute && rangeTokens.length > 0) {
-                const maybeMode = rangeTokens[0].toLowerCase();
-                if (maybeMode === 'abs' || maybeMode === 'absolute') {
-                    useAbsolute = true;
-                    rangeTokens = rangeTokens.slice(1);
-                }
+        const dateRange = applyDateArgs(rangeTokens);
+        const section = document.getElementById('runningAmountSection');
+        const tableContainer = document.querySelector('.table-responsive-container');
+
+        const targetChart = useAbsolute ? baseChartKey + 'Abs' : baseChartKey;
+        const isActive = transactionState.activeChart === targetChart;
+        const isVisible = section && !section.classList.contains('is-hidden');
+        const hasDateArgs = rangeTokens.length > 0;
+
+        if (isActive && isVisible && !hasDateArgs) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            let typeName = baseChartKey;
+            if (baseChartKey === 'sectors') {typeName = 'sector allocation';} else if (baseChartKey === 'geography') {typeName = 'geography allocation';} else if (baseChartKey === 'marketcap') {typeName = 'market cap allocation';}
+            appendMessage(`Hidden ${typeName} chart.`);
+        } else {
+            setActiveChart(targetChart);
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            if (tableContainer) {tableContainer.classList.add('is-hidden');}
+            let typeName = baseChartKey;
+            if (baseChartKey === 'sectors') {typeName = 'sector allocation';} else if (baseChartKey === 'geography') {typeName = 'geography allocation';} else if (baseChartKey === 'marketcap') {typeName = 'market cap allocation';}
+            let result = `Showing ${typeName}${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
+
+            let snapshotFn;
+            const labelPrefix = useAbsolute ? baseChartKey.charAt(0).toUpperCase() + baseChartKey.slice(1) + ' Abs' : baseChartKey.charAt(0).toUpperCase() + baseChartKey.slice(1);
+            if (baseChartKey === 'composition') {snapshotFn = getCompositionSnapshotLine;} else if (baseChartKey === 'sectors') {snapshotFn = getSectorsSnapshotLine;} else if (baseChartKey === 'geography') {snapshotFn = getGeographySnapshotLine;} else if (baseChartKey === 'marketcap') {snapshotFn = getMarketcapSnapshotLine;} else if (baseChartKey === 'drawdown') {
+                snapshotFn = () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: useAbsolute });
+                result = `Showing drawdown${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
             }
-            dateRange = applyDateArgs(rangeTokens);
-            const sectorsSection = document.getElementById('runningAmountSection');
-            const sectorsTableContainer = document.querySelector('.table-responsive-container');
 
-            const targetChart = useAbsolute ? 'sectorsAbs' : 'sectors';
-            const isSectorsActive = transactionState.activeChart === targetChart;
-            const isSectorsVisible =
-                sectorsSection && !sectorsSection.classList.contains('is-hidden');
-
-            // If chart is already active and no date args provided, toggle off
-            // If date args are provided, always apply them and re-render
-            const hasDateArgs = rangeTokens.length > 0;
-
-            if (isSectorsActive && isSectorsVisible && !hasDateArgs) {
-                setActiveChart(null);
-                if (sectorsSection) {
-                    sectorsSection.classList.add('is-hidden');
-                }
-                result = 'Hidden sector allocation chart.';
-            } else {
-                setActiveChart(targetChart);
-                if (sectorsSection) {
-                    sectorsSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (sectorsTableContainer) {
-                    sectorsTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing sector allocation${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
-                const sectorsSnapshot = await getSectorsSnapshotLine({
-                    labelPrefix: useAbsolute ? 'Sectors Abs' : 'Sectors',
-                });
-                if (sectorsSnapshot) {
-                    result += `\n${sectorsSnapshot}`;
-                }
-            }
-            break;
+            const snapshot = await snapshotFn({ labelPrefix });
+            if (snapshot) {result += `\n${snapshot}`;}
+            appendMessage(result);
         }
-        case 'geography':
-        case 'geography-abs':
-        case 'geographyabs':
-        case 'geographyabsolute': {
-            let useAbsolute = subcommand !== 'geography';
-            let rangeTokens = [...rawArgs];
-            if (!useAbsolute && rangeTokens.length > 0) {
-                const maybeMode = rangeTokens[0].toLowerCase();
-                if (maybeMode === 'abs' || maybeMode === 'absolute') {
-                    useAbsolute = true;
-                    rangeTokens = rangeTokens.slice(1);
-                }
-            }
-            dateRange = applyDateArgs(rangeTokens);
-            const geographySection = document.getElementById('runningAmountSection');
-            const geographyTableContainer = document.querySelector('.table-responsive-container');
+    };
 
-            const targetChart = useAbsolute ? 'geographyAbs' : 'geography';
-            const isGeographyActive = transactionState.activeChart === targetChart;
-            const isGeographyVisible =
-                geographySection && !geographySection.classList.contains('is-hidden');
+    const baseSubcommand = getBaseSubcommand(subcommand);
 
-            // If chart is already active and no date args provided, toggle off
-            // If date args are provided, always apply them and re-render
-            const hasDateArgs = rangeTokens.length > 0;
-
-            if (isGeographyActive && isGeographyVisible && !hasDateArgs) {
-                setActiveChart(null);
-                if (geographySection) {
-                    geographySection.classList.add('is-hidden');
-                }
-                result = 'Hidden geography chart.';
-            } else {
-                setActiveChart(targetChart);
-                if (geographySection) {
-                    geographySection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (geographyTableContainer) {
-                    geographyTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing geography allocation${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
-                const geographySnapshot = await getGeographySnapshotLine({
-                    labelPrefix: useAbsolute ? 'Geography Abs' : 'Geography',
-                });
-                if (geographySnapshot) {
-                    result += `\n${geographySnapshot}`;
-                }
-            }
-            break;
-        }
-        case 'marketcap':
-        case 'marketcap-abs':
-        case 'marketcapabs':
-        case 'marketcapabsolute': {
-            let useAbsolute = subcommand !== 'marketcap';
-
-            let rangeTokens = [...rawArgs];
-            if (!useAbsolute && rangeTokens.length > 0) {
-                const maybeMode = rangeTokens[0].toLowerCase();
-                if (maybeMode === 'abs' || maybeMode === 'absolute') {
-                    useAbsolute = true;
-                    rangeTokens = rangeTokens.slice(1);
-                }
-            }
-            dateRange = applyDateArgs(rangeTokens);
-
-            const marketcapSection = document.getElementById('runningAmountSection');
-            const marketcapTableContainer = document.querySelector('.table-responsive-container');
-
-            const targetChart = useAbsolute ? 'marketcapAbs' : 'marketcap';
-            const isMarketcapActive = transactionState.activeChart === targetChart;
-            const isMarketcapVisible =
-                marketcapSection && !marketcapSection.classList.contains('is-hidden');
-
-            const hasDateArgs = rangeTokens.length > 0;
-
-            if (isMarketcapActive && isMarketcapVisible && !hasDateArgs) {
-                setActiveChart(null);
-                if (marketcapSection) {
-                    marketcapSection.classList.add('is-hidden');
-                }
-                result = 'Hidden market cap chart.';
-            } else {
-                setActiveChart(targetChart);
-                if (marketcapSection) {
-                    marketcapSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (marketcapTableContainer) {
-                    marketcapTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing market cap composition${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
-
-                try {
-                    const marketcapSnapshot = await getMarketcapSnapshotLine({
-                        labelPrefix: useAbsolute ? 'Market Cap Abs' : 'Market Cap',
-                    });
-                    if (marketcapSnapshot) {
-                        result += `\n${marketcapSnapshot}`;
-                    }
-                } catch (error) {
-                    logger.warn('Caught exception:', error);
-                    // Snapshot failed, but command should still complete
-                    // Silently handle error - chart will still display
-                }
-            }
-            break;
-        }
-        case 'fx':
-            dateRange = applyDateArgs(rawArgs);
-            const fxSection = document.getElementById('runningAmountSection');
-            const fxTableContainer = document.querySelector('.table-responsive-container');
-
-            const isFxActive = transactionState.activeChart === 'fx';
-            const isFxVisible = fxSection && !fxSection.classList.contains('is-hidden');
-
-            if (isFxActive && isFxVisible) {
-                setActiveChart(null);
-                if (fxSection) {
-                    fxSection.classList.add('is-hidden');
-                }
-                result = 'Hidden FX chart.';
-            } else {
-                setActiveChart('fx');
-                if (fxSection) {
-                    fxSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (fxTableContainer) {
-                    fxTableContainer.classList.add('is-hidden');
-                }
-                const baseCurrency = transactionState.selectedCurrency || 'USD';
-                result = `Showing FX chart (base ${baseCurrency}) for ${formatDateRange(
-                    dateRange
-                )}.`;
-                const fxSnapshot = getFxSnapshotLine();
-                if (fxSnapshot) {
-                    result += `\n${fxSnapshot}`;
-                }
-            }
-            break;
-        case 'drawdown': {
-            // Check for abs argument
-            const useAbsolute = rawArgs.some(
-                (arg) => arg.toLowerCase() === 'abs' || arg.toLowerCase() === 'absolute'
-            );
-            const filteredArgs = rawArgs.filter(
-                (arg) => arg.toLowerCase() !== 'abs' && arg.toLowerCase() !== 'absolute'
-            );
-            dateRange = applyDateArgs(filteredArgs);
-
-            const drawdownSection = document.getElementById('runningAmountSection');
-            const drawdownTableContainer = document.querySelector('.table-responsive-container');
-
-            const targetChart = useAbsolute ? 'drawdownAbs' : 'drawdown';
-            const isDrawdownActive =
-                transactionState.activeChart === 'drawdown' ||
-                transactionState.activeChart === 'drawdownAbs';
-            const isDrawdownVisible =
-                drawdownSection && !drawdownSection.classList.contains('is-hidden');
-
-            if (
-                isDrawdownActive &&
-                isDrawdownVisible &&
-                !useAbsolute &&
-                transactionState.activeChart === 'drawdown'
-            ) {
-                // Toggle off only if same mode
-                setActiveChart(null);
-                if (drawdownSection) {
-                    drawdownSection.classList.add('is-hidden');
-                }
-                result = 'Hidden drawdown chart.';
-            } else {
-                setActiveChart(targetChart);
-                if (drawdownSection) {
-                    drawdownSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (drawdownTableContainer) {
-                    drawdownTableContainer.classList.add('is-hidden');
-                }
-                const modeLabel = useAbsolute ? ' (absolute)' : '';
-                result = `Showing drawdown${modeLabel} chart for ${formatDateRange(dateRange)}.`;
-                const drawdownSnapshot = getDrawdownSnapshotLine({
-                    includeHidden: true,
-                    isAbsolute: useAbsolute,
-                });
-                if (drawdownSnapshot) {
-                    result += `\n${drawdownSnapshot}`;
-                }
-            }
-            break;
-        }
-        case 'concentration': {
-            dateRange = applyDateArgs(rawArgs);
-            const concSection = document.getElementById('runningAmountSection');
-            const concTableContainer = document.querySelector('.table-responsive-container');
-
-            const isConcActive = transactionState.activeChart === 'concentration';
-            const isConcVisible = concSection && !concSection.classList.contains('is-hidden');
-
-            if (isConcActive && isConcVisible) {
-                setActiveChart(null);
-                if (concSection) {
-                    concSection.classList.add('is-hidden');
-                }
-                result = 'Hidden concentration chart.';
-            } else {
-                setActiveChart('concentration');
-                if (concSection) {
-                    concSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (concTableContainer) {
-                    concTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing concentration (HHI) chart for ${formatDateRange(dateRange)}.`;
-                const summary = await getConcentrationSnapshotText();
-                if (summary) {
-                    result += `\n${summary}`;
-                }
-            }
-            break;
-        }
-        case 'pe': {
-            dateRange = applyDateArgs(rawArgs);
-            const peSection = document.getElementById('runningAmountSection');
-            const peTableContainer = document.querySelector('.table-responsive-container');
-
-            const isPeActive = transactionState.activeChart === 'pe';
-            const isPeVisible = peSection && !peSection.classList.contains('is-hidden');
-
-            if (isPeActive && isPeVisible) {
-                setActiveChart(null);
-                if (peSection) {
-                    peSection.classList.add('is-hidden');
-                }
-                result = 'Hidden P/E ratio chart.';
-            } else {
-                setActiveChart('pe');
-                if (peSection) {
-                    peSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (peTableContainer) {
-                    peTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing weighted average P/E ratio chart for ${formatDateRange(dateRange)}.`;
-                const summary = await getPESnapshotLine();
-                if (summary) {
-                    result += `\n${summary}`;
-                }
-            }
-            break;
-        }
-        case 'rolling': {
-            dateRange = applyDateArgs(rawArgs);
-            const rollingSection = document.getElementById('runningAmountSection');
-            const rollingTableContainer = document.querySelector('.table-responsive-container');
-
-            const isRollingActive = transactionState.activeChart === 'rolling';
-            const isRollingVisible =
-                rollingSection && !rollingSection.classList.contains('is-hidden');
-
-            if (isRollingActive && isRollingVisible) {
-                setActiveChart(null);
-                if (rollingSection) {
-                    rollingSection.classList.add('is-hidden');
-                }
-                result = 'Hidden 1-Year rolling returns chart.';
-            } else {
-                setActiveChart('rolling');
-                if (rollingSection) {
-                    rollingSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (rollingTableContainer) {
-                    rollingTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing 1-Year rolling returns chart for ${formatDateRange(dateRange)}.\n\n${ROLLING_EXPLANATION}`;
-                const rollingSnapshot = getRollingSnapshotLine();
-                if (rollingSnapshot) {
-                    result += `\n\n${rollingSnapshot}`;
-                }
-            }
-            break;
-        }
-        case 'volatility': {
-            dateRange = applyDateArgs(rawArgs);
-            const volSection = document.getElementById('runningAmountSection');
-            const volTableContainer = document.querySelector('.table-responsive-container');
-
-            const isVolActive = transactionState.activeChart === 'volatility';
-            const isVolVisible = volSection && !volSection.classList.contains('is-hidden');
-
-            if (isVolActive && isVolVisible) {
-                setActiveChart(null);
-                if (volSection) {
-                    volSection.classList.add('is-hidden');
-                }
-                result = 'Hidden 90-Day annualized rolling volatility chart.';
-            } else {
-                setActiveChart('volatility');
-                if (volSection) {
-                    volSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (volTableContainer) {
-                    volTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(
-                    dateRange
-                )}.\n\n${VOLATILITY_EXPLANATION}`;
-                const volatilitySnapshot = getVolatilitySnapshotLine();
-                if (volatilitySnapshot) {
-                    result += `\n\n${volatilitySnapshot}`;
-                }
-            }
-            break;
-        }
-        case 'beta': {
-            dateRange = applyDateArgs(rawArgs);
-            const betaSection = document.getElementById('runningAmountSection');
-            const betaTableContainer = document.querySelector('.table-responsive-container');
-
-            const isBetaActive = transactionState.activeChart === 'beta';
-            const isBetaVisible = betaSection && !betaSection.classList.contains('is-hidden');
-
-            if (isBetaActive && isBetaVisible) {
-                setActiveChart(null);
-                if (betaSection) {
-                    betaSection.classList.add('is-hidden');
-                }
-                result = 'Hidden portfolio beta chart.';
-            } else {
-                setActiveChart('beta');
-                if (betaSection) {
-                    betaSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (betaTableContainer) {
-                    betaTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(
-                    dateRange
-                )}.\n\n${BETA_EXPLANATION}`;
-                const betaSnapshot = await getBetaSnapshotLine();
-                if (betaSnapshot) {
-                    result += `\n\n${betaSnapshot}`;
-                }
-            }
-            break;
-        }
-        case 'yield': {
-            dateRange = applyDateArgs(rawArgs);
-            const yieldSection = document.getElementById('runningAmountSection');
-            const yieldTableContainer = document.querySelector('.table-responsive-container');
-
-            const isYieldActive = transactionState.activeChart === 'yield';
-            const isYieldVisible = yieldSection && !yieldSection.classList.contains('is-hidden');
-
-            if (isYieldActive && isYieldVisible) {
-                setActiveChart(null);
-                if (yieldSection) {
-                    yieldSection.classList.add('is-hidden');
-                }
-                result = 'Hidden dividend yield and income chart.';
-            } else {
-                setActiveChart('yield');
-                if (yieldSection) {
-                    yieldSection.classList.remove('is-hidden');
-                    chartManager.update();
-                }
-                if (yieldTableContainer) {
-                    yieldTableContainer.classList.add('is-hidden');
-                }
-                result = `Showing dividend yield and income chart for ${formatDateRange(
-                    dateRange
-                )}.\n\n${YIELD_EXPLANATION}`;
-                const yieldSnapshot = await getYieldSnapshotLine();
-                if (yieldSnapshot) {
-                    result += `\n\n${yieldSnapshot}`;
-                }
-            }
-            break;
-        }
-        default:
-            result = `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`;
-            break;
+    if (['composition', 'sectors', 'geography', 'marketcap', 'drawdown'].includes(baseSubcommand)) {
+        await handleCompositionStyleChart(baseSubcommand);
+        return;
     }
 
-    if (result) {
-        appendMessage(result);
+    const dateRange = applyDateArgs(rawArgs);
+
+    if (subcommand === 'balance') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'contribution';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden contribution chart.');
+        } else {
+            setActiveChart('contribution');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            const summary = await getContributionSummaryText(transactionState.chartDateRange);
+            let result = `Showing contribution chart for ${formatDateRange(dateRange)}.`;
+            if (summary) {result += `\n${summary}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'performance') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'performance';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden performance chart.');
+        } else {
+            setActiveChart('performance');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing performance chart for ${formatDateRange(dateRange)}.\n\n${TWRR_MESSAGE}`;
+            const snap = getPerformanceSnapshotLine({ includeHidden: true });
+            if (snap) {result += `\n\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'fx') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'fx';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden FX rate chart.');
+        } else {
+            setActiveChart('fx');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing FX rate chart for ${formatDateRange(dateRange)}.`;
+            const snap = getFxSnapshotLine();
+            if (snap) {result += `\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'concentration') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'concentration';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden concentration chart.');
+        } else {
+            setActiveChart('concentration');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing concentration (HHI) chart for ${formatDateRange(dateRange)}.`;
+            const snap = await getConcentrationSnapshotText();
+            if (snap) {result += `\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'pe') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'pe';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden P/E ratio chart.');
+        } else {
+            setActiveChart('pe');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing weighted average P/E ratio chart for ${formatDateRange(dateRange)}.`;
+            const snap = await getPESnapshotLine();
+            if (snap) {result += `\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'rolling') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'rolling';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden 1-Year rolling returns chart.');
+        } else {
+            setActiveChart('rolling');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing 1-Year rolling returns chart for ${formatDateRange(dateRange)}.\n\n${ROLLING_EXPLANATION}`;
+            const snap = getRollingSnapshotLine();
+            if (snap) {result += `\n\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'volatility') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'volatility';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden 90-Day annualized rolling volatility chart.');
+        } else {
+            setActiveChart('volatility');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(dateRange)}.\n\n${VOLATILITY_EXPLANATION}`;
+            const snap = getVolatilitySnapshotLine();
+            if (snap) {result += `\n\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'beta') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'beta';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden portfolio beta chart.');
+        } else {
+            setActiveChart('beta');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(dateRange)}.\n\n${BETA_EXPLANATION}`;
+            const snap = await getBetaSnapshotLine();
+            if (snap) {result += `\n\n${snap}`;}
+            appendMessage(result);
+        }
+    } else if (subcommand === 'yield') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'yield';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {section.classList.add('is-hidden');}
+            appendMessage('Hidden dividend yield and income chart.');
+        } else {
+            setActiveChart('yield');
+            if (section) { section.classList.remove('is-hidden'); chartManager.update(); }
+            let result = `Showing dividend yield and income chart for ${formatDateRange(dateRange)}.\n\n${YIELD_EXPLANATION}`;
+            const snap = await getYieldSnapshotLine();
+            if (snap) {result += `\n\n${snap}`;}
+            appendMessage(result);
+        }
+    } else {
+        appendMessage(`Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`);
     }
 }
