@@ -113,3 +113,27 @@ html.force-hide-cursor .custom-cursor {
 footer a {
     cursor: none !important;
 }
+
+.custom-cursor__core.has-text {
+    background: #fff;
+    border: none;
+}
+
+.custom-cursor__text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.33);
+    color: #000;
+    font-family: 'JetBrains Mono ExtraBold', monospace;
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+}
+
+.custom-cursor__core.has-text .custom-cursor__text {
+    opacity: 1;
+}
