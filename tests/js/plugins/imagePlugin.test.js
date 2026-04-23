@@ -223,8 +223,8 @@ describe('imagePlugin', () => {
                 try {
                     delete global.navigator;
                 } catch (err) {
-            console.warn('Caught expected error in test:', err);
-        }
+                    console.warn('Caught expected error in test:', err);
+                }
             }
         }
     });
