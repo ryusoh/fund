@@ -310,11 +310,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     const benchmarkFwdPE = forwardPE ? forwardPE.benchmark_forward_pe || {} : {};
 
     // Include benchmark values in Y range (only for the first visible benchmark)
-    const { chartVisibility } = transactionState;
     let visibleBenchmarkKey = null;
 
-    // Only support ^GSPC
-    if (chartVisibility['^GSPC'] !== false && benchmarkData['^GSPC']) {
+    // Only support ^GSPC — always show it in PE chart regardless of
+    // benchmark selection in other charts (it's the only PE benchmark)
+    if (benchmarkData['^GSPC']) {
         visibleBenchmarkKey = '^GSPC';
     }
 
@@ -797,7 +797,13 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         });
     }
 
+    // Ensure ^GSPC is not dimmed in the PE legend — it's the only
+    // benchmark here and should always appear active regardless of
+    // benchmark selection in other charts (performance, drawdown, etc.)
+    const savedGSPCVisibility = transactionState.chartVisibility['^GSPC'];
+    transactionState.chartVisibility['^GSPC'] = true;
     updateLegend(legendItems, chartManager);
+    transactionState.chartVisibility['^GSPC'] = savedGSPCVisibility;
 }
 
 /**

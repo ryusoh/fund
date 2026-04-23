@@ -66,5 +66,6 @@
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.
 
 ## 2026-04-21 - Terminal Input UX
+
 **Learning:** Terminal emulator text inputs natively receive browser spellcheck by default, which incorrectly flags commands and stock tickers as spelling errors with distracting red underlines, breaking UI immersion.
 **Action:** Always add `spellcheck="false"` to text inputs that act as CLIs or expect non-prose data to prevent native browser interference.
