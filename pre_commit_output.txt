@@ -1,0 +1,327 @@
+
+> fund-frontend@1.0.0 verify:all
+> npm run lint && npm test && ruff check scripts tests/python && black --check . && mypy && bandit -r scripts -lll && pytest
+
+
+> fund-frontend@1.0.0 lint
+> npm run lint:js && npm run lint:css
+
+
+> fund-frontend@1.0.0 lint:js
+> eslint .
+
+
+> fund-frontend@1.0.0 lint:css
+> stylelint "**/*.css"
+
+
+> fund-frontend@1.0.0 test
+> NODE_NO_WARNINGS=1 jest --coverage
+
+PASS tests/js/ui/marquee.test.js
+PASS tests/js/transactions/chart_core.test.js
+PASS tests/js/transactions/terminal_marketcap.test.js
+PASS tests/js/transactions/terminal_plot.test.js
+PASS tests/js/services/dataService.test.js
+PASS tests/js/transactions/terminal_integration.test.js
+PASS tests/js/transactions/terminal_core.test.js
+PASS tests/js/transactions/chartCurrency.test.js
+PASS tests/js/charts/allocationChartManager.test.js
+PASS tests/js/transactions/dataLoader.test.js
+PASS tests/js/transactions/table.test.js
+PASS tests/js/transactions/chart_concentration.test.js
+PASS tests/js/transactions/terminalRollingCumulative.test.js
+PASS tests/js/transactions/terminal_pe.test.js
+PASS tests/js/transactions/chart_axis.test.js
+PASS tests/js/transactions/terminal_fx_duplication.test.js
+PASS tests/js/pages/analysis/monte_carlo.worker.test.js
+PASS tests/js/csp.test.js
+PASS tests/js/transactions/contributionLegendToggle.test.js
+PASS tests/js/pages/performance/twrr.test.js
+PASS tests/js/transactions/yieldChart.test.js
+PASS tests/js/ui/currencyToggleManager.test.js
+PASS tests/js/transactions/terminal_sectors.test.js
+PASS tests/js/ui/tableGlassEffect.test.js
+PASS tests/js/transactions/chart_pe.test.js
+PASS tests/js/pages/calendar/index.test.js
+PASS tests/js/ui/nav_prefetch.test.js
+PASS tests/js/ui/calendarMonthLabelManager.test.js
+PASS tests/js/transactions/yieldChartRendering.test.js
+PASS tests/js/ui/video_warmup.test.js
+PASS tests/js/utils/formatting.test.js
+PASS tests/js/transactions/terminal_crosshair_newline.test.js
+PASS tests/js/transactions/terminal/stats/transactions.test.js
+PASS tests/js/transactions/chartDataHelpers.test.js
+PASS tests/js/utils/smoothing.test.js
+PASS tests/js/ui/responsive.test.js
+PASS tests/js/charts/imageDrawer.test.js
+PASS tests/js/pages/position/index.test.js
+PASS tests/js/transactions/benchmarkLegendConsistency.test.js
+PASS tests/js/transactions/chart/renderers/pe.test.js
+PASS tests/js/transactions/terminalInput.test.js
+PASS tests/js/transactions/zoom.test.js
+PASS tests/js/pages/analysis/lab.test.js
+PASS tests/js/pages/position/index-immediate.test.js
+PASS tests/js/transactions/volatilityChartScale.test.js
+PASS tests/js/transactions/chart/renderers/composition.test.js
+PASS tests/js/transactions/terminal/stats/analysis.test.js
+PASS tests/js/worker/index.test.js
+PASS tests/js/transactions/terminal/handlers/misc.test.js
+PASS tests/js/transactions/terminal/stats/formatting.test.js
+PASS tests/js/transactions/terminalCompositionHints.test.js
+PASS tests/js/transactions/chart_regression.test.js
+PASS tests/js/ui/textHighlightManager.test.js
+PASS tests/js/transactions/terminal/snapshots.test.js
+PASS tests/js/ui/backgroundSweep.test.js
+PASS tests/js/transactions/drawdown.test.js
+PASS tests/js/transactions/filter.test.js
+PASS tests/js/transactions/terminal/viewUtils.test.js
+PASS tests/js/transactions/terminal/stats/holdings.test.js
+PASS tests/js/utils/date.test.js
+PASS tests/js/transactions/chart_feature_parity.test.js
+PASS tests/js/utils/logger.test.js
+PASS tests/js/plugins/waveAnimationPlugin.test.js
+PASS tests/js/transactions/chart_animation.test.js
+PASS tests/js/cursor/cursor_init_timing.test.js
+PASS tests/js/transactions/ui.test.js
+PASS tests/js/ui/nav_current_page.test.js
+PASS tests/js/transactions/terminal/stats/financial.test.js
+PASS tests/js/ui/videoFallback.test.js
+PASS tests/js/transactions/chart_interaction.test.js
+PASS tests/js/transactions/autocomplete_completeness.test.js
+PASS tests/js/transactions/parser.test.js
+PASS tests/js/transactions/utils.test.js
+PASS tests/js/ui/service_worker_register.test.js
+PASS tests/js/transactions/betaChart.test.js
+PASS tests/js/transactions/fade.test.js
+PASS tests/js/transactions/state.test.js
+PASS tests/js/css/footer-consistency.test.js
+PASS tests/js/transactions/calculations.test.js
+PASS tests/js/ambient/ambient.test.js
+PASS tests/js/pages/calendar/xss_repro.test.js
+PASS tests/js/utils/host.test.js
+PASS tests/js/transactions/drawAxes_comprehensive.test.js
+PASS tests/js/transactions/layout.test.js
+PASS tests/js/ui/currencyBootstrap.test.js
+PASS tests/js/transactions/sort.test.js
+PASS tests/js/transactions/terminal/handlers/stats.test.js
+PASS tests/js/ui/icon_font_ready.test.js
+PASS tests/js/ui/tilt_effect.test.js
+PASS tests/js/ui/scroll_control.test.js
+PASS tests/js/ui/footerToggle.test.js
+PASS tests/js/transactions/chart_interaction_logic.test.js
+PASS tests/js/plugins/imagePlugin.test.js
+PASS tests/js/transactions/terminal/autocomplete.test.js
+PASS tests/js/transactions/volatility_calculation.test.js
+PASS tests/js/pages/calendar/displayCache.test.js
+PASS tests/js/transactions/realtimeData.test.js
+PASS tests/js/transactions/terminalStats_exports.test.js
+PASS tests/js/performance/caching-regression.test.js
+PASS tests/js/config.test.js
+PASS tests/js/transactions/terminal/stats/static.test.js
+PASS tests/js/transactions/drawdown_legend.test.js
+PASS tests/js/pages/calendar/keyboard.test.js
+PASS tests/js/transactions/chart_fx.test.js
+PASS tests/js/ui/magnetic_nav.test.js
+PASS tests/js/transactions/volumeBarWidth.test.js
+PASS tests/js/utils/colors.test.js
+PASS tests/js/plugins/customArcBordersPlugin.test.js
+PASS tests/js/plugins/glass3dPlugin.test.js
+PASS tests/js/ambient/loader.test.js
+PASS tests/js/pages/analysis/visuals.test.js
+PASS tests/js/transactions/sectors_crosshair.test.js
+PASS tests/js/ui/reduced_motion.test.js
+PASS tests/js/transactions/chart_sorting.test.js
+PASS tests/js/transactions/contribution_drawdown_legend.test.js
+PASS tests/js/transactions/terminal/dateUtils.test.js
+PASS tests/js/pages/analysis/bayes.test.js
+PASS tests/js/transactions/geography_crosshair.test.js
+PASS tests/js/transactions/chart_config.test.js
+PASS tests/js/config/assetClasses.test.js
+PASS tests/js/transactions/chart_label_collision.test.js
+PASS tests/js/ambient/config.test.js
+PASS tests/js/transactions/resolveBenchmarkDateKey.test.js
+PASS tests/js/transactions/terminal/handlers/geographySummary.test.js
+PASS tests/js/ui/layoutRegression.test.js
+PASS tests/js/transactions/terminal/handlers/help.test.js
+PASS tests/js/pages/calendar/colorUtils.test.js
+PASS tests/js/utils/easing.test.js
+PASS tests/js/performance/beta-allocation.test.js
+-----------------------------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-----------------------------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+All files                          |   66.01 |    55.85 |    66.4 |   66.11 |
+ js                                |   91.76 |    71.11 |     100 |   91.76 |
+  config.js                        |   91.02 |    68.29 |     100 |   91.02 | 8,17,179,183,190,402,410
+  cursor-init.js                   |     100 |      100 |     100 |     100 |
+ js/ambient                        |   15.42 |     20.4 |   11.11 |   15.13 |
+  ambient.js                       |   89.24 |    77.41 |     100 |   88.88 | 26-30,62,118,127-129
+  config.js                        |     100 |      100 |     100 |     100 |
+  quantum_shader.js                |       0 |        0 |       0 |       0 | 4-621
+  sketch.js                        |       0 |        0 |       0 |       0 | 1-435
+ js/charts                         |   91.63 |    89.88 |   86.66 |    91.5 |
+  allocationChartManager.js        |   94.06 |    92.85 |    92.3 |   93.85 | 56,126,165,257-261
+  imageDrawer.js                   |   89.65 |    87.96 |      50 |   89.65 | 34-37,43-45,47-51,55-57,165-166
+ js/config                         |     100 |      100 |     100 |     100 |
+  assetClasses.js                  |     100 |      100 |     100 |     100 |
+ js/pages/analysis                 |   30.87 |    15.35 |   28.86 |   30.53 |
+  bayes.js                         |     100 |      100 |     100 |     100 |
+  lab.js                           |   17.78 |    10.46 |   13.75 |   18.05 | 34,40-100,105,109,125,146-302,321-330,351-602,609,634-636,641-643,648-651,658-670,684-734,743,784-1054,1059
+  monte_carlo.worker.js            |   98.18 |    86.66 |     100 |   98.07 | 20
+  visuals.js                       |     100 |      100 |     100 |     100 |
+ js/pages/calendar                 |   72.68 |    65.77 |   67.12 |    72.5 |
+  colorUtils.js                    |   86.66 |    68.65 |     100 |   86.66 | 16,43,48,68
+  displayCache.js                  |     100 |      100 |     100 |     100 |
+  index.js                         |   69.21 |    59.09 |   61.29 |   69.12 | 52,55-56,83,86-92,100-101,109-110,116,123,136,146,150,169-172,184,198-199,210,213,245,340-341,431-433,528,645-646,652,673,692-935,951,1149,1167,1187-1188,1194-1204,1209,1213,1218,1227-1232,1247-1249,1255-1256,1265,1278-1279,1285-1286,1291-1293
+ js/pages/performance              |     100 |      100 |     100 |     100 |
+  twrr.js                          |     100 |      100 |     100 |     100 |
+ js/pages/position                 |    92.5 |     90.9 |   81.25 |   92.43 |
+  index.js                         |    92.5 |     90.9 |   81.25 |   92.43 | 119,126,159-161,269-270,275-276
+ js/pages/terminal                 |       0 |        0 |       0 |       0 |
+  index.js                         |       0 |        0 |       0 |       0 | 31-443
+ js/plugins                        |   87.53 |    67.84 |   89.39 |   87.61 |
+  customArcBordersPlugin.js        |     100 |      100 |     100 |     100 |
+  glass3dPlugin.js                 |   87.84 |    55.96 |      90 |   87.76 | 84,89-94,99-101,114,119,125-128,161-166,172,177,200-220,458,465-472,488-491,566,689
+  glowTrailAnimator.js             |   80.71 |    59.81 |   78.94 |   81.29 | 50,55-57,70-72,76,80,92,98,223,234-235,242,248,256,264-270,277-281
+  imagePlugin.js                   |   83.33 |    90.56 |     100 |   83.09 | 66,89-99
+  waveAnimationPlugin.js           |     100 |      100 |     100 |     100 |
+ js/services                       |   93.84 |    80.99 |     100 |   93.97 |
+  dataService.js                   |   93.84 |    80.99 |     100 |   93.97 | 86,103,114,136-138,148,187,202,207-208,286,305-308,314,591,596-599,619,840,848
+ js/transactions                   |    73.3 |    64.76 |   81.21 |   73.38 |
+  benchmark.js                     |     100 |      100 |     100 |     100 |
+  calculations.js                  |     100 |    91.42 |     100 |     100 | 124,151-152
+  chart.js                         |    61.9 |    63.15 |     100 |    61.9 | 69-73,78-82,92-96,111,114,119,121,123,125,127,129,131,133,135,137,139,141,143,145,147
+  dataLoader.js                    |   61.69 |     51.4 |   70.96 |    61.5 | 6-7,19-23,33-37,58,65-69,118-119,124-125,139,154,161,185-186,232-336,345-346,386,403-404
+  fade.js                          |   98.14 |      100 |    87.5 |     100 |
+  layout.js                        |     100 |     82.5 |     100 |     100 | 8-11,40-43,46,56
+  realtimeData.js                  |     100 |       95 |     100 |     100 | 83
+  state.js                         |     100 |    95.71 |     100 |     100 | 5,136-140
+  table.js                         |   71.95 |    71.21 |   48.14 |   73.58 | 23,32,124-127,212-258,273,293-294
+  terminal.js                      |   57.87 |    33.33 |   64.28 |   57.69 | 25-37,47,99-100,110,116,119,125-126,140,184-240,259,269,309-362,373-374,381,387-389,392
+  terminalStats.js                 |       0 |        0 |       0 |       0 |
+  ui.js                            |     100 |      100 |     100 |     100 |
+  utils.js                         |   57.28 |    51.03 |   83.33 |   57.07 | 21,33,39,46-96,102,106,123,138-153,169-177,182,188,191,194,197,215,218,229,232,241,244,256,259,269-272,281,284,294-297,307,312,317,323,327,334,345-346,348
+  zoom.js                          |   95.65 |       85 |     100 |   95.65 | 52-53,195
+ js/transactions/chart             |   69.91 |    55.51 |   76.63 |   69.54 |
+  animation.js                     |     100 |      100 |     100 |     100 |
+  config.js                        |     100 |      100 |     100 |     100 |
+  core.js                          |   91.25 |    80.15 |     100 |      91 | 9,12,27,30,65-68,72-74,114,117,136,162,197,407-410,460,466,470,474,479,500,529,543,609,659,692-693,714-715,753,834
+  helpers.js                       |   44.95 |     42.7 |   51.72 |   45.03 | 18,28,41,64,86,89,92,95,102,107,129,132,145,152-189,195,201-265,271,275,282-284,294-342,347,375,380,383,392,397,401,410-472,490,495,503,507,532,547-577
+  interaction.js                   |   64.03 |    47.17 |   62.06 |   63.42 | 36-42,58,61,96,117,133,138-139,158-159,165-166,225,231,274-284,317,329,358,362,404,407,438,441,447,454,460,470,475-482,493,498,513,530,535,563-564,590-593,642,738-988,993,998,1008-1009
+  state.js                         |     100 |      100 |     100 |     100 |
+ js/transactions/chart/data        |   83.39 |    62.54 |   84.37 |   83.93 |
+  contribution.js                  |   83.39 |    62.54 |   84.37 |   83.93 | 13,25,47,126-131,219,226,242,277,288-297,322-333,344,354,363,371,386,398-399,456,462,475
+ js/transactions/chart/renderers   |   48.62 |    38.66 |   41.64 |   48.53 |
+  beta.js                          |   86.22 |       60 |   88.46 |   85.44 | 36-39,44-46,55,60,65,74-75,111-112,121,152,191-194,225-226,254,325,330,335,410,442-444,451
+  composition.js                   |   77.73 |    61.62 |   69.56 |   76.57 | 99-106,128,134,143-152,160,164,180,196-200,208-214,245-251,259,262,307-308,338,375,405,412-414,431,445-449,457-459,486-494,514-517,521-522,537
+  concentration.js                 |   21.95 |    23.88 |   20.83 |   21.82 | 37-75,89,123,161,182-482
+  contribution.js                  |   84.81 |     65.6 |   77.27 |   84.47 | 89,93,110,112-113,123-128,184,201-202,258-261,268-271,275-279,332,339,344,352,379-391,423,432-433,442,488,495-496,522-525,543-544,583,733,748-754,776-787,794,822,1019-1021,1050,1056-1057,1091-1099,1107
+  contributionComponents.js        |   92.41 |    82.88 |   88.23 |   93.66 | 24,32,36,99,113,117,150,232,279
+  drawdown.js                      |   81.38 |    51.53 |   73.91 |   82.48 | 31,40,96-99,105,115,145-148,172-173,200,275,318-328,333-334,338,349,372,392-400,408
+  fx.js                            |   71.96 |    49.38 |   80.95 |   71.29 | 45,51,55,61,93-99,102,126,137,152-158,194-197,207-210,225-226,248,261,284,361,374-384,389-392,405-413,424-447,454
+  geography.js                     |    1.03 |        0 |       0 |    1.08 | 29-387
+  marketcap.js                     |    1.47 |        0 |       0 |    1.54 | 41-420
+  pe.js                            |   16.62 |    22.72 |      20 |   16.62 | 32-37,70,115-800,824
+  performance.js                   |       0 |        0 |       0 |       0 | 37-455
+  rolling.js                       |       0 |        0 |       0 |       0 | 34-410
+  sectors.js                       |    1.08 |        0 |       0 |    1.14 | 29-365
+  volatility.js                    |   81.18 |    51.88 |   69.56 |   80.11 | 43-46,50-56,61,137-140,171-172,200,257-265,270,277-280,352,389-394,401-402
+  yield.js                         |   94.19 |    66.12 |      75 |      94 | 38,66,79-80,94,161,291,302,325
+ js/transactions/table             |   97.95 |    97.63 |     100 |   97.94 |
+  filter.js                        |     100 |      100 |     100 |     100 |
+  parser.js                        |   97.05 |       96 |     100 |   97.05 | 58,128
+  sort.js                          |   97.36 |    96.15 |     100 |   97.36 | 36
+ js/transactions/terminal          |   60.59 |    50.67 |   70.27 |    61.1 |
+  autocomplete.js                  |     100 |    95.65 |     100 |     100 | 46,60
+  commands.js                      |   56.86 |    51.51 |      50 |   56.86 | 70-71,78-93,123-144
+  constants.js                     |     100 |      100 |     100 |     100 |
+  dateUtils.js                     |   73.07 |    64.84 |     100 |   73.07 | 14,86-88,105-107,129-136,153-159,169,211,214,217,220,223,226,231,238,253,264,279,288-332
+  snapshots.js                     |   54.79 |    43.11 |   64.36 |   55.32 | 44,52,56,59,62,80,84,88,93,112,141,164-178,188,247,258,287-365,370,384-390,398,402-405,412,435-438,447-450,457,472-490,544-648,656,687,701,713,721-738,743-766,781,806,837,851,863,896,908-978,986,998-1068,1082,1096-1105,1121,1130,1139,1157-1174,1181,1192-1200,1234,1267,1295-1297,1306,1312,1335-1341,1350,1355,1403
+  viewUtils.js                     |   62.26 |       64 |      75 |   62.26 | 20-26,73,76,79,82,88,91,97,103,106,109,112,115,118,124
+ js/transactions/terminal/handlers |   70.26 |     57.5 |   68.75 |   70.23 |
+  geographySummary.js              |     100 |      100 |     100 |     100 |
+  help.js                          |     100 |      100 |     100 |     100 |
+  misc.js                          |   49.73 |    43.82 |   57.89 |   49.64 | 54,60-79,118-120,125,135-199,211-213,239,241,256-271,276,278,293-332,346,348,363-378,383,385,400-439,446-635,655,659,669,679,689,699,709,758,762,772,782,792,802,812,875,885,895,905,915
+  plot.js                          |   95.57 |    77.81 |   71.42 |   95.57 | 211,328-331,367,420-423,459,466,469,511,605,638,671,710-711
+  stats.js                         |     100 |      100 |     100 |     100 |
+  transaction.js                   |   72.85 |    57.97 |     100 |   72.85 | 18,62-84,120,135,143,149
+ js/transactions/terminal/stats    |   86.82 |    71.66 |   86.53 |   86.74 |
+  analysis.js                      |   79.53 |    53.69 |   76.36 |    79.1 | 18,26,37,42,46,55,70,124,198-205,219,223,227,232,246-283,316,320,365,370,375,412,464,469,479,503-513,517,542,561,583,589,604,628,633
+  financial.js                     |   79.04 |       60 |     100 |   78.43 | 19,34,41,53,56,60,71,80,90,98,107,116,147-148,155,199,208,232-233,240,274-275
+  formatting.js                    |     100 |    98.14 |     100 |     100 | 25,73
+  holdings.js                      |   97.91 |      100 |   85.71 |     100 |
+  static.js                        |     100 |      100 |     100 |     100 |
+  transactions.js                  |     100 |      100 |     100 |     100 |
+ js/ui                             |   93.06 |    82.25 |   97.56 |   93.22 |
+  backgroundSweep.js               |     100 |      100 |     100 |     100 |
+  calendarMonthLabelManager.js     |     100 |      100 |     100 |     100 |
+  currencyBootstrap.js             |     100 |      100 |     100 |     100 |
+  currencyToggleManager.js         |   90.43 |    77.89 |   94.73 |   90.35 | 106-108,136,139-146,202
+  footerToggle.js                  |     100 |      100 |     100 |     100 |
+  icon_font_ready.js               |     100 |      100 |     100 |     100 |
+  magnetic_nav.js                  |   96.15 |    92.85 |     100 |   96.15 | 75
+  marquee.js                       |   77.64 |    56.86 |     100 |    77.1 | 29,70,77-78,124-146,154
+  nav_current_page.js              |     100 |      100 |     100 |     100 |
+  nav_prefetch.js                  |   85.71 |    69.74 |     100 |   85.54 | 39,43,108,112,122,131-132,144,153,158,184,187,190,204,211,242,251,256,280,293,320,336,339,352,365
+  reduced_motion.js                |     100 |      100 |     100 |     100 |
+  responsive.js                    |   98.49 |    89.74 |     100 |   98.48 | 89,150
+  scroll_control.js                |     100 |      100 |     100 |     100 |
+  service_worker_register.js       |     100 |      100 |     100 |     100 |
+  tableGlassEffect.js              |   93.93 |    79.87 |   88.46 |   94.64 | 87-88,147-156,176,312,411,445-446,459-460,548,648
+  tilt_effect.js                   |     100 |      100 |     100 |     100 |
+  videoFallback.js                 |     100 |      100 |     100 |     100 |
+  video_warmup.js                  |   98.07 |    90.47 |     100 |   98.07 | 27
+ js/utils                          |     100 |      100 |     100 |     100 |
+  colors.js                        |     100 |      100 |     100 |     100 |
+  date.js                          |     100 |      100 |     100 |     100 |
+  easing.js                        |     100 |      100 |     100 |     100 |
+  formatting.js                    |     100 |      100 |     100 |     100 |
+  host.js                          |     100 |      100 |     100 |     100 |
+  logger.js                        |     100 |      100 |     100 |     100 |
+  smoothing.js                     |     100 |      100 |     100 |     100 |
+-----------------------------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Test Suites: 129 passed, 129 total
+Tests:       1798 passed, 1798 total
+Snapshots:   0 total
+Time:        15.207 s
+All checks passed!
+All done! ✨ 🍰 ✨
+100 files would be left unchanged.
+scripts/generate_pe_data.py:1176: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+scripts/generate_pe_data.py:1177: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 56 source files
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.12.13
+Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01
+Run started:2026-04-23 03:34:57.120439+00:00
+
+Test results:
+	No issues identified.
+
+Code scanned:
+	Total lines of code: 8162
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 2
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 13
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 13
+Files skipped (0):
+....................................................................... [ 21%]
+........................................................................ [ 43%]
+........................................................................ [ 65%]
+........................................................................ [ 87%]
+..........................................                               [100%]
+329 passed, 1 subtests passed in 5.51s
