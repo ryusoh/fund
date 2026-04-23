@@ -37,3 +37,30 @@
         { passive: false }
     ); // Use passive: false to allow preventDefault
 })();
+
+// Add to scroll_control.js to shift themes
+window.addEventListener('scroll', function () {
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    if (scrollY > 100) {
+        document.body.setAttribute('data-theme', 'scrolled');
+    } else {
+        document.body.removeAttribute('data-theme');
+    }
+});
+
+// Add scroll-linked marquee effect
+window.addEventListener('scroll', function () {
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+    const leftMarquees = document.querySelectorAll('.marquee-left');
+    const rightMarquees = document.querySelectorAll('.marquee-right');
+
+    // Add translation based on scroll position to the existing transform
+    leftMarquees.forEach((el) => {
+        el.style.transform = `perspective(1000px) rotate(-3deg) scale(1.1) translateX(${scrollY * -0.5}px)`;
+    });
+
+    rightMarquees.forEach((el) => {
+        el.style.transform = `perspective(1000px) rotate(3deg) scale(1.1) translateX(${scrollY * 0.5}px)`;
+    });
+});

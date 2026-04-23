@@ -169,3 +169,9 @@ footer a:focus-visible {
     outline-offset: -2px;
     border-radius: 4px;
 }
+
+/* Lando Norris Test: Mask and clip, don't box */
+.content-block {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+    border-bottom-right-radius: 0;
+}
