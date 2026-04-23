@@ -28,7 +28,7 @@ describe('Marquee', () => {
             },
             ticker: {
                 add: jest.fn(),
-            }
+            },
         };
         delete window.ontouchstart;
         Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
@@ -41,7 +41,10 @@ describe('Marquee', () => {
         } else {
             delete window.ontouchstart;
         }
-        Object.defineProperty(navigator, 'maxTouchPoints', { value: originalNavigatorMaxTouchPoints, configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+            value: originalNavigatorMaxTouchPoints,
+            configurable: true,
+        });
         jest.clearAllMocks();
     });
 
@@ -98,8 +101,8 @@ describe('Marquee', () => {
                 gsap: {
                     to: jest.fn(),
                     utils: { wrap: jest.fn() },
-                    ticker: { add: jest.fn() }
-                }
+                    ticker: { add: jest.fn() },
+                },
             };
 
             marqueeModule = require('../../../js/ui/marquee.js');
@@ -115,9 +118,12 @@ describe('Marquee', () => {
 
         marqueeModule.initMarquee();
 
-        expect(global.window.gsap.to).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-            duration: 20
-        }));
+        expect(global.window.gsap.to).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                duration: 20,
+            })
+        );
 
         MARQUEE_CONFIG.sizeMultiplier = oldSize;
         MARQUEE_CONFIG.direction = oldDir;
@@ -211,9 +217,11 @@ describe('Marquee', () => {
         let callCount = 0;
         Element.prototype.getBoundingClientRect = jest.fn(() => {
             callCount++;
-            if (callCount === 1) { // widget
+            if (callCount === 1) {
+                // widget
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else { // span
+            } else {
+                // span
                 return { width: 10, height: 10, top: 1000, left: 1000 };
             }
         });
@@ -250,13 +258,16 @@ describe('Marquee Initialization', () => {
                 gsap: {
                     to: jest.fn(),
                     utils: { wrap: jest.fn() },
-                    ticker: { add: jest.fn() }
-                }
+                    ticker: { add: jest.fn() },
+                },
             };
             require('../../../js/ui/marquee.js');
         });
 
-        expect(document.addEventListener).toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
+        expect(document.addEventListener).toHaveBeenCalledWith(
+            'DOMContentLoaded',
+            expect.any(Function)
+        );
     });
 });
 
@@ -275,9 +286,11 @@ describe('Marquee Gravity Edge Cases', () => {
         let callCount = 0;
         Element.prototype.getBoundingClientRect = jest.fn(() => {
             callCount++;
-            if (callCount === 1) { // widget
+            if (callCount === 1) {
+                // widget
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else { // span
+            } else {
+                // span
                 // Set span right exactly in the center to make distance < 1
                 return { width: 10, height: 10, top: 0, left: 0 };
             }
@@ -287,8 +300,10 @@ describe('Marquee Gravity Edge Cases', () => {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
             ticker: {
-                add: jest.fn(cb => { callback = cb; })
-            }
+                add: jest.fn((cb) => {
+                    callback = cb;
+                }),
+            },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -334,7 +349,7 @@ describe('Marquee Edge Cases', () => {
         const winGsap = {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn() }
+            ticker: { add: jest.fn() },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -360,7 +375,7 @@ describe('Marquee Edge Cases', () => {
         const winGsap = {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn() }
+            ticker: { add: jest.fn() },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -379,7 +394,11 @@ describe('Marquee Edge Cases', () => {
         const winGsap = {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn(cb => { callback = cb; }) }
+            ticker: {
+                add: jest.fn((cb) => {
+                    callback = cb;
+                }),
+            },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -395,9 +414,11 @@ describe('Marquee Edge Cases', () => {
         let callCount = 0;
         Element.prototype.getBoundingClientRect = jest.fn(() => {
             callCount++;
-            if (callCount === 1) { // widget at 0,0
+            if (callCount === 1) {
+                // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else { // span approaching
+            } else {
+                // span approaching
                 return { width: 10, height: 10, top: 0, left: -50 }; // distance < influenceRadius (350), direction > 0 and dx < 0
             }
         });
@@ -421,7 +442,11 @@ describe('Marquee Edge Cases', () => {
         const winGsap = {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn(cb => { callback = cb; }) }
+            ticker: {
+                add: jest.fn((cb) => {
+                    callback = cb;
+                }),
+            },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -437,9 +462,11 @@ describe('Marquee Edge Cases', () => {
         let callCount = 0;
         Element.prototype.getBoundingClientRect = jest.fn(() => {
             callCount++;
-            if (callCount === 1) { // widget at 0,0
+            if (callCount === 1) {
+                // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else { // span receding
+            } else {
+                // span receding
                 return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction < 0 and dx < 0
             }
         });
@@ -463,7 +490,11 @@ describe('Marquee Edge Cases', () => {
         const winGsap = {
             to: jest.fn(),
             utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn(cb => { callback = cb; }) }
+            ticker: {
+                add: jest.fn((cb) => {
+                    callback = cb;
+                }),
+            },
         };
         Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
 
@@ -479,9 +510,11 @@ describe('Marquee Edge Cases', () => {
         let callCount = 0;
         Element.prototype.getBoundingClientRect = jest.fn(() => {
             callCount++;
-            if (callCount === 1) { // widget at 0,0
+            if (callCount === 1) {
+                // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else { // span receding
+            } else {
+                // span receding
                 return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction > 0 and dx > 0
             }
         });
