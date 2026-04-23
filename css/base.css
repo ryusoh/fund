@@ -118,3 +118,42 @@ footer a:focus-visible {
     outline-offset: 4px;
     border-radius: 4px;
 }
+
+/* Hide default browser scaffolding like scrollbars globally */
+::-webkit-scrollbar {
+    display: none !important;
+}
+* {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    src: local('Georgia'), local('Times New Roman'), serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.dramatic {
+    font-family: 'Playfair Display', Georgia, serif !important;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: -0.02em;
+}
+
+/* Add scroll-driven theme shifts */
+body {
+    transition:
+        background-color 0.3s cubic-bezier(0.65, 0.05, 0, 1),
+        color 0.3s cubic-bezier(0.65, 0.05, 0, 1);
+}
+
+body[data-theme='scrolled'] {
+    background-color: #1a1a1a !important; /* Slightly lighter or different for narrative shift */
+    color: #e0e0e0;
+}
