@@ -220,10 +220,9 @@ describe('Marquee', () => {
             if (callCount === 1) {
                 // widget
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else {
-                // span
-                return { width: 10, height: 10, top: 1000, left: 1000 };
             }
+            // span
+            return { width: 10, height: 10, top: 1000, left: 1000 };
         });
 
         initMarquee();
@@ -289,11 +288,10 @@ describe('Marquee Gravity Edge Cases', () => {
             if (callCount === 1) {
                 // widget
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else {
-                // span
-                // Set span right exactly in the center to make distance < 1
-                return { width: 10, height: 10, top: 0, left: 0 };
             }
+            // span
+            // Set span right exactly in the center to make distance < 1
+            return { width: 10, height: 10, top: 0, left: 0 };
         });
 
         const winGsap = {
@@ -417,10 +415,9 @@ describe('Marquee Edge Cases', () => {
             if (callCount === 1) {
                 // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else {
-                // span approaching
-                return { width: 10, height: 10, top: 0, left: -50 }; // distance < influenceRadius (350), direction > 0 and dx < 0
             }
+            // span approaching
+            return { width: 10, height: 10, top: 0, left: -50 }; // distance < influenceRadius (350), direction > 0 and dx < 0
         });
 
         let marqueeModule;
@@ -465,10 +462,9 @@ describe('Marquee Edge Cases', () => {
             if (callCount === 1) {
                 // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else {
-                // span receding
-                return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction < 0 and dx < 0
             }
+            // span receding
+            return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction < 0 and dx < 0
         });
 
         let marqueeModule;
@@ -513,10 +509,9 @@ describe('Marquee Edge Cases', () => {
             if (callCount === 1) {
                 // widget at 0,0
                 return { width: 10, height: 10, top: 0, left: 0 };
-            } else {
-                // span receding
-                return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction > 0 and dx > 0
             }
+            // span receding
+            return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction > 0 and dx > 0
         });
 
         let marqueeModule;
