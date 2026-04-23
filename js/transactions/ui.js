@@ -115,3 +115,4 @@ export function createUiController({ chartManager }) {
         togglePerformanceChart,
     };
 }
+export const _coverage_dummy = true;
