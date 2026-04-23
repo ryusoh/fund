@@ -37,6 +37,28 @@
     filter: drop-shadow(0 12px 18px rgba(11, 15, 30, 0.75));
 }
 
+.chart-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #8b949e;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.empty-state-content i {
+    font-size: 2em;
+    margin-bottom: 8px;
+    opacity: 0.5;
+}
+
+.empty-state-content p {
+    font-size: 14px;
+    margin: 0;
+}
+
 .table-header {
     display: flex;
     justify-content: space-between;
