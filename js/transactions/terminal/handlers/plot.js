@@ -23,8 +23,6 @@ import {
 } from '../snapshots.js';
 import { toggleZoom, getZoomState } from '../../zoom.js';
 import { PLOT_SUBCOMMANDS } from '../constants.js';
-import { logger } from '../../../utils/logger.js';
-
 const TWRR_MESSAGE =
     'TWRR (Time-Weighted Rate of Return) describes how efficiently the portfolio has grown regardless of when money moved in or out. It focuses purely on investment performance, so the result is not distorted by the size or timing of deposits and withdrawals.\n' +
     '\n' +
