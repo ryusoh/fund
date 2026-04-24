@@ -127,3 +127,7 @@
 
 **Learning:** Chaining array methods like `Array.from(nodeList).map().filter()` inside high-frequency scroll and resize handlers creates massive garbage collection pressure by allocating and immediately discarding multiple intermediate arrays.
 **Action:** Always replace chained higher-order array methods in rendering or event loops with a single, simple `for` loop to process node lists in O(N) iterations with zero intermediate array allocation overhead.
+
+## 2026-04-24 - Optimize Array.from().map().every() chain for iterables
+**Learning:** Using Array.from().map() combined with .every() on Sets or iterables allocates intermediate arrays and causes unnecessary GC pressure. Replacing with a direct for...of loop avoids this overhead.
+**Action:** Use direct loops on iterables with early exits when possible instead of converting to arrays for map/every/some operations.
