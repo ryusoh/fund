@@ -18,3 +18,13 @@
 - **Issue:** Function `filterAndSort` in `js/transactions/table.js` had high cyclomatic complexity (25) due to monolithic filter, parsing, and sort logic.
 - **Action:** Refactored into smaller sub-modules (`js/transactions/table/filter.js`, `js/transactions/table/parser.js`, `js/transactions/table/sort.js`), isolating logic into testable components. The new structure drops `filterAndSort` complexity to 11.
 - **Verification:** Unit tests passing successfully with no regression in `table.js` behavior.
+
+## 2025-05-24 - Complex Methods Refactoring & Sentinel Catch Blocks Fixes
+
+- **Issue:** Function `activateCurrency` in `js/ui/currencyToggleManager.js` had high cyclomatic complexity (13).
+- **Action:** Refactored into smaller sub-modules `_updateButtonStates` and `_emitCurrencyChange` to reduce complexity below 10.
+- **Issue:** Functions `fetchFromAlpaca`, `fetchFromYahoo` and `fetch` in `worker/src/index.js` had high cyclomatic complexity.
+- **Action:** Refactored into smaller sub-modules (`_processAlpacaSnapshots`, `_resolveYahooPrice`, `_parseYahooPrices`, `_fetchPricesWithFallback`, `_validateRequest`) to reduce complexity below 10.
+- **Issue:** Empty catch block found in `corsHeaders` method of `worker/src/index.js`.
+- **Action:** Added error logging via `console.warn` to avoid silent failures and maintain visibility.
+- **Verification:** Unit tests passing successfully with no regression and lint commands executed properly.
