@@ -29,7 +29,9 @@ describe('Marquee', () => {
 
     afterEach(() => {
         window.gsap = originalGsap;
-        if (originalTouch !== undefined) {window.ontouchstart = originalTouch;}
+        if (originalTouch !== undefined) {
+            window.ontouchstart = originalTouch;
+        }
         document.body.innerHTML = '';
         jest.restoreAllMocks();
     });
@@ -67,19 +69,19 @@ describe('Marquee', () => {
         widget.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 });
 
         const chars = document.querySelectorAll('.mq-char');
-        chars.forEach(char => {
+        chars.forEach((char) => {
             char.getBoundingClientRect = () => ({ left: 50, top: 50, width: 10, height: 10 });
             char.style.transform = 'test'; // set an initial transform
         });
 
-        chars.forEach(char => {
+        chars.forEach((char) => {
             char.getBoundingClientRect = () => ({ left: 1000, top: 1000, width: 10, height: 10 });
         });
 
         tickerFn();
 
         // Now it should be reset
-        chars.forEach(char => {
+        chars.forEach((char) => {
             expect(char.style.transform).toBe('');
         });
     });
@@ -92,13 +94,13 @@ describe('Marquee', () => {
         widget.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 100 });
 
         const chars = document.querySelectorAll('.mq-char');
-        chars.forEach(char => {
+        chars.forEach((char) => {
             char.style.transform = 'should-not-change';
         });
 
         tickerFn();
 
-        chars.forEach(char => {
+        chars.forEach((char) => {
             expect(char.style.transform).toBe('should-not-change');
         });
     });
