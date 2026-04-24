@@ -38,3 +38,5 @@ Result: Targeted `js/transactions/table` component directory which had significa
 
 **Learning:** If `pytest` fails with `ImportError: Unable to import required dependencies: numpy: cannot load module more than once per process` when collecting tests that import `pandas`, it is often caused by executing `python3 -m pytest` on an isolated test file located outside the standard `tests/` directory structure (e.g. at the project root).
 **Action:** Always create ad-hoc test files for debugging within the `tests/` directory structure to ensure Python's import mechanisms correctly resolve dependencies like pandas and numpy without double-loading C extensions.
+## 2026-04-24 - Testing edge cases
+**Learning:** Ensure mock functions and spies use `jest.runAllTimers()` accurately to verify async queues, and ensure global variables/state changes reflect directly rather than indirectly testing them.
