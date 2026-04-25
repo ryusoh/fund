@@ -393,10 +393,14 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ];
             const bmkColor = bmkGradientStops[1] || '#999';
             // Mountain fill for benchmark
-            const bmkCoords = bmkSeries.map((point) => ({
-                x: xScale(point.date.getTime()),
-                y: yScale(point.pe),
-            }));
+            const bmkCoords = new Array(bmkSeries.length);
+            for (let i = 0; i < bmkSeries.length; i += 1) {
+                const point = bmkSeries[i];
+                bmkCoords[i] = {
+                    x: xScale(point.date.getTime()),
+                    y: yScale(point.pe),
+                };
+            }
 
             const bmkGradient = ctx.createLinearGradient(
                 0,
@@ -410,7 +414,9 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ctx.beginPath();
             if (bmkCoords.length > 0) {
                 ctx.moveTo(bmkCoords[0].x, plotHeight + padding.top);
-                bmkCoords.forEach((p) => ctx.lineTo(p.x, p.y));
+                for (let i = 0; i < bmkCoords.length; i += 1) {
+                    ctx.lineTo(bmkCoords[i].x, bmkCoords[i].y);
+                }
                 ctx.lineTo(bmkCoords[bmkCoords.length - 1].x, plotHeight + padding.top);
             }
             ctx.closePath();
@@ -434,13 +440,12 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ctx.beginPath();
             ctx.lineWidth = Math.max(1, lineThickness - 0.5);
             ctx.globalAlpha = 0.8;
-            bmkCoords.forEach((coord, index) => {
-                if (index === 0) {
-                    ctx.moveTo(coord.x, coord.y);
-                } else {
-                    ctx.lineTo(coord.x, coord.y);
+            if (bmkCoords.length > 0) {
+                ctx.moveTo(bmkCoords[0].x, bmkCoords[0].y);
+                for (let i = 1; i < bmkCoords.length; i += 1) {
+                    ctx.lineTo(bmkCoords[i].x, bmkCoords[i].y);
                 }
-            });
+            }
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
@@ -559,7 +564,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             }
 
             // Store for crosshair
-            const bmkPoints = bmkSeries.map((p) => ({ time: p.date.getTime(), value: p.pe }));
+            const bmkPoints = new Array(bmkSeries.length);
+            for (let i = 0; i < bmkSeries.length; i += 1) {
+                const p = bmkSeries[i];
+                bmkPoints[i] = { time: p.date.getTime(), value: p.pe };
+            }
             benchmarkRendered.push({
                 key: visibleBenchmarkKey,
                 color: bmkColor,
@@ -569,12 +578,16 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         }
     }
 
-    const coords = series.map((point) => ({
-        x: xScale(point.date.getTime()),
-        y: yScale(point.pe),
-        time: point.date.getTime(),
-        value: point.pe,
-    }));
+    const coords = new Array(series.length);
+    for (let i = 0; i < series.length; i += 1) {
+        const point = series[i];
+        coords[i] = {
+            x: xScale(point.date.getTime()),
+            y: yScale(point.pe),
+            time: point.date.getTime(),
+            value: point.pe,
+        };
+    }
 
     // Mountain fill
     const baselineY = yScale(yMin);
@@ -599,13 +612,12 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     }
     ctx.beginPath();
     ctx.lineWidth = lineThickness;
-    coords.forEach((coord, index) => {
-        if (index === 0) {
-            ctx.moveTo(coord.x, coord.y);
-        } else {
-            ctx.lineTo(coord.x, coord.y);
+    if (coords.length > 0) {
+        ctx.moveTo(coords[0].x, coords[0].y);
+        for (let i = 1; i < coords.length; i += 1) {
+            ctx.lineTo(coords[i].x, coords[i].y);
         }
-    });
+    }
     ctx.stroke();
 
     // --- Draw forward PE dashed line ---
@@ -713,7 +725,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     }
 
     // --- Layout for crosshair ---
-    const pePoints = series.map((p) => ({ time: p.date.getTime(), value: p.pe }));
+    const pePoints = new Array(series.length);
+    for (let i = 0; i < series.length; i += 1) {
+        const p = series[i];
+        pePoints[i] = { time: p.date.getTime(), value: p.pe };
+    }
 
     chartLayouts.pe = {
         key: 'pe',

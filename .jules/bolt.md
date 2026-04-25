@@ -132,3 +132,8 @@
 
 **Learning:** Using Array.from().map() combined with .every() on Sets or iterables allocates intermediate arrays and causes unnecessary GC pressure. Replacing with a direct for...of loop avoids this overhead.
 **Action:** Use direct loops on iterables with early exits when possible instead of converting to arrays for map/every/some operations.
+
+## 2026-04-25 - Pre-sizing Map Array Allocations
+
+**Learning:** When replacing `.map()` and `.forEach()` calls inside high-frequency rendering loops (like generating `coords` or `bmkPoints` in `pe.js`) with explicit iterations, using `.push()` can dynamically resize arrays and increase GC pressure.
+**Action:** Pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(series.length);`) and assign items by index (`coords[i] = ...`) to completely remove dynamic array resizing overhead and reduce total GC pauses in charting frames.
