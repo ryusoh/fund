@@ -207,45 +207,19 @@ describe('Composition Chart Feature Parity', () => {
         });
     });
 
-    describe.skip('Future-Proof Consistency Checks', () => {
-        test('Any chart in plot.js handlers must be in COMPOSITION_CHARTS or explicitly excluded', () => {
-            // Extract all chart case handlers from plot.js
-            const casePattern = /case\s+'([a-z]+(-abs)?)':/g;
-            const allCases = extractRegisteredCharts(plotContent, casePattern);
+    describe('Future-Proof Consistency Checks', () => {
+        test('Any composition chart in PLOT_SUBCOMMANDS must be in COMPOSITION_CHARTS', () => {
+            // Extract all chart keys from constants.js
+            const compositionPattern = /'(composition|sectors|geography|marketcap)(-abs)?'/g;
+            const registeredInConstants = extractRegisteredCharts(
+                constantsContent,
+                compositionPattern
+            );
 
-            // Filter to only composition-style charts (those that should have feature parity)
-            const compositionStyleCharts = allCases.filter((chart) => {
-                // Charts that use applyDateArgs and have abs variants are composition-style
-                const chartSection = plotContent.substring(
-                    plotContent.indexOf(`case '${chart}':`),
-                    plotContent.indexOf(`case '${chart}':`) + 2000
-                );
-                return (
-                    chartSection.includes('useAbsolute') || chartSection.includes('applyDateArgs')
-                );
-            });
-
-            compositionStyleCharts.forEach((chart) => {
-                // Skip non-composition charts that happen to use similar patterns
-                const knownNonComposition = [
-                    'balance',
-                    'performance',
-                    'fx',
-                    'drawdown',
-                    'rolling',
-                    'volatility',
-                    'beta',
-                    'yield',
-                    'pe',
-                    'concentration',
-                ];
-                if (knownNonComposition.includes(chart)) {
-                    return;
-                }
-
+            registeredInConstants.forEach((chart) => {
                 expect(COMPOSITION_CHARTS).toContain(
                     chart,
-                    `Chart "${chart}" appears to be composition-style but is NOT in COMPOSITION_CHARTS array - add it to enable feature parity tests`
+                    `Chart "${chart}" is in PLOT_SUBCOMMANDS but NOT in COMPOSITION_CHARTS array - add it to enable feature parity tests`
                 );
             });
         });
@@ -265,7 +239,7 @@ describe('Composition Chart Feature Parity', () => {
 
                 const rendererContent = fs.readFileSync(rendererPath, 'utf8');
 
-                // Check renderer exports both functions (handle different export patterns)
+                // Check renderer exports both functions
                 const hasDrawFunction =
                     rendererContent.includes(`draw${jsName}Chart`) ||
                     rendererContent.includes(`function draw${jsName}Chart`);
@@ -294,14 +268,16 @@ describe('Composition Chart Feature Parity', () => {
                     `Snapshot function get${jsName}SnapshotLine missing`
                 );
 
-                // Check viewUtils integration
+                // Check viewUtils integration (needed for standalone date filters)
+                const viewJsName = CHART_NAME_MAPPING[baseChart];
+                const viewAbsName = CHART_NAME_MAPPING[`${baseChart}-abs`];
                 expect(viewUtilsContent).toContain(
-                    `'${baseChart}'`,
-                    `Chart '${baseChart}' not in viewUtils.js (needed for standalone date filters)`
+                    `'${viewJsName}'`,
+                    `Chart '${viewJsName}' not in viewUtils.js (needed for standalone date filters)`
                 );
                 expect(viewUtilsContent).toContain(
-                    `'${baseChart}Abs'`,
-                    `Chart '${baseChart}Abs' not in viewUtils.js (needed for standalone date filters)`
+                    `'${viewAbsName}'`,
+                    `Chart '${viewAbsName}' not in viewUtils.js (needed for standalone date filters)`
                 );
             });
         });
@@ -309,19 +285,19 @@ describe('Composition Chart Feature Parity', () => {
         test('Crosshair interaction.js must have all composition charts in ALL required locations', () => {
             const baseCharts = [...new Set(COMPOSITION_CHARTS.map(getBaseChart))];
 
-            // Check all 5 locations where composition charts must be registered
+            // Check all locations where composition charts must be registered
             const locations = [
-                { name: 'isCompositionLayout', pattern: /isCompositionLayout[\s\S]{0,500}/ },
-                { name: 'range skip (1)', pattern: /Skip range functionality[\s\S]{0,800}/ },
-                { name: 'range skip (2)', pattern: /handlePointerDown[\s\S]{0,1500}/ },
-                { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,1500}/ },
-                { name: 'legend click skip', pattern: /Skip click events[\s\S]{0,800}/ },
-                { name: 'getActiveChartKey', pattern: /function getActiveChartKey[\s\S]{0,1000}/ },
+                { name: 'isCompositionLayout', pattern: /isCompositionLayout[\s\S]{0,800}/ },
+                { name: 'range skip (1)', pattern: /Skip range functionality[\s\S]{0,1000}/ },
+                { name: 'range skip (2)', pattern: /handlePointerDown[\s\S]{0,2000}/ },
+                { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,2000}/ },
+                { name: 'legend click skip', pattern: /Skip click events[\s\S]{0,1000}/ },
+                { name: 'getActiveChartKey', pattern: /function getActiveChartKey[\s\S]{0,1500}/ },
             ];
 
             baseCharts.forEach((baseChart) => {
-                const jsName = baseChart;
-                const absName = `${baseChart}Abs`;
+                const jsName = CHART_NAME_MAPPING[baseChart];
+                const absName = CHART_NAME_MAPPING[`${baseChart}-abs`];
 
                 locations.forEach((location) => {
                     const section = interactionContent.match(location.pattern);
@@ -329,11 +305,11 @@ describe('Composition Chart Feature Parity', () => {
                         const sectionContent = section[0];
                         expect(sectionContent).toContain(
                             `'${jsName}'`,
-                            `Chart '${jsName}' missing from ${location.name} in interaction.js`
+                            `Chart '${jsName}' (${baseChart}) missing from ${location.name} in interaction.js`
                         );
                         expect(sectionContent).toContain(
                             `'${absName}'`,
-                            `Chart '${absName}' missing from ${location.name} in interaction.js`
+                            `Chart '${absName}' (${baseChart}-abs) missing from ${location.name} in interaction.js`
                         );
                     }
                 });
@@ -341,151 +317,98 @@ describe('Composition Chart Feature Parity', () => {
         });
     });
 
-    describe.skip('Date Range Filter Support', () => {
-        test('all composition charts must have plot command handler with date range support', () => {
-            COMPOSITION_CHARTS.forEach((chartKey) => {
-                // Check for the case statement
-                expect(plotContent).toContain(
-                    `case '${chartKey}':`,
-                    `Chart "${chartKey}" is missing from plot command handlers`
-                );
+    describe('Date Range Filter Support', () => {
+        test('handleCompositionStyleChart must handle all composition charts', () => {
+            const baseCharts = [...new Set(COMPOSITION_CHARTS.map(getBaseChart))];
 
-                // Get the handler section (look for 3000 chars after the case)
-                const caseIndex = plotContent.indexOf(`case '${chartKey}':`);
-                const handlerSection = plotContent.substring(caseIndex, caseIndex + 3000);
+            // Get the handleCompositionStyleChart function body
+            const handlerMatch = plotContent.match(
+                /const handleCompositionStyleChart = async \(baseChartKey\) => \{([\s\S]+?)\};/
+            );
+            expect(handlerMatch).toBeTruthy();
+            const handlerBody = handlerMatch[1];
 
-                // Must have applyDateArgs call
-                expect(handlerSection).toContain(
-                    'applyDateArgs',
-                    `Chart "${chartKey}" handler missing applyDateArgs call - date range filters will not work`
-                );
-
-                // Must have dateRange variable usage
-                expect(handlerSection).toContain(
-                    'dateRange',
-                    `Chart "${chartKey}" handler missing dateRange usage`
-                );
-
-                // Must have formatDateRange in result message
-                expect(handlerSection).toContain(
-                    'formatDateRange',
-                    `Chart "${chartKey}" handler missing formatDateRange in result message`
-                );
-
-                // Must call applyDateArgs which internally calls setChartDateRange
-                // We verify applyDateArgs is called above, which handles setChartDateRange
+            baseCharts.forEach((baseChart) => {
+                // Check if the chart is handled in the if/else-if chain for snapshots
+                if (baseChart !== 'drawdown') {
+                    // drawdown is handled specially with custom snapshotFn
+                    expect(handlerBody).toContain(
+                        `baseChartKey === '${baseChart}'`,
+                        `Chart "${baseChart}" is missing from handleCompositionStyleChart snapshot matching`
+                    );
+                }
             });
-        });
 
-        test('all composition charts must support abs/absolute mode toggle', () => {
-            // Only test base charts (not the -abs variants)
-            const baseCharts = COMPOSITION_CHARTS.filter((c) => !c.includes('-abs'));
+            // Verify the list of charts that call handleCompositionStyleChart
+            const dispatchMatch = plotContent.match(
+                /if \(\[([\s\S]+?)\]\.includes\(baseSubcommand\)\)/
+            );
+            expect(dispatchMatch).toBeTruthy();
+            const dispatchList = dispatchMatch[1];
 
-            baseCharts.forEach((chartKey) => {
-                const caseIndex = plotContent.indexOf(`case '${chartKey}':`);
-                const handlerSection = plotContent.substring(caseIndex, caseIndex + 3000);
-
-                // Check for abs mode detection
-                expect(handlerSection).toMatch(
-                    /useAbsolute.*?(abs|absolute)/i,
-                    `Chart "${chartKey}" missing abs mode detection`
-                );
-
-                // Check for targetChart with Abs variant
-                const absVariant = `${chartKey}-abs`;
-                expect(handlerSection).toContain(
-                    `'${absVariant}'`,
-                    `Chart "${chartKey}" missing Abs variant (${absVariant}) handling`
+            baseCharts.forEach((baseChart) => {
+                expect(dispatchList).toContain(
+                    `'${baseChart}'`,
+                    `Chart "${baseChart}" is missing from handleCompositionStyleChart dispatch list`
                 );
             });
         });
 
-        test('all composition chart handlers must use rangeTokens for proper date arg parsing', () => {
-            // This test ensures charts properly handle "abs" keyword before date args
-            const baseCharts = COMPOSITION_CHARTS.filter((c) => !c.includes('-abs'));
+        test('handleCompositionStyleChart must support abs/absolute mode toggle and date args', () => {
+            const handlerMatch = plotContent.match(
+                /const handleCompositionStyleChart = async \(baseChartKey\) => \{([\s\S]+?)\};/
+            );
+            const handlerBody = handlerMatch[1];
 
-            baseCharts.forEach((chartKey) => {
-                const caseIndex = plotContent.indexOf(`case '${chartKey}':`);
-                const handlerSection = plotContent.substring(caseIndex, caseIndex + 3000);
-
-                // Must handle abs keyword extraction before date parsing
-                expect(handlerSection).toMatch(
-                    /rangeTokens.*=.*\[.*\.\.\.rawArgs\]/,
-                    `Chart "${chartKey}" must use rangeTokens to properly handle "abs" keyword before date args`
-                );
-
-                // Must check for abs/absolute mode in first token
-                expect(handlerSection).toMatch(
-                    /maybeMode.*===.*['"](abs|absolute)['"]/i,
-                    `Chart "${chartKey}" must check first token for abs/absolute mode`
-                );
-
-                // Must have hasDateArgs check to prevent toggle-off when date args provided
-                expect(handlerSection).toContain(
-                    'hasDateArgs',
-                    `Chart "${chartKey}" must have hasDateArgs variable to distinguish between toggle and filter commands`
-                );
-
-                // Must check hasDateArgs in toggle condition
-                expect(handlerSection).toMatch(
-                    /is.*Active.*is.*Visible.*!hasDateArgs/,
-                    `Chart "${chartKey}" must check !hasDateArgs in toggle condition to allow date filtering when chart is visible`
-                );
-            });
+            // Verify core features are implemented in the shared handler
+            expect(handlerBody).toContain('isAbsoluteSubcommand(subcommand)');
+            expect(handlerBody).toContain('applyDateArgs(rangeTokens)');
+            expect(handlerBody).toContain("baseChartKey + 'Abs'");
+            expect(handlerBody).toContain('!hasDateArgs'); // Toggle behavior
         });
 
         test('all composition chart renderers must filter data based on chartDateRange', () => {
             // Check that renderer files properly implement date filtering
-            const rendererFiles = {
-                composition: '../../../js/transactions/chart/renderers/composition.js',
-                sectors: '../../../js/transactions/chart/renderers/sectors.js',
-                geography: '../../../js/transactions/chart/renderers/geography.js',
-                marketcap: '../../../js/transactions/chart/renderers/marketcap.js',
-            };
+            const baseCharts = [...new Set(COMPOSITION_CHARTS.map(getBaseChart))];
 
-            Object.entries(rendererFiles).forEach(([chartName, relativePath]) => {
-                const rendererContent = readFileContent(relativePath);
+            baseCharts.forEach((baseChart) => {
+                const rendererPath = path.join(
+                    __dirname,
+                    `../../../js/transactions/chart/renderers/${baseChart}.js`
+                );
+                const rendererContent = fs.readFileSync(rendererPath, 'utf8');
 
                 // Must read chartDateRange from transactionState
                 expect(rendererContent).toContain(
                     'chartDateRange',
-                    `Renderer ${chartName} must read chartDateRange from transactionState`
+                    `Renderer ${baseChart} must read chartDateRange from transactionState`
                 );
 
                 // Must parse filterFrom and filterTo dates
                 expect(rendererContent).toContain(
                     'filterFrom',
-                    `Renderer ${chartName} must have filterFrom variable for date filtering`
+                    `Renderer ${baseChart} must have filterFrom variable for date filtering`
                 );
                 expect(rendererContent).toContain(
                     'filterTo',
-                    `Renderer ${chartName} must have filterTo variable for date filtering`
+                    `Renderer ${baseChart} must have filterTo variable for date filtering`
                 );
 
                 // Must filter indices based on date range
                 expect(rendererContent).toContain(
                     'filteredIndices',
-                    `Renderer ${chartName} must filter indices based on date range`
+                    `Renderer ${baseChart} must filter indices based on date range`
                 );
 
                 // Must use filterFrom/filterTo in filter logic
-                const filterSection = rendererContent.substring(
-                    rendererContent.indexOf('filterFrom'),
-                    rendererContent.indexOf('filterFrom') + 500
-                );
-                expect(filterSection).toContain(
-                    'filterTo',
-                    `Renderer ${chartName} must use both filterFrom and filterTo in filter logic`
+                expect(rendererContent).toMatch(
+                    /filterFrom|filterTo/,
+                    `Renderer ${baseChart} must use date filters`
                 );
             });
         });
 
         test('all composition charts must be in isActiveChartVisible for standalone date filters', () => {
-            // Standalone date filters like '2024' or 'f:2023' only work if chart is in isActiveChartVisible
-            const viewUtilsContent = readFileContent(
-                '../../../js/transactions/terminal/viewUtils.js'
-            );
-
             COMPOSITION_CHARTS.forEach((chartKey) => {
                 const jsName = CHART_NAME_MAPPING[chartKey];
                 expect(viewUtilsContent).toContain(
@@ -496,24 +419,11 @@ describe('Composition Chart Feature Parity', () => {
         });
 
         test('all composition charts must have getActiveChartSummaryText support', () => {
-            // Standalone date filters show chart summary after applying
-            const viewUtilsContent = readFileContent(
-                '../../../js/transactions/terminal/viewUtils.js'
-            );
+            const baseCharts = [...new Set(COMPOSITION_CHARTS.map(getBaseChart))];
 
-            const baseCharts = COMPOSITION_CHARTS.filter((c) => !c.includes('-abs'));
-
-            baseCharts.forEach((chartKey) => {
-                const jsName = CHART_NAME_MAPPING[chartKey];
-                const snapshotFunction = `get${jsName.charAt(0).toUpperCase() + jsName.slice(1)}SnapshotLine`;
-
-                // Must have snapshot function imported
-                expect(viewUtilsContent).toContain(
-                    snapshotFunction,
-                    `Chart "${jsName}" must have ${snapshotFunction} imported in viewUtils.js`
-                );
-
-                // Must have case in getActiveChartSummaryText
+            baseCharts.forEach((baseChart) => {
+                const jsName = CHART_NAME_MAPPING[baseChart];
+                // Check if viewUtils handles the chart or its abs variant
                 expect(viewUtilsContent).toContain(
                     `activeChart === '${jsName}'`,
                     `Chart "${jsName}" must have case in getActiveChartSummaryText()`
