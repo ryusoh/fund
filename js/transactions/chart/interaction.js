@@ -1008,5 +1008,15 @@ export function attachCrosshairEvents(canvas, chartManager) {
         container.addEventListener('pointerleave', handleContainerLeave);
         containerPointerBound = true;
     }
+    const card = canvas.closest('.chart-card');
+    if (card) {
+        card.addEventListener(
+            'wheel',
+            (event) => {
+                event.preventDefault();
+            },
+            { passive: false }
+        );
+    }
     pointerEventsAttached = true;
 }
