@@ -69,7 +69,8 @@
             "<rootDir>/tests/js/**/*.test.js"
         ],
         "modulePathIgnorePatterns": [
-            "<rootDir>/venv/"
+            "<rootDir>/venv/",
+            "<rootDir>/.claude/"
         ],
         "collectCoverageFrom": [
             "js/**/*.js",
