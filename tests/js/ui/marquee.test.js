@@ -53,6 +53,63 @@ describe('Marquee', () => {
         expect(window.gsap.to).not.toHaveBeenCalled();
     });
 
+    it('should ignore if content wrapper missing', () => {
+        document.body.innerHTML = `
+            <div class="marquee-container"></div>
+        `;
+        initMarquee();
+        expect(window.gsap.to).toHaveBeenCalledTimes(0);
+    });
+
+    it('should ignore if span is missing inside splitIntoChars', () => {
+        document.body.innerHTML = `
+            <div class="quantum-widget" style="width: 100px; height: 100px;"></div>
+            <div class="marquee-container">
+                <div class="marquee-content"></div>
+            </div>
+        `;
+        initMarquee();
+        expect(document.querySelector('.mq-char')).toBeNull();
+    });
+
+    it('should handle zero distance calculation inside ticker', () => {
+        initMarquee();
+        const tickerFn = window.gsap.ticker.add.mock.calls[0][0];
+
+        const widget = document.querySelector('.quantum-widget');
+        widget.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 });
+
+        const chars = document.querySelectorAll('.mq-char');
+        chars.forEach((char) => {
+            char.getBoundingClientRect = () => ({ left: 45, top: 45, width: 10, height: 10 });
+        });
+
+        tickerFn();
+
+        chars.forEach((char) => {
+            expect(char.style.transform).toBe('');
+        });
+    });
+
+    it('should handle approaching chars inside ticker', () => {
+        initMarquee();
+        const tickerFn = window.gsap.ticker.add.mock.calls[0][0];
+
+        const widget = document.querySelector('.quantum-widget');
+        widget.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 });
+
+        const chars = document.querySelectorAll('.mq-char');
+        chars.forEach((char) => {
+            char.getBoundingClientRect = () => ({ left: 60, top: 50, width: 10, height: 10 });
+        });
+
+        tickerFn();
+
+        chars.forEach((char) => {
+            expect(char.style.transform).not.toBe('');
+        });
+    });
+
     it('should not initialize on touch devices', () => {
         window.ontouchstart = null; // simulate touch device
         initMarquee();

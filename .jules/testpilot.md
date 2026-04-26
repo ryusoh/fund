@@ -38,3 +38,9 @@ Result: Targeted `js/transactions/table` component directory which had significa
 
 **Learning:** If `pytest` fails with `ImportError: Unable to import required dependencies: numpy: cannot load module more than once per process` when collecting tests that import `pandas`, it is often caused by executing `python3 -m pytest` on an isolated test file located outside the standard `tests/` directory structure (e.g. at the project root).
 **Action:** Always create ad-hoc test files for debugging within the `tests/` directory structure to ensure Python's import mechanisms correctly resolve dependencies like pandas and numpy without double-loading C extensions.
+
+## 2024-05-23
+
+What: Added missing test coverage for edge cases in `js/ui/marquee.js`, `js/ui/nav_prefetch.js`, and `js/ui/tableGlassEffect.js`.
+Coverage: Brought `marquee.js` and `tableGlassEffect.js` closer to 100% and increased `nav_prefetch.js` coverage significantly using mock injections for `navigator.connection` and DOM configurations.
+Result: Targeted unhandled failure branches in utility and UI scripts without modifying production logic. Ran full test suite to ensure no regressions.
