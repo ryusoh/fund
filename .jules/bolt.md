@@ -137,3 +137,8 @@
 
 **Learning:** When replacing `.map()` and `.forEach()` calls inside high-frequency rendering loops (like generating `coords` or `bmkPoints` in `pe.js`) with explicit iterations, using `.push()` can dynamically resize arrays and increase GC pressure.
 **Action:** Pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(series.length);`) and assign items by index (`coords[i] = ...`) to completely remove dynamic array resizing overhead and reduce total GC pauses in charting frames.
+
+## $(date +%Y-%m-%d) - Array map and forEach closures in high-frequency event loops
+
+**Learning:** Using `Array.from({ length }, () => ...)` for initialization and `.forEach()` combined with dynamic `.push()` array growth inside rendering or resize loops (e.g., `tableGlassEffect.js` resize handler) generates significant garbage collection pressure due to closure allocations and dynamic array resizing.
+**Action:** Replace `Array.from` maps and `.forEach()` calls inside animation and resize paths with pre-allocated arrays (e.g., `new Array(length)`) and standard index-based `for` loops. This eliminates intermediate allocations and ensures O(1) space growth per iteration.
