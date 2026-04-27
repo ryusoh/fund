@@ -53,7 +53,7 @@ function updateOutputFade(outputContainer) {
         }
 
         if (!child.style.transition) {
-            child.style.transition = 'opacity 0.18s ease-out';
+            child.style.transition = 'opacity 0.18s cubic-bezier(0.65, 0.05, 0, 1)';
         }
 
         const relativeTop = child.offsetTop - viewTop;

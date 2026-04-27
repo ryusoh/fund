@@ -131,7 +131,7 @@ body {
 }
 
 #terminalSweepOverlay.sweeping {
-    animation: terminal-optic-sweep var(--optic-sweep-duration, 3s) cubic-bezier(0.35, 0, 0.25, 1)
+    animation: terminal-optic-sweep var(--optic-sweep-duration, 3s) cubic-bezier(0.65, 0.05, 0, 1)
         forwards;
 }
 
@@ -160,9 +160,7 @@ body {
     z-index: 1;
 }
 
-::-webkit-scrollbar-corner {
-    background: transparent;
-}
+
 
 footer {
     position: fixed;
@@ -187,35 +185,16 @@ footer {
 }
 
 .terminal-output::-webkit-scrollbar,
-.table-responsive-container::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
+.table-responsive-container
 
 .terminal-output::-webkit-scrollbar-track,
-.table-responsive-container::-webkit-scrollbar-track {
-    background: rgba(30, 30, 35, 0.35);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-}
+.table-responsive-container
 
 .terminal-output::-webkit-scrollbar-thumb,
-.table-responsive-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(140, 140, 148, 0.55) 0%, rgba(92, 92, 98, 0.55) 100%);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
+.table-responsive-container
 
 .terminal-output::-webkit-scrollbar-thumb:hover,
-.table-responsive-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-        180deg,
-        rgba(170, 170, 178, 0.65) 0%,
-        rgba(120, 120, 128, 0.65) 100%
-    );
-}
+.table-responsive-container
 
 .table-responsive-container:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
@@ -227,4 +206,12 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+
+/* Hide scrollbar */
+::-webkit-scrollbar { display: none; }
+* {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

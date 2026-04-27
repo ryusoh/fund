@@ -4,6 +4,6 @@ body.is-preload #bg {
 }
 
 #bg {
-    transition: opacity 1s ease-in-out;
+    transition: opacity 0.3s  cubic-bezier(0.65, 0.05, 0, 1);
     opacity: 1;
 }
