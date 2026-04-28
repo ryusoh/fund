@@ -47,6 +47,3 @@ export function handleHelpCommand(args, { appendMessage }) {
         appendMessage(result);
     }
 }
-
-// Dummy variable to enable statement coverage tracking for this file.
-export const _coverage_dummy = true;

@@ -95,12 +95,12 @@ describe('tilt_effect', () => {
             left: 100,
             top: 100,
             width: 200,
-            height: 200
+            height: 200,
         }));
 
         const event = new MouseEvent('mousemove', {
             clientX: 150,
-            clientY: 150
+            clientY: 150,
         });
 
         container.dispatchEvent(event);

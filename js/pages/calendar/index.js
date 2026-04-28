@@ -1116,7 +1116,11 @@ export async function initCalendar() {
                     /* istanbul ignore next: mathematical calculation for max date in calendar config */
                     return new Date(Math.max(endOfCurrentMonth.getTime(), lastDataDate.getTime()));
                 })(),
-                highlight: [todayNy],
+                highlight: [
+                    new Date(
+                        Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), todayNy.getDate())
+                    ),
+                ],
             },
             tooltip,
             /* istanbul ignore next: calendar domain navigation callback in test environment */

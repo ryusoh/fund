@@ -36,8 +36,15 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 - Identified and fixed multiple empty `catch` blocks or generic error suppressions across the frontend application.
 - Targeted missing error logs in `js/transactions/chart/renderers/marketcap.js`, `sectors.js`, `concentration.js`, `composition.js`, `geography.js`, `pe.js`, `dataLoader.js`, `cdnFallback.js`, `twrr.js`, and `nav_prefetch.js` where exceptions were caught but silenced.
 - Injected `logger.warn('Caught exception:', error)` (or `console.warn` where appropriate) to ensure resilience and trackable debugging without failing the user experience.
+
 ## 2025-04-18 - [SECURITY ENHANCEMENT] Replace innerHTML with Safe DOM Manipulation
 
 **Vulnerability:** The application was using `.innerHTML` to inject a loading spinner into a button (`btnRunMonteCarlo`) in `js/pages/analysis/lab.js`. Although the injected string was hardcoded and not an immediate XSS vulnerability, the continued use of `.innerHTML` represents a latent risk. If the hardcoded string is later modified to include variables or dynamic input, it could silently introduce an XSS vector.
 **Learning:** Security auditing tools and strict policies (like Trusted Types) flag all uses of `.innerHTML` as potential sinks. To satisfy defense-in-depth principles, even safe uses of dangerous sinks should be refactored.
 **Prevention:** Avoid `.innerHTML` entirely. Use safe, standard DOM APIs like `document.createElement`, `Element.replaceChildren()`, and `document.createTextNode` to construct and inject elements dynamically, completely eliminating the HTML parsing vector.
+
+## 2025-04-20 - [HIGH] Fix overly permissive CORS configuration bypass
+
+**Vulnerability:** The CORS validation logic in `worker/src/index.js` checked if the Origin header ended with `.lyeutsaon.com` using a simple string `endsWith` method. This allowed a malicious origin like `https://malicious.lyeutsaon.com.evil.com` to bypass CORS validation. Also, since there was no protocol check, a `http:` scheme would also be permitted.
+**Learning:** Naive string manipulation for Origin validation is insecure, especially since browsers pass the entire scheme+hostname+port in the Origin header. Validation must isolate the hostname.
+**Prevention:** Always use the `URL` constructor to securely parse the `hostname` and explicitly enforce the `https:` protocol when verifying CORS Origins.

@@ -83,29 +83,52 @@ function applyCurrencyIcons() {
     });
 }
 
+function _updateButtonStates(normalized) {
+    const targetButton = currencyButtons.find(
+        (btn) => normalizeCurrency(btn.dataset.currency) === normalized
+    );
+    if (!targetButton) {
+        return false;
+    }
+    if (currentCurrency !== normalized) {
+        currencyButtons.forEach((btn) => {
+            btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
+        });
+        targetButton.classList.add('active');
+        targetButton.setAttribute('aria-pressed', 'true');
+        currentCurrency = normalized;
+    } else if (!targetButton.classList.contains('active')) {
+        targetButton.classList.add('active');
+        targetButton.setAttribute('aria-pressed', 'true');
+    }
+    return true;
+}
+
+function _emitCurrencyChange(normalized) {
+    if (isDispatching) {
+        return;
+    }
+    try {
+        isDispatching = true;
+        document.dispatchEvent(
+            new CustomEvent('currencyChangedGlobal', {
+                detail: { currency: normalized },
+            })
+        );
+    } finally {
+        isDispatching = false;
+    }
+}
+
 function activateCurrency(currency, { emit = true, persist = true } = {}) {
     const normalized = normalizeCurrency(currency) || 'USD';
     ensureToggleElements();
     const hasButtons = Array.isArray(currencyButtons) && currencyButtons.length > 0;
 
     if (hasButtons) {
-        const targetButton = currencyButtons.find(
-            (btn) => normalizeCurrency(btn.dataset.currency) === normalized
-        );
-        if (!targetButton) {
+        if (!_updateButtonStates(normalized)) {
             return false;
-        }
-        if (currentCurrency !== normalized) {
-            currencyButtons.forEach((btn) => {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-pressed', 'false');
-            });
-            targetButton.classList.add('active');
-            targetButton.setAttribute('aria-pressed', 'true');
-            currentCurrency = normalized;
-        } else if (!targetButton.classList.contains('active')) {
-            targetButton.classList.add('active');
-            targetButton.setAttribute('aria-pressed', 'true');
         }
     } else {
         currentCurrency = normalized;
@@ -115,17 +138,8 @@ function activateCurrency(currency, { emit = true, persist = true } = {}) {
         persistCurrency(normalized);
     }
 
-    if (emit && !isDispatching) {
-        try {
-            isDispatching = true;
-            document.dispatchEvent(
-                new CustomEvent('currencyChangedGlobal', {
-                    detail: { currency: normalized },
-                })
-            );
-        } finally {
-            isDispatching = false;
-        }
+    if (emit) {
+        _emitCurrencyChange(normalized);
     }
 
     return true;

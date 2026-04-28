@@ -287,11 +287,17 @@ export async function drawConcentrationChart(ctx, chartManager, timestamp) {
     for (let i = 0; i < series.length; i++) {
         const time = series[i].date.getTime();
         dateTimes[i] = time;
-        if (time < minTime) {minTime = time;}
-        if (time > maxTime) {maxTime = time;}
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
 
         const eh = series[i].effectiveHoldings;
-        if (eh > dataMax) {dataMax = eh;}
+        if (eh > dataMax) {
+            dataMax = eh;
+        }
     }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;

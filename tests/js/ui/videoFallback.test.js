@@ -46,8 +46,8 @@ describe('videoFallback.js', () => {
         // Wait for the rejection to be handled (flush microtasks)
         try {
             await playPromise;
-        } catch {
-            // ignore
+        } catch (err) {
+            console.warn('Caught expected error in test:', err);
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -72,8 +72,8 @@ describe('videoFallback.js', () => {
         initVideoFallback();
         try {
             await playPromise;
-        } catch {
-            // ignore
+        } catch (err) {
+            console.warn('Caught expected error in test:', err);
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
 

@@ -270,8 +270,12 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     for (let i = 0; i < dates.length; i++) {
         const time = parseLocalDate(dates[i]).getTime();
         dateTimes[i] = time;
-        if (time < minTime) {minTime = time;}
-        if (time > maxTime) {maxTime = time;}
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
     }
 
     // Ensure minTime aligns with filter start for correct x-axis labels

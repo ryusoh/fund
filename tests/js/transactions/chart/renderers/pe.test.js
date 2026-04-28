@@ -41,6 +41,196 @@ describe('buildPESeries', () => {
     });
 });
 
+describe('drawPEChart GSPC benchmark visibility', () => {
+    let mockTransactionState;
+    let mockChartLayouts;
+
+    function createMockCtx() {
+        const noop = jest.fn();
+        return {
+            canvas: { offsetWidth: 800, offsetHeight: 400 },
+            beginPath: noop,
+            moveTo: noop,
+            lineTo: noop,
+            stroke: noop,
+            fill: noop,
+            closePath: noop,
+            save: noop,
+            restore: noop,
+            setLineDash: noop,
+            createLinearGradient: jest.fn(() => ({ addColorStop: noop })),
+            strokeStyle: '',
+            fillStyle: '',
+            lineWidth: 1,
+            globalAlpha: 1,
+        };
+    }
+
+    beforeEach(() => {
+        jest.resetModules();
+
+        mockTransactionState = {
+            chartDateRange: { from: null, to: null },
+            chartVisibility: { '^GSPC': false, '^IXIC': true },
+            showChartLabels: false,
+        };
+        mockChartLayouts = {};
+
+        jest.doMock('@js/transactions/state.js', () => ({
+            transactionState: mockTransactionState,
+        }));
+        jest.doMock('@js/transactions/chart/state.js', () => ({
+            chartLayouts: mockChartLayouts,
+        }));
+        jest.doMock('@js/utils/logger.js', () => ({
+            logger: { warn: jest.fn() },
+        }));
+        jest.doMock('@js/transactions/chart/animation.js', () => ({
+            stopPerformanceAnimation: jest.fn(),
+            stopContributionAnimation: jest.fn(),
+            stopFxAnimation: jest.fn(),
+            stopPeAnimation: jest.fn(),
+            stopConcentrationAnimation: jest.fn(),
+            isAnimationEnabled: jest.fn(() => false),
+            advancePeAnimation: jest.fn(() => 0),
+            schedulePeAnimation: jest.fn(),
+            drawSeriesGlow: jest.fn(),
+        }));
+        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+            updateCrosshairUI: jest.fn(),
+            updateLegend: jest.fn(),
+            drawCrosshairOverlay: jest.fn(),
+        }));
+        jest.doMock('@js/transactions/chart/core.js', () => ({
+            drawAxes: jest.fn(),
+            drawMountainFill: jest.fn(),
+            drawEndValue: jest.fn(() => null),
+        }));
+        jest.doMock('@js/config.js', () => ({
+            mountainFill: { enabled: false },
+            CHART_LINE_WIDTHS: { contribution: 2 },
+        }));
+
+        // Mock document/window for DOM access
+        if (typeof document !== 'undefined') {
+            jest.spyOn(document, 'getElementById').mockReturnValue(null);
+            jest.spyOn(window, 'getComputedStyle').mockReturnValue({
+                getPropertyValue: () => '#fff',
+            });
+        }
+    });
+
+    it('shows GSPC benchmark even when chartVisibility has it disabled', async () => {
+        // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
+        mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
+
+        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+
+        // Inject cached PE data with benchmark
+        const peData = {
+            dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
+            portfolio_pe: [15, 16, 17],
+            ticker_pe: {},
+            ticker_weights: {},
+            benchmark_pe: {
+                '^GSPC': [20, 21, 22],
+            },
+        };
+
+        // We need to set peDataCache. Since it's a module-level variable,
+        // we trigger it via loadPEData mock. Instead, call drawPEChart after
+        // priming the cache by calling loadPEData first.
+        // Actually, let's mock fetch to return our data and call drawPEChart twice.
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(peData),
+            })
+        );
+
+        const ctx = createMockCtx();
+        const chartManager = { redraw: jest.fn() };
+
+        // First call triggers the fetch
+        peModule.drawPEChart(ctx, chartManager, 0);
+        // Wait for the fetch to resolve
+        await new Promise((r) => setTimeout(r, 0));
+
+        // redraw was called after fetch resolved, now call drawPEChart again with cached data
+        peModule.drawPEChart(ctx, chartManager, 0);
+
+        // chartLayouts.pe should have been set with the benchmark series
+        expect(mockChartLayouts.pe).not.toBeNull();
+        expect(mockChartLayouts.pe.series.length).toBe(2); // portfolio + ^GSPC
+        const gspcSeries = mockChartLayouts.pe.series.find((s) => s.key === '^GSPC');
+        expect(gspcSeries).toBeDefined();
+    });
+
+    it('does not dim GSPC legend when chartVisibility has it disabled', async () => {
+        // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
+        mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
+
+        const { updateLegend } = await import('@js/transactions/chart/interaction.js');
+        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+
+        const peData = {
+            dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
+            portfolio_pe: [15, 16, 17],
+            ticker_pe: {},
+            ticker_weights: {},
+            benchmark_pe: {
+                '^GSPC': [20, 21, 22],
+            },
+        };
+
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(peData),
+            })
+        );
+
+        const ctx = createMockCtx();
+        const chartManager = { redraw: jest.fn() };
+
+        peModule.drawPEChart(ctx, chartManager, 0);
+        await new Promise((r) => setTimeout(r, 0));
+        peModule.drawPEChart(ctx, chartManager, 0);
+
+        // updateLegend should have been called
+        expect(updateLegend).toHaveBeenCalled();
+
+        // At the moment updateLegend was called, chartVisibility['^GSPC'] should have been true
+        // so the legend dot is not dimmed. Verify by checking the spy was called while
+        // visibility was temporarily overridden.
+        const callArgs = updateLegend.mock.calls;
+        const lastCall = callArgs[callArgs.length - 1];
+        const legendItems = lastCall[0];
+
+        // Verify GSPC is included in legend items
+        const gspcLegend = legendItems.find((item) => item.key === '^GSPC');
+        expect(gspcLegend).toBeDefined();
+
+        // Verify chartVisibility['^GSPC'] was true when updateLegend was invoked
+        // We capture the value at call time via a custom mock
+        // Since the mock already ran, we verify the state was restored after
+        expect(mockTransactionState.chartVisibility['^GSPC']).toBe(false); // restored to original
+
+        // Replace updateLegend with a spy that captures visibility at call time
+        updateLegend.mockImplementation(() => {
+            // Capture the visibility state at the moment of the call
+            updateLegend._capturedGSPCVisibility = mockTransactionState.chartVisibility['^GSPC'];
+        });
+
+        // Run drawPEChart again to capture visibility during updateLegend call
+        peModule.drawPEChart(ctx, chartManager, 0);
+        expect(updateLegend._capturedGSPCVisibility).toBe(true);
+
+        // And after the call, it should be restored back to false
+        expect(mockTransactionState.chartVisibility['^GSPC']).toBe(false);
+    });
+});
+
 describe('getPESnapshotText', () => {
     let mockState;
 

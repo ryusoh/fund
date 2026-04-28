@@ -1,7 +1,7 @@
 /* Overrides for table.css */
 .table-responsive-container {
     position: relative;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: auto;
     overflow-y: overlay;
     height: auto;
@@ -158,6 +158,21 @@ th.filterable {
     justify-content: flex-start;
 }
 
+#transactionTable th.sortable.filterable {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+#transactionTable th.sortable.filterable .header-action-button {
+    width: auto;
+}
+
+#transactionTable th.sortable.filterable .filter-indicator {
+    flex-shrink: 0;
+    margin-left: 0;
+}
+
 #transactionTable th:nth-child(n + 4) .header-action-button {
     justify-content: flex-end; /* Align amount columns to the right */
 }
@@ -220,7 +235,7 @@ th.sortable[data-sort='desc'] .sort-indicator::after {
 }
 
 .filter-dropdown div:hover {
-    background-color: var(--hover-bg);
+    background-color: rgba(255, 255, 255, 0.06);
 }
 
 .table-responsive-container:focus-visible {

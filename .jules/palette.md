@@ -64,3 +64,13 @@
 **Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
 
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.
+
+## 2026-04-21 - Terminal Input UX
+
+**Learning:** Terminal emulator text inputs natively receive browser spellcheck by default, which incorrectly flags commands and stock tickers as spelling errors with distracting red underlines, breaking UI immersion.
+**Action:** Always add `spellcheck="false"` to text inputs that act as CLIs or expect non-prose data to prevent native browser interference.
+
+## 2026-04-22 - Layout Containers Accessibility Pitfall
+
+**Learning:** Adding `tabindex="0"` to non-interactive structural or layout containers (like `.left-col` or `.right-col`) to make them scrollable is an accessibility anti-pattern. It creates confusing stops for screen reader users on elements that have no interactive purpose or semantic meaning.
+**Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
