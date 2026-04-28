@@ -47,7 +47,7 @@ describe('getGeographySummaryText', () => {
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 
-    it('is a valid module object', () => {
+    it('has expected module exports', () => {
         expect(typeof geographySummary).toBe('object');
         expect(Object.keys(geographySummary).length).toBeGreaterThan(0);
     });

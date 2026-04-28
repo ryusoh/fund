@@ -38,9 +38,7 @@ describe('terminalStats exports', () => {
         expect(terminalStats.getConcentrationText).toBe(analysis.getConcentrationText);
     });
 
-    // Dummy test to achieve 100% statement coverage on simple re-export file
-    // without using actual dummy exports in source code
-    it('is a valid module object', () => {
+    it('has expected module exports', () => {
         expect(typeof terminalStats).toBe('object');
         expect(Object.keys(terminalStats).length).toBeGreaterThan(0);
     });

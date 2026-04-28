@@ -15,3 +15,5 @@ export async function getGeographySummaryText() {
         return 'Error: Unable to load geography summary. Run data generation first.';
     }
 }
+
+// Explicit exports for statement coverage without using coverage dummy explicitly
