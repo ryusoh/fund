@@ -102,8 +102,11 @@ export function findHoveredHolding(layout, time, hoverY, holdings) {
     const invertedValue = ((bottom - hoverY) / plotHeight) * stackMax;
 
     // Build a set of holding keys for quick lookup
+    // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
     const holdingsByKey = new Map();
-    holdings.forEach((h) => holdingsByKey.set(h.key, h));
+    for (let i = 0; i < holdings.length; i++) {
+        holdingsByKey.set(holdings[i].key, holdings[i]);
+    }
 
     // Walk through layout.series in stacking order, accumulating values,
     // to find which band the cursor falls in.
@@ -214,16 +217,18 @@ export function drawCrosshairOverlay(ctx, layout) {
         const selectedCurrency = layout.currency || transactionState.selectedCurrency || 'USD';
         const isAbsoluteMode = layout.valueMode === 'absolute';
         // Get values at the current time for all series
+        // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
         const valuesAtTime = [];
-        layout.series.forEach((series) => {
+        for (let i = 0; i < layout.series.length; i++) {
+            const series = layout.series[i];
             if (typeof series.getValueAtTime !== 'function') {
-                return;
+                continue;
             }
             const value = series.getValueAtTime(time);
             // For composition chart, include all non-null values, even if very small
             // This ensures holdings like FNSFX at 100% on Jan 01, 2021 are shown
             if (value === null || value === undefined) {
-                return;
+                continue;
             }
 
             valuesAtTime.push({
@@ -238,7 +243,7 @@ export function drawCrosshairOverlay(ctx, layout) {
                       ? formatPercentInline(value)
                       : formatCurrencyInline(value),
             });
-        });
+        }
 
         // Filter out holdings that had 0% allocation at this time (were not held)
         // Only keep holdings that had actual positive allocation
@@ -295,29 +300,33 @@ export function drawCrosshairOverlay(ctx, layout) {
         // Top 7 for display in snapshot panel and dots
         const enhancedHoldings = allEnhancedHoldings.slice(0, 7);
 
-        enhancedHoldings.forEach((h) => seriesSnapshot.push(h));
+        // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
+        for (let i = 0; i < enhancedHoldings.length; i++) {
+            seriesSnapshot.push(enhancedHoldings[i]);
+        }
 
         // Draw dots for composition chart (stacked)
         if (hasHover && typeof layout.yScale === 'function') {
             const visibleKeys = new Set(enhancedHoldings.map((h) => h.key));
             let stackValue = 0;
 
-            layout.series.forEach((series) => {
+            for (let i = 0; i < layout.series.length; i++) {
+                const series = layout.series[i];
                 const value = series.getValueAtTime ? series.getValueAtTime(time) : 0;
                 if (!Number.isFinite(value)) {
-                    return;
+                    continue;
                 }
 
                 stackValue += value;
 
                 // Only draw dot if it's one of the top holdings shown in the panel
                 if (!visibleKeys.has(series.key)) {
-                    return;
+                    continue;
                 }
 
                 // Only draw dot if value is significant enough to be visible as a layer
                 if (Math.abs(value) < 0.1) {
-                    return;
+                    continue;
                 }
 
                 const y = layout.yScale(stackValue);
@@ -330,7 +339,7 @@ export function drawCrosshairOverlay(ctx, layout) {
                     ctx.fill();
                     ctx.stroke();
                 }
-            });
+            }
         }
 
         if (hasHover && allEnhancedHoldings.length > 0) {
@@ -343,13 +352,14 @@ export function drawCrosshairOverlay(ctx, layout) {
             drawCompositionHoverPanel(ctx, layout, x, crosshairState.hoverY, time, hoveredHolding);
         }
     } else {
-        layout.series.forEach((series) => {
+        for (let i = 0; i < layout.series.length; i++) {
+            const series = layout.series[i];
             if (typeof series.getValueAtTime !== 'function') {
-                return;
+                continue;
             }
             const value = series.getValueAtTime(time);
             if (value === null || value === undefined) {
-                return;
+                continue;
             }
 
             const isBuySellBar = series.key === 'buyVolume' || series.key === 'sellVolume';
@@ -384,7 +394,7 @@ export function drawCrosshairOverlay(ctx, layout) {
                     ctx.stroke();
                 }
             }
-        });
+        }
     }
 
     // Sort snapshot for display
@@ -997,6 +1007,16 @@ export function attachCrosshairEvents(canvas, chartManager) {
     if (container && !containerPointerBound) {
         container.addEventListener('pointerleave', handleContainerLeave);
         containerPointerBound = true;
+    }
+    const card = canvas.closest('.chart-card');
+    if (card) {
+        card.addEventListener(
+            'wheel',
+            (event) => {
+                event.preventDefault();
+            },
+            { passive: false }
+        );
     }
     pointerEventsAttached = true;
 }

@@ -279,24 +279,53 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         return;
     }
 
-    const allTimes = [
-        ...contributionData.map((d) => d.date.getTime()),
-        ...balanceData.map((d) => d.date.getTime()),
-    ];
+    const allTimes = new Array(contributionData.length + balanceData.length);
+    let allTimesIndex = 0;
+    let allTimesMin = Infinity;
+    let allTimesMax = -Infinity;
+    for (let i = 0; i < contributionData.length; i++) {
+        const t = contributionData[i].date.getTime();
+        allTimes[allTimesIndex++] = t;
+        if (t < allTimesMin) {
+            allTimesMin = t;
+        }
+        if (t > allTimesMax) {
+            allTimesMax = t;
+        }
+    }
+    for (let i = 0; i < balanceData.length; i++) {
+        const t = balanceData[i].date.getTime();
+        allTimes[allTimesIndex++] = t;
+        if (t < allTimesMin) {
+            allTimesMin = t;
+        }
+        if (t > allTimesMax) {
+            allTimesMax = t;
+        }
+    }
 
     // Calculate effective min times based on actual data within filter range
-    const effectiveMinTimes = [];
+    let minEffectiveTime = Infinity;
+    let hasEffectiveTime = false;
     if (rawContributionData.length > 0) {
         // Use the first point (including synthetic start point) for consistency with balance data
-        effectiveMinTimes.push(rawContributionData[0].date.getTime());
+        const t = rawContributionData[0].date.getTime();
+        if (t < minEffectiveTime) {
+            minEffectiveTime = t;
+        }
+        hasEffectiveTime = true;
     }
 
     if (showBalance && rawBalanceData.length > 0) {
-        effectiveMinTimes.push(rawBalanceData[0].date.getTime());
+        const t = rawBalanceData[0].date.getTime();
+        if (t < minEffectiveTime) {
+            minEffectiveTime = t;
+        }
+        hasEffectiveTime = true;
     }
 
-    const fallbackMinTime = allTimes.length > 0 ? Math.min(...allTimes) : Date.now();
-    let minTime = effectiveMinTimes.length > 0 ? Math.min(...effectiveMinTimes) : fallbackMinTime;
+    const fallbackMinTime = allTimes.length > 0 ? allTimesMin : Date.now();
+    let minTime = hasEffectiveTime ? minEffectiveTime : fallbackMinTime;
 
     if (Number.isFinite(filterFromTime)) {
         // Ensure minTime is at least the filter start time, but don't extend before actual data
@@ -310,7 +339,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         maxTime = Math.min(filterToTime, Date.now());
     } else if (allTimes.length > 0) {
         // No filter: use the maximum time from the data (including padding points)
-        maxTime = Math.max(...allTimes);
+        maxTime = allTimesMax;
     } else {
         maxTime = Date.now();
     }

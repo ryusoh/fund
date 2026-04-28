@@ -422,7 +422,8 @@ describe('TableGlassEffect', () => {
         const canvas = container.querySelector('canvas');
 
         expect(canvas.style.top).toBe('50px');
-        expect(canvas.style.height).toBe('calc(100% - 50px)');
+        // Height is now set as explicit pixels (clientHeight - headerHeight) instead of calc()
+        expect(canvas.style.height).toBe('350px');
         expect(canvas.style.borderRadius).toBe('0');
 
         effect.dispose();

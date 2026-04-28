@@ -73,21 +73,42 @@ export const imagePlugin = {
             return;
         }
 
+        const cursor = chart._cursorPos;
+        const MAGNETIC_RADIUS = 80;
+        const MAGNETIC_STRENGTH = 0.35;
+
         meta.data.forEach((arc, index) => {
             if (showLogos || index === hoveredSliceIndex) {
                 const logoInfo = images[index];
                 if (logoInfo && logoInfo.src) {
                     const imageUrl = logoInfo.src;
+
+                    // Calculate magnetic pull toward cursor
+                    let magneticOffset = null;
+                    if (cursor) {
+                        const sliceAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
+                        const midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) / 2;
+                        const logoX = arc.x + Math.cos(sliceAngle) * midR;
+                        const logoY = arc.y + Math.sin(sliceAngle) * midR;
+                        const dx = cursor.x - logoX;
+                        const dy = cursor.y - logoY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < MAGNETIC_RADIUS && dist > 0) {
+                            const t = 1 - dist / MAGNETIC_RADIUS;
+                            const pull = t * t * MAGNETIC_STRENGTH;
+                            magneticOffset = { dx: dx * pull, dy: dy * pull };
+                        }
+                    }
+
                     if (loadedImages[imageUrl]) {
-                        // Image is already loaded and in cache, just draw it
-                        drawImage(ctx, arc, loadedImages[imageUrl], logoInfo);
+                        drawImage(ctx, arc, loadedImages[imageUrl], logoInfo, magneticOffset);
                     } else {
                         // Image is not loaded yet, start loading
                         const img = new Image();
                         img.src = imageUrl;
                         img.onload = () => {
-                            loadedImages[imageUrl] = img; // Cache the loaded image
-                            chart.draw(); // Redraw the chart to show the loaded image
+                            loadedImages[imageUrl] = img;
+                            chart.draw();
                         };
                     }
                 }

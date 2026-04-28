@@ -102,3 +102,48 @@
 
 **Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N\*W) allocations resulting in garbage collection pressure.
 **Action:** Avoid `.slice()` and pass the original array with start/end indices to helper functions to compute values in O(1) space per iteration.
+
+## $(date +%Y-%m-%d) - Array.from().reduce() overhead on Iterables
+
+**Learning:** When summing or accumulating values from an iterable (e.g., `Map.values()` or `Set.values()`), using `Array.from(iterable).reduce(...)` allocates an unnecessary intermediate array, which causes garbage collection (GC) pressure.
+**Action:** Always replace `Array.from(iterable).reduce(...)` with a direct `for...of` loop over the iterable to prevent memory allocation and reduce overhead.
+
+## 2026-05-18 - Math.min/max and Spread operator allocation avoidance
+
+**Learning:** Combining \`.map(...)\` with \`Math.max(...array)\` and \`Math.min(...array)\` spreading creates unnecessary array allocations. The spread operator can exceed the maximum call stack size on large datasets.
+**Action:** Replaced \`Math.max(...array.map(x => x))\` and similar combinations with a single, simple \`for\` loop that tracks the min and max inline. This eliminates the intermediate array allocations and prevents \`Maximum call stack size exceeded\` errors, dropping complexity to O(N) with O(1) space.
+
+## $(date +%Y-%m-%d) - Pre-sizing Map Array Allocations
+
+**Learning:** When refactoring chained `.map()` calls in rendering loops (like generating `coords`, `points`, and `rawPoints` in `fx.js`), dynamically generating mapping points dynamically grows arrays and places pressure on Garbage Collection.
+**Action:** When replacing `.map()` calls inside high-frequency loops with explicit iterations, pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(nSmoothed);`) and assign items by index (`coords[i] = ...`) rather than `push` or map. This removes dynamic array resizing overhead and reduces total GC pauses in charting frames.
+
+## 2024-04-18 - Replacing forEach with for loops in high-frequency event handlers
+
+**Learning:** In performance-critical interactive functions, such as those fired repeatedly by UI interactions (`mousemove` handlers for crosshairs), using `Array.prototype.forEach` allocates an implicit closure per iteration. Over many executions, this causes closure allocation overhead, adding to JavaScript garbage collection pressure which can eventually result in micro-stutters.
+**Action:** Always replace `.forEach` array iteration loops inside hot paths (such as `interaction.js` event handlers) with index-based `for` loops or `for...of` loops, as these avoid closure allocations entirely and execute more deterministically.
+
+## 2026-04-22 - Array mapping and filtering overhead
+
+**Learning:** Chaining array methods like `Array.from(nodeList).map().filter()` inside high-frequency scroll and resize handlers creates massive garbage collection pressure by allocating and immediately discarding multiple intermediate arrays.
+**Action:** Always replace chained higher-order array methods in rendering or event loops with a single, simple `for` loop to process node lists in O(N) iterations with zero intermediate array allocation overhead.
+
+## 2026-04-24 - Optimize Array.from().map().every() chain for iterables
+
+**Learning:** Using Array.from().map() combined with .every() on Sets or iterables allocates intermediate arrays and causes unnecessary GC pressure. Replacing with a direct for...of loop avoids this overhead.
+**Action:** Use direct loops on iterables with early exits when possible instead of converting to arrays for map/every/some operations.
+
+## 2026-04-25 - Pre-sizing Map Array Allocations
+
+**Learning:** When replacing `.map()` and `.forEach()` calls inside high-frequency rendering loops (like generating `coords` or `bmkPoints` in `pe.js`) with explicit iterations, using `.push()` can dynamically resize arrays and increase GC pressure.
+**Action:** Pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(series.length);`) and assign items by index (`coords[i] = ...`) to completely remove dynamic array resizing overhead and reduce total GC pauses in charting frames.
+
+## $(date +%Y-%m-%d) - Array map and forEach closures in high-frequency event loops
+
+**Learning:** Using `Array.from({ length }, () => ...)` for initialization and `.forEach()` combined with dynamic `.push()` array growth inside rendering or resize loops (e.g., `tableGlassEffect.js` resize handler) generates significant garbage collection pressure due to closure allocations and dynamic array resizing.
+**Action:** Replace `Array.from` maps and `.forEach()` calls inside animation and resize paths with pre-allocated arrays (e.g., `new Array(length)`) and standard index-based `for` loops. This eliminates intermediate allocations and ensures O(1) space growth per iteration.
+
+## 2026-04-27 - Array map and reduce in high-frequency calculations
+
+**Learning:** In high-frequency data calculation loops (like `applyTransactionFIFO` and `computeRunningTotals`), using `Array.prototype.map` and `Array.prototype.reduce` generates intermediate closures and increases Garbage Collection pressure.
+**Action:** Replace `map` and `reduce` in critical data crunching paths with pre-allocated arrays and manual index-based `for` loops to drop closure allocation overhead entirely.

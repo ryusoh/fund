@@ -673,6 +673,19 @@ export const TABLE_GLASS_EFFECT = {
     },
 };
 
+export const MARQUEE_CONFIG = {
+    enabled: true,
+    // Size multiplier for marquee content (1 = normal, 2 = twice as large)
+    sizeMultiplier: 2,
+    animationDuration: 20, // seconds for one full loop
+    // Direction: 1 = right-to-left (default), -1 = left-to-right
+    direction: -1,
+};
+
+export const TILT_EFFECT = {
+    enabled: false,
+};
+
 export const PERLIN_BACKGROUND_SETTINGS = {
     enabled: false,
     blendMode: 'screen',

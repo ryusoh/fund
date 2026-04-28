@@ -38,7 +38,10 @@ export function clearSplitAdjustmentCache() {
 }
 
 export function applyTransactionFIFO(lots, transaction, splitHistory) {
-    const newLots = lots.map((l) => ({ ...l }));
+    const newLots = new Array(lots.length);
+    for (let i = 0; i < lots.length; i += 1) {
+        newLots[i] = { ...lots[i] };
+    }
     let realizedGainDelta = 0;
 
     const quantity = parseFloat(transaction.quantity);
@@ -119,7 +122,10 @@ export function computeRunningTotals(transactions, splitHistory) {
         };
         securityStates.set(security, newState);
 
-        const totalShares = newState.lots.reduce((sum, lot) => sum + lot.qty, 0);
+        let totalShares = 0;
+        for (let i = 0; i < newState.lots.length; i += 1) {
+            totalShares += newState.lots[i].qty;
+        }
         const netAmount = Number.parseFloat(transaction.netAmount);
         const normalizedNetAmount = Number.isFinite(netAmount) ? netAmount : 0;
         cumulativeNetAmount += normalizedNetAmount;
@@ -131,10 +137,12 @@ export function computeRunningTotals(transactions, splitHistory) {
         });
     });
 
-    const totalRealizedGain = Array.from(securityStates.values()).reduce(
-        (sum, s) => sum + s.totalRealizedGain,
-        0
-    );
+    // Bolt: Use direct for...of loop over Map.values() instead of Array.from().reduce()
+    // to avoid intermediate array allocation and reduce garbage collection overhead
+    let totalRealizedGain = 0;
+    for (const s of securityStates.values()) {
+        totalRealizedGain += s.totalRealizedGain;
+    }
     runningTotalsById.totalRealizedGain = totalRealizedGain;
 
     return runningTotalsById;

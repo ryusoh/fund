@@ -29,6 +29,14 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'JetBrains Mono ExtraBold';
+    src: url('../assets/fonts/webfonts/JetBrainsMono-ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
 html {
     background-color: #000;
 }

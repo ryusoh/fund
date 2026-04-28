@@ -183,9 +183,19 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         return colors[index % colors.length];
     };
 
-    const dateTimes = dates.map((dateStr) => parseLocalDate(dateStr).getTime());
-    let minTime = Math.min(...dateTimes);
-    const maxTime = Math.max(...dateTimes);
+    const dateTimes = new Array(dates.length);
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    for (let i = 0; i < dates.length; i++) {
+        const time = parseLocalDate(dates[i]).getTime();
+        dateTimes[i] = time;
+        if (time < minTime) {
+            minTime = time;
+        }
+        if (time > maxTime) {
+            maxTime = time;
+        }
+    }
 
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
@@ -199,7 +209,12 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
             : ((time - minTime) / (maxTime - minTime)) * plotWidth);
 
     const yMin = 0;
-    const maxTotalValue = Math.max(...totalValuesConverted, 0);
+    let maxTotalValue = 0;
+    for (let i = 0; i < totalValuesConverted.length; i++) {
+        if (totalValuesConverted[i] > maxTotalValue) {
+            maxTotalValue = totalValuesConverted[i];
+        }
+    }
     const yMax = valueMode === 'absolute' ? Math.max(maxTotalValue, 1) : 100;
     const yScale = (value) =>
         padding.top + plotHeight - ((value - yMin) / (yMax - yMin || 1)) * plotHeight;

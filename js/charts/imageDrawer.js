@@ -1,6 +1,6 @@
 import { LOGO_SIZE, LOGO_SHADOW, LOGO_MARGIN_DEFAULT } from '@js/config.js';
 
-export function drawImage(ctx, arc, img, logoInfo) {
+export function drawImage(ctx, arc, img, logoInfo, magneticOffset) {
     // Skip very small slices to avoid clutter (about 10 degrees)
     const sliceAngle = Math.abs(arc.endAngle - arc.startAngle);
     if (sliceAngle < Math.PI / 18) {
@@ -157,8 +157,14 @@ export function drawImage(ctx, arc, img, logoInfo) {
 
     // Center of the slice at mid radius
     const angle = arc.startAngle + sliceAngle / 2;
-    const x = arc.x + Math.cos(angle) * midRadius;
-    const y = arc.y + Math.sin(angle) * midRadius;
+    let x = arc.x + Math.cos(angle) * midRadius;
+    let y = arc.y + Math.sin(angle) * midRadius;
+
+    // Apply magnetic cursor pull
+    if (magneticOffset) {
+        x += magneticOffset.dx;
+        y += magneticOffset.dy;
+    }
 
     // rotationRad already computed above
 
