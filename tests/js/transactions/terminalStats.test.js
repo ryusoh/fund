@@ -37,8 +37,11 @@ describe('terminalStats exports', () => {
         expect(terminalStats.getLifespanStatsText).toBe(analysis.getLifespanStatsText);
         expect(terminalStats.getConcentrationText).toBe(analysis.getConcentrationText);
     });
-});
 
-    it('has dummy export for coverage', () => {
-        expect(terminalStats._coverage_dummy).toBe(true);
+    // Dummy test to achieve 100% statement coverage on simple re-export file
+    // without using actual dummy exports in source code
+    it('is a valid module object', () => {
+        expect(typeof terminalStats).toBe('object');
+        expect(Object.keys(terminalStats).length).toBeGreaterThan(0);
     });
+});

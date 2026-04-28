@@ -276,10 +276,3 @@ describe('ui controller', () => {
         });
     });
 });
-
-    describe('coverage dummy', () => {
-        it('has dummy export for coverage', () => {
-            const ui = require('@js/transactions/ui.js');
-            expect(ui._coverage_dummy).toBe(true);
-        });
-    });
