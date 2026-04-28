@@ -443,3 +443,9 @@ window.addEventListener('keydown', (event) => {
         cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
     }
 });
+
+export const __terminalTesting = {
+    buildFxRateMaps,
+    ensureSyntheticStart,
+    convertCurrencySeries
+};
