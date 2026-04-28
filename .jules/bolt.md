@@ -142,3 +142,7 @@
 
 **Learning:** Using `Array.from({ length }, () => ...)` for initialization and `.forEach()` combined with dynamic `.push()` array growth inside rendering or resize loops (e.g., `tableGlassEffect.js` resize handler) generates significant garbage collection pressure due to closure allocations and dynamic array resizing.
 **Action:** Replace `Array.from` maps and `.forEach()` calls inside animation and resize paths with pre-allocated arrays (e.g., `new Array(length)`) and standard index-based `for` loops. This eliminates intermediate allocations and ensures O(1) space growth per iteration.
+
+## 2026-04-27 - Array map and reduce in high-frequency calculations
+**Learning:** In high-frequency data calculation loops (like `applyTransactionFIFO` and `computeRunningTotals`), using `Array.prototype.map` and `Array.prototype.reduce` generates intermediate closures and increases Garbage Collection pressure.
+**Action:** Replace `map` and `reduce` in critical data crunching paths with pre-allocated arrays and manual index-based `for` loops to drop closure allocation overhead entirely.
