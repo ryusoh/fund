@@ -140,7 +140,7 @@ describe('plot marketcap command', () => {
         expect(session.chartManager.update).toHaveBeenCalled();
 
         const message = getLastTerminalMessage();
-        expect(message).toContain('Showing market cap composition');
+        expect(message).toContain('Showing market cap allocation');
         expect(getTerminalInput().value).toBe('');
     }, 30000);
 
@@ -153,7 +153,7 @@ describe('plot marketcap command', () => {
         expect(session.chartManager.update).toHaveBeenCalled();
 
         const message = getLastTerminalMessage();
-        expect(message).toContain('Showing market cap composition (absolute)');
+        expect(message).toContain('Showing market cap allocation (absolute)');
         expect(getTerminalInput().value).toBe('');
     }, 30000);
 
@@ -206,7 +206,7 @@ describe('plot marketcap command', () => {
         expect(transactionState.activeChart).toBe(null);
 
         const message = getLastTerminalMessage();
-        expect(message).toContain('Hidden market cap chart');
+        expect(message).toContain('Hidden market cap allocation chart');
         expect(getTerminalInput().value).toBe('');
     }, 30000);
 
@@ -228,7 +228,7 @@ describe('plot marketcap command', () => {
         expect(transactionState.chartDateRange.from).toBe('2025-01-01');
 
         const message = getLastTerminalMessage();
-        expect(message).toContain('Showing market cap composition');
+        expect(message).toContain('Showing market cap allocation');
         expect(getTerminalInput().value).toBe('');
     }, 30000);
 

@@ -124,10 +124,17 @@ export function buildContributionSeriesFromTransactions(
         if (entry.orderTypes.size === 1) {
             orderType = entry.orderTypes.values().next().value;
         } else if (entry.orderTypes.size > 0) {
-            const types = Array.from(entry.orderTypes).map((t) => String(t).toLowerCase());
-            if (types.every((t) => t === 'buy')) {
+            let allBuy = true;
+            let allSell = true;
+            for (const t of entry.orderTypes) {
+                const lowerT = String(t).toLowerCase();
+                if (lowerT !== 'buy') {allBuy = false;}
+                if (lowerT !== 'sell') {allSell = false;}
+                if (!allBuy && !allSell) {break;}
+            }
+            if (allBuy) {
                 orderType = 'buy';
-            } else if (types.every((t) => t === 'sell')) {
+            } else if (allSell) {
                 orderType = 'sell';
             }
         }

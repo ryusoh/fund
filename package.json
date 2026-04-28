@@ -39,11 +39,11 @@
         "jest-environment-jsdom": "^30.3.0",
         "js-yaml": "^4.1.1",
         "lint-staged": "^16.4.0",
-        "markdownlint-cli2": "^0.22.0",
+        "markdownlint-cli2": "^0.22.1",
         "prettier": "^3.8.3",
-        "stylelint": "^17.8.0",
+        "stylelint": "^17.9.1",
         "stylelint-config-standard": "^40.0.0",
-        "wrangler": "^4.83.0"
+        "wrangler": "^4.85.0"
     },
     "lint-staged": {
         "*.js": [
@@ -69,7 +69,8 @@
             "<rootDir>/tests/js/**/*.test.js"
         ],
         "modulePathIgnorePatterns": [
-            "<rootDir>/venv/"
+            "<rootDir>/venv/",
+            "<rootDir>/.claude/"
         ],
         "collectCoverageFrom": [
             "js/**/*.js",

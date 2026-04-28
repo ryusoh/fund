@@ -54,9 +54,9 @@ function corsHeaders(origin) {
             const url = new URL(origin);
             isSubdomain = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
         }
-    } catch (error) {
+    } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Invalid URL:', origin, err);
     }
 
     const allowed =
