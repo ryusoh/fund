@@ -63,6 +63,7 @@
 
 **Learning:** Vertical scrolling containers (like `.left-col` and `.right-col` in analysis or `.chart-card` in terminal) with `overflow-y: auto` cannot be scrolled via keyboard unless they are explicitly focusable. Arrow keys will scroll the whole page instead of the container content.
 **Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling matching the container's `border-radius` to scrollable containers.
+
 ## 2026-04-18 - Nested Grid Layout Scrollable Columns Accessibility
 
 **Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
