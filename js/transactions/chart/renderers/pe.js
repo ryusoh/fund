@@ -761,20 +761,26 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 formatValue: (v) => `${v.toFixed(1)}x`,
                 formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
             },
-            // Benchmark crosshair series
-            ...benchmarkRendered.map((bmk) => ({
-                key: bmk.key,
-                name: bmk.key,
-                label: bmk.key,
-                color: bmk.color,
-                getValueAtTime: createTimeInterpolator(bmk.points),
-                formatValue: (v) => `${v.toFixed(1)}x`,
-                formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
-            })),
         ],
         rawSeries: series,
         forwardPE: forwardPE || null,
     };
+
+    // Benchmark crosshair series
+    // Bolt: Use explicit O(N) loop instead of chained .map() and spread operator
+    // to eliminate GC overhead and avoid intermediate array allocations
+    for (let i = 0; i < benchmarkRendered.length; i += 1) {
+        const bmk = benchmarkRendered[i];
+        chartLayouts.pe.series.push({
+            key: bmk.key,
+            name: bmk.key,
+            label: bmk.key,
+            color: bmk.color,
+            getValueAtTime: createTimeInterpolator(bmk.points),
+            formatValue: (v) => `${v.toFixed(1)}x`,
+            formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
+        });
+    }
 
     drawCrosshairOverlay(ctx, chartLayouts.pe);
 
