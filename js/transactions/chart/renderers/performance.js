@@ -141,7 +141,10 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
                     normalizedData.push({
                         ...d,
                         date: pointDate,
-                        value: Number.isFinite(startValue) && startValue !== 0 ? d.value / startValue : 1,
+                        value:
+                            Number.isFinite(startValue) && startValue !== 0
+                                ? d.value / startValue
+                                : 1,
                     });
                 }
             }

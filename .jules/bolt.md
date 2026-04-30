@@ -152,6 +152,7 @@
 
 **Learning:** Using chained `.map()` calls inside high-frequency rendering loops dynamically allocates new arrays on every frame, generating significant garbage collection (GC) pressure.
 **Action:** Replace `.map()` operations inside high-frequency rendering loops with a standard `for` loop and pre-allocated arrays using `new Array(length)` to avoid runtime memory allocations.
+
 ## 2026-04-29 - Array .map().filter().map() chains in chart renderers
 
 **Learning:** Chaining `.map().filter().map()` inside `performance.js` and other chart renderers creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead, max call stack limits, and garbage collection (GC) pressure.

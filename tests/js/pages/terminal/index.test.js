@@ -20,7 +20,7 @@ describe('Terminal index page', () => {
                 return value;
             }),
             formatCurrency: jest.fn(),
-            isDarkTheme: jest.fn()
+            isDarkTheme: jest.fn(),
         }));
 
         const module = await import('@pages/terminal/index.js');
@@ -39,7 +39,7 @@ describe('Terminal index page', () => {
                 rates: {
                     '2023-01-02': { eUR: 0.95, gbp: 0.8 },
                     '2023-01-01': { eUR: 0.94, gbp: 0.79 },
-                }
+                },
             };
             const maps = buildFxRateMaps(rawData);
 
@@ -54,8 +54,8 @@ describe('Terminal index page', () => {
         it('ignores invalid rate numbers', () => {
             const rawData = {
                 rates: {
-                    '2023-01-01': { eUR: NaN, gbp: 'invalid' }
-                }
+                    '2023-01-01': { eUR: NaN, gbp: 'invalid' },
+                },
             };
             const maps = buildFxRateMaps(rawData);
             expect(maps.EUR).toBeUndefined();
@@ -63,8 +63,8 @@ describe('Terminal index page', () => {
         });
 
         it('handles null/undefined payloads safely', () => {
-             expect(buildFxRateMaps(null)).toEqual({});
-             expect(buildFxRateMaps({ rates: null })).toEqual({});
+            expect(buildFxRateMaps(null)).toEqual({});
+            expect(buildFxRateMaps({ rates: null })).toEqual({});
         });
     });
 
@@ -73,10 +73,14 @@ describe('Terminal index page', () => {
             const seriesMap = {
                 USD: [
                     { dateKey: '2023-01-02', valueKey: 100 },
-                    { dateKey: '2023-01-03', valueKey: 110 }
-                ]
+                    { dateKey: '2023-01-03', valueKey: 110 },
+                ],
             };
-            const result = ensureSyntheticStart(seriesMap, { dateKey: 'dateKey', valueKey: 'valueKey', zeroProps: { extra: true } });
+            const result = ensureSyntheticStart(seriesMap, {
+                dateKey: 'dateKey',
+                valueKey: 'valueKey',
+                zeroProps: { extra: true },
+            });
 
             expect(result.USD.length).toBe(3);
             expect(result.USD[0].dateKey).toBe('2023-01-01');
@@ -90,16 +94,16 @@ describe('Terminal index page', () => {
         });
 
         it('handles objects properly and returns arrays as expected', () => {
-             const result = ensureSyntheticStart([], { dateKey: 'd', valueKey: 'v' });
-             expect(result).toEqual([]);
+            const result = ensureSyntheticStart([], { dateKey: 'd', valueKey: 'v' });
+            expect(result).toEqual([]);
         });
 
         it('handles missing or zero starting values', () => {
-             const series = [ { d: '2023-01-02', v: 0 } ];
-             const result = ensureSyntheticStart(series, { dateKey: 'd', valueKey: 'v' });
-             // Should update the date but keep the zero point
-             expect(result.length).toBe(1);
-             expect(result[0].d).toBeDefined();
+            const series = [{ d: '2023-01-02', v: 0 }];
+            const result = ensureSyntheticStart(series, { dateKey: 'd', valueKey: 'v' });
+            // Should update the date but keep the zero point
+            expect(result.length).toBe(1);
+            expect(result[0].d).toBeDefined();
         });
     });
 
@@ -111,7 +115,10 @@ describe('Terminal index page', () => {
         });
 
         it('converts value property appropriately', () => {
-            const series = [{ date: '2023-01-01', value: 100 }, { date: '2023-01-02', value: 200 }];
+            const series = [
+                { date: '2023-01-01', value: 100 },
+                { date: '2023-01-02', value: 200 },
+            ];
             const result = convertCurrencySeries(series, 'EUR');
             expect(result[0].value).toBe(90);
             expect(result[1].value).toBe(180);
@@ -121,7 +128,7 @@ describe('Terminal index page', () => {
             const series = [
                 { tradeDate: '2023-01-01', netAmount: 100, amount: 100 },
                 { tradeDate: '2023-01-02', netAmount: -50, amount: 50 },
-                { tradeDate: '2023-01-03', netAmount: 0, orderType: 'padding', synthetic: true }
+                { tradeDate: '2023-01-03', netAmount: 0, orderType: 'padding', synthetic: true },
             ];
             const result = convertCurrencySeries(series, 'EUR');
             expect(result[0].netAmount).toBe(90);
