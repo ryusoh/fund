@@ -79,3 +79,9 @@
 
 **Learning:** Adding `tabindex="0"` to non-interactive structural or layout containers (like `.left-col` or `.right-col`) to make them scrollable is an accessibility anti-pattern. It creates confusing stops for screen reader users on elements that have no interactive purpose or semantic meaning.
 **Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
+
+## 2026-04-26 - Visual Empty States for Canvas Charts
+
+**Learning:** When using canvas-based data visualizations, an empty canvas without an explicit visual empty state overlay makes the application appear broken or stuck loading when there is genuinely no data to display. Relying solely on `display: none` for the canvas itself often breaks grid/flexbox layouts.
+
+**Action:** Always provide an explicit visual empty state overlay (e.g., `.chart-empty` with an icon and clear message) over the chart container when no data is available to clearly communicate the state to the user.
