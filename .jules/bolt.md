@@ -122,3 +122,38 @@
 
 **Learning:** In performance-critical interactive functions, such as those fired repeatedly by UI interactions (`mousemove` handlers for crosshairs), using `Array.prototype.forEach` allocates an implicit closure per iteration. Over many executions, this causes closure allocation overhead, adding to JavaScript garbage collection pressure which can eventually result in micro-stutters.
 **Action:** Always replace `.forEach` array iteration loops inside hot paths (such as `interaction.js` event handlers) with index-based `for` loops or `for...of` loops, as these avoid closure allocations entirely and execute more deterministically.
+
+## 2026-04-22 - Array mapping and filtering overhead
+
+**Learning:** Chaining array methods like `Array.from(nodeList).map().filter()` inside high-frequency scroll and resize handlers creates massive garbage collection pressure by allocating and immediately discarding multiple intermediate arrays.
+**Action:** Always replace chained higher-order array methods in rendering or event loops with a single, simple `for` loop to process node lists in O(N) iterations with zero intermediate array allocation overhead.
+
+## 2026-04-24 - Optimize Array.from().map().every() chain for iterables
+
+**Learning:** Using Array.from().map() combined with .every() on Sets or iterables allocates intermediate arrays and causes unnecessary GC pressure. Replacing with a direct for...of loop avoids this overhead.
+**Action:** Use direct loops on iterables with early exits when possible instead of converting to arrays for map/every/some operations.
+
+## 2026-04-25 - Pre-sizing Map Array Allocations
+
+**Learning:** When replacing `.map()` and `.forEach()` calls inside high-frequency rendering loops (like generating `coords` or `bmkPoints` in `pe.js`) with explicit iterations, using `.push()` can dynamically resize arrays and increase GC pressure.
+**Action:** Pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(series.length);`) and assign items by index (`coords[i] = ...`) to completely remove dynamic array resizing overhead and reduce total GC pauses in charting frames.
+
+## $(date +%Y-%m-%d) - Array map and forEach closures in high-frequency event loops
+
+**Learning:** Using `Array.from({ length }, () => ...)` for initialization and `.forEach()` combined with dynamic `.push()` array growth inside rendering or resize loops (e.g., `tableGlassEffect.js` resize handler) generates significant garbage collection pressure due to closure allocations and dynamic array resizing.
+**Action:** Replace `Array.from` maps and `.forEach()` calls inside animation and resize paths with pre-allocated arrays (e.g., `new Array(length)`) and standard index-based `for` loops. This eliminates intermediate allocations and ensures O(1) space growth per iteration.
+
+## 2026-04-27 - Array map and reduce in high-frequency calculations
+
+**Learning:** In high-frequency data calculation loops (like `applyTransactionFIFO` and `computeRunningTotals`), using `Array.prototype.map` and `Array.prototype.reduce` generates intermediate closures and increases Garbage Collection pressure.
+**Action:** Replace `map` and `reduce` in critical data crunching paths with pre-allocated arrays and manual index-based `for` loops to drop closure allocation overhead entirely.
+
+## 2026-04-28 - Array map in render loops
+
+**Learning:** Using chained `.map()` calls inside high-frequency rendering loops dynamically allocates new arrays on every frame, generating significant garbage collection (GC) pressure.
+**Action:** Replace `.map()` operations inside high-frequency rendering loops with a standard `for` loop and pre-allocated arrays using `new Array(length)` to avoid runtime memory allocations.
+
+## 2026-04-29 - Array .map().filter().map() chains in chart renderers
+
+**Learning:** Chaining `.map().filter().map()` inside `performance.js` and other chart renderers creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead, max call stack limits, and garbage collection (GC) pressure.
+**Action:** Replaced chained higher-order array methods with a single inline manual `for` loop. Iterate over the input array, check the condition, compute the mapped values, and push directly to a newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.

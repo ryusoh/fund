@@ -1,45 +1,48 @@
 import { createUiController } from '@js/transactions/ui.js';
 import {
-    transactionState,
-    setActiveChart,
-    setChartDateRange,
     setChartVisibility,
+    setActiveChart,
+    transactionState,
+    setChartDateRange,
 } from '@js/transactions/state.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
 
 jest.mock('@js/transactions/state.js', () => ({
+    setChartVisibility: jest.fn(),
+    setActiveChart: jest.fn(),
+    setChartDateRange: jest.fn(),
     transactionState: {
         activeChart: 'contribution',
     },
-    setActiveChart: jest.fn(),
-    setChartDateRange: jest.fn(),
-    setChartVisibility: jest.fn(),
 }));
 
 jest.mock('@js/transactions/layout.js', () => ({
     adjustMobilePanels: jest.fn(),
 }));
 
-describe('ui.js', () => {
-    let uiController;
+describe('ui controller', () => {
     let chartManager;
+    let uiController;
 
     beforeEach(() => {
-        document.body.innerHTML = `
-            <div class="table-responsive-container"></div>
-            <table id="transactionTable"></table>
-            <div id="runningAmountSection"></div>
-            <div class="chart-legend">
-                <div class="legend-item" data-series="series1"></div>
-            </div>
-        `;
-
         chartManager = {
             update: jest.fn(),
             redraw: jest.fn(),
         };
 
+        document.body.innerHTML = `
+            <div class="table-responsive-container"></div>
+            <div id="runningAmountSection"></div>
+            <table id="transactionTable"></table>
+            <div class="chart-legend">
+                <div class="legend-item" data-series="series1"></div>
+                <div class="legend-item" data-series="series2" class="legend-disabled"></div>
+            </div>
+        `;
+
         uiController = createUiController({ chartManager });
+
+        // Mock requestAnimationFrame to execute synchronously
         jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb());
     });
 

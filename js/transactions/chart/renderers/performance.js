@@ -120,26 +120,34 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     let normalizedSeriesToDraw = seriesToDraw.map(cloneSeries);
 
     if (filterFrom || filterTo) {
+        // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
         normalizedSeriesToDraw = normalizedSeriesToDraw.map((series) => {
-            const filteredData = series.data
-                .map((d) => ({ ...d, date: parseLocalDate(d.date) }))
-                .filter((d) => {
-                    const pointDate = d.date;
-                    return (
-                        (!filterFrom || pointDate >= filterFrom) &&
-                        (!filterTo || pointDate <= filterTo)
-                    );
-                });
+            const normalizedData = [];
+            let startValue = 0;
+            let hasStartValue = false;
 
-            if (filteredData.length === 0) {
-                return { ...series, data: [] };
+            for (let j = 0; j < series.data.length; j++) {
+                const d = series.data[j];
+                const pointDate = parseLocalDate(d.date);
+
+                if (
+                    (!filterFrom || pointDate >= filterFrom) &&
+                    (!filterTo || pointDate <= filterTo)
+                ) {
+                    if (!hasStartValue) {
+                        startValue = d.value;
+                        hasStartValue = true;
+                    }
+                    normalizedData.push({
+                        ...d,
+                        date: pointDate,
+                        value:
+                            Number.isFinite(startValue) && startValue !== 0
+                                ? d.value / startValue
+                                : 1,
+                    });
+                }
             }
-
-            const startValue = filteredData[0].value;
-            const normalizedData = filteredData.map((d) => ({
-                ...d,
-                value: Number.isFinite(startValue) && startValue !== 0 ? d.value / startValue : 1,
-            }));
 
             return {
                 ...series,

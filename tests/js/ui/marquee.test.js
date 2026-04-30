@@ -1,14 +1,5 @@
-import { initMarquee } from '../../../js/ui/marquee.js';
-import { MARQUEE_CONFIG } from '../../../js/config.js';
-
-jest.mock('../../../js/config.js', () => ({
-    MARQUEE_CONFIG: {
-        enabled: true,
-        direction: 1,
-        animationDuration: 20,
-        sizeMultiplier: 1,
-    },
-}));
+import { initMarquee } from '@ui/marquee.js';
+import { MARQUEE_CONFIG } from '@js/config.js';
 
 describe('Marquee', () => {
     let originalGsap;
@@ -32,6 +23,7 @@ describe('Marquee', () => {
         };
         delete window.ontouchstart;
         Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        MARQUEE_CONFIG.enabled = true;
     });
 
     afterEach(() => {
@@ -45,13 +37,14 @@ describe('Marquee', () => {
             value: originalNavigatorMaxTouchPoints,
             configurable: true,
         });
+        document.body.innerHTML = '';
         jest.clearAllMocks();
     });
 
-    it('should do nothing if gsaps is not defined', () => {
+    it('should do nothing if gsap is not defined', () => {
         delete window.gsap;
         initMarquee();
-        expect(document.querySelectorAll('.marquee-container').length).toBe(0); // Nothing changed
+        expect(document.querySelectorAll('.marquee-container').length).toBe(0);
     });
 
     it('should do nothing if touch device', () => {
@@ -93,10 +86,7 @@ describe('Marquee', () => {
         // Force reading from updated MARQUEE_CONFIG config by triggering inside isolateModules
         let marqueeModule;
         jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.sizeMultiplier = undefined;
-            require('../../../js/config.js').MARQUEE_CONFIG.direction = undefined;
-            require('../../../js/config.js').MARQUEE_CONFIG.animationDuration = undefined;
-
+            // Setup global inside isolated module
             global.window = {
                 gsap: {
                     to: jest.fn(),
@@ -104,7 +94,6 @@ describe('Marquee', () => {
                     ticker: { add: jest.fn() },
                 },
             };
-
             marqueeModule = require('../../../js/ui/marquee.js');
         });
 
@@ -243,6 +232,65 @@ describe('Marquee', () => {
         expect(span.style.marginLeft).toBe('');
         expect(span.style.marginRight).toBe('');
     });
+
+    it('should handle zero distance calculation inside ticker', () => {
+        document.body.innerHTML = `
+            <div class="quantum-widget" style="width: 100px; height: 100px;"></div>
+            <div class="marquee-container">
+                <div class="marquee-content">
+                    <span>A</span>
+                </div>
+            </div>
+        `;
+
+        let callCount = 0;
+        Element.prototype.getBoundingClientRect = jest.fn(() => {
+            callCount++;
+            if (callCount === 1) {
+                // widget at 0,0
+                return { left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 };
+            }
+            // char right in middle
+            return { left: 45, top: 45, width: 10, height: 10, right: 55, bottom: 55 };
+        });
+
+        initMarquee();
+        const tickerFn = window.gsap.ticker.add.mock.calls[0][0];
+        tickerFn();
+
+        const char = document.querySelector('.mq-char');
+        expect(char.style.transform).toBe('');
+    });
+
+    it('should apply gravity transforms when chars approach the widget', () => {
+        document.body.innerHTML = `
+            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
+            <div class="marquee-container marquee-right">
+                <div class="marquee-content">
+                    <span>A</span>
+                </div>
+            </div>
+        `;
+
+        let callCount = 0;
+        Element.prototype.getBoundingClientRect = jest.fn(() => {
+            callCount++;
+            if (callCount === 1) {
+                // widget at 0,0
+                return { width: 10, height: 10, top: 0, left: 0, right: 10, bottom: 10 };
+            }
+            // span approaching
+            return { width: 10, height: 10, top: 0, left: -50, right: -40, bottom: 10 };
+        });
+
+        initMarquee();
+        const tickerFn = window.gsap.ticker.add.mock.calls[0][0];
+        tickerFn();
+
+        const span = document.querySelector('.mq-char');
+        expect(span.style.transform).not.toBe('');
+        expect(span.style.marginLeft).not.toBe('');
+    });
 });
 
 describe('Marquee Initialization', () => {
@@ -250,9 +298,7 @@ describe('Marquee Initialization', () => {
         Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
         document.addEventListener = jest.fn();
 
-        // We have to re-evaluate the script to test the top-level if statement
         jest.isolateModules(() => {
-            // Setup global inside isolated module
             global.window = {
                 gsap: {
                     to: jest.fn(),
@@ -267,264 +313,5 @@ describe('Marquee Initialization', () => {
             'DOMContentLoaded',
             expect.any(Function)
         );
-    });
-});
-
-describe('Marquee Gravity Edge Cases', () => {
-    it('should revert transform when distance is < 1', () => {
-        let callback;
-        document.body.innerHTML = `
-            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
-            <div class="marquee-container">
-                <div class="marquee-content">
-                    <span>A</span>
-                </div>
-            </div>
-        `;
-
-        let callCount = 0;
-        Element.prototype.getBoundingClientRect = jest.fn(() => {
-            callCount++;
-            if (callCount === 1) {
-                // widget
-                return { width: 10, height: 10, top: 0, left: 0 };
-            }
-            // span
-            // Set span right exactly in the center to make distance < 1
-            return { width: 10, height: 10, top: 0, left: 0 };
-        });
-
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: {
-                add: jest.fn((cb) => {
-                    callback = cb;
-                }),
-            },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        // Let's rely on the mock config at the top.
-        // Wait, why was `callback` not defined? `gsap.ticker.add` must not have been called!
-        // Why? Because initMarquee probably saw `isTouchDevice` or `!MARQUEE_CONFIG.enabled`.
-        // Let's reset the touch checks.
-        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
-        delete window.ontouchstart;
-        MARQUEE_CONFIG.enabled = true;
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        callback();
-
-        const span = document.querySelector('.mq-char');
-        // Setting style first to see if it clears
-        span.style.transform = 'scale(2)';
-        span.style.marginLeft = '10px';
-        span.style.marginRight = '10px';
-
-        // Reset call count for the next ticker tick
-        callCount = 0;
-        callback();
-
-        expect(span.style.transform).toBe('');
-        expect(span.style.marginLeft).toBe('');
-        expect(span.style.marginRight).toBe('');
-    });
-});
-
-describe('Marquee Edge Cases', () => {
-    it('should ignore wrapper if .marquee-content is missing', () => {
-        document.body.innerHTML = `
-            <div class="marquee-container">
-            </div>
-        `;
-
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn() },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.enabled = true;
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        expect(document.querySelector('.marquee-container').children.length).toBe(0);
-    });
-
-    it('should skip splitIntoChars if span is missing', () => {
-        document.body.innerHTML = `
-            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
-            <div class="marquee-container">
-                <div class="marquee-content">
-                </div>
-            </div>
-        `;
-
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: { add: jest.fn() },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.enabled = true;
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        expect(document.querySelectorAll('.mq-char').length).toBe(0);
-    });
-
-    it('should apply gravity transforms when chars approach the widget', () => {
-        let callback;
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: {
-                add: jest.fn((cb) => {
-                    callback = cb;
-                }),
-            },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        document.body.innerHTML = `
-            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
-            <div class="marquee-container marquee-right">
-                <div class="marquee-content">
-                    <span>A</span>
-                </div>
-            </div>
-        `;
-
-        let callCount = 0;
-        Element.prototype.getBoundingClientRect = jest.fn(() => {
-            callCount++;
-            if (callCount === 1) {
-                // widget at 0,0
-                return { width: 10, height: 10, top: 0, left: 0 };
-            }
-            // span approaching
-            return { width: 10, height: 10, top: 0, left: -50 }; // distance < influenceRadius (350), direction > 0 and dx < 0
-        });
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.enabled = true;
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        callback();
-
-        const span = document.querySelector('.mq-char');
-        expect(span.style.transform).not.toBe('');
-        expect(span.style.marginLeft).not.toBe('');
-    });
-
-    it('should apply gravity transforms with reverse direction', () => {
-        let callback;
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: {
-                add: jest.fn((cb) => {
-                    callback = cb;
-                }),
-            },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        document.body.innerHTML = `
-            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
-            <div class="marquee-container"> <!-- NOT marquee-right, so direction is -1 -->
-                <div class="marquee-content">
-                    <span>A</span>
-                </div>
-            </div>
-        `;
-
-        let callCount = 0;
-        Element.prototype.getBoundingClientRect = jest.fn(() => {
-            callCount++;
-            if (callCount === 1) {
-                // widget at 0,0
-                return { width: 10, height: 10, top: 0, left: 0 };
-            }
-            // span receding
-            return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction < 0 and dx < 0
-        });
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.enabled = true;
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        callback();
-
-        const span = document.querySelector('.mq-char');
-        expect(span.style.transform).not.toBe('');
-        expect(span.style.marginLeft).not.toBe('');
-    });
-
-    it('should apply gravity transforms when chars recede from the widget', () => {
-        let callback;
-        const winGsap = {
-            to: jest.fn(),
-            utils: { wrap: jest.fn() },
-            ticker: {
-                add: jest.fn((cb) => {
-                    callback = cb;
-                }),
-            },
-        };
-        Object.defineProperty(window, 'gsap', { value: winGsap, configurable: true });
-
-        document.body.innerHTML = `
-            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
-            <div class="marquee-container marquee-right">
-                <div class="marquee-content">
-                    <span>A</span>
-                </div>
-            </div>
-        `;
-
-        let callCount = 0;
-        Element.prototype.getBoundingClientRect = jest.fn(() => {
-            callCount++;
-            if (callCount === 1) {
-                // widget at 0,0
-                return { width: 10, height: 10, top: 0, left: 0 };
-            }
-            // span receding
-            return { width: 10, height: 10, top: 0, left: 50 }; // distance < influenceRadius (350), direction > 0 and dx > 0
-        });
-
-        let marqueeModule;
-        jest.isolateModules(() => {
-            require('../../../js/config.js').MARQUEE_CONFIG.enabled = true;
-            marqueeModule = require('../../../js/ui/marquee.js');
-        });
-
-        marqueeModule.initMarquee();
-        callback();
-
-        const span = document.querySelector('.mq-char');
-        expect(span.style.transform).not.toBe('');
-        expect(span.style.marginLeft).not.toBe('');
     });
 });

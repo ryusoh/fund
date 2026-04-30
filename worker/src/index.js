@@ -54,8 +54,9 @@ function corsHeaders(origin) {
             const url = new URL(origin);
             isSubdomain = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
         }
-    } catch {
-        // Invalid URL
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Invalid URL:', origin, err);
     }
 
     const allowed =
@@ -86,6 +87,28 @@ function isOvernightET() {
     return h >= 20 || h < 4; // 20:00–04:00 ET
 }
 
+function _isValidAlpacaTradeDate(snapshot, todayUTC) {
+    if (!isOvernightET()) {
+        return true;
+    }
+    const tradeDate = snapshot?.latestTrade?.t
+        ? new Date(snapshot.latestTrade.t).toISOString().slice(0, 10)
+        : null;
+    return tradeDate && tradeDate >= todayUTC;
+}
+
+function _processAlpacaSnapshots(snapshots) {
+    const todayUTC = new Date().toISOString().slice(0, 10);
+    const prices = {};
+    for (const [ticker, snapshot] of Object.entries(snapshots)) {
+        const price = snapshot?.latestTrade?.p ?? null;
+        if (price !== null && _isValidAlpacaTradeDate(snapshot, todayUTC)) {
+            prices[ticker] = price;
+        }
+    }
+    return prices;
+}
+
 async function fetchFromAlpaca(symbols, env) {
     // During pre/post-market extended hours (04:00–09:30 and 16:00–20:00 ET),
     // the Alpaca free-tier IEX feed only carries regular-session trades.
@@ -113,24 +136,7 @@ async function fetchFromAlpaca(symbols, env) {
     // During overnight, skip tickers whose last trade predates today (UTC) — they didn't
     // trade in this overnight session and the caller will fill the gap via Yahoo Finance.
     const snapshots = data.snapshots ?? data; // API may return object directly
-    const todayUTC = new Date().toISOString().slice(0, 10);
-    const prices = {};
-    for (const [ticker, snapshot] of Object.entries(snapshots)) {
-        const price = snapshot?.latestTrade?.p ?? null;
-        if (price === null) {
-            continue;
-        }
-        if (isOvernightET()) {
-            const tradeDate = snapshot?.latestTrade?.t
-                ? new Date(snapshot.latestTrade.t).toISOString().slice(0, 10)
-                : null;
-            if (!tradeDate || tradeDate < todayUTC) {
-                continue;
-            }
-        }
-        prices[ticker] = price;
-    }
-    return prices;
+    return _processAlpacaSnapshots(snapshots);
 }
 
 const YAHOO_UA =
@@ -177,6 +183,35 @@ async function getYahooCrumb(env) {
     return result;
 }
 
+function _resolveYahooPrice(quote) {
+    if (!quote) {
+        return null;
+    }
+
+    const regular = quote.regularMarketPrice ?? null;
+    const regularTime = quote.regularMarketTime ?? 0;
+
+    if ((quote.postMarketTime ?? 0) > regularTime && quote.postMarketPrice != null) {
+        return quote.postMarketPrice;
+    }
+    if ((quote.preMarketTime ?? 0) > regularTime && quote.preMarketPrice != null) {
+        return quote.preMarketPrice;
+    }
+
+    return regular;
+}
+
+function _parseYahooPrices(results) {
+    const prices = {};
+    for (const quote of results) {
+        const price = _resolveYahooPrice(quote);
+        if (quote?.symbol && price !== null) {
+            prices[quote.symbol] = price;
+        }
+    }
+    return prices;
+}
+
 async function fetchFromYahoo(symbols, env) {
     const { crumb, cookie } = await getYahooCrumb(env);
     const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}&crumb=${encodeURIComponent(crumb)}`;
@@ -195,22 +230,71 @@ async function fetchFromYahoo(symbols, env) {
     if (results.length === 0) {
         throw new Error('Yahoo Finance returned no results');
     }
-    const prices = {};
-    for (const quote of results) {
-        // Prefer the most recent extended-hours price when available and fresher
-        const regular = quote?.regularMarketPrice ?? null;
-        const post = quote?.postMarketPrice ?? null;
-        const postTime = quote?.postMarketTime ?? 0;
-        const pre = quote?.preMarketPrice ?? null;
-        const preTime = quote?.preMarketTime ?? 0;
-        const regularTime = quote?.regularMarketTime ?? 0;
-        const extendedPrice = postTime > regularTime ? post : preTime > regularTime ? pre : null;
-        const price = extendedPrice ?? regular;
-        if (quote?.symbol && price !== null) {
-            prices[quote.symbol] = price;
+    return _parseYahooPrices(results);
+}
+
+async function _resolvePricesFallback(env, missingFromAlpaca, prices) {
+    if (missingFromAlpaca.length > 0) {
+        try {
+            const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
+            Object.assign(prices, yahooPrices);
+        } catch (yahooErr) {
+            const safeYahooMsg = scrubSecrets(yahooErr.message || String(yahooErr), [
+                env.ALPACA_API_KEY,
+                env.ALPACA_API_SECRET,
+            ]);
+            // eslint-disable-next-line no-console
+            console.error('Error fetching from Yahoo:', safeYahooMsg);
+            if (Object.keys(prices).length === 0) {
+                return { error: 'Failed to fetch prices', detail: safeYahooMsg };
+            }
+            // Partial: Alpaca got some tickers, Yahoo failed for the rest — serve what we have
         }
     }
     return prices;
+}
+
+function _parseSymbols(symbolsParam) {
+    return [
+        ...new Set(
+            symbolsParam
+                .split(',')
+                .map((s) => s.trim().toUpperCase())
+                .filter(Boolean)
+        ),
+    ];
+}
+
+async function _fetchPricesWithFallback(symbols, env) {
+    let prices = {};
+    try {
+        prices = await fetchFromAlpaca(symbols, env);
+    } catch (err) {
+        const safeMsg = scrubSecrets(err.message || String(err), [
+            env.ALPACA_API_KEY,
+            env.ALPACA_API_SECRET,
+        ]);
+        // eslint-disable-next-line no-console
+        console.error('Error fetching from Alpaca:', safeMsg);
+        // Alpaca failed or was skipped (extended session) — Yahoo handles everything
+    }
+
+    const missingFromAlpaca = symbols.filter((s) => !(s in prices));
+    return _resolvePricesFallback(env, missingFromAlpaca, prices);
+}
+
+function _validateRequest(request, origin, url) {
+    if (request.method !== 'GET') {
+        return jsonResponse({ error: 'Method not allowed' }, 405, origin);
+    }
+    if (url.pathname !== '/prices') {
+        return jsonResponse({ error: 'Not found' }, 404, origin);
+    }
+    const symbolsParam = url.searchParams.get('symbols');
+    if (!symbolsParam) {
+        return jsonResponse({ error: 'Missing required query param: symbols' }, 400, origin);
+    }
+    return null; // Valid
 }
 
 export default {
@@ -222,29 +306,15 @@ export default {
             return new Response(null, { status: 204, headers: corsHeaders(origin) });
         }
 
-        if (request.method !== 'GET') {
-            return jsonResponse({ error: 'Method not allowed' }, 405, origin);
-        }
-
         const url = new URL(request.url);
-        if (url.pathname !== '/prices') {
-            return jsonResponse({ error: 'Not found' }, 404, origin);
+        const validationResponse = _validateRequest(request, origin, url);
+        if (validationResponse) {
+            return validationResponse;
         }
 
         const symbolsParam = url.searchParams.get('symbols');
-        if (!symbolsParam) {
-            return jsonResponse({ error: 'Missing required query param: symbols' }, 400, origin);
-        }
-
         // Normalise and deduplicate symbols
-        const symbols = [
-            ...new Set(
-                symbolsParam
-                    .split(',')
-                    .map((s) => s.trim().toUpperCase())
-                    .filter(Boolean)
-            ),
-        ];
+        const symbols = _parseSymbols(symbolsParam);
         if (symbols.length === 0) {
             return jsonResponse({ error: 'No valid symbols provided' }, 400, origin);
         }
@@ -259,47 +329,17 @@ export default {
         }
 
         // 2. Fetch prices: Alpaca first, Yahoo Finance for any gaps
-        let prices = {};
-        try {
-            prices = await fetchFromAlpaca(symbols, env);
-        } catch (err) {
-            const safeMsg = scrubSecrets(err.message || String(err), [
-                env.ALPACA_API_KEY,
-                env.ALPACA_API_SECRET,
-            ]);
-            // eslint-disable-next-line no-console
-            console.error('Error fetching from Alpaca:', safeMsg);
-            // Alpaca failed or was skipped (extended session) — Yahoo handles everything
+        const resolvedResult = await _fetchPricesWithFallback(symbols, env);
+
+        if (resolvedResult && resolvedResult.error) {
+            const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+            if (stale) {
+                return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
+            }
+            return jsonResponse(resolvedResult, 502, origin);
         }
 
-        // Supplement any symbols Alpaca didn't return (no overnight trade, extended session, etc.)
-        const missingFromAlpaca = symbols.filter((s) => !(s in prices));
-        if (missingFromAlpaca.length > 0) {
-            try {
-                const yahooPrices = await fetchFromYahoo(missingFromAlpaca, env);
-                Object.assign(prices, yahooPrices);
-            } catch (yahooErr) {
-                const safeYahooMsg = scrubSecrets(yahooErr.message || String(yahooErr), [
-                    env.ALPACA_API_KEY,
-                    env.ALPACA_API_SECRET,
-                ]);
-                // eslint-disable-next-line no-console
-                console.error('Error fetching from Yahoo:', safeYahooMsg);
-                if (Object.keys(prices).length === 0) {
-                    // 3. Both sources failed entirely — serve last-known-good value (stale-on-error)
-                    const stale = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
-                    if (stale) {
-                        return jsonResponse(stale, 200, origin, { 'X-Cache': 'STALE' });
-                    }
-                    return jsonResponse(
-                        { error: 'Failed to fetch prices', detail: safeYahooMsg },
-                        502,
-                        origin
-                    );
-                }
-                // Partial: Alpaca got some tickers, Yahoo failed for the rest — serve what we have
-            }
-        }
+        const prices = resolvedResult;
 
         // 4. Write to KV after response is sent
         const pricesJson = JSON.stringify(prices);

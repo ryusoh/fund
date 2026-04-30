@@ -7,12 +7,20 @@
     background: rgba(17, 17, 17, 0.5);
     position: relative;
     overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: none;
     width: 100%;
     box-sizing: border-box;
     background-clip: padding-box;
     -webkit-backdrop-filter: blur(36px);
     backdrop-filter: blur(36px);
     box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
+}
+
+.chart-card:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
+    border-radius: 18px;
 }
 
 .chart-card.chart-zoomed-out {
@@ -34,6 +42,7 @@
     width: 100%;
     height: 100%;
     display: block;
+    touch-action: none;
     filter: drop-shadow(0 12px 18px rgba(11, 15, 30, 0.75));
 }
 

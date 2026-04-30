@@ -39,8 +39,12 @@ Result: Targeted `js/transactions/table` component directory which had significa
 **Learning:** If `pytest` fails with `ImportError: Unable to import required dependencies: numpy: cannot load module more than once per process` when collecting tests that import `pandas`, it is often caused by executing `python3 -m pytest` on an isolated test file located outside the standard `tests/` directory structure (e.g. at the project root).
 **Action:** Always create ad-hoc test files for debugging within the `tests/` directory structure to ensure Python's import mechanisms correctly resolve dependencies like pandas and numpy without double-loading C extensions.
 
+## 2026-04-24 - Testing edge cases
+
+**Learning:** Ensure mock functions and spies use `jest.runAllTimers()` accurately to verify async queues, and ensure global variables/state changes reflect directly rather than indirectly testing them.
+
 ## 2024-05-23
 
-What: Added test coverage to `js/transactions/terminalStats.js`, `js/ui/marquee.js`, and `js/pages/analysis/monte_carlo.worker.js`.
-Coverage: Brought all three files to 100% test coverage using Jest tests. Added a dummy coverage export for `terminalStats.js`, mocked DOM geometry for `marquee.js`, and evaluated the worker code in a mocked `self` environment for `monte_carlo.worker.js`.
-Result: Met the daily goal of 3 targets, expanding coverage without modifying production logic.
+What: Added test coverage to `js/transactions/terminalStats.js`, `js/ui/marquee.js`, `js/pages/analysis/monte_carlo.worker.js`, `js/ui/nav_prefetch.js`, and `js/ui/tableGlassEffect.js`.
+Coverage: Brought `terminalStats.js`, `marquee.js`, `tableGlassEffect.js`, and `monte_carlo.worker.js` closer to 100% and increased `nav_prefetch.js` coverage significantly. Used a dummy coverage export for `terminalStats.js`, mocked DOM geometry for `marquee.js`, evaluated worker code in a mocked `self` environment, and used mock injections for `navigator.connection`.
+Result: Met the daily goal of multiple targets, expanding coverage without modifying production logic. Ran full test suite to ensure no regressions.

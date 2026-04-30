@@ -250,6 +250,93 @@ describe('nav_prefetch.js', () => {
         expect(window.fetch).toHaveBeenCalled();
     });
 
+    test('should handle empty or missing URL regex matches', () => {
+        const makeSyncPromise = (val) => ({
+            then: (cb) => {
+                if (cb) {
+                    try {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    } catch (e) {
+                        return makeSyncPromise(e, true);
+                    }
+                }
+                return makeSyncPromise(val);
+            },
+            catch: () => makeSyncPromise(val),
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val);
+            },
+        });
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith('.css')) {
+                return makeSyncPromise({
+                    ok: true,
+                    text: () =>
+                        makeSyncPromise(
+                            'background: url(data:image/png;base64,123); background: url(); background:;'
+                        ),
+                });
+            }
+            return makeSyncPromise({ ok: true });
+        });
+        loadScript();
+        expect(window.fetch).toHaveBeenCalled();
+    });
+
+    test('should handle manifest URL parsing error gracefully', () => {
+        const OriginalURL = window.URL;
+        window.URL = jest.fn((url, base) => {
+            if (url && url.includes('manifest.webmanifest')) {
+                throw new Error('Test parsing error');
+            }
+            return new OriginalURL(url, base);
+        });
+
+        document.body.innerHTML = `
+            <link rel="manifest" href="/assets/manifest.webmanifest" />
+            <div class="container">
+                <a href="/position/">Internal</a>
+            </div>
+        `;
+
+        try {
+            expect(() => loadScript()).not.toThrow();
+        } finally {
+            window.URL = OriginalURL;
+        }
+    });
+
+    test('should handle missing navigator.connection', () => {
+        const originalConnection = navigator.connection;
+        const originalMozConnection = navigator.mozConnection;
+        const originalWebkitConnection = navigator.webkitConnection;
+
+        delete navigator.connection;
+        delete navigator.mozConnection;
+        delete navigator.webkitConnection;
+
+        try {
+            expect(() => loadScript()).not.toThrow();
+        } finally {
+            if (originalConnection !== undefined) {
+                navigator.connection = originalConnection;
+            }
+            if (originalMozConnection !== undefined) {
+                navigator.mozConnection = originalMozConnection;
+            }
+            if (originalWebkitConnection !== undefined) {
+                navigator.webkitConnection = originalWebkitConnection;
+            }
+        }
+    });
+
     test('should handle fetch rejection gracefully', () => {
         const makeSyncPromise = (val, isReject = false) => ({
             then: (cb) => {

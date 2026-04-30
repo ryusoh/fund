@@ -25,4 +25,4 @@ export {
     getConcentrationText,
 };
 
-export const _coverage_dummy = true;
+// Explicit exports for statement coverage without using coverage dummy explicitly

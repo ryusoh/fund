@@ -5,14 +5,20 @@
  */
 /* global self */
 
-self.onmessage = function (e) {
-    const { type, payload } = e.data;
+export function initWorker(selfContext) {
+    selfContext.onmessage = function (e) {
+        const { type, payload } = e.data;
 
-    if (type === 'RUN_SIMULATION') {
-        const result = runSimulation(payload);
-        self.postMessage({ type: 'SIMULATION_COMPLETE', result });
-    }
-};
+        if (type === 'RUN_SIMULATION') {
+            const result = runSimulation(payload);
+            selfContext.postMessage({ type: 'SIMULATION_COMPLETE', result });
+        }
+    };
+}
+
+if (typeof self !== 'undefined' && typeof window === 'undefined') {
+    initWorker(self);
+}
 
 function runSimulation(config) {
     const { scenarios, volatility, horizon, paths = 10000 } = config;

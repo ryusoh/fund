@@ -73,8 +73,8 @@ describe('icon_font_ready', () => {
 
         try {
             await readyPromise;
-        } catch {
-            /* ignore */
+        } catch (err) {
+            console.warn('Caught expected error in test:', err);
         }
 
         // Let promises resolve
@@ -122,8 +122,8 @@ describe('icon_font_ready', () => {
         // Catch to prevent unhandled rejection
         try {
             await loadPromise;
-        } catch {
-            /* ignore */
+        } catch (err) {
+            console.warn('Caught expected error in test:', err);
         }
 
         await readyPromise;

@@ -1,4 +1,5 @@
 import { getGeographySummaryText } from '@js/transactions/terminal/handlers/geographySummary.js';
+import * as geographySummary from '@js/transactions/terminal/handlers/geographySummary.js';
 import { logger } from '@js/utils/logger.js';
 
 jest.mock('@js/utils/logger.js', () => ({
@@ -44,5 +45,10 @@ describe('getGeographySummaryText', () => {
 
         expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+    });
+
+    it('has expected module exports', () => {
+        expect(typeof geographySummary).toBe('object');
+        expect(Object.keys(geographySummary).length).toBeGreaterThan(0);
     });
 });
