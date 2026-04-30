@@ -24,5 +24,3 @@ export {
     getLifespanStatsText,
     getConcentrationText,
 };
-
-// Explicit exports for statement coverage without using coverage dummy explicitly
