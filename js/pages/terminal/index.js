@@ -144,13 +144,16 @@ function ensureSyntheticStart(series, { dateKey, valueKey, zeroProps = {} }) {
     }
 
     const rawDate = first?.[dateKey];
-    const firstDate = rawDate instanceof Date ? new Date(rawDate) : new Date(rawDate);
+    // Parse as UTC if it's a string to avoid timezone shifts
+    const firstDate =
+        rawDate instanceof Date
+            ? new Date(rawDate)
+            : new Date(rawDate + (rawDate.includes('T') ? '' : 'T00:00:00Z'));
     if (Number.isNaN(firstDate.getTime())) {
         return series;
     }
-    firstDate.setHours(0, 0, 0, 0);
     const syntheticDate = new Date(firstDate);
-    syntheticDate.setDate(syntheticDate.getDate() - 1);
+    syntheticDate.setUTCDate(syntheticDate.getUTCDate() - 1);
     const formattedDate =
         rawDate instanceof Date ? syntheticDate : syntheticDate.toISOString().split('T')[0];
 
