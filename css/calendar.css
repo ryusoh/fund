@@ -117,6 +117,7 @@ body.body-calendar {
 /* Ensure the calendar SVG scales down on smaller screens to fit its container */
 #cal-heatmap svg {
     max-width: 100%;
+    overflow: visible;
 }
 
 /* Navigation controls for the calendar */
