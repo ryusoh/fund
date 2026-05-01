@@ -141,8 +141,7 @@ function applyFilters(transactions, parsedCommands, term, currentCurrency) {
     // include transactions matching any ticker OR matching the asset class
     if (multiTickerSet && parsedCommands.assetClass) {
         filtered = filtered.filter((t) => {
-            const ticker =
-                normalizeTickerToken(t.security) || t.security.toUpperCase();
+            const ticker = normalizeTickerToken(t.security) || t.security.toUpperCase();
             if (multiTickerSet.has(ticker)) {
                 return true;
             }

@@ -1,4 +1,9 @@
-import { isActiveChartVisible, ensureTransactionTableVisible, isTransactionTableVisible, getActiveChartSummaryText } from '../../../../js/transactions/terminal/viewUtils.js';
+import {
+    isActiveChartVisible,
+    ensureTransactionTableVisible,
+    isTransactionTableVisible,
+    getActiveChartSummaryText,
+} from '../../../../js/transactions/terminal/viewUtils.js';
 import * as snapshotsModule from '../../../../js/transactions/terminal/snapshots.js';
 import { transactionState } from '../../../../js/transactions/state.js';
 
@@ -117,20 +122,42 @@ describe('viewUtils - getActiveChartSummaryText', () => {
     let marketcapSpy;
 
     beforeEach(() => {
-        compositionSpy = jest.spyOn(snapshotsModule, 'getCompositionSnapshotLine').mockResolvedValue('composition text');
-        sectorsSpy = jest.spyOn(snapshotsModule, 'getSectorsSnapshotLine').mockResolvedValue('sectors text');
-        performanceSpy = jest.spyOn(snapshotsModule, 'getPerformanceSnapshotLine').mockReturnValue('performance text');
+        compositionSpy = jest
+            .spyOn(snapshotsModule, 'getCompositionSnapshotLine')
+            .mockResolvedValue('composition text');
+        sectorsSpy = jest
+            .spyOn(snapshotsModule, 'getSectorsSnapshotLine')
+            .mockResolvedValue('sectors text');
+        performanceSpy = jest
+            .spyOn(snapshotsModule, 'getPerformanceSnapshotLine')
+            .mockReturnValue('performance text');
         fxSpy = jest.spyOn(snapshotsModule, 'getFxSnapshotLine').mockReturnValue('fx text');
-        contributionSpy = jest.spyOn(snapshotsModule, 'getContributionSummaryText').mockResolvedValue('contribution text');
-        drawdownSpy = jest.spyOn(snapshotsModule, 'getDrawdownSnapshotLine').mockReturnValue('drawdown text');
-        concentrationSpy = jest.spyOn(snapshotsModule, 'getConcentrationSnapshotText').mockReturnValue('concentration text');
+        contributionSpy = jest
+            .spyOn(snapshotsModule, 'getContributionSummaryText')
+            .mockResolvedValue('contribution text');
+        drawdownSpy = jest
+            .spyOn(snapshotsModule, 'getDrawdownSnapshotLine')
+            .mockReturnValue('drawdown text');
+        concentrationSpy = jest
+            .spyOn(snapshotsModule, 'getConcentrationSnapshotText')
+            .mockReturnValue('concentration text');
         peSpy = jest.spyOn(snapshotsModule, 'getPESnapshotLine').mockResolvedValue('pe text');
-        rollingSpy = jest.spyOn(snapshotsModule, 'getRollingSnapshotLine').mockReturnValue('rolling text');
-        volatilitySpy = jest.spyOn(snapshotsModule, 'getVolatilitySnapshotLine').mockReturnValue('volatility text');
-        yieldSpy = jest.spyOn(snapshotsModule, 'getYieldSnapshotLine').mockResolvedValue('yield text');
+        rollingSpy = jest
+            .spyOn(snapshotsModule, 'getRollingSnapshotLine')
+            .mockReturnValue('rolling text');
+        volatilitySpy = jest
+            .spyOn(snapshotsModule, 'getVolatilitySnapshotLine')
+            .mockReturnValue('volatility text');
+        yieldSpy = jest
+            .spyOn(snapshotsModule, 'getYieldSnapshotLine')
+            .mockResolvedValue('yield text');
         betaSpy = jest.spyOn(snapshotsModule, 'getBetaSnapshotLine').mockResolvedValue('beta text');
-        geographySpy = jest.spyOn(snapshotsModule, 'getGeographySnapshotLine').mockResolvedValue('geography text');
-        marketcapSpy = jest.spyOn(snapshotsModule, 'getMarketcapSnapshotLine').mockResolvedValue('marketcap text');
+        geographySpy = jest
+            .spyOn(snapshotsModule, 'getGeographySnapshotLine')
+            .mockResolvedValue('geography text');
+        marketcapSpy = jest
+            .spyOn(snapshotsModule, 'getMarketcapSnapshotLine')
+            .mockResolvedValue('marketcap text');
     });
 
     afterEach(() => {

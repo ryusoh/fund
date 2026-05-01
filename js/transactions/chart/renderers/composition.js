@@ -201,18 +201,23 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     });
 
     const explicitTickerFilters = getCompositionFilterTickers();
+    const assetClassFilter = getCompositionAssetClassFilter();
     let derivedTickerFilters = explicitTickerFilters;
-    if (!derivedTickerFilters.length) {
-        const assetClassFilter = getCompositionAssetClassFilter();
-        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
-            const shouldMatchEtf = assetClassFilter === 'etf';
-            derivedTickerFilters = baseTickerOrder.filter((ticker) => {
-                if (typeof ticker === 'string' && ticker.toUpperCase() === 'OTHERS') {
-                    return false;
-                }
-                const assetClass = getHoldingAssetClass(ticker);
-                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
-            });
+    if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
+        const shouldMatchEtf = assetClassFilter === 'etf';
+        const classMatchedTickers = baseTickerOrder.filter((ticker) => {
+            if (typeof ticker === 'string' && ticker.toUpperCase() === 'OTHERS') {
+                return false;
+            }
+            const ac = getHoldingAssetClass(ticker);
+            return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
+        });
+        if (explicitTickerFilters.length) {
+            // OR: explicit tickers + asset-class-matched tickers
+            const merged = new Set([...explicitTickerFilters, ...classMatchedTickers]);
+            derivedTickerFilters = [...merged];
+        } else {
+            derivedTickerFilters = classMatchedTickers;
         }
     }
 

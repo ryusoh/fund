@@ -184,6 +184,51 @@ describe('drawCompositionChart', () => {
         expect(mockState.chartLayouts.compositionAbs.valueMode).toBe('absolute');
     });
 
+    it('includes both explicit tickers and asset-class-matched tickers with OR logic', async () => {
+        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        loadCompositionSnapshotData.mockResolvedValueOnce({
+            dates: ['2023-01-01', '2023-01-02'],
+            total_values: [1000, 2000],
+            composition: {
+                AAPL: [400, 500],
+                VT: [300, 400],
+                MSFT: [200, 300],
+                VOO: [100, 200],
+            },
+        });
+
+        // AAPL is a stock, VT and VOO are ETFs, MSFT is a stock
+        // Filter: etf + MSFT → should show VT, VOO (etf) and MSFT (explicit ticker)
+        const stateModule = await import('@js/transactions/state.js');
+        stateModule.getCompositionFilterTickers.mockReturnValue(['MSFT']);
+        stateModule.getCompositionAssetClassFilter.mockReturnValue('etf');
+
+        jest.mock('@js/config.js', () => ({
+            COLOR_PALETTES: { COMPOSITION_CHART_COLORS: ['#1', '#2', '#3', '#4', '#5'] },
+            getHoldingAssetClass: jest.fn((ticker) => {
+                if (ticker === 'VT' || ticker === 'VOO') {
+                    return 'etf';
+                }
+                return 'stock';
+            }),
+        }));
+
+        const { drawCompositionChart } =
+            await import('@js/transactions/chart/renderers/composition.js');
+        drawCompositionChart(mockCtx, mockChartManager);
+
+        await new Promise(process.nextTick);
+
+        expect(mockState.chartLayouts.composition).toBeDefined();
+        const seriesKeys = mockState.chartLayouts.composition.series.map((s) => s.key);
+        expect(seriesKeys).toContain('MSFT');
+        expect(seriesKeys).toContain('VT');
+        expect(seriesKeys).toContain('VOO');
+        // AAPL should be folded into Others, not shown as its own series
+        expect(seriesKeys).not.toContain('AAPL');
+        expect(seriesKeys).toContain('Others');
+    });
+
     it('filters data by date range', async () => {
         mockState.transactionState.chartDateRange = { from: '2023-01-02', to: '2023-01-02' };
 

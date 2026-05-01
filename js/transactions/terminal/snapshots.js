@@ -718,14 +718,39 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
 
     let displayHoldings = holdings;
     const filterTickers = getCompositionFilterTickers();
-    if (Array.isArray(filterTickers) && filterTickers.length > 0) {
-        const normalized = new Set(
-            filterTickers.map((ticker) => (typeof ticker === 'string' ? ticker.toUpperCase() : ''))
-        );
-        const selected = holdings.filter((holding) => normalized.has(holding.ticker.toUpperCase()));
+    const assetClassFilter = getCompositionAssetClassFilter();
+
+    // Build a matcher that combines explicit tickers and asset class with OR logic
+    const explicitSet =
+        Array.isArray(filterTickers) && filterTickers.length > 0
+            ? new Set(
+                  filterTickers.map((ticker) =>
+                      typeof ticker === 'string' ? ticker.toUpperCase() : ''
+                  )
+              )
+            : null;
+    const hasClassFilter = assetClassFilter === 'etf' || assetClassFilter === 'stock';
+    const shouldMatchEtf = assetClassFilter === 'etf';
+
+    if (explicitSet || hasClassFilter) {
+        const selected = holdings.filter((holding) => {
+            const upperTicker = holding.ticker.toUpperCase();
+            if (explicitSet && explicitSet.has(upperTicker)) {
+                return true;
+            }
+            if (hasClassFilter) {
+                if (upperTicker === 'OTHERS') {
+                    return false;
+                }
+                const ac = getHoldingAssetClass(holding.ticker);
+                return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
+            }
+            return false;
+        });
         if (selected.length > 0) {
+            const selectedSet = new Set(selected.map((h) => h.ticker.toUpperCase()));
             const remainder = holdings.filter(
-                (holding) => !normalized.has(holding.ticker.toUpperCase())
+                (holding) => !selectedSet.has(holding.ticker.toUpperCase())
             );
             if (remainder.length > 0) {
                 const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
@@ -737,35 +762,6 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
                 });
             }
             displayHoldings = selected;
-        }
-    } else {
-        const assetClassFilter = getCompositionAssetClassFilter();
-        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
-            const shouldMatchEtf = assetClassFilter === 'etf';
-            const selected = holdings.filter((holding) => {
-                if (holding.ticker && holding.ticker.toUpperCase() === 'OTHERS') {
-                    return false;
-                }
-                const assetClass = getHoldingAssetClass(holding.ticker);
-                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
-            });
-            if (selected.length > 0) {
-                const remainder = holdings.filter((holding) =>
-                    shouldMatchEtf
-                        ? getHoldingAssetClass(holding.ticker) !== 'etf'
-                        : getHoldingAssetClass(holding.ticker) === 'etf'
-                );
-                if (remainder.length > 0) {
-                    const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
-                    const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
-                    selected.push({
-                        ticker: 'Others',
-                        percent: totalPercent,
-                        absolute: totalAbsolute,
-                    });
-                }
-                displayHoldings = selected;
-            }
         }
     }
 

@@ -286,6 +286,20 @@ describe('composition ticker filters derived from table search', () => {
         controller.filterAndSort('');
         expect(transactionState.compositionFilterTickers).toEqual([]);
     });
+
+    it('sets both tickers and asset class when combined for composition OR logic', () => {
+        const controller = initTable();
+        controller.filterAndSort('etf anet');
+        expect(transactionState.compositionFilterTickers).toEqual(['ANET']);
+        expect(transactionState.compositionAssetClassFilter).toBe('etf');
+    });
+
+    it('sets both tickers and stock class when combined', () => {
+        const controller = initTable();
+        controller.filterAndSort('stock vt');
+        expect(transactionState.compositionFilterTickers).toEqual(['VT']);
+        expect(transactionState.compositionAssetClassFilter).toBe('stock');
+    });
 });
 
 describe('asset class filters', () => {

@@ -33,34 +33,58 @@ describe('terminal commands', () => {
     describe('executeCommand', () => {
         it('should call handleHelpCommand for "h" or "help"', async () => {
             await executeCommand('help arg1', mockContext);
-            expect(helpHandlers.handleHelpCommand).toHaveBeenCalledWith(['arg1'], expect.objectContaining({ clearOutput: mockClearOutput }));
+            expect(helpHandlers.handleHelpCommand).toHaveBeenCalledWith(
+                ['arg1'],
+                expect.objectContaining({ clearOutput: mockClearOutput })
+            );
 
             await executeCommand('h arg2', mockContext);
-            expect(helpHandlers.handleHelpCommand).toHaveBeenCalledWith(['arg2'], expect.any(Object));
+            expect(helpHandlers.handleHelpCommand).toHaveBeenCalledWith(
+                ['arg2'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleStatsCommand for "s" or "stats"', async () => {
             await executeCommand('stats arg', mockContext);
-            expect(statsHandlers.handleStatsCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(statsHandlers.handleStatsCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('s arg', mockContext);
-            expect(statsHandlers.handleStatsCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(statsHandlers.handleStatsCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handlePlotCommand for "p" or "plot"', async () => {
             await executeCommand('plot arg', mockContext);
-            expect(plotHandlers.handlePlotCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(plotHandlers.handlePlotCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('p arg', mockContext);
-            expect(plotHandlers.handlePlotCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(plotHandlers.handlePlotCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleTransactionCommand for "t" or "transaction"', async () => {
             await executeCommand('transaction arg', mockContext);
-            expect(transactionHandlers.handleTransactionCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(transactionHandlers.handleTransactionCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('t arg', mockContext);
-            expect(transactionHandlers.handleTransactionCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(transactionHandlers.handleTransactionCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleAllCommand for "all"', async () => {
@@ -70,38 +94,62 @@ describe('terminal commands', () => {
 
         it('should call handleAllTimeCommand for "alltime"', async () => {
             await executeCommand('alltime arg', mockContext);
-            expect(miscHandlers.handleAllTimeCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleAllTimeCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleAllStockCommand for "allstock"', async () => {
             await executeCommand('allstock arg', mockContext);
-            expect(miscHandlers.handleAllStockCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleAllStockCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleResetCommand for "reset"', async () => {
             await executeCommand('reset arg', mockContext);
-            expect(miscHandlers.handleResetCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleResetCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleClearCommand for "clear"', async () => {
             await executeCommand('clear arg', mockContext);
-            expect(miscHandlers.handleClearCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleClearCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleZoomCommand for "zoom" or "z"', async () => {
             await executeCommand('zoom arg', mockContext);
-            expect(miscHandlers.handleZoomCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleZoomCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('z arg', mockContext);
-            expect(miscHandlers.handleZoomCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleZoomCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleLabelCommand for "label" or "l"', async () => {
             await executeCommand('label arg', mockContext);
-            expect(miscHandlers.handleLabelCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleLabelCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('l arg', mockContext);
-            expect(miscHandlers.handleLabelCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleLabelCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleAbsCommand for "abs", "absolute" or "a"', async () => {
@@ -117,53 +165,86 @@ describe('terminal commands', () => {
 
         it('should call handlePercentageCommand for "percentage", "percent", or "per"', async () => {
             await executeCommand('percentage arg', mockContext);
-            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('percent arg', mockContext);
-            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
 
             await executeCommand('per arg', mockContext);
-            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handlePercentageCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleRollingCommand for "rolling"', async () => {
             await executeCommand('rolling arg', mockContext);
-            expect(miscHandlers.handleRollingCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleRollingCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleCumulativeCommand for "cumulative"', async () => {
             await executeCommand('cumulative arg', mockContext);
-            expect(miscHandlers.handleCumulativeCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleCumulativeCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleCompositionCommand for "composition"', async () => {
             await executeCommand('composition arg', mockContext);
-            expect(miscHandlers.handleCompositionCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleCompositionCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleSectorsCommand for "sectors"', async () => {
             await executeCommand('sectors arg', mockContext);
-            expect(miscHandlers.handleSectorsCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleSectorsCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleGeographyCommand for "geography"', async () => {
             await executeCommand('geography arg', mockContext);
-            expect(miscHandlers.handleGeographyCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleGeographyCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleMarketcapCommand for "marketcap"', async () => {
             await executeCommand('marketcap arg', mockContext);
-            expect(miscHandlers.handleMarketcapCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleMarketcapCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleSummaryCommand for "summary"', async () => {
             await executeCommand('summary arg', mockContext);
-            expect(miscHandlers.handleSummaryCommand).toHaveBeenCalledWith(['arg'], expect.any(Object));
+            expect(miscHandlers.handleSummaryCommand).toHaveBeenCalledWith(
+                ['arg'],
+                expect.any(Object)
+            );
         });
 
         it('should call handleDefaultCommand for unknown commands', async () => {
             await executeCommand('unknown arg', mockContext);
-            expect(transactionHandlers.handleDefaultCommand).toHaveBeenCalledWith('unknown arg', expect.any(Object));
+            expect(transactionHandlers.handleDefaultCommand).toHaveBeenCalledWith(
+                'unknown arg',
+                expect.any(Object)
+            );
         });
 
         it('should set fade preserve second last to false', async () => {
@@ -180,5 +261,4 @@ describe('terminal commands', () => {
             await expect(executeCommand('help', {})).resolves.not.toThrow();
         });
     });
-
 });
