@@ -369,6 +369,29 @@ describe('asset class filters', () => {
         expect(getRenderedSecurities().sort()).toEqual(['FNSFX', 'VT']);
         expect(transactionState.compositionAssetClassFilter).toBe('etf');
     });
+
+    it('combines etf with specific tickers using OR logic', () => {
+        const controller = initTable();
+        controller.filterAndSort('etf AAA');
+        const securities = getRenderedSecurities().sort();
+        expect(securities).toEqual(['AAA', 'FNSFX', 'VT']);
+    });
+
+    it('combines stock with specific etf ticker using OR logic', () => {
+        const controller = initTable();
+        controller.filterAndSort('stock VT');
+        const securities = getRenderedSecurities().sort();
+        expect(securities).toEqual(['AAA', 'VT']);
+    });
+
+    it('combines etf with multiple tickers using OR logic', () => {
+        const controller = initTable();
+        controller.filterAndSort('etf AAA');
+        const securities = getRenderedSecurities().sort();
+        expect(securities).toContain('AAA');
+        expect(securities).toContain('VT');
+        expect(securities).toContain('FNSFX');
+    });
 });
 
 describe('sort indicator vs row order sync', () => {

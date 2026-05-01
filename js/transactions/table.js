@@ -9,7 +9,12 @@ import {
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
 import { adjustMobilePanels } from './layout.js';
-import { parseCommandPalette, deriveCompositionTickerFilters } from './table/parser.js';
+import {
+    parseCommandPalette,
+    deriveCompositionTickerFilters,
+    normalizeTickerToken,
+    matchesAssetClass,
+} from './table/parser.js';
 import {
     applyDateRangeFilter,
     applySecurityFilter,
@@ -132,8 +137,24 @@ function applyFilters(transactions, parsedCommands, term, currentCurrency) {
     const multiTickerSet =
         parsedCommands.tickers.length > 0 ? new Set(parsedCommands.tickers) : null;
 
-    filtered = applySecurityFilter(filtered, parsedCommands, multiTickerSet);
-    filtered = applyValueFilters(filtered, parsedCommands, currentCurrency);
+    // When both tickers and assetClass are specified, use OR logic:
+    // include transactions matching any ticker OR matching the asset class
+    if (multiTickerSet && parsedCommands.assetClass) {
+        filtered = filtered.filter((t) => {
+            const ticker =
+                normalizeTickerToken(t.security) || t.security.toUpperCase();
+            if (multiTickerSet.has(ticker)) {
+                return true;
+            }
+            return matchesAssetClass(t.security, parsedCommands.assetClass);
+        });
+        // Apply remaining value filters without assetClass (already handled above)
+        const commandsWithoutClass = { ...parsedCommands, assetClass: null };
+        filtered = applyValueFilters(filtered, commandsWithoutClass, currentCurrency);
+    } else {
+        filtered = applySecurityFilter(filtered, parsedCommands, multiTickerSet);
+        filtered = applyValueFilters(filtered, parsedCommands, currentCurrency);
+    }
     filtered = applyTextFilter(filtered, term);
 
     return filtered;
