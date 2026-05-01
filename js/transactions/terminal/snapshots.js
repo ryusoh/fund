@@ -144,10 +144,15 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
                 dailyMap.set(dayStr, item);
             });
 
-            return Array.from(dailyMap.values()).map((item) => ({
-                date: new Date(item[dateKey] || item.date),
-                value: Number(item[valueKey] || item.value),
-            }));
+            const result = new Array(dailyMap.size);
+            let idx = 0;
+            for (const item of dailyMap.values()) {
+                result[idx++] = {
+                    date: new Date(item[dateKey] || item.date),
+                    value: Number(item[valueKey] || item.value),
+                };
+            }
+            return result;
         };
 
         // Check if filters are active
@@ -405,31 +410,30 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
             return;
         }
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
-        const normalizedPoints = rawPoints
-            .map((point) => {
-                const dateObj = parseDateSafe(point.date);
-                if (!dateObj) {
-                    return null;
-                }
-                const convertedValue = convertBetweenCurrencies(
-                    point.value,
-                    sourceCurrency,
-                    point.date,
-                    selectedCurrency
-                );
-                return {
-                    date: dateObj,
-                    value: Number.isFinite(convertedValue) ? convertedValue : null,
-                };
-            })
-            .filter(
-                (point) =>
-                    point &&
-                    Number.isFinite(point.value) &&
-                    (!filterFrom || point.date >= filterFrom) &&
-                    (!filterTo || point.date <= filterTo)
-            )
-            .sort((a, b) => a.date - b.date);
+        const normalizedPoints = [];
+        for (let i = 0; i < rawPoints.length; i++) {
+            const point = rawPoints[i];
+            const dateObj = parseDateSafe(point.date);
+            if (!dateObj) {
+                continue;
+            }
+            const convertedValue = convertBetweenCurrencies(
+                point.value,
+                sourceCurrency,
+                point.date,
+                selectedCurrency
+            );
+            const value = Number.isFinite(convertedValue) ? convertedValue : null;
+            if (
+                value !== null &&
+                Number.isFinite(value) &&
+                (!filterFrom || dateObj >= filterFrom) &&
+                (!filterTo || dateObj <= filterTo)
+            ) {
+                normalizedPoints.push({ date: dateObj, value });
+            }
+        }
+        normalizedPoints.sort((a, b) => a.date - b.date);
 
         if (normalizedPoints.length === 0) {
             if (showAllSeries) {
@@ -670,16 +674,13 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -820,16 +821,13 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -910,16 +908,13 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -1000,16 +995,13 @@ export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = 
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
