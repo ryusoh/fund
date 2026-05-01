@@ -4,18 +4,18 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              70.40%  ███████████████████████████████████
-  Asia                       24.53%  ████████████
+  North America              70.45%  ███████████████████████████████████
+  Asia                       24.49%  ████████████
   Europe                      3.91%  █
   Oceania                     0.45%  
   Other                       0.41%  
   South America               0.18%  
-  Africa                      0.11%  
+  Africa                      0.12%  
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           70.33%  ███████████████████████████████████
-  East Asia                  23.62%  ███████████
+  Northern America           70.38%  ███████████████████████████████████
+  East Asia                  23.57%  ███████████
   Western Europe              2.98%  █
   South Asia                  0.54%  
   Northern Europe             0.45%  
@@ -24,13 +24,13 @@ SUB-REGION BREAKDOWN (Ranked)
   Other                       0.41%  
   Southeast Asia              0.26%  
   South America               0.18%  
-  Sub-Saharan Africa          0.11%  
+  Sub-Saharan Africa          0.12%  
   Middle East                 0.11%  
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            69.51%  ██████████████████████████████████
-   2. China                    21.36%  ██████████
+   1. United States            69.56%  ██████████████████████████████████
+   2. China                    21.31%  ██████████
    3. Japan                     1.53%  
    4. United Kingdom            0.88%  
    5. Canada                    0.82%  
@@ -48,7 +48,7 @@ ALL COUNTRIES (Ranked)
   17. Brazil                    0.16%  
   18. Denmark                   0.12%  
   19. Singapore                 0.12%  
-  20. South Africa              0.11%  
+  20. South Africa              0.12%  
   21. Hong Kong                 0.11%  
 
 SUMMARY STATISTICS
