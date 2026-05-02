@@ -5,7 +5,15 @@
     max-width: 900px; /* Max width for larger screens */
     margin: 30px auto 20px auto; /* Centered, combined vertical spacing */
     background-color: rgba(44, 44, 46, 0.9); /* Unified background */
-    border-radius: 8px; /* Unified rounded corners */
+    border-radius: 0;
+    clip-path: polygon(
+        0 20px,
+        20px 0,
+        100% 0,
+        100% calc(100% - 20px),
+        calc(100% - 20px) 100%,
+        0 100%
+    );
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Unified shadow */
     position: relative; /* Create stacking context for z-index */
     z-index: 100; /* Ensure table/footer sit above chart canvas */
@@ -71,7 +79,8 @@ footer {
     font-size: 12px;
     text-align: center; /* Centers text within the footer block */
     color: rgba(255, 255, 255, 0.5);
-    font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
+    font-family:
+        'Playfair Display', 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
     font-weight: 100;
     letter-spacing: 1px;
     padding: 0;

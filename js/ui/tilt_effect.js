@@ -27,7 +27,7 @@ export function initTiltEffect() {
                 rotateX: rotateX,
                 rotateY: rotateY,
                 duration: 0.5,
-                ease: 'power2.out',
+                ease: 'power3.out',
                 overwrite: true,
             });
         });

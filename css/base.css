@@ -37,6 +37,8 @@
     font-display: swap;
 }
 
+
+
 html {
     background-color: #000;
 }
@@ -117,4 +119,13 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+/* Hide scrollbar globally for Lando Norris test */
+::-webkit-scrollbar {
+    display: none;
+}
+* {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

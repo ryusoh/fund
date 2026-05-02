@@ -34,7 +34,7 @@ export function initMagneticNav() {
                 x: distX * strength,
                 y: distY * strength,
                 duration: 0.3,
-                ease: 'power2.out',
+                ease: 'power3.out',
             });
 
             // Pull the child element (e.g. <a> or <i>) slightly more for a parallax effect
@@ -44,7 +44,7 @@ export function initMagneticNav() {
                     x: distX * (strength * 1.5),
                     y: distY * (strength * 1.5),
                     duration: 0.3,
-                    ease: 'power2.out',
+                    ease: 'power3.out',
                 });
             }
         });

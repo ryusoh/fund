@@ -178,7 +178,8 @@ footer {
     line-height: 1;
     text-align: center; /* Centers text within the footer block */
     color: rgba(255, 255, 255, 0.5);
-    font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
+    font-family:
+        'Playfair Display', 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
     font-weight: 100;
     letter-spacing: 1px;
     padding: 0;

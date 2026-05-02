@@ -109,7 +109,7 @@ describe('tilt_effect', () => {
             rotateX: 5,
             rotateY: -5,
             duration: 0.5,
-            ease: 'power2.out',
+            ease: 'power3.out',
             overwrite: true,
         });
     });

@@ -6,7 +6,7 @@
 import { isZoomed, setZoomed } from './state.js';
 
 const ANIMATION_DURATION = 0.35;
-const EASING = 'power2.inOut';
+const EASING = 'power3.out';
 
 /**
  * Gets the elements needed for zoom transitions.
