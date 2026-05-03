@@ -162,3 +162,6 @@
 
 **Learning:** Using `Array.from(nodeList).forEach()` inside high-frequency paths like event listeners or UI update functions creates implicit closures and unnecessary intermediate array allocations, increasing garbage collection (GC) pressure and reducing frontend responsiveness.
 **Action:** Replace `Array.from(nodeList).forEach()` with standard index-based `for` loops (`for (let i = 0; i < nodeList.length; i++)`) to prevent intermediate array creation and closure allocations, leading to smoother animations and scroll experiences.
+## 2026-05-03 - Replaced Array.map().slice() with standard for-loop inside High-Frequency Event Handler
+**Learning:** Using chained `.map()` and `.slice()` in `js/transactions/chart/interaction.js` inside high-frequency mouse event handlers (like crosshairs) triggers large intermediate array allocations leading to GC overhead and stutters.
+**Action:** Replace `.map()` with pre-sized `new Array()` and index-based `for` loops. Also replace `.slice()` and array `forEach()` closures with direct element access loops to keep allocations completely stable (O(1)) during chart interaction loops.

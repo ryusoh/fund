@@ -259,7 +259,10 @@ export function drawCrosshairOverlay(ctx, layout) {
         const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
 
         // Enhance ALL non-zero holdings so Y-position hit testing can match any stock
-        const enhanceHolding = (holding) => {
+        const allEnhancedHoldings = new Array(nonZeroHoldings.length);
+
+        for (let i = 0; i < nonZeroHoldings.length; i++) {
+            const holding = nonZeroHoldings[i];
             const absoluteValue = isAbsoluteMode
                 ? holding.value
                 : convertValueToCurrency(
@@ -273,12 +276,12 @@ export function drawCrosshairOverlay(ctx, layout) {
                 percentValue = holding.value;
             } else if (layout.percentSeriesMap && layout.percentSeriesMap[holding.key]) {
                 const dates = layout.dates || [];
-                const interpolator = createTimeInterpolator(
-                    dates.map((d, i) => ({
-                        time: new Date(d).getTime(),
-                        value: layout.percentSeriesMap[holding.key][i],
-                    }))
-                );
+                const timePoints = new Array(dates.length);
+                const holdingSeries = layout.percentSeriesMap[holding.key];
+                for (let j = 0; j < dates.length; j++) {
+                    timePoints[j] = { time: new Date(dates[j]).getTime(), value: holdingSeries[j] };
+                }
+                const interpolator = createTimeInterpolator(timePoints);
                 percentValue = interpolator(time) ?? 0;
             } else {
                 percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
@@ -286,7 +289,8 @@ export function drawCrosshairOverlay(ctx, layout) {
 
             const currencyText = formatCurrencyInline(absoluteValue);
             const percentText = `${percentValue.toFixed(2)}%`;
-            return {
+
+            allEnhancedHoldings[i] = {
                 ...holding,
                 percent: percentValue,
                 absoluteValue,
@@ -294,20 +298,23 @@ export function drawCrosshairOverlay(ctx, layout) {
                 formattedPercent: percentText,
                 formattedValue: currencyText,
             };
-        };
+        }
 
-        const allEnhancedHoldings = nonZeroHoldings.map(enhanceHolding);
         // Top 7 for display in snapshot panel and dots
-        const enhancedHoldings = allEnhancedHoldings.slice(0, 7);
+        const limit = Math.min(allEnhancedHoldings.length, 7);
+        const enhancedHoldings = new Array(limit);
+        const visibleKeys = new Set();
 
         // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
-        for (let i = 0; i < enhancedHoldings.length; i++) {
-            seriesSnapshot.push(enhancedHoldings[i]);
+        for (let i = 0; i < limit; i++) {
+            const enhanced = allEnhancedHoldings[i];
+            enhancedHoldings[i] = enhanced;
+            seriesSnapshot.push(enhanced);
+            visibleKeys.add(enhanced.key);
         }
 
         // Draw dots for composition chart (stacked)
         if (hasHover && typeof layout.yScale === 'function') {
-            const visibleKeys = new Set(enhancedHoldings.map((h) => h.key));
             let stackValue = 0;
 
             for (let i = 0; i < layout.series.length; i++) {
