@@ -157,3 +157,8 @@
 
 **Learning:** Chaining `.map().filter().map()` inside `performance.js` and other chart renderers creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead, max call stack limits, and garbage collection (GC) pressure.
 **Action:** Replaced chained higher-order array methods with a single inline manual `for` loop. Iterate over the input array, check the condition, compute the mapped values, and push directly to a newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.
+
+## 2026-05-02 - Replaced Array.from().forEach() with standard loops
+
+**Learning:** Using `Array.from(nodeList).forEach()` inside high-frequency paths like event listeners or UI update functions creates implicit closures and unnecessary intermediate array allocations, increasing garbage collection (GC) pressure and reducing frontend responsiveness.
+**Action:** Replace `Array.from(nodeList).forEach()` with standard index-based `for` loops (`for (let i = 0; i < nodeList.length; i++)`) to prevent intermediate array creation and closure allocations, leading to smoother animations and scroll experiences.

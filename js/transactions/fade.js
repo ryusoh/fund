@@ -14,11 +14,12 @@ export function setFadePreserveSecondLast(preserve) {
 function updateOutputFade(outputContainer) {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-        Array.from(outputContainer.children).forEach((child) => {
+        for (let i = 0; i < outputContainer.children.length; i++) {
+            const child = outputContainer.children[i];
             if (child && child.nodeType === 1) {
                 child.style.opacity = '1';
             }
-        });
+        }
         return;
     }
 
@@ -34,22 +35,23 @@ function updateOutputFade(outputContainer) {
     const secondLastChild = lastChild ? lastChild.previousElementSibling : null;
     const thirdLastChild = secondLastChild ? secondLastChild.previousElementSibling : null;
 
-    Array.from(outputContainer.children).forEach((child) => {
+    for (let i = 0; i < outputContainer.children.length; i++) {
+        const child = outputContainer.children[i];
         if (!child || child.nodeType !== 1) {
-            return;
+            continue;
         }
 
         // Constraint: Never fade the most recent output
         if (child === lastChild) {
             child.style.opacity = '1';
-            return;
+            continue;
         }
 
         // Constraint: If preserved, keep context (last 3 items) opaque
         // This covers: Zoom Prompt (2nd last) and Previous Output (3rd last)
         if (preserveSecondLast && (child === secondLastChild || child === thirdLastChild)) {
             child.style.opacity = '1';
-            return;
+            continue;
         }
 
         if (!child.style.transition) {
@@ -61,12 +63,12 @@ function updateOutputFade(outputContainer) {
 
         if (relativeBottom <= 0) {
             child.style.opacity = '0';
-            return;
+            continue;
         }
 
         if (relativeTop >= threshold) {
             child.style.opacity = '';
-            return;
+            continue;
         }
 
         const visibleTop = Math.max(relativeTop, 0);
@@ -78,7 +80,7 @@ function updateOutputFade(outputContainer) {
         );
         const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * coverage;
         child.style.opacity = opacity.toFixed(2);
-    });
+    }
 }
 
 /**
