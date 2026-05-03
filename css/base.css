@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+
 /* JetBrains Mono – regular and italics */
 @font-face {
     font-family: 'JetBrains Mono';
@@ -117,4 +120,77 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+/* Hide scrollbars globally */
+::-webkit-scrollbar {
+    display: none;
+}
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Selection */
+::selection {
+    background: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+/* Typography: Playfair Display for emphasis */
+h1, h2, h3, h4, h5, h6, .emphasis, .marquee-content span {
+    font-family: 'Playfair Display', serif;
+}
+
+/* Organic shapes */
+.nav-link, .button, button {
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+    border-radius: 0;
+}
+
+
+/* Contextual Color Themes */
+:root {
+    --brand-bg: #000;
+    --brand-text: rgba(255, 255, 255, 0.85);
+    --brand-accent: #fff;
+    --brand-nav-bg: transparent;
+    --brand-nav-blur: 0px;
+
+    /* Easing Curve */
+    --brand-ease: cubic-bezier(0.65, 0.05, 0, 1);
+}
+
+[data-theme='light'] {
+    --brand-bg: #f5f5f5;
+    --brand-text: #1a1a1a;
+    --brand-accent: #ff4500;
+    --brand-nav-bg: rgba(255, 255, 255, 0.8);
+    --brand-nav-blur: 10px;
+}
+
+[data-theme='terminal'] {
+    --brand-bg: #0a0a0a;
+    --brand-text: #0f0;
+    --brand-accent: #0f0;
+    --brand-nav-bg: rgba(0, 0, 0, 0.9);
+}
+
+html, body {
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
+    transition: background-color 0.3s var(--brand-ease), color 0.3s var(--brand-ease);
+}
+
+a, .nav-link, button, .button {
+    color: var(--brand-accent);
+    transition: color 0.3s var(--brand-ease), transform 0.3s var(--brand-ease);
+}
+
+nav, .nav-container {
+    background: var(--brand-nav-bg);
+    backdrop-filter: blur(var(--brand-nav-blur));
+    transition: background 0.3s var(--brand-ease), backdrop-filter 0.3s var(--brand-ease);
 }
