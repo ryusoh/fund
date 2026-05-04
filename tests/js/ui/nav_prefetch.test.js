@@ -244,6 +244,47 @@ describe('nav_prefetch.js', () => {
         expect(calls.some((url) => url && url.endsWith && url.endsWith('/position/'))).toBe(true);
     });
 
+    test('drainQueue uses requestIdleCallback recursively if available', () => {
+        // Need to isolate to mock requestIdleCallback being used inside drainQueue recursively
+        jest.isolateModules(() => {
+            const originalRIC = window.requestIdleCallback;
+            const originalTimeout = window.setTimeout;
+
+            const ricMock = jest.fn((cb) => {
+                cb(); // immediately execute
+                return 1;
+            });
+            window.requestIdleCallback = ricMock;
+
+            const timeoutMock = jest.fn((cb) => {
+                cb();
+                return 1;
+            });
+            window.setTimeout = timeoutMock;
+
+            // Mock fetch to track queue calls
+            window.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+
+            document.body.innerHTML = `
+                <div class="container">
+                    <a href="/position/">Internal</a>
+                    <a href="/calendar/">Internal 2</a>
+                </div>
+            `;
+
+            // Re-require to capture mocked window functions
+            require('../../../js/ui/nav_prefetch.js');
+
+            // finalizePrefetch uses setTimeout which calls drainQueue
+            expect(timeoutMock).toHaveBeenCalled();
+            // drainQueue uses requestIdleCallback
+            expect(ricMock).toHaveBeenCalled();
+
+            window.requestIdleCallback = originalRIC;
+            window.setTimeout = originalTimeout;
+        });
+    });
+
     test('should fallback to setTimeout if requestIdleCallback missing', () => {
         delete window.requestIdleCallback;
         loadScript();
