@@ -29,11 +29,11 @@
     },
     "devDependencies": {
         "@babel/core": "^7.29.0",
-        "@babel/preset-env": "^7.29.2",
+        "@babel/preset-env": "^7.29.3",
         "@stylistic/stylelint-plugin": "^5.1.0",
         "@testing-library/jest-dom": "^6.9.1",
         "babel-jest": "^30.3.0",
-        "eslint": "^10.2.1",
+        "eslint": "^10.3.0",
         "husky": "^9.1.6",
         "jest": "^30.3.0",
         "jest-environment-jsdom": "^30.3.0",
@@ -41,9 +41,9 @@
         "lint-staged": "^16.4.0",
         "markdownlint-cli2": "^0.22.1",
         "prettier": "^3.8.3",
-        "stylelint": "^17.9.1",
+        "stylelint": "^17.10.0",
         "stylelint-config-standard": "^40.0.0",
-        "wrangler": "^4.85.0"
+        "wrangler": "^4.87.0"
     },
     "lint-staged": {
         "*.js": [
