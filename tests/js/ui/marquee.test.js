@@ -291,6 +291,36 @@ describe('Marquee', () => {
         expect(span.style.transform).not.toBe('');
         expect(span.style.marginLeft).not.toBe('');
     });
+
+    it('should calculate positions correctly for mq-chars and apply scaling', () => {
+        document.body.innerHTML = `
+            <div class="quantum-widget" style="width: 10px; height: 10px;"></div>
+            <div class="marquee-container marquee-right">
+                <div class="marquee-content">
+                    <span>A</span>
+                </div>
+            </div>
+        `;
+
+        let callCount = 0;
+        Element.prototype.getBoundingClientRect = jest.fn(() => {
+            callCount++;
+            if (callCount === 1) {
+                return { width: 10, height: 10, top: 0, left: 0, right: 10, bottom: 10 };
+            }
+            return { width: 10, height: 10, top: 0, left: -50, right: -40, bottom: 10 };
+        });
+
+        initMarquee();
+        const tickerFn = window.gsap.ticker.add.mock.calls[0][0];
+        tickerFn();
+
+        const span = document.querySelector('.mq-char');
+        expect(span.style.transform).not.toBe('');
+
+        // Assert distance calculations in loops were covered
+        expect(span.style.transform).toContain('scale(');
+    });
 });
 
 describe('Marquee Initialization', () => {

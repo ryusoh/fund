@@ -405,6 +405,63 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should test electric trails opacity logic correctly', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { electric: { enabled: true, colors: { primary: 'rgba(255,0,0,1)' } } },
+        });
+
+        const mockCtx = effect.ctx;
+        mockCtx.stroke = jest.fn();
+        mockCtx.moveTo = jest.fn();
+        mockCtx.lineTo = jest.fn();
+
+        effect.drawElectricTrails(8);
+
+        expect(mockCtx.stroke).toHaveBeenCalled();
+        expect(mockCtx.globalAlpha).toBeDefined();
+
+        effect.dispose();
+    });
+
+    it('should calculate scrollable correctly during resize', () => {
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect._scrollable = false;
+
+        // Mock properties to trigger _scrollable true
+        Object.defineProperty(effect.container, 'scrollHeight', { value: 1000 });
+        Object.defineProperty(effect.container, 'clientHeight', { value: 500 });
+
+        // Assume default getComputedStyle is returning '' for overflow, so we can't easily mock window.getComputedStyle without affecting everything.
+        // Instead, mock it for this specific element.
+        const originalGetComputedStyle = window.getComputedStyle;
+        window.getComputedStyle = jest.fn((el) => {
+            if (el === effect.container) {
+                return { overflow: 'auto', overflowY: 'auto' };
+            }
+            return originalGetComputedStyle(el);
+        });
+
+        effect.resize();
+
+        expect(effect._scrollable).toBe(true);
+        expect(effect.canvas.style.position).toBe('sticky');
+
+        // Reset and trigger toggle
+        window.getComputedStyle = jest.fn((el) => {
+            if (el === effect.container) {
+                return { overflow: 'hidden', overflowY: 'hidden' };
+            }
+            return originalGetComputedStyle(el);
+        });
+
+        effect.resize();
+        expect(effect._scrollable).toBe(false);
+        expect(effect.canvas.style.position).toBe('absolute');
+
+        window.getComputedStyle = originalGetComputedStyle;
+        effect.dispose();
+    });
+
     it('should clean up on dispose', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         expect(container.querySelector('canvas')).toBeTruthy();
