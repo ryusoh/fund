@@ -7,4 +7,4 @@ urllib3>=2.6.3
 argcomplete>=3.6.3
 lxml>=6.1.0
 pytz
-Pillow>=10.0.0
+Pillow>=11.3.0
