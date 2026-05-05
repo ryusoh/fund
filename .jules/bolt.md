@@ -165,3 +165,7 @@
 ## 2026-05-03 - Replaced Array.map().slice() with standard for-loop inside High-Frequency Event Handler
 **Learning:** Using chained `.map()` and `.slice()` in `js/transactions/chart/interaction.js` inside high-frequency mouse event handlers (like crosshairs) triggers large intermediate array allocations leading to GC overhead and stutters.
 **Action:** Replace `.map()` with pre-sized `new Array()` and index-based `for` loops. Also replace `.slice()` and array `forEach()` closures with direct element access loops to keep allocations completely stable (O(1)) during chart interaction loops.
+
+## 2026-05-05 - Replaced .map().filter().reduce() chains in computeWeightedMedian
+**Learning:** Chaining `.map().filter().reduce()` when processing collections (like in statistical functions computing medians) allocates multiple intermediate arrays and processes the data across multiple O(N) passes, increasing Garbage Collection overhead.
+**Action:** Replaced chained array methods with a single manual `for` loop that computes weights and values, filters valid items, tracks the total sum inline, and directly populates the final array, keeping the operation O(N) with minimal GC pressure.

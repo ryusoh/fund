@@ -29,22 +29,24 @@ function normalizeTickerKey(ticker) {
 }
 
 function computeWeightedMedian(entries, weightGetter, valueGetter) {
-    const normalized = entries
-        .map((entry) => {
-            const weight = weightGetter(entry);
-            const value = valueGetter(entry);
-            if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(value)) {
-                return null;
-            }
-            return { weight, value };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.value - b.value);
+    const normalized = [];
+    let totalWeight = 0;
+    for (let i = 0; i < entries.length; i += 1) {
+        const entry = entries[i];
+        const weight = weightGetter(entry);
+        const value = valueGetter(entry);
+        if (Number.isFinite(weight) && weight > 0 && Number.isFinite(value)) {
+            normalized.push({ weight, value });
+            totalWeight += weight;
+        }
+    }
 
-    const totalWeight = normalized.reduce((sum, item) => sum + item.weight, 0);
     if (totalWeight <= 0) {
         return null;
     }
+
+    normalized.sort((a, b) => a.value - b.value);
+
     let cumulative = 0;
     for (let i = 0; i < normalized.length; i += 1) {
         cumulative += normalized[i].weight;
