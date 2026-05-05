@@ -25,6 +25,7 @@ body.body-main {
 
     .video-background {
         display: none;
+    clip-path: ellipse(120% 100% at 50% 0%);
     }
 
     .mobile-banner {
@@ -39,7 +40,8 @@ body.body-main {
         mix-blend-mode: difference;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s cubic-bezier(0.65, 0.05, 0, 1);
+    clip-path: polygon(0 0, 100% 5%, 100% 100%, 0 95%);
     }
 
     .mobile-banner.is-fallback-ready {
@@ -51,6 +53,9 @@ body.body-main {
 h1 {
     color: #fff; /* Changed to white for dark background */
     margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 700;
 }
 
 /* Media Queries for .container position and background */
@@ -95,8 +100,9 @@ h1 {
         opacity: 0;
         visibility: hidden;
         transition:
-            opacity 0.3s ease,
+            opacity 0.3s cubic-bezier(0.65, 0.05, 0, 1),
             visibility 0s linear 0.3s;
+    clip-path: polygon(0 0, 100% 5%, 100% 100%, 0 95%);
     }
 
     .mobile-banner.is-fallback-ready {
@@ -122,6 +128,7 @@ footer .fa-github {
 
     body.body-main .mobile-banner {
         bottom: calc(1% + env(safe-area-inset-bottom));
+    clip-path: polygon(0 0, 100% 5%, 100% 100%, 0 95%);
     }
 }
 

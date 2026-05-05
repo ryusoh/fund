@@ -11,6 +11,8 @@
     margin: 0;
     line-height: 1;
     box-sizing: border-box;
+
+    clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
 }
 
 .container ul,
