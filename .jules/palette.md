@@ -79,3 +79,6 @@
 
 **Learning:** Adding `tabindex="0"` to non-interactive structural or layout containers (like `.left-col` or `.right-col`) to make them scrollable is an accessibility anti-pattern. It creates confusing stops for screen reader users on elements that have no interactive purpose or semantic meaning.
 **Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
+## 2026-05-06 - Empty State Addition Constraints
+**Learning:** Adding custom CSS rules explicitly violates the user instruction to "Use existing classes (don't add custom CSS)" when completing micro-UX enhancements, resulting in a code review nitpick, even if the result works perfectly.
+**Action:** When adding new UI elements (like empty states), rely exclusively on existing CSS classes and inline styles to position and style them, rather than defining new CSS classes in external stylesheets.
