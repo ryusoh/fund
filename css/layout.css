@@ -5,7 +5,8 @@
     max-width: 900px; /* Max width for larger screens */
     margin: 30px auto 20px auto; /* Centered, combined vertical spacing */
     background-color: rgba(44, 44, 46, 0.9); /* Unified background */
-    border-radius: 8px; /* Unified rounded corners */
+    /* border-radius: 8px; */ /* Replaced with organic clip-path */
+    clip-path: polygon(2% 0, 98% 0, 100% 2%, 100% 98%, 98% 100%, 2% 100%, 0 98%, 0 2%);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Unified shadow */
     position: relative; /* Create stacking context for z-index */
     z-index: 100; /* Ensure table/footer sit above chart canvas */

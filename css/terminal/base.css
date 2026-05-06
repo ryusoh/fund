@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
 :root {
     --bg-color: #05070d;
     --text-color: #c9d1d9;
@@ -131,7 +133,7 @@ body {
 }
 
 #terminalSweepOverlay.sweeping {
-    animation: terminal-optic-sweep var(--optic-sweep-duration, 3s) cubic-bezier(0.35, 0, 0.25, 1)
+    animation: terminal-optic-sweep var(--optic-sweep-duration, 0.3s) cubic-bezier(0.65, 0.05, 0, 1)
         forwards;
 }
 
@@ -227,4 +229,10 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+.serif-emphasis {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 600;
 }
