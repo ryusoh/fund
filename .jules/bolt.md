@@ -169,3 +169,7 @@
 ## 2026-05-05 - Replaced .map().filter().reduce() chains in computeWeightedMedian
 **Learning:** Chaining `.map().filter().reduce()` when processing collections (like in statistical functions computing medians) allocates multiple intermediate arrays and processes the data across multiple O(N) passes, increasing Garbage Collection overhead.
 **Action:** Replaced chained array methods with a single manual `for` loop that computes weights and values, filters valid items, tracks the total sum inline, and directly populates the final array, keeping the operation O(N) with minimal GC pressure.
+
+## 2025-05-06 - Array.prototype.map Optimization in Terminal Series Iteration
+**Learning:** High-frequency `.map` operations that also include `.some()` scans to check for properties cause multiple full-array iterations and excessive object closure allocations per data point, increasing garbage collection pressure.
+**Action:** Replace `.some()` and `.map()` with a combined traditional `for` loop, pre-allocate arrays (`new Array(len)`), and retain explicit spreading (`{...item}`) to safely preserve properties while minimizing loop overhead.

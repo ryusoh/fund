@@ -32,13 +32,21 @@ function convertCurrencySeries(series, targetCurrency) {
         return series;
     }
 
-    const hasNetAmount = series.some((entry) =>
-        Object.prototype.hasOwnProperty.call(entry, 'netAmount')
-    );
+    const len = series.length;
+    let hasNetAmount = false;
+    for (let i = 0; i < len; i += 1) {
+        if (Object.prototype.hasOwnProperty.call(series[i], 'netAmount')) {
+            hasNetAmount = true;
+            break;
+        }
+    }
+
+    const resultSeries = new Array(len);
 
     if (hasNetAmount) {
         let cumulative = 0;
-        return series.map((item) => {
+        for (let i = 0; i < len; i += 1) {
+            const item = series[i];
             const dateRef = item.tradeDate || item.date;
             const convertedNet = convertValueToCurrency(item.netAmount, dateRef, targetCurrency);
             cumulative += convertedNet;
@@ -49,17 +57,20 @@ function convertCurrencySeries(series, targetCurrency) {
             if (item.synthetic && item.orderType === 'padding') {
                 result.amount = cumulative;
             }
-            return result;
-        });
+            resultSeries[i] = result;
+        }
+        return resultSeries;
     }
 
-    return series.map((item) => {
+    for (let i = 0; i < len; i += 1) {
+        const item = series[i];
         const result = { ...item };
         if ('value' in item) {
             result.value = convertValueToCurrency(item.value, item.date, targetCurrency);
         }
-        return result;
-    });
+        resultSeries[i] = result;
+    }
+    return resultSeries;
 }
 import {
     loadSplitHistory,
