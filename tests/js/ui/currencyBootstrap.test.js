@@ -44,13 +44,13 @@ describe('currencyBootstrap', () => {
         expect(document.documentElement.getAttribute('data-selected-currency')).toBe('GBP');
     });
 
-    test('updates currency toggle buttons active state', () => {
+    test('updates currency toggle buttons active state and aria-pressed attributes', () => {
         window.localStorage.setItem('fund.selectedCurrency', 'EUR');
 
         document.body.innerHTML = `
             <div id="currencyToggleContainer">
-                <button class="currency-toggle active" data-currency="USD">USD</button>
-                <button class="currency-toggle" data-currency="EUR">EUR</button>
+                <button class="currency-toggle active" aria-pressed="true" data-currency="USD">USD</button>
+                <button class="currency-toggle" aria-pressed="false" data-currency="EUR">EUR</button>
             </div>
         `;
 
@@ -60,7 +60,9 @@ describe('currencyBootstrap', () => {
         const eurButton = document.querySelector('[data-currency="EUR"]');
 
         expect(usdButton.classList.contains('active')).toBe(false);
+        expect(usdButton.getAttribute('aria-pressed')).toBe('false');
         expect(eurButton.classList.contains('active')).toBe(true);
+        expect(eurButton.getAttribute('aria-pressed')).toBe('true');
     });
 
     test('handles missing matching target gracefully', () => {
