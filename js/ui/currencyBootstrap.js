@@ -27,9 +27,11 @@ function bootstrapStoredCurrency() {
                     target = button;
                 }
                 button.classList.remove('active');
+                button.setAttribute('aria-pressed', 'false');
             });
             if (target) {
                 target.classList.add('active');
+                target.setAttribute('aria-pressed', 'true');
             }
         });
     } catch (error) {
