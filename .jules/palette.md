@@ -81,3 +81,8 @@
 **Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
 
 ## 2026-05-08 - Accessible Toggle Bootstrap\n\n**Learning:** During page load bootstrap scripts that restore UI toggle states (like currency toggles) without a framework, the initialization script often updates the visual CSS class (`active`) but forgets to sync the corresponding ARIA attribute (`aria-pressed`). This creates a mismatch for screen readers, announcing an incorrect state on initial load.\n\n**Action:** Always ensure that bootstrap scripts that manually modify `.active` CSS classes on toggles also explicitly update the `aria-pressed` attribute to maintain accessibility parity.\n
+
+## 2026-05-08 - Applied Steve Jobs and Lando Norris design principles
+
+**Learning:** Implementing minimalist, high-performance design philosophy with 'honest' UI, unified aggressive ease-out curves, hidden browser scaffolding, dual-font system, organic shapes, and narrative scroll improves the aesthetic and performance.
+**Action:** Replaced CSS transitions with cubic-bezier(0.65, 0.05, 0, 1), limited transition durations to <=0.3s, globally hid scrollbars via ::-webkit-scrollbar display none, added Playfair Display serif for emphasis, updated JS animation easing to power3.out, and modified index HTML marquee elements to use the new fonts and clip paths.
