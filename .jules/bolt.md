@@ -173,3 +173,6 @@
 ## 2025-05-06 - Array.prototype.map Optimization in Terminal Series Iteration
 **Learning:** High-frequency `.map` operations that also include `.some()` scans to check for properties cause multiple full-array iterations and excessive object closure allocations per data point, increasing garbage collection pressure.
 **Action:** Replace `.some()` and `.map()` with a combined traditional `for` loop, pre-allocate arrays (`new Array(len)`), and retain explicit spreading (`{...item}`) to safely preserve properties while minimizing loop overhead.
+## 2026-05-09 - Pre-allocating Map Arrays for Drawdowns
+**Learning:** When iterating through sorted arrays to compute drawdowns, using `.map()` dynamically grows the array and creates implicit closures, adding pressure on Garbage Collection.
+**Action:** Replaced `.map()` in `applyDrawdownToSeries` with a pre-allocated array (`new Array(len)`) and a standard `for` loop to eliminate intermediate allocations and ensure O(1) space growth per iteration.
