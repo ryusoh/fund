@@ -416,16 +416,21 @@ export function applyDrawdownToSeries(data, valueKey, initialPeak = -Infinity) {
     // Sort by date first
     const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     let runningPeak = initialPeak;
-    return sorted.map((p) => {
+    const len = sorted.length;
+    // Bolt: Use pre-allocated Array and a standard loop instead of .map() to avoid closure allocations and eliminate array growth overhead.
+    const result = new Array(len);
+    for (let i = 0; i < len; i++) {
+        const p = sorted[i];
         const val = p[valueKey];
         if (val > runningPeak) {
             runningPeak = val;
         }
-        return {
+        result[i] = {
             ...p,
             [valueKey]: val - runningPeak, // <= 0
         };
-    });
+    }
+    return result;
 }
 
 /**
