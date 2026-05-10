@@ -182,3 +182,8 @@
 
 **Learning:** When iterating through sorted arrays to compute drawdowns, using `.map()` dynamically grows the array and creates implicit closures, adding pressure on Garbage Collection.
 **Action:** Replaced `.map()` in `applyDrawdownToSeries` with a pre-allocated array (`new Array(len)`) and a standard `for` loop to eliminate intermediate allocations and ensure O(1) space growth per iteration.
+
+## 2026-05-10 - Optimize FX chart array allocations
+
+**Learning:** Chained `.map().filter()` inside the FX chart renderer causes intermediate array allocations, increasing GC pressure during high-frequency renders.
+**Action:** Replaced chained higher-order array methods with single explicit `for` loops and pre-allocated arrays in `renderFxChart`.

@@ -44,19 +44,17 @@ export function buildFxChartSeries(baseCurrency) {
         if (dateSource.length === 0) {
             return;
         }
-        const points = dateSource
-            .map(({ date }) => {
-                const value = convertBetweenCurrencies(1, normalizedBase, date, currency);
-                if (!Number.isFinite(value)) {
-                    return null;
-                }
+        const points = [];
+        for (let i = 0; i < dateSource.length; i++) {
+            const { date } = dateSource[i];
+            const value = convertBetweenCurrencies(1, normalizedBase, date, currency);
+            if (Number.isFinite(value)) {
                 const parsedDate = parseLocalDate(date);
-                if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
-                    return null;
+                if (parsedDate && !Number.isNaN(parsedDate.getTime())) {
+                    points.push({ date: parsedDate, value });
                 }
-                return { date: parsedDate, value };
-            })
-            .filter(Boolean);
+            }
+        }
         if (!points.length) {
             return;
         }
@@ -127,26 +125,34 @@ export function drawFxChart(ctx, chartManager, timestamp) {
         }
     }
 
-    const filteredSeries = seriesData
-        .map((series) => {
-            const filtered = series.data.filter((point) => {
-                const date = point.date;
-                return (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo);
-            });
-            if (!filtered.length) {
-                return { ...series, data: [] };
+    const filteredSeries = [];
+    for (let i = 0; i < seriesData.length; i++) {
+        const series = seriesData[i];
+        const filtered = [];
+        for (let j = 0; j < series.data.length; j++) {
+            const point = series.data[j];
+            const date = point.date;
+            if ((!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+                filtered.push(point);
             }
+        }
+
+        if (filtered.length > 0) {
             // Normalize to percent change since first point
             const baseValue = filtered[0].value;
             const safeBase = Number.isFinite(baseValue) && baseValue !== 0 ? baseValue : 1;
-            const percentData = filtered.map((point) => ({
-                ...point,
-                percent: ((point.value - safeBase) / safeBase) * 100,
-                rawValue: point.value,
-            }));
-            return { ...series, data: percentData };
-        })
-        .filter((series) => series.data.length > 0);
+            const percentData = new Array(filtered.length);
+            for (let j = 0; j < filtered.length; j++) {
+                const point = filtered[j];
+                percentData[j] = {
+                    ...point,
+                    percent: ((point.value - safeBase) / safeBase) * 100,
+                    rawValue: point.value,
+                };
+            }
+            filteredSeries.push({ ...series, data: percentData });
+        }
+    }
 
     if (!filteredSeries.length) {
         if (emptyState) {
@@ -264,6 +270,7 @@ export function drawFxChart(ctx, chartManager, timestamp) {
         const smoothingConfig = getSmoothingConfig('performance');
 
         // Bolt: Eliminate chained Array map allocations in render loops
+        // Impact: Eliminates O(N) intermediate array allocations per animation frame, reducing GC pauses.
         const nData = series.data.length;
         const rawPoints = new Array(nData);
         for (let i = 0; i < nData; i++) {
@@ -412,42 +419,47 @@ export function drawFxChart(ctx, chartManager, timestamp) {
             const ratio = (clampedX - padding.left) / plotWidth;
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
-        series: renderedSeries.map((series) => {
-            const rawInterpolator = createTimeInterpolator(series.rawPoints || []);
-            return {
-                key: series.key,
-                label: series.label,
-                color: series.color,
-                getValueAtTime: createTimeInterpolator(series.points || []),
-                getRawValueAtTime: rawInterpolator,
-                formatValue: (value, time) => {
-                    const raw = rawInterpolator(time);
-                    const percentText = formatPercentInline(value);
-                    if (!Number.isFinite(raw)) {
+        series: (function () {
+            const result = new Array(renderedSeries.length);
+            for (let i = 0; i < renderedSeries.length; i++) {
+                const series = renderedSeries[i];
+                const rawInterpolator = createTimeInterpolator(series.rawPoints || []);
+                result[i] = {
+                    key: series.key,
+                    label: series.label,
+                    color: series.color,
+                    getValueAtTime: createTimeInterpolator(series.points || []),
+                    getRawValueAtTime: rawInterpolator,
+                    formatValue: (value, time) => {
+                        const raw = rawInterpolator(time);
+                        const percentText = formatPercentInline(value);
+                        if (!Number.isFinite(raw)) {
+                            return percentText;
+                        }
+                        return `${formatFxValue(raw)} (${percentText})`;
+                    },
+                    formatDelta: (delta, percentChange, startTime, endTime) => {
+                        const startRaw = rawInterpolator(startTime);
+                        const endRaw = rawInterpolator(endTime);
+                        const rawDelta =
+                            Number.isFinite(startRaw) && Number.isFinite(endRaw)
+                                ? endRaw - startRaw
+                                : null;
+                        const percentText = Number.isFinite(percentChange)
+                            ? formatPercentInline(percentChange)
+                            : formatPercentInline(delta);
+                        if (Number.isFinite(rawDelta) && Math.abs(rawDelta) > 1e-6) {
+                            const rawText = `${rawDelta >= 0 ? '+' : '−'}${formatFxValue(
+                                Math.abs(rawDelta)
+                            )}`;
+                            return `${rawText} (${percentText})`;
+                        }
                         return percentText;
-                    }
-                    return `${formatFxValue(raw)} (${percentText})`;
-                },
-                formatDelta: (delta, percentChange, startTime, endTime) => {
-                    const startRaw = rawInterpolator(startTime);
-                    const endRaw = rawInterpolator(endTime);
-                    const rawDelta =
-                        Number.isFinite(startRaw) && Number.isFinite(endRaw)
-                            ? endRaw - startRaw
-                            : null;
-                    const percentText = Number.isFinite(percentChange)
-                        ? formatPercentInline(percentChange)
-                        : formatPercentInline(delta);
-                    if (Number.isFinite(rawDelta) && Math.abs(rawDelta) > 1e-6) {
-                        const rawText = `${rawDelta >= 0 ? '+' : '−'}${formatFxValue(
-                            Math.abs(rawDelta)
-                        )}`;
-                        return `${rawText} (${percentText})`;
-                    }
-                    return percentText;
-                },
-            };
-        }),
+                    },
+                };
+            }
+            return result;
+        })(),
     };
 
     if (fxAnimationEnabled && glowIndex > 0) {
@@ -458,10 +470,14 @@ export function drawFxChart(ctx, chartManager, timestamp) {
 
     drawCrosshairOverlay(ctx, chartLayouts.fx);
 
-    const legendEntries = renderedSeries.map((series) => ({
-        key: series.key,
-        name: series.label,
-        color: series.color,
-    }));
+    const legendEntries = new Array(renderedSeries.length);
+    for (let i = 0; i < renderedSeries.length; i++) {
+        const series = renderedSeries[i];
+        legendEntries[i] = {
+            key: series.key,
+            name: series.label,
+            color: series.color,
+        };
+    }
     updateLegend(legendEntries, chartManager);
 }
