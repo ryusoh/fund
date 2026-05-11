@@ -11,6 +11,11 @@ describe('dataLoader basic history loaders', () => {
     let loadSplitHistory;
     let loadTransactionData;
     let loadContributionSeries;
+    let loadSectorsSnapshotData;
+    let loadGeographySnapshotData;
+    let loadMarketcapSnapshotData;
+    let loadFxDailyRates;
+    let loadPerformanceSeries;
     let mockFetch;
 
     beforeEach(() => {
@@ -38,6 +43,11 @@ describe('dataLoader basic history loaders', () => {
         loadSplitHistory = mod.loadSplitHistory;
         loadTransactionData = mod.loadTransactionData;
         loadContributionSeries = mod.loadContributionSeries;
+        loadSectorsSnapshotData = mod.loadSectorsSnapshotData;
+        loadGeographySnapshotData = mod.loadGeographySnapshotData;
+        loadMarketcapSnapshotData = mod.loadMarketcapSnapshotData;
+        loadFxDailyRates = mod.loadFxDailyRates;
+        loadPerformanceSeries = mod.loadPerformanceSeries;
     }
 
     function createMockResponse(data, ok = true, isText = false) {
@@ -225,6 +235,11 @@ INVALID_ROW`;
 describe('dataLoader real-time integration', () => {
     let loadPortfolioSeries;
     let loadCompositionSnapshotData;
+    let loadSectorsSnapshotData;
+    let loadGeographySnapshotData;
+    let loadMarketcapSnapshotData;
+    let loadFxDailyRates;
+    let loadPerformanceSeries;
     let mockFetch;
 
     beforeEach(() => {
@@ -257,6 +272,11 @@ describe('dataLoader real-time integration', () => {
         const mod = await import('../../../js/transactions/dataLoader.js');
         loadPortfolioSeries = mod.loadPortfolioSeries;
         loadCompositionSnapshotData = mod.loadCompositionSnapshotData;
+        loadSectorsSnapshotData = mod.loadSectorsSnapshotData;
+        loadGeographySnapshotData = mod.loadGeographySnapshotData;
+        loadMarketcapSnapshotData = mod.loadMarketcapSnapshotData;
+        loadFxDailyRates = mod.loadFxDailyRates;
+        loadPerformanceSeries = mod.loadPerformanceSeries;
     }
 
     function createMockResponse(data, ok = true, isText = false) {
@@ -581,6 +601,120 @@ describe('dataLoader real-time integration', () => {
             // Verify composition percentages updated
             expect(result.composition.VT[1]).toBeCloseTo(92.3, 1);
             expect(result.composition.GOOG[1]).toBeCloseTo(7.7, 1);
+        });
+    });
+
+    describe('snapshot data loaders', () => {
+        it('loadSectorsSnapshotData handles success', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const result = await loadSectorsSnapshotData();
+            expect(result).toEqual({ some: 'data' });
+            expect(mockFetch).toHaveBeenCalledWith('../data/output/figures/sectors.json');
+        });
+
+        it('loadSectorsSnapshotData handles failure', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+            await loadModule();
+            const result = await loadSectorsSnapshotData();
+            expect(result).toBeNull();
+        });
+
+        it('loadGeographySnapshotData handles success', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const result = await loadGeographySnapshotData();
+            expect(result).toEqual({ some: 'data' });
+            expect(mockFetch).toHaveBeenCalledWith('../data/output/figures/geography.json');
+        });
+
+        it('loadGeographySnapshotData handles failure', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+            await loadModule();
+            const result = await loadGeographySnapshotData();
+            expect(result).toBeNull();
+        });
+
+        it('loadMarketcapSnapshotData handles success', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const result = await loadMarketcapSnapshotData();
+            expect(result).toEqual({ some: 'data' });
+            expect(mockFetch).toHaveBeenCalledWith('../data/output/figures/marketcap.json');
+        });
+
+        it('loadMarketcapSnapshotData handles failure', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+            await loadModule();
+            const result = await loadMarketcapSnapshotData();
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('loadFxDailyRates', () => {
+        it('handles success and clears cache', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ rates: { EUR: 0.9 } }));
+            await loadModule();
+            const result = await loadFxDailyRates();
+            expect(result).toEqual({ rates: { EUR: 0.9 } });
+            expect(mockFetch).toHaveBeenCalledWith('../data/output/fx_daily_rates.json');
+        });
+
+        it('handles failure', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+            await loadModule();
+            const result = await loadFxDailyRates();
+            expect(result).toBeNull();
+        });
+
+        it('handles missing payload', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse(null));
+            await loadModule();
+            const result = await loadFxDailyRates();
+            expect(result).toBeNull();
+        });
+
+        it('handles missing rates in payload', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ other: 'data' }));
+            await loadModule();
+            const result = await loadFxDailyRates();
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('loadPerformanceSeries', () => {
+        it('handles failure of performance series fetch', async () => {
+            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 }) // For performance_series.json
+                     .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+
+            await loadModule();
+            const result = await loadPerformanceSeries();
+
+            expect(result).toEqual({});
+        });
+
+        it('handles invalid payload structure', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse(null)) // For performance_series.json
+                     .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+
+            await loadModule();
+            const result = await loadPerformanceSeries();
+
+            expect(result).toEqual({});
+        });
+
+        it('handles success without realtime match', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({
+                '^LZ': [
+                    { date: '2024-12-03', value: 1.05 }
+                ]
+            }))
+            .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+
+            await loadModule();
+            const result = await loadPerformanceSeries();
+
+            expect(result['^LZ']).toHaveLength(1);
         });
     });
 });
