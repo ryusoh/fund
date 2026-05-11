@@ -147,3 +147,37 @@
     border: none;
     align-self: center;
 }
+
+/* Empty state styling */
+.chart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 10;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    border-radius: 18px; /* Match chart container if it has one */
+}
+
+.chart-empty::before {
+    content: '\f071'; /* FontAwesome warning/exclamation-triangle icon */
+    font-family: 'FontAwesome';
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.chart-empty::after {
+    content: 'No data available';
+    font-size: 0.9rem;
+}
