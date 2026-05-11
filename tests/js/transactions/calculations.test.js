@@ -323,7 +323,6 @@ describe('calculations.js', () => {
         expect(getSplitAdjustment(splitHistory, 'TEST', '2021-07-20')).toBe(1.0);
     });
 
-
     test('parseCSV handles quantity and price formatting gracefully', () => {
         const csvText = `Trade Date,Order Type,Security,Quantity,Price
 2021-01-01,Buy,AAPL,,
@@ -338,6 +337,45 @@ describe('calculations.js', () => {
         expect(result[1].quantity).toBe('invalid');
         expect(result[1].price).toBe('invalid');
         expect(result[1].netAmount).toBe('0');
+    });
+
+    test('parseCSV handles quantity and price formatting gracefully', () => {
+        const csvText = `Trade Date,Order Type,Security,Quantity,Price
+2021-01-01,Buy,AAPL,,
+2021-02-01,Buy,AAPL,invalid,invalid`;
+
+        const result = parseCSV(csvText);
+        expect(result).toHaveLength(2);
+        expect(result[0].quantity).toBe('');
+        expect(result[0].price).toBe('');
+        expect(result[1].quantity).toBe('invalid');
+        expect(result[1].price).toBe('invalid');
+    });
+
+    test('parseCSV handles quantity and price formatting gracefully', () => {
+        const csvText = `Trade Date,Order Type,Security,Quantity,Price
+2021-01-01,Buy,AAPL,,
+2021-02-01,Buy,AAPL,invalid,invalid`;
+
+        const result = parseCSV(csvText);
+        expect(result).toHaveLength(2);
+        expect(result[0].quantity).toBe('');
+        expect(result[0].price).toBe('');
+        expect(result[1].quantity).toBe('invalid');
+        expect(result[1].price).toBe('invalid');
+    });
+
+    test('parseCSV handles quantity and price formatting gracefully', () => {
+        const csvText = `Trade Date,Order Type,Security,Quantity,Price
+2021-01-01,Buy,AAPL,,
+2021-02-01,Buy,AAPL,invalid,invalid`;
+
+        const result = parseCSV(csvText);
+        expect(result).toHaveLength(2);
+        expect(result[0].quantity).toBe('');
+        expect(result[0].price).toBe('');
+        expect(result[1].quantity).toBe('invalid');
+        expect(result[1].price).toBe('invalid');
     });
 
     test('parseCSV parses simple CSV text', () => {
