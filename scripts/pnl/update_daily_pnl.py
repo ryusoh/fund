@@ -128,8 +128,9 @@ def _get_latest_trading_day() -> str:
         if not hist.empty:
             latest_date = hist.index[-1].date()
             return str(latest_date.strftime("%Y-%m-%d"))
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.warning(f"Failed to fetch SPY for fallback date: {e}")
 
     # Fallback: use previous business day
     today = datetime.now(ZoneInfo("America/New_York"))
@@ -165,7 +166,8 @@ def main():
                 if all_rows:
                     last_date = all_rows[-1][0]
             except StopIteration:
-                pass
+                import logging
+                logging.warning("Historical CSV is empty")
 
     if not header:
         print("Calculating current portfolio value...")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import json
+import logging
 import shutil
 import tempfile
 from datetime import datetime, timezone
@@ -250,8 +251,8 @@ def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any
                 result_metadata['volatility'] = float(
                     closes.std() * (252**0.5)
                 )  # Assigned to new variable
-        except Exception:
-            pass
+        except Exception as e:
+            logging.warning(f"Failed to calculate volatility for {ticker}: {e}")
 
     # Apply currency conversion for tickers that report in local currency
     # but trade in USD (e.g., Chinese ADRs)
@@ -362,8 +363,8 @@ def ensure_structure(symbol: str, config: dict) -> dict:
     if shares_value is not None:
         try:
             position['shares'] = float(shares_value)
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as e:
+            logging.warning(f"Failed to parse shares: {e}")
     position.setdefault('currentWeight', None)
     position.setdefault('targetWeight', None)
     position.setdefault('maxKellyWeight', None)
@@ -588,8 +589,8 @@ def main() -> None:
                 if position.get('shares') != shares:
                     position['shares'] = shares
                     changed = True
-            except ValueError:
-                pass
+            except ValueError as e:
+                logging.warning(f"Failed to update shares for {symbol}: {e}")
 
         if changed:
             config['meta']['asOf'] = datetime.now(timezone.utc).isoformat()

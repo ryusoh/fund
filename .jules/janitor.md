@@ -33,3 +33,6 @@
 
 **Issue:** `plot.js` cyclomatic complexity was over 167, violating the modularity constraint, and empty catch blocks in `worker/src/index.js` and JS UI tests silently swallowed errors.
 **Action:** Refactored `handlePlotCommand` into a modular design using sub-functions to map and execute chart renderings, reducing its complexity to 13. Filled all empty catch blocks with `console.warn` using the actual `err` object to surface suppressed errors without crashing the main application thread. Fixed legacy static string checks in `chart_feature_parity.test.js` to ensure the new modular architecture passes the tests.
+
+- **Issue:** Several Python scripts suppressed exceptions using `except: pass` which could lead to silent data processing failures.
+- **Action:** Audited the codebase to replace empty catch blocks with proper warning logs or print statements to ensure exceptions are visible and resilience is maintained.
