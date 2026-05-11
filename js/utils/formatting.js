@@ -1,5 +1,20 @@
 import { logger } from './logger.js';
 
+// Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
+const numberFormatCache = new Map();
+function getNumberFormatter(locale = undefined, minFrac = 2, maxFrac = 2) {
+    const key = `${locale}-${minFrac}-${maxFrac}`;
+    let formatter = numberFormatCache.get(key);
+    if (!formatter) {
+        formatter = new Intl.NumberFormat(locale, {
+            minimumFractionDigits: minFrac,
+            maximumFractionDigits: maxFrac,
+        });
+        numberFormatCache.set(key, formatter);
+    }
+    return formatter;
+}
+
 /**
  * Formats a numeric value as a currency string in the target currency.
  * @param {number} valueInUSD - The value in USD.
@@ -17,9 +32,11 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
     }
 
     const rate = exchangeRates[targetCurrency];
+    const formatter = getNumberFormatter();
+
     if (typeof rate !== 'number') {
         logger.warn(`Exchange rate for ${targetCurrency} not found. Displaying in USD.`);
-        return `${currencySymbols['USD'] || '$'}${numValueInUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `${currencySymbols['USD'] || '$'}${formatter.format(numValueInUSD)}`;
     }
 
     // Work with the absolute value for conversion and formatting
@@ -27,10 +44,7 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
     const symbol = currencySymbols[targetCurrency] || targetCurrency; // Fallback to code if symbol missing
 
     // Format the number with locale-specific thousand separators and 2 decimal places.
-    const formattedNumber = absoluteConvertedValue.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formattedNumber = formatter.format(absoluteConvertedValue);
 
     return `${symbol}${formattedNumber}`;
 }
@@ -319,10 +333,8 @@ function defaultCurrencyFormatter(value) {
         return '$0.00';
     }
     const sign = numeric < 0 ? '-' : '';
-    const formatted = Math.abs(numeric).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formatter = getNumberFormatter('en-US');
+    const formatted = formatter.format(Math.abs(numeric));
     return `${sign}$${formatted}`;
 }
 
