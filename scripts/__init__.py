@@ -12,5 +12,6 @@ try:
     _yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
     yf.set_tz_cache_location(_yf_cache_dir)
     atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
-except ImportError:
-    pass
+except ImportError as e:
+    import logging
+    logging.debug(f"ImportError while configuring yfinance cache: {e}")

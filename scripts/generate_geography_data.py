@@ -113,8 +113,9 @@ def get_country_for_ticker(ticker: str, metadata: dict) -> str:
         if ticker_upper.endswith('.US') or '.' not in ticker_upper:
             return 'United States'
 
-    except Exception:  # pylint: disable=broad-except
-        pass
+    except Exception as e:  # pylint: disable=broad-except
+        import logging
+        logging.warning(f"Failed to resolve country for {ticker_upper}: {e}")
 
     # Default fallback
     return 'Other'
