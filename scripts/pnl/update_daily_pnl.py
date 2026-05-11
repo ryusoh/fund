@@ -130,6 +130,7 @@ def _get_latest_trading_day() -> str:
             return str(latest_date.strftime("%Y-%m-%d"))
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to fetch SPY for fallback date: {e}")
 
     # Fallback: use previous business day
@@ -167,6 +168,7 @@ def main():
                     last_date = all_rows[-1][0]
             except StopIteration:
                 import logging
+
                 logging.warning("Historical CSV is empty")
 
     if not header:

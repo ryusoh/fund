@@ -74,6 +74,7 @@ def main() -> None:
         argcomplete.autocomplete(parser)  # type: ignore[attr-defined]
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to enable argcomplete: {e}")
     args = parser.parse_args()
 

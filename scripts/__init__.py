@@ -14,4 +14,5 @@ try:
     atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
 except ImportError as e:
     import logging
+
     logging.debug(f"ImportError while configuring yfinance cache: {e}")

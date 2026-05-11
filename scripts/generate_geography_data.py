@@ -115,6 +115,7 @@ def get_country_for_ticker(ticker: str, metadata: dict) -> str:
 
     except Exception as e:  # pylint: disable=broad-except
         import logging
+
         logging.warning(f"Failed to resolve country for {ticker_upper}: {e}")
 
     # Default fallback

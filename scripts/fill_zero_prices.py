@@ -13,9 +13,9 @@ Use --in-place to overwrite the input file.
 from __future__ import annotations
 
 import argparse
-import logging
 import csv
 import datetime as dt
+import logging
 import sys
 from collections import defaultdict
 from pathlib import Path
