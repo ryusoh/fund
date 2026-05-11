@@ -153,13 +153,26 @@ export function convertBetweenCurrencies(
     return usdAmount * targetRate;
 }
 
+// Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
+const numberFormatCache = new Map();
+function getNumberFormatter(locale = 'en-US', minFrac = 2, maxFrac = 2) {
+    const key = `${locale}-${minFrac}-${maxFrac}`;
+    let formatter = numberFormatCache.get(key);
+    if (!formatter) {
+        formatter = new Intl.NumberFormat(locale, {
+            minimumFractionDigits: minFrac,
+            maximumFractionDigits: maxFrac,
+        });
+        numberFormatCache.set(key, formatter);
+    }
+    return formatter;
+}
+
 export function formatCurrency(value, { currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);
-    const formatted = absolute.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formatter = getNumberFormatter('en-US', 2, 2);
+    const formatted = formatter.format(absolute);
     const sign = amount < 0 ? '-' : '';
     const symbol = getSymbolForCurrency(currency || transactionState.selectedCurrency);
     return `${sign}${symbol}${formatted}`;
@@ -168,10 +181,8 @@ export function formatCurrency(value, { currency } = {}) {
 export function formatCurrencyInlineValue(value, { digits = 0, currency } = {}) {
     const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
     const absolute = Math.abs(amount);
-    const formatted = absolute.toLocaleString('en-US', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
+    const formatter = getNumberFormatter('en-US', digits, digits);
+    const formatted = formatter.format(absolute);
     const sign = amount < 0 ? '-' : '';
     const symbol = getSymbolForCurrency(currency || transactionState.selectedCurrency);
     return `${sign}${symbol}${formatted}`;
