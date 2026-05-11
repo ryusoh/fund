@@ -6,7 +6,7 @@ import {
     parseCSVLine,
     convertBetweenCurrencies,
     convertValueToCurrency,
-    clearFxRateCache
+    clearFxRateCache,
 } from '@js/transactions/utils.js';
 import { transactionState } from '@js/transactions/state.js';
 
@@ -89,17 +89,13 @@ describe('convertBetweenCurrencies', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
+                    ['2024-01-02', 0.85],
+                ]),
             },
             JPY: {
-                sorted: [
-                    { date: '2024-01-01', ts: new Date('2024-01-01').getTime() }
-                ],
-                map: new Map([
-                    ['2024-01-01', 150]
-                ])
-            }
+                sorted: [{ date: '2024-01-01', ts: new Date('2024-01-01').getTime() }],
+                map: new Map([['2024-01-01', 150]]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -151,9 +147,9 @@ describe('convertValueToCurrency', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
-            }
+                    ['2024-01-02', 0.85],
+                ]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -284,17 +280,13 @@ describe('convertBetweenCurrencies', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
+                    ['2024-01-02', 0.85],
+                ]),
             },
             JPY: {
-                sorted: [
-                    { date: '2024-01-01', ts: new Date('2024-01-01').getTime() }
-                ],
-                map: new Map([
-                    ['2024-01-01', 150]
-                ])
-            }
+                sorted: [{ date: '2024-01-01', ts: new Date('2024-01-01').getTime() }],
+                map: new Map([['2024-01-01', 150]]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -346,9 +338,9 @@ describe('convertValueToCurrency', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
-            }
+                    ['2024-01-02', 0.85],
+                ]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -479,17 +471,13 @@ describe('convertBetweenCurrencies', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
+                    ['2024-01-02', 0.85],
+                ]),
             },
             JPY: {
-                sorted: [
-                    { date: '2024-01-01', ts: new Date('2024-01-01').getTime() }
-                ],
-                map: new Map([
-                    ['2024-01-01', 150]
-                ])
-            }
+                sorted: [{ date: '2024-01-01', ts: new Date('2024-01-01').getTime() }],
+                map: new Map([['2024-01-01', 150]]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -541,9 +529,9 @@ describe('convertValueToCurrency', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
-            }
+                    ['2024-01-02', 0.85],
+                ]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -674,17 +662,13 @@ describe('convertBetweenCurrencies', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
+                    ['2024-01-02', 0.85],
+                ]),
             },
             JPY: {
-                sorted: [
-                    { date: '2024-01-01', ts: new Date('2024-01-01').getTime() }
-                ],
-                map: new Map([
-                    ['2024-01-01', 150]
-                ])
-            }
+                sorted: [{ date: '2024-01-01', ts: new Date('2024-01-01').getTime() }],
+                map: new Map([['2024-01-01', 150]]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();
@@ -736,9 +720,9 @@ describe('convertValueToCurrency', () => {
                 ],
                 map: new Map([
                     ['2024-01-01', 0.9],
-                    ['2024-01-02', 0.85]
-                ])
-            }
+                    ['2024-01-02', 0.85],
+                ]),
+            },
         };
         transactionState.selectedCurrency = 'USD';
         clearFxRateCache();

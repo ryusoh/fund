@@ -137,8 +137,9 @@ describe('dataLoader basic history loaders', () => {
 
     describe('loadPerformanceSeries', () => {
         it('handles failure of performance series fetch', async () => {
-            mockFetch.mockResolvedValueOnce({ ok: false, status: 404 }) // For performance_series.json
-                     .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+            mockFetch
+                .mockResolvedValueOnce({ ok: false, status: 404 }) // For performance_series.json
+                .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
 
             await loadModule();
             const result = await loadPerformanceSeries();
@@ -147,8 +148,9 @@ describe('dataLoader basic history loaders', () => {
         });
 
         it('handles invalid payload structure', async () => {
-            mockFetch.mockResolvedValueOnce(createMockResponse(null)) // For performance_series.json
-                     .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+            mockFetch
+                .mockResolvedValueOnce(createMockResponse(null)) // For performance_series.json
+                .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
 
             await loadModule();
             const result = await loadPerformanceSeries();
@@ -157,12 +159,13 @@ describe('dataLoader basic history loaders', () => {
         });
 
         it('handles success without realtime match', async () => {
-            mockFetch.mockResolvedValueOnce(createMockResponse({
-                '^LZ': [
-                    { date: '2024-12-03', value: 1.05 }
-                ]
-            }))
-            .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        '^LZ': [{ date: '2024-12-03', value: 1.05 }],
+                    })
+                )
+                .mockRejectedValueOnce(new Error('Network error')); // For fetchRealTimeData
 
             await loadModule();
             const result = await loadPerformanceSeries();
