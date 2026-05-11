@@ -103,20 +103,67 @@ describe('analysis lab data loading', () => {
         expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
     });
 
-    it('extracts scenario titles from thesis markdown headings', async () => {
-        global[FLAG] = true;
-        const module = await import('@pages/analysis/lab.js');
-        const { extractScenarioTitles } = module.__analysisLabTesting;
-        const markdown = `
+    describe('extractScenarioTitles and stripWrappingQuotes', () => {
+        let extractScenarioTitles;
+
+        beforeEach(async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            extractScenarioTitles = module.__analysisLabTesting.extractScenarioTitles;
+        });
+
+        it('extracts scenario titles from thesis markdown headings', () => {
+            const markdown = `
 ### 4.2 Bull Case – “Hypergrowth Bonus”
 ### 4.3 Base Case – 'Steady State'
 ### 4.4 Bear Case – Collapse
 `;
-        const titles = extractScenarioTitles(markdown);
-        expect(titles).toEqual({
-            bull: 'Hypergrowth Bonus',
-            base: 'Steady State',
-            bear: 'Collapse',
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: 'Hypergrowth Bonus',
+                base: 'Steady State',
+                bear: 'Collapse',
+            });
+        });
+
+        it('strips standard and smart quotes correctly', () => {
+            const markdown = `
+### Bull Case - "Double Quotes"
+### Base Case - 'Single Quotes'
+### Bear Case - “Smart Double Quotes”
+`;
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: 'Double Quotes',
+                base: 'Single Quotes',
+                bear: 'Smart Double Quotes'
+            });
+        });
+
+        it('strips smart single quotes correctly', () => {
+             const markdown = '### Bull Case - ‘Smart Single Quotes’';
+             const titles = extractScenarioTitles(markdown);
+             expect(titles).toEqual({ bull: 'Smart Single Quotes' });
+        });
+
+        it('leaves mismatched or missing quotes untouched', () => {
+            const markdown = `
+### Bull Case - "Mismatched'
+### Base Case - No Quotes
+### Bear Case - "
+`;
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: '"Mismatched\'',
+                base: 'No Quotes',
+                bear: '"'
+            });
+        });
+
+        it('returns null for empty, missing, or malformed strings', () => {
+            expect(extractScenarioTitles('')).toBeNull();
+            expect(extractScenarioTitles(null)).toBeNull();
+            expect(extractScenarioTitles('### Just Some Heading')).toBeNull();
         });
     });
 

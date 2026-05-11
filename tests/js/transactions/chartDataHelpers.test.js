@@ -393,4 +393,126 @@ describe('Chart data helpers', () => {
             expect(filterFrom.getSeconds()).toBe(0);
         });
     });
+
+    describe('injectSyntheticStartPoint', () => {
+        let helpers;
+        beforeEach(async () => {
+            jest.resetModules();
+            helpers = await import('@js/transactions/chart/helpers.js');
+        });
+
+        test('returns filteredData when no filterFrom provided', () => {
+            const filtered = [{ date: new Date('2024-01-02'), value: 100 }];
+            expect(helpers.injectSyntheticStartPoint(filtered, [])).toEqual(filtered);
+        });
+
+        test('returns filteredData when filteredData is empty or not an array', () => {
+            expect(helpers.injectSyntheticStartPoint([], [], new Date())).toEqual([]);
+            expect(helpers.injectSyntheticStartPoint(null, [], new Date())).toBeNull();
+        });
+
+        test('returns filteredData when fullSeries is empty or not an array', () => {
+            const filtered = [{ date: new Date('2024-01-02'), value: 100 }];
+            expect(helpers.injectSyntheticStartPoint(filtered, [], new Date())).toEqual(filtered);
+            expect(helpers.injectSyntheticStartPoint(filtered, null, new Date())).toEqual(filtered);
+        });
+
+        test('returns filteredData if firstFiltered time is invalid', () => {
+            const filtered = [{ date: 'invalid-date', value: 100 }];
+            expect(helpers.injectSyntheticStartPoint(filtered, [], new Date())).toEqual(filtered);
+        });
+
+        test('injects point at filterFrom if synthetic point exists before filter', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2023-12-31'), value: 50, synthetic: true },
+                { date: new Date('2024-01-02'), value: 100 }
+            ];
+            const filteredData = [ fullSeries[1] ];
+            const result = helpers.injectSyntheticStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result.length).toBe(2);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].date.getTime()).toBe(filterFrom.getTime());
+            expect(result[0].value).toBe(50);
+        });
+
+        test('does not inject if point at filterFrom already exists', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2023-12-31'), value: 50, synthetic: true },
+                { date: new Date('2024-01-01'), value: 100 }
+            ];
+            const filteredData = [ fullSeries[1] ];
+            const result = helpers.injectSyntheticStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result.length).toBe(1);
+        });
+
+        test('injects synthetic point using previous value', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2023-12-30'), value: 0 },
+                { date: new Date('2023-12-31'), value: 0, synthetic: true },
+                { date: new Date('2024-01-02'), value: 100 }
+            ];
+            const filteredData = [ fullSeries[2] ];
+            const result = helpers.injectSyntheticStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result.length).toBe(2);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].date.getTime()).toBe(filterFrom.getTime());
+            expect(result[0].value).toBe(0);
+        });
+    });
+
+    describe('injectCarryForwardStartPoint', () => {
+        let helpers;
+        beforeEach(async () => {
+            jest.resetModules();
+            helpers = await import('@js/transactions/chart/helpers.js');
+        });
+
+        test('returns filteredData when inputs are invalid', () => {
+            const filtered = [{ date: new Date('2024-01-02'), value: 100 }];
+            expect(helpers.injectCarryForwardStartPoint(filtered, [], null)).toEqual(filtered);
+            expect(helpers.injectCarryForwardStartPoint(null, [], new Date())).toBeNull();
+            expect(helpers.injectCarryForwardStartPoint(filtered, null, new Date())).toEqual(filtered);
+            expect(helpers.injectCarryForwardStartPoint(filtered, [], new Date('invalid'))).toEqual(filtered);
+        });
+
+        test('injects carry-forward point at filterFrom with last available value', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2023-12-15'), value: 200 },
+                { date: new Date('2024-01-05'), value: 300 }
+            ];
+            const filteredData = [ fullSeries[1] ];
+            const result = helpers.injectCarryForwardStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result.length).toBe(2);
+            expect(result[0].carryForward).toBe(true);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].date.getTime()).toBe(filterFrom.getTime());
+            expect(result[0].value).toBe(200);
+        });
+
+        test('does not inject if first filtered point is at or before filterFrom', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2023-12-15'), value: 200 },
+                { date: new Date('2024-01-01'), value: 300 }
+            ];
+            const filteredData = [ fullSeries[1] ];
+            const result = helpers.injectCarryForwardStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result.length).toBe(1);
+            expect(result).toEqual(filteredData);
+        });
+
+        test('returns filteredData if no points before filterFrom', () => {
+            const filterFrom = new Date('2024-01-01');
+            const fullSeries = [
+                { date: new Date('2024-01-05'), value: 300 }
+            ];
+            const filteredData = [ fullSeries[0] ];
+            const result = helpers.injectCarryForwardStartPoint(filteredData, fullSeries, filterFrom);
+            expect(result).toEqual(filteredData);
+        });
+    });
 });
