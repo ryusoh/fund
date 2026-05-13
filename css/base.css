@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 /* JetBrains Mono – regular and italics */
 @font-face {
     font-family: 'JetBrains Mono';
@@ -74,6 +75,11 @@ body::after {
 }
 
 body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
     color: rgba(255, 255, 255, 0.85); /* Apple's primary label color for dark mode */
     margin: 0; /* Remove default browser margins */
     min-height: 100vh; /* Ensure body takes up at least the full viewport height */
@@ -117,4 +123,20 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+
+::selection {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.serif-emphasis {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 400;
 }
