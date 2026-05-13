@@ -3,7 +3,7 @@
     "name": "Vanguard Total World Index Fund",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-05-12T08:40:57.881387+00:00",
+        "asOf": "2026-05-13T08:41:17.604616+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,21 +28,21 @@
         }
     },
     "market": {
-        "pe": 23.7903,
+        "pe": 23.6418,
         "dividendYield": 1.67,
         "currency": "USD",
         "fiftyTwoWeekHigh": 155.63,
         "fiftyTwoWeekLow": 121.0,
-        "marketDataUpdatedAt": "2026-05-12T08:40:57.745170+00:00",
-        "price": 155.32,
+        "marketDataUpdatedAt": "2026-05-13T08:41:17.493136+00:00",
+        "price": 154.35,
         "eps": 6.22,
-        "fiftyDayAverage": 144.9684,
-        "twoHundredDayAverage": 140.8875,
-        "averageVolume": 4766478.0,
-        "averageDailyVolume10Day": 2538330.0
+        "fiftyDayAverage": 145.1164,
+        "twoHundredDayAverage": 140.9993,
+        "averageVolume": 4715418.0,
+        "averageDailyVolume10Day": 2583480.0
     },
     "risk": {
-        "volatility": 0.1265,
+        "volatility": 0.1267,
         "estimateSource": "historical",
         "correlations": null
     },
