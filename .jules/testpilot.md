@@ -54,5 +54,7 @@ Result: Met the daily goal of multiple targets, expanding coverage without modif
 What: Added test coverage to `js/transactions/chart/renderers/rolling.js`, `marketcap.js`, and `geography.js`.
 Coverage: Brought missing renderers closer to 100% by targeting empty state early exits using Jest.
 Result: Tested and verified gracefull exits for zero data/series, increasing system resilience and satisfying test targets without modifying production code.
+
 ## 2025-05-11 - Fixed Date parsing coverage and Markdown regex matching
+
 **Learning:** When testing timezone-sensitive utilities like `parseLocalDate`, tests should explicitly assert against the local timezone output rather than hardcoded UTC equivalents. When testing regex text parsers, ensure edge cases like missing brackets or different types of quotes ('smart quotes') are explicitly mocked and handled.
