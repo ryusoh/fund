@@ -2,7 +2,7 @@ import { logger } from './logger.js';
 
 // Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
 const numberFormatCache = new Map();
-function getNumberFormatter(locale = undefined, minFrac = 2, maxFrac = 2) {
+export function getNumberFormatter(locale = undefined, minFrac = 2, maxFrac = 2) {
     const key = `${locale}-${minFrac}-${maxFrac}`;
     let formatter = numberFormatCache.get(key);
     if (!formatter) {
