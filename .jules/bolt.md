@@ -187,9 +187,8 @@
 
 **Learning:** Chained `.map().filter()` inside the FX chart renderer causes intermediate array allocations, increasing GC pressure during high-frequency renders.
 **Action:** Replaced chained higher-order array methods with single explicit `for` loops and pre-allocated arrays in `renderFxChart`.
+
 ## 2026-05-11 - Cache Intl.NumberFormat in formatting utilities
-**Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method. In a performance test with 100k iterations, `toLocaleString` took over 4.3 seconds whereas caching `Intl.NumberFormat` took under 200ms.
-**Action:** When executing high-frequency currency or number formatting functions (e.g. `formatCurrency` used frequently during rendering lists or tooltips), cache the `Intl.NumberFormat` instance using a Map. Avoid calling `.toLocaleString()` dynamically where a single instantiation could be reused.
-## 2026-05-11 - Cache Intl.NumberFormat in formatting utilities
+
 **Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method. In a performance test with 100k iterations, `toLocaleString` took over 4.3 seconds whereas caching `Intl.NumberFormat` took under 200ms.
 **Action:** When executing high-frequency currency or number formatting functions (e.g. `formatCurrency` used frequently during rendering lists or tooltips), cache the `Intl.NumberFormat` instance using a Map. Avoid calling `.toLocaleString()` dynamically where a single instantiation could be reused.
