@@ -34,7 +34,7 @@ export function initMagneticNav() {
                 x: distX * strength,
                 y: distY * strength,
                 duration: 0.3,
-                ease: 'power2.out',
+                ease: 'power3.out',
             });
 
             // Pull the child element (e.g. <a> or <i>) slightly more for a parallax effect
@@ -44,7 +44,7 @@ export function initMagneticNav() {
                     x: distX * (strength * 1.5),
                     y: distY * (strength * 1.5),
                     duration: 0.3,
-                    ease: 'power2.out',
+                    ease: 'power3.out',
                 });
             }
         });
@@ -54,8 +54,8 @@ export function initMagneticNav() {
             window.gsap.to(el, {
                 x: 0,
                 y: 0,
-                duration: 0.7,
-                ease: 'elastic.out(1, 0.3)',
+                duration: 0.3,
+                ease: 'power3.out',
             });
 
             const child = el.querySelector('a, i');
@@ -63,8 +63,8 @@ export function initMagneticNav() {
                 window.gsap.to(child, {
                     x: 0,
                     y: 0,
-                    duration: 0.7,
-                    ease: 'elastic.out(1, 0.3)',
+                    duration: 0.3,
+                    ease: 'power3.out',
                 });
             }
         });

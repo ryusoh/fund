@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 /* JetBrains Mono – regular and italics */
 @font-face {
     font-family: 'JetBrains Mono';
@@ -117,4 +118,18 @@ footer a:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 4px;
     border-radius: 4px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+}
+
+/* Hide scaffolding globally */
+::-webkit-scrollbar {
+    display: none;
+}
+* {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
