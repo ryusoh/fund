@@ -1,3 +1,4 @@
+import { getNumberFormatter } from '../../../utils/formatting.js';
 import { transactionState } from '../../state.js';
 import { getSplitAdjustment } from '../../calculations.js';
 import { loadCompositionSnapshotData } from '../../dataLoader.js';
@@ -352,13 +353,13 @@ export async function getDurationStatsText() {
         summaryRows.push([
             'Weighted Avg Age (Open)',
             Number.isFinite(weightedAvgDays)
-                ? `${Math.round(weightedAvgDays).toLocaleString()} days (${formatDurationLabel(weightedAvgDays)})`
+                ? `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgDays))} days (${formatDurationLabel(weightedAvgDays)})`
                 : 'N/A',
         ]);
         summaryRows.push([
             'Weighted Median Age (Open)',
             Number.isFinite(medianDays)
-                ? `${Math.round(medianDays).toLocaleString()} days (${formatDurationLabel(medianDays)})`
+                ? `${getNumberFormatter(undefined, 0, 0).format(Math.round(medianDays))} days (${formatDurationLabel(medianDays)})`
                 : 'N/A',
         ]);
     }
@@ -376,7 +377,7 @@ export async function getDurationStatsText() {
     if (Number.isFinite(weightedClosedAvgDays)) {
         summaryRows.push([
             'Weighted Avg Age (Closed)',
-            `${Math.round(weightedClosedAvgDays).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedClosedAvgDays))} days (${formatDurationLabel(
                 weightedClosedAvgDays
             )})`,
         ]);
@@ -396,7 +397,7 @@ export async function getDurationStatsText() {
     if (Number.isFinite(weightedAvgAll)) {
         summaryRows.push([
             'Weighted Avg Age (All)',
-            `${Math.round(weightedAvgAll).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgAll))} days (${formatDurationLabel(
                 weightedAvgAll
             )})`,
         ]);
@@ -416,7 +417,7 @@ export async function getDurationStatsText() {
         .map((entry) => [
             entry.ticker,
             `${entry.percent.toFixed(2)}%`,
-            Math.round(entry.avgAgeDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.avgAgeDays)),
             formatYearsValue(entry.avgAgeDays),
         ]);
 
@@ -485,7 +486,7 @@ export async function getLifespanStatsText() {
         .map((entry) => [
             entry.ticker,
             formatShareValueShort(entry.openShares),
-            Math.round(entry.spanDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.spanDays)),
             formatYearsValue(entry.spanDays),
         ]);
 
@@ -519,7 +520,7 @@ export async function getLifespanStatsText() {
         .map((entry) => [
             entry.ticker,
             formatShareValueShort(entry.shares),
-            Math.round(entry.spanDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.spanDays)),
             formatYearsValue(entry.spanDays),
         ]);
 
@@ -554,7 +555,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgOpen)) {
         summaryRows.push([
             'Weighted Avg (Open)',
-            `${Math.round(weightedAvgOpen).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgOpen))} days (${formatDurationLabel(
                 weightedAvgOpen
             )})`,
         ]);
@@ -562,7 +563,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgClosed)) {
         summaryRows.push([
             'Weighted Avg (Closed)',
-            `${Math.round(weightedAvgClosed).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgClosed))} days (${formatDurationLabel(
                 weightedAvgClosed
             )})`,
         ]);
@@ -570,7 +571,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgAll)) {
         summaryRows.push([
             'Weighted Avg (All)',
-            `${Math.round(weightedAvgAll).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgAll))} days (${formatDurationLabel(
                 weightedAvgAll
             )})`,
         ]);
@@ -578,13 +579,13 @@ export async function getLifespanStatsText() {
     if (openEntries.length) {
         summaryRows.push([
             'Longest Open Position',
-            `${openEntries[0].ticker} · ${Math.round(openEntries[0].spanDays).toLocaleString()} days`,
+            `${openEntries[0].ticker} · ${getNumberFormatter(undefined, 0, 0).format(Math.round(openEntries[0].spanDays))} days`,
         ]);
     }
     if (closedEntries.length) {
         summaryRows.push([
             'Longest Closed Position',
-            `${closedEntries[0].ticker} · ${Math.round(closedEntries[0].spanDays).toLocaleString()} days`,
+            `${closedEntries[0].ticker} · ${getNumberFormatter(undefined, 0, 0).format(Math.round(closedEntries[0].spanDays))} days`,
         ]);
     }
     if (!openEntries.length && !closedEntries.length) {

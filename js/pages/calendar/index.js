@@ -1,3 +1,4 @@
+import { getNumberFormatter } from '@utils/formatting.js';
 import {
     initCurrencyToggle,
     cycleCurrency,
@@ -1074,7 +1075,7 @@ export async function initCalendar() {
                 const pnlPercent = (value * 100).toFixed(2);
                 /* istanbul ignore next: tooltip function implementation */
                 const totalValue = entry
-                    ? entry.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                    ? getNumberFormatter('en-US', 2, 2, { style: 'currency', currency: 'USD' }).format(entry.total)
                     : 'N/A';
                 /* istanbul ignore next: tooltip function implementation */
                 const sign = value > 0 ? '+' : '';

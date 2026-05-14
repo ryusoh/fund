@@ -192,3 +192,8 @@
 
 **Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method. In a performance test with 100k iterations, `toLocaleString` took over 4.3 seconds whereas caching `Intl.NumberFormat` took under 200ms.
 **Action:** When executing high-frequency currency or number formatting functions (e.g. `formatCurrency` used frequently during rendering lists or tooltips), cache the `Intl.NumberFormat` instance using a Map. Avoid calling `.toLocaleString()` dynamically where a single instantiation could be reused.
+
+## 2026-05-14 - Cache Intl.NumberFormat in formatting utilities
+
+**Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method.
+**Action:** Replaced dynamic `.toLocaleString()` calls with the cached `getNumberFormatter()` in formatting loops in `holdings.js`, `transactions.js`, `analysis.js` and `calendar/index.js` to avoid recreation overhead and decrease latency.
