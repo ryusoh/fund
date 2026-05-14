@@ -1,7 +1,4 @@
 import { drawYieldChart } from '@js/transactions/chart/renderers/yield.js';
-import { transactionState } from '@js/transactions/state.js';
-import { chartLayouts } from '@js/transactions/chart/state.js';
-import { loadYieldData } from '@js/transactions/dataLoader.js';
 
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {
@@ -46,7 +43,7 @@ describe('Yield Chart Renderer', () => {
     it('handles empty fetch gracefully by updating chartManager', async () => {
         document.body.innerHTML = '<div id="runningAmountEmpty"></div>';
         const ctx = {
-            canvas: { offsetWidth: 800, offsetHeight: 600 }
+            canvas: { offsetWidth: 800, offsetHeight: 600 },
         };
         const chartManager = { update: jest.fn() };
 

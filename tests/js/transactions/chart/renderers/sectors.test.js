@@ -1,5 +1,4 @@
 import { drawSectorsChart } from '@js/transactions/chart/renderers/sectors.js';
-import { transactionState } from '@js/transactions/state.js';
 import { chartLayouts } from '@js/transactions/chart/state.js';
 import { loadSectorsSnapshotData } from '@js/transactions/dataLoader.js';
 
