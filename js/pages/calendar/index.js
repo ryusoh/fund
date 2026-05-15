@@ -1075,7 +1075,10 @@ export async function initCalendar() {
                 const pnlPercent = (value * 100).toFixed(2);
                 /* istanbul ignore next: tooltip function implementation */
                 const totalValue = entry
-                    ? getNumberFormatter('en-US', 2, 2, { style: 'currency', currency: 'USD' }).format(entry.total)
+                    ? getNumberFormatter('en-US', 2, 2, {
+                          style: 'currency',
+                          currency: 'USD',
+                      }).format(entry.total)
                     : 'N/A';
                 /* istanbul ignore next: tooltip function implementation */
                 const sign = value > 0 ? '+' : '';

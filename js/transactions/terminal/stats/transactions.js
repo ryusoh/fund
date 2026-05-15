@@ -71,9 +71,20 @@ export async function getStatsText(currency = 'USD') {
             const counts = statsDataCache.counts || {};
             const values = availableCurrencies[selectedCurrency] || {};
             const rows = [
-                ['Total Transactions', getNumberFormatter(undefined, 0, 0).format(Number(counts.total_transactions || 0))],
-                ['Buy Orders', getNumberFormatter(undefined, 0, 0).format(Number(counts.buy_orders || 0))],
-                ['Sell Orders', getNumberFormatter(undefined, 0, 0).format(Number(counts.sell_orders || 0))],
+                [
+                    'Total Transactions',
+                    getNumberFormatter(undefined, 0, 0).format(
+                        Number(counts.total_transactions || 0)
+                    ),
+                ],
+                [
+                    'Buy Orders',
+                    getNumberFormatter(undefined, 0, 0).format(Number(counts.buy_orders || 0)),
+                ],
+                [
+                    'Sell Orders',
+                    getNumberFormatter(undefined, 0, 0).format(Number(counts.sell_orders || 0)),
+                ],
                 [
                     'Total Buy Amount',
                     formatCurrency(values.total_buy_amount || 0, { currency: selectedCurrency }),
