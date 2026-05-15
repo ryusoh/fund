@@ -91,8 +91,17 @@ function runSimulation(config) {
     };
 }
 
+function secureRandom() {
+    if (typeof self !== 'undefined' && self.crypto && typeof self.crypto.getRandomValues === 'function') {
+        const array = new Uint32Array(1);
+        self.crypto.getRandomValues(array);
+        return array[0] / (0xffffffff + 1);
+    }
+    return Math.random();
+}
+
 function pickScenario(scenarios) {
-    const r = Math.random();
+    const r = secureRandom();
     let sum = 0;
     for (const s of scenarios) {
         sum += s.prob;
@@ -104,8 +113,8 @@ function pickScenario(scenarios) {
 }
 
 function normalSample(mean, stdDev) {
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = secureRandom();
+    const u2 = secureRandom();
     const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
     return mean + z * stdDev;
 }

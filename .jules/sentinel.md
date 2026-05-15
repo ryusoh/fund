@@ -48,3 +48,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** The CORS validation logic in `worker/src/index.js` checked if the Origin header ended with `.lyeutsaon.com` using a simple string `endsWith` method. This allowed a malicious origin like `https://malicious.lyeutsaon.com.evil.com` to bypass CORS validation. Also, since there was no protocol check, a `http:` scheme would also be permitted.
 **Learning:** Naive string manipulation for Origin validation is insecure, especially since browsers pass the entire scheme+hostname+port in the Origin header. Validation must isolate the hostname.
 **Prevention:** Always use the `URL` constructor to securely parse the `hostname` and explicitly enforce the `https:` protocol when verifying CORS Origins.
+
+## 2025-05-13 - [HIGH] Insecure Random Number Generation in Financial Simulations
+
+**Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
+**Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG).
+**Prevention:** Replace `Math.random()` with a secure implementation utilizing `crypto.getRandomValues()` when available in the environment, ensuring randomness integrity for financial computations.
