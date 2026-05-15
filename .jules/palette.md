@@ -81,3 +81,7 @@
 **Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
 
 ## 2026-05-08 - Accessible Toggle Bootstrap\n\n**Learning:** During page load bootstrap scripts that restore UI toggle states (like currency toggles) without a framework, the initialization script often updates the visual CSS class (`active`) but forgets to sync the corresponding ARIA attribute (`aria-pressed`). This creates a mismatch for screen readers, announcing an incorrect state on initial load.\n\n**Action:** Always ensure that bootstrap scripts that manually modify `.active` CSS classes on toggles also explicitly update the `aria-pressed` attribute to maintain accessibility parity.\n
+## 2026-05-13 - Visual Empty States for Data Visualization
+
+**Learning:** When data visualizations (like canvas-based charts) are completely empty due to filtering or lack of data, rendering a blank canvas or hiding the container leaves users confused, assuming the application is broken or stuck loading.
+**Action:** Always provide an explicit visual empty state (e.g., an overlay with an icon and a clear message like "No data available") when no data is available to render in the visualization.
