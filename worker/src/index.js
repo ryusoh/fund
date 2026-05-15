@@ -75,6 +75,8 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
         status,
         headers: {
             'Content-Type': 'application/json',
+            'X-Content-Type-Options': 'nosniff',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
             ...corsHeaders(origin),
             ...extraHeaders,
         },
@@ -294,6 +296,9 @@ function _validateRequest(request, origin, url) {
     if (!symbolsParam) {
         return jsonResponse({ error: 'Missing required query param: symbols' }, 400, origin);
     }
+    if (symbolsParam.length > 1000) {
+        return jsonResponse({ error: 'Symbols parameter exceeds maximum length of 1000' }, 400, origin);
+    }
     return null; // Valid
 }
 
@@ -317,6 +322,9 @@ export default {
         const symbols = _parseSymbols(symbolsParam);
         if (symbols.length === 0) {
             return jsonResponse({ error: 'No valid symbols provided' }, 400, origin);
+        }
+        if (symbols.length > 100) {
+            return jsonResponse({ error: 'Maximum of 100 symbols allowed per request' }, 400, origin);
         }
 
         const cacheKey = `prices:${symbols.sort().join(',')}`;
