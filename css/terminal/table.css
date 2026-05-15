@@ -234,8 +234,14 @@ th.sortable[data-sort='desc'] .sort-indicator::after {
     border-radius: 4px;
 }
 
-.filter-dropdown div:hover {
+.filter-dropdown div:hover,
+.filter-dropdown div:focus-visible {
     background-color: rgba(255, 255, 255, 0.06);
+}
+
+.filter-dropdown div:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: -2px;
 }
 
 .table-responsive-container:focus-visible {
