@@ -25,7 +25,9 @@
         if (document.fonts && document.fonts.load) {
             Promise.all([
                 document.fonts.load('1em FontAwesome'),
-                document.fonts.ready.catch(function () {
+                document.fonts.ready.catch(function (err) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Caught exception:', err);
                     return undefined;
                 }),
             ])
@@ -33,7 +35,9 @@
                     window.clearTimeout(fallbackTimer);
                     markReady();
                 })
-                .catch(function () {
+                .catch(function (err) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Caught exception:', err);
                     window.clearTimeout(fallbackTimer);
                     markReady();
                 });

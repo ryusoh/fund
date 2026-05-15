@@ -54,3 +54,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
 **Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG).
 **Prevention:** Replace `Math.random()` with a secure implementation utilizing `crypto.getRandomValues()` when available in the environment, ensuring randomness integrity for financial computations.
+
+## 2024-05-14 - Added Security Headers
+
+**Vulnerability:** Missing security headers.
+**Learning:** Static site headers in Cloudflare Pages are configured via `_headers`. API worker responses need headers set programmatically in `worker/src/index.js`.
+**Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.
