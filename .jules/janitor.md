@@ -43,3 +43,8 @@
 - **Action:** Addressed these by logging a standard warning via `console.warn` along with the actual error.
 - **Issue:** Several methods such as `updateOutputFade`, `adjustMobilePanels`, and `updateTerminalCrosshair` had high cyclomatic complexity scores (up to 20).
 - **Action:** Refactored into smaller sub-modules keeping complexities below 10, complying with structural health checks.
+
+## 2024-05-14 - Sentinel Catch Blocks Fixes
+
+- **Issue:** Several global scripts and UI modules had completely empty `catch` blocks or `catch` closures that blindly returned without logging, risking silent failures across various async operations (video warmup, prefetching, and font loading).
+- **Action:** Audited the codebase for empty `catch` blocks and modified `icon_font_ready.js`, `videoFallback.js`, `video_warmup.js`, and `nav_prefetch.js`. Added `console.warn` statements to correctly log the rejected promises and error conditions, ensuring failures are trackable without disrupting the user flow. Verified with test suite which remains 100% green.

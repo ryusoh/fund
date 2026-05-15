@@ -25,9 +25,9 @@
         if (document.fonts && document.fonts.load) {
             Promise.all([
                 document.fonts.load('1em FontAwesome'),
-                document.fonts.ready.catch(function (err) {
+                document.fonts.ready.catch(function (error) {
                     // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', err);
+                    console.warn('Icon font ready promise rejected:', error);
                     return undefined;
                 }),
             ])

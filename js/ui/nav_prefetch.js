@@ -144,9 +144,9 @@
                 options.mode = 'no-cors';
             }
 
-            return fetch(fetchUrl.href, options).catch((err) => {
+            return fetch(fetchUrl.href, options).catch((error) => {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', err);
+                console.warn('Prefetch request failed:', error);
                 return undefined;
             });
         });
@@ -164,9 +164,9 @@
             const task = queue.shift();
             Promise.resolve()
                 .then(task)
-                .catch((err) => {
+                .catch((error) => {
                     // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', err);
+                    console.warn('Prefetch task failed:', error);
                     return undefined;
                 })
                 .finally(() => {
@@ -223,9 +223,9 @@
             });
 
             tasks.push(
-                discoveryTask.catch((err) => {
+                discoveryTask.catch((error) => {
                     // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', err);
+                    console.warn('Discovery task failed:', error);
                     return undefined;
                 })
             );
@@ -244,9 +244,9 @@
                 }
                 return res.text().then((text) => extractBackgroundUrls(text, cssUrl));
             })
-            .catch((err) => {
+            .catch((error) => {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', err);
+                console.warn('CSS background fetch failed:', error);
                 return [];
             });
     }
