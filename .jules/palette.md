@@ -80,7 +80,10 @@
 **Learning:** Adding `tabindex="0"` to non-interactive structural or layout containers (like `.left-col` or `.right-col`) to make them scrollable is an accessibility anti-pattern. It creates confusing stops for screen reader users on elements that have no interactive purpose or semantic meaning.
 **Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
 
-## 2026-05-08 - Accessible Toggle Bootstrap\n\n**Learning:** During page load bootstrap scripts that restore UI toggle states (like currency toggles) without a framework, the initialization script often updates the visual CSS class (`active`) but forgets to sync the corresponding ARIA attribute (`aria-pressed`). This creates a mismatch for screen readers, announcing an incorrect state on initial load.\n\n**Action:** Always ensure that bootstrap scripts that manually modify `.active` CSS classes on toggles also explicitly update the `aria-pressed` attribute to maintain accessibility parity.\n
+## 2026-05-08 - Accessible Toggle Bootstrap
+
+**Learning:** During page load bootstrap scripts that restore UI toggle states (like currency toggles) without a framework, the initialization script often updates the visual CSS class (`active`) but forgets to sync the corresponding ARIA attribute (`aria-pressed`). This creates a mismatch for screen readers, announcing an incorrect state on initial load.
+**Action:** Always ensure that bootstrap scripts that manually modify `.active` CSS classes on toggles also explicitly update the `aria-pressed` attribute to maintain accessibility parity.
 
 ## 2026-05-14 - Dynamic Content Accessibility
 
