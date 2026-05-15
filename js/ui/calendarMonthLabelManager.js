@@ -6,7 +6,6 @@ import {
     UI_BREAKPOINTS,
 } from '@js/config.js';
 import { setThinkingHighlight } from '@ui/textHighlightManager.js';
-import { getNumberFormatter } from '../utils/formatting.js';
 
 const FROSTED_FILTER_ID = 'cal-domain-frosted';
 
@@ -147,7 +146,10 @@ function formatMonthlyChange(state, currencySymbols, monthlyPnlInfo) {
 
     /* istanbul ignore next: defensive programming for invalid amounts */
     const symbol = currencySymbols[currency] || currency;
-    const formattedNumber = getNumberFormatter(undefined, 2, 2).format(Math.abs(absoluteChange));
+    const formattedNumber = Math.abs(absoluteChange).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 
     /* istanbul ignore next: defensive programming for invalid amounts */
     const sign = absoluteChange > 0 ? '+' : absoluteChange < 0 ? '-' : '';

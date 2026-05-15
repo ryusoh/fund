@@ -7,7 +7,6 @@ import { isZoomed, setZoomed } from './state.js';
 
 const ANIMATION_DURATION = 0.35;
 const EASING = 'power2.inOut';
-let animating = false;
 
 /**
  * Gets the elements needed for zoom transitions.
@@ -214,13 +213,6 @@ function animateZoomOut(terminal, chart, terminalOutput) {
  * @returns {Promise<{zoomed: boolean, message: string}>}
  */
 export async function toggleZoom() {
-    if (animating) {
-        return {
-            zoomed: isZoomed(),
-            message: 'Toggle skipped: animation in progress.',
-        };
-    }
-
     const elements = getZoomElements();
     if (!elements) {
         return {
@@ -232,25 +224,20 @@ export async function toggleZoom() {
     const { terminal, chart, terminalOutput } = elements;
     const currentlyZoomed = isZoomed();
 
-    animating = true;
-    try {
-        if (currentlyZoomed) {
-            await animateZoomOut(terminal, chart, terminalOutput);
-            setZoomed(false);
-            return {
-                zoomed: false,
-                message: 'Terminal zoomed out.',
-            };
-        }
-        await animateZoomIn(terminal, chart, terminalOutput);
-        setZoomed(true);
+    if (currentlyZoomed) {
+        await animateZoomOut(terminal, chart, terminalOutput);
+        setZoomed(false);
         return {
-            zoomed: true,
-            message: 'Terminal zoomed in.',
+            zoomed: false,
+            message: 'Terminal zoomed out.',
         };
-    } finally {
-        animating = false;
     }
+    await animateZoomIn(terminal, chart, terminalOutput);
+    setZoomed(true);
+    return {
+        zoomed: true,
+        message: 'Terminal zoomed in.',
+    };
 }
 
 /**

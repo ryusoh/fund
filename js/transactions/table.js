@@ -8,7 +8,6 @@ import {
 } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
-import { getNumberFormatter } from '../utils/formatting.js';
 import { adjustMobilePanels } from './layout.js';
 import {
     parseCommandPalette,
@@ -85,9 +84,10 @@ function displayTransactions(transactions) {
         row.appendChild(tdSecurity);
 
         const tdQuantity = document.createElement('td');
-        tdQuantity.textContent = getNumberFormatter(undefined, 2, 2).format(
-            parseFloat(transaction.quantity)
-        );
+        tdQuantity.textContent = parseFloat(transaction.quantity).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
         row.appendChild(tdQuantity);
 
         const tdPrice = document.createElement('td');

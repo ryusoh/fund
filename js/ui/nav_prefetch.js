@@ -144,11 +144,7 @@
                 options.mode = 'no-cors';
             }
 
-            return fetch(fetchUrl.href, options).catch((error) => {
-                // eslint-disable-next-line no-console
-                console.warn('Prefetch request failed:', error);
-                return undefined;
-            });
+            return fetch(fetchUrl.href, options).catch(() => undefined);
         });
     }
 
@@ -164,11 +160,7 @@
             const task = queue.shift();
             Promise.resolve()
                 .then(task)
-                .catch((error) => {
-                    // eslint-disable-next-line no-console
-                    console.warn('Prefetch task failed:', error);
-                    return undefined;
-                })
+                .catch(() => undefined)
                 .finally(() => {
                     if (queue.length) {
                         if ('requestIdleCallback' in window) {
@@ -223,9 +215,7 @@
             });
 
             tasks.push(
-                discoveryTask.catch((error) => {
-                    // eslint-disable-next-line no-console
-                    console.warn('Discovery task failed:', error);
+                discoveryTask.catch(() => {
                     return undefined;
                 })
             );
@@ -244,11 +234,7 @@
                 }
                 return res.text().then((text) => extractBackgroundUrls(text, cssUrl));
             })
-            .catch((error) => {
-                // eslint-disable-next-line no-console
-                console.warn('CSS background fetch failed:', error);
-                return [];
-            });
+            .catch(() => []);
     }
 
     function extractBackgroundUrls(cssText, cssUrl) {

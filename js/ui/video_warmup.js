@@ -55,20 +55,9 @@
                         return globalScope.caches
                             .open(CACHE_NAME)
                             .then((cache) => cache.add(absoluteUrl))
-                            .catch((error) => {
-                                // eslint-disable-next-line no-console
-                                console.warn(
-                                    'Video warmup fallback triggered due to error:',
-                                    error
-                                );
-                                return warmFetchFallback(absoluteUrl);
-                            });
+                            .catch(() => warmFetchFallback(absoluteUrl));
                     })
-                    .catch((error) => {
-                        // eslint-disable-next-line no-console
-                        console.warn('Video warmup fallback triggered due to error:', error);
-                        return warmFetchFallback(absoluteUrl);
-                    });
+                    .catch(() => warmFetchFallback(absoluteUrl));
             } else {
                 warmFetchFallback(absoluteUrl);
             }

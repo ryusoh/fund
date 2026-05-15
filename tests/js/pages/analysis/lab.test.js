@@ -136,14 +136,14 @@ describe('analysis lab data loading', () => {
             expect(titles).toEqual({
                 bull: 'Double Quotes',
                 base: 'Single Quotes',
-                bear: 'Smart Double Quotes',
+                bear: 'Smart Double Quotes'
             });
         });
 
         it('strips smart single quotes correctly', () => {
-            const markdown = '### Bull Case - ‘Smart Single Quotes’';
-            const titles = extractScenarioTitles(markdown);
-            expect(titles).toEqual({ bull: 'Smart Single Quotes' });
+             const markdown = '### Bull Case - ‘Smart Single Quotes’';
+             const titles = extractScenarioTitles(markdown);
+             expect(titles).toEqual({ bull: 'Smart Single Quotes' });
         });
 
         it('leaves mismatched or missing quotes untouched', () => {
@@ -156,7 +156,7 @@ describe('analysis lab data loading', () => {
             expect(titles).toEqual({
                 bull: '"Mismatched\'',
                 base: 'No Quotes',
-                bear: '"',
+                bear: '"'
             });
         });
 

@@ -191,60 +191,6 @@ describe('toggleZoom function', () => {
         expect(result.message).toBe('Terminal zoomed out.');
     });
 
-    test('is a no-op when called while animation is in progress', async () => {
-        const mockTimeline = {
-            to: jest.fn().mockReturnThis(),
-        };
-        let completionCallback;
-        global.gsap.timeline = jest.fn((opts) => {
-            completionCallback = opts?.onComplete;
-            return mockTimeline;
-        });
-
-        // First call - starts animation (don't resolve yet)
-        const firstResult = toggleZoom();
-
-        // Second call while first is still animating - should be a no-op
-        const secondResult = await toggleZoom();
-
-        expect(secondResult.message).toContain('animation in progress');
-        expect(secondResult.zoomed).toBe(false); // unchanged from initial state
-
-        // gsap.timeline should only have been called once (for the first call)
-        expect(global.gsap.timeline).toHaveBeenCalledTimes(1);
-
-        // Now complete the first animation
-        if (completionCallback) {
-            completionCallback();
-        }
-        const first = await firstResult;
-        expect(first.zoomed).toBe(true);
-    });
-
-    test('allows toggle after previous animation completes', async () => {
-        const mockTimeline = {
-            to: jest.fn().mockReturnThis(),
-        };
-        let completionCallback;
-        global.gsap.timeline = jest.fn((opts) => {
-            completionCallback = opts?.onComplete;
-            return mockTimeline;
-        });
-
-        // First call - zoom in
-        const firstPromise = toggleZoom();
-        completionCallback();
-        await firstPromise;
-
-        // Second call - should work since first completed
-        const secondPromise = toggleZoom();
-        completionCallback();
-        const secondResult = await secondPromise;
-
-        expect(secondResult.zoomed).toBe(false);
-        expect(secondResult.message).toBe('Terminal zoomed out.');
-    });
-
     test('hides table when zooming in if table is visible', async () => {
         const table = document.querySelector('.table-responsive-container');
         table.classList.remove('is-hidden');

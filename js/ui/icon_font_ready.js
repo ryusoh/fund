@@ -25,9 +25,7 @@
         if (document.fonts && document.fonts.load) {
             Promise.all([
                 document.fonts.load('1em FontAwesome'),
-                document.fonts.ready.catch(function (error) {
-                    // eslint-disable-next-line no-console
-                    console.warn('Icon font ready promise rejected:', error);
+                document.fonts.ready.catch(function () {
                     return undefined;
                 }),
             ])
@@ -35,9 +33,7 @@
                     window.clearTimeout(fallbackTimer);
                     markReady();
                 })
-                .catch(function (err) {
-                    // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', err);
+                .catch(function () {
                     window.clearTimeout(fallbackTimer);
                     markReady();
                 });

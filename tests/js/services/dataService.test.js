@@ -56,7 +56,7 @@ describe('dataService', () => {
                 <tbody></tbody>
             </table>
             <div id="total-portfolio-value-in-table"></div>
-            <div id="table-footer-summary" aria-live="polite">
+            <div id="table-footer-summary">
                 <span class="total-pnl"></span>
             </div>
         `;
