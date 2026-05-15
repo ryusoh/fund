@@ -1,7 +1,6 @@
 import { handleStatsCommand } from '../../../../../js/transactions/terminal/handlers/stats.js';
 import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
 import * as geographySummary from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
-import { transactionState } from '../../../../../js/transactions/state.js';
 
 jest.mock('../../../../../js/transactions/terminalStats.js');
 jest.mock('../../../../../js/transactions/terminal/handlers/geographySummary.js');
