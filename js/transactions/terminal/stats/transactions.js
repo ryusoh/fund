@@ -1,3 +1,4 @@
+import { getNumberFormatter } from '../../../utils/formatting.js';
 import { formatCurrency } from '../../utils.js';
 import { transactionState } from '../../state.js';
 import { renderAsciiTable } from './formatting.js';
@@ -34,7 +35,7 @@ export async function getDynamicStatsText(currency = 'USD') {
     const netInvested = totalBuy - totalSell; // Cost - Proceeds. Positive = Net Invested (Cash Out). Negative = Net Divested (Cash In).
 
     const rows = [
-        ['Transactions', count.toLocaleString()],
+        ['Transactions', getNumberFormatter(undefined, 0, 0).format(count)],
         ['Total Buy', formatCurrency(totalBuy, { currency: normalizedCurrency })],
         ['Total Sell', formatCurrency(totalSell, { currency: normalizedCurrency })],
         ['Net Invested', formatCurrency(netInvested, { currency: normalizedCurrency })],
@@ -70,9 +71,20 @@ export async function getStatsText(currency = 'USD') {
             const counts = statsDataCache.counts || {};
             const values = availableCurrencies[selectedCurrency] || {};
             const rows = [
-                ['Total Transactions', Number(counts.total_transactions || 0).toLocaleString()],
-                ['Buy Orders', Number(counts.buy_orders || 0).toLocaleString()],
-                ['Sell Orders', Number(counts.sell_orders || 0).toLocaleString()],
+                [
+                    'Total Transactions',
+                    getNumberFormatter(undefined, 0, 0).format(
+                        Number(counts.total_transactions || 0)
+                    ),
+                ],
+                [
+                    'Buy Orders',
+                    getNumberFormatter(undefined, 0, 0).format(Number(counts.buy_orders || 0)),
+                ],
+                [
+                    'Sell Orders',
+                    getNumberFormatter(undefined, 0, 0).format(Number(counts.sell_orders || 0)),
+                ],
                 [
                     'Total Buy Amount',
                     formatCurrency(values.total_buy_amount || 0, { currency: selectedCurrency }),
