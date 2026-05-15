@@ -104,42 +104,21 @@ function ensureCrosshairOverlay() {
     return { overlay, details };
 }
 
-export function updateTerminalCrosshair(snapshot, rangeSummary) {
-    const { overlay, details } = ensureCrosshairOverlay();
-    if (!overlay || !details) {
-        return;
+function updateCrosshairDetailsList(detailsList, snapshot) {
+    if (typeof detailsList.replaceChildren === 'function') {
+        detailsList.replaceChildren();
+    } else {
+        detailsList.textContent = '';
     }
 
-    if (!snapshot) {
-        overlay.classList.remove('terminal-crosshair-active');
-        if (crosshairTimeout) {
-            clearTimeout(crosshairTimeout);
-        }
-        crosshairTimeout = setTimeout(() => {
-            overlay.style.visibility = 'hidden';
-        }, 160);
-        return;
+    if (snapshot.header) {
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'terminal-crosshair-header';
+        headerDiv.textContent = snapshot.header;
+        detailsList.appendChild(headerDiv);
     }
 
-    if (crosshairTimeout) {
-        clearTimeout(crosshairTimeout);
-        crosshairTimeout = null;
-    }
-
-    overlay.style.visibility = 'visible';
-    requestAnimationFrame(() => overlay.classList.add('terminal-crosshair-active'));
-
-    if (details.date) {
-        details.date.textContent = snapshot.dateLabel || '';
-    }
-
-    if (details.list) {
-        if (typeof details.list.replaceChildren === 'function') {
-            details.list.replaceChildren();
-        } else {
-            details.list.textContent = '';
-        }
-
+    if (Array.isArray(snapshot.series)) {
         snapshot.series.forEach((series) => {
             const formattedLines = series.formatted.split('\n');
             const mainVal = formattedLines[0];
@@ -171,74 +150,113 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
                 rowDiv.appendChild(breakdownDiv);
             }
 
-            details.list.appendChild(rowDiv);
+            detailsList.appendChild(rowDiv);
         });
+    }
+}
+
+function updateCrosshairRangeDetails(rangeContainer, rangeSummary) {
+    if (!rangeSummary) {
+        rangeContainer.hidden = true;
+        if (typeof rangeContainer.replaceChildren === 'function') {
+            rangeContainer.replaceChildren();
+        } else {
+            rangeContainer.textContent = '';
+        }
+        return;
+    }
+
+    if (typeof rangeContainer.replaceChildren === 'function') {
+        rangeContainer.replaceChildren();
+    } else {
+        rangeContainer.textContent = '';
+    }
+
+    const durationLabel =
+        rangeSummary.durationDays >= 1
+            ? `${Math.round(rangeSummary.durationDays)} day${
+                  Math.round(rangeSummary.durationDays) === 1 ? '' : 's'
+              }`
+            : `${Math.max(1, Math.round(rangeSummary.durationMs / (1000 * 60 * 60)))} hrs`;
+
+    const startLabel = formatCrosshairDateLabel(rangeSummary.start);
+    const endLabel = formatCrosshairDateLabel(rangeSummary.end);
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'terminal-crosshair-range-header';
+    headerDiv.textContent = `${startLabel} → ${endLabel} · ${durationLabel}`;
+    rangeContainer.appendChild(headerDiv);
+
+    if (rangeSummary.entries && rangeSummary.entries.length > 0) {
+        const bodyDiv = document.createElement('div');
+        bodyDiv.className = 'terminal-crosshair-range-body';
+
+        rangeSummary.entries.forEach((entry) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'terminal-crosshair-range-row';
+
+            const keySpan = document.createElement('span');
+            keySpan.className = 'terminal-crosshair-key';
+
+            const dotSpan = document.createElement('span');
+            dotSpan.className = 'terminal-crosshair-dot';
+            dotSpan.style.background = entry.color;
+
+            keySpan.appendChild(dotSpan);
+            keySpan.appendChild(document.createTextNode(' ' + entry.label));
+
+            const valSpan = document.createElement('span');
+            valSpan.className = 'terminal-crosshair-value';
+            valSpan.textContent =
+                entry.deltaFormatted +
+                (entry.percentFormatted ? ` (${entry.percentFormatted})` : '');
+
+            rowDiv.appendChild(keySpan);
+            rowDiv.appendChild(valSpan);
+            bodyDiv.appendChild(rowDiv);
+        });
+
+        rangeContainer.appendChild(bodyDiv);
+    }
+
+    rangeContainer.hidden = false;
+}
+
+export function updateTerminalCrosshair(snapshot, rangeSummary) {
+    const { overlay, details } = ensureCrosshairOverlay();
+    if (!overlay || !details) {
+        return;
+    }
+
+    if (!snapshot) {
+        overlay.classList.remove('terminal-crosshair-active');
+        if (crosshairTimeout) {
+            clearTimeout(crosshairTimeout);
+        }
+        crosshairTimeout = setTimeout(() => {
+            overlay.style.visibility = 'hidden';
+        }, 160);
+        return;
+    }
+
+    if (crosshairTimeout) {
+        clearTimeout(crosshairTimeout);
+        crosshairTimeout = null;
+    }
+
+    overlay.style.visibility = 'visible';
+    requestAnimationFrame(() => overlay.classList.add('terminal-crosshair-active'));
+
+    if (details.date) {
+        details.date.textContent = snapshot.dateLabel || '';
+    }
+
+    if (details.list && snapshot) {
+        updateCrosshairDetailsList(details.list, snapshot);
     }
 
     if (details.range) {
-        if (!rangeSummary) {
-            details.range.hidden = true;
-            if (typeof details.range.replaceChildren === 'function') {
-                details.range.replaceChildren();
-            } else {
-                details.range.textContent = '';
-            }
-        } else {
-            if (typeof details.range.replaceChildren === 'function') {
-                details.range.replaceChildren();
-            } else {
-                details.range.textContent = '';
-            }
-
-            const durationLabel =
-                rangeSummary.durationDays >= 1
-                    ? `${Math.round(rangeSummary.durationDays)} day${
-                          Math.round(rangeSummary.durationDays) === 1 ? '' : 's'
-                      }`
-                    : `${Math.max(1, Math.round(rangeSummary.durationMs / (1000 * 60 * 60)))} hrs`;
-
-            const startLabel = formatCrosshairDateLabel(rangeSummary.start);
-            const endLabel = formatCrosshairDateLabel(rangeSummary.end);
-
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'terminal-crosshair-range-header';
-            headerDiv.textContent = `${startLabel} → ${endLabel} · ${durationLabel}`;
-            details.range.appendChild(headerDiv);
-
-            if (rangeSummary.entries && rangeSummary.entries.length > 0) {
-                const bodyDiv = document.createElement('div');
-                bodyDiv.className = 'terminal-crosshair-range-body';
-
-                rangeSummary.entries.forEach((entry) => {
-                    const rowDiv = document.createElement('div');
-                    rowDiv.className = 'terminal-crosshair-range-row';
-
-                    const keySpan = document.createElement('span');
-                    keySpan.className = 'terminal-crosshair-key';
-
-                    const dotSpan = document.createElement('span');
-                    dotSpan.className = 'terminal-crosshair-dot';
-                    dotSpan.style.background = entry.color;
-
-                    keySpan.appendChild(dotSpan);
-                    keySpan.appendChild(document.createTextNode(' ' + entry.label));
-
-                    const valSpan = document.createElement('span');
-                    valSpan.className = 'terminal-crosshair-value';
-                    valSpan.textContent =
-                        entry.deltaFormatted +
-                        (entry.percentFormatted ? ` (${entry.percentFormatted})` : '');
-
-                    rowDiv.appendChild(keySpan);
-                    rowDiv.appendChild(valSpan);
-                    bodyDiv.appendChild(rowDiv);
-                });
-
-                details.range.appendChild(bodyDiv);
-            }
-
-            details.range.hidden = false;
-        }
+        updateCrosshairRangeDetails(details.range, rangeSummary);
     }
 }
 
@@ -291,67 +309,70 @@ export function initTerminal({
         outputContainer.scrollTop = outputContainer.scrollHeight;
     }
 
+    async function processEnterKey(input) {
+        if (input.value.trim()) {
+            const command = input.value.trim();
+            pushCommandHistory(command);
+            resetHistoryIndex();
+            await processCommand(command);
+            input.value = '';
+        }
+        resetAutocompleteState();
+        requestFadeUpdate();
+    }
+
+    function processArrowUp(e, input) {
+        e.preventDefault();
+        if (transactionState.historyIndex < transactionState.commandHistory.length - 1) {
+            setHistoryIndex(transactionState.historyIndex + 1);
+            input.value = transactionState.commandHistory[transactionState.historyIndex];
+        }
+        resetAutocompleteState();
+        requestFadeUpdate();
+    }
+
+    function processArrowDown(e, input) {
+        e.preventDefault();
+        if (transactionState.historyIndex > 0) {
+            setHistoryIndex(transactionState.historyIndex - 1);
+            input.value = transactionState.commandHistory[transactionState.historyIndex];
+        } else {
+            resetHistoryIndex();
+            input.value = '';
+        }
+        resetAutocompleteState();
+        requestFadeUpdate();
+    }
+
+    function processArrowLeftRight(e, input, direction) {
+        if (input.value.trim() === '' && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            cycleCurrency(direction);
+        } else if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            cycleCurrency(direction);
+        }
+        resetAutocompleteState();
+        requestFadeUpdate();
+    }
+
     async function handleTerminalInput(e) {
         const input = e.target;
         switch (e.key) {
             case 'Enter':
-                if (input.value.trim()) {
-                    const command = input.value.trim();
-                    pushCommandHistory(command);
-                    resetHistoryIndex();
-                    await processCommand(command);
-                    input.value = '';
-                }
-                resetAutocompleteState();
-                requestFadeUpdate();
+                await processEnterKey(input);
                 break;
             case 'ArrowUp':
-                e.preventDefault();
-                if (transactionState.historyIndex < transactionState.commandHistory.length - 1) {
-                    setHistoryIndex(transactionState.historyIndex + 1);
-                    input.value = transactionState.commandHistory[transactionState.historyIndex];
-                }
-                resetAutocompleteState();
-                requestFadeUpdate();
+                processArrowUp(e, input);
                 break;
             case 'ArrowDown':
-                e.preventDefault();
-                if (transactionState.historyIndex > 0) {
-                    setHistoryIndex(transactionState.historyIndex - 1);
-                    input.value = transactionState.commandHistory[transactionState.historyIndex];
-                } else {
-                    resetHistoryIndex();
-                    input.value = '';
-                }
-                resetAutocompleteState();
-                requestFadeUpdate();
+                processArrowDown(e, input);
                 break;
-
             case 'ArrowLeft':
-                // Only cycle currency if the input is empty and no modifier keys (don't interfere when user is editing text)
-                if (input.value.trim() === '' && !e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    cycleCurrency(-1); // Move left/cycle backward
-                } else if (e.ctrlKey || e.metaKey) {
-                    // Process Cmd/Ctrl+arrows synchronously to prevent double firing
-                    e.preventDefault();
-                    cycleCurrency(-1); // Move left/cycle backward
-                }
-                resetAutocompleteState();
-                requestFadeUpdate();
+                processArrowLeftRight(e, input, -1);
                 break;
             case 'ArrowRight':
-                // Only cycle currency if the input is empty and no modifier keys (don't interfere when user is editing text)
-                if (input.value.trim() === '' && !e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    cycleCurrency(1); // Move right/cycle forward
-                } else if (e.ctrlKey || e.metaKey) {
-                    // Process Cmd/Ctrl+arrows synchronously to prevent double firing
-                    e.preventDefault();
-                    cycleCurrency(1); // Move right/cycle forward
-                }
-                resetAutocompleteState();
-                requestFadeUpdate();
+                processArrowLeftRight(e, input, 1);
                 break;
             case 'Tab':
                 e.preventDefault();

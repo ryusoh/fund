@@ -36,3 +36,10 @@
 
 - **Issue:** Several Python scripts suppressed exceptions using `except: pass` which could lead to silent data processing failures.
 - **Action:** Audited the codebase to replace empty catch blocks with proper warning logs or print statements to ensure exceptions are visible and resilience is maintained.
+
+## 2026-05-20 - Catch Blocks and Complexity
+
+- **Issue:** Codebase contained unaddressed silent failures via empty catch blocks in `js/ui/nav_prefetch.js`, `js/ui/icon_font_ready.js`, and `js/ui/videoFallback.js`.
+- **Action:** Addressed these by logging a standard warning via `console.warn` along with the actual error.
+- **Issue:** Several methods such as `updateOutputFade`, `adjustMobilePanels`, and `updateTerminalCrosshair` had high cyclomatic complexity scores (up to 20).
+- **Action:** Refactored into smaller sub-modules keeping complexities below 10, complying with structural health checks.

@@ -144,7 +144,11 @@
                 options.mode = 'no-cors';
             }
 
-            return fetch(fetchUrl.href, options).catch(() => undefined);
+            return fetch(fetchUrl.href, options).catch((err) => {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception:', err);
+                return undefined;
+            });
         });
     }
 
@@ -160,7 +164,11 @@
             const task = queue.shift();
             Promise.resolve()
                 .then(task)
-                .catch(() => undefined)
+                .catch((err) => {
+                    // eslint-disable-next-line no-console
+                    console.warn('Caught exception:', err);
+                    return undefined;
+                })
                 .finally(() => {
                     if (queue.length) {
                         if ('requestIdleCallback' in window) {
@@ -215,7 +223,9 @@
             });
 
             tasks.push(
-                discoveryTask.catch(() => {
+                discoveryTask.catch((err) => {
+                    // eslint-disable-next-line no-console
+                    console.warn('Caught exception:', err);
                     return undefined;
                 })
             );
@@ -234,7 +244,11 @@
                 }
                 return res.text().then((text) => extractBackgroundUrls(text, cssUrl));
             })
-            .catch(() => []);
+            .catch((err) => {
+                // eslint-disable-next-line no-console
+                console.warn('Caught exception:', err);
+                return [];
+            });
     }
 
     function extractBackgroundUrls(cssText, cssUrl) {
