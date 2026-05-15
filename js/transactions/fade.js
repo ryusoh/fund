@@ -11,15 +11,69 @@ export function setFadePreserveSecondLast(preserve) {
     preserveSecondLast = preserve;
 }
 
+function resetChildOpacities(outputContainer) {
+    for (let i = 0; i < outputContainer.children.length; i++) {
+        const child = outputContainer.children[i];
+        if (child && child.nodeType === 1) {
+            child.style.opacity = '1';
+        }
+    }
+}
+
+function calculateChildOpacity(child, viewTop, threshold) {
+    if (!child.style.transition) {
+        child.style.transition = 'opacity 0.18s ease-out';
+    }
+
+    const relativeTop = child.offsetTop - viewTop;
+    const relativeBottom = relativeTop + child.offsetHeight;
+
+    if (relativeBottom <= 0) {
+        return '0';
+    }
+
+    if (relativeTop >= threshold) {
+        return '';
+    }
+
+    const visibleTop = Math.max(relativeTop, 0);
+    const visibleBottom = Math.min(relativeBottom, threshold);
+    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+    const coverage = Math.min(
+        1,
+        visibleHeight / Math.max(1, Math.min(child.offsetHeight, threshold))
+    );
+    const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * coverage;
+    return opacity.toFixed(2);
+}
+
+function processFadeForChildren(outputContainer, viewTop, threshold) {
+    const lastChild = outputContainer.lastElementChild;
+    const secondLastChild = lastChild ? lastChild.previousElementSibling : null;
+    const thirdLastChild = secondLastChild ? secondLastChild.previousElementSibling : null;
+
+    for (let i = 0; i < outputContainer.children.length; i++) {
+        const child = outputContainer.children[i];
+        if (!child || child.nodeType !== 1) {
+            continue;
+        }
+
+        if (
+            child === lastChild ||
+            (preserveSecondLast && (child === secondLastChild || child === thirdLastChild))
+        ) {
+            child.style.opacity = '1';
+            continue;
+        }
+
+        child.style.opacity = calculateChildOpacity(child, viewTop, threshold);
+    }
+}
+
 function updateOutputFade(outputContainer) {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-        for (let i = 0; i < outputContainer.children.length; i++) {
-            const child = outputContainer.children[i];
-            if (child && child.nodeType === 1) {
-                child.style.opacity = '1';
-            }
-        }
+        resetChildOpacities(outputContainer);
         return;
     }
 
@@ -31,56 +85,7 @@ function updateOutputFade(outputContainer) {
     const threshold = viewHeight * 0.25;
     const viewTop = outputContainer.scrollTop;
 
-    const lastChild = outputContainer.lastElementChild;
-    const secondLastChild = lastChild ? lastChild.previousElementSibling : null;
-    const thirdLastChild = secondLastChild ? secondLastChild.previousElementSibling : null;
-
-    for (let i = 0; i < outputContainer.children.length; i++) {
-        const child = outputContainer.children[i];
-        if (!child || child.nodeType !== 1) {
-            continue;
-        }
-
-        // Constraint: Never fade the most recent output
-        if (child === lastChild) {
-            child.style.opacity = '1';
-            continue;
-        }
-
-        // Constraint: If preserved, keep context (last 3 items) opaque
-        // This covers: Zoom Prompt (2nd last) and Previous Output (3rd last)
-        if (preserveSecondLast && (child === secondLastChild || child === thirdLastChild)) {
-            child.style.opacity = '1';
-            continue;
-        }
-
-        if (!child.style.transition) {
-            child.style.transition = 'opacity 0.18s ease-out';
-        }
-
-        const relativeTop = child.offsetTop - viewTop;
-        const relativeBottom = relativeTop + child.offsetHeight;
-
-        if (relativeBottom <= 0) {
-            child.style.opacity = '0';
-            continue;
-        }
-
-        if (relativeTop >= threshold) {
-            child.style.opacity = '';
-            continue;
-        }
-
-        const visibleTop = Math.max(relativeTop, 0);
-        const visibleBottom = Math.min(relativeBottom, threshold);
-        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-        const coverage = Math.min(
-            1,
-            visibleHeight / Math.max(1, Math.min(child.offsetHeight, threshold))
-        );
-        const opacity = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * coverage;
-        child.style.opacity = opacity.toFixed(2);
-    }
+    processFadeForChildren(outputContainer, viewTop, threshold);
 }
 
 /**

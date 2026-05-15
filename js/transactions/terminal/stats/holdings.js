@@ -1,3 +1,4 @@
+import { getNumberFormatter } from '../../../utils/formatting.js';
 import { formatCurrency } from '../../utils.js';
 import {
     renderAsciiTable,
@@ -28,10 +29,7 @@ export async function getHoldingsText(currency = 'USD') {
                 return 'No current holdings.';
             }
             const rows = currencyData.map((item) => {
-                const shares = Number(item.shares || 0).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
+                const shares = getNumberFormatter(undefined, 2, 2).format(Number(item.shares || 0));
                 const avgPrice =
                     item.average_price !== null && item.average_price !== undefined
                         ? formatCurrency(item.average_price, { currency: normalizedCurrency })
