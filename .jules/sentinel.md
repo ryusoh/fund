@@ -48,3 +48,7 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** The CORS validation logic in `worker/src/index.js` checked if the Origin header ended with `.lyeutsaon.com` using a simple string `endsWith` method. This allowed a malicious origin like `https://malicious.lyeutsaon.com.evil.com` to bypass CORS validation. Also, since there was no protocol check, a `http:` scheme would also be permitted.
 **Learning:** Naive string manipulation for Origin validation is insecure, especially since browsers pass the entire scheme+hostname+port in the Origin header. Validation must isolate the hostname.
 **Prevention:** Always use the `URL` constructor to securely parse the `hostname` and explicitly enforce the `https:` protocol when verifying CORS Origins.
+## 2024-05-14 - Added Security Headers
+**Vulnerability:** Missing security headers.
+**Learning:** Static site headers in Cloudflare Pages are configured via `_headers`. API worker responses need headers set programmatically in `worker/src/index.js`.
+**Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.

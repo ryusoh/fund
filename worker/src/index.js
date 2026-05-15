@@ -75,6 +75,7 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
         status,
         headers: {
             'Content-Type': 'application/json',
+            'X-Content-Type-Options': 'nosniff',
             ...corsHeaders(origin),
             ...extraHeaders,
         },
@@ -303,7 +304,7 @@ export default {
 
         // Handle CORS preflight
         if (request.method === 'OPTIONS') {
-            return new Response(null, { status: 204, headers: corsHeaders(origin) });
+            return new Response(null, { status: 204, headers: { ...corsHeaders(origin), 'X-Content-Type-Options': 'nosniff' } });
         }
 
         const url = new URL(request.url);
