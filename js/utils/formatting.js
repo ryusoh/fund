@@ -2,14 +2,19 @@ import { logger } from './logger.js';
 
 // Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
 const numberFormatCache = new Map();
-function getNumberFormatter(locale = undefined, minFrac = 2, maxFrac = 2) {
-    const key = `${locale}-${minFrac}-${maxFrac}`;
+function getNumberFormatter(locale = undefined, minFrac = 2, maxFrac = 2, currency = undefined) {
+    const key = `${locale}-${minFrac}-${maxFrac}-${currency}`;
     let formatter = numberFormatCache.get(key);
     if (!formatter) {
-        formatter = new Intl.NumberFormat(locale, {
+        const options = {
             minimumFractionDigits: minFrac,
             maximumFractionDigits: maxFrac,
-        });
+        };
+        if (currency) {
+            options.style = 'currency';
+            options.currency = currency;
+        }
+        formatter = new Intl.NumberFormat(locale, options);
         numberFormatCache.set(key, formatter);
     }
     return formatter;
@@ -270,12 +275,8 @@ export function toFixed(num, decimalPlaces) {
  * @returns {string} The formatted currency string.
  */
 export function formatAsCurrency(amount, currency) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
+    const formatter = getNumberFormatter('en-US', 2, 2, currency);
+    return formatter.format(amount);
 }
 
 /**

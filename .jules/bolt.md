@@ -190,3 +190,6 @@
 ## 2026-05-11 - Cache Intl.NumberFormat in formatting utilities
 **Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method. In a performance test with 100k iterations, `toLocaleString` took over 4.3 seconds whereas caching `Intl.NumberFormat` took under 200ms.
 **Action:** When executing high-frequency currency or number formatting functions (e.g. `formatCurrency` used frequently during rendering lists or tooltips), cache the `Intl.NumberFormat` instance using a Map. Avoid calling `.toLocaleString()` dynamically where a single instantiation could be reused.
+## $(date +%Y-%m-%d) - Cache Intl.DateTimeFormat in date utilities
+**Learning:** Similar to \`Intl.NumberFormat\`, instantiating \`Intl.DateTimeFormat\` via \`toLocaleString()\` in high-frequency functions (like \`getNyDate()\` or chart crosshair formatting) introduces significant performance overhead due to V8's internal object allocation and locale resolution.
+**Action:** Replaced \`toLocaleString()\` calls and repeated \`new Intl.DateTimeFormat\` constructions with cached instances. Reused the formatter's \`.formatToParts()\` method to construct the date without recreating the expensive \`Intl\` object.

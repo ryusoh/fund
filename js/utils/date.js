@@ -2,9 +2,41 @@
  * Gets the current date in the America/New_York timezone.
  * @returns {Date} The current date in New York.
  */
-export function getNyDate() {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-}
+export const getNyDate = (() => {
+    let formatter = null;
+    return () => {
+        if (!formatter) {
+            formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                hour12: false,
+            });
+        }
+        const parts = formatter.formatToParts(new Date());
+        let year, month, day, hour, minute, second;
+        for (const p of parts) {
+            if (p.type === 'year') {
+                year = p.value;
+            } else if (p.type === 'month') {
+                month = p.value.padStart(2, '0');
+            } else if (p.type === 'day') {
+                day = p.value.padStart(2, '0');
+            } else if (p.type === 'hour') {
+                hour = p.value === '24' ? '00' : p.value.padStart(2, '0');
+            } else if (p.type === 'minute') {
+                minute = p.value.padStart(2, '0');
+            } else if (p.type === 'second') {
+                second = p.value.padStart(2, '0');
+            }
+        }
+        return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+    };
+})();
 
 /**
  * Checks if a given date is a US market holiday.

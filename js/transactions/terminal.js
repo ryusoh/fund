@@ -5,6 +5,21 @@ import {
     setHistoryIndex,
 } from './state.js';
 
+// Bolt: Cache Intl.DateTimeFormat instance to prevent expensive recreation
+const getCrosshairDateFormatter = (() => {
+    let formatter = null;
+    return () => {
+        if (!formatter && typeof Intl !== 'undefined') {
+            formatter = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+            });
+        }
+        return formatter;
+    };
+})();
+
 import { executeCommand } from './terminal/commands.js';
 import { autocompleteCommand, resetAutocompleteState } from './terminal/autocomplete.js';
 
@@ -14,10 +29,6 @@ import { cycleCurrency } from '@ui/currencyToggleManager.js';
 let crosshairOverlay = null;
 let crosshairDetails = null;
 let crosshairTimeout = null;
-const crosshairDateFormatter =
-    typeof Intl !== 'undefined'
-        ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
-        : null;
 
 let lastEmptyFilterTerm = null;
 
@@ -29,8 +40,9 @@ function formatCrosshairDateLabel(time) {
     if (Number.isNaN(date.getTime())) {
         return '';
     }
-    if (crosshairDateFormatter) {
-        return crosshairDateFormatter.format(date);
+    const formatter = getCrosshairDateFormatter();
+    if (formatter) {
+        return formatter.format(date);
     }
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
