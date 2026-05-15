@@ -89,3 +89,8 @@
 
 **Learning:** Asynchronous data updates in footers or summaries are missed by screen readers unless explicitly marked.
 **Action:** Add `aria-live="polite"` to parent containers or footers (e.g., `#table-footer-summary`) that are dynamically populated.
+
+## 2026-05-15 - Explicitly Define Utility Classes for Accessibility
+
+**Learning:** The application uses utility classes like `.sr-only` for screen reader accessible labels (e.g., in `terminal/index.html`). However, because the project does not use a CSS framework like Tailwind or Bootstrap, the class was missing from the CSS, causing screen-reader-only text to be visually rendered.
+**Action:** Always ensure that any utility class used for accessibility (like `.sr-only`) is explicitly defined in the project's base CSS (`css/base.css`) so that it functions correctly without relying on external frameworks.
