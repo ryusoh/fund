@@ -247,4 +247,18 @@ describe('drawCompositionChart', () => {
             )
         ).toBe(100);
     });
+
+    it('sets chartLayouts.composition to null on empty snapshot data', async () => {
+        const { drawCompositionChart } = await import('@js/transactions/chart/renderers/composition.js');
+        const { chartLayouts } = await import('@js/transactions/chart/state.js');
+        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+
+        loadCompositionSnapshotData.mockResolvedValueOnce({ valid: true, data: [] });
+
+        const ctx = { canvas: { offsetWidth: 800, offsetHeight: 600 } };
+        const chartManager = {};
+        await drawCompositionChart(ctx, chartManager, 0);
+
+        expect(chartLayouts.composition).toBeNull();
+    });
 });
