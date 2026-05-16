@@ -58,3 +58,5 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2025-05-11 - Fixed Date parsing coverage and Markdown regex matching
 
 **Learning:** When testing timezone-sensitive utilities like `parseLocalDate`, tests should explicitly assert against the local timezone output rather than hardcoded UTC equivalents. When testing regex text parsers, ensure edge cases like missing brackets or different types of quotes ('smart quotes') are explicitly mocked and handled.
+## 2024-05-24 - Test mocking patterns
+- **Pattern:** When unit testing IIFEs or scripts that evaluate on import and depend on global state (like URL parameters), call `jest.resetModules()` in `beforeEach()`, configure global mocks (e.g., mocking `window.URLSearchParams` globally with `jest.fn().mockImplementation()` instead of redefining `window.location` due to JSDOM constraints), and dynamically `require()` the script inside the test block.

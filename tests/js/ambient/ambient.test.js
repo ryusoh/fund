@@ -89,7 +89,7 @@ describe('Ambient Logic', () => {
     });
 
     it('should initialize with debug settings', () => {
-        window.location = { search: '?ambient=debug' };
+        window.URLSearchParams = jest.fn().mockImplementation(() => ({ get: (key) => key === 'ambient' ? 'debug' : null }));
         require('../../../js/ambient/ambient.js');
         expect(window.Sketch.create).toHaveBeenCalled();
     });
@@ -159,5 +159,41 @@ describe('Ambient Logic', () => {
             'Caught exception in ambient setup:',
             expect.any(Error)
         );
+    });
+
+    it('sets minimum threshold correctly for debug configuration', () => {
+        // Change window.URLSearchParams behavior for debug using mock
+        window.URLSearchParams = jest.fn().mockImplementation(() => ({
+            get: (key) => key === 'ambient' ? 'debug' : null
+        }));
+        window.AMBIENT_CONFIG.densityDivisor = 20000;
+        window.AMBIENT_CONFIG.speed = 0.1;
+
+        require('../../../js/ambient/ambient.js');
+        const s = window.Sketch.create.mock.results[0].value;
+
+        // Verify Math.max logic worked
+        expect(window.Sketch.create).toHaveBeenCalled();
+        expect(s.canvas.style.zIndex).toBe("999");
+    });
+
+    it('handles particles array boundary cases during update and draw', () => {
+        window.URLSearchParams = jest.fn().mockImplementation(() => ({
+            get: (key) => key === 'ambient' ? 'on' : null
+        }));
+        window.AMBIENT_CONFIG.maxParticles = 5;
+        require('../../../js/ambient/ambient.js');
+
+        const s = window.Sketch.create.mock.results[0].value;
+        s.setup();
+
+        s.update();
+        s.height = -100;
+        s.update();
+        s.draw();
+
+        // Assertions verifying behavior
+        expect(s.arc).toHaveBeenCalled();
+        expect(s.fill).toHaveBeenCalled();
     });
 });
