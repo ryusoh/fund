@@ -1066,4 +1066,6 @@ export const __analysisLabTesting = {
     extractScenarioTitles,
     renderBayesOutput,
     state,
+    normalizeConfig,
+    buildPortfolioConfig,
 };
