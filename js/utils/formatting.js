@@ -6,17 +6,26 @@ export function getNumberFormatter(
     locale = undefined,
     minFrac = 2,
     maxFrac = 2,
-    extraOptions = {}
+    extraOptionsOrCurrency = {}
 ) {
+    let extraOptions = {};
+    if (typeof extraOptionsOrCurrency === 'string') {
+        extraOptions = { style: 'currency', currency: extraOptionsOrCurrency };
+    } else if (extraOptionsOrCurrency && typeof extraOptionsOrCurrency === 'object') {
+        extraOptions = extraOptionsOrCurrency;
+    }
+
     const extraKey = Object.keys(extraOptions).length ? JSON.stringify(extraOptions) : '';
     const key = `${locale}-${minFrac}-${maxFrac}-${extraKey}`;
+
     let formatter = numberFormatCache.get(key);
     if (!formatter) {
-        formatter = new Intl.NumberFormat(locale, {
+        const options = {
             minimumFractionDigits: minFrac,
             maximumFractionDigits: maxFrac,
             ...extraOptions,
-        });
+        };
+        formatter = new Intl.NumberFormat(locale, options);
         numberFormatCache.set(key, formatter);
     }
     return formatter;
@@ -277,12 +286,8 @@ export function toFixed(num, decimalPlaces) {
  * @returns {string} The formatted currency string.
  */
 export function formatAsCurrency(amount, currency) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
+    const formatter = getNumberFormatter('en-US', 2, 2, currency);
+    return formatter.format(amount);
 }
 
 /**

@@ -197,3 +197,8 @@
 
 **Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method.
 **Action:** Replaced dynamic `.toLocaleString()` calls with the cached `getNumberFormatter()` in formatting loops in `holdings.js`, `transactions.js`, `analysis.js` and `calendar/index.js` to avoid recreation overhead and decrease latency.
+
+## $(date +%Y-%m-%d) - Cache Intl.DateTimeFormat in date utilities
+
+**Learning:** Similar to `Intl.NumberFormat`, instantiating `Intl.DateTimeFormat` via `toLocaleString()` in high-frequency functions (like `getNyDate()` or chart crosshair formatting) introduces significant performance overhead due to V8's internal object allocation and locale resolution.
+**Action:** Replaced `toLocaleString()` calls and repeated `new Intl.DateTimeFormat` constructions with cached instances. Reused the formatter's `.formatToParts()` method to construct the date without recreating the expensive `Intl` object.
