@@ -202,3 +202,8 @@
 
 **Learning:** Similar to `Intl.NumberFormat`, instantiating `Intl.DateTimeFormat` via `toLocaleString()` in high-frequency functions (like `getNyDate()` or chart crosshair formatting) introduces significant performance overhead due to V8's internal object allocation and locale resolution.
 **Action:** Replaced `toLocaleString()` calls and repeated `new Intl.DateTimeFormat` constructions with cached instances. Reused the formatter's `.formatToParts()` method to construct the date without recreating the expensive `Intl` object.
+
+## 2026-04-23 - Eliminate chained .map().filter().map() allocations
+
+**Learning:** Chaining array methods like `.map().filter().map()` creates multiple intermediate arrays. In tight loops or large datasets, this leads to significant array allocation overhead and garbage collection pressure.
+**Action:** Replaced chained higher-order array methods with a single manual `for` loop to push results directly to an output array, reducing execution time and preventing unnecessary GC pauses.
