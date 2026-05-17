@@ -39,7 +39,7 @@ body.body-main {
         mix-blend-mode: difference;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s cubic-bezier(0.65, 0.05, 0, 1);
     }
 
     .mobile-banner.is-fallback-ready {
@@ -95,7 +95,7 @@ h1 {
         opacity: 0;
         visibility: hidden;
         transition:
-            opacity 0.3s ease,
+            opacity 0.3s cubic-bezier(0.65, 0.05, 0, 1),
             visibility 0s linear 0.3s;
     }
 
@@ -215,4 +215,8 @@ footer .fa-github {
     .quantum-widget .quantum-wave-canvas {
         border-radius: 42px;
     }
+}
+
+.mobile-banner {
+    clip-path: ellipse(150% 150% at 50% 50%);
 }

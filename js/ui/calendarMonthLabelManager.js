@@ -347,7 +347,7 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
                     .interrupt()
                     .transition()
                     .duration(transitionDuration)
-                    .ease(d3Instance.easeCubicInOut)
+                    .ease(d3Instance.easeCubicOut)
                     .attr('opacity', 0);
             }
         }
@@ -407,7 +407,7 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
                     backgroundRect
                         .transition()
                         .duration(transitionDuration)
-                        .ease(d3Instance.easeCubicInOut)
+                        .ease(d3Instance.easeCubicOut)
                         .attr('opacity', 0);
                 }
             }
@@ -498,7 +498,7 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
                 .interrupt()
                 .transition()
                 .duration(transitionDuration)
-                .ease(d3Instance.easeCubicInOut)
+                .ease(d3Instance.easeCubicOut)
                 .attr('opacity', 0);
         }
 
