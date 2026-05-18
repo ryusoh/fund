@@ -297,7 +297,11 @@ function _validateRequest(request, origin, url) {
         return jsonResponse({ error: 'Missing required query param: symbols' }, 400, origin);
     }
     if (symbolsParam.length > 1000) {
-        return jsonResponse({ error: 'Symbols parameter exceeds maximum length of 1000' }, 400, origin);
+        return jsonResponse(
+            { error: 'Symbols parameter exceeds maximum length of 1000' },
+            400,
+            origin
+        );
     }
     return null; // Valid
 }
@@ -327,7 +331,11 @@ export default {
             return jsonResponse({ error: 'No valid symbols provided' }, 400, origin);
         }
         if (symbols.length > 100) {
-            return jsonResponse({ error: 'Maximum of 100 symbols allowed per request' }, 400, origin);
+            return jsonResponse(
+                { error: 'Maximum of 100 symbols allowed per request' },
+                400,
+                origin
+            );
         }
 
         const cacheKey = `prices:${symbols.sort().join(',')}`;

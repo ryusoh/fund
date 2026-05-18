@@ -18,23 +18,96 @@ import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../intera
 import { drawAxes, drawMountainFill, drawEndValue } from '../core.js';
 import { getChartColors, createTimeInterpolator, clampTime, parseLocalDate } from '../helpers.js';
 
+import { fetchRealTimeData } from '../../realtimeData.js';
+
 // Data cache
 let peDataCache = null;
 let peDataLoading = false;
 
 /**
- * Load PE ratio data from the backend JSON.
+ * Load PE ratio data from the backend JSON and merge real-time data if available.
  * @returns {Promise<Object|null>}
  */
 export async function loadPEData() {
     try {
-        const response = await fetch('../data/output/figures/pe_ratio.json');
-        if (!response.ok) {
+        const [response, realtime] = await Promise.all([
+            fetch('../data/output/figures/pe_ratio.json').catch(() => null),
+            fetchRealTimeData().catch((err) => {
+                logger.warn('Real-time PE data fetch failed:', err);
+                return null;
+            }),
+        ]);
+
+        let data = null;
+        if (response && response.ok) {
+            data = await response.json();
+        }
+
+        if (data && realtime && realtime.date && realtime.pe !== null) {
+            const lastDate = data.dates[data.dates.length - 1];
+            if (lastDate === realtime.date || lastDate < realtime.date) {
+                if (lastDate === realtime.date) {
+                    data.portfolio_pe[data.portfolio_pe.length - 1] = realtime.pe;
+
+                    const idx = data.dates.length - 1;
+                    Object.keys(data.ticker_pe || {}).forEach((ticker) => {
+                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker] || null;
+                    });
+                    Object.keys(data.ticker_weights || {}).forEach((ticker) => {
+                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker] || null;
+                    });
+                } else {
+                    data.dates.push(realtime.date);
+                    data.portfolio_pe.push(realtime.pe);
+
+                    // Pad existing ticker arrays
+                    Object.keys(data.ticker_pe || {}).forEach((ticker) => {
+                        data.ticker_pe[ticker].push(realtime.tickerPEs[ticker] || null);
+                    });
+                    Object.keys(data.ticker_weights || {}).forEach((ticker) => {
+                        data.ticker_weights[ticker].push(realtime.tickerWeights[ticker] || null);
+                    });
+                }
+
+                const idx = data.dates.length - 1;
+                // Add new tickers that may not exist in historical data
+                data.ticker_pe = data.ticker_pe || {};
+                data.ticker_weights = data.ticker_weights || {};
+
+                Object.keys(realtime.tickerPEs || {}).forEach((ticker) => {
+                    if (!data.ticker_pe[ticker]) {
+                        data.ticker_pe[ticker] = new Array(idx + 1).fill(null);
+                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker];
+                    }
+                });
+                Object.keys(realtime.tickerWeights || {}).forEach((ticker) => {
+                    if (!data.ticker_weights[ticker]) {
+                        data.ticker_weights[ticker] = new Array(idx + 1).fill(null);
+                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker];
+                    }
+                });
+
+                if (realtime.forwardPe !== null) {
+                    data.forward_pe = data.forward_pe || {};
+                    data.forward_pe.portfolio_forward_pe = realtime.forwardPe;
+                    if (!data.forward_pe.target_date) {
+                        const parts = realtime.date.split('-');
+                        if (parts.length === 3) {
+                            parts[0] = String(Number(parts[0]) + 1);
+                            data.forward_pe.target_date = parts.join('-');
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!data) {
             // eslint-disable-next-line no-console
             console.warn('pe_ratio.json not found');
             return null;
         }
-        return await response.json();
+
+        return data;
     } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('Failed to load PE data:', error);

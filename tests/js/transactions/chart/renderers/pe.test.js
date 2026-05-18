@@ -1,5 +1,89 @@
 import { buildPESeries } from '@js/transactions/chart/renderers/pe.js';
 
+describe('loadPEData', () => {
+    beforeEach(() => {
+        jest.resetModules();
+        global.fetch = jest.fn();
+    });
+
+    it('merges realtime data into pe_ratio correctly', async () => {
+        const mockPEData = {
+            dates: ['2023-01-01', '2023-01-02'],
+            portfolio_pe: [15, 16],
+            ticker_pe: { AAPL: [20, 21] },
+            ticker_weights: { AAPL: [0.5, 0.5] },
+        };
+
+        const mockRealtimeData = {
+            date: '2023-01-03',
+            pe: 17,
+            forwardPe: 18,
+            tickerPEs: { AAPL: 22, MSFT: 30 },
+            tickerWeights: { AAPL: 0.6, MSFT: 0.4 },
+        };
+
+        jest.doMock('@js/transactions/realtimeData.js', () => ({
+            fetchRealTimeData: jest.fn().mockResolvedValue(mockRealtimeData),
+        }));
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve(mockPEData),
+        });
+
+        // We need to re-import loadPEData because we mocked a dependency
+        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const data = await peModule.loadPEData();
+
+        expect(data.dates).toEqual(['2023-01-01', '2023-01-02', '2023-01-03']);
+        expect(data.portfolio_pe).toEqual([15, 16, 17]);
+
+        expect(data.ticker_pe.AAPL).toEqual([20, 21, 22]);
+        // MSFT was added on the third day, should be padded with null
+        expect(data.ticker_pe.MSFT).toEqual([null, null, 30]);
+
+        expect(data.ticker_weights.AAPL).toEqual([0.5, 0.5, 0.6]);
+        expect(data.ticker_weights.MSFT).toEqual([null, null, 0.4]);
+
+        expect(data.forward_pe.portfolio_forward_pe).toBe(18);
+        expect(data.forward_pe.target_date).toBe('2024-01-03');
+    });
+
+    it('preserves existing target_date when merging realtime data', async () => {
+        const mockPEData = {
+            dates: ['2023-01-01', '2023-01-02'],
+            portfolio_pe: [15, 16],
+            forward_pe: {
+                portfolio_forward_pe: 17,
+                target_date: '2024-12-31',
+            },
+        };
+
+        const mockRealtimeData = {
+            date: '2023-01-03',
+            pe: 17,
+            forwardPe: 18,
+            tickerPEs: {},
+            tickerWeights: {},
+        };
+
+        jest.doMock('@js/transactions/realtimeData.js', () => ({
+            fetchRealTimeData: jest.fn().mockResolvedValue(mockRealtimeData),
+        }));
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve(mockPEData),
+        });
+
+        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const data = await peModule.loadPEData();
+
+        expect(data.forward_pe.portfolio_forward_pe).toBe(18);
+        expect(data.forward_pe.target_date).toBe('2024-12-31');
+    });
+});
+
 describe('buildPESeries', () => {
     it('returns an empty array if dates is empty', () => {
         expect(buildPESeries([], [10], {}, {}, null, null)).toEqual([]);

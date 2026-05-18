@@ -1,6 +1,7 @@
 module.exports = [
     {
         ignores: [
+            '.claude/**',
             'node_modules/**',
             'coverage/**',
             'assets/**',
