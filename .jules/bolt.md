@@ -207,3 +207,6 @@
 
 **Learning:** Chaining array methods like `.map().filter().map()` creates multiple intermediate arrays. In tight loops or large datasets, this leads to significant array allocation overhead and garbage collection pressure.
 **Action:** Replaced chained higher-order array methods with a single manual `for` loop to push results directly to an output array, reducing execution time and preventing unnecessary GC pauses.
+## 2026-05-18 - Array .forEach closures in pe.js chart renderer
+**Learning:** Using `Object.keys().forEach()` to iterate and populate ticker PE and weight data inside a high-frequency real-time update loop or when building chart series (like in `js/transactions/chart/renderers/pe.js`) allocates implicit closures and creates garbage collection (GC) pressure.
+**Action:** Replaced `.forEach()` calls with standard index-based `for` loops and explicitly iterated over the keys array to prevent closure allocations and reduce GC overhead.

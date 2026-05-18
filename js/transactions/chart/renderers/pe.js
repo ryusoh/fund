@@ -50,23 +50,35 @@ export async function loadPEData() {
                     data.portfolio_pe[data.portfolio_pe.length - 1] = realtime.pe;
 
                     const idx = data.dates.length - 1;
-                    Object.keys(data.ticker_pe || {}).forEach((ticker) => {
+                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                    const peKeys = Object.keys(data.ticker_pe || {});
+                    for (let k = 0; k < peKeys.length; k += 1) {
+                        const ticker = peKeys[k];
                         data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker] || null;
-                    });
-                    Object.keys(data.ticker_weights || {}).forEach((ticker) => {
+                    }
+
+                    const weightKeys = Object.keys(data.ticker_weights || {});
+                    for (let k = 0; k < weightKeys.length; k += 1) {
+                        const ticker = weightKeys[k];
                         data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker] || null;
-                    });
+                    }
                 } else {
                     data.dates.push(realtime.date);
                     data.portfolio_pe.push(realtime.pe);
 
                     // Pad existing ticker arrays
-                    Object.keys(data.ticker_pe || {}).forEach((ticker) => {
+                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                    const peKeys = Object.keys(data.ticker_pe || {});
+                    for (let k = 0; k < peKeys.length; k += 1) {
+                        const ticker = peKeys[k];
                         data.ticker_pe[ticker].push(realtime.tickerPEs[ticker] || null);
-                    });
-                    Object.keys(data.ticker_weights || {}).forEach((ticker) => {
+                    }
+
+                    const weightKeys = Object.keys(data.ticker_weights || {});
+                    for (let k = 0; k < weightKeys.length; k += 1) {
+                        const ticker = weightKeys[k];
                         data.ticker_weights[ticker].push(realtime.tickerWeights[ticker] || null);
-                    });
+                    }
                 }
 
                 const idx = data.dates.length - 1;
@@ -74,18 +86,24 @@ export async function loadPEData() {
                 data.ticker_pe = data.ticker_pe || {};
                 data.ticker_weights = data.ticker_weights || {};
 
-                Object.keys(realtime.tickerPEs || {}).forEach((ticker) => {
+                // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                const newPEKeys = Object.keys(realtime.tickerPEs || {});
+                for (let k = 0; k < newPEKeys.length; k += 1) {
+                    const ticker = newPEKeys[k];
                     if (!data.ticker_pe[ticker]) {
                         data.ticker_pe[ticker] = new Array(idx + 1).fill(null);
                         data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker];
                     }
-                });
-                Object.keys(realtime.tickerWeights || {}).forEach((ticker) => {
+                }
+
+                const newWeightKeys = Object.keys(realtime.tickerWeights || {});
+                for (let k = 0; k < newWeightKeys.length; k += 1) {
+                    const ticker = newWeightKeys[k];
                     if (!data.ticker_weights[ticker]) {
                         data.ticker_weights[ticker] = new Array(idx + 1).fill(null);
                         data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker];
                     }
-                });
+                }
 
                 if (realtime.forwardPe !== null) {
                     data.forward_pe = data.forward_pe || {};
@@ -155,24 +173,29 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
         }
 
         // Gather per-ticker PE values and weights for crosshair
+        // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
         const dayTickerPEs = {};
         if (tickerPE && typeof tickerPE === 'object') {
-            Object.keys(tickerPE).forEach((ticker) => {
+            const keys = Object.keys(tickerPE);
+            for (let k = 0; k < keys.length; k += 1) {
+                const ticker = keys[k];
                 const val = tickerPE[ticker][i];
                 if (val !== null && val !== undefined && Number.isFinite(val)) {
                     dayTickerPEs[ticker] = val;
                 }
-            });
+            }
         }
 
         const dayTickerWeights = {};
         if (tickerWeights && typeof tickerWeights === 'object') {
-            Object.keys(tickerWeights).forEach((ticker) => {
+            const keys = Object.keys(tickerWeights);
+            for (let k = 0; k < keys.length; k += 1) {
+                const ticker = keys[k];
                 const val = tickerWeights ? tickerWeights[ticker][i] : null;
                 if (val !== null && val !== undefined && Number.isFinite(val)) {
                     dayTickerWeights[ticker] = val;
                 }
-            });
+            }
         }
 
         result.push({ date, pe, tickerPEs: dayTickerPEs, tickerWeights: dayTickerWeights });
