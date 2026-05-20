@@ -102,7 +102,7 @@ describe('Magnetic Nav', () => {
             expect.objectContaining({
                 x: 0,
                 y: 0,
-                ease: 'elastic.out(1, 0.3)',
+                ease: 'power3.out',
             })
         );
     });
@@ -139,7 +139,7 @@ describe('Magnetic Nav', () => {
             expect.objectContaining({
                 x: 0,
                 y: 0,
-                ease: 'elastic.out(1, 0.3)',
+                ease: 'power3.out',
             })
         );
     });

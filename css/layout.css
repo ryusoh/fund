@@ -6,6 +6,7 @@
     margin: 30px auto 20px auto; /* Centered, combined vertical spacing */
     background-color: rgba(44, 44, 46, 0.9); /* Unified background */
     border-radius: 8px; /* Unified rounded corners */
+    clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 100%); /* Organic geometry */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Unified shadow */
     position: relative; /* Create stacking context for z-index */
     z-index: 100; /* Ensure table/footer sit above chart canvas */

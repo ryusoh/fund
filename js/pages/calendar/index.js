@@ -309,7 +309,7 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                 fadeOutSelection
                     .transition()
                     .duration(400)
-                    .ease(d3.easeCubicInOut)
+                    .ease(d3.easeCubicOut)
                     .style('opacity', 0)
                     .on('end', function () {
                         d3.select(this).text('');
@@ -394,7 +394,7 @@ export function renderLabels(cal, byDate, state, currencySymbols) {
                 .style('opacity', 0)
                 .transition()
                 .duration(400)
-                .ease(d3.easeCubicInOut)
+                .ease(d3.easeCubicOut)
                 .style('opacity', 1)
                 .on('end', function () {
                     state.isAnimating = false;

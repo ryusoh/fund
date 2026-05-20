@@ -26,8 +26,8 @@ export function initTiltEffect() {
             window.gsap.to(container, {
                 rotateX: rotateX,
                 rotateY: rotateY,
-                duration: 0.5,
-                ease: 'power2.out',
+                duration: 0.3,
+                ease: 'power3.out',
                 overwrite: true,
             });
         });
@@ -35,8 +35,8 @@ export function initTiltEffect() {
             window.gsap.to(container, {
                 rotateX: 0,
                 rotateY: 0,
-                duration: 1,
-                ease: 'elastic.out(1, 0.3)',
+                duration: 0.3,
+                ease: 'power3.out',
                 overwrite: true,
             });
         });
