@@ -145,6 +145,10 @@ th.filterable {
     border-radius: 4px;
 }
 
+.header-action-button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
 /* Ensure padding matches what TH had when it was clickable */
 #transactionTable th.sortable,
 #transactionTable th.filterable {

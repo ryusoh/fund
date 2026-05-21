@@ -94,3 +94,9 @@
 
 **Learning:** The application uses utility classes like `.sr-only` for screen reader accessible labels (e.g., in `terminal/index.html`). However, because the project does not use a CSS framework like Tailwind or Bootstrap, the class was missing from the CSS, causing screen-reader-only text to be visually rendered.
 **Action:** Always ensure that any utility class used for accessibility (like `.sr-only`) is explicitly defined in the project's base CSS (`css/base.css`) so that it functions correctly without relying on external frameworks.
+
+## 2026-05-21 - Disabled Interactive Elements Hover Polish (Continued)
+
+**Learning:** While the previous learning (2026-04-12) correctly identified the need for `:hover:not(:disabled)` on `.btn` elements, this rule must also be consistently applied to other interactive elements like sortable and filterable table headers. Specifically, elements with the class `.header-action-button` in the terminal table lacked proper hover states, making it difficult for users to perceive them as interactive.
+
+**Action:** Always ensure that structural interactive elements (e.g., table header sorting/filtering buttons) provide visual feedback on hover, and remember to append `:not(:disabled)` to prevent disabled buttons from showing hover effects (e.g., `.header-action-button:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.05); }`).
