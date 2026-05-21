@@ -23,6 +23,34 @@ describe('Terminal index page', () => {
             isDarkTheme: jest.fn(),
         }));
 
+        jest.mock('@js/transactions/state.js', () => ({
+            setAllTransactions: jest.fn(),
+            setFilteredTransactions: jest.fn(),
+            setSplitHistory: jest.fn(),
+            setPortfolioSeriesMap: jest.fn(),
+            setRunningAmountSeriesMap: jest.fn(),
+            setFxRatesByCurrency: jest.fn(),
+            setSelectedCurrency: jest.fn(),
+            setPortfolioSeries: jest.fn(),
+            setRunningAmountSeries: jest.fn(),
+            setPerformanceSeries: jest.fn(),
+            setChartDateRange: jest.fn(),
+            cycleCurrency: jest.fn(),
+            transactionState: {
+                runningAmountSeriesByCurrency: {},
+                portfolioSeriesByCurrency: {}
+            }
+        }));
+
+        jest.mock('@js/transactions/dataLoader.js', () => ({
+            loadTransactionData: jest.fn().mockResolvedValue([]),
+            loadSplitHistory: jest.fn().mockResolvedValue([]),
+            loadPortfolioSeries: jest.fn().mockResolvedValue({}),
+            loadContributionSeries: jest.fn().mockResolvedValue({}),
+            loadPerformanceSeries: jest.fn().mockResolvedValue([]),
+            loadFxDailyRates: jest.fn().mockResolvedValue(null)
+        }));
+
         const module = await import('@pages/terminal/index.js');
         buildFxRateMaps = module.__terminalTesting.buildFxRateMaps;
         ensureSyntheticStart = module.__terminalTesting.ensureSyntheticStart;
