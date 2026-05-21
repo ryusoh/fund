@@ -3,7 +3,7 @@
     "name": "Alphabet",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-05-20T08:45:31.881116+00:00",
+        "asOf": "2026-05-21T08:47:46.794174+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -39,18 +39,18 @@
         "currency": "USD",
         "fiftyTwoWeekHigh": 404.47,
         "fiftyTwoWeekLow": 163.33,
-        "marketDataUpdatedAt": "2026-05-20T08:45:31.783999+00:00",
+        "marketDataUpdatedAt": "2026-05-21T08:47:46.475032+00:00",
         "evToEbitda": 28.7168,
         "eps": 13.13,
         "price": 384.9,
-        "fiftyDayAverage": 334.2576,
-        "twoHundredDayAverage": 293.2299,
-        "averageVolume": 19210196.0,
-        "averageDailyVolume10Day": 17729010.0,
-        "pegRatio": 1.55
+        "fiftyDayAverage": 335.817,
+        "twoHundredDayAverage": 294.1756,
+        "averageVolume": 19166677.0,
+        "averageDailyVolume10Day": 17070480.0,
+        "pegRatio": 1.52
     },
     "risk": {
-        "volatility": 0.2848,
+        "volatility": 0.2837,
         "estimateSource": "historical",
         "correlations": null
     },
