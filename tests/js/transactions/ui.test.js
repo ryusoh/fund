@@ -192,7 +192,7 @@ describe('ui controller', () => {
         });
 
         it('should not throw if chartManager.redraw is not a function', () => {
-            const newUiController = createUiController({ chartManager: {} });
+             createUiController({ chartManager: {} });
             const legendItem = document.querySelector('[data-series="series1"]');
             expect(() => legendItem.click()).not.toThrow();
         });
