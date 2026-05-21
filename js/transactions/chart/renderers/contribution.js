@@ -589,57 +589,60 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     const showChartLabels = getShowChartLabels();
 
     if (showContribution && finalContributionData.length > 0) {
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const contribData = [];
+        for (let i = 0; i < finalContributionData.length; i++) {
+            const item = finalContributionData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                contribData.push({ time, value: item.amount });
+            }
+        }
         animatedSeries.push({
             key: 'contribution',
             color: colors.contribution,
             lineWidth: CHART_LINE_WIDTHS.contribution ?? 2,
             order: 1,
-            data: finalContributionData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.amount,
-                })),
+            data: contribData,
         });
     }
 
     if (showBalance && finalBalanceData.length > 0) {
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const balData = [];
+        for (let i = 0; i < finalBalanceData.length; i++) {
+            const item = finalBalanceData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                balData.push({ time, value: item.value });
+            }
+        }
         animatedSeries.push({
             key: 'balance',
             color: colors.portfolio,
             lineWidth: CHART_LINE_WIDTHS.balance ?? 2,
             order: 2,
-            data: finalBalanceData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.value,
-                })),
+            data: balData,
         });
     }
 
     if (showAppreciation && appreciationData.length > 0) {
         const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const apprecData = [];
+        for (let i = 0; i < appreciationData.length; i++) {
+            const item = appreciationData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                apprecData.push({ time, value: item.value });
+            }
+        }
         animatedSeries.push({
             key: 'appreciation',
             color: appreciationGradient ? appreciationGradient[1] : '#FF8E53',
             lineWidth: CHART_LINE_WIDTHS.appreciation ?? 1,
             order: 1.5,
-            data: appreciationData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.value,
-                })),
+            data: apprecData,
         });
     }
 
