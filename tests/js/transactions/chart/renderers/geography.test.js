@@ -24,7 +24,7 @@ describe('Geography Chart Renderer', () => {
         jest.doMock('@js/transactions/state.js', () => ({
             transactionState: {
                 chartDateRange: { from: null, to: null },
-                selectedCurrency: 'USD'
+                selectedCurrency: 'USD',
             },
         }));
         jest.doMock('@js/transactions/chart/state.js', () => ({
@@ -53,7 +53,9 @@ describe('Geography Chart Renderer', () => {
         }));
         jest.doMock('@js/transactions/utils.js', () => ({
             parseLocalDate: jest.fn((date) => {
-                if (date === 'invalid') {return new Date('invalid');}
+                if (date === 'invalid') {
+                    return new Date('invalid');
+                }
                 return new Date(date);
             }),
             convertValueToCurrency: jest.fn((val) => val),
@@ -94,7 +96,7 @@ describe('Geography Chart Renderer', () => {
         const mockData = {
             dates: ['2023-01-01'],
             total_values: [1000],
-            series: { US: [100] }
+            series: { US: [100] },
         };
         loadGeographySnapshotData.mockResolvedValueOnce(mockData);
         ctx.canvas.offsetWidth = 0;
@@ -113,7 +115,7 @@ describe('Geography Chart Renderer', () => {
             series: {
                 US: [50, 60],
                 UK: [50, 40],
-            }
+            },
         };
         loadGeographySnapshotData.mockResolvedValueOnce(mockData);
 
@@ -133,7 +135,7 @@ describe('Geography Chart Renderer', () => {
             series: {
                 US: [50, 60],
                 UK: [50, 40],
-            }
+            },
         };
         loadGeographySnapshotData.mockResolvedValueOnce(mockData);
 
@@ -153,8 +155,8 @@ describe('Geography Chart Renderer', () => {
             dates: ['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'],
             total_values: [1000, 1100, 1200, 1300],
             series: {
-                US: [50, 60, 70, 80]
-            }
+                US: [50, 60, 70, 80],
+            },
         };
         loadGeographySnapshotData.mockResolvedValueOnce(mockData);
 
@@ -172,8 +174,8 @@ describe('Geography Chart Renderer', () => {
             dates: ['2023-01-01', '2023-01-02'],
             total_values: [1000, 1100],
             series: {
-                US: [50, 60]
-            }
+                US: [50, 60],
+            },
         };
         loadGeographySnapshotData.mockResolvedValueOnce(mockData);
 

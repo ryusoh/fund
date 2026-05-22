@@ -24,7 +24,7 @@ describe('Marketcap Chart Renderer', () => {
         jest.doMock('@js/transactions/state.js', () => ({
             transactionState: {
                 chartDateRange: { from: null, to: null },
-                selectedCurrency: 'USD'
+                selectedCurrency: 'USD',
             },
         }));
         jest.doMock('@js/transactions/chart/state.js', () => ({
@@ -53,7 +53,9 @@ describe('Marketcap Chart Renderer', () => {
         }));
         jest.doMock('@js/transactions/utils.js', () => ({
             parseLocalDate: jest.fn((date) => {
-                if (date === 'invalid') {return new Date('invalid');}
+                if (date === 'invalid') {
+                    return new Date('invalid');
+                }
                 return new Date(date);
             }),
             convertValueToCurrency: jest.fn((val) => val),
@@ -94,7 +96,7 @@ describe('Marketcap Chart Renderer', () => {
         const mockData = {
             dates: ['invalid'],
             total_values: [1000],
-            series: { Mega: [100] }
+            series: { Mega: [100] },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
 
@@ -108,7 +110,7 @@ describe('Marketcap Chart Renderer', () => {
         const mockData = {
             dates: ['2023-01-01'],
             total_values: [1000],
-            series: { Mega: [100] }
+            series: { Mega: [100] },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
         ctx.canvas.offsetWidth = 0;
@@ -127,7 +129,7 @@ describe('Marketcap Chart Renderer', () => {
             series: {
                 Mega: [50, 60],
                 Large: [50, 40],
-            }
+            },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
 
@@ -147,7 +149,7 @@ describe('Marketcap Chart Renderer', () => {
             series: {
                 Mega: [50, 60],
                 Large: [50, 40],
-            }
+            },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
 
@@ -167,8 +169,8 @@ describe('Marketcap Chart Renderer', () => {
             dates: ['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'],
             total_values: [1000, 1100, 1200, 1300],
             series: {
-                Mega: [50, 60, 70, 80]
-            }
+                Mega: [50, 60, 70, 80],
+            },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
 
@@ -186,8 +188,8 @@ describe('Marketcap Chart Renderer', () => {
             dates: ['2023-01-01', '2023-01-02'],
             total_values: [1000, 1100],
             series: {
-                Mega: [50, 60]
-            }
+                Mega: [50, 60],
+            },
         };
         loadMarketcapSnapshotData.mockResolvedValueOnce(mockData);
 

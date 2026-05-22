@@ -38,8 +38,8 @@ describe('Terminal index page', () => {
             cycleCurrency: jest.fn(),
             transactionState: {
                 runningAmountSeriesByCurrency: {},
-                portfolioSeriesByCurrency: {}
-            }
+                portfolioSeriesByCurrency: {},
+            },
         }));
 
         jest.mock('@js/transactions/dataLoader.js', () => ({
@@ -48,7 +48,7 @@ describe('Terminal index page', () => {
             loadPortfolioSeries: jest.fn().mockResolvedValue({}),
             loadContributionSeries: jest.fn().mockResolvedValue({}),
             loadPerformanceSeries: jest.fn().mockResolvedValue([]),
-            loadFxDailyRates: jest.fn().mockResolvedValue(null)
+            loadFxDailyRates: jest.fn().mockResolvedValue(null),
         }));
 
         const module = await import('@pages/terminal/index.js');

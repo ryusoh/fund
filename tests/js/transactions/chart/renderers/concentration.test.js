@@ -16,13 +16,13 @@ describe('Concentration Chart Renderer', () => {
             closePath: jest.fn(),
             fill: jest.fn(),
             stroke: jest.fn(),
-            createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() }))
+            createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
         };
         chartManager = { redraw: jest.fn() };
 
         loadCompositionSnapshotData = jest.fn().mockResolvedValue({
             dates: ['2023-01-01'],
-            series: { AAPL: [100] }
+            series: { AAPL: [100] },
         });
 
         jest.doMock('@js/transactions/state.js', () => ({
@@ -63,14 +63,16 @@ describe('Concentration Chart Renderer', () => {
         jest.doMock('@js/config.js', () => ({
             mountainFill: { enabled: true },
             CHART_LINE_WIDTHS: { contribution: 2 },
-            BENCHMARK_GRADIENTS: { '^LZ': ['#fff', '#000'] }
+            BENCHMARK_GRADIENTS: { '^LZ': ['#fff', '#000'] },
         }));
         jest.doMock('@js/utils/colors.js', () => ({
             getChartColors: jest.fn(() => ({ portfolio: '#fff' })),
         }));
         jest.doMock('@js/transactions/utils.js', () => ({
             parseLocalDate: jest.fn((date) => {
-                if (date === 'invalid') {return new Date('invalid');}
+                if (date === 'invalid') {
+                    return new Date('invalid');
+                }
                 return new Date(date);
             }),
         }));
@@ -84,7 +86,7 @@ describe('Concentration Chart Renderer', () => {
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,
-                json: () => Promise.resolve({ 'SPY': 500 }),
+                json: () => Promise.resolve({ SPY: 500 }),
             })
         );
 
@@ -109,7 +111,7 @@ describe('Concentration Chart Renderer', () => {
     it('handles empty dimensions', async () => {
         const mockData = {
             dates: ['2023-01-01'],
-            composition: { AAPL: [100] }
+            composition: { AAPL: [100] },
         };
         loadCompositionSnapshotData.mockResolvedValueOnce(mockData);
         ctx.canvas.offsetWidth = 0;
@@ -127,7 +129,7 @@ describe('Concentration Chart Renderer', () => {
             series: {
                 AAPL: [60, 50],
                 MSFT: [40, 50],
-            }
+            },
         };
         loadCompositionSnapshotData.mockResolvedValueOnce(mockData);
 
@@ -147,7 +149,7 @@ describe('Concentration Chart Renderer', () => {
     it('filters dates correctly in buildConcentrationSeries', () => {
         const rawDates = ['2023-01-01', '2023-01-02', '2023-01-03'];
         const compositionSeries = {
-            AAPL: [100, 100, 100]
+            AAPL: [100, 100, 100],
         };
         const filterFrom = new Date('2023-01-02');
         const filterTo = new Date('2023-01-02');
@@ -163,7 +165,7 @@ describe('Concentration Chart Renderer', () => {
         const compositionSeries = {
             AAPL: [100],
             CASH: [-50],
-            BAD: [0]
+            BAD: [0],
         };
         const series = buildConcentrationSeries(rawDates, compositionSeries, null, null);
 
@@ -177,7 +179,7 @@ describe('Concentration Chart Renderer', () => {
 
         const rawDates = ['2023-01-01'];
         const compositionSeries = {
-            SPY: [100]
+            SPY: [100],
         };
 
         const series = buildConcentrationSeries(rawDates, compositionSeries, null, null);
