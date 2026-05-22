@@ -94,3 +94,8 @@
 
 **Learning:** The application uses utility classes like `.sr-only` for screen reader accessible labels (e.g., in `terminal/index.html`). However, because the project does not use a CSS framework like Tailwind or Bootstrap, the class was missing from the CSS, causing screen-reader-only text to be visually rendered.
 **Action:** Always ensure that any utility class used for accessibility (like `.sr-only`) is explicitly defined in the project's base CSS (`css/base.css`) so that it functions correctly without relying on external frameworks.
+
+## 2026-05-16 - Data Visualization Scroll Accessibility
+
+**Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
+**Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
