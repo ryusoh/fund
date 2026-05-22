@@ -210,3 +210,6 @@
 ## 2026-05-18 - Array .forEach closures in pe.js chart renderer
 **Learning:** Using `Object.keys().forEach()` to iterate and populate ticker PE and weight data inside a high-frequency real-time update loop or when building chart series (like in `js/transactions/chart/renderers/pe.js`) allocates implicit closures and creates garbage collection (GC) pressure.
 **Action:** Replaced `.forEach()` calls with standard index-based `for` loops and explicitly iterated over the keys array to prevent closure allocations and reduce GC overhead.
+## 2024-05-21 - Replace chained array operations with explicit loops
+**Learning:** High-frequency chart rendering loops that use chained array methods (like `.filter().map()`) create intermediate arrays and multiple closure allocations, which cause significant garbage collection overhead during rapid UI updates.
+**Action:** Replaced chained `.filter().map()` operations in `js/transactions/chart/renderers/contribution.js` with pre-allocated explicit `for` loops to minimize GC pressure and improve render performance.
