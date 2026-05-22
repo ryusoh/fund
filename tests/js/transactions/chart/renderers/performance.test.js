@@ -1,9 +1,9 @@
 import { drawPerformanceChart } from '@js/transactions/chart/renderers/performance.js';
-import { transactionState, getShowChartLabels } from '@js/transactions/state.js';
+import { transactionState } from '@js/transactions/state.js';
 import { chartLayouts } from '@js/transactions/chart/state.js';
-import { drawAxes, drawMountainFill, drawEndValue } from '@js/transactions/chart/core.js';
+import { drawAxes } from '@js/transactions/chart/core.js';
 import { convertBetweenCurrencies } from '@js/transactions/utils.js';
-import { getChartColors, parseLocalDate } from '@js/transactions/chart/helpers.js';
+import { } from '@js/transactions/chart/helpers.js';
 
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {
@@ -52,7 +52,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
             '^GSPC': '#00ff00'
         })),
         getSmoothingConfig: jest.fn(() => ({ smooth: true, tension: 0.4 })),
-        createTimeInterpolator: jest.fn(() => jest.fn((time) => 1)),
+        createTimeInterpolator: jest.fn(() => jest.fn(() => 1)),
         formatPercentInline: jest.fn((val) => `${val}%`),
         clampTime: jest.fn((time) => time),
         parseLocalDate: jest.fn((str) => new Date(str)),
@@ -118,12 +118,6 @@ describe('Performance Chart Renderer', () => {
 
         await drawPerformanceChart(mockCtx, mockChartManager, 0);
 
-        // When all hidden, it just falls through to min/max calculations and since points exist but they are not drawn, wait it fails earlier:
-        // Actually, in `drawPerformanceChart`:
-        // if (seriesToDraw.length === 0 && allPossibleSeries.length > 0) { // Draw axes and legend only }
-        // Let's see if drawAxes is called. Wait, if seriesToDraw.length == 0, then normalizedSeriesToDraw has 0 elements, and allPoints is empty, so it does:
-        // if (allPoints.length === 0) { stopPerformanceAnimation(); return; }
-        // Therefore drawAxes is NEVER called if seriesToDraw.length === 0! Let's check the code.
         expect(mockCtx.beginPath).not.toHaveBeenCalled();
     });
 

@@ -127,7 +127,6 @@ describe('Sectors Chart Renderer', () => {
 
     it('draws sectors chart with valid data in absolute mode', async () => {
         // Because of the cache `let sectorsDataCache = null;`, it uses the data from the previous test if run in sequence.
-        // It's ok to use cache if it does.
         await drawSectorsAbsoluteChart(mockCtx, mockChartManager);
 
         expect(chartLayouts.sectorsAbs).not.toBeNull();

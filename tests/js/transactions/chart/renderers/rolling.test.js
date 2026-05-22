@@ -1,7 +1,7 @@
 import { drawRollingChart } from '@js/transactions/chart/renderers/rolling.js';
-import { transactionState, getShowChartLabels } from '@js/transactions/state.js';
+import { transactionState } from '@js/transactions/state.js';
 import { chartLayouts } from '@js/transactions/chart/state.js';
-import { drawAxes, drawMountainFill, drawEndValue } from '@js/transactions/chart/core.js';
+import { drawAxes } from '@js/transactions/chart/core.js';
 import { convertBetweenCurrencies } from '@js/transactions/utils.js';
 
 jest.mock('@js/transactions/state.js', () => ({
@@ -48,7 +48,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
             '^GSPC': '#00ff00'
         })),
         getSmoothingConfig: jest.fn(() => ({ smooth: true, tension: 0.4 })),
-        createTimeInterpolator: jest.fn(() => jest.fn((time) => 1)),
+        createTimeInterpolator: jest.fn(() => jest.fn(() => 1)),
         formatPercentInline: jest.fn((val) => `${val}%`),
         clampTime: jest.fn((time) => time),
         parseLocalDate: jest.fn((str) => new Date(str)),
