@@ -62,3 +62,6 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2024-05-24 - Test mocking patterns
 
 - **Pattern:** When unit testing IIFEs or scripts that evaluate on import and depend on global state (like URL parameters), call `jest.resetModules()` in `beforeEach()`, configure global mocks (e.g., mocking `window.URLSearchParams` globally with `jest.fn().mockImplementation()` instead of redefining `window.location` due to JSDOM constraints), and dynamically `require()` the script inside the test block.
+## 2026-05-22 - Added test coverage for Chart Renderers
+- **Action:** Added Jest unit test suites for `performance.js`, `rolling.js`, and `sectors.js` chart renderers to improve overall JS test coverage.
+- **Learning:** Mocking canvas interactions and window/DOM objects early ensures smooth test execution without runtime DOM failures. Additionally, ensuring correct structure definition when mocking configuration or chart layouts allows test assertions like `.toBeDefined()` to pass correctly.
