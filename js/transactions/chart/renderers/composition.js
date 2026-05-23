@@ -33,7 +33,8 @@ function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
         return null;
     }
-    const aggregated = Array.from({ length: seriesLength }, () => 0);
+    // Bolt: Use new Array(length).fill(0) instead of Array.from to reduce GC overhead
+    const aggregated = new Array(seriesLength).fill(0);
     tickers.forEach((ticker) => {
         const values = chartData[ticker] || [];
         for (let i = 0; i < seriesLength; i += 1) {

@@ -84,7 +84,14 @@ export function buildContributionSeriesFromTransactions(
         }
     });
 
-    const uniqueDates = Array.from(dailyMap.keys()).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    // Bolt: Replaced Array.from(dailyMap.keys()).sort() with explicit pre-allocated array and manual iteration to reduce GC overhead
+    const uniqueDates = new Array(dailyMap.size);
+    let dateIdx = 0;
+    for (const dateStr of dailyMap.keys()) {
+        uniqueDates[dateIdx++] = dateStr;
+    }
+    uniqueDates.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
     const series = [];
     let cumulativeAmount = 0;
 

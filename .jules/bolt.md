@@ -217,3 +217,8 @@
 
 **Learning:** High-frequency chart rendering loops that use chained array methods (like `.filter().map()`) create intermediate arrays and multiple closure allocations, which cause significant garbage collection overhead during rapid UI updates.
 **Action:** Replaced chained `.filter().map()` operations in `js/transactions/chart/renderers/contribution.js` with pre-allocated explicit `for` loops to minimize GC pressure and improve render performance.
+
+## 2026-05-23 - Array.from overhead in Set/Map iterations
+
+**Learning:** Using `Array.from(map.keys())` or `Array.from({ length })` creates intermediate arrays and iterators which add overhead to garbage collection in high-frequency functions.
+**Action:** Replace `Array.from({ length }, () => 0)` with `new Array(length).fill(0)` and explicit iterations over iterables into pre-allocated arrays to eliminate overhead and closure allocations.
