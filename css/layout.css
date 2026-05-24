@@ -169,3 +169,30 @@ footer a:focus-visible {
     outline-offset: -2px;
     border-radius: 4px;
 }
+
+/* Hide scaffolding: scrollbars completely removed */
+html,
+body {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
+.table-responsive-container::-webkit-scrollbar {
+    display: none;
+}
+.table-responsive-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Scroll is narrative */
+@media (min-width: 769px) {
+    body.body-main {
+        scroll-behavior: smooth;
+    }
+}

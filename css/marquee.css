@@ -59,3 +59,10 @@
 .mq-char.mq-space {
     width: 0.35em;
 }
+
+/* Dual-font system: Playfair Display for emphasis */
+.marquee-content span {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 700;
+}
