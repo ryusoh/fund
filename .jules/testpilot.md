@@ -65,3 +65,7 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2026-05-22 - Added test coverage for Chart Renderers
 - **Action:** Added Jest unit test suites for `performance.js`, `rolling.js`, and `sectors.js` chart renderers to improve overall JS test coverage.
 - **Learning:** Mocking canvas interactions and window/DOM objects early ensures smooth test execution without runtime DOM failures. Additionally, ensuring correct structure definition when mocking configuration or chart layouts allows test assertions like `.toBeDefined()` to pass correctly.
+
+## 2024-05-25 - Chart Renderer Early Exits & Snapshot Tests
+
+**Learning:** When unit testing chart renderers like `beta.js` and `fx.js`, ensure you cover the early-exit branches that handle empty data (e.g. `seriesToDraw.length === 0`). This requires mocking out internal chart dependencies like `stopPerformanceAnimation` or `stopFxAnimation` correctly. Additionally, when testing data aggregation functions like `getPESnapshotLine` that format numbers, account for asynchronous mock overrides to maintain predictable test executions and reach isolated branches.
