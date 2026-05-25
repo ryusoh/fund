@@ -1,4 +1,7 @@
-import { drawSectorsChart, drawSectorsAbsoluteChart } from '@js/transactions/chart/renderers/sectors.js';
+import {
+    drawSectorsChart,
+    drawSectorsAbsoluteChart,
+} from '@js/transactions/chart/renderers/sectors.js';
 import { transactionState } from '@js/transactions/state.js';
 import { chartLayouts } from '@js/transactions/chart/state.js';
 import { loadSectorsSnapshotData } from '@js/transactions/dataLoader.js';
@@ -21,9 +24,9 @@ const testData = {
     dates: ['2024-01-01', '2024-01-02', '2024-01-03'],
     sectors: ['Technology', 'Healthcare'],
     series: {
-        'Technology': [100, 110, 120],
-        'Healthcare': [50, 55, 60]
-    }
+        Technology: [100, 110, 120],
+        Healthcare: [50, 55, 60],
+    },
 };
 
 jest.mock('@js/transactions/dataLoader.js', () => ({
@@ -41,7 +44,7 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
     stopFxAnimation: jest.fn(),
 }));
 jest.mock('@js/utils/smoothing.js', () => ({
-    smoothFinancialData: jest.fn((data) => data)
+    smoothFinancialData: jest.fn((data) => data),
 }));
 jest.mock('@js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
@@ -49,7 +52,7 @@ jest.mock('@js/transactions/chart/core.js', () => ({
 jest.mock('@js/transactions/utils.js', () => ({
     formatCurrencyInlineValue: jest.fn((val) => `$${val}`),
     formatCurrencyCompact: jest.fn((val) => `$${val}`),
-    convertValueToCurrency: jest.fn((val) => val)
+    convertValueToCurrency: jest.fn((val) => val),
 }));
 jest.mock('@js/transactions/chart/helpers.js', () => {
     const actual = jest.requireActual('@js/transactions/chart/helpers.js');
@@ -73,7 +76,7 @@ describe('Sectors Chart Renderer', () => {
         mockCanvas = {
             offsetWidth: 800,
             offsetHeight: 600,
-            style: { display: 'block' }
+            style: { display: 'block' },
         };
 
         mockCtx = {
@@ -95,7 +98,7 @@ describe('Sectors Chart Renderer', () => {
         mockChartManager = {
             updateCrosshairTarget: jest.fn(),
             filterFrom: null,
-            getFilterState: jest.fn(() => ({ from: null, to: null }))
+            getFilterState: jest.fn(() => ({ from: null, to: null })),
         };
 
         document.body.innerHTML = '<div id="runningAmountEmpty"></div>';

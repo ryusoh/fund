@@ -44,13 +44,13 @@ jest.mock('@js/config.js', () => ({
 
 jest.mock('@js/transactions/utils.js', () => ({
     getShowChartLabels: jest.fn(() => true),
-    formatPercentInline: jest.fn(v => `${v}%`),
-    formatFxValue: jest.fn(v => v.toString()),
+    formatPercentInline: jest.fn((v) => `${v}%`),
+    formatFxValue: jest.fn((v) => v.toString()),
 }));
 
 jest.mock('@js/utils/smoothing.js', () => ({
     getSmoothingConfig: jest.fn(() => null),
-    smoothFinancialData: jest.fn(points => points),
+    smoothFinancialData: jest.fn((points) => points),
 }));
 
 jest.mock('@js/transactions/chart/helpers.js', () => ({

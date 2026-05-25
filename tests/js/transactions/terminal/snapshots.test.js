@@ -124,7 +124,8 @@ describe('getPESnapshotLine', () => {
             return result;
         });
 
-        getPESnapshotLine = (await import('@js/transactions/terminal/snapshots.js')).getPESnapshotLine;
+        getPESnapshotLine = (await import('@js/transactions/terminal/snapshots.js'))
+            .getPESnapshotLine;
     });
 
     it('returns null when loadPEData returns invalid data', async () => {
@@ -155,15 +156,15 @@ describe('getPESnapshotLine', () => {
             dates: ['2024-01-01', '2024-02-01'],
             portfolio_pe: [15, 20],
             ticker_pe: {
-                '2024-02-01': { AAPL: 25, MSFT: 30, VT: 18 }
+                '2024-02-01': { AAPL: 25, MSFT: 30, VT: 18 },
             },
             ticker_weights: {
-                '2024-02-01': { AAPL: 0.5, MSFT: 0.3, VT: 0.2 }
+                '2024-02-01': { AAPL: 0.5, MSFT: 0.3, VT: 0.2 },
             },
             forward_pe: {
                 ticker_forward_pe: { AAPL: 20, MSFT: 28 },
-                msci_pe_ratio: { ratio: 1.2 }
-            }
+                msci_pe_ratio: { ratio: 1.2 },
+            },
         });
 
         const result = await getPESnapshotLine();

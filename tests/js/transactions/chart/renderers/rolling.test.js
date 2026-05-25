@@ -20,7 +20,7 @@ jest.mock('@js/transactions/chart/interaction.js', () => ({
     updateCrosshairUI: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
     updateLegend: jest.fn(),
-    legendState: { performanceDirty: false }
+    legendState: { performanceDirty: false },
 }));
 jest.mock('@js/transactions/chart/animation.js', () => ({
     stopPerformanceAnimation: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
 jest.mock('@js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawMountainFill: jest.fn(),
-    drawEndValue: jest.fn(() => ({ x: 0, y: 0, width: 10, height: 10 }))
+    drawEndValue: jest.fn(() => ({ x: 0, y: 0, width: 10, height: 10 })),
 }));
 jest.mock('@js/transactions/utils.js', () => ({
     convertBetweenCurrencies: jest.fn((val) => val),
@@ -45,7 +45,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
         ...actual,
         getChartColors: jest.fn(() => ({
             '^LZ': '#ff0000',
-            '^GSPC': '#00ff00'
+            '^GSPC': '#00ff00',
         })),
         getSmoothingConfig: jest.fn(() => ({ smooth: true, tension: 0.4 })),
         createTimeInterpolator: jest.fn(() => jest.fn(() => 1)),
@@ -55,7 +55,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
     };
 });
 jest.mock('@js/utils/smoothing.js', () => ({
-    smoothFinancialData: jest.fn((data) => data)
+    smoothFinancialData: jest.fn((data) => data),
 }));
 
 describe('Rolling Chart Renderer', () => {
@@ -69,7 +69,7 @@ describe('Rolling Chart Renderer', () => {
         mockCanvas = {
             offsetWidth: 800,
             offsetHeight: 600,
-            style: { display: 'block' }
+            style: { display: 'block' },
         };
 
         mockCtx = {
@@ -84,14 +84,14 @@ describe('Rolling Chart Renderer', () => {
             setLineDash: jest.fn(),
             fill: jest.fn(),
             createLinearGradient: jest.fn(() => ({
-                addColorStop: jest.fn()
-            }))
+                addColorStop: jest.fn(),
+            })),
         };
 
         mockChartManager = {
             updateCrosshairTarget: jest.fn(),
             filterFrom: null,
-            getFilterState: jest.fn(() => ({ from: null, to: null }))
+            getFilterState: jest.fn(() => ({ from: null, to: null })),
         };
 
         document.body.innerHTML = '<div id="runningAmountEmpty"></div>';
@@ -108,7 +108,10 @@ describe('Rolling Chart Renderer', () => {
 
     it('draws axes and legend only when all series are hidden', async () => {
         transactionState.performanceSeries = {
-            '^LZ': [{ date: '2024-01-01', value: 100 }, { date: '2024-01-02', value: 105 }]
+            '^LZ': [
+                { date: '2024-01-01', value: 100 },
+                { date: '2024-01-02', value: 105 },
+            ],
         };
         transactionState.chartVisibility = { '^LZ': false };
 
@@ -124,7 +127,7 @@ describe('Rolling Chart Renderer', () => {
             dataLZ.push({ date: current.toISOString().split('T')[0], value: 100 + i });
         }
         transactionState.performanceSeries = {
-            '^LZ': dataLZ
+            '^LZ': dataLZ,
         };
         transactionState.chartVisibility = { '^LZ': true };
 
@@ -145,7 +148,7 @@ describe('Rolling Chart Renderer', () => {
             dataLZ.push({ date: current.toISOString().split('T')[0], value: 100 + i });
         }
         transactionState.performanceSeries = {
-            '^LZ': dataLZ
+            '^LZ': dataLZ,
         };
         transactionState.chartVisibility = { '^LZ': true };
 
