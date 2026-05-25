@@ -2,6 +2,9 @@ import {
     resolveQuarterRange,
     getDefaultYear,
     getEarliestDataYear,
+    parseDateRange,
+    formatDateRange,
+    parseSimplifiedDateRange,
 } from '../../../../js/transactions/terminal/dateUtils.js';
 import { transactionState } from '../../../../js/transactions/state.js';
 
@@ -90,6 +93,160 @@ describe('terminal dateUtils', () => {
                 { tradeDate: '2023-01-01' },
             ];
             expect(getEarliestDataYear()).toBe(2022);
+        });
+    });
+
+    describe('parseDateRange', () => {
+        beforeEach(() => {
+            const currentYear = new Date().getFullYear();
+            transactionState.allTransactions = [{ tradeDate: `${currentYear}-01-01` }];
+        });
+
+        it('should parse a single year', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseDateRange([currentYear.toString()]);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: `${currentYear}-12-31` });
+        });
+
+        it('should return nulls for invalid single year', () => {
+            const result = parseDateRange(['invalid']);
+            expect(result).toEqual({ from: null, to: null });
+        });
+
+        it('should parse a single quarter', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseDateRange([`${currentYear}q1`]);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: `${currentYear}-03-31` });
+        });
+
+        it('should parse from a year', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseDateRange(['from', currentYear.toString()]);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: null });
+        });
+
+        it('should parse from a quarter', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseDateRange(['from', `${currentYear}q2`]);
+            expect(result).toEqual({ from: `${currentYear}-04-01`, to: null });
+        });
+
+        it('should parse range between two years', () => {
+            const result = parseDateRange(['2020', 'to', '2022']);
+            expect(result).toEqual({ from: '2020-01-01', to: '2022-12-31' });
+        });
+
+        it('should parse range between two quarters', () => {
+            const result = parseDateRange(['2021q1', 'to', '2021q3']);
+            expect(result).toEqual({ from: '2021-01-01', to: '2021-09-30' });
+        });
+
+        it('should parse range between year and quarter', () => {
+            const result = parseDateRange(['2021', 'to', '2022q1']);
+            expect(result).toEqual({ from: '2021-01-01', to: '2022-03-31' });
+        });
+
+        it('should ignore invalid to ranges', () => {
+            const result = parseDateRange(['2022', 'to', '2020']);
+            expect(result).toEqual({ from: null, to: null });
+        });
+    });
+
+    describe('formatDateRange', () => {
+        it('should format full year range correctly', () => {
+            expect(formatDateRange({ from: '2023-01-01', to: '2023-12-31' })).toBe('2023');
+        });
+
+        it('should format quarter range correctly', () => {
+            expect(formatDateRange({ from: '2023-01-01', to: '2023-03-31' })).toBe('Q1 2023');
+            expect(formatDateRange({ from: '2023-04-01', to: '2023-06-30' })).toBe('Q2 2023');
+            expect(formatDateRange({ from: '2023-07-01', to: '2023-09-30' })).toBe('Q3 2023');
+            expect(formatDateRange({ from: '2023-10-01', to: '2023-12-31' })).toBe('Q4 2023');
+        });
+
+        it('should return range as string for arbitrary dates', () => {
+            expect(formatDateRange({ from: '2023-02-01', to: '2023-05-15' })).toBe('2023-02-01 to 2023-05-15');
+        });
+
+        it('should format open-ended start range', () => {
+            expect(formatDateRange({ from: '2023-01-01', to: null })).toBe('from 2023-01-01');
+        });
+
+        it('should format open-ended end range', () => {
+            expect(formatDateRange({ from: null, to: '2023-12-31' })).toBe('to 2023-12-31');
+        });
+
+        it('should return all time if no dates are provided', () => {
+            expect(formatDateRange({ from: null, to: null })).toBe('all time');
+        });
+    });
+
+    describe('parseSimplifiedDateRange', () => {
+        beforeEach(() => {
+            const currentYear = new Date().getFullYear();
+            transactionState.allTransactions = [{ tradeDate: `${currentYear}-01-01` }];
+        });
+
+        it('should parse single quarter token', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`${currentYear}q1`);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: `${currentYear}-03-31` });
+        });
+
+        it('should parse single year token', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(currentYear.toString());
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: `${currentYear}-12-31` });
+        });
+
+        it('should parse from year', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`from:${currentYear}`);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: null });
+        });
+
+        it('should parse f year alias', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`f:${currentYear}`);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: null });
+        });
+
+        it('should parse from quarter', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`from:${currentYear}q1`);
+            expect(result).toEqual({ from: `${currentYear}-01-01`, to: null });
+        });
+
+        it('should parse to year', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`to:${currentYear}`);
+            expect(result).toEqual({ from: null, to: `${currentYear}-12-31` });
+        });
+
+        it('should parse to quarter', () => {
+            const currentYear = new Date().getFullYear();
+            const result = parseSimplifiedDateRange(`to:${currentYear}q3`);
+            expect(result).toEqual({ from: null, to: `${currentYear}-09-30` });
+        });
+
+        it('should parse range between two years', () => {
+            const result = parseSimplifiedDateRange('2020:2022');
+            expect(result).toEqual({ from: '2020-01-01', to: '2022-12-31' });
+        });
+
+        it('should parse range between two quarters', () => {
+            const result = parseSimplifiedDateRange('2021q1:2021q4');
+            expect(result).toEqual({ from: '2021-01-01', to: '2021-12-31' });
+        });
+
+        it('should ignore invalid year range order', () => {
+            const result = parseSimplifiedDateRange('2022:2020');
+            expect(result).toEqual({ from: null, to: null });
+        });
+
+        it('should ignore completely invalid strings', () => {
+            const result = parseSimplifiedDateRange('invalid:format');
+            expect(result).toEqual({ from: null, to: null });
         });
     });
 });
