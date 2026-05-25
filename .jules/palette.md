@@ -99,3 +99,6 @@
 
 **Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
 **Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
+## 2026-05-25 - Title Tooltips for Icon-Only Buttons
+**Learning:** While `aria-label` makes icon-only buttons accessible to screen readers, sighted users might still struggle to understand their purpose without hover feedback.
+**Action:** Always pair `aria-label` with a native `title` attribute for icon-only interactive elements to provide a helpful browser tooltip.
