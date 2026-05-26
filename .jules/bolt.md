@@ -222,3 +222,7 @@
 
 **Learning:** Using `Array.from(map.keys())` or `Array.from({ length })` creates intermediate arrays and iterators which add overhead to garbage collection in high-frequency functions.
 **Action:** Replace `Array.from({ length }, () => 0)` with `new Array(length).fill(0)` and explicit iterations over iterables into pre-allocated arrays to eliminate overhead and closure allocations.
+
+## 2026-05-26 - Replaced higher-order reduce() with manual for loops
+**Learning:** Using chained array methods or `.reduce()` inside high-frequency processing paths (like analytical summations and statistical computations over large arrays) introduces unnecessary functional callback overhead and closure allocations, leading to increased garbage collection pressure.
+**Action:** Replaced `.reduce()` calls in `js/transactions/terminal/stats/analysis.js` and `js/pages/analysis/lab.js` with pre-allocated index-based `for` loops to drop closure allocation overhead and speed up array summations.

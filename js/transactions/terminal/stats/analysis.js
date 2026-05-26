@@ -318,15 +318,19 @@ export async function getDurationStatsText() {
             if (!lots || lots.length === 0) {
                 return null;
             }
-            const totalQty = lots.reduce((sum, lot) => sum + lot.qty, 0);
+            let totalQty = 0;
+            for (let i = 0; i < lots.length; i++) {
+                totalQty += lots[i].qty;
+            }
             if (totalQty <= 0) {
                 return null;
             }
-            const avgAgeDays =
-                lots.reduce((sum, lot) => {
-                    const diffMs = Math.max(0, baselineDate - lot.date);
-                    return sum + lot.qty * (diffMs / MS_IN_DAY);
-                }, 0) / totalQty;
+            let ageDaysSum = 0;
+            for (let i = 0; i < lots.length; i++) {
+                const diffMs = Math.max(0, baselineDate - lots[i].date);
+                ageDaysSum += lots[i].qty * (diffMs / MS_IN_DAY);
+            }
+            const avgAgeDays = ageDaysSum / totalQty;
             return {
                 ticker: formatTicker(holding.ticker),
                 weight: holding.weight,
@@ -337,10 +341,17 @@ export async function getDurationStatsText() {
         })
         .filter(Boolean);
 
-    const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
+    let totalWeight = 0;
+    for (let i = 0; i < entries.length; i++) {
+        totalWeight += entries[i].weight;
+    }
+    let weightedAvgDaysSum = 0;
+    for (let i = 0; i < entries.length; i++) {
+        weightedAvgDaysSum += entries[i].weight * entries[i].avgAgeDays;
+    }
     const weightedAvgDays =
         totalWeight > 0
-            ? entries.reduce((sum, entry) => sum + entry.weight * entry.avgAgeDays, 0) / totalWeight
+            ? weightedAvgDaysSum / totalWeight
             : null;
     const medianDays = computeWeightedMedian(
         entries,
@@ -364,15 +375,21 @@ export async function getDurationStatsText() {
         ]);
     }
 
-    const totalClosedQty = hasClosedData
-        ? closedSales.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
-        : 0;
+    let totalClosedQty = 0;
+    if (hasClosedData) {
+        for (let i = 0; i < closedSales.length; i++) {
+            totalClosedQty += Number(closedSales[i].qty) || 0;
+        }
+    }
+    let closedDaysSum = 0;
+    if (totalClosedQty > 0) {
+        for (let i = 0; i < closedSales.length; i++) {
+            closedDaysSum += (Number(closedSales[i].qty) || 0) * (Number(closedSales[i].days) || 0);
+        }
+    }
     const weightedClosedAvgDays =
         totalClosedQty > 0
-            ? closedSales.reduce(
-                  (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.days) || 0),
-                  0
-              ) / totalClosedQty
+            ? closedDaysSum / totalClosedQty
             : null;
     if (Number.isFinite(weightedClosedAvgDays)) {
         summaryRows.push([
@@ -383,11 +400,14 @@ export async function getDurationStatsText() {
         ]);
     }
 
-    const totalOpenShareWeight = entries.reduce((sum, entry) => sum + entry.openShares, 0);
-    const openShareWeightedSum = entries.reduce(
-        (sum, entry) => sum + entry.openShares * entry.avgAgeDays,
-        0
-    );
+    let totalOpenShareWeight = 0;
+    for (let i = 0; i < entries.length; i++) {
+        totalOpenShareWeight += entries[i].openShares;
+    }
+    let openShareWeightedSum = 0;
+    for (let i = 0; i < entries.length; i++) {
+        openShareWeightedSum += entries[i].openShares * entries[i].avgAgeDays;
+    }
     const allDenominator = totalOpenShareWeight + totalClosedQty;
     const weightedAvgAll =
         allDenominator > 0
@@ -467,7 +487,10 @@ export async function getLifespanStatsText() {
                 return null;
             }
             const lots = lotsByTicker?.get(normalizedTicker) || [];
-            const openShares = lots.reduce((sum, lot) => sum + lot.qty, 0);
+            let openShares = 0;
+            for (let i = 0; i < lots.length; i++) {
+                openShares += lots[i].qty;
+            }
             if (!Number.isFinite(openShares) || openShares <= 0) {
                 return null;
             }
@@ -534,17 +557,23 @@ export async function getLifespanStatsText() {
         : '';
 
     const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
-    const openShareSum = openEntries.reduce((sum, entry) => sum + entry.openShares, 0);
-    const openWeightedSpanSum = openEntries.reduce(
-        (sum, entry) => sum + entry.spanDays * entry.openShares,
-        0
-    );
+    let openShareSum = 0;
+    for (let i = 0; i < openEntries.length; i++) {
+        openShareSum += openEntries[i].openShares;
+    }
+    let openWeightedSpanSum = 0;
+    for (let i = 0; i < openEntries.length; i++) {
+        openWeightedSpanSum += openEntries[i].spanDays * openEntries[i].openShares;
+    }
     const weightedAvgOpen = openShareSum > 0 ? openWeightedSpanSum / openShareSum : null;
-    const closedShareSum = closedEntries.reduce((sum, entry) => sum + entry.shares, 0);
-    const closedWeightedSpanSum = closedEntries.reduce(
-        (sum, entry) => sum + entry.spanDays * entry.shares,
-        0
-    );
+    let closedShareSum = 0;
+    for (let i = 0; i < closedEntries.length; i++) {
+        closedShareSum += closedEntries[i].shares;
+    }
+    let closedWeightedSpanSum = 0;
+    for (let i = 0; i < closedEntries.length; i++) {
+        closedWeightedSpanSum += closedEntries[i].spanDays * closedEntries[i].shares;
+    }
     const weightedAvgClosed = closedShareSum > 0 ? closedWeightedSpanSum / closedShareSum : null;
     const combinedDenominator = openShareSum + closedShareSum;
     const weightedAvgAll =
@@ -631,7 +660,10 @@ export async function getConcentrationText() {
         return 'No positive weights in composition data.';
     }
 
-    const totalWeight = holdings.reduce((sum, item) => sum + item.weight, 0);
+    let totalWeight = 0;
+    for (let i = 0; i < holdings.length; i++) {
+        totalWeight += holdings[i].weight;
+    }
     if (totalWeight <= 0) {
         return 'No positive weights in composition data.';
     }
@@ -645,10 +677,10 @@ export async function getConcentrationText() {
         .sort((a, b) => b.normalizedWeight - a.normalizedWeight);
 
     // Calculate adjusted HHI using ETF internal diversification
-    const hhi = normalized.reduce(
-        (sum, item) => sum + calculateAdjustedHhiContribution(item.ticker, item.normalizedWeight),
-        0
-    );
+    let hhi = 0;
+    for (let i = 0; i < normalized.length; i++) {
+        hhi += calculateAdjustedHhiContribution(normalized[i].ticker, normalized[i].normalizedWeight);
+    }
     const effectiveHoldings = hhi > 0 ? 1 / hhi : null;
     let top3Weight = 0;
     let top5Weight = 0;
