@@ -384,10 +384,10 @@ function computeMetrics(config) {
     const outcomes = normalizedScenarios.map((scenario) =>
         computeScenarioOutcome(scenario, { price, eps, horizon })
     );
-    const expectedMultiple = outcomes.reduce(
-        (sum, outcome) => sum + outcome.prob * outcome.multiple,
-        0
-    );
+    let expectedMultiple = 0;
+    for (let i = 0; i < outcomes.length; i++) {
+        expectedMultiple += outcomes[i].prob * outcomes[i].multiple;
+    }
     const expectedCagr = expectedMultiple > 0 ? expectedMultiple ** (1 / horizon) - 1 : 0;
     const edge = expectedCagr - benchmark;
     const variance = volatility ** 2;
@@ -883,12 +883,20 @@ function buildPortfolioConfig(configs) {
     if (!configs.length) {
         return null;
     }
-    const totalValue = configs.reduce((sum, cfg) => sum + cfg.marketValue, 0);
+    let totalValue = 0;
+    for (let i = 0; i < configs.length; i++) {
+        totalValue += configs[i].marketValue;
+    }
     if (!(totalValue > 0)) {
         return null;
     }
-    const weighted = (selector) =>
-        configs.reduce((sum, cfg) => sum + cfg.weight * selector(cfg), 0);
+    const weighted = (selector) => {
+        let sum = 0;
+        for (let i = 0; i < configs.length; i++) {
+            sum += configs[i].weight * selector(configs[i]);
+        }
+        return sum;
+    };
     const basePreferences = getPreferences(configs[0]);
     const horizonRaw = Number(basePreferences.horizon ?? 1);
     const horizon = Number.isFinite(horizonRaw) && horizonRaw > 0 ? horizonRaw : 1;
@@ -897,12 +905,14 @@ function buildPortfolioConfig(configs) {
     const benchmarkValue = weighted((cfg) => getBenchmarkDescriptor(getPreferences(cfg)).value);
     const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
     const targetCagr = weighted((cfg) => getPreferences(cfg).targetCagr ?? 0.1);
-    const volatility = Math.sqrt(
-        configs.reduce((sum, cfg) => {
-            const vol = getEffectiveVolatility(cfg);
-            return sum + Math.pow(cfg.weight, 2) * Math.pow(vol, 2);
-        }, 0)
-    );
+
+    let volSum = 0;
+    for (let i = 0; i < configs.length; i++) {
+        const vol = getEffectiveVolatility(configs[i]);
+        volSum += Math.pow(configs[i].weight, 2) * Math.pow(vol, 2);
+    }
+    const volatility = Math.sqrt(volSum);
+
     const overrides = {
         price,
         eps,
@@ -1000,7 +1010,10 @@ async function buildConfigs() {
     );
 
     const validConfigs = configs.filter(Boolean);
-    const totalValue = validConfigs.reduce((sum, cfg) => sum + cfg.marketValue, 0);
+    let totalValue = 0;
+    for (let i = 0; i < validConfigs.length; i++) {
+        totalValue += validConfigs[i].marketValue;
+    }
     validConfigs.forEach((cfg) => {
         cfg.weight = totalValue > 0 ? cfg.marketValue / totalValue : 0;
     });
