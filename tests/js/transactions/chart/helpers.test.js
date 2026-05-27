@@ -1,4 +1,4 @@
-import { niceNumber, parseLocalDate, clampTime, clamp01, colorWithAlpha, parseColorToRgb } from '../../../../js/transactions/chart/helpers.js';
+import { niceNumber, parseLocalDate, clampTime, clamp01 } from '../../../../js/transactions/chart/helpers.js';
 
 describe('Chart Helpers', () => {
     describe('niceNumber', () => {

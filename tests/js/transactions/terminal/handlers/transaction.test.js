@@ -1,5 +1,5 @@
 import { handleTransactionCommand, handleDefaultCommand } from '../../../../../js/transactions/terminal/handlers/transaction.js';
-import { transactionState, setChartDateRange } from '../../../../../js/transactions/state.js';
+import { setChartDateRange } from '../../../../../js/transactions/state.js';
 import * as viewUtils from '../../../../../js/transactions/terminal/viewUtils.js';
 import * as dateUtils from '../../../../../js/transactions/terminal/dateUtils.js';
 import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
