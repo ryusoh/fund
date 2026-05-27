@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
 /* JetBrains Mono – regular and italics */
 @font-face {
     font-family: 'JetBrains Mono';
@@ -128,4 +130,9 @@ footer a:focus-visible {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border-width: 0;
+}
+::selection { background: #b1ff05; color: #000; }
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
