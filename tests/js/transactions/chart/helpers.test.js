@@ -1,4 +1,9 @@
-import { niceNumber, parseLocalDate, clampTime, clamp01 } from '../../../../js/transactions/chart/helpers.js';
+import {
+    niceNumber,
+    parseLocalDate,
+    clampTime,
+    clamp01,
+} from '../../../../js/transactions/chart/helpers.js';
 
 describe('Chart Helpers', () => {
     describe('niceNumber', () => {
@@ -16,10 +21,10 @@ describe('Chart Helpers', () => {
         });
 
         it('should return nice fractions without rounding', () => {
-             expect(niceNumber(0.8, false)).toBe(1);
-             expect(niceNumber(1.5, false)).toBe(2);
-             expect(niceNumber(3.5, false)).toBe(5);
-             expect(niceNumber(8.5, false)).toBe(10);
+            expect(niceNumber(0.8, false)).toBe(1);
+            expect(niceNumber(1.5, false)).toBe(2);
+            expect(niceNumber(3.5, false)).toBe(5);
+            expect(niceNumber(8.5, false)).toBe(10);
         });
     });
 

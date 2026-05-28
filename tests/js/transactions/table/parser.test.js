@@ -1,11 +1,18 @@
-import { normalizeTickerToken, parseCommandPalette, deriveCompositionTickerFilters, matchesAssetClass } from '../../../../js/transactions/table/parser.js';
+import {
+    normalizeTickerToken,
+    parseCommandPalette,
+    deriveCompositionTickerFilters,
+    matchesAssetClass,
+} from '../../../../js/transactions/table/parser.js';
 
 // mock config
 jest.mock('../../../../js/config.js', () => ({
     getHoldingAssetClass: jest.fn((ticker) => {
-        if (ticker === 'SPY' || ticker === 'VOO') {return 'etf';}
+        if (ticker === 'SPY' || ticker === 'VOO') {
+            return 'etf';
+        }
         return 'stock'; // Default fallback in this mock
-    })
+    }),
 }));
 
 describe('Table Parser Helpers', () => {
@@ -45,8 +52,8 @@ describe('Table Parser Helpers', () => {
                     min: null,
                     max: null,
                     assetClass: null,
-                    tickers: []
-                }
+                    tickers: [],
+                },
             });
         });
 
@@ -92,51 +99,51 @@ describe('Table Parser Helpers', () => {
         });
 
         it('should handle unhandled key:value tokens', () => {
-             const res = parseCommandPalette('unknown:value');
-             // processKeyValToken takes the whole token "unknown:value" as the ticker if it fails to parse as a specific key.
-             expect(res.commands.tickers).toContain('UNKNOWNVALUE');
+            const res = parseCommandPalette('unknown:value');
+            // processKeyValToken takes the whole token "unknown:value" as the ticker if it fails to parse as a specific key.
+            expect(res.commands.tickers).toContain('UNKNOWNVALUE');
         });
     });
 
     describe('deriveCompositionTickerFilters', () => {
         it('should extract unique tickers from commands and text', () => {
-             const commands = { security: 'AAPL' };
-             const text = 'MSFT aapl GOOG 123';
+            const commands = { security: 'AAPL' };
+            const text = 'MSFT aapl GOOG 123';
 
-             const result = deriveCompositionTickerFilters(text, commands);
-             expect(result).toEqual(['AAPL', 'MSFT', 'GOOG']);
+            const result = deriveCompositionTickerFilters(text, commands);
+            expect(result).toEqual(['AAPL', 'MSFT', 'GOOG']);
         });
 
         it('should handle null/empty commands or text', () => {
-             expect(deriveCompositionTickerFilters('', {})).toEqual([]);
-             expect(deriveCompositionTickerFilters(null, null)).toEqual([]);
-             expect(deriveCompositionTickerFilters('AAPL', null)).toEqual(['AAPL']);
+            expect(deriveCompositionTickerFilters('', {})).toEqual([]);
+            expect(deriveCompositionTickerFilters(null, null)).toEqual([]);
+            expect(deriveCompositionTickerFilters('AAPL', null)).toEqual(['AAPL']);
         });
     });
 
     describe('matchesAssetClass', () => {
-         it('should return true if no desired class is provided', () => {
-              expect(matchesAssetClass('AAPL', null)).toBe(true);
-              expect(matchesAssetClass('AAPL', '')).toBe(true);
-         });
+        it('should return true if no desired class is provided', () => {
+            expect(matchesAssetClass('AAPL', null)).toBe(true);
+            expect(matchesAssetClass('AAPL', '')).toBe(true);
+        });
 
-         it('should return true if security is not a string', () => {
-              expect(matchesAssetClass(123, 'etf')).toBe(true);
-              expect(matchesAssetClass(null, 'etf')).toBe(true);
-         });
+        it('should return true if security is not a string', () => {
+            expect(matchesAssetClass(123, 'etf')).toBe(true);
+            expect(matchesAssetClass(null, 'etf')).toBe(true);
+        });
 
-         it('should match etf', () => {
-              expect(matchesAssetClass('SPY', 'etf')).toBe(true);
-              expect(matchesAssetClass('AAPL', 'etf')).toBe(false);
-         });
+        it('should match etf', () => {
+            expect(matchesAssetClass('SPY', 'etf')).toBe(true);
+            expect(matchesAssetClass('AAPL', 'etf')).toBe(false);
+        });
 
-         it('should match stock', () => {
-              expect(matchesAssetClass('AAPL', 'stock')).toBe(true);
-              expect(matchesAssetClass('SPY', 'stock')).toBe(false);
-         });
+        it('should match stock', () => {
+            expect(matchesAssetClass('AAPL', 'stock')).toBe(true);
+            expect(matchesAssetClass('SPY', 'stock')).toBe(false);
+        });
 
-         it('should return true for unknown asset classes', () => {
-              expect(matchesAssetClass('AAPL', 'unknown')).toBe(true);
-         });
+        it('should return true for unknown asset classes', () => {
+            expect(matchesAssetClass('AAPL', 'unknown')).toBe(true);
+        });
     });
 });

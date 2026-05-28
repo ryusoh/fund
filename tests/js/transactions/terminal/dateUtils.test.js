@@ -165,7 +165,9 @@ describe('terminal dateUtils', () => {
         });
 
         it('should return range as string for arbitrary dates', () => {
-            expect(formatDateRange({ from: '2023-02-01', to: '2023-05-15' })).toBe('2023-02-01 to 2023-05-15');
+            expect(formatDateRange({ from: '2023-02-01', to: '2023-05-15' })).toBe(
+                '2023-02-01 to 2023-05-15'
+            );
         });
 
         it('should format open-ended start range', () => {

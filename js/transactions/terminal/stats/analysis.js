@@ -349,10 +349,7 @@ export async function getDurationStatsText() {
     for (let i = 0; i < entries.length; i++) {
         weightedAvgDaysSum += entries[i].weight * entries[i].avgAgeDays;
     }
-    const weightedAvgDays =
-        totalWeight > 0
-            ? weightedAvgDaysSum / totalWeight
-            : null;
+    const weightedAvgDays = totalWeight > 0 ? weightedAvgDaysSum / totalWeight : null;
     const medianDays = computeWeightedMedian(
         entries,
         (entry) => entry.weight,
@@ -387,10 +384,7 @@ export async function getDurationStatsText() {
             closedDaysSum += (Number(closedSales[i].qty) || 0) * (Number(closedSales[i].days) || 0);
         }
     }
-    const weightedClosedAvgDays =
-        totalClosedQty > 0
-            ? closedDaysSum / totalClosedQty
-            : null;
+    const weightedClosedAvgDays = totalClosedQty > 0 ? closedDaysSum / totalClosedQty : null;
     if (Number.isFinite(weightedClosedAvgDays)) {
         summaryRows.push([
             'Weighted Avg Age (Closed)',
@@ -679,7 +673,10 @@ export async function getConcentrationText() {
     // Calculate adjusted HHI using ETF internal diversification
     let hhi = 0;
     for (let i = 0; i < normalized.length; i++) {
-        hhi += calculateAdjustedHhiContribution(normalized[i].ticker, normalized[i].normalizedWeight);
+        hhi += calculateAdjustedHhiContribution(
+            normalized[i].ticker,
+            normalized[i].normalizedWeight
+        );
     }
     const effectiveHoldings = hhi > 0 ? 1 / hhi : null;
     let top3Weight = 0;

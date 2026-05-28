@@ -1,4 +1,7 @@
-import { handleTransactionCommand, handleDefaultCommand } from '../../../../../js/transactions/terminal/handlers/transaction.js';
+import {
+    handleTransactionCommand,
+    handleDefaultCommand,
+} from '../../../../../js/transactions/terminal/handlers/transaction.js';
 import { setChartDateRange } from '../../../../../js/transactions/state.js';
 import * as viewUtils from '../../../../../js/transactions/terminal/viewUtils.js';
 import * as dateUtils from '../../../../../js/transactions/terminal/dateUtils.js';
@@ -10,31 +13,31 @@ jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         activeFilterTerm: '',
         activeChart: 'performance',
-        selectedCurrency: 'USD'
+        selectedCurrency: 'USD',
     },
-    setChartDateRange: jest.fn()
+    setChartDateRange: jest.fn(),
 }));
 
 jest.mock('../../../../../js/transactions/terminal/viewUtils.js', () => ({
     isTransactionTableVisible: jest.fn(),
     getActiveChartSummaryText: jest.fn(),
     ensureTransactionTableVisible: jest.fn(),
-    isActiveChartVisible: jest.fn()
+    isActiveChartVisible: jest.fn(),
 }));
 
 jest.mock('../../../../../js/transactions/terminal/dateUtils.js', () => ({
     updateContextYearFromRange: jest.fn(),
     parseSimplifiedDateRange: jest.fn(),
-    formatDateRange: jest.fn()
+    formatDateRange: jest.fn(),
 }));
 
 jest.mock('../../../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn(),
-    getZoomState: jest.fn()
+    getZoomState: jest.fn(),
 }));
 
 jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
-    getDynamicStatsText: jest.fn()
+    getDynamicStatsText: jest.fn(),
 }));
 
 describe('Transaction Command Handler', () => {
@@ -46,7 +49,7 @@ describe('Transaction Command Handler', () => {
             toggleTable: jest.fn(),
             filterAndSort: jest.fn(),
             chartManager: { update: jest.fn() },
-            appendMessage: jest.fn()
+            appendMessage: jest.fn(),
         };
     });
 
@@ -54,7 +57,9 @@ describe('Transaction Command Handler', () => {
         it('should toggle table when no args provided and return instructions', async () => {
             await handleTransactionCommand([], mockContext);
             expect(mockContext.toggleTable).toHaveBeenCalled();
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Toggled transaction table'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Toggled transaction table')
+            );
         });
 
         it('should apply valid date filter to table when table is visible', async () => {
@@ -73,7 +78,9 @@ describe('Transaction Command Handler', () => {
             expect(setChartDateRange).toHaveBeenCalledWith(mockRange);
             expect(dateUtils.updateContextYearFromRange).toHaveBeenCalledWith(mockRange);
             expect(mockContext.filterAndSort).toHaveBeenCalledWith('');
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Applied date filter 2023 to transactions table'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Applied date filter 2023 to transactions table')
+            );
         });
 
         it('should apply valid date filter to active chart when chart is visible', async () => {
@@ -88,8 +95,12 @@ describe('Transaction Command Handler', () => {
 
             expect(setChartDateRange).toHaveBeenCalledWith(mockRange);
             expect(mockContext.chartManager.update).toHaveBeenCalled();
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Applied date filter 2023 to performance chart.'));
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Chart summary'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Applied date filter 2023 to performance chart.')
+            );
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Chart summary')
+            );
         });
 
         it('should fallback to filter string if invalid date range', async () => {
@@ -99,8 +110,12 @@ describe('Transaction Command Handler', () => {
             await handleTransactionCommand(['invalid'], mockContext);
 
             expect(mockContext.filterAndSort).toHaveBeenCalledWith('invalid');
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Filtering transactions by: "invalid"'));
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Chart summary'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Filtering transactions by: "invalid"')
+            );
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Chart summary')
+            );
             expect(setChartDateRange).not.toHaveBeenCalled();
         });
 
@@ -112,7 +127,9 @@ describe('Transaction Command Handler', () => {
 
             await handleTransactionCommand(['AAPL'], mockContext);
 
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Some dynamic stats'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Some dynamic stats')
+            );
         });
 
         it('should unzoom if zoomed', async () => {
@@ -135,7 +152,9 @@ describe('Transaction Command Handler', () => {
 
             expect(dateUtils.parseSimplifiedDateRange).toHaveBeenCalledWith('2023');
             expect(setChartDateRange).toHaveBeenCalled();
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Applied date filter'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Applied date filter')
+            );
         });
 
         it('should filter transactions if command is not a valid date range', async () => {
@@ -146,7 +165,9 @@ describe('Transaction Command Handler', () => {
             await handleDefaultCommand('notadate', mockContext);
 
             expect(mockContext.filterAndSort).toHaveBeenCalledWith('notadate');
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Some dynamic stats'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Some dynamic stats')
+            );
         });
 
         it('should append summary text if chart is active instead of table', async () => {
@@ -157,7 +178,9 @@ describe('Transaction Command Handler', () => {
             await handleDefaultCommand('notadate', mockContext);
 
             expect(mockContext.filterAndSort).toHaveBeenCalledWith('notadate');
-            expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Some summary'));
+            expect(mockContext.appendMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Some summary')
+            );
         });
     });
 });
