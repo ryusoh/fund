@@ -71,3 +71,7 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2024-05-25 - Chart Renderer Early Exits & Snapshot Tests
 
 **Learning:** When unit testing chart renderers like `beta.js` and `fx.js`, ensure you cover the early-exit branches that handle empty data (e.g. `seriesToDraw.length === 0`). This requires mocking out internal chart dependencies like `stopPerformanceAnimation` or `stopFxAnimation` correctly. Additionally, when testing data aggregation functions like `getPESnapshotLine` that format numbers, account for asynchronous mock overrides to maintain predictable test executions and reach isolated branches.
+
+## 2025-02-23 - Glow Trail Animator, Glass 3D Plugin, and Fade Control Testing
+
+**Learning:** When testing visual animation loops tied to requestAnimationFrame (e.g. `glowTrailAnimator`), manually triggering mocked RAF callbacks allows for deterministic phase advancement and verifies state reset logic. When verifying plugins that inject directly into Chart.js lifecycles, full object mocks for `datasetMeta` and partial mock `CanvasRenderingContext2D` ensures early branches exit safely before execution hits `TypeError` on null pointer properties.

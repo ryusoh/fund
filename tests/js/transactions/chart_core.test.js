@@ -32,6 +32,45 @@ describe('composition ticker filtering helper', () => {
     });
 });
 
+describe('createChartManager', () => {
+    let createChartManager;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const chartModule = require('@js/transactions/chart.js');
+            createChartManager = chartModule.createChartManager;
+        });
+    });
+
+    it('handles redraw requests and skips when pending', () => {
+        const manager = createChartManager();
+        let rafCallback = null;
+        jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+            rafCallback = cb;
+            return 123;
+        });
+
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+        // Calling again should skip scheduling since it is pending
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+        // Execute the callback
+        if (rafCallback) {
+            rafCallback(1000);
+        }
+
+        // Now we can redraw again
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(2);
+
+        global.requestAnimationFrame.mockRestore();
+    });
+});
+
 describe('Minimum Tick Count Verification', () => {
     let generateConcreteTicks;
     let computePercentTickInfo;
