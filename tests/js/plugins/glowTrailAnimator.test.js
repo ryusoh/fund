@@ -9,12 +9,12 @@ describe('glowTrailAnimator', () => {
             enabled: true,
             charts: {
                 disabledChart: { enabled: false },
-                customChart: { tailRatio: 0.5, oscillationSpeed: 2 }
-            }
+                customChart: { tailRatio: 0.5, oscillationSpeed: 2 },
+            },
         });
 
         const mockGradient = {
-            addColorStop: jest.fn()
+            addColorStop: jest.fn(),
         };
 
         mockCtx = {
@@ -34,7 +34,7 @@ describe('glowTrailAnimator', () => {
             shadowColor: '',
             shadowBlur: 0,
             lineWidth: 0,
-            globalAlpha: 1
+            globalAlpha: 1,
         };
 
         jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
@@ -104,23 +104,38 @@ describe('glowTrailAnimator', () => {
 
     describe('drawSeriesGlow', () => {
         it('does not draw if coords are empty', () => {
-            animator.drawSeriesGlow(mockCtx, { coords: [], color: '#ff0000', lineWidth: 2 }, { chartKey: 'test' });
+            animator.drawSeriesGlow(
+                mockCtx,
+                { coords: [], color: '#ff0000', lineWidth: 2 },
+                { chartKey: 'test' }
+            );
             expect(mockCtx.beginPath).not.toHaveBeenCalled();
         });
 
         it('does not draw if color is invalid', () => {
-            animator.drawSeriesGlow(mockCtx, { coords: [{x: 0, y: 0}], color: 'invalid', lineWidth: 2 }, { chartKey: 'test' });
+            animator.drawSeriesGlow(
+                mockCtx,
+                { coords: [{ x: 0, y: 0 }], color: 'invalid', lineWidth: 2 },
+                { chartKey: 'test' }
+            );
             expect(mockCtx.beginPath).not.toHaveBeenCalled();
         });
 
         it('draws halo and ring with valid coords and color', () => {
             const series = {
-                coords: [{ x: 10, y: 10 }, { x: 20, y: 20 }],
+                coords: [
+                    { x: 10, y: 10 },
+                    { x: 20, y: 20 },
+                ],
                 color: '#ff0000',
-                lineWidth: 2
+                lineWidth: 2,
             };
 
-            animator.drawSeriesGlow(mockCtx, series, { chartKey: 'test', isMobile: false, seriesIndex: 0 });
+            animator.drawSeriesGlow(mockCtx, series, {
+                chartKey: 'test',
+                isMobile: false,
+                seriesIndex: 0,
+            });
 
             expect(mockCtx.createRadialGradient).toHaveBeenCalled();
             expect(mockCtx.arc).toHaveBeenCalled();
@@ -130,9 +145,9 @@ describe('glowTrailAnimator', () => {
 
         it('draws tail when tailRatio > 0 and coords are sufficient', () => {
             const series = {
-                coords: Array.from({length: 20}, (_, i) => ({ x: i, y: i })),
+                coords: Array.from({ length: 20 }, (_, i) => ({ x: i, y: i })),
                 color: 'rgb(255, 0, 0)',
-                lineWidth: 2
+                lineWidth: 2,
             };
 
             animator.drawSeriesGlow(mockCtx, series, { chartKey: 'customChart' });
@@ -145,7 +160,7 @@ describe('glowTrailAnimator', () => {
             const series = {
                 coords: [{ x: 10, y: 10 }],
                 color: '#00ff00',
-                lineWidth: 2
+                lineWidth: 2,
             };
 
             animator.drawSeriesGlow(mockCtx, series, { chartKey: 'test', isMobile: true });
@@ -161,7 +176,7 @@ describe('glowTrailAnimator', () => {
             const series = {
                 coords: [{ x: 10, y: 10 }],
                 color: '#f00',
-                lineWidth: 2
+                lineWidth: 2,
             };
 
             animator.drawSeriesGlow(mockCtx, series, { chartKey: 'test' });
