@@ -76,10 +76,7 @@ def test_fetch_dividends():
         # Test already in cache
         cache = {'AAPL': []}
         res = generate_yield_data.fetch_dividends(['AAPL'], cache)
-        assert res == cache
-        mock_ticker.assert_not_called()
 
-        # Test not in cache
         mock_t = MagicMock()
         mock_t.dividends = pd.Series(
             [0.5, 0.6], index=pd.DatetimeIndex(['2020-01-01', '2020-04-01'])
@@ -90,7 +87,7 @@ def test_fetch_dividends():
         res = generate_yield_data.fetch_dividends(['AAPL'], cache)
         assert 'AAPL' in res
         assert res['AAPL'] == [['2020-01-01', 0.5], ['2020-04-01', 0.6]]
-        mock_save.assert_called_once()
+        assert mock_save.call_count == 2
 
         # Test empty dividends
         mock_t.dividends = pd.Series(dtype=float)
@@ -150,6 +147,8 @@ def test_calculate_yield_data(mock_dirs):
         assert data[1]['date'] == '2020-01-02'
         assert data[1]['ttm_income'] == 10.0  # 10 shares * 1.0
         assert data[1]['market_value'] == 2000.0  # AAPL(100*10) + TSLA(200*5)
+        assert data[1]['daily_dividend'] == 10.0  # 10 shares * $1.0 on ex-date
+        assert data[1]['daily_dividends_by_ticker'] == {'AAPL': 10.0}
 
 
 def test_calculate_yield_data_empty_shares(mock_dirs):
@@ -216,3 +215,82 @@ def test_load_dividend_cache_exception(tmp_path):
             res = generate_yield_data.load_dividend_cache()
             assert res == {}
             mock_warning.assert_called_once()
+
+
+def test_daily_dividend_on_ex_date(mock_dirs):
+    """daily_dividend should equal shares * dividend on the ex-date, and 0 otherwise."""
+    generate_yield_data.HOLDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    generate_yield_data.PRICES_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    dates = pd.date_range(start='2020-01-01', periods=2)
+    holdings_df = pd.DataFrame({'AAPL': [10, 10], 'date': dates}, index=dates)
+    holdings_df.to_parquet(generate_yield_data.HOLDINGS_PATH)
+
+    prices_df = pd.DataFrame({'AAPL': [100.0, 100.0]}, index=dates)
+    prices_df.to_parquet(generate_yield_data.PRICES_PATH)
+
+    with (
+        patch('scripts.generate_yield_data.load_dividend_cache') as mock_load,
+        patch('scripts.generate_yield_data.fetch_dividends') as mock_fetch,
+    ):
+        mock_load.return_value = {}
+        mock_fetch.return_value = {'AAPL': [['2020-01-02', 1.0]]}
+
+        generate_yield_data.calculate_yield_data()
+
+        with open(generate_yield_data.OUTPUT_FILE, 'r') as f:
+            data = json.load(f)
+
+        assert data[0]['daily_dividend'] == 0  # No dividend on 2020-01-01
+        assert data[1]['daily_dividend'] == 10.0  # 10 shares * $1.0
+
+
+def test_daily_dividend_multiple_tickers(mock_dirs):
+    """daily_dividend should sum across all tickers on the same date."""
+    generate_yield_data.HOLDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    generate_yield_data.PRICES_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    dates = pd.date_range(start='2020-01-01', periods=2)
+    holdings_df = pd.DataFrame({'AAPL': [10, 10], 'TSLA': [5, 5], 'date': dates}, index=dates)
+    holdings_df.to_parquet(generate_yield_data.HOLDINGS_PATH)
+
+    prices_df = pd.DataFrame({'AAPL': [100.0, 100.0], 'TSLA': [200.0, 200.0]}, index=dates)
+    prices_df.to_parquet(generate_yield_data.PRICES_PATH)
+
+    with (
+        patch('scripts.generate_yield_data.load_dividend_cache') as mock_load,
+        patch('scripts.generate_yield_data.fetch_dividends') as mock_fetch,
+    ):
+        mock_load.return_value = {}
+        mock_fetch.return_value = {
+            'AAPL': [['2020-01-02', 1.0]],
+            'TSLA': [['2020-01-02', 2.0]],
+        }
+
+        generate_yield_data.calculate_yield_data()
+
+        with open(generate_yield_data.OUTPUT_FILE, 'r') as f:
+            data = json.load(f)
+
+        assert data[1]['daily_dividend'] == 20.0
+        assert data[1]['daily_dividends_by_ticker'] == {
+            'AAPL': 10.0,
+            'TSLA': 10.0,
+        }  # 10*1.0 + 5*2.0
+
+
+def test_fetch_dividends_updates_stale():
+    """If a ticker is in the cache, it should still be refreshed with the latest data."""
+    cache = {'VT': [['2020-01-01', 1.0]]}
+
+    mock_div_series = pd.Series([1.5, 2.0], index=pd.to_datetime(['2020-01-01', '2026-03-20']))
+
+    with patch('yfinance.Ticker') as mock_ticker:
+        mock_ticker.return_value.dividends = mock_div_series
+
+        with patch('scripts.generate_yield_data.save_dividend_cache') as mock_save:
+            updated_cache = generate_yield_data.fetch_dividends(['VT'], cache)
+
+            mock_ticker.assert_called_once_with('VT')
+            assert updated_cache['VT'] == [['2020-01-01', 1.5], ['2026-03-20', 2.0]]
+            mock_save.assert_called_once()

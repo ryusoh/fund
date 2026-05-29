@@ -1,4 +1,8 @@
-import { drawYieldChart } from '@js/transactions/chart/renderers/yield.js';
+import {
+    drawYieldChart,
+    loadYieldData,
+    getCachedYieldData,
+} from '@js/transactions/chart/renderers/yield.js';
 
 jest.mock('@js/transactions/state.js', () => ({
     transactionState: {
@@ -57,5 +61,35 @@ describe('Yield Chart Renderer', () => {
         expect(global.fetch).toHaveBeenCalled();
         await new Promise(process.nextTick);
         expect(chartManager.update).toHaveBeenCalled();
+    });
+
+    describe('Yield Data Caching', () => {
+        beforeEach(() => {
+            // Reset module state by isolating tests if necessary,
+            // or we mock fetch to return data.
+        });
+
+        it('loadYieldData fetches once and caches the result', async () => {
+            const mockData = [{ date: '2020-01-01', daily_dividend: 10 }];
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve(mockData),
+                })
+            );
+
+            // First call should fetch
+            const data1 = await loadYieldData();
+            expect(data1).toEqual(mockData);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+
+            // Second call should return cached data without fetching
+            const data2 = await loadYieldData();
+            expect(data2).toEqual(mockData);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+
+            // getCachedYieldData should return the same object synchronously
+            expect(getCachedYieldData()).toBe(data1);
+        });
     });
 });

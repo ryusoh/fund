@@ -440,7 +440,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     );
 }
 
-function buildRangeSummary(layout, rawStart, rawEnd) {
+export function buildRangeSummary(layout, rawStart, rawEnd) {
     if (!layout || !Array.isArray(layout.series) || layout.series.length === 0) {
         return null;
     }

@@ -29,8 +29,10 @@ import {
     buildFilteredBalanceSeries,
     applyDrawdownToSeries,
     computeAppreciationSeries,
+    mergeDividendsIntoContribution,
 } from '../data/contribution.js';
 import { drawVolumeChart, drawContributionMarkers } from './contributionComponents.js';
+import { loadYieldData, getCachedYieldData } from './yield.js';
 import {
     parseLocalDate,
     clampTime,
@@ -114,6 +116,31 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         } else {
             contributionSource = runningAmountSeries;
         }
+    }
+
+    // Load yield data and merge dividends into contribution series
+    const yieldData = getCachedYieldData();
+    if (!yieldData) {
+        // Trigger load asynchronously to avoid blocking the render loop
+        loadYieldData().then(() => chartManager.update());
+    } else if (contributionSource.length > 0) {
+        let activeTickers = null;
+        if (filtersActive && Array.isArray(filteredTransactions)) {
+            const tickerSet = new Set();
+            filteredTransactions.forEach((t) => {
+                if (t.security) {
+                    tickerSet.add(t.security);
+                }
+            });
+            activeTickers = Array.from(tickerSet);
+        }
+
+        contributionSource = mergeDividendsIntoContribution(
+            contributionSource,
+            yieldData,
+            selectedCurrency,
+            activeTickers
+        );
     }
 
     let historicalPrices = transactionState.historicalPrices;

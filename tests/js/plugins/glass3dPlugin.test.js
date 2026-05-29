@@ -61,7 +61,7 @@ describe('glass3dPlugin', () => {
             ctx,
             glassPointerTarget: { x: 0.3, y: -0.2 },
             getDatasetMeta: jest.fn(() => ({ data: arcs })),
-            chartArea: { top: 0, bottom: 200, left: 0, right: 200 }
+            chartArea: { top: 0, bottom: 200, left: 0, right: 200 },
         };
         global.performance = { now: jest.fn(() => 1000) };
         window.pieChartGlassEffect = {
@@ -110,10 +110,12 @@ describe('glass3dPlugin', () => {
         const doughnutChart = {
             ctx,
             getDatasetMeta: jest.fn(() => ({ data: arcs })),
-            config: { type: 'doughnut' }
+            config: { type: 'doughnut' },
         };
         glass3dPlugin.beforeDatasetsDraw(doughnutChart, { meta: {} }, {});
-        expect(() => glass3dPlugin.afterDatasetsDraw(doughnutChart, { meta: {} }, {})).not.toThrow();
+        expect(() =>
+            glass3dPlugin.afterDatasetsDraw(doughnutChart, { meta: {} }, {})
+        ).not.toThrow();
         // Additional coverage for drawing hole geometry
         expect(ctx.fill).toHaveBeenCalled();
     });
