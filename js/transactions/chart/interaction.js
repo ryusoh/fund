@@ -405,17 +405,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     }
 
     // Sort snapshot for display
-    seriesSnapshot.sort((a, b) => {
-        // Buy/Sell bars always at the bottom
-        if (a.isBuySellBar && !b.isBuySellBar) {
-            return 1;
-        }
-        if (!a.isBuySellBar && b.isBuySellBar) {
-            return -1;
-        }
-        // Then by value descending
-        return Math.abs(b.value) - Math.abs(a.value);
-    });
+    sortCrosshairSnapshot(seriesSnapshot);
 
     const dateLabel = formatCrosshairDateLabel(time);
 
@@ -1026,4 +1016,36 @@ export function attachCrosshairEvents(canvas, chartManager) {
         );
     }
     pointerEventsAttached = true;
+}
+
+export function sortCrosshairSnapshot(seriesSnapshot) {
+    const fixedOrder = {
+        contribution: 1,
+        balance: 2,
+        appreciation: 3,
+        buyVolume: 4,
+        sellVolume: 5,
+    };
+
+    seriesSnapshot.sort((a, b) => {
+        if (a.key in fixedOrder && b.key in fixedOrder) {
+            return fixedOrder[a.key] - fixedOrder[b.key];
+        }
+        if (a.key in fixedOrder) {
+            return -1;
+        }
+        if (b.key in fixedOrder) {
+            return 1;
+        }
+
+        // Buy/Sell bars always at the bottom
+        if (a.isBuySellBar && !b.isBuySellBar) {
+            return 1;
+        }
+        if (!a.isBuySellBar && b.isBuySellBar) {
+            return -1;
+        }
+        // Then by value descending
+        return Math.abs(b.value) - Math.abs(a.value);
+    });
 }

@@ -1,4 +1,4 @@
-import { buildRangeSummary } from '@js/transactions/chart/interaction.js';
+import { buildRangeSummary, sortCrosshairSnapshot } from '@js/transactions/chart/interaction.js';
 import { formatCurrencyInline } from '@js/transactions/utils.js';
 
 jest.mock('@js/transactions/utils.js', () => ({
@@ -53,6 +53,42 @@ describe('Interaction logic', () => {
             expect(entry.key).toBe('contribution');
             expect(entry.delta).toBe(500);
             expect(entry.deltaFormatted).toBe('$500.00');
+        });
+    });
+
+    describe('sortCrosshairSnapshot', () => {
+        it('sorts standard keys in a fixed order: contribution, balance, appreciation, buy, sell', () => {
+            const snapshot = [
+                { key: 'sellVolume', value: 1000, isBuySellBar: true },
+                { key: 'appreciation', value: -500, isBuySellBar: false },
+                { key: 'contribution', value: 200, isBuySellBar: false },
+                { key: 'buyVolume', value: 10, isBuySellBar: true },
+                { key: 'balance', value: 300, isBuySellBar: false },
+            ];
+
+            sortCrosshairSnapshot(snapshot);
+
+            expect(snapshot[0].key).toBe('contribution');
+            expect(snapshot[1].key).toBe('balance');
+            expect(snapshot[2].key).toBe('appreciation');
+            expect(snapshot[3].key).toBe('buyVolume');
+            expect(snapshot[4].key).toBe('sellVolume');
+        });
+
+        it('sorts regular unknown series by absolute value descending after fixed keys', () => {
+            const snapshot = [
+                { key: 'seriesB', value: -300, isBuySellBar: false },
+                { key: 'contribution', value: 100, isBuySellBar: false },
+                { key: 'seriesA', value: 500, isBuySellBar: false },
+                { key: 'seriesC', value: 100, isBuySellBar: false },
+            ];
+
+            sortCrosshairSnapshot(snapshot);
+
+            expect(snapshot[0].key).toBe('contribution'); // Fixed keys first
+            expect(snapshot[1].key).toBe('seriesA'); // abs: 500
+            expect(snapshot[2].key).toBe('seriesB'); // abs: 300
+            expect(snapshot[3].key).toBe('seriesC'); // abs: 100
         });
     });
 });
