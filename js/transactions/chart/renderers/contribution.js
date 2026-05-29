@@ -119,11 +119,11 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     }
 
     // Load yield data and merge dividends into contribution series
-    const yieldData = getCachedYieldData();
+    let yieldData = getCachedYieldData();
     if (!yieldData) {
-        // Trigger load asynchronously to avoid blocking the render loop
-        loadYieldData().then(() => chartManager.update());
-    } else if (contributionSource.length > 0) {
+        yieldData = await loadYieldData();
+    }
+    if (yieldData && contributionSource.length > 0) {
         let activeTickers = null;
         if (filtersActive && Array.isArray(filteredTransactions)) {
             const tickerSet = new Set();

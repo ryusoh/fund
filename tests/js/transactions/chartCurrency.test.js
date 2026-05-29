@@ -112,6 +112,11 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             smoothFinancialData: jest.fn((data) => data.map((p) => ({ x: p.x, y: p.y }))), // Identity pass-through
         }));
 
+        jest.doMock('@js/transactions/chart/renderers/yield.js', () => ({
+            getCachedYieldData: jest.fn(() => null),
+            loadYieldData: jest.fn(() => Promise.resolve(null)),
+        }));
+
         // Mock document/canvas for chartManager
         global.document.getElementById = jest.fn((id) => {
             if (id === 'runningAmountCanvas') {
