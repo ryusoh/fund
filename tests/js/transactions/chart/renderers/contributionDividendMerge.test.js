@@ -218,7 +218,9 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
     });
 
     it('calls mergeDividendsIntoContribution even when yield data was not pre-cached', async () => {
-        const { drawContributionChart } = require('@js/transactions/chart/renderers/contribution.js');
+        const {
+            drawContributionChart,
+        } = require('@js/transactions/chart/renderers/contribution.js');
 
         const ctx = makeCtxStub();
         const chartManager = { update: jest.fn() };
@@ -233,7 +235,7 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
             expect.any(Array), // contributionSource
             FAKE_YIELD_DATA, // the yield data that was loaded
             'USD', // selectedCurrency
-            ['FSGGX'], // activeTickers from filtered transactions
+            ['FSGGX'] // activeTickers from filtered transactions
         );
     });
 
@@ -241,7 +243,9 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
         // Now simulate pre-cached yield data
         mockGetCachedYieldData.mockReturnValue(FAKE_YIELD_DATA);
 
-        const { drawContributionChart } = require('@js/transactions/chart/renderers/contribution.js');
+        const {
+            drawContributionChart,
+        } = require('@js/transactions/chart/renderers/contribution.js');
 
         const ctx = makeCtxStub();
         const chartManager = { update: jest.fn() };
@@ -252,11 +256,8 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
         expect(mockLoadYieldData).not.toHaveBeenCalled();
 
         // But merge MUST still happen
-        expect(mockMergeDividends).toHaveBeenCalledWith(
-            expect.any(Array),
-            FAKE_YIELD_DATA,
-            'USD',
-            ['FSGGX'],
-        );
+        expect(mockMergeDividends).toHaveBeenCalledWith(expect.any(Array), FAKE_YIELD_DATA, 'USD', [
+            'FSGGX',
+        ]);
     });
 });
