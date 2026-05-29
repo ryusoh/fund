@@ -175,3 +175,107 @@ describe('getPESnapshotLine', () => {
         expect(result).toContain('VT:18/15'); // 18 / 1.2 = 15
     });
 });
+
+describe('getContributionSummaryText', () => {
+    let getContributionSummaryText;
+    let loadYieldData;
+    let hasActiveTransactionFilters;
+    let buildFilteredBalanceSeries;
+    let buildContributionSeriesFromTransactions;
+    let transactionState;
+    let mergeDividendsIntoContribution;
+
+    beforeEach(async () => {
+        jest.resetModules();
+
+        jest.mock('@js/transactions/chart/renderers/yield.js', () => ({
+            loadYieldData: jest.fn(),
+        }));
+
+        jest.mock('@js/transactions/chart.js', () => ({
+            hasActiveTransactionFilters: jest.fn(),
+            buildFilteredBalanceSeries: jest.fn(),
+            buildContributionSeriesFromTransactions: jest.fn(),
+            buildFxChartSeries: jest.fn(),
+            buildDrawdownSeries: jest.fn(),
+            getContributionSeriesForTransactions: jest.fn(),
+        }));
+
+        jest.mock('@js/transactions/chart/data/contribution.js', () => ({
+            mergeDividendsIntoContribution: jest.fn(),
+        }));
+
+        jest.mock('@js/transactions/state.js', () => ({
+            transactionState: {
+                chartDateRange: { from: null, to: null },
+                selectedCurrency: 'USD',
+                allTransactions: [],
+                filteredTransactions: [],
+                runningAmountSeries: [],
+            },
+            setHistoricalPrices: jest.fn(),
+            getCompositionFilterTickers: jest.fn(),
+            getCompositionAssetClassFilter: jest.fn(),
+        }));
+
+        jest.mock('@js/transactions/utils.js', () => ({
+            formatCurrency: jest.fn((val) => `$${val.toFixed(2)}`),
+            convertValueToCurrency: jest.fn((val) => val),
+            convertBetweenCurrencies: jest.fn(),
+            formatCurrencyInline: jest.fn(),
+        }));
+
+        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
+        loadYieldData = yieldModule.loadYieldData;
+
+        const chartModule = await import('@js/transactions/chart.js');
+        hasActiveTransactionFilters = chartModule.hasActiveTransactionFilters;
+        buildFilteredBalanceSeries = chartModule.buildFilteredBalanceSeries;
+        buildContributionSeriesFromTransactions =
+            chartModule.buildContributionSeriesFromTransactions;
+
+        const contribModule = await import('@js/transactions/chart/data/contribution.js');
+        mergeDividendsIntoContribution = contribModule.mergeDividendsIntoContribution;
+
+        const stateModule = await import('@js/transactions/state.js');
+        transactionState = stateModule.transactionState;
+
+        const snapshotsModule = await import('@js/transactions/terminal/snapshots.js');
+        getContributionSummaryText = snapshotsModule.getContributionSummaryText;
+    });
+
+    it('subtracts dividends from the contribution value', async () => {
+        transactionState.chartDateRange = { from: null, to: null };
+        transactionState.selectedCurrency = 'USD';
+        transactionState.allTransactions = [
+            {
+                tradeDate: '2023-01-01',
+                amount: 1000,
+                netAmount: 1000,
+                orderTypes: new Set(['buy']),
+            },
+        ];
+        transactionState.filteredTransactions = [];
+        transactionState.runningAmountSeries = [];
+
+        hasActiveTransactionFilters.mockReturnValue(false);
+
+        buildContributionSeriesFromTransactions.mockReturnValue([
+            { tradeDate: '2023-01-01', amount: 1000 },
+        ]);
+
+        loadYieldData.mockResolvedValue([
+            { date: '2023-01-02', daily_dividend: 50, ttm_income: 50, forward_yield: 2 },
+        ]);
+
+        buildFilteredBalanceSeries.mockReturnValue([{ date: new Date('2023-01-01'), value: 1000 }]);
+
+        mergeDividendsIntoContribution.mockReturnValue([
+            { tradeDate: '2023-01-01', amount: 950 }, // Subtracted dividend
+        ]);
+
+        const text = await getContributionSummaryText();
+        expect(text).toContain('Contribution');
+        expect(text).toContain('$950.00');
+    });
+});

@@ -2,8 +2,8 @@ import { buildRangeSummary } from '@js/transactions/chart/interaction.js';
 import { formatCurrencyInline } from '@js/transactions/utils.js';
 
 jest.mock('@js/transactions/utils.js', () => ({
-    formatCurrencyInline: jest.fn(val => `$${val.toFixed(2)}`),
-    formatPercentInline: jest.fn(val => `${val.toFixed(2)}%`)
+    formatCurrencyInline: jest.fn((val) => `$${val.toFixed(2)}`),
+    formatPercentInline: jest.fn((val) => `${val.toFixed(2)}%`),
 }));
 
 describe('Interaction logic', () => {
@@ -17,20 +17,26 @@ describe('Interaction logic', () => {
                 // Jan 1: 1000
                 // Jan 2: 2000
                 // Jan 3: 1500 (500 dividend payout)
-                getValueAtTime: jest.fn(time => {
-                    if (time === 100) {return 1000;}
-                    if (time === 200) {return 2000;}
-                    if (time === 300) {return 1500;}
+                getValueAtTime: jest.fn((time) => {
+                    if (time === 100) {
+                        return 1000;
+                    }
+                    if (time === 200) {
+                        return 2000;
+                    }
+                    if (time === 300) {
+                        return 1500;
+                    }
                     return 0;
                 }),
-                formatDelta: (delta) => formatCurrencyInline(delta)
+                formatDelta: (delta) => formatCurrencyInline(delta),
             };
 
             const layout = {
                 minTime: 0,
                 maxTime: 1000,
                 valueType: 'currency',
-                series: [mockContributionSeries]
+                series: [mockContributionSeries],
             };
 
             // Range from Jan 1 (100) to Jan 3 (300)
