@@ -232,3 +232,8 @@
 
 **Learning:** Using `.map()` to copy coordinates inside `drawMountainFill` during high-frequency chart rendering loops allocates new objects and creates closures on every frame. This builds up garbage collection (GC) pressure over time, potentially causing frame drops.
 **Action:** Replaced the `.map()` coordinate mapping with a pre-allocated array (`new Array()`) and a standard, explicit `for` loop to eliminate intermediate closure allocations and reduce dynamic array growth overhead during rendering.
+
+## 2026-06-10 - Eliminate nested .forEach closures in stacked area rendering
+
+**Learning:** Using `.forEach()` inside tight charting rendering loops (such as `activeTickerOrder.forEach` wrapping `dates.forEach` to trace stacked area paths in `composition.js`, `sectors.js`, and `geography.js`) implicitly allocates closures on every frame. For complex charts with numerous groups and hundreds of date points, this compounds significantly, generating severe garbage collection (GC) pressure that can lead to micro-stutters and dropped frames during interaction or animation.
+**Action:** Always replace `.forEach()` iterations with standard, index-based `for` loops within critical high-frequency chart rendering code paths to eliminate closure allocation overhead entirely.
