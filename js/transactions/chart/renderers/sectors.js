@@ -207,7 +207,9 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
     );
 
     const cumulativeValues = new Array(dates.length).fill(0);
-    baseSectorOrder.forEach((sector) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let sIdx = 0; sIdx < baseSectorOrder.length; sIdx += 1) {
+        const sector = baseSectorOrder[sIdx];
         const values = chartData[sector] || [];
         const color = resolveSectorColor(sector);
         ctx.beginPath();
@@ -215,7 +217,9 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
 
-        dates.forEach((dateStr, index) => {
+        // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
+        for (let index = 0; index < dates.length; index += 1) {
+            const dateStr = dates[index];
             const x = xScale(parseLocalDate(dateStr).getTime());
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
@@ -223,7 +227,7 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
             } else {
                 ctx.lineTo(x, y);
             }
-        });
+        }
 
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
@@ -238,7 +242,7 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
-    });
+    }
 
     const latestIndex = dates.length - 1;
     const legendSeries = baseSectorOrder
