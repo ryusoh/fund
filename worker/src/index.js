@@ -52,7 +52,9 @@ function corsHeaders(origin) {
     try {
         if (origin) {
             const url = new URL(origin);
-            isSubdomain = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
+            isSubdomain =
+                url.protocol === 'https:' &&
+                (url.hostname === 'lyeutsaon.com' || url.hostname.endsWith('.lyeutsaon.com'));
         }
     } catch (err) {
         // eslint-disable-next-line no-console
