@@ -99,3 +99,8 @@
 
 **Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
 **Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
+
+## 2026-05-18 - Keyboard Accessibility for Custom Dropdowns
+
+**Learning:** When custom interactive elements like dropdown lists are built using non-semantic `div` tags, they inherently lack keyboard accessibility. Keyboard-only and screen reader users cannot focus, navigate, or activate these elements without proper roles and tab management.
+**Action:** Always add `role="button"`, `tabindex="0"`, a `keydown` event listener for Enter/Space keys, and a `:focus-visible` styling state when transforming generic `div` containers into interactive dropdown menu options.
