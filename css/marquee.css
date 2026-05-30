@@ -36,6 +36,7 @@
     font-size: clamp(5rem, 10vw, 12rem);
     font-weight: 800;
     font-family: 'JetBrains Mono ExtraBold', monospace;
+    /* Use serif for visual interrupt */
     text-transform: uppercase;
     color: transparent;
     -webkit-text-stroke: 2px rgba(255, 255, 255, 0.9);
@@ -48,6 +49,7 @@
     font-size: clamp(5rem, 10vw, 12rem);
     font-weight: 800;
     font-family: 'JetBrains Mono ExtraBold', monospace;
+    /* Use serif for visual interrupt */
     text-transform: uppercase;
     color: transparent;
     -webkit-text-stroke: 2px rgba(255, 255, 255, 0.9);
@@ -58,4 +60,11 @@
 
 .mq-char.mq-space {
     width: 0.35em;
+}
+
+.mq-char.mq-serif {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 700;
+    text-transform: lowercase;
 }

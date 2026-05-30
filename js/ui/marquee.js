@@ -71,17 +71,29 @@ function splitIntoChars(contentEl) {
     }
     const text = originalSpan.textContent;
     const fragment = document.createDocumentFragment();
-    for (const char of text) {
-        const s = document.createElement('span');
-        if (char === ' ') {
-            s.className = 'mq-char mq-space';
-            s.textContent = '\u00A0';
-        } else {
-            s.className = 'mq-char';
+
+    const words = text.split(' ');
+
+    const emphasisWords = ['TIME', 'TEARS', 'LOST'];
+
+    words.forEach((word, wordIndex) => {
+        const isEmphasis = emphasisWords.includes(word);
+
+        for (const char of word) {
+            const s = document.createElement('span');
+            s.className = 'mq-char' + (isEmphasis ? ' mq-serif' : '');
             s.textContent = char;
+            fragment.appendChild(s);
         }
-        fragment.appendChild(s);
-    }
+
+        if (wordIndex < words.length - 1) {
+            const space = document.createElement('span');
+            space.className = 'mq-char mq-space';
+            space.textContent = '\u00A0';
+            fragment.appendChild(space);
+        }
+    });
+
     originalSpan.replaceWith(fragment);
 }
 
