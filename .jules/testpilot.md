@@ -75,3 +75,10 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2025-02-23 - Glow Trail Animator, Glass 3D Plugin, and Fade Control Testing
 
 **Learning:** When testing visual animation loops tied to requestAnimationFrame (e.g. `glowTrailAnimator`), manually triggering mocked RAF callbacks allows for deterministic phase advancement and verifies state reset logic. When verifying plugins that inject directly into Chart.js lifecycles, full object mocks for `datasetMeta` and partial mock `CanvasRenderingContext2D` ensures early branches exit safely before execution hits `TypeError` on null pointer properties.
+## 2024-05-31 - Coverage Command Quirk
+- **Learning:** In this repository, `pnpm test` already runs with the `--coverage` flag configured in package.json. Appending `-- --coverage` causes Jest to interpret the flag as a literal test path regex, resulting in 'No tests found' errors.
+- **Action:** To check coverage, simply run `pnpm test` and examine its standard output.
+
+## 2024-05-31 - Mocking State Modules
+- **Learning:** When using `jest.mock` factory functions to mock state modules (like `js/transactions/state.js`), ensure all exported functions accessed or cleared in the tests (such as `setChartDateRange`) are explicitly included as `jest.fn()` in the returned mock object. Omitting them will cause `TypeError: ... is not a function` during test execution or teardown.
+- **Action:** Always double-check the module exports and ensure all accessed properties are mocked in the factory.

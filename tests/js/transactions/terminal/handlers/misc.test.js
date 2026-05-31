@@ -1,9 +1,11 @@
 import {
+    handleClearCommand,
+    handleLabelCommand,
     handleMarketcapCommand,
     handleGeographyCommand,
     handleSectorsCommand,
 } from '../../../../../js/transactions/terminal/handlers/misc.js';
-import { transactionState, setActiveChart } from '../../../../../js/transactions/state.js';
+import { transactionState, setActiveChart, setChartDateRange } from '../../../../../js/transactions/state.js';
 
 jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
@@ -326,5 +328,169 @@ describe('Misc Command Handlers', () => {
                 'Composition, Sectors, Geography, or Market Cap chart must be active. Use `plot composition`, `plot sectors`, `plot geography`, or `plot marketcap` first.'
             );
         });
+    });
+});
+
+describe('handleClearCommand', () => {
+    let terminalOutput;
+    let appendMessageMock;
+
+    beforeEach(() => {
+        terminalOutput = document.createElement('div');
+        terminalOutput.id = 'terminalOutput';
+        document.body.appendChild(terminalOutput);
+        appendMessageMock = jest.fn();
+    });
+
+    afterEach(() => {
+        if (terminalOutput) {
+            terminalOutput.remove();
+        }
+        setChartDateRange.mockClear();
+    });
+
+    it('should call clearOutput if it is a function', () => {
+        const clearOutputMock = jest.fn();
+        const closeAllFilterDropdownsMock = jest.fn();
+        const resetSortStateMock = jest.fn();
+        const filterAndSortMock = jest.fn();
+        const terminalInputMock = { value: 'some text' };
+
+        handleClearCommand([], {
+            clearOutput: clearOutputMock,
+            closeAllFilterDropdowns: closeAllFilterDropdownsMock,
+            resetSortState: resetSortStateMock,
+            filterAndSort: filterAndSortMock,
+            terminalInput: terminalInputMock,
+            appendMessage: appendMessageMock,
+        });
+
+        expect(clearOutputMock).toHaveBeenCalled();
+        expect(closeAllFilterDropdownsMock).toHaveBeenCalled();
+        expect(resetSortStateMock).toHaveBeenCalled();
+        expect(filterAndSortMock).toHaveBeenCalledWith('');
+        expect(terminalInputMock.value).toBe('');
+        expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
+    });
+
+    it('should clear terminalOutput children if clearOutput is not a function (replaceChildren fallback)', () => {
+        const closeAllFilterDropdownsMock = jest.fn();
+        const resetSortStateMock = jest.fn();
+        const filterAndSortMock = jest.fn();
+        const terminalInputMock = { value: 'some text' };
+
+        terminalOutput.appendChild(document.createElement('div'));
+        terminalOutput.replaceChildren = jest.fn(); // Mock replaceChildren
+
+        handleClearCommand([], {
+            closeAllFilterDropdowns: closeAllFilterDropdownsMock,
+            resetSortState: resetSortStateMock,
+            filterAndSort: filterAndSortMock,
+            terminalInput: terminalInputMock,
+            appendMessage: appendMessageMock,
+        });
+
+        expect(terminalOutput.replaceChildren).toHaveBeenCalled();
+        expect(closeAllFilterDropdownsMock).toHaveBeenCalled();
+        expect(resetSortStateMock).toHaveBeenCalled();
+        expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
+    });
+
+    it('should clear terminalOutput textContent if clearOutput is not a function and replaceChildren does not exist (jsdom fallback)', () => {
+        const closeAllFilterDropdownsMock = jest.fn();
+        const resetSortStateMock = jest.fn();
+        const filterAndSortMock = jest.fn();
+        const terminalInputMock = { value: 'some text' };
+
+        terminalOutput.appendChild(document.createElement('div'));
+        // In jsdom, replaceChildren might exist, so we force it to undefined to test the fallback
+        const originalReplaceChildren = terminalOutput.replaceChildren;
+        terminalOutput.replaceChildren = undefined;
+
+        handleClearCommand([], {
+            closeAllFilterDropdowns: closeAllFilterDropdownsMock,
+            resetSortState: resetSortStateMock,
+            filterAndSort: filterAndSortMock,
+            terminalInput: terminalInputMock,
+            appendMessage: appendMessageMock,
+        });
+
+        expect(terminalOutput.textContent).toBe('');
+        expect(closeAllFilterDropdownsMock).toHaveBeenCalled();
+        expect(resetSortStateMock).toHaveBeenCalled();
+        expect(setChartDateRange).toHaveBeenCalledWith({ from: null, to: null });
+
+        // Restore for other tests
+        terminalOutput.replaceChildren = originalReplaceChildren;
+    });
+});
+
+describe('handleLabelCommand', () => {
+    let appendMessageMock;
+    let chartManagerMock;
+
+    beforeEach(() => {
+        appendMessageMock = jest.fn();
+        chartManagerMock = {
+            redraw: jest.fn(),
+        };
+        // Reset transaction state before each test
+        transactionState.showChartLabels = undefined;
+    });
+
+    it('should toggle showChartLabels to true if it is explicitly false', () => {
+        // Let's set it to false explicitly first
+        transactionState.showChartLabels = false;
+
+        handleLabelCommand([], {
+            appendMessage: appendMessageMock,
+            chartManager: chartManagerMock
+        });
+
+
+        expect(transactionState.showChartLabels).toBe(true);
+        expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now visible.');
+        expect(chartManagerMock.redraw).toHaveBeenCalled();
+    });
+
+    it('should toggle showChartLabels to false if initially true', () => {
+        transactionState.showChartLabels = true;
+
+        handleLabelCommand([], {
+            appendMessage: appendMessageMock,
+            chartManager: chartManagerMock
+        });
+
+
+        expect(transactionState.showChartLabels).toBe(false);
+        expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now hidden.');
+        expect(chartManagerMock.redraw).toHaveBeenCalled();
+    });
+
+    it('should not throw if chartManager.redraw is not a function', () => {
+        transactionState.showChartLabels = true;
+
+        expect(() => {
+            handleLabelCommand([], {
+                appendMessage: appendMessageMock,
+                chartManager: {} // No redraw function
+            });
+        }).not.toThrow();
+
+        expect(transactionState.showChartLabels).toBe(false);
+        expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now hidden.');
+    });
+
+    it('should not throw if chartManager is undefined', () => {
+        transactionState.showChartLabels = true;
+
+        expect(() => {
+            handleLabelCommand([], {
+                appendMessage: appendMessageMock,
+            });
+        }).not.toThrow();
+
+        expect(transactionState.showChartLabels).toBe(false);
+        expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now hidden.');
     });
 });
