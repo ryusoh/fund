@@ -275,13 +275,19 @@ export function drawCrosshairOverlay(ctx, layout) {
             if (!isAbsoluteMode) {
                 percentValue = holding.value;
             } else if (layout.percentSeriesMap && layout.percentSeriesMap[holding.key]) {
-                const dates = layout.dates || [];
-                const timePoints = new Array(dates.length);
-                const holdingSeries = layout.percentSeriesMap[holding.key];
-                for (let j = 0; j < dates.length; j++) {
-                    timePoints[j] = { time: new Date(dates[j]).getTime(), value: holdingSeries[j] };
+                // Bolt: Cache interpolators on layout to avoid rebuilding them and repeatedly calling new Date() on every hover event frame
+                layout.percentInterpolators = layout.percentInterpolators || {};
+                let interpolator = layout.percentInterpolators[holding.key];
+                if (!interpolator) {
+                    const dates = layout.dates || [];
+                    const timePoints = new Array(dates.length);
+                    const holdingSeries = layout.percentSeriesMap[holding.key];
+                    for (let j = 0; j < dates.length; j++) {
+                        timePoints[j] = { time: new Date(dates[j]).getTime(), value: holdingSeries[j] };
+                    }
+                    interpolator = createTimeInterpolator(timePoints);
+                    layout.percentInterpolators[holding.key] = interpolator;
                 }
-                const interpolator = createTimeInterpolator(timePoints);
                 percentValue = interpolator(time) ?? 0;
             } else {
                 percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
