@@ -647,5 +647,261 @@ class TestGeneratePEData(unittest.TestCase):
         self.assertEqual(res.iloc[1], 1.0)
 
 
+class TestFetchBenchmarkPEDaily(unittest.TestCase):
+    """Tests for fetch_benchmark_pe_daily — the orchestrator that fetches
+    proxy price/EPS and calls compute_benchmark_pe_from_proxy."""
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_produces_daily_granularity(self, mock_ticker) -> None:
+        """End-to-end: fetched proxy data produces daily PE variation."""
+        from scripts.generate_pe_data import fetch_benchmark_pe_daily
+
+        dates = pd.date_range("2024-06-01", "2024-06-10")
+
+        # Mock SPY price history
+        mock_stock = MagicMock()
+        price_data = pd.DataFrame(
+            {"Close": [530, 532, 528, 535, 531, 540, 538, 542, 537, 545]},
+            index=dates,
+        )
+        mock_stock.history.return_value = price_data
+        mock_stock.info = {"trailingPE": 27.0, "trailingEps": 20.0}
+        mock_stock.income_stmt = pd.DataFrame()
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        mock_stock.splits = pd.Series(dtype=float)
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame()
+        mock_ticker.return_value = mock_stock
+
+        result = fetch_benchmark_pe_daily("SPY", dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(len(result), 10)
+        # Should have daily variation (not flat stretches)
+        self.assertGreater(result.nunique(), 5)
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_fallback_to_manual_when_no_history(self, mock_ticker) -> None:
+        """When yfinance history fails, falls back to manual anchors."""
+        from scripts.generate_pe_data import fetch_benchmark_pe_daily
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+
+        mock_stock = MagicMock()
+        mock_stock.history.return_value = pd.DataFrame()  # No history
+        mock_stock.info = {"trailingPE": 25.0, "trailingEps": None}
+        mock_stock.income_stmt = pd.DataFrame()
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        mock_stock.splits = pd.Series(dtype=float)
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame()
+        mock_ticker.return_value = mock_stock
+
+        manual = {"2024-01-01": 24.0, "2024-01-05": 25.0}
+        result = fetch_benchmark_pe_daily("SPY", dates, manual_anchors=manual)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertAlmostEqual(result.iloc[0], 24.0, places=1)
+        self.assertAlmostEqual(result.iloc[4], 25.0, places=1)
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_returns_none_on_total_failure(self, mock_ticker) -> None:
+        """Returns None when both proxy fetch and manual anchors fail."""
+        from scripts.generate_pe_data import fetch_benchmark_pe_daily
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        mock_ticker.side_effect = Exception("Network error")
+
+        result = fetch_benchmark_pe_daily("SPY", dates)
+        self.assertIsNone(result)
+
+
+class TestComputeBenchmarkPEFromProxy(unittest.TestCase):
+    """Tests for compute_benchmark_pe_from_proxy — derives daily benchmark PE
+    from a proxy ETF's price history and EPS, replacing the old approach of
+    interpolating sparse monthly manual anchors."""
+
+    def test_basic_daily_pe_from_price_and_eps(self) -> None:
+        """Given daily prices and EPS anchors, PE = price / interpolated TTM EPS."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        prices = pd.Series([500.0, 510.0, 505.0, 515.0, 520.0], index=dates)
+        # Single EPS anchor covering the whole range
+        eps_points = [{"date": pd.Timestamp("2024-01-01"), "eps": 20.0}]
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(len(result), 5)
+        # PE = price / EPS: 500/20=25, 510/20=25.5, etc.
+        self.assertAlmostEqual(result.iloc[0], 25.0, places=1)
+        self.assertAlmostEqual(result.iloc[1], 25.5, places=1)
+        self.assertAlmostEqual(result.iloc[4], 26.0, places=1)
+
+    def test_eps_interpolation_between_anchors(self) -> None:
+        """EPS should be linearly interpolated between anchor points."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        prices = pd.Series([500.0] * 5, index=dates)
+        eps_points = [
+            {"date": pd.Timestamp("2024-01-01"), "eps": 20.0},
+            {"date": pd.Timestamp("2024-01-05"), "eps": 25.0},
+        ]
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        # At day 1: PE = 500/20 = 25.0
+        self.assertAlmostEqual(result.iloc[0], 25.0, places=1)
+        # At day 5: PE = 500/25 = 20.0
+        self.assertAlmostEqual(result.iloc[4], 20.0, places=1)
+        # Mid-range PE should be between 20 and 25
+        self.assertGreater(result.iloc[2], 20.0)
+        self.assertLess(result.iloc[2], 25.0)
+
+    def test_daily_granularity_not_flat(self) -> None:
+        """Result should show daily price-driven variation, not flat stretches."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-10")
+        # Simulate realistic daily price movement
+        prices = pd.Series(
+            [500, 505, 498, 512, 507, 515, 503, 520, 510, 525],
+            index=dates,
+            dtype=float,
+        )
+        eps_points = [{"date": pd.Timestamp("2024-01-01"), "eps": 20.0}]
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        # Count unique PE values — should be 10 (one per day) since prices differ
+        unique_values = result.nunique()
+        self.assertEqual(unique_values, 10)
+
+    def test_manual_anchors_used_as_fallback(self) -> None:
+        """When no price data exists for early dates, manual anchors fill in."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        # Prices only available for last 3 days
+        prices = pd.Series([None, None, 505.0, 515.0, 520.0], index=dates)
+        eps_points = [{"date": pd.Timestamp("2024-01-01"), "eps": 20.0}]
+        manual_anchors = {
+            "2024-01-01": 24.0,
+            "2024-01-02": 24.5,
+        }
+
+        result = compute_benchmark_pe_from_proxy(
+            prices, eps_points, dates, manual_anchors=manual_anchors
+        )
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        # Early dates should use manual anchors
+        self.assertAlmostEqual(result.iloc[0], 24.0, places=1)
+        self.assertAlmostEqual(result.iloc[1], 24.5, places=1)
+        # Later dates should use price / EPS
+        self.assertAlmostEqual(result.iloc[2], 505.0 / 20.0, places=1)
+
+    def test_returns_none_for_no_data(self) -> None:
+        """Should return None when no prices and no anchors are available."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        prices = pd.Series([None] * 5, index=dates)
+        eps_points: list[dict] = []
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNone(result)
+
+    def test_zero_or_negative_eps_excluded(self) -> None:
+        """PE should be NaN/skipped for dates where EPS <= 0."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-03")
+        prices = pd.Series([500.0, 500.0, 500.0], index=dates)
+        eps_points = [
+            {"date": pd.Timestamp("2024-01-01"), "eps": -5.0},
+            {"date": pd.Timestamp("2024-01-03"), "eps": 20.0},
+        ]
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        # Day 3 with positive EPS should have valid PE
+        self.assertTrue(pd.notna(result.iloc[2]))
+        self.assertAlmostEqual(result.iloc[2], 25.0, places=1)
+
+    def test_derive_eps_from_anchors_and_prices(self) -> None:
+        """When no EPS points given, derive EPS from manual_anchors + prices."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-10")
+        # Prices vary daily
+        prices = pd.Series(
+            [500, 505, 498, 512, 507, 515, 503, 520, 510, 525],
+            index=dates,
+            dtype=float,
+        )
+        # Manual anchor says PE=25 on day 1 → implied EPS = 500/25 = 20
+        manual_anchors = {"2024-01-01": 25.0}
+        # No EPS points — should derive from anchor
+        result = compute_benchmark_pe_from_proxy(prices, [], dates, manual_anchors=manual_anchors)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        # Day 1: PE should be ~25.0 (anchor)
+        self.assertAlmostEqual(result.iloc[0], 25.0, places=1)
+        # Day 2: price=505, EPS=20 → PE=25.25 (different from day 1)
+        self.assertAlmostEqual(result.iloc[1], 505.0 / 20.0, places=1)
+        # All 10 days should have unique PE values
+        self.assertEqual(result.nunique(), 10)
+
+    def test_derive_eps_from_multiple_anchors(self) -> None:
+        """EPS derived from anchors should interpolate between anchor dates."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+        prices = pd.Series([500.0] * 5, index=dates)
+        # Two anchors: PE=25 on day 1 (EPS=20), PE=20 on day 5 (EPS=25)
+        manual_anchors = {
+            "2024-01-01": 25.0,  # implies EPS = 500/25 = 20
+            "2024-01-05": 20.0,  # implies EPS = 500/20 = 25
+        }
+
+        result = compute_benchmark_pe_from_proxy(prices, [], dates, manual_anchors=manual_anchors)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertAlmostEqual(result.iloc[0], 25.0, places=1)
+        self.assertAlmostEqual(result.iloc[4], 20.0, places=1)
+        # Mid-point EPS interpolated → PE between 20 and 25
+        self.assertGreater(result.iloc[2], 20.0)
+        self.assertLess(result.iloc[2], 25.0)
+
+    def test_result_length_matches_dates(self) -> None:
+        """Output series length must match input dates index."""
+        from scripts.generate_pe_data import compute_benchmark_pe_from_proxy
+
+        dates = pd.date_range("2023-06-01", "2024-06-01")
+        prices = pd.Series(500.0, index=dates)
+        eps_points = [{"date": pd.Timestamp("2023-06-01"), "eps": 20.0}]
+
+        result = compute_benchmark_pe_from_proxy(prices, eps_points, dates)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+
+        self.assertEqual(len(result), len(dates))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -283,7 +283,10 @@ export function drawCrosshairOverlay(ctx, layout) {
                     const timePoints = new Array(dates.length);
                     const holdingSeries = layout.percentSeriesMap[holding.key];
                     for (let j = 0; j < dates.length; j++) {
-                        timePoints[j] = { time: new Date(dates[j]).getTime(), value: holdingSeries[j] };
+                        timePoints[j] = {
+                            time: new Date(dates[j]).getTime(),
+                            value: holdingSeries[j],
+                        };
                     }
                     interpolator = createTimeInterpolator(timePoints);
                     layout.percentInterpolators[holding.key] = interpolator;

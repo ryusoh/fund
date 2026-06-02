@@ -715,6 +715,197 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
     return results
 
 
+def compute_benchmark_pe_from_proxy(
+    prices: pd.Series,
+    eps_points: List[Dict],
+    dates: pd.DatetimeIndex,
+    manual_anchors: Optional[Dict[str, float]] = None,
+) -> Optional[pd.Series]:
+    """Compute daily benchmark PE from proxy ETF prices and EPS data.
+
+    Instead of interpolating sparse monthly PE anchors (which loses daily
+    granularity), this derives PE = price / interpolated_TTM_EPS for each day.
+
+    Args:
+        prices: Daily price series for the proxy ETF (e.g. SPY), indexed by date.
+        eps_points: List of {"date": Timestamp, "eps": float} EPS anchor points.
+        dates: DatetimeIndex of all dates to produce PE for.
+        manual_anchors: Optional dict of date_str → PE for dates without price data.
+
+    Returns:
+        pd.Series of daily PE values, or None if no data available.
+    """
+    result = pd.Series(index=dates, dtype=float)
+    prices_aligned = prices.reindex(dates).ffill()
+
+    # 1. Build EPS series — from explicit eps_points, or derived from anchors + prices
+    known_eps = {}
+    if eps_points:
+        for p in eps_points:
+            if p["eps"] is not None and p["eps"] > 0:
+                known_eps[p["date"]] = p["eps"]
+
+    # Derive EPS from manual PE anchors: implied_EPS = price / anchor_PE
+    if manual_anchors and not known_eps:
+        for date_str, pe_val in manual_anchors.items():
+            if pe_val is None or pe_val <= 0:
+                continue
+            ts = pd.Timestamp(date_str).tz_localize(None)
+            # Find price at anchor date
+            price_at_anchor = None
+            if ts in prices_aligned.index and pd.notna(prices_aligned.loc[ts]):
+                price_at_anchor = float(prices_aligned.loc[ts])
+            elif len(prices_aligned.dropna()) > 0:
+                idx = prices_aligned.index.get_indexer([ts], method="nearest")[0]
+                if idx != -1 and pd.notna(prices_aligned.iloc[idx]):
+                    price_at_anchor = float(prices_aligned.iloc[idx])
+            if price_at_anchor and price_at_anchor > 0:
+                known_eps[ts] = price_at_anchor / pe_val
+
+    has_eps = bool(known_eps)
+
+    if has_eps:
+        eps_series = pd.Series(known_eps).sort_index()
+        eps_series = eps_series[~eps_series.index.duplicated(keep="last")]
+        full_eps = eps_series.reindex(eps_series.index.union(dates))
+        full_eps = full_eps.interpolate(method="time").ffill().bfill()
+        eps_daily = full_eps.reindex(dates)
+    else:
+        eps_daily = pd.Series(dtype=float, index=dates)
+
+    # 2. Compute PE = price / EPS for dates with valid price and EPS
+    if has_eps:
+        valid_mask = (
+            prices_aligned.notna() & (prices_aligned > 0) & eps_daily.notna() & (eps_daily > 0)
+        )
+        result[valid_mask] = prices_aligned[valid_mask] / eps_daily[valid_mask]
+
+    # 3. Fill gaps from manual anchors (for dates without price data)
+    if manual_anchors:
+        for date_str, pe_val in manual_anchors.items():
+            ts = pd.Timestamp(date_str).tz_localize(None)
+            if ts in dates:
+                if pd.isna(result.loc[ts]):
+                    result.loc[ts] = pe_val
+            else:
+                idx = dates.get_indexer([ts], method="nearest")[0]
+                if idx != -1 and pd.isna(result.iloc[idx]):
+                    result.iloc[idx] = pe_val
+
+    # 4. Interpolate remaining gaps and forward/back fill edges
+    if result.notna().sum() == 0:
+        return None
+
+    result = result.interpolate(method="time").ffill().bfill()
+    return result
+
+
+def fetch_benchmark_pe_daily(
+    proxy_ticker: str,
+    dates: pd.DatetimeIndex,
+    manual_anchors: Optional[Dict[str, float]] = None,
+) -> Optional[pd.Series]:
+    """Fetch daily PE for a benchmark index via its ETF proxy.
+
+    Uses the proxy's price history and trailing EPS to compute daily PE,
+    giving true daily granularity instead of interpolated monthly anchors.
+
+    Args:
+        proxy_ticker: ETF ticker to use as proxy (e.g. "SPY" for ^GSPC).
+        dates: DatetimeIndex of all dates to produce PE for.
+        manual_anchors: Optional dict of date_str → PE for fallback.
+
+    Returns:
+        pd.Series of daily PE values, or None on failure.
+    """
+    try:
+        stock = yf.Ticker(proxy_ticker)
+        info = stock.info or {}
+
+        # Get trailing EPS from info
+        trailing_eps = info.get("trailingEps")
+
+        # Build EPS points from financial statements
+        eps_points: List[Dict] = []
+
+        try:
+            annual = stock.income_stmt
+            if annual is not None and not annual.empty and "Basic EPS" in annual.index:
+                for d_val, v in annual.loc["Basic EPS"].items():
+                    if pd.notna(v) and v > 0:
+                        eps_points.append(
+                            {
+                                "date": pd.Timestamp(d_val).tz_localize(None),
+                                "eps": float(v),
+                            }
+                        )
+        except Exception:
+            pass
+
+        try:
+            quarterly = stock.quarterly_income_stmt
+            if quarterly is not None and not quarterly.empty and "Basic EPS" in quarterly.index:
+                q_series = quarterly.loc["Basic EPS"].dropna().sort_index()
+                if len(q_series) >= 4:
+                    q_ttm = q_series.rolling(4).sum().dropna()
+                    for d_val, ttm_v in q_ttm.items():
+                        if ttm_v > 0:
+                            eps_points.append(
+                                {
+                                    "date": pd.Timestamp(d_val).tz_localize(None),
+                                    "eps": float(ttm_v),
+                                }
+                            )
+        except Exception:
+            pass
+
+        # Add current trailing EPS as today's anchor
+        if trailing_eps and trailing_eps > 0:
+            eps_points.append(
+                {
+                    "date": pd.Timestamp.now().normalize(),
+                    "eps": float(trailing_eps),
+                }
+            )
+
+        # Fetch price history
+        start_date = dates[0] - pd.Timedelta(days=7)
+        end_date = dates[-1] + pd.Timedelta(days=1)
+        try:
+            hist = stock.history(start=start_date, end=end_date)
+            if hist is not None and not hist.empty and "Close" in hist.columns:
+                prices = hist["Close"]
+                prices.index = prices.index.normalize().tz_localize(None)
+            else:
+                prices = pd.Series(dtype=float)
+        except Exception:
+            prices = pd.Series(dtype=float)
+
+        # For ETF proxies: if no EPS data but trailingPE is available,
+        # add today's PE as a manual anchor so EPS can be derived from price/PE
+        if not eps_points:
+            trailing_pe = info.get("trailingPE")
+            if trailing_pe and math.isfinite(trailing_pe) and trailing_pe > 0:
+                today_str = pd.Timestamp.now().normalize().strftime("%Y-%m-%d")
+                if manual_anchors is None:
+                    manual_anchors = {}
+                else:
+                    manual_anchors = dict(manual_anchors)
+                manual_anchors[today_str] = float(trailing_pe)
+
+        return compute_benchmark_pe_from_proxy(
+            prices, eps_points, dates, manual_anchors=manual_anchors
+        )
+
+    except Exception as e:
+        print(f"Warning: fetch_benchmark_pe_daily({proxy_ticker}) failed: {e}")
+        if manual_anchors:
+            return compute_benchmark_pe_from_proxy(
+                pd.Series(dtype=float), [], dates, manual_anchors=manual_anchors
+            )
+        return None
+
+
 def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     symbol = yf_symbol(ticker)
     if ticker in MANUAL_TICKER_PE_CURVES:
@@ -1176,28 +1367,41 @@ def main():
     benchmark_pe: Dict[str, Any] = {}
     benchmark_fwd_pe: Dict[str, float] = {}
     for bmk_ticker, proxy_etf in BENCHMARK_PE_TICKERS.items():
-        # Historical PE via MANUAL_TICKER_PE_CURVES interpolation
-        pe_series = fetch_etf_pe(bmk_ticker, dates)
+        # Use daily price/EPS approach for true daily granularity
+        manual_anchors = MANUAL_TICKER_PE_CURVES.get(bmk_ticker)
+
+        # Merge benchmark_history.json entries into manual anchors
+        if BENCHMARK_HISTORY_PATH.exists():
+            try:
+                with open(BENCHMARK_HISTORY_PATH, "r") as f:
+                    history = json.load(f)
+                if bmk_ticker in history:
+                    if manual_anchors is None:
+                        manual_anchors = {}
+                    else:
+                        manual_anchors = manual_anchors.copy()
+                    manual_anchors.update(history[bmk_ticker])
+            except Exception:
+                pass
+
+        pe_series = fetch_benchmark_pe_daily(proxy_etf, dates, manual_anchors=manual_anchors)
         if pe_series is None:
-            print(f"  {bmk_ticker}: No PE data from manual curves")
-            continue
+            # Fallback to old interpolation method
+            pe_series = fetch_etf_pe(bmk_ticker, dates)
+            if pe_series is None:
+                print(f"  {bmk_ticker}: No PE data available")
+                continue
+            # Update last point with live PE
+            try:
+                proxy_info = yf.Ticker(proxy_etf).info
+                if proxy_info:
+                    live_pe = proxy_info.get("trailingPE")
+                    if live_pe and math.isfinite(live_pe) and live_pe > 0:
+                        pe_series.iloc[-1] = float(live_pe)
+            except Exception as e:
+                print(f"  {bmk_ticker} proxy info error: {e}")
 
-        # Update the last data point with live trailing PE from the ETF proxy
-        try:
-            proxy_info = yf.Ticker(proxy_etf).info
-            if proxy_info:
-                live_pe = proxy_info.get("trailingPE")
-                if live_pe and math.isfinite(live_pe) and live_pe > 0:
-                    pe_series.iloc[-1] = float(live_pe)
-
-                if bmk_ticker != "^GSPC":
-                    fwd_pe = proxy_info.get("forwardPE")
-                    if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
-                        benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
-        except Exception as e:
-            print(f"  {bmk_ticker} proxy info error: {e}")
-
-        # Fetch WSJ forward PE outside the proxy try-catch
+        # Fetch forward PE
         if bmk_ticker == "^GSPC":
             wsj_pe = scrape_wsj_forward_pe()
             if wsj_pe is not None:
@@ -1211,6 +1415,15 @@ def main():
                     print(
                         f"  {bmk_ticker}: Fetched Forward PE {benchmark_fwd_pe[bmk_ticker]} from existing pe_ratio.json (fallback)"
                     )
+        else:
+            try:
+                proxy_info = yf.Ticker(proxy_etf).info
+                if proxy_info:
+                    fwd_pe = proxy_info.get("forwardPE")
+                    if fwd_pe and math.isfinite(fwd_pe) and fwd_pe > 0:
+                        benchmark_fwd_pe[bmk_ticker] = round(float(fwd_pe), 2)
+            except Exception as e:
+                print(f"  {bmk_ticker} forward PE error: {e}")
 
         pe_values = [
             round(float(v), 2) if pd.notna(v) and math.isfinite(v) else None for v in pe_series

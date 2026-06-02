@@ -237,6 +237,8 @@
 
 **Learning:** Using `.forEach()` inside tight charting rendering loops (such as `activeTickerOrder.forEach` wrapping `dates.forEach` to trace stacked area paths in `composition.js`, `sectors.js`, and `geography.js`) implicitly allocates closures on every frame. For complex charts with numerous groups and hundreds of date points, this compounds significantly, generating severe garbage collection (GC) pressure that can lead to micro-stutters and dropped frames during interaction or animation.
 **Action:** Always replace `.forEach()` iterations with standard, index-based `for` loops within critical high-frequency chart rendering code paths to eliminate closure allocation overhead entirely.
+
 ## 2024-05-18 - Caching derived objects during high-frequency events
+
 **Learning:** Doing `new Date(dates[j])` and repeatedly constructing interpolators with `createTimeInterpolator()` inside high-frequency hover event handlers (like chart crosshair drawing) causes severe CPU and Garbage Collection (GC) degradation due to constant array allocations and closure recreations.
-**Action:** Cache derived objects like interpolators directly on the `layout` state object during the first hover interaction so they can be reused on subsequent hover event frames, changing an O(H*N) per-frame operation to an O(1) lookup per frame.
+**Action:** Cache derived objects like interpolators directly on the `layout` state object during the first hover interaction so they can be reused on subsequent hover event frames, changing an O(H\*N) per-frame operation to an O(1) lookup per frame.

@@ -5,7 +5,11 @@ import {
     handleGeographyCommand,
     handleSectorsCommand,
 } from '../../../../../js/transactions/terminal/handlers/misc.js';
-import { transactionState, setActiveChart, setChartDateRange } from '../../../../../js/transactions/state.js';
+import {
+    transactionState,
+    setActiveChart,
+    setChartDateRange,
+} from '../../../../../js/transactions/state.js';
 
 jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
@@ -444,9 +448,8 @@ describe('handleLabelCommand', () => {
 
         handleLabelCommand([], {
             appendMessage: appendMessageMock,
-            chartManager: chartManagerMock
+            chartManager: chartManagerMock,
         });
-
 
         expect(transactionState.showChartLabels).toBe(true);
         expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now visible.');
@@ -458,9 +461,8 @@ describe('handleLabelCommand', () => {
 
         handleLabelCommand([], {
             appendMessage: appendMessageMock,
-            chartManager: chartManagerMock
+            chartManager: chartManagerMock,
         });
-
 
         expect(transactionState.showChartLabels).toBe(false);
         expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now hidden.');
@@ -473,7 +475,7 @@ describe('handleLabelCommand', () => {
         expect(() => {
             handleLabelCommand([], {
                 appendMessage: appendMessageMock,
-                chartManager: {} // No redraw function
+                chartManager: {}, // No redraw function
             });
         }).not.toThrow();
 
