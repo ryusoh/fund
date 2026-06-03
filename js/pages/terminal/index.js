@@ -1,5 +1,4 @@
 import { logger } from '@utils/logger.js';
-import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 import {
     transactionState,
     setAllTransactions,
@@ -279,7 +278,13 @@ async function loadTransactions() {
 
 function initialize() {
     if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
-        perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+        import('../../vendor/perlin-plane.js')
+            .then(({ mountPerlinPlaneBackground }) => {
+                perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+            })
+            .catch((err) => {
+                logger.error('Failed to load perlin-plane background:', err);
+            });
     }
 
     // Initialize glass effects for terminal pane, chart card, and transaction table

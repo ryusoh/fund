@@ -1,3 +1,74 @@
+describe('perlin-plane lazy loading', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        jest.resetModules();
+    });
+
+    it('does not eagerly import perlin-plane when PERLIN_BACKGROUND_SETTINGS is disabled', async () => {
+        document.body.innerHTML = '<div class="terminal-container"></div>';
+
+        // Track whether perlin-plane module is loaded
+        const mockPerlinMount = jest.fn(() => ({ dispose: jest.fn() }));
+        jest.mock('../../vendor/perlin-plane.js', () => ({
+            __esModule: true,
+            mountPerlinPlaneBackground: mockPerlinMount,
+        }));
+
+        // Ensure PERLIN_BACKGROUND_SETTINGS.enabled is false (it is by default in config)
+        jest.mock('@js/config.js', () => {
+            const actual = jest.requireActual('@js/config.js');
+            return {
+                ...actual,
+                PERLIN_BACKGROUND_SETTINGS: {
+                    ...actual.PERLIN_BACKGROUND_SETTINGS,
+                    enabled: false,
+                },
+            };
+        });
+
+        // Minimal mocks to allow module to load
+        jest.mock('@js/transactions/state.js', () => ({
+            setAllTransactions: jest.fn(),
+            setFilteredTransactions: jest.fn(),
+            setSplitHistory: jest.fn(),
+            setPortfolioSeriesMap: jest.fn(),
+            setRunningAmountSeriesMap: jest.fn(),
+            setFxRatesByCurrency: jest.fn(),
+            setSelectedCurrency: jest.fn(),
+            setPortfolioSeries: jest.fn(),
+            setRunningAmountSeries: jest.fn(),
+            setPerformanceSeries: jest.fn(),
+            setChartDateRange: jest.fn(),
+            getActiveFilterTerm: jest.fn(() => ''),
+            resetSortState: jest.fn(),
+            transactionState: {
+                runningAmountSeriesByCurrency: {},
+                portfolioSeriesByCurrency: {},
+                activeChart: null,
+            },
+        }));
+
+        jest.mock('@js/transactions/dataLoader.js', () => ({
+            loadTransactionData: jest.fn().mockResolvedValue([]),
+            loadSplitHistory: jest.fn().mockResolvedValue([]),
+            loadPortfolioSeries: jest.fn().mockResolvedValue({}),
+            loadContributionSeries: jest.fn().mockResolvedValue({}),
+            loadPerformanceSeries: jest.fn().mockResolvedValue([]),
+            loadFxDailyRates: jest.fn().mockResolvedValue(null),
+        }));
+
+        jest.mock('@js/transactions/utils.js', () => ({
+            convertValueToCurrency: jest.fn((v) => v),
+            formatCurrency: jest.fn(),
+        }));
+
+        await import('@pages/terminal/index.js');
+
+        // mountPerlinPlaneBackground should never be called when disabled
+        expect(mockPerlinMount).not.toHaveBeenCalled();
+    });
+});
+
 describe('Terminal index page', () => {
     let buildFxRateMaps;
     let ensureSyntheticStart;
