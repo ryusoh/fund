@@ -166,16 +166,3 @@ describe('adjustMobilePanels', () => {
         expect(chartContainer.style.height).toBe('676px');
     });
 });
-
-    it('handles hidden plotSection and clears chart container height, but misses plotSection if it is null somehow inside else if', () => {
-        // we already tested hidden plotSection. To hit if (plotSection) inside else if (chartContainer) as false,
-        // plotSection must be null, but chartContainer must be non-null.
-        // We can do this by mocking document.getElementById to return null when we want it to,
-        // but it evaluates plotSection once at the beginning.
-        // Wait, if plotSection is null initially:
-        // const chartContainer = plotSection ? plotSection.querySelector(...) : null
-        // chartContainer will be null!
-        // So `else if (chartContainer)` will be false.
-        // So line 64 `if (plotSection)` is actually unreachable if it's strictly false.
-        // It's technically 100% covered if we remove the unreachable branch check or just leave it.
-    });

@@ -3,7 +3,6 @@ import { transactionState } from '../../../../../js/transactions/state.js';
 import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
 import { getGeographySummaryText } from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
 
-
 jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         selectedCurrency: 'USD',
