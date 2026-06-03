@@ -192,17 +192,19 @@ describe('getContributionSummaryText', () => {
             loadYieldData: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart.js', () => ({
-            hasActiveTransactionFilters: jest.fn(),
+        jest.mock('@js/transactions/chart/data/contribution.js', () => ({
             buildFilteredBalanceSeries: jest.fn(),
             buildContributionSeriesFromTransactions: jest.fn(),
-            buildFxChartSeries: jest.fn(),
-            buildDrawdownSeries: jest.fn(),
             getContributionSeriesForTransactions: jest.fn(),
+            mergeDividendsIntoContribution: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/data/contribution.js', () => ({
-            mergeDividendsIntoContribution: jest.fn(),
+        jest.mock('@js/transactions/chart/renderers/fx.js', () => ({
+            buildFxChartSeries: jest.fn(),
+        }));
+
+        jest.mock('@js/transactions/chart/renderers/drawdown.js', () => ({
+            buildDrawdownSeries: jest.fn(),
         }));
 
         jest.mock('@js/transactions/state.js', () => ({
@@ -216,6 +218,7 @@ describe('getContributionSummaryText', () => {
             setHistoricalPrices: jest.fn(),
             getCompositionFilterTickers: jest.fn(),
             getCompositionAssetClassFilter: jest.fn(),
+            hasActiveTransactionFilters: jest.fn(),
         }));
 
         jest.mock('@js/transactions/utils.js', () => ({
@@ -228,17 +231,15 @@ describe('getContributionSummaryText', () => {
         const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
         loadYieldData = yieldModule.loadYieldData;
 
-        const chartModule = await import('@js/transactions/chart.js');
-        hasActiveTransactionFilters = chartModule.hasActiveTransactionFilters;
-        buildFilteredBalanceSeries = chartModule.buildFilteredBalanceSeries;
-        buildContributionSeriesFromTransactions =
-            chartModule.buildContributionSeriesFromTransactions;
+        const stateModule = await import('@js/transactions/state.js');
+        hasActiveTransactionFilters = stateModule.hasActiveTransactionFilters;
+        transactionState = stateModule.transactionState;
 
         const contribModule = await import('@js/transactions/chart/data/contribution.js');
+        buildFilteredBalanceSeries = contribModule.buildFilteredBalanceSeries;
+        buildContributionSeriesFromTransactions =
+            contribModule.buildContributionSeriesFromTransactions;
         mergeDividendsIntoContribution = contribModule.mergeDividendsIntoContribution;
-
-        const stateModule = await import('@js/transactions/state.js');
-        transactionState = stateModule.transactionState;
 
         const snapshotsModule = await import('@js/transactions/terminal/snapshots.js');
         getContributionSummaryText = snapshotsModule.getContributionSummaryText;

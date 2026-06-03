@@ -6,8 +6,8 @@ describe('composition ticker filtering helper', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
-            ({ buildCompositionDisplayOrder } = chartModule.__chartTestables);
+            const compositionModule = require('@js/transactions/chart/renderers/composition.js');
+            ({ buildCompositionDisplayOrder } = compositionModule);
         });
     });
 

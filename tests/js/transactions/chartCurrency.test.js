@@ -153,8 +153,9 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             return null;
         });
         global.window.devicePixelRatio = 1;
+        global._rafPromise = null;
         global.requestAnimationFrame = (cb) => {
-            cb(Date.now());
+            global._rafPromise = Promise.resolve().then(() => cb(Date.now()));
             return 1;
         };
 
@@ -193,6 +194,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
 
         // Trigger draw
         await chartManager.update();
+        await global._rafPromise;
 
         // Assertions
         // convertValueToCurrency should NOT be called for the balance values (7000, 7070)
@@ -247,6 +249,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         const chartManager = createChartManager();
 
         await chartManager.update();
+        await global._rafPromise;
 
         // Assertions
         // convertValueToCurrency SHOULD be called to convert 150 USD -> CNY
@@ -290,6 +293,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
 
         const chartManager = createChartManager();
         await chartManager.update();
+        await global._rafPromise;
 
         const calls = mockConvertValueToCurrency.mock.calls;
 
@@ -332,6 +336,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
 
         const chartManager = createChartManager();
         await chartManager.update();
+        await global._rafPromise;
 
         const calls = mockConvertValueToCurrency.mock.calls;
 
@@ -491,8 +496,9 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             return null;
         });
         global.window.devicePixelRatio = 1;
+        global._rafPromise = null;
         global.requestAnimationFrame = (cb) => {
-            cb(Date.now());
+            global._rafPromise = Promise.resolve().then(() => cb(Date.now()));
             return 1;
         };
 
@@ -509,6 +515,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
 
         const chartManager = createChartManager();
         await chartManager.update();
+        await global._rafPromise;
 
         // convertValueToCurrency should NOT be called because we're using
         // the pre-calculated CNY series from portfolioSeriesByCurrency
@@ -547,6 +554,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
 
         const chartManager = createChartManager();
         await chartManager.update();
+        await global._rafPromise;
 
         // In filtered mode, balance series is built from filtered transactions (USD)
         // then converted to CNY. Check that conversion was called.

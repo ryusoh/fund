@@ -3,16 +3,16 @@ import {
     setHistoricalPrices,
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
+    hasActiveTransactionFilters,
 } from '../state.js';
 import { chartLayouts } from '../chart/state.js';
 import {
-    hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
-    buildFxChartSeries,
-    buildDrawdownSeries,
     getContributionSeriesForTransactions,
-} from '../chart.js';
+} from '../chart/data/contribution.js';
+import { buildFxChartSeries } from '../chart/renderers/fx.js';
+import { buildDrawdownSeries } from '../chart/renderers/drawdown.js';
 import { PERFORMANCE_SERIES_CURRENCY } from '../chart/config.js';
 import {
     loadCompositionSnapshotData,

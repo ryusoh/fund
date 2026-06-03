@@ -17,9 +17,9 @@ jest.mock('@js/transactions/terminalStats.js', () => {
 });
 
 // Mock buildFxChartSeries to return predictable data
-jest.mock('@js/transactions/chart.js', () => {
+jest.mock('@js/transactions/chart/renderers/fx.js', () => {
     return {
-        ...jest.requireActual('@js/transactions/chart.js'),
+        ...jest.requireActual('@js/transactions/chart/renderers/fx.js'),
         buildFxChartSeries: jest.fn().mockImplementation(() => {
             return [
                 {
