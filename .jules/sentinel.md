@@ -68,6 +68,7 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.
 
 ## 2025-05-24 - [SECURITY ENHANCEMENT] Add Timeout to External API Calls in Cloudflare Worker
+
 **Vulnerability:** External `fetch` requests to third-party APIs (like Alpaca and Yahoo Finance) in the Cloudflare Worker (`worker/src/index.js`) did not have an explicit timeout configured. If the upstream service became unresponsive or excessively slow, the worker execution could hang until it hit the platform's hard limits, leading to resource exhaustion, elevated latency, and potential Denial of Service (DoS) for the application.
 **Learning:** Cloudflare Workers and standard `fetch` APIs do not have a default timeout for outbound requests. When building resilient security architectures, relying on external availability without bounds check is a risk.
 **Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
