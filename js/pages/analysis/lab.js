@@ -1081,4 +1081,5 @@ export const __analysisLabTesting = {
     state,
     normalizeConfig,
     buildPortfolioConfig,
+    fetchText,
 };
