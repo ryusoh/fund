@@ -25,6 +25,7 @@ jest.mock('../../../../../js/transactions/terminal/snapshots.js', () => ({
     getSectorsSnapshotLine: jest.fn().mockResolvedValue('Mocked sectors summary'),
     getGeographySnapshotLine: jest.fn().mockResolvedValue('Mocked geography summary'),
     getMarketcapSnapshotLine: jest.fn().mockResolvedValue('Mocked marketcap summary'),
+    getFxSnapshotLine: jest.fn().mockReturnValue(null),
 }));
 
 describe('Misc Command Handlers', () => {
@@ -38,6 +39,33 @@ describe('Misc Command Handlers', () => {
         document.body.innerHTML = `
             <div id="runningAmountSection" class="is-hidden"></div>
         `;
+    });
+
+    describe('handleAllCommand', () => {
+        it('clears all filters, resets sorts, dates, and updates chart', async () => {
+            // Arrange
+            const closeAllFilterDropdowns = jest.fn();
+            const resetSortState = jest.fn();
+            const filterAndSort = jest.fn();
+            const chartManager = { update: jest.fn() };
+
+            const { handleAllCommand } = await import('@js/transactions/terminal/handlers/misc.js');
+
+            // Act
+            await handleAllCommand([], {
+                appendMessage: appendMessageMock,
+                closeAllFilterDropdowns,
+                resetSortState,
+                filterAndSort,
+                chartManager,
+            });
+
+            // Assert
+            expect(closeAllFilterDropdowns).toHaveBeenCalled();
+            expect(resetSortState).toHaveBeenCalled();
+            expect(filterAndSort).toHaveBeenCalledWith('');
+            expect(appendMessageMock).toHaveBeenCalledWith('Showing all data (filters and date ranges cleared).');
+        });
     });
 
     describe('handleMarketcapCommand', () => {

@@ -1,9 +1,14 @@
-import { getYieldSnapshotLine } from '@js/transactions/terminal/snapshots.js';
+import { getYieldSnapshotLine, getFxSnapshotLine } from '@js/transactions/terminal/snapshots.js';
 import { transactionState } from '@js/transactions/state.js';
 import { loadYieldData } from '@js/transactions/chart/renderers/yield.js';
+import { buildFxChartSeries } from '@js/transactions/chart/renderers/fx.js';
 
 jest.mock('@js/transactions/chart/renderers/yield.js', () => ({
     loadYieldData: jest.fn(),
+}));
+
+jest.mock('@js/transactions/chart/renderers/fx.js', () => ({
+    buildFxChartSeries: jest.fn(),
 }));
 
 jest.mock('@js/transactions/chart/helpers.js', () => ({
@@ -25,6 +30,42 @@ describe('snapshots.js', () => {
         jest.clearAllMocks();
         transactionState.chartDateRange = { from: null, to: null };
         transactionState.selectedCurrency = 'USD';
+    });
+
+    describe('getFxSnapshotLine', () => {
+        it('returns null if activeChart is not fx', () => {
+            transactionState.activeChart = 'performance';
+            expect(getFxSnapshotLine()).toBeNull();
+        });
+
+        it('returns null if buildFxChartSeries returns empty', () => {
+            transactionState.activeChart = 'fx';
+            buildFxChartSeries.mockReturnValue([]);
+            expect(getFxSnapshotLine()).toBeNull();
+        });
+
+        it('returns formatted FX snapshot line when data is available', () => {
+            // Arrange
+            transactionState.activeChart = 'fx';
+            transactionState.selectedCurrency = 'USD';
+            transactionState.chartVisibility = {
+                'EUR': true,
+                'GBP': false, // this one is hidden
+                'JPY': true
+            };
+            buildFxChartSeries.mockReturnValue([
+                { key: 'EUR', quote: 'EUR', data: [{ value: 0.8 }, { value: 0.95 }] },
+                { key: 'GBP', quote: 'GBP', data: [{ value: 0.7 }] },
+                { key: 'JPY', quote: 'JPY', data: [{ value: 110 }] },
+                { key: 'CAD', quote: 'CAD', data: [] } // empty data should be skipped
+            ]);
+
+            // Act
+            const result = getFxSnapshotLine();
+
+            // Assert
+            expect(result).toBe('FX (USD base): USD/EUR 0.9500   USD/JPY 110.0');
+        });
     });
 
     describe('getYieldSnapshotLine', () => {
