@@ -64,7 +64,9 @@ describe('Misc Command Handlers', () => {
             expect(closeAllFilterDropdowns).toHaveBeenCalled();
             expect(resetSortState).toHaveBeenCalled();
             expect(filterAndSort).toHaveBeenCalledWith('');
-            expect(appendMessageMock).toHaveBeenCalledWith('Showing all data (filters and date ranges cleared).');
+            expect(appendMessageMock).toHaveBeenCalledWith(
+                'Showing all data (filters and date ranges cleared).'
+            );
         });
     });
 

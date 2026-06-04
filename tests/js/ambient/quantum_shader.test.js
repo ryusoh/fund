@@ -4,7 +4,6 @@
 
 describe('quantum_shader coverage', () => {
     let originalConsoleError;
-    let canvasMock;
 
     beforeEach(() => {
         document.body.innerHTML = '';
@@ -37,7 +36,6 @@ describe('quantum_shader coverage', () => {
                     fill: jest.fn(),
                     beginPath: jest.fn(),
                 });
-                canvasMock = el;
             }
             return el;
         });

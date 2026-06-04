@@ -95,7 +95,9 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     const getBaseSubcommand = (subcmd) => {
         const prefixes = ['composition', 'sectors', 'geography', 'marketcap', 'drawdown'];
         for (const prefix of prefixes) {
-            if (subcmd.startsWith(prefix)) {return prefix;}
+            if (subcmd.startsWith(prefix)) {
+                return prefix;
+            }
         }
         return subcmd;
     };
@@ -228,15 +230,18 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             balance: {
                 key: 'contribution',
                 hiddenName: 'contribution chart.',
-                getSummary: async () => await getContributionSummaryText(transactionState.chartDateRange),
-                getBaseMsg: (dRange) => `Showing contribution chart for ${formatDateRange(dRange)}.`,
+                getSummary: async () =>
+                    await getContributionSummaryText(transactionState.chartDateRange),
+                getBaseMsg: (dRange) =>
+                    `Showing contribution chart for ${formatDateRange(dRange)}.`,
                 getSnap: async () => null,
             },
             performance: {
                 key: 'performance',
                 hiddenName: 'performance chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing performance chart for ${formatDateRange(dRange)}.\n\n${TWRR_MESSAGE}`,
+                getBaseMsg: (dRange) =>
+                    `Showing performance chart for ${formatDateRange(dRange)}.\n\n${TWRR_MESSAGE}`,
                 getSnap: async () => getPerformanceSnapshotLine({ includeHidden: true }),
                 appendSnapDoubleNewline: true,
             },
@@ -251,21 +256,24 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 key: 'concentration',
                 hiddenName: 'concentration chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing concentration (HHI) chart for ${formatDateRange(dRange)}.`,
+                getBaseMsg: (dRange) =>
+                    `Showing concentration (HHI) chart for ${formatDateRange(dRange)}.`,
                 getSnap: async () => await getConcentrationSnapshotText(),
             },
             pe: {
                 key: 'pe',
                 hiddenName: 'P/E ratio chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing weighted average P/E ratio chart for ${formatDateRange(dRange)}.`,
+                getBaseMsg: (dRange) =>
+                    `Showing weighted average P/E ratio chart for ${formatDateRange(dRange)}.`,
                 getSnap: async () => await getPESnapshotLine(),
             },
             rolling: {
                 key: 'rolling',
                 hiddenName: '1-Year rolling returns chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing 1-Year rolling returns chart for ${formatDateRange(dRange)}.\n\n${ROLLING_EXPLANATION}`,
+                getBaseMsg: (dRange) =>
+                    `Showing 1-Year rolling returns chart for ${formatDateRange(dRange)}.\n\n${ROLLING_EXPLANATION}`,
                 getSnap: async () => getRollingSnapshotLine(),
                 appendSnapDoubleNewline: true,
             },
@@ -273,7 +281,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 key: 'volatility',
                 hiddenName: '90-Day annualized rolling volatility chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(dRange)}.\n\n${VOLATILITY_EXPLANATION}`,
+                getBaseMsg: (dRange) =>
+                    `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(dRange)}.\n\n${VOLATILITY_EXPLANATION}`,
                 getSnap: async () => getVolatilitySnapshotLine(),
                 appendSnapDoubleNewline: true,
             },
@@ -281,7 +290,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 key: 'beta',
                 hiddenName: 'portfolio beta chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(dRange)}.\n\n${BETA_EXPLANATION}`,
+                getBaseMsg: (dRange) =>
+                    `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(dRange)}.\n\n${BETA_EXPLANATION}`,
                 getSnap: async () => await getBetaSnapshotLine(),
                 appendSnapDoubleNewline: true,
             },
@@ -289,7 +299,8 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 key: 'yield',
                 hiddenName: 'dividend yield and income chart.',
                 getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing dividend yield and income chart for ${formatDateRange(dRange)}.\n\n${YIELD_EXPLANATION}`,
+                getBaseMsg: (dRange) =>
+                    `Showing dividend yield and income chart for ${formatDateRange(dRange)}.\n\n${YIELD_EXPLANATION}`,
                 getSnap: async () => await getYieldSnapshotLine(),
                 appendSnapDoubleNewline: true,
             },
