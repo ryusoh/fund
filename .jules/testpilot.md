@@ -85,3 +85,8 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 
 - **Learning:** When using `jest.mock` factory functions to mock state modules (like `js/transactions/state.js`), ensure all exported functions accessed or cleared in the tests (such as `setChartDateRange`) are explicitly included as `jest.fn()` in the returned mock object. Omitting them will cause `TypeError: ... is not a function` during test execution or teardown.
 - **Action:** Always double-check the module exports and ensure all accessed properties are mocked in the factory.
+
+## 2025-05-24 - Test coverage improvements
+
+- **Issue:** Identified tests with zero coverage and improved their test coverages, adhering to max automation constraint.
+- **Action:** Wrote tests for `sketch.js`, `quantum_shader.js` and `terminalStats.js`
