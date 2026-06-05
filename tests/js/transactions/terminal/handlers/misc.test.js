@@ -1,6 +1,11 @@
 import {
     handleClearCommand,
     handleLabelCommand,
+    handleAllTimeCommand,
+    handleAllStockCommand,
+    handleResetCommand,
+    handleZoomCommand,
+    handleSummaryCommand,
     handleMarketcapCommand,
     handleGeographyCommand,
     handleSectorsCommand,
@@ -26,6 +31,11 @@ jest.mock('../../../../../js/transactions/terminal/snapshots.js', () => ({
     getGeographySnapshotLine: jest.fn().mockResolvedValue('Mocked geography summary'),
     getMarketcapSnapshotLine: jest.fn().mockResolvedValue('Mocked marketcap summary'),
     getFxSnapshotLine: jest.fn().mockReturnValue(null),
+}));
+
+
+jest.mock('../../../../../js/transactions/zoom.js', () => ({
+    toggleZoom: jest.fn().mockResolvedValue({ zoomed: true, message: 'Zoom toggled.' })
 }));
 
 describe('Misc Command Handlers', () => {
@@ -523,4 +533,100 @@ describe('handleLabelCommand', () => {
         expect(transactionState.showChartLabels).toBe(false);
         expect(appendMessageMock).toHaveBeenCalledWith('Chart labels are now hidden.');
     });
+    describe('handleAllTimeCommand', () => {
+        it('should reset date range, call filterAndSort, and report message', async () => {
+            const context = {
+                appendMessage: jest.fn(),
+                filterAndSort: jest.fn(),
+                chartManager: { update: jest.fn() }
+            };
+            transactionState.activeFilterTerm = 'test';
+            transactionState.activeChart = null;
+            document.body.innerHTML = '<div class="table-responsive-container is-hidden"></div>';
+
+            await handleAllTimeCommand([], context);
+
+            expect(context.filterAndSort).toHaveBeenCalledWith('test');
+            expect(context.appendMessage).toHaveBeenCalled();
+            expect(context.appendMessage.mock.calls[0][0]).toContain('Cleared chart date filters.');
+        });
+    });
+
+    describe('handleAllStockCommand', () => {
+        it('should strip stock keywords and active tickers, then filter', async () => {
+            const context = {
+                appendMessage: jest.fn(),
+                filterAndSort: jest.fn(),
+                chartManager: { update: jest.fn() },
+                terminalInput: { value: '' }
+            };
+            transactionState.activeFilterTerm = 'stock: AAPL test ETF';
+            transactionState.activeChart = null;
+            document.body.innerHTML = '<div class="table-responsive-container is-hidden"></div>';
+            transactionState.compositionFilterTickers = ['AAPL'];
+
+            await handleAllStockCommand([], context);
+
+            expect(context.terminalInput.value).toBe('test');
+            expect(context.filterAndSort).toHaveBeenCalledWith('test');
+            expect(context.appendMessage).toHaveBeenCalled();
+            expect(context.appendMessage.mock.calls[0][0]).toContain('Cleared composition ticker filters.');
+        });
+    });
+
+    describe('handleResetCommand', () => {
+        it('should close dropdowns, hide UI sections, and reset sort', async () => {
+            const context = {
+                appendMessage: jest.fn(),
+                closeAllFilterDropdowns: jest.fn(),
+                resetSortState: jest.fn(),
+                filterAndSort: jest.fn(),
+                terminalInput: { value: 'test' }
+            };
+
+            document.body.innerHTML = `
+                <div class="table-responsive-container"></div>
+                <div id="runningAmountSection"></div>
+                <div id="performanceSection"></div>
+            `;
+
+            await handleResetCommand([], context);
+
+            expect(context.closeAllFilterDropdowns).toHaveBeenCalled();
+            expect(context.resetSortState).toHaveBeenCalled();
+            expect(context.filterAndSort).toHaveBeenCalledWith('');
+            expect(context.terminalInput.value).toBe('');
+
+            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(true);
+            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(true);
+            expect(document.getElementById('performanceSection').classList.contains('is-hidden')).toBe(true);
+        });
+    });
+
+    describe('handleZoomCommand', () => {
+        it('should call toggleZoom and append its message', async () => {
+            const context = {
+                appendMessage: jest.fn()
+            };
+
+            await handleZoomCommand([], context);
+
+            expect(context.appendMessage).toHaveBeenCalled();
+            expect(typeof context.appendMessage.mock.calls[0][0]).toBe('string');
+        });
+    });
+
+    describe('handleSummaryCommand', () => {
+        it('should report summary based on active view', async () => {
+            const context = {
+                appendMessage: jest.fn()
+            };
+
+            await handleSummaryCommand([], context);
+
+            expect(context.appendMessage).toHaveBeenCalled();
+            expect(typeof context.appendMessage.mock.calls[0][0]).toBe('string');
+        });
+    });
+
 });
