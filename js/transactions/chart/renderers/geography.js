@@ -372,7 +372,7 @@ function drawGeographyChartLoader(ctx, chartManager, valueMode) {
             renderGeographyChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Caught exception:', error);
+            logger.warn('Geography chart rendering failed:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

@@ -931,7 +931,7 @@ function handlePointerUp(event) {
         try {
             pointerCanvas.releasePointerCapture(event.pointerId);
         } catch (error) {
-            logger.warn('Caught exception:', error);
+            logger.warn('Chart interaction handling failed:', error);
             // Ignore release errors
         }
     }

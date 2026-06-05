@@ -37,7 +37,7 @@
                 })
                 .catch(function (err) {
                     // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', err);
+                    console.warn('Icon font ready check failed:', err);
                     window.clearTimeout(fallbackTimer);
                     markReady();
                 });

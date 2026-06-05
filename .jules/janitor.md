@@ -53,3 +53,8 @@
 
 - **Issue:** The `handlePlotCommand` inside `js/transactions/terminal/handlers/plot.js` had a severe cyclomatic complexity of 67, far exceeding the max limit of 10.
 - **Action:** Refactored the command by dispatching to sub-handler functions and a cleaner mapping pattern (`chartHandlers`), dramatically reducing its complexity and eliminating ESLint configuration errors. Updated `chart_feature_parity.test.js` to rely on robust logic rather than strict string exact-matching.
+
+## 2026-06-05 - Code Health & Cleanup
+
+- **Issue:** Function cyclomatic complexity was > 10 in several modules (e.g., `js/pages/analysis/lab.js`, `js/pages/terminal/index.js`, `js/transactions/utils.js`, `js/transactions/chart/interaction.js`, `js/pages/calendar/index.js`). Generic empty `catch` blocks and non-descriptive `Caught exception:` messages found across various files.
+- **Action:** Refactored `normalizeConfig` and `computeScenarioOutcome` in `lab.js`, `convertCurrencySeries` and `ensureSyntheticStart` in `terminal/index.js`, `findFxRate` in `utils.js`, `getActiveChartKey` and large if blocks in `interaction.js`, and `setupTouchNavigation` / `_handleKeyboardNavigation` in `calendar/index.js` to bring complexity < 10. Replaced generic `Caught exception:` with context-specific messages in both `console.warn` and `logger.warn` statements.
