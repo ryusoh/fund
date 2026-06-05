@@ -5,8 +5,8 @@ import { transactionState } from '../../../../../js/transactions/state.js';
 
 jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
-        selectedCurrency: 'USD'
-    }
+        selectedCurrency: 'USD',
+    },
 }));
 
 jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
@@ -24,11 +24,11 @@ jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
 }));
 
 jest.mock('../../../../../js/transactions/terminal/handlers/geographySummary.js', () => ({
-    getGeographySummaryText: jest.fn()
+    getGeographySummaryText: jest.fn(),
 }));
 
 jest.mock('../../../../../js/transactions/terminal/constants.js', () => ({
-    STATS_SUBCOMMANDS: ['transactions', 'holdings'] // mocked for fallback
+    STATS_SUBCOMMANDS: ['transactions', 'holdings'], // mocked for fallback
 }));
 
 describe('handleStatsCommand', () => {
@@ -150,7 +150,9 @@ describe('handleStatsCommand', () => {
 
     it('handles unknown subcommand', async () => {
         await handleStatsCommand(['unknown_cmd'], { appendMessage: mockAppendMessage });
-        expect(mockAppendMessage).toHaveBeenCalledWith(expect.stringContaining('Unknown stats subcommand: unknown_cmd'));
+        expect(mockAppendMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Unknown stats subcommand: unknown_cmd')
+        );
     });
 
     it('does not append message if result is empty string', async () => {

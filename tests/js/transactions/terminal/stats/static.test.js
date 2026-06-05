@@ -1,10 +1,14 @@
-import { getCagrText, getAnnualReturnText, getRatioText } from '../../../../../js/transactions/terminal/stats/static.js';
+import {
+    getCagrText,
+    getAnnualReturnText,
+    getRatioText,
+} from '../../../../../js/transactions/terminal/stats/static.js';
 import { logger } from '../../../../../js/utils/logger.js';
 
 jest.mock('../../../../../js/utils/logger.js', () => ({
     logger: {
-        warn: jest.fn()
-    }
+        warn: jest.fn(),
+    },
 }));
 
 describe('static stats fetchers', () => {
@@ -17,7 +21,7 @@ describe('static stats fetchers', () => {
         it('returns text on successful fetch', async () => {
             global.fetch.mockResolvedValueOnce({
                 ok: true,
-                text: async () => 'Mock CAGR data'
+                text: async () => 'Mock CAGR data',
             });
 
             const result = await getCagrText();
@@ -44,7 +48,7 @@ describe('static stats fetchers', () => {
         it('returns text on successful fetch', async () => {
             global.fetch.mockResolvedValueOnce({
                 ok: true,
-                text: async () => 'Mock Annual Return data'
+                text: async () => 'Mock Annual Return data',
             });
 
             const result = await getAnnualReturnText();
@@ -71,7 +75,7 @@ describe('static stats fetchers', () => {
         it('returns text on successful fetch', async () => {
             global.fetch.mockResolvedValueOnce({
                 ok: true,
-                text: async () => 'Mock Ratio data'
+                text: async () => 'Mock Ratio data',
             });
 
             const result = await getRatioText();

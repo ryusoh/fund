@@ -3,8 +3,8 @@ import { logger } from '../../../../../js/utils/logger.js';
 
 jest.mock('../../../../../js/utils/logger.js', () => ({
     logger: {
-        warn: jest.fn()
-    }
+        warn: jest.fn(),
+    },
 }));
 
 describe('getGeographySummaryText', () => {
@@ -16,7 +16,7 @@ describe('getGeographySummaryText', () => {
     it('returns text on successful fetch', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            text: async () => 'Mock Geography Summary'
+            text: async () => 'Mock Geography Summary',
         });
 
         const result = await getGeographySummaryText();
@@ -29,7 +29,7 @@ describe('getGeographySummaryText', () => {
     it('throws error and returns fallback on non-ok fetch', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: false,
-            status: 404
+            status: 404,
         });
 
         const result = await getGeographySummaryText();
