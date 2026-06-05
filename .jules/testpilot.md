@@ -95,3 +95,7 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 
 - **Issue:** Identified tests with zero coverage and improved their test coverages, adhering to max automation constraint.
 - **Action:** Wrote tests for `sketch.js`, `quantum_shader.js` and `terminalStats.js`
+
+## 2025-02-23 - Internal testing functions via rewire mock injection
+
+To test highly internal functions isolated in a module closure safely, we inject test execution context by hooking window instead of modifying real feature logic in production code. Exposing through `testContent` rewrites directly isolates scope.
