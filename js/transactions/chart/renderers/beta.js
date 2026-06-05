@@ -60,51 +60,54 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
             return a.localeCompare(b);
         });
 
-    orderedKeys.forEach((key) => {
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    });
+    }
 
     // Enforce "one benchmark" rule
     const visibleBenchmarks = allowedBenchmarks.filter(
         (b) => transactionState.chartVisibility[b] === true
     );
     if (visibleBenchmarks.length > 1) {
-        visibleBenchmarks.slice(1).forEach((b) => {
-            transactionState.chartVisibility[b] = false;
-        });
+        const toHide = visibleBenchmarks.slice(1);
+        for (let i = 0; i < toHide.length; i++) {
+            transactionState.chartVisibility[toHide[i]] = false;
+        }
     }
 
     // 1. Calculate daily returns
     const returnsMap = {};
-    orderedKeys.forEach((key) => {
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
         const points = performanceSeries[key] || [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
         const returns = [];
-        for (let i = 1; i < points.length; i++) {
+        for (let j = 1; j < points.length; j++) {
             const startVal = convertBetweenCurrencies(
-                Number(points[i - 1].value),
+                Number(points[j - 1].value),
                 sourceCurrency,
-                points[i - 1].date,
+                points[j - 1].date,
                 selectedCurrency
             );
             const endVal = convertBetweenCurrencies(
-                Number(points[i].value),
+                Number(points[j].value),
                 sourceCurrency,
-                points[i].date,
+                points[j].date,
                 selectedCurrency
             );
             if (startVal !== 0) {
                 returns.push({
-                    date: points[i].date,
-                    time: parseLocalDate(points[i].date).getTime(),
+                    date: points[j].date,
+                    time: parseLocalDate(points[j].date).getTime(),
                     val: endVal / startVal - 1,
                 });
             }
         }
         returnsMap[key] = returns;
-    });
+    }
 
     const marketReturns = returnsMap[MARKET_REF];
     if (!marketReturns || marketReturns.length < 20) {
@@ -330,9 +333,10 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         return 0;
     });
 
-    seriesForDrawing.forEach((series) => {
+    for (let i = 0; i < seriesForDrawing.length; i++) {
+        const series = seriesForDrawing[i];
         if (series.data.length === 0) {
-            return;
+            continue;
         }
 
         // Use raw points for Beta to ensure statistical accuracy (no smoothing)
@@ -361,13 +365,14 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        coords.forEach((c, idx) => {
+        for (let idx = 0; idx < coords.length; idx++) {
+            const c = coords[idx];
             if (idx === 0) {
                 ctx.moveTo(c.x, c.y);
             } else {
                 ctx.lineTo(c.x, c.y);
             }
-        });
+        }
         ctx.strokeStyle = resolvedColor;
         if (gradientStops) {
             const grad = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
@@ -402,7 +407,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    });
+    }
 
     if (isAnimationEnabled('performance') && glowIndex > 0) {
         schedulePerformanceAnimation(chartManager);
@@ -411,7 +416,8 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
     }
 
     if (getShowChartLabels()) {
-        renderedSeries.forEach((s) => {
+        for (let i = 0; i < renderedSeries.length; i++) {
+            const s = renderedSeries[i];
             drawEndValue(
                 ctx,
                 s.x,
@@ -426,7 +432,7 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
                 true,
                 []
             );
-        });
+        }
     }
 
     chartLayouts.beta = {
