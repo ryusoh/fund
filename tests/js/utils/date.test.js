@@ -17,12 +17,11 @@ describe('Date Utils', () => {
         expect(date).toBeInstanceOf(Date);
     });
 
-
     describe('getNyDate internal formatting edge case', () => {
         it('should correctly format hour 24 as 00', () => {
             const originalDateTimeFormat = Intl.DateTimeFormat;
 
-            global.Intl.DateTimeFormat = function() {
+            global.Intl.DateTimeFormat = function () {
                 return {
                     formatToParts: () => [
                         { type: 'year', value: '2023' },
@@ -30,8 +29,8 @@ describe('Date Utils', () => {
                         { type: 'day', value: '15' },
                         { type: 'hour', value: '24' },
                         { type: 'minute', value: '30' },
-                        { type: 'second', value: '45' }
-                    ]
+                        { type: 'second', value: '45' },
+                    ],
                 };
             };
 

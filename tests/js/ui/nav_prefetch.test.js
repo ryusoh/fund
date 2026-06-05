@@ -1,33 +1,33 @@
 import { jest } from '@jest/globals';
 
 describe('nav_prefetch.js', () => {
-
     test('queueFetchTask handles cross-origin fetch options', async () => {
         window.fetch.mockImplementation((url) => {
             if (url && url.endsWith && url.endsWith('manifest.json')) {
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({
-                        assets: [
-                            { url: 'https://external.com/asset.js' },
-                            { url: 'http://invalid url' }
-                        ]
-                    })
+                    json: () =>
+                        Promise.resolve({
+                            assets: [
+                                { url: 'https://external.com/asset.js' },
+                                { url: 'http://invalid url' },
+                            ],
+                        }),
                 });
             }
             return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
         });
 
-        document.body.innerHTML = `<a href="/page" data-prefetch="true">Link</a>`;
+        document.body.innerHTML = '<a href="/page" data-prefetch="true">Link</a>';
         loadScript();
 
         const link = document.querySelector('a');
         link.dispatchEvent(new MouseEvent('mouseenter'));
 
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 150));
 
         const calls = window.fetch.mock.calls;
-        const crossOriginCall = calls.find(c => c[0] === 'https://external.com/asset.js');
+        const crossOriginCall = calls.find((c) => c[0] === 'https://external.com/asset.js');
         if (crossOriginCall) {
             expect(crossOriginCall[1].mode).toBe('no-cors');
             expect(crossOriginCall[1].credentials).toBe('omit');
@@ -39,11 +39,10 @@ describe('nav_prefetch.js', () => {
             if (url && url.endsWith && url.endsWith('manifest.json')) {
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({
-                        assets: [
-                            { url: '/error-asset.js' }
-                        ]
-                    })
+                    json: () =>
+                        Promise.resolve({
+                            assets: [{ url: '/error-asset.js' }],
+                        }),
                 });
             }
             if (url && url.endsWith && url.endsWith('error-asset.js')) {
@@ -52,13 +51,13 @@ describe('nav_prefetch.js', () => {
             return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
         });
 
-        document.body.innerHTML = `<a href="/page2" data-prefetch="true">Link2</a>`;
+        document.body.innerHTML = '<a href="/page2" data-prefetch="true">Link2</a>';
         loadScript();
 
         const link = document.querySelector('a');
         link.dispatchEvent(new MouseEvent('mouseenter'));
 
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 150));
     });
 
     let originalFetch;
