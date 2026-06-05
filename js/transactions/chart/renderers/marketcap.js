@@ -401,7 +401,7 @@ function drawMarketcapChartLoader(ctx, chartManager, valueMode) {
             renderMarketcapChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Caught exception:', error);
+            logger.warn('Market cap chart rendering failed:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

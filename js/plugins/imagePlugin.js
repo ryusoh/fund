@@ -50,7 +50,7 @@ export const imagePlugin = {
                     try {
                         img.decoding = 'async';
                     } catch (error) {
-                        logger.warn('Caught exception:', error);
+                        logger.warn('Image plugin processing failed:', error);
                     }
                     img.onload = () => {
                         loadedImages[imageUrl] = img;
@@ -63,7 +63,7 @@ export const imagePlugin = {
                     img.src = imageUrl;
                 }
             } catch (error) {
-                logger.warn('Caught exception:', error);
+                logger.warn('Image plugin processing failed:', error);
             }
             // Do not draw yet; exit early since logos aren't visible
             return;

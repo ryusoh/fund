@@ -348,6 +348,293 @@ class TestCalculateDailyValuesEdgeCases(unittest.TestCase):
         self.assertAlmostEqual(result["value_usd"], expected_usd, places=2)
 
 
+class TestNaNClosePrice(unittest.TestCase):
+    """Regression tests for NaN close price bug.
+
+    When yfinance returns a row with a NaN close price (e.g. incomplete data
+    for the current trading day), the script should skip that row and fall
+    back to the most recent row with a valid close price.
+    """
+
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        self.holdings_data = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+            "MSFT": {"shares": "50", "average_price": "280.00"},
+        }
+        self.forex_data = {
+            "rates": {"CNY": 7.2, "JPY": 145.0, "KRW": 1300.0},
+        }
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def _create_mock_history_response(self, dates: List[str], closes: List[float]) -> MagicMock:
+        mock_history = MagicMock()
+        mock_history.empty = False
+        mock_df = pd.DataFrame(
+            {"Close": closes},
+            index=pd.to_datetime(dates),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        mock_history.index = mock_df.index
+        return mock_history
+
+    def test_nan_close_uses_regular_market_price(self) -> None:
+        """When history() returns NaN, fall back to info["regularMarketPrice"].
+
+        Reproduces the June 4 2026 bug where yfinance history() returned NaN
+        for the latest day, but info["regularMarketPrice"] (official close)
+        had the correct price.
+
+        Expected: use regularMarketPrice, date should still be June 4.
+        """
+        mock_history = self._create_mock_history_response(
+            dates=[
+                "2026-06-03 00:00:00-05:00",
+                "2026-06-04 00:00:00-05:00",
+            ],
+            closes=[150.0, float("nan")],
+        )
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+        mock_ticker.info = {"regularMarketPrice": 155.0}
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            values, actual_date = calculate_daily_values_with_date(
+                self.holdings_data, self.forex_data
+            )
+
+        # Should use June 4 date (the row exists), with regularMarketPrice
+        self.assertEqual(actual_date, "2026-06-04")
+        # 100 * 155 + 50 * 155 = 23250
+        expected_usd = 23250.0
+        self.assertAlmostEqual(values["value_usd"], expected_usd, places=2)
+        # NaN should NOT propagate
+        self.assertFalse(pd.isna(values["value_usd"]))
+        self.assertFalse(pd.isna(values["value_cny"]))
+
+    def test_nan_close_no_info_falls_back_to_previous_row(self) -> None:
+        """When history() NaN AND info unavailable, walk back to previous valid close."""
+        mock_history = self._create_mock_history_response(
+            dates=[
+                "2026-06-03 00:00:00-05:00",
+                "2026-06-04 00:00:00-05:00",
+            ],
+            closes=[150.0, float("nan")],
+        )
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+        mock_ticker.info = {}  # no regularMarketPrice
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            values, actual_date = calculate_daily_values_with_date(
+                self.holdings_data, self.forex_data
+            )
+
+        # Should fall back to June 3 (the previous valid close)
+        self.assertEqual(actual_date, "2026-06-03")
+        expected_usd = 100 * 150.0 + 50 * 150.0
+        self.assertAlmostEqual(values["value_usd"], expected_usd, places=2)
+
+    def test_all_nan_closes_and_no_info_returns_zero(self) -> None:
+        """When ALL rows have NaN close and no info, return zero values."""
+        mock_history = self._create_mock_history_response(
+            dates=[
+                "2026-06-03 00:00:00-05:00",
+                "2026-06-04 00:00:00-05:00",
+            ],
+            closes=[float("nan"), float("nan")],
+        )
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+        mock_ticker.info = {}
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            values, actual_date = calculate_daily_values_with_date(
+                self.holdings_data, self.forex_data
+            )
+
+        self.assertEqual(values["value_usd"], 0.0)
+        self.assertIsNone(actual_date)
+
+    def test_nan_in_middle_uses_latest_valid(self) -> None:
+        """When NaN appears in the middle, still use the latest valid close."""
+        mock_history = self._create_mock_history_response(
+            dates=[
+                "2026-06-02 00:00:00-05:00",
+                "2026-06-03 00:00:00-05:00",
+                "2026-06-04 00:00:00-05:00",
+            ],
+            closes=[145.0, float("nan"), 155.0],
+        )
+
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            values, actual_date = calculate_daily_values_with_date(
+                self.holdings_data, self.forex_data
+            )
+
+        # June 4 has a valid close, should use it
+        self.assertEqual(actual_date, "2026-06-04")
+        expected_usd = 100 * 155.0 + 50 * 155.0
+        self.assertAlmostEqual(values["value_usd"], expected_usd, places=2)
+
+
+class TestNaNRowCleanup(unittest.TestCase):
+    """Regression test for corrupt NaN rows in the CSV.
+
+    When a previous run wrote a row with all-NaN values (e.g. due to yfinance
+    returning NaN close prices), the script should drop that corrupt row and
+    re-fetch, rather than treating it as valid data that blocks future updates.
+    """
+
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        self.holdings_path = self.temp_path / "holdings_details.json"
+        self.holdings_data = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+        }
+        self.holdings_path.write_text(json.dumps(self.holdings_data), encoding="utf-8")
+
+        self.forex_path = self.temp_path / "fx_data.json"
+        self.forex_data = {"rates": {"USD": 1.0}}
+        self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def _create_mock_history_response(self, dates: List[str], closes: List[float]) -> MagicMock:
+        mock_history = MagicMock()
+        mock_history.empty = False
+        mock_df = pd.DataFrame(
+            {"Close": closes},
+            index=pd.to_datetime(dates),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        mock_history.index = mock_df.index
+        return mock_history
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_nan_row_is_dropped_and_replaced(self, mock_read_csv, mock_csv_path) -> None:
+        """A trailing NaN row should be dropped so the script can re-fetch.
+
+        Scenario (reproduces June 4 2026 bug):
+        - CSV has valid June 3 row and corrupt June 4 row (all NaN)
+        - yfinance now returns valid June 4 data
+        - Script should drop the NaN row, append valid June 4 data
+        """
+        from scripts.pnl.update_daily_pnl import main
+
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        csv_path.write_text(
+            "date,value_usd\n" "2026-06-03,1418751.0\n" "2026-06-04,nan\n",
+            encoding="utf-8",
+        )
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        # yfinance now returns valid June 4 data
+        mock_history = self._create_mock_history_response(
+            dates=["2026-06-03", "2026-06-04"],
+            closes=[150.0, 155.0],
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                main()
+
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # Should have 2 rows: valid June 3 and valid June 4
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["date"], "2026-06-03")
+        self.assertEqual(float(rows[0]["value_usd"]), 1418751.0)
+        self.assertEqual(rows[1]["date"], "2026-06-04")
+        # 100 shares * $155 = $15,500
+        self.assertAlmostEqual(float(rows[1]["value_usd"]), 15500.0, places=2)
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_nan_row_replaced_via_regular_market_price(self, mock_read_csv, mock_csv_path) -> None:
+        """NaN row is dropped and replaced when regularMarketPrice is available.
+
+        Scenario:
+        - CSV has valid June 3 and corrupt June 4 (NaN)
+        - yfinance history() still returns NaN for June 4
+        - But info["regularMarketPrice"] has the official close price
+        - Script should drop the NaN row, then append valid June 4 data
+        """
+        from scripts.pnl.update_daily_pnl import main
+
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        csv_path.write_text(
+            "date,value_usd\n" "2026-06-03,1418751.0\n" "2026-06-04,nan\n",
+            encoding="utf-8",
+        )
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        # yfinance history() still returns NaN, but info has the close price
+        mock_history = self._create_mock_history_response(
+            dates=["2026-06-03", "2026-06-04"],
+            closes=[150.0, float("nan")],
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+        mock_ticker.info = {"regularMarketPrice": 155.0}
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                main()
+
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        # Should have 2 rows: valid June 3 (preserved) and valid June 4 (re-fetched)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["date"], "2026-06-03")
+        self.assertEqual(float(rows[0]["value_usd"]), 1418751.0)
+        self.assertEqual(rows[1]["date"], "2026-06-04")
+        # 100 shares * $155 (regularMarketPrice) = $15,500
+        self.assertAlmostEqual(float(rows[1]["value_usd"]), 15500.0, places=2)
+
+
 class TestStaleDataDetection(unittest.TestCase):
     """Integration tests for stale data detection and correction."""
 

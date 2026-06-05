@@ -85,3 +85,17 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 
 - **Learning:** When using `jest.mock` factory functions to mock state modules (like `js/transactions/state.js`), ensure all exported functions accessed or cleared in the tests (such as `setChartDateRange`) are explicitly included as `jest.fn()` in the returned mock object. Omitting them will cause `TypeError: ... is not a function` during test execution or teardown.
 - **Action:** Always double-check the module exports and ensure all accessed properties are mocked in the factory.
+
+## 2024-10-30 - Unit Testing Terminal UI Handlers
+
+- **Learning:** When unit testing terminal UI handlers (e.g., `misc.js` handlers) that invoke DOM-dependent summary functions (like `getActiveChartSummaryText`), `activeChart` may default to values like 'yield', which in turn calls snapshot functions that aren't mocked, causing `TypeError: (0, _snapshots.getYieldSnapshotLine) is not a function`.
+- **Action:** Explicitly mock `transactionState.activeChart` (e.g., set to `null`) or properly mock the dependent UI view utilities (e.g., `viewUtils.js` or `zoom.js`) to decouple the terminal logic tests from heavy DOM parsing and prevent crashes in JSDOM environments.
+
+## 2025-05-24 - Test coverage improvements
+
+- **Issue:** Identified tests with zero coverage and improved their test coverages, adhering to max automation constraint.
+- **Action:** Wrote tests for `sketch.js`, `quantum_shader.js` and `terminalStats.js`
+
+## 2025-02-23 - Internal testing functions via rewire mock injection
+
+To test highly internal functions isolated in a module closure safely, we inject test execution context by hooking window instead of modifying real feature logic in production code. Exposing through `testContent` rewrites directly isolates scope.
