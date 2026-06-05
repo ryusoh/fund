@@ -74,6 +74,7 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
 
 ## 2025-05-24 - [SECURITY ENHANCEMENT] Add Content-Security-Policy and X-Frame-Options to Worker APIs
+
 **Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
 **Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
 **Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.

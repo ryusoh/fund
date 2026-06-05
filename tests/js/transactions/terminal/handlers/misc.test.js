@@ -33,9 +33,8 @@ jest.mock('../../../../../js/transactions/terminal/snapshots.js', () => ({
     getFxSnapshotLine: jest.fn().mockReturnValue(null),
 }));
 
-
 jest.mock('../../../../../js/transactions/zoom.js', () => ({
-    toggleZoom: jest.fn().mockResolvedValue({ zoomed: true, message: 'Zoom toggled.' })
+    toggleZoom: jest.fn().mockResolvedValue({ zoomed: true, message: 'Zoom toggled.' }),
 }));
 
 describe('Misc Command Handlers', () => {
@@ -540,7 +539,7 @@ describe('handleLabelCommand', () => {
             const context = {
                 appendMessage: jest.fn(),
                 filterAndSort: jest.fn(),
-                chartManager: { update: jest.fn() }
+                chartManager: { update: jest.fn() },
             };
             transactionState.activeFilterTerm = 'test';
             transactionState.activeChart = null;
@@ -560,7 +559,7 @@ describe('handleLabelCommand', () => {
                 appendMessage: jest.fn(),
                 filterAndSort: jest.fn(),
                 chartManager: { update: jest.fn() },
-                terminalInput: { value: '' }
+                terminalInput: { value: '' },
             };
             transactionState.activeFilterTerm = 'stock: AAPL test ETF';
             transactionState.activeChart = null;
@@ -572,7 +571,9 @@ describe('handleLabelCommand', () => {
             expect(context.terminalInput.value).toBe('test');
             expect(context.filterAndSort).toHaveBeenCalledWith('test');
             expect(context.appendMessage).toHaveBeenCalled();
-            expect(context.appendMessage.mock.calls[0][0]).toContain('Cleared composition ticker filters.');
+            expect(context.appendMessage.mock.calls[0][0]).toContain(
+                'Cleared composition ticker filters.'
+            );
         });
     });
 
@@ -583,7 +584,7 @@ describe('handleLabelCommand', () => {
                 closeAllFilterDropdowns: jest.fn(),
                 resetSortState: jest.fn(),
                 filterAndSort: jest.fn(),
-                terminalInput: { value: 'test' }
+                terminalInput: { value: 'test' },
             };
 
             document.body.innerHTML = `
@@ -599,16 +600,24 @@ describe('handleLabelCommand', () => {
             expect(context.filterAndSort).toHaveBeenCalledWith('');
             expect(context.terminalInput.value).toBe('');
 
-            expect(document.querySelector('.table-responsive-container').classList.contains('is-hidden')).toBe(true);
-            expect(document.getElementById('runningAmountSection').classList.contains('is-hidden')).toBe(true);
-            expect(document.getElementById('performanceSection').classList.contains('is-hidden')).toBe(true);
+            expect(
+                document
+                    .querySelector('.table-responsive-container')
+                    .classList.contains('is-hidden')
+            ).toBe(true);
+            expect(
+                document.getElementById('runningAmountSection').classList.contains('is-hidden')
+            ).toBe(true);
+            expect(
+                document.getElementById('performanceSection').classList.contains('is-hidden')
+            ).toBe(true);
         });
     });
 
     describe('handleZoomCommand', () => {
         it('should call toggleZoom and append its message', async () => {
             const context = {
-                appendMessage: jest.fn()
+                appendMessage: jest.fn(),
             };
 
             await handleZoomCommand([], context);
@@ -621,7 +630,7 @@ describe('handleLabelCommand', () => {
     describe('handleSummaryCommand', () => {
         it('should report summary based on active view', async () => {
             const context = {
-                appendMessage: jest.fn()
+                appendMessage: jest.fn(),
             };
 
             await handleSummaryCommand([], context);
@@ -630,5 +639,4 @@ describe('handleLabelCommand', () => {
             expect(typeof context.appendMessage.mock.calls[0][0]).toBe('string');
         });
     });
-
 });
