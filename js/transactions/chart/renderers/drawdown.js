@@ -110,12 +110,11 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
         return a.localeCompare(b);
     });
 
-    for (let i = 0; i < orderedKeys.length; i++) {
-        const key = orderedKeys[i];
+    orderedKeys.forEach((key) => {
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    }
+    });
 
     const allExpectedSeries = orderedKeys.map((key) => {
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
@@ -263,8 +262,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
 
     const zeroLineY = yScale(0);
 
-    for (let sIdx = 0; sIdx < seriesToDraw.length; sIdx++) {
-        const series = seriesToDraw[sIdx];
+    seriesToDraw.forEach((series) => {
         const resolvedColor = colorMap[series.key] || colors.contribution;
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
 
@@ -277,17 +275,15 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
             ctx.strokeStyle = resolvedColor;
         }
 
-        const coords = new Array(series.data.length);
-        for (let i = 0; i < series.data.length; i++) {
-            const point = series.data[i];
+        const coords = series.data.map((point) => {
             const time = parseLocalDate(point.date).getTime();
-            coords[i] = {
+            return {
                 x: xScale(time),
                 y: yScale(point.value),
                 time,
                 value: point.value,
             };
-        }
+        });
 
         // "Underwater" fill: fill area between line and 0
         if (mountainFill.enabled) {
@@ -301,14 +297,13 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        for (let idx = 0; idx < coords.length; idx++) {
-            const coord = coords[idx];
-            if (idx === 0) {
+        coords.forEach((coord, index) => {
+            if (index === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        }
+        });
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
@@ -332,7 +327,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
             );
             glowIndex++;
         }
-    }
+    });
 
     if (renderedSeries.length === 0) {
         stopPerformanceAnimation();
@@ -348,11 +343,10 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {
-        for (let i = 0; i < seriesToDraw.length; i++) {
-            const series = seriesToDraw[i];
+        seriesToDraw.forEach((series) => {
             const lastData = series.data[series.data.length - 1];
             if (!lastData) {
-                continue;
+                return;
             }
             const x = xScale(parseLocalDate(lastData.date).getTime());
             const y = yScale(lastData.value);
@@ -377,7 +371,7 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
             if (bounds) {
                 labelBounds.push(bounds);
             }
-        }
+        });
     }
 
     // Store layout for crosshair

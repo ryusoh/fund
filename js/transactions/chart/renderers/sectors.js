@@ -350,7 +350,7 @@ function drawSectorsChartLoader(ctx, chartManager, valueMode) {
             renderSectorsChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Sectors chart rendering failed:', error);
+            logger.warn('Caught exception:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

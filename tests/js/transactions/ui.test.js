@@ -30,24 +30,20 @@ describe('ui controller', () => {
             redraw: jest.fn(),
         };
 
-        // Reset document body
         document.body.innerHTML = `
             <div class="table-responsive-container"></div>
-            <table id="transactionTable"></table>
             <div id="runningAmountSection"></div>
+            <table id="transactionTable"></table>
             <div class="chart-legend">
                 <div class="legend-item" data-series="series1"></div>
-                <div class="legend-item" data-series="series2"></div>
+                <div class="legend-item" data-series="series2" class="legend-disabled"></div>
             </div>
         `;
 
         uiController = createUiController({ chartManager });
 
         // Mock requestAnimationFrame to execute synchronously
-        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-            cb();
-            return 1;
-        });
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb());
     });
 
     afterEach(() => {

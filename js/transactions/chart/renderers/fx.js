@@ -182,10 +182,8 @@ export function drawFxChart(ctx, chartManager, timestamp) {
     let dataMin = Infinity;
     let dataMax = -Infinity;
 
-    for (let i = 0; i < filteredSeries.length; i++) {
-        const series = filteredSeries[i];
-        for (let j = 0; j < series.data.length; j++) {
-            const point = series.data[j];
+    filteredSeries.forEach((series) => {
+        series.data.forEach((point) => {
             const time = point.date.getTime();
             if (Number.isFinite(time)) {
                 minTime = Math.min(minTime, time);
@@ -195,8 +193,8 @@ export function drawFxChart(ctx, chartManager, timestamp) {
                 dataMin = Math.min(dataMin, point.percent);
                 dataMax = Math.max(dataMax, point.percent);
             }
-        }
-    }
+        });
+    });
 
     if (!Number.isFinite(minTime) || !Number.isFinite(maxTime) || minTime === maxTime) {
         chartLayouts.fx = null;
@@ -263,11 +261,10 @@ export function drawFxChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const renderedSeries = [];
     const labelBounds = [];
-    for (let i = 0; i < filteredSeries.length; i++) {
-        const series = filteredSeries[i];
+    filteredSeries.forEach((series) => {
         const visibility = transactionState.chartVisibility[series.key];
         if (visibility === false) {
-            continue;
+            return;
         }
 
         const smoothingConfig = getSmoothingConfig('performance');
@@ -340,14 +337,13 @@ export function drawFxChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        for (let j = 0; j < coords.length; j++) {
-            const coord = coords[j];
-            if (j === 0) {
+        coords.forEach((coord, index) => {
+            if (index === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        }
+        });
         ctx.lineWidth = CHART_LINE_WIDTHS.fx ?? 2;
         ctx.strokeStyle = strokeGradient;
         ctx.stroke();
@@ -394,7 +390,7 @@ export function drawFxChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    }
+    });
 
     if (!renderedSeries.length) {
         stopFxAnimation();

@@ -242,8 +242,3 @@
 
 **Learning:** Doing `new Date(dates[j])` and repeatedly constructing interpolators with `createTimeInterpolator()` inside high-frequency hover event handlers (like chart crosshair drawing) causes severe CPU and Garbage Collection (GC) degradation due to constant array allocations and closure recreations.
 **Action:** Cache derived objects like interpolators directly on the `layout` state object during the first hover interaction so they can be reused on subsequent hover event frames, changing an O(H\*N) per-frame operation to an O(1) lookup per frame.
-
-## 2026-06-21 - Replaced .forEach closures in chart render and interaction loops
-
-**Learning:** Using `.forEach()` arrays in extremely high-frequency event loops like pointer hover iterations (`interaction.js`) and every animation frame drawing step (`fx.js`, `beta.js`, `rolling.js`, `volatility.js`, `performance.js`, `drawdown.js`, `contribution.js`) implicitly allocates new closure functions on every frame tick/mouse move. In large composite charts with multiple overlaid lines/series, this exponentially increases the short-lived heap allocations, leading to heavy GC overhead and resulting micro-stutters during interactivity.
-**Action:** Always replace `.forEach()` with explicit index-based `for` loops (e.g., `for (let i = 0; i < array.length; i++)`) inside critical path rendering, mapping coordinates, and high-frequency UI handlers to entirely eliminate closure creation overhead and drop GC pressure.

@@ -127,12 +127,11 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         let activeTickers = null;
         if (filtersActive && Array.isArray(filteredTransactions)) {
             const tickerSet = new Set();
-            for (let i = 0; i < filteredTransactions.length; i++) {
-                const t = filteredTransactions[i];
+            filteredTransactions.forEach((t) => {
                 if (t.security) {
                     tickerSet.add(t.security);
                 }
-            }
+            });
             activeTickers = Array.from(tickerSet);
         }
 
@@ -156,7 +155,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 historicalPrices = {};
             }
         } catch (error) {
-            logger.warn('Contribution chart rendering failed:', error);
+            logger.warn('Caught exception:', error);
             historicalPrices = {};
         }
     } else {
@@ -406,23 +405,19 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         if (filterFrom) {
             const filterFromTime = filterFrom.getTime();
             // Find peak in contribution data before filter start
-            const cSrc = mappedContributionSource || [];
-            for (let i = 0; i < cSrc.length; i++) {
-                const item = cSrc[i];
+            (mappedContributionSource || []).forEach((item) => {
                 const itemDate = new Date(item.date);
                 if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
                     contributionHistoricalPeak = Math.max(contributionHistoricalPeak, item.value);
                 }
-            }
+            });
             // Find peak in balance data before filter start
-            const bSrc = mappedBalanceSource || [];
-            for (let i = 0; i < bSrc.length; i++) {
-                const item = bSrc[i];
+            (mappedBalanceSource || []).forEach((item) => {
                 const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
                 if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
                     balanceHistoricalPeak = Math.max(balanceHistoricalPeak, item.value);
                 }
-            }
+            });
         }
 
         finalContributionData = applyDrawdownToSeries(
@@ -678,9 +673,8 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         });
     }
 
-    for (let sIdx = 0; sIdx < animatedSeries.length; sIdx++) {
-        const series = animatedSeries[sIdx];
-        const coords = new Array(series.data.length);
+    animatedSeries.forEach((series) => {
+        const coords = [];
         if (series.data.length > 0) {
             // Ensure visual continuity by adding a synthetic start point if filtering
             if (filterStartTime && series.data[0].time > filterStartTime) {
@@ -691,18 +685,17 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             }
         }
 
-        for (let i = 0; i < series.data.length; i++) {
-            const point = series.data[i];
-            coords[i] = {
+        series.data.forEach((point) => {
+            coords.push({
                 x: xScale(point.time),
                 y: yScale(point.value),
                 time: point.time,
                 value: point.value,
-            };
-        }
+            });
+        });
 
         series.coords = coords;
-    }
+    });
 
     // Draw divider line between line chart and volume chart
     if (volumeHeight > 0) {
@@ -764,11 +757,10 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     // However, since volume is below, and line chart is above, they don't overlap much.
     // But to be safe and consistent with previous logic:
 
-    for (let index = 0; index < sortedSeries.length; index++) {
-        const series = sortedSeries[index];
+    sortedSeries.forEach((series, index) => {
         const coords = series.coords || [];
         if (coords.length === 0) {
-            continue;
+            return;
         }
 
         // Apply gradient effect for balance chart lines
@@ -799,14 +791,13 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         }
 
         ctx.beginPath();
-        for (let coordIndex = 0; coordIndex < coords.length; coordIndex++) {
-            const coord = coords[coordIndex];
+        coords.forEach((coord, coordIndex) => {
             if (coordIndex === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        }
+        });
         ctx.lineWidth = series.lineWidth;
         ctx.stroke();
 
@@ -825,7 +816,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             );
             hasAnimatedSeries = true;
         }
-    }
+    });
 
     // ctx.restore(); // Removed inner restore, will restore at the end
 

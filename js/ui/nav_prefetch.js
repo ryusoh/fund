@@ -128,7 +128,7 @@
                 fetchUrl = new window.URL(url);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Navigation prefetch failed:', error);
+                console.warn('Caught exception:', error);
                 return undefined;
             }
 
@@ -281,7 +281,7 @@
                 urls.add(resolved);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Navigation prefetch failed:', error);
+                console.warn('Caught exception:', error);
                 // Ignore invalid URLs
             }
         }
@@ -324,7 +324,7 @@
                 resolved = new window.URL(href, window.location.href);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Navigation prefetch failed:', error);
+                console.warn('Caught exception:', error);
                 return;
             }
             if (resolved.origin !== window.location.origin) {

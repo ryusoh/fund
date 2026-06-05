@@ -79,7 +79,7 @@
                     video.load();
                 } catch (error) {
                     // eslint-disable-next-line no-console
-                    console.warn('Video warmup failed:', error);
+                    console.warn('Caught exception:', error);
                     // Ignore playback readiness errors; fallback will still cache the source
                 }
             }

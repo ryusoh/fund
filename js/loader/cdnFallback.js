@@ -15,7 +15,7 @@
             }
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.warn('CDN fallback initialization failed:', error);
+            console.warn('Caught exception:', error);
         }
     }
     function loadScriptSequential(urls, attrs) {
@@ -62,7 +62,7 @@
                         })
                         .catch(function (error) {
                             // eslint-disable-next-line no-console
-                            console.warn('CDN fallback initialization failed:', error);
+                            console.warn('Caught exception:', error);
                             resolve();
                         });
                     return;

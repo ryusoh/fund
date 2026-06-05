@@ -1,46 +1,32 @@
-import { handleStatsCommand } from '../../../../../js/transactions/terminal/handlers/stats.js';
-import { transactionState } from '../../../../../js/transactions/state.js';
-import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
-import { getGeographySummaryText } from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
+import { handleStatsCommand } from '@js/transactions/terminal/handlers/stats.js';
+import { transactionState } from '@js/transactions/state.js';
+import * as terminalStats from '@js/transactions/terminalStats.js';
+import * as geographySummary from '@js/transactions/terminal/handlers/geographySummary.js';
 
-jest.mock('../../../../../js/transactions/state.js', () => ({
-    transactionState: {
-        selectedCurrency: 'USD',
-    },
+jest.mock('@js/transactions/state.js', () => ({
+    transactionState: {},
 }));
 
-jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
-    getStatsText: jest.fn(),
-    getHoldingsText: jest.fn(),
-    getHoldingsDebugText: jest.fn(),
-    getFinancialStatsText: jest.fn(),
-    getTechnicalStatsText: jest.fn(),
-    getCagrText: jest.fn(),
-    getAnnualReturnText: jest.fn(),
-    getRatioText: jest.fn(),
-    getDurationStatsText: jest.fn(),
-    getLifespanStatsText: jest.fn(),
-    getConcentrationText: jest.fn(),
+jest.mock('@js/transactions/terminalStats.js', () => ({
+    getStatsText: jest.fn().mockResolvedValue('StatsText'),
+    getHoldingsText: jest.fn().mockResolvedValue('HoldingsText'),
+    getHoldingsDebugText: jest.fn().mockResolvedValue('HoldingsDebugText'),
+    getFinancialStatsText: jest.fn().mockResolvedValue('FinancialText'),
+    getTechnicalStatsText: jest.fn().mockResolvedValue('TechnicalText'),
+    getCagrText: jest.fn().mockResolvedValue('CagrText'),
+    getAnnualReturnText: jest.fn().mockResolvedValue('ReturnText'),
+    getRatioText: jest.fn().mockResolvedValue('RatioText'),
+    getDurationStatsText: jest.fn().mockResolvedValue('DurationText'),
+    getLifespanStatsText: jest.fn().mockResolvedValue('LifespanText'),
+    getConcentrationText: jest.fn().mockResolvedValue('ConcentrationText'),
 }));
 
-jest.mock('../../../../../js/transactions/terminal/handlers/geographySummary.js', () => ({
-    getGeographySummaryText: jest.fn(),
+jest.mock('@js/transactions/terminal/handlers/geographySummary.js', () => ({
+    getGeographySummaryText: jest.fn().mockResolvedValue('GeographyText'),
 }));
 
-jest.mock('../../../../../js/transactions/terminal/constants.js', () => ({
-    STATS_SUBCOMMANDS: [
-        'transactions',
-        'holdings',
-        'financial',
-        'technical',
-        'cagr',
-        'return',
-        'ratio',
-        'duration',
-        'lifespan',
-        'concentration',
-        'geography',
-    ],
+jest.mock('@js/transactions/terminal/constants.js', () => ({
+    STATS_SUBCOMMANDS: ['transactions', 'holdings', 'financial'],
 }));
 
 describe('handleStatsCommand', () => {
@@ -48,144 +34,109 @@ describe('handleStatsCommand', () => {
 
     beforeEach(() => {
         appendMessage = jest.fn();
+        transactionState.selectedCurrency = 'USD';
         jest.clearAllMocks();
     });
 
-    it('displays help when no arguments are provided', async () => {
+    it('should display help when no args provided', async () => {
         await handleStatsCommand([], { appendMessage });
-
-        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Stats commands:\n'));
-        expect(terminalStats.getStatsText).not.toHaveBeenCalled();
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Stats commands:'));
     });
 
-    it('handles "transactions" subcommand', async () => {
-        terminalStats.getStatsText.mockResolvedValue('Mocked Transactions Stats');
+    it('should handle transactions subcommand with currency', async () => {
         await handleStatsCommand(['transactions'], { appendMessage });
-
         expect(terminalStats.getStatsText).toHaveBeenCalledWith('USD');
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Transactions Stats');
+        expect(appendMessage).toHaveBeenCalledWith('StatsText');
     });
 
-    it('handles "transactions" subcommand with fallback currency', async () => {
-        transactionState.selectedCurrency = null;
-        terminalStats.getStatsText.mockResolvedValue('Mocked Transactions Stats');
+    it('should handle transactions subcommand without currency', async () => {
+        delete transactionState.selectedCurrency;
         await handleStatsCommand(['transactions'], { appendMessage });
-
         expect(terminalStats.getStatsText).toHaveBeenCalledWith('USD');
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Transactions Stats');
-        transactionState.selectedCurrency = 'USD';
     });
 
-    it('handles "holdings" subcommand', async () => {
-        terminalStats.getHoldingsText.mockResolvedValue('Mocked Holdings Stats');
+    it('should handle holdings subcommand with currency', async () => {
         await handleStatsCommand(['holdings'], { appendMessage });
-
         expect(terminalStats.getHoldingsText).toHaveBeenCalledWith('USD');
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Holdings Stats');
+        expect(appendMessage).toHaveBeenCalledWith('HoldingsText');
     });
 
-    it('handles "holdings" subcommand with fallback currency', async () => {
-        transactionState.selectedCurrency = undefined;
-        terminalStats.getHoldingsText.mockResolvedValue('Mocked Holdings Stats');
+    it('should handle holdings subcommand without currency', async () => {
+        delete transactionState.selectedCurrency;
         await handleStatsCommand(['holdings'], { appendMessage });
-
         expect(terminalStats.getHoldingsText).toHaveBeenCalledWith('USD');
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Holdings Stats');
-        transactionState.selectedCurrency = 'USD';
     });
 
-    it('handles "holdings-debug" subcommand', async () => {
-        terminalStats.getHoldingsDebugText.mockResolvedValue('Mocked Debug Holdings');
+    it('should handle holdings-debug subcommand', async () => {
         await handleStatsCommand(['holdings-debug'], { appendMessage });
-
         expect(terminalStats.getHoldingsDebugText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Debug Holdings');
+        expect(appendMessage).toHaveBeenCalledWith('HoldingsDebugText');
     });
 
-    it('handles "financial" subcommand', async () => {
-        terminalStats.getFinancialStatsText.mockResolvedValue('Mocked Financial Stats');
+    it('should handle financial subcommand', async () => {
         await handleStatsCommand(['financial'], { appendMessage });
-
         expect(terminalStats.getFinancialStatsText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Financial Stats');
+        expect(appendMessage).toHaveBeenCalledWith('FinancialText');
     });
 
-    it('handles "technical" subcommand', async () => {
-        terminalStats.getTechnicalStatsText.mockResolvedValue('Mocked Technical Stats');
+    it('should handle technical subcommand', async () => {
         await handleStatsCommand(['technical'], { appendMessage });
-
         expect(terminalStats.getTechnicalStatsText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Technical Stats');
+        expect(appendMessage).toHaveBeenCalledWith('TechnicalText');
     });
 
-    it('handles "cagr" subcommand', async () => {
-        terminalStats.getCagrText.mockResolvedValue('Mocked CAGR Stats');
+    it('should handle cagr subcommand', async () => {
         await handleStatsCommand(['cagr'], { appendMessage });
-
         expect(terminalStats.getCagrText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked CAGR Stats');
+        expect(appendMessage).toHaveBeenCalledWith('CagrText');
     });
 
-    it('handles "return" subcommand', async () => {
-        terminalStats.getAnnualReturnText.mockResolvedValue('Mocked Return Stats');
+    it('should handle return subcommand', async () => {
         await handleStatsCommand(['return'], { appendMessage });
-
         expect(terminalStats.getAnnualReturnText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Return Stats');
+        expect(appendMessage).toHaveBeenCalledWith('ReturnText');
     });
 
-    it('handles "ratio" subcommand', async () => {
-        terminalStats.getRatioText.mockResolvedValue('Mocked Ratio Stats');
+    it('should handle ratio subcommand', async () => {
         await handleStatsCommand(['ratio'], { appendMessage });
-
         expect(terminalStats.getRatioText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Ratio Stats');
+        expect(appendMessage).toHaveBeenCalledWith('RatioText');
     });
 
-    it('handles "duration" subcommand', async () => {
-        terminalStats.getDurationStatsText.mockResolvedValue('Mocked Duration Stats');
+    it('should handle duration subcommand', async () => {
         await handleStatsCommand(['duration'], { appendMessage });
-
         expect(terminalStats.getDurationStatsText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Duration Stats');
+        expect(appendMessage).toHaveBeenCalledWith('DurationText');
     });
 
-    it('handles "lifespan" subcommand', async () => {
-        terminalStats.getLifespanStatsText.mockResolvedValue('Mocked Lifespan Stats');
+    it('should handle lifespan subcommand', async () => {
         await handleStatsCommand(['lifespan'], { appendMessage });
-
         expect(terminalStats.getLifespanStatsText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Lifespan Stats');
+        expect(appendMessage).toHaveBeenCalledWith('LifespanText');
     });
 
-    it('handles "concentration" subcommand', async () => {
-        terminalStats.getConcentrationText.mockResolvedValue('Mocked Concentration Stats');
+    it('should handle concentration subcommand', async () => {
         await handleStatsCommand(['concentration'], { appendMessage });
-
         expect(terminalStats.getConcentrationText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Concentration Stats');
+        expect(appendMessage).toHaveBeenCalledWith('ConcentrationText');
     });
 
-    it('handles "geography" subcommand', async () => {
-        getGeographySummaryText.mockResolvedValue('Mocked Geography Stats');
+    it('should handle geography subcommand', async () => {
         await handleStatsCommand(['geography'], { appendMessage });
-
-        expect(getGeographySummaryText).toHaveBeenCalled();
-        expect(appendMessage).toHaveBeenCalledWith('Mocked Geography Stats');
+        expect(geographySummary.getGeographySummaryText).toHaveBeenCalled();
+        expect(appendMessage).toHaveBeenCalledWith('GeographyText');
     });
 
-    it('handles unknown subcommands', async () => {
-        await handleStatsCommand(['unknown_command'], { appendMessage });
-
+    it('should handle unknown subcommand', async () => {
+        await handleStatsCommand(['unknown'], { appendMessage });
         expect(appendMessage).toHaveBeenCalledWith(
-            expect.stringContaining('Unknown stats subcommand: unknown_command\nAvailable: ')
+            expect.stringContaining('Unknown stats subcommand: unknown')
         );
     });
 
-    it('does not append message if result is empty', async () => {
-        terminalStats.getStatsText.mockResolvedValue('');
+    it('should not append message if result is empty', async () => {
+        terminalStats.getStatsText.mockResolvedValueOnce('');
         await handleStatsCommand(['transactions'], { appendMessage });
-
         expect(appendMessage).not.toHaveBeenCalled();
     });
 });

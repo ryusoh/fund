@@ -321,6 +321,24 @@ describe('Composition Chart Feature Parity', () => {
         test('handleCompositionStyleChart must handle all composition charts', () => {
             const baseCharts = [...new Set(COMPOSITION_CHARTS.map(getBaseChart))];
 
+            // Get the handleCompositionStyleChart function body
+            const handlerMatch = plotContent.match(
+                /const handleCompositionStyleChart = async \(baseChartKey\) => \{([\s\S]+?)\};/
+            );
+            expect(handlerMatch).toBeTruthy();
+            const handlerBody = handlerMatch[1];
+
+            baseCharts.forEach((baseChart) => {
+                // Check if the chart is handled in the if/else-if chain for snapshots
+                if (baseChart !== 'drawdown') {
+                    // drawdown is handled specially with custom snapshotFn
+                    expect(handlerBody).toContain(
+                        `baseChartKey === '${baseChart}'`,
+                        `Chart "${baseChart}" is missing from handleCompositionStyleChart snapshot matching`
+                    );
+                }
+            });
+
             // Verify the list of charts that call handleCompositionStyleChart
             const dispatchMatch = plotContent.match(
                 /if \(\[([\s\S]+?)\]\.includes\(baseSubcommand\)\)/
@@ -337,13 +355,16 @@ describe('Composition Chart Feature Parity', () => {
         });
 
         test('handleCompositionStyleChart must support abs/absolute mode toggle and date args', () => {
-            const fullPlotContent = plotContent;
+            const handlerMatch = plotContent.match(
+                /const handleCompositionStyleChart = async \(baseChartKey\) => \{([\s\S]+?)\};/
+            );
+            const handlerBody = handlerMatch[1];
 
             // Verify core features are implemented in the shared handler
-            expect(fullPlotContent).toContain('isAbsoluteSubcommand(subcommand)');
-            expect(fullPlotContent).toContain('applyDateArgs(rangeTokens)');
-            expect(fullPlotContent).toContain("baseChartKey + 'Abs'");
-            expect(fullPlotContent).toMatch(/rangeTokens\.length === 0|!hasDateArgs/); // Toggle behavior
+            expect(handlerBody).toContain('isAbsoluteSubcommand(subcommand)');
+            expect(handlerBody).toContain('applyDateArgs(rangeTokens)');
+            expect(handlerBody).toContain("baseChartKey + 'Abs'");
+            expect(handlerBody).toContain('!hasDateArgs'); // Toggle behavior
         });
 
         test('all composition chart renderers must filter data based on chartDateRange', () => {

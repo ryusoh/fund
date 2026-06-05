@@ -233,7 +233,7 @@ export async function loadPerformanceSeries() {
         const [response, realtime] = await Promise.all([
             fetch('../data/output/performance_series.json'),
             fetchRealTimeData().catch((error) => {
-                logger.warn('Data loading failed:', error);
+                logger.warn('Caught exception:', error);
                 return null;
             }),
         ]);
@@ -305,7 +305,7 @@ export async function loadPerformanceSeries() {
                     }
                 }
             } catch (error) {
-                logger.warn('Data loading failed:', error);
+                logger.warn('Caught exception:', error);
                 // Ignore complexity if balance fetch fails
             }
         }
@@ -342,7 +342,7 @@ export async function loadCompositionSnapshotData() {
         const [response, realtime] = await Promise.all([
             fetch('../data/output/figures/composition.json'),
             fetchRealTimeData().catch((error) => {
-                logger.warn('Data loading failed:', error);
+                logger.warn('Caught exception:', error);
                 return null;
             }),
         ]);

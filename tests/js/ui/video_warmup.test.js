@@ -170,7 +170,7 @@ describe('video_warmup.js', () => {
         loadScript();
         jest.runAllTimers();
 
-        expect(consoleSpy).toHaveBeenCalledWith('Video warmup failed:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
         consoleSpy.mockRestore();
     });
 

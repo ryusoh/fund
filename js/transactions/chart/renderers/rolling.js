@@ -56,12 +56,11 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         return a.localeCompare(b);
     });
 
-    for (let i = 0; i < orderedKeys.length; i++) {
-        const key = orderedKeys[i];
+    orderedKeys.forEach((key) => {
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    }
+    });
 
     // Transform cumulative TWRR into rolling 1Y returns
     const allPossibleSeries = orderedKeys.map((key) => {
@@ -261,52 +260,32 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         return 0;
     });
 
-    for (let sIdx = 0; sIdx < seriesForDrawing.length; sIdx++) {
-        const series = seriesForDrawing[sIdx];
+    seriesForDrawing.forEach((series) => {
         if (series.data.length === 0) {
-            continue;
+            return;
         }
 
         const rawPoints = series.data;
         const smoothingConfig = getSmoothingConfig('performance');
-
-        // Bolt: Optimize array allocation
-        const mapRawPoints = new Array(rawPoints.length);
-        for (let i = 0; i < rawPoints.length; i++) {
-            const p = rawPoints[i];
-            mapRawPoints[i] = { x: parseLocalDate(p.date).getTime(), y: p.value };
-        }
-
-        let points;
-        if (smoothingConfig) {
-            const smoothed = smoothFinancialData(mapRawPoints, smoothingConfig, true);
-            points = new Array(smoothed.length);
-            for (let i = 0; i < smoothed.length; i++) {
-                points[i] = { date: parseLocalDate(smoothed[i].x), value: smoothed[i].y };
-            }
-        } else {
-            points = new Array(rawPoints.length);
-            for (let i = 0; i < rawPoints.length; i++) {
-                const p = rawPoints[i];
-                points[i] = { date: parseLocalDate(p.date), value: p.value };
-            }
-        }
+        const points = smoothingConfig
+            ? smoothFinancialData(
+                  rawPoints.map((p) => ({ x: parseLocalDate(p.date).getTime(), y: p.value })),
+                  smoothingConfig,
+                  true
+              ).map((p) => ({ date: parseLocalDate(p.x), value: p.y }))
+            : rawPoints.map((p) => ({ date: parseLocalDate(p.date), value: p.value }));
 
         const gradientStops = BENCHMARK_GRADIENTS[series.key];
         const resolvedColor = gradientStops
             ? gradientStops[1]
             : colorMap[series.key] || colors.contribution;
 
-        const coords = new Array(points.length);
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            coords[i] = {
-                x: xScale(p.date.getTime()),
-                y: yScale(p.value),
-                time: p.date.getTime(),
-                value: p.value,
-            };
-        }
+        const coords = points.map((p) => ({
+            x: xScale(p.date.getTime()),
+            y: yScale(p.value),
+            time: p.date.getTime(),
+            value: p.value,
+        }));
 
         if (mountainFill.enabled) {
             drawMountainFill(ctx, coords, baselineY, {
@@ -319,14 +298,13 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        for (let idx = 0; idx < coords.length; idx++) {
-            const c = coords[idx];
+        coords.forEach((c, idx) => {
             if (idx === 0) {
                 ctx.moveTo(c.x, c.y);
             } else {
                 ctx.lineTo(c.x, c.y);
             }
-        }
+        });
         ctx.strokeStyle = resolvedColor;
         if (gradientStops) {
             const grad = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);
@@ -361,7 +339,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    }
+    });
 
     if (isAnimationEnabled('performance') && glowIndex > 0) {
         schedulePerformanceAnimation(chartManager);
@@ -372,8 +350,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {
-        for (let i = 0; i < renderedSeries.length; i++) {
-            const s = renderedSeries[i];
+        renderedSeries.forEach((s) => {
             const bounds = drawEndValue(
                 ctx,
                 s.x,
@@ -391,7 +368,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             if (bounds) {
                 labelBounds.push(bounds);
             }
-        }
+        });
     }
 
     chartLayouts.rolling = {

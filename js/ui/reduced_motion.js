@@ -11,7 +11,7 @@
         }
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Reduced motion detection failed:', error);
+        console.warn('Caught exception:', error);
         /* no-op */
     }
 })();

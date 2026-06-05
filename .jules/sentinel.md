@@ -78,9 +78,3 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** Calls to `subprocess.run` and `subprocess.call` in Python scripts (`extract_pnl_history.py`, `update_vt_sectors.py`, `watch_transactions.py`) lacked an explicit timeout parameter. If the executed command hung (e.g., waiting for user input, network stall, or an infinite loop), the parent script would block indefinitely. In an automated or CI/CD environment, this could lead to resource exhaustion and potential Denial of Service (DoS) of the pipeline.
 **Learning:** `subprocess.run` and `subprocess.call` do not have a default timeout in Python. Relying on the underlying system or process to exit normally is risky.
 **Prevention:** Always add an explicit `timeout` argument to `subprocess.run` and `subprocess.call` invocations (e.g., `timeout=60`) to ensure that processes fail fast rather than hanging indefinitely.
-
-## 2025-05-24 - [SECURITY ENHANCEMENT] Add Content-Security-Policy and X-Frame-Options to Worker APIs
-
-**Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
-**Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
-**Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.

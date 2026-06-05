@@ -93,11 +93,20 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     };
 
     const getBaseSubcommand = (subcmd) => {
-        const prefixes = ['composition', 'sectors', 'geography', 'marketcap', 'drawdown'];
-        for (const prefix of prefixes) {
-            if (subcmd.startsWith(prefix)) {
-                return prefix;
-            }
+        if (subcmd.startsWith('composition')) {
+            return 'composition';
+        }
+        if (subcmd.startsWith('sectors')) {
+            return 'sectors';
+        }
+        if (subcmd.startsWith('geography')) {
+            return 'geography';
+        }
+        if (subcmd.startsWith('marketcap')) {
+            return 'marketcap';
+        }
+        if (subcmd.startsWith('drawdown')) {
+            return 'drawdown';
         }
         return subcmd;
     };
@@ -116,12 +125,14 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             return getExistingChartRange();
         }
 
-        const firstTokenLower = normalizedTokens[0].toLowerCase();
-        if (normalizedTokens.length === 1 && ['all', 'reset', 'clear'].includes(firstTokenLower)) {
-            const clearedRange = { from: null, to: null };
-            setChartDateRange(clearedRange);
-            updateContextYearFromRange(clearedRange);
-            return clearedRange;
+        if (normalizedTokens.length === 1) {
+            const token = normalizedTokens[0].toLowerCase();
+            if (token === 'all' || token === 'reset' || token === 'clear') {
+                const clearedRange = { from: null, to: null };
+                setChartDateRange(clearedRange);
+                updateContextYearFromRange(clearedRange);
+                return clearedRange;
+            }
         }
 
         let range = parseDateRange(normalizedTokens);
@@ -137,7 +148,7 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
         return range;
     };
 
-    const getCompositionTokensAndMode = () => {
+    const handleCompositionStyleChart = async (baseChartKey) => {
         let useAbsolute = isAbsoluteSubcommand(subcommand);
         let rangeTokens = [...rawArgs];
         if (!useAbsolute && rangeTokens.length > 0) {
@@ -147,203 +158,75 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
                 rangeTokens = rangeTokens.slice(1);
             }
         }
-        return { useAbsolute, rangeTokens };
-    };
-
-    const getSnapshotFn = (baseChartKey, useAbsolute) => {
-        if (baseChartKey === 'drawdown') {
-            return () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: useAbsolute });
-        }
-        const snapshotFnMap = {
-            composition: getCompositionSnapshotLine,
-            sectors: getSectorsSnapshotLine,
-            geography: getGeographySnapshotLine,
-            marketcap: getMarketcapSnapshotLine,
-        };
-        return snapshotFnMap[baseChartKey];
-    };
-
-    const toggleCompositionChart = (targetChart) => {
+        const dateRange = applyDateArgs(rangeTokens);
         const section = document.getElementById('runningAmountSection');
         const tableContainer = document.querySelector('.table-responsive-container');
-        setActiveChart(targetChart);
-        if (section) {
-            section.classList.remove('is-hidden');
-            chartManager.update();
-        }
-        if (tableContainer) {
-            tableContainer.classList.add('is-hidden');
-        }
-    };
 
-    const buildCompositionResultMsg = (baseChartKey, useAbsolute, dateRange, typeName) => {
-        const isAbs = useAbsolute ? ' (absolute)' : '';
-        if (baseChartKey === 'drawdown') {
-            return `Showing drawdown${isAbs} chart for ${formatDateRange(dateRange)}.`;
-        }
-        return `Showing ${typeName}${isAbs} chart for ${formatDateRange(dateRange)}.`;
-    };
-
-    const handleCompositionStyleChart = async (baseChartKey) => {
-        const { useAbsolute, rangeTokens } = getCompositionTokensAndMode();
-        const dateRange = applyDateArgs(rangeTokens);
         const targetChart = useAbsolute ? baseChartKey + 'Abs' : baseChartKey;
-        const section = document.getElementById('runningAmountSection');
         const isActive = transactionState.activeChart === targetChart;
         const isVisible = section && !section.classList.contains('is-hidden');
+        const hasDateArgs = rangeTokens.length > 0;
 
-        const typeNameMap = {
-            sectors: 'sector allocation',
-            geography: 'geography allocation',
-            marketcap: 'market cap allocation',
-        };
-        const typeName = typeNameMap[baseChartKey] || baseChartKey;
-
-        if (isActive && isVisible && rangeTokens.length === 0) {
+        if (isActive && isVisible && !hasDateArgs) {
             setActiveChart(null);
             if (section) {
                 section.classList.add('is-hidden');
+            }
+            let typeName = baseChartKey;
+            if (baseChartKey === 'sectors') {
+                typeName = 'sector allocation';
+            } else if (baseChartKey === 'geography') {
+                typeName = 'geography allocation';
+            } else if (baseChartKey === 'marketcap') {
+                typeName = 'market cap allocation';
             }
             appendMessage(`Hidden ${typeName} chart.`);
-            return;
-        }
-
-        toggleCompositionChart(targetChart);
-        let result = buildCompositionResultMsg(baseChartKey, useAbsolute, dateRange, typeName);
-
-        const suffix = useAbsolute ? ' Abs' : '';
-        const labelPrefix = baseChartKey.charAt(0).toUpperCase() + baseChartKey.slice(1) + suffix;
-
-        const snapshotFn = getSnapshotFn(baseChartKey, useAbsolute);
-        const snapshot = await snapshotFn({ labelPrefix });
-        if (snapshot) {
-            result += `\n${snapshot}`;
-        }
-
-        appendMessage(result);
-    };
-
-    const baseSubcommand = getBaseSubcommand(subcommand);
-
-    const handleNonCompositionStyleChart = async (subcmd, dateRange) => {
-        const chartHandlers = {
-            balance: {
-                key: 'contribution',
-                hiddenName: 'contribution chart.',
-                getSummary: async () =>
-                    await getContributionSummaryText(transactionState.chartDateRange),
-                getBaseMsg: (dRange) =>
-                    `Showing contribution chart for ${formatDateRange(dRange)}.`,
-                getSnap: async () => null,
-            },
-            performance: {
-                key: 'performance',
-                hiddenName: 'performance chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing performance chart for ${formatDateRange(dRange)}.\n\n${TWRR_MESSAGE}`,
-                getSnap: async () => getPerformanceSnapshotLine({ includeHidden: true }),
-                appendSnapDoubleNewline: true,
-            },
-            fx: {
-                key: 'fx',
-                hiddenName: 'FX rate chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) => `Showing FX rate chart for ${formatDateRange(dRange)}.`,
-                getSnap: async () => getFxSnapshotLine(),
-            },
-            concentration: {
-                key: 'concentration',
-                hiddenName: 'concentration chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing concentration (HHI) chart for ${formatDateRange(dRange)}.`,
-                getSnap: async () => await getConcentrationSnapshotText(),
-            },
-            pe: {
-                key: 'pe',
-                hiddenName: 'P/E ratio chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing weighted average P/E ratio chart for ${formatDateRange(dRange)}.`,
-                getSnap: async () => await getPESnapshotLine(),
-            },
-            rolling: {
-                key: 'rolling',
-                hiddenName: '1-Year rolling returns chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing 1-Year rolling returns chart for ${formatDateRange(dRange)}.\n\n${ROLLING_EXPLANATION}`,
-                getSnap: async () => getRollingSnapshotLine(),
-                appendSnapDoubleNewline: true,
-            },
-            volatility: {
-                key: 'volatility',
-                hiddenName: '90-Day annualized rolling volatility chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(dRange)}.\n\n${VOLATILITY_EXPLANATION}`,
-                getSnap: async () => getVolatilitySnapshotLine(),
-                appendSnapDoubleNewline: true,
-            },
-            beta: {
-                key: 'beta',
-                hiddenName: 'portfolio beta chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(dRange)}.\n\n${BETA_EXPLANATION}`,
-                getSnap: async () => await getBetaSnapshotLine(),
-                appendSnapDoubleNewline: true,
-            },
-            yield: {
-                key: 'yield',
-                hiddenName: 'dividend yield and income chart.',
-                getSummary: async () => null,
-                getBaseMsg: (dRange) =>
-                    `Showing dividend yield and income chart for ${formatDateRange(dRange)}.\n\n${YIELD_EXPLANATION}`,
-                getSnap: async () => await getYieldSnapshotLine(),
-                appendSnapDoubleNewline: true,
-            },
-        };
-
-        const handler = chartHandlers[subcmd];
-        if (!handler) {
-            appendMessage(
-                `Unknown plot subcommand: ${subcmd}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`
-            );
-            return;
-        }
-
-        const section = document.getElementById('runningAmountSection');
-        const isAct = transactionState.activeChart === handler.key;
-        const isVis = section && !section.classList.contains('is-hidden');
-
-        if (isAct && isVis) {
-            setActiveChart(null);
-            if (section) {
-                section.classList.add('is-hidden');
-            }
-            appendMessage(`Hidden ${handler.hiddenName}`);
         } else {
-            setActiveChart(handler.key);
+            setActiveChart(targetChart);
             if (section) {
                 section.classList.remove('is-hidden');
                 chartManager.update();
             }
+            if (tableContainer) {
+                tableContainer.classList.add('is-hidden');
+            }
+            let typeName = baseChartKey;
+            if (baseChartKey === 'sectors') {
+                typeName = 'sector allocation';
+            } else if (baseChartKey === 'geography') {
+                typeName = 'geography allocation';
+            } else if (baseChartKey === 'marketcap') {
+                typeName = 'market cap allocation';
+            }
+            let result = `Showing ${typeName}${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
 
-            let result = handler.getBaseMsg(dateRange);
-            const summary = await handler.getSummary();
-            if (summary) {
-                result += `\n${summary}`;
+            let snapshotFn;
+            const labelPrefix = useAbsolute
+                ? baseChartKey.charAt(0).toUpperCase() + baseChartKey.slice(1) + ' Abs'
+                : baseChartKey.charAt(0).toUpperCase() + baseChartKey.slice(1);
+            if (baseChartKey === 'composition') {
+                snapshotFn = getCompositionSnapshotLine;
+            } else if (baseChartKey === 'sectors') {
+                snapshotFn = getSectorsSnapshotLine;
+            } else if (baseChartKey === 'geography') {
+                snapshotFn = getGeographySnapshotLine;
+            } else if (baseChartKey === 'marketcap') {
+                snapshotFn = getMarketcapSnapshotLine;
+            } else if (baseChartKey === 'drawdown') {
+                snapshotFn = () =>
+                    getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: useAbsolute });
+                result = `Showing drawdown${useAbsolute ? ' (absolute)' : ''} chart for ${formatDateRange(dateRange)}.`;
             }
 
-            const snap = await handler.getSnap();
-            if (snap) {
-                result += handler.appendSnapDoubleNewline ? `\n\n${snap}` : `\n${snap}`;
+            const snapshot = await snapshotFn({ labelPrefix });
+            if (snapshot) {
+                result += `\n${snapshot}`;
             }
             appendMessage(result);
         }
     };
+
+    const baseSubcommand = getBaseSubcommand(subcommand);
 
     if (['composition', 'sectors', 'geography', 'marketcap', 'drawdown'].includes(baseSubcommand)) {
         await handleCompositionStyleChart(baseSubcommand);
@@ -351,5 +234,217 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
     }
 
     const dateRange = applyDateArgs(rawArgs);
-    await handleNonCompositionStyleChart(subcommand, dateRange);
+
+    if (subcommand === 'balance') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'contribution';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden contribution chart.');
+        } else {
+            setActiveChart('contribution');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            const summary = await getContributionSummaryText(transactionState.chartDateRange);
+            let result = `Showing contribution chart for ${formatDateRange(dateRange)}.`;
+            if (summary) {
+                result += `\n${summary}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'performance') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'performance';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden performance chart.');
+        } else {
+            setActiveChart('performance');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing performance chart for ${formatDateRange(dateRange)}.\n\n${TWRR_MESSAGE}`;
+            const snap = getPerformanceSnapshotLine({ includeHidden: true });
+            if (snap) {
+                result += `\n\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'fx') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'fx';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden FX rate chart.');
+        } else {
+            setActiveChart('fx');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing FX rate chart for ${formatDateRange(dateRange)}.`;
+            const snap = getFxSnapshotLine();
+            if (snap) {
+                result += `\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'concentration') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'concentration';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden concentration chart.');
+        } else {
+            setActiveChart('concentration');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing concentration (HHI) chart for ${formatDateRange(dateRange)}.`;
+            const snap = await getConcentrationSnapshotText();
+            if (snap) {
+                result += `\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'pe') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'pe';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden P/E ratio chart.');
+        } else {
+            setActiveChart('pe');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing weighted average P/E ratio chart for ${formatDateRange(dateRange)}.`;
+            const snap = await getPESnapshotLine();
+            if (snap) {
+                result += `\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'rolling') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'rolling';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden 1-Year rolling returns chart.');
+        } else {
+            setActiveChart('rolling');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing 1-Year rolling returns chart for ${formatDateRange(dateRange)}.\n\n${ROLLING_EXPLANATION}`;
+            const snap = getRollingSnapshotLine();
+            if (snap) {
+                result += `\n\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'volatility') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'volatility';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden 90-Day annualized rolling volatility chart.');
+        } else {
+            setActiveChart('volatility');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing 90-Day annualized rolling volatility chart for ${formatDateRange(dateRange)}.\n\n${VOLATILITY_EXPLANATION}`;
+            const snap = getVolatilitySnapshotLine();
+            if (snap) {
+                result += `\n\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'beta') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'beta';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden portfolio beta chart.');
+        } else {
+            setActiveChart('beta');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing 6-Month rolling portfolio beta chart for ${formatDateRange(dateRange)}.\n\n${BETA_EXPLANATION}`;
+            const snap = await getBetaSnapshotLine();
+            if (snap) {
+                result += `\n\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else if (subcommand === 'yield') {
+        const section = document.getElementById('runningAmountSection');
+        const isAct = transactionState.activeChart === 'yield';
+        const isVis = section && !section.classList.contains('is-hidden');
+        if (isAct && isVis) {
+            setActiveChart(null);
+            if (section) {
+                section.classList.add('is-hidden');
+            }
+            appendMessage('Hidden dividend yield and income chart.');
+        } else {
+            setActiveChart('yield');
+            if (section) {
+                section.classList.remove('is-hidden');
+                chartManager.update();
+            }
+            let result = `Showing dividend yield and income chart for ${formatDateRange(dateRange)}.\n\n${YIELD_EXPLANATION}`;
+            const snap = await getYieldSnapshotLine();
+            if (snap) {
+                result += `\n\n${snap}`;
+            }
+            appendMessage(result);
+        }
+    } else {
+        appendMessage(
+            `Unknown plot subcommand: ${subcommand}\nAvailable: ${PLOT_SUBCOMMANDS.join(', ')}`
+        );
+    }
 }
