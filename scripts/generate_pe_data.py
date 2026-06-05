@@ -839,8 +839,8 @@ def fetch_benchmark_pe_daily(
                                 "eps": float(v),
                             }
                         )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Exception fetching EPS data for {t}: {e}")
 
         try:
             quarterly = stock.quarterly_income_stmt
@@ -856,8 +856,8 @@ def fetch_benchmark_pe_daily(
                                     "eps": float(ttm_v),
                                 }
                             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Exception fetching quarterly EPS data for {t}: {e}")
 
         # Add current trailing EPS as today's anchor
         if trailing_eps and trailing_eps > 0:
@@ -1381,8 +1381,8 @@ def main():
                     else:
                         manual_anchors = manual_anchors.copy()
                     manual_anchors.update(history[bmk_ticker])
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: Exception loading manual anchors for {bmk_ticker}: {e}")
 
         pe_series = fetch_benchmark_pe_daily(proxy_etf, dates, manual_anchors=manual_anchors)
         if pe_series is None:

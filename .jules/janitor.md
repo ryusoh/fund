@@ -53,3 +53,8 @@
 
 - **Issue:** The `handlePlotCommand` inside `js/transactions/terminal/handlers/plot.js` had a severe cyclomatic complexity of 67, far exceeding the max limit of 10.
 - **Action:** Refactored the command by dispatching to sub-handler functions and a cleaner mapping pattern (`chartHandlers`), dramatically reducing its complexity and eliminating ESLint configuration errors. Updated `chart_feature_parity.test.js` to rely on robust logic rather than strict string exact-matching.
+
+## 2026-06-05 - Code Health & Cleanup
+
+- **Issue:** Several Python scripts suppressed exceptions using `except Exception: pass` which could lead to silent data processing failures.
+- **Action:** Refactored `scripts/generate_pe_data.py` to replace empty catch blocks with proper print statements to ensure exceptions are visible and resilience is maintained.
