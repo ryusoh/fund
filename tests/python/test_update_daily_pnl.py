@@ -540,9 +540,7 @@ class TestNaNRowCleanup(unittest.TestCase):
 
         csv_path = self.temp_path / "historical_portfolio_values.csv"
         csv_path.write_text(
-            "date,value_usd\n"
-            "2026-06-03,1418751.0\n"
-            "2026-06-04,nan\n",
+            "date,value_usd\n" "2026-06-03,1418751.0\n" "2026-06-04,nan\n",
             encoding="utf-8",
         )
 
@@ -583,9 +581,7 @@ class TestNaNRowCleanup(unittest.TestCase):
 
     @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
     @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
-    def test_nan_row_replaced_via_regular_market_price(
-        self, mock_read_csv, mock_csv_path
-    ) -> None:
+    def test_nan_row_replaced_via_regular_market_price(self, mock_read_csv, mock_csv_path) -> None:
         """NaN row is dropped and replaced when regularMarketPrice is available.
 
         Scenario:
@@ -598,9 +594,7 @@ class TestNaNRowCleanup(unittest.TestCase):
 
         csv_path = self.temp_path / "historical_portfolio_values.csv"
         csv_path.write_text(
-            "date,value_usd\n"
-            "2026-06-03,1418751.0\n"
-            "2026-06-04,nan\n",
+            "date,value_usd\n" "2026-06-03,1418751.0\n" "2026-06-04,nan\n",
             encoding="utf-8",
         )
 
