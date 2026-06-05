@@ -139,7 +139,7 @@ describe('quantum_shader coverage', () => {
                 setAttribute() {}
             },
             BufferAttribute: class {
-                constructor(_arr, _size) {}
+                constructor() {}
             },
             PlaneGeometry: class {
                 constructor() {}
