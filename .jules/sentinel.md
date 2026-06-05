@@ -72,3 +72,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** External `fetch` requests to third-party APIs (like Alpaca and Yahoo Finance) in the Cloudflare Worker (`worker/src/index.js`) did not have an explicit timeout configured. If the upstream service became unresponsive or excessively slow, the worker execution could hang until it hit the platform's hard limits, leading to resource exhaustion, elevated latency, and potential Denial of Service (DoS) for the application.
 **Learning:** Cloudflare Workers and standard `fetch` APIs do not have a default timeout for outbound requests. When building resilient security architectures, relying on external availability without bounds check is a risk.
 **Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
+
+## 2025-06-03 - [SECURITY ENHANCEMENT] Prevent Subprocess Hangs in Python Scripts
+
+**Vulnerability:** Calls to `subprocess.run` and `subprocess.call` in Python scripts (`extract_pnl_history.py`, `update_vt_sectors.py`, `watch_transactions.py`) lacked an explicit timeout parameter. If the executed command hung (e.g., waiting for user input, network stall, or an infinite loop), the parent script would block indefinitely. In an automated or CI/CD environment, this could lead to resource exhaustion and potential Denial of Service (DoS) of the pipeline.
+**Learning:** `subprocess.run` and `subprocess.call` do not have a default timeout in Python. Relying on the underlying system or process to exit normally is risky.
+**Prevention:** Always add an explicit `timeout` argument to `subprocess.run` and `subprocess.call` invocations (e.g., `timeout=60`) to ensure that processes fail fast rather than hanging indefinitely.

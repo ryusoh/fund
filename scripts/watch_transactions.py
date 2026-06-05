@@ -13,7 +13,7 @@ MAKE_TARGET = 'twrr-refresh'
 
 
 def run_make(target: str) -> int:
-    return subprocess.call(['make', target])
+    return subprocess.call(['make', target], timeout=120)
 
 
 def poll(interval: float) -> None:

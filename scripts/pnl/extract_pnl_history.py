@@ -23,7 +23,13 @@ OUTPUT_CSV = Path("data/historical_portfolio_values.csv")
 def run_git_command(command: List[str], repo_path: Path) -> Optional[str]:
     try:
         result = subprocess.run(  # nosec B603
-            command, cwd=repo_path, capture_output=True, text=True, check=True, encoding="utf-8"
+            command,
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+            encoding="utf-8",
+            timeout=60,
         )
         return result.stdout.strip()
     except FileNotFoundError:

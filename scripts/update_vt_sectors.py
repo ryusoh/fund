@@ -144,7 +144,9 @@ def main():
                     if venv_python.exists():
                         python_exe = str(venv_python)
 
-                subprocess.run([python_exe, "scripts/generate_composition_data.py"], check=True)
+                subprocess.run(
+                    [python_exe, "scripts/generate_composition_data.py"], check=True, timeout=60
+                )
                 print("Successfully updated and regenerated all data.")
             except Exception as e:
                 print(f"Error regenerating data: {e}")

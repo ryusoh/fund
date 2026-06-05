@@ -6,6 +6,8 @@
     function loadScript(src, defer) {
         const script = document.createElement('script');
         script.src = src;
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
         script.defer = !!defer;
         script.async = false; // Ensure sequential execution
         document.head.appendChild(script);

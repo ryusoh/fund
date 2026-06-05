@@ -27,6 +27,7 @@
                 const s = document.createElement('script');
                 s.src = urls[i];
                 s.crossOrigin = 'anonymous';
+                s.referrerPolicy = 'no-referrer';
                 if (attrs && attrs.defer) {
                     s.defer = true;
                 }
@@ -70,6 +71,7 @@
                 link.rel = 'stylesheet';
                 link.href = urls[i];
                 link.crossOrigin = 'anonymous';
+                link.referrerPolicy = 'no-referrer';
                 link.onload = function () {
                     resolve();
                 };
