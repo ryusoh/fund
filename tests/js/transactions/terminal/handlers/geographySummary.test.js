@@ -3,55 +3,49 @@ import { logger } from '../../../../../js/utils/logger.js';
 
 jest.mock('../../../../../js/utils/logger.js', () => ({
     logger: {
-        warn: jest.fn(),
-    },
+        warn: jest.fn()
+    }
 }));
 
-describe('geographySummary handler', () => {
-    let originalFetch;
-
+describe('getGeographySummaryText', () => {
     beforeEach(() => {
-        originalFetch = global.fetch;
         global.fetch = jest.fn();
         jest.clearAllMocks();
     });
 
-    afterEach(() => {
-        global.fetch = originalFetch;
-    });
-
-    it('returns text when fetch is successful', async () => {
+    it('returns text on successful fetch', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            text: jest.fn().mockResolvedValue('Mocked Geography Summary'),
+            text: async () => 'Mock Geography Summary'
         });
 
         const result = await getGeographySummaryText();
 
+        expect(result).toBe('Mock Geography Summary');
         expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
-        expect(result).toBe('Mocked Geography Summary');
+        expect(logger.warn).not.toHaveBeenCalled();
     });
 
-    it('throws error and returns error message when fetch is not ok', async () => {
+    it('throws error and returns fallback on non-ok fetch', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: false,
-            status: 404,
+            status: 404
         });
 
         const result = await getGeographySummaryText();
 
-        expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
-        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
+        expect(logger.warn.mock.calls[0][1].message).toBe('Failed to fetch geography summary: 404');
     });
 
-    it('throws error and returns error message when fetch throws an exception', async () => {
-        const error = new Error('Network error');
+    it('catches network exceptions and returns fallback', async () => {
+        const error = new Error('Network failure');
         global.fetch.mockRejectedValueOnce(error);
 
         const result = await getGeographySummaryText();
 
-        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', error);
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', error);
     });
 });
