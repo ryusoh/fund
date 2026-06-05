@@ -265,7 +265,7 @@ export function parseColorToRgb(baseColor) {
             return parseColorToRgb(computed);
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Chart helpers execution failed:', error);
         ctx.restore();
         return null;
     }
