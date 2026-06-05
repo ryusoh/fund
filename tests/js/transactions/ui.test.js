@@ -47,7 +47,6 @@ describe('createUiController', () => {
 
     it('toggleTable hides table and shows plot if table is currently visible', () => {
         const tableContainer = document.querySelector('.table-responsive-container');
-        const plotSection = document.getElementById('runningAmountSection');
 
         // Initial state: table is visible (not is-hidden)
         uiController.toggleTable();
@@ -72,7 +71,6 @@ describe('createUiController', () => {
 
     it('togglePlot hides plot if it is currently visible', () => {
         const plotSection = document.getElementById('runningAmountSection');
-        const tableContainer = document.querySelector('.table-responsive-container');
 
         // Initial state: plot is visible
         uiController.togglePlot();
@@ -98,7 +96,6 @@ describe('createUiController', () => {
     });
 
     it('togglePlot handles switching from performance chart', () => {
-        const plotSection = document.getElementById('runningAmountSection');
         state.transactionState.activeChart = 'performance';
 
         uiController.togglePlot();
