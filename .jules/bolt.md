@@ -247,3 +247,8 @@
 
 **Learning:** Using `.forEach()` arrays in extremely high-frequency event loops like pointer hover iterations (`interaction.js`) and every animation frame drawing step (`fx.js`, `beta.js`, `rolling.js`, `volatility.js`, `performance.js`, `drawdown.js`, `contribution.js`) implicitly allocates new closure functions on every frame tick/mouse move. In large composite charts with multiple overlaid lines/series, this exponentially increases the short-lived heap allocations, leading to heavy GC overhead and resulting micro-stutters during interactivity.
 **Action:** Always replace `.forEach()` with explicit index-based `for` loops (e.g., `for (let i = 0; i < array.length; i++)`) inside critical path rendering, mapping coordinates, and high-frequency UI handlers to entirely eliminate closure creation overhead and drop GC pressure.
+
+## 2026-06-06 - Replaced .forEach and .map with explicit for loops
+
+**Learning:** High-frequency chart data processing paths and UI update loops using `.forEach()` and `.map()` result in unnecessary closure allocations and intermediate array creation, which increases Garbage Collection (GC) pressure and causes performance degradation.
+**Action:** Replace `.forEach()` and `.map()` inside `js/transactions/chart/data/contribution.js` and `js/transactions/table.js` with explicit `for` loops and pre-allocated arrays (e.g., `new Array(length)`) to eliminate closure allocations and reduce GC overhead.
