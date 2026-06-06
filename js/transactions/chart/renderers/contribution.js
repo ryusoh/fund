@@ -156,7 +156,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 historicalPrices = {};
             }
         } catch (error) {
-            logger.warn('Contribution chart rendering failed:', error);
+            logger.warn('Caught exception:', error);
             historicalPrices = {};
         }
     } else {

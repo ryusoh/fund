@@ -1,8 +1,4 @@
-import {
-    getCagrText,
-    getAnnualReturnText,
-    getRatioText,
-} from '../../../../../js/transactions/terminal/stats/static.js';
+import { getCagrText, getAnnualReturnText, getRatioText } from '../../../../../js/transactions/terminal/stats/static.js';
 import { logger } from '../../../../../js/utils/logger.js';
 
 jest.mock('../../../../../js/utils/logger.js', () => ({

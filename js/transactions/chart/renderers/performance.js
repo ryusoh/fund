@@ -59,12 +59,11 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         return a.localeCompare(b);
     });
 
-    for (let i = 0; i < orderedKeys.length; i++) {
-        const key = orderedKeys[i];
+    orderedKeys.forEach((key) => {
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    }
+    });
 
     const allPossibleSeries = orderedKeys.map((key) => {
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
@@ -283,11 +282,10 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const performanceBaselineY = yScale(0);
 
-    for (let i = 0; i < seriesForDrawing.length; i++) {
-        const series = seriesForDrawing[i];
+    seriesForDrawing.forEach((series) => {
         const isVisible = transactionState.chartVisibility[series.key] !== false;
         if (!isVisible || !Array.isArray(series.data) || series.data.length === 0) {
-            continue;
+            return;
         }
 
         // Apply smoothing to the series data
@@ -336,14 +334,13 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        for (let j = 0; j < coords.length; j++) {
-            const coord = coords[j];
-            if (j === 0) {
+        coords.forEach((coord, index) => {
+            if (index === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        }
+        });
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
@@ -374,7 +371,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    }
+    });
 
     if (renderedSeries.length === 0) {
         stopPerformanceAnimation();
@@ -400,8 +397,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {
-        for (let i = 0; i < renderedSeries.length; i++) {
-            const series = renderedSeries[i];
+        renderedSeries.forEach((series) => {
             const { x, y, color, value } = series;
 
             const bounds = drawEndValue(
@@ -421,7 +417,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
             if (bounds) {
                 labelBounds.push(bounds);
             }
-        }
+        });
     }
 
     chartLayouts.performance = {

@@ -58,10 +58,5 @@ jobs:
                     echo 'No changes to commit.'
                   else
                     git commit -m "chore(data): TWRRとファンドデータを自動更新 [skip ci]"
-                    # Retry push with rebase in case another workflow pushed in the meantime
-                    for i in 1 2 3; do
-                      git push && break
-                      echo "Push failed (attempt $i), rebasing and retrying..."
-                      git pull --rebase
-                    done
+                    git push
                   fi

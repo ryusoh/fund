@@ -246,10 +246,7 @@ function createFilterDropdown(column) {
         const div = document.createElement('div');
         div.className = 'filter-option';
         div.textContent = option;
-        div.role = 'button';
-        div.tabIndex = 0;
-
-        const triggerOption = (e) => {
+        div.addEventListener('click', (e) => {
             e.stopPropagation();
             const command =
                 option === 'All' ? '' : `${column === 'orderType' ? 'type' : 'security'}:${option}`;
@@ -259,14 +256,6 @@ function createFilterDropdown(column) {
             }
             filterAndSort(command);
             closeAllFilterDropdowns();
-        };
-
-        div.addEventListener('click', triggerOption);
-        div.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerOption(e);
-            }
         });
         dropdown.appendChild(div);
     });

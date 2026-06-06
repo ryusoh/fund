@@ -56,7 +56,7 @@ export async function loadYieldData() {
             yieldDataCache = await response.json();
             return yieldDataCache;
         } catch (error) {
-            logger.warn('Yield chart rendering failed:', error);
+            logger.warn('Caught exception:', error);
             yieldDataPromise = null;
             return null;
         }

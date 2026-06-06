@@ -20,7 +20,7 @@ const CONFIG = {
 document.addEventListener('DOMContentLoaded', () => {
     renderTwrrChart().catch((error) => {
         // eslint-disable-next-line no-console
-        console.warn('TWRR initialization failed:', error);
+        console.warn('Caught exception:', error);
         // Fail silently: perf page is optional and should not halt load.
     });
 });

@@ -786,7 +786,7 @@ def compute_benchmark_pe_from_proxy(
             ts = pd.Timestamp(date_str).tz_localize(None)
             if ts in dates:
                 if pd.isna(result.loc[ts]):
-                    result.loc[ts] = pe_val  # type: ignore[call-overload]
+                    result.loc[ts] = pe_val
             else:
                 idx = dates.get_indexer([ts], method="nearest")[0]
                 if idx != -1 and pd.isna(result.iloc[idx]):

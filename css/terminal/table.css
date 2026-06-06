@@ -228,21 +228,14 @@ th.sortable[data-sort='desc'] .sort-indicator::after {
     -webkit-backdrop-filter: blur(12px);
 }
 
-.filter-dropdown .filter-option {
+.filter-dropdown div {
     padding: 8px 12px;
     cursor: pointer;
     border-radius: 4px;
 }
 
-.filter-dropdown .filter-option:hover,
-.filter-dropdown .filter-option:focus-visible {
+.filter-dropdown div:hover {
     background-color: rgba(255, 255, 255, 0.06);
-    outline: none;
-}
-
-.filter-dropdown .filter-option:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: -2px;
 }
 
 .table-responsive-container:focus-visible {

@@ -49,15 +49,15 @@ describe('snapshots.js', () => {
             transactionState.activeChart = 'fx';
             transactionState.selectedCurrency = 'USD';
             transactionState.chartVisibility = {
-                EUR: true,
-                GBP: false, // this one is hidden
-                JPY: true,
+                'EUR': true,
+                'GBP': false, // this one is hidden
+                'JPY': true
             };
             buildFxChartSeries.mockReturnValue([
                 { key: 'EUR', quote: 'EUR', data: [{ value: 0.8 }, { value: 0.95 }] },
                 { key: 'GBP', quote: 'GBP', data: [{ value: 0.7 }] },
                 { key: 'JPY', quote: 'JPY', data: [{ value: 110 }] },
-                { key: 'CAD', quote: 'CAD', data: [] }, // empty data should be skipped
+                { key: 'CAD', quote: 'CAD', data: [] } // empty data should be skipped
             ]);
 
             // Act

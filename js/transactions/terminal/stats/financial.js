@@ -144,7 +144,7 @@ export async function getFinancialStatsText() {
                         formatMarketCap(market.marketCap, currency),
                     ];
                 } catch (error) {
-                    logger.warn('Financial stats processing failed:', error);
+                    logger.warn('Caught exception:', error);
                     return null;
                 }
             })
@@ -186,7 +186,7 @@ export async function getFinancialStatsText() {
 ${table}
 `;
     } catch (error) {
-        logger.warn('Financial stats processing failed:', error);
+        logger.warn('Caught exception:', error);
         return 'Error loading financial analysis data.';
     }
 }
@@ -229,7 +229,7 @@ export async function getTechnicalStatsText() {
                         formatPercentageValue(market.volatility, { digits: 2, mode: 'fraction' }),
                     ];
                 } catch (error) {
-                    logger.warn('Financial stats processing failed:', error);
+                    logger.warn('Caught exception:', error);
                     return null;
                 }
             })
@@ -271,7 +271,7 @@ export async function getTechnicalStatsText() {
 ${table}
 `;
     } catch (error) {
-        logger.warn('Financial stats processing failed:', error);
+        logger.warn('Caught exception:', error);
         return 'Error loading technical analysis data.';
     }
 }

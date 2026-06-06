@@ -155,7 +155,7 @@ async function fetchThesisScenarioTitles(symbol) {
         thesisTitleCache.set(symbol, titles);
         return titles;
     } catch (error) {
-        logger.warn('Analysis lab operations failed:', error);
+        logger.warn('Caught exception:', error);
         thesisTitleCache.set(symbol, null);
         return null;
     }
@@ -1003,7 +1003,7 @@ async function buildConfigs() {
                 config.metrics = computeMetrics(config);
                 return config;
             } catch (error) {
-                logger.warn('Analysis lab operations failed:', error);
+                logger.warn('Caught exception:', error);
                 return null;
             }
         })

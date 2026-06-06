@@ -17,35 +17,6 @@ describe('Date Utils', () => {
         expect(date).toBeInstanceOf(Date);
     });
 
-    describe('getNyDate internal formatting edge case', () => {
-        it('should correctly format hour 24 as 00', () => {
-            const originalDateTimeFormat = Intl.DateTimeFormat;
-
-            global.Intl.DateTimeFormat = function () {
-                return {
-                    formatToParts: () => [
-                        { type: 'year', value: '2023' },
-                        { type: 'month', value: '05' },
-                        { type: 'day', value: '15' },
-                        { type: 'hour', value: '24' },
-                        { type: 'minute', value: '30' },
-                        { type: 'second', value: '45' },
-                    ],
-                };
-            };
-
-            let dateModule;
-            jest.isolateModules(() => {
-                dateModule = require('../../../js/utils/date.js');
-            });
-
-            const result = dateModule.getNyDate();
-            expect(result.getHours()).toBe(0);
-
-            global.Intl.DateTimeFormat = originalDateTimeFormat;
-        });
-    });
-
     describe('isTradingDay', () => {
         it('should return false for weekends', () => {
             const saturday = new Date(

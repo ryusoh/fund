@@ -12,7 +12,7 @@
                 list = JSON.parse(listAttr);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Image fallback handling failed:', error);
+                console.warn('Caught exception:', error);
                 list = [];
             }
             if (!Array.isArray(list) || list.length === 0) {
@@ -45,6 +45,6 @@
         }
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Image fallback handling failed:', error);
+        console.warn('Caught exception:', error);
     }
 })();

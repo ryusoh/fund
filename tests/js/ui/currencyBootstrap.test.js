@@ -140,10 +140,7 @@ describe('currencyBootstrap', () => {
 
         loadBootstrap();
 
-        expect(console.warn).toHaveBeenCalledWith(
-            'Currency bootstrap storage failed:',
-            expect.any(Error)
-        );
+        expect(console.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
 
         Object.defineProperty(window, 'localStorage', {
             value: originalLocalStorage,

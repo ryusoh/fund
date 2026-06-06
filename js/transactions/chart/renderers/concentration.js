@@ -207,7 +207,7 @@ export async function drawConcentrationChart(ctx, chartManager, timestamp) {
                 chartManager.redraw();
             })
             .catch((error) => {
-                logger.warn('Concentration chart rendering failed:', error);
+                logger.warn('Caught exception:', error);
                 chartLayouts.concentration = null;
                 updateCrosshairUI(null, null);
                 if (emptyState) {
