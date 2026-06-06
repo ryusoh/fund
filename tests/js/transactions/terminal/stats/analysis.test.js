@@ -32,7 +32,8 @@ describe('getConcentrationText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getConcentrationText } =
@@ -44,7 +45,8 @@ describe('getConcentrationText', () => {
     });
 
     it('returns error if no positive weights', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         // Need to provide a snapshot that getLatestCompositionSnapshot will parse,
         // but results in holdings with 0 weights
         loadCompositionSnapshotData.mockResolvedValueOnce({
@@ -130,7 +132,8 @@ describe('getDurationStatsText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getDurationStatsText } =
@@ -165,7 +168,8 @@ describe('getDurationStatsText', () => {
         const result = await getDurationStatsText();
         expect(result).toContain('MOCK_DURATION_TABLE');
 
-        const { renderAsciiTable } = await import('../../../../../js/transactions/terminal/stats/formatting.js');
+        const { renderAsciiTable } =
+            await import('../../../../../js/transactions/terminal/stats/formatting.js');
         expect(renderAsciiTable).toHaveBeenCalledTimes(2);
     });
 });
@@ -209,7 +213,8 @@ describe('getLifespanStatsText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getLifespanStatsText } =
@@ -244,7 +249,8 @@ describe('getLifespanStatsText', () => {
         const result = await getLifespanStatsText();
         expect(result).toContain('MOCK_LIFESPAN_TABLE');
 
-        const { renderAsciiTable } = await import('../../../../../js/transactions/terminal/stats/formatting.js');
+        const { renderAsciiTable } =
+            await import('../../../../../js/transactions/terminal/stats/formatting.js');
         // Called for summary table and open table
         expect(renderAsciiTable).toHaveBeenCalledTimes(2);
     });

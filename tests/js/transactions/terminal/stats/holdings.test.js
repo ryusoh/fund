@@ -36,7 +36,8 @@ describe('Holdings Stats Module', () => {
     describe('getHoldingsText', () => {
         beforeEach(() => {
             // reset cache
-            require('../../../../../js/transactions/terminal/stats/holdings.js').__holdingsDataCache = null;
+            require('../../../../../js/transactions/terminal/stats/holdings.js').__holdingsDataCache =
+                null;
         });
 
         test('handles invalid currency and empty average_price/total_cost', async () => {

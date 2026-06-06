@@ -1,4 +1,7 @@
-import { buildRangeSummary, sortCrosshairSnapshot } from '../../../../js/transactions/chart/interaction.js';
+import {
+    buildRangeSummary,
+    sortCrosshairSnapshot,
+} from '../../../../js/transactions/chart/interaction.js';
 import { formatCurrencyInline } from '../../../../js/transactions/utils.js';
 
 jest.mock('../../../../js/transactions/utils.js', () => ({

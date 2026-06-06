@@ -90,7 +90,8 @@ describe('Concentration Chart Renderer', () => {
             })
         );
 
-        const module = await import('../../../../../js/transactions/chart/renderers/concentration.js');
+        const module =
+            await import('../../../../../js/transactions/chart/renderers/concentration.js');
         drawConcentrationChart = module.drawConcentrationChart;
         buildConcentrationSeries = module.buildConcentrationSeries;
     });

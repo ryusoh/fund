@@ -506,7 +506,9 @@ describe('marketcap crosshair support', () => {
 
 describe('marketcap snapshot', () => {
     test('getMarketcapSnapshotLine is exported', () => {
-        const { getMarketcapSnapshotLine } = require('../../../js/transactions/terminal/snapshots.js');
+        const {
+            getMarketcapSnapshotLine,
+        } = require('../../../js/transactions/terminal/snapshots.js');
         expect(typeof getMarketcapSnapshotLine).toBe('function');
     });
 });

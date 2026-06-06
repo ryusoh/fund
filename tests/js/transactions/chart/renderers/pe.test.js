@@ -254,7 +254,8 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
         mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
 
-        const { updateLegend } = await import('../../../../../js/transactions/chart/interaction.js');
+        const { updateLegend } =
+            await import('../../../../../js/transactions/chart/interaction.js');
         const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
 
         const peData = {
@@ -333,7 +334,8 @@ describe('getPESnapshotText', () => {
     });
 
     it('returns loading state if series is empty', async () => {
-        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } =
+            await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe('Loading PE data...');
     });
 
@@ -345,7 +347,8 @@ describe('getPESnapshotText', () => {
                 { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
-        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } =
+            await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 10.00x | Range: 10.00x - 20.00x | Harmonic Mean (1 / Σ(w/PE))'
         );
@@ -360,7 +363,8 @@ describe('getPESnapshotText', () => {
                 { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
-        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } =
+            await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 20.00x | Range: 20.00x - 20.00x | Harmonic Mean (1 / Σ(w/PE))'
         );
@@ -374,7 +378,8 @@ describe('getPESnapshotText', () => {
                 benchmark_forward_pe: { '^GSPC': 22 },
             },
         };
-        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } =
+            await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 15.00x | Range: 15.00x - 15.00x | Harmonic Mean (1 / Σ(w/PE)) | Forward: 18.00x (S&P 500: 22.00x)'
         );

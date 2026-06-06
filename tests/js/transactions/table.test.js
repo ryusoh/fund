@@ -20,7 +20,10 @@ describe('transactions table sorting', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -197,7 +200,10 @@ describe('transaction date filtering visibility guard', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(sampleTransactions);
@@ -243,7 +249,10 @@ describe('composition ticker filters derived from table search', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions([
@@ -350,7 +359,10 @@ describe('asset class filters', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(sampleTransactions);
@@ -493,7 +505,10 @@ describe('sort indicator vs row order sync', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(transactions);
@@ -669,7 +684,10 @@ describe('sort after table becomes visible with date range', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, setChartDateRange } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                setChartDateRange,
+            } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -790,7 +808,10 @@ describe('sort after table visible - date parse robustness', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, setChartDateRange } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                setChartDateRange,
+            } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -908,7 +929,10 @@ describe('ticker alias filtering', () => {
 
         jest.isolateModules(() => {
             ({ initTable } = require('../../../js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
         });
     });
 

@@ -143,7 +143,8 @@ describe('drawCompositionChart', () => {
     });
 
     it('handles empty data', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { drawCompositionChart } =
@@ -185,7 +186,8 @@ describe('drawCompositionChart', () => {
     });
 
     it('includes both explicit tickers and asset-class-matched tickers with OR logic', async () => {
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce({
             dates: ['2023-01-01', '2023-01-02'],
             total_values: [1000, 2000],
@@ -252,7 +254,8 @@ describe('drawCompositionChart', () => {
         const { drawCompositionChart } =
             await import('../../../../../js/transactions/chart/renderers/composition.js');
         const { chartLayouts } = await import('../../../../../js/transactions/chart/state.js');
-        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } =
+            await import('../../../../../js/transactions/dataLoader.js');
 
         loadCompositionSnapshotData.mockResolvedValueOnce({ valid: true, data: [] });
 

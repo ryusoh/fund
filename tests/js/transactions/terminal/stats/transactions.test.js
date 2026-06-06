@@ -13,7 +13,8 @@ describe('transactions.js test without mocks', () => {
         transactionState = tsModule.transactionState;
         transactionState.filteredTransactions = [];
 
-        const module = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+        const module =
+            await import('../../../../../js/transactions/terminal/stats/transactions.js');
         getDynamicStatsText = module.getDynamicStatsText;
     });
 
@@ -73,7 +74,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule1 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule1 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule1.getStatsText();
             expect(result).toBe('TXT STATS');
         });
@@ -81,7 +83,8 @@ describe('transactions.js test without mocks', () => {
         test('should return error string if both fetch fail', async () => {
             global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
             jest.resetModules();
-            const freshModule2 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule2 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule2.getStatsText();
             expect(result).toBe('Error loading transaction stats.');
         });
@@ -95,7 +98,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule3 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule3 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule3.getStatsText();
             expect(result).toBe('Error loading transaction stats.');
         });
@@ -109,7 +113,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule4 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule4 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule4.getStatsText();
             expect(result).toBe('Error loading transaction stats.');
         });
@@ -137,7 +142,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule.getStatsText('USD');
             expect(result).toContain('TRANSACTION STATS');
             expect(result).toContain('100');
@@ -157,7 +163,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule5 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule5 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule5.getStatsText('EUR');
             expect(result).toContain('TRANSACTION STATS');
             expect(result).toContain('0'); // default values
@@ -180,7 +187,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule6 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule6 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule6.getStatsText('EUR');
             expect(result).toContain('TRANSACTION STATS');
             expect(result).toContain('100'); // it fell back to USD data which has 100
@@ -203,7 +211,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule7 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule7 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             await freshModule7.getStatsText('USD');
             expect(global.fetch).toHaveBeenCalledTimes(1);
 
@@ -229,7 +238,8 @@ describe('transactions.js test without mocks', () => {
             });
 
             jest.resetModules();
-            const freshModule8 = await import('../../../../../js/transactions/terminal/stats/transactions.js');
+            const freshModule8 =
+                await import('../../../../../js/transactions/terminal/stats/transactions.js');
             const result = await freshModule8.getStatsText('');
             expect(result).toContain('100');
         });

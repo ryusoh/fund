@@ -27,7 +27,8 @@ describe('rolling/cumulative snapshot hints', () => {
 
     test('getRollingSnapshotLine includes hint about cumulative command', async () => {
         const { transactionState } = await import('../../../js/transactions/state.js');
-        const { getRollingSnapshotLine } = await import('../../../js/transactions/terminal/snapshots.js');
+        const { getRollingSnapshotLine } =
+            await import('../../../js/transactions/terminal/snapshots.js');
 
         transactionState.activeChart = 'rolling';
         transactionState.performanceSeries = {
@@ -80,7 +81,8 @@ describe('rolling/cumulative command handlers exist', () => {
     });
 
     test('handleRollingCommand is exported', async () => {
-        const { handleRollingCommand } = await import('../../../js/transactions/terminal/handlers/misc.js');
+        const { handleRollingCommand } =
+            await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleRollingCommand).toBe('function');
     });
 
@@ -181,7 +183,8 @@ describe('composition/sectors command handlers exist', () => {
     });
 
     test('handleSectorsCommand is exported', async () => {
-        const { handleSectorsCommand } = await import('../../../js/transactions/terminal/handlers/misc.js');
+        const { handleSectorsCommand } =
+            await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleSectorsCommand).toBe('function');
     });
 

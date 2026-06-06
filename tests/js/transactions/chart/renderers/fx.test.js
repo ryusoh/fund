@@ -62,8 +62,10 @@ jest.mock('../../../../../js/transactions/chart/helpers.js', () => ({
 
 describe('drawFxChart', () => {
     it('gracefully exits when there are no series to draw', async () => {
-        const { drawFxChart } = await import('../../../../../js/transactions/chart/renderers/fx.js');
-        const { stopFxAnimation } = await import('../../../../../js/transactions/chart/animation.js');
+        const { drawFxChart } =
+            await import('../../../../../js/transactions/chart/renderers/fx.js');
+        const { stopFxAnimation } =
+            await import('../../../../../js/transactions/chart/animation.js');
         const { chartLayouts } = await import('../../../../../js/transactions/chart/state.js');
 
         const mockCtx = {
