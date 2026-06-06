@@ -6,7 +6,6 @@ import {
     stopFxAnimation,
 } from './chart/animation.js';
 
-import { drawContributionChart } from './chart/renderers/contribution.js';
 import {
     getContributionSeriesForTransactions,
     buildContributionSeriesFromTransactions,
@@ -20,27 +19,6 @@ export {
 };
 
 export { hasActiveTransactionFilters } from './state.js';
-import { drawPerformanceChart } from './chart/renderers/performance.js';
-import { drawFxChart, buildFxChartSeries } from './chart/renderers/fx.js';
-import { drawDrawdownChart, buildDrawdownSeries } from './chart/renderers/drawdown.js';
-import {
-    drawCompositionChart,
-    drawCompositionAbsoluteChart,
-    aggregateCompositionSeries,
-    buildCompositionDisplayOrder,
-} from './chart/renderers/composition.js';
-import { drawConcentrationChart } from './chart/renderers/concentration.js';
-import { drawPEChart } from './chart/renderers/pe.js';
-import { drawRollingChart } from './chart/renderers/rolling.js';
-import { drawVolatilityChart } from './chart/renderers/volatility.js';
-import { drawSectorsChart, drawSectorsAbsoluteChart } from './chart/renderers/sectors.js';
-import { drawGeographyChart, drawGeographyAbsoluteChart } from './chart/renderers/geography.js';
-import { drawMarketcapChart, drawMarketcapAbsoluteChart } from './chart/renderers/marketcap.js';
-import { drawBetaChart } from './chart/renderers/beta.js';
-import { drawYieldChart } from './chart/renderers/yield.js';
-
-export { buildFxChartSeries };
-export { buildDrawdownSeries };
 
 import {
     generateConcreteTicks,
@@ -53,6 +31,22 @@ import {
     setCrosshairExternalUpdate,
     attachCrosshairEvents,
 } from './chart/interaction.js';
+
+// ---------------------------------------------------------------------------
+// Lazy renderer loader — each renderer is only fetched on first use
+// ---------------------------------------------------------------------------
+
+const rendererCache = {};
+
+async function loadRenderer(name) {
+    if (rendererCache[name]) {
+        return rendererCache[name];
+    }
+    const mod = await import(`./chart/renderers/${name}.js`);
+    rendererCache[name] = mod;
+    return mod;
+}
+
 // --- Main Chart Manager ---
 
 export function createChartManager(options = {}) {
@@ -108,44 +102,61 @@ export function createChartManager(options = {}) {
         ctx.clearRect(0, 0, displayWidth, displayHeight);
 
         if (transactionState.activeChart === 'performance') {
+            const { drawPerformanceChart } = await loadRenderer('performance');
             await drawPerformanceChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'drawdown') {
-            // Percentage drawdown (benchmarks)
+            const { drawDrawdownChart } = await loadRenderer('drawdown');
             await drawDrawdownChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'drawdownAbs') {
-            // Absolute drawdown - use contribution chart with drawdown transformation
+            const { drawContributionChart } = await loadRenderer('contribution');
             await drawContributionChart(ctx, chartManager, timestamp, { drawdownMode: true });
         } else if (transactionState.activeChart === 'composition') {
+            const { drawCompositionChart } = await loadRenderer('composition');
             drawCompositionChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'compositionAbs') {
+            const { drawCompositionAbsoluteChart } = await loadRenderer('composition');
             drawCompositionAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'concentration') {
+            const { drawConcentrationChart } = await loadRenderer('concentration');
             drawConcentrationChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'pe') {
+            const { drawPEChart } = await loadRenderer('pe');
             drawPEChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'sectors') {
+            const { drawSectorsChart } = await loadRenderer('sectors');
             drawSectorsChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'sectorsAbs') {
+            const { drawSectorsAbsoluteChart } = await loadRenderer('sectors');
             drawSectorsAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'geography') {
+            const { drawGeographyChart } = await loadRenderer('geography');
             drawGeographyChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'geographyAbs') {
+            const { drawGeographyAbsoluteChart } = await loadRenderer('geography');
             drawGeographyAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'marketcap') {
+            const { drawMarketcapChart } = await loadRenderer('marketcap');
             drawMarketcapChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'marketcapAbs') {
+            const { drawMarketcapAbsoluteChart } = await loadRenderer('marketcap');
             drawMarketcapAbsoluteChart(ctx, chartManager);
         } else if (transactionState.activeChart === 'rolling') {
+            const { drawRollingChart } = await loadRenderer('rolling');
             await drawRollingChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'volatility') {
+            const { drawVolatilityChart } = await loadRenderer('volatility');
             await drawVolatilityChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'beta') {
+            const { drawBetaChart } = await loadRenderer('beta');
             await drawBetaChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'yield') {
+            const { drawYieldChart } = await loadRenderer('yield');
             await drawYieldChart(ctx, chartManager, timestamp);
         } else if (transactionState.activeChart === 'fx') {
+            const { drawFxChart } = await loadRenderer('fx');
             drawFxChart(ctx, chartManager, timestamp);
         } else {
+            const { drawContributionChart } = await loadRenderer('contribution');
             await drawContributionChart(ctx, chartManager, timestamp);
         }
     };
@@ -169,11 +180,8 @@ export function createChartManager(options = {}) {
 }
 
 export const __chartTestables = {
-    buildCompositionDisplayOrder,
-    aggregateCompositionSeries,
     generateConcreteTicks,
     computePercentTickInfo,
     buildFilteredBalanceSeries,
-    buildDrawdownSeries,
     generateYearBasedTicks,
 };

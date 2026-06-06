@@ -66,3 +66,15 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** Missing security headers.
 **Learning:** Static site headers in Cloudflare Pages are configured via `_headers`. API worker responses need headers set programmatically in `worker/src/index.js`.
 **Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.
+
+## 2025-05-24 - [SECURITY ENHANCEMENT] Add Timeout to External API Calls in Cloudflare Worker
+
+**Vulnerability:** External `fetch` requests to third-party APIs (like Alpaca and Yahoo Finance) in the Cloudflare Worker (`worker/src/index.js`) did not have an explicit timeout configured. If the upstream service became unresponsive or excessively slow, the worker execution could hang until it hit the platform's hard limits, leading to resource exhaustion, elevated latency, and potential Denial of Service (DoS) for the application.
+**Learning:** Cloudflare Workers and standard `fetch` APIs do not have a default timeout for outbound requests. When building resilient security architectures, relying on external availability without bounds check is a risk.
+**Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
+
+## 2025-05-24 - [SECURITY ENHANCEMENT] Add Content-Security-Policy and X-Frame-Options to Worker APIs
+
+**Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
+**Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
+**Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.

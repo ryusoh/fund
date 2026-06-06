@@ -202,6 +202,24 @@ describe('service_worker_register.js', () => {
         expect(addEventListenerSpy).not.toHaveBeenCalled();
     });
 
+    test('unregisters existing service workers on localhost', async () => {
+        window.__SW_FORCE_SW_HOSTNAME__ = 'localhost';
+        const mockUnregister = jest.fn().mockResolvedValue(true);
+        const mockGetRegistrations = jest
+            .fn()
+            .mockResolvedValue([{ unregister: mockUnregister }, { unregister: mockUnregister }]);
+        Object.defineProperty(window.navigator, 'serviceWorker', {
+            configurable: true,
+            value: { getRegistrations: mockGetRegistrations },
+        });
+
+        loadScript();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(mockGetRegistrations).toHaveBeenCalled();
+        expect(mockUnregister).toHaveBeenCalledTimes(2);
+    });
+
     test('bails out early if serviceWorker is not supported in navigator', () => {
         window.__SW_FORCE_SW_HOSTNAME__ = 'example.com';
         const originalNavigator = global.navigator;

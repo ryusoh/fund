@@ -275,13 +275,22 @@ export function drawCrosshairOverlay(ctx, layout) {
             if (!isAbsoluteMode) {
                 percentValue = holding.value;
             } else if (layout.percentSeriesMap && layout.percentSeriesMap[holding.key]) {
-                const dates = layout.dates || [];
-                const timePoints = new Array(dates.length);
-                const holdingSeries = layout.percentSeriesMap[holding.key];
-                for (let j = 0; j < dates.length; j++) {
-                    timePoints[j] = { time: new Date(dates[j]).getTime(), value: holdingSeries[j] };
+                // Bolt: Cache interpolators on layout to avoid rebuilding them and repeatedly calling new Date() on every hover event frame
+                layout.percentInterpolators = layout.percentInterpolators || {};
+                let interpolator = layout.percentInterpolators[holding.key];
+                if (!interpolator) {
+                    const dates = layout.dates || [];
+                    const timePoints = new Array(dates.length);
+                    const holdingSeries = layout.percentSeriesMap[holding.key];
+                    for (let j = 0; j < dates.length; j++) {
+                        timePoints[j] = {
+                            time: new Date(dates[j]).getTime(),
+                            value: holdingSeries[j],
+                        };
+                    }
+                    interpolator = createTimeInterpolator(timePoints);
+                    layout.percentInterpolators[holding.key] = interpolator;
                 }
-                const interpolator = createTimeInterpolator(timePoints);
                 percentValue = interpolator(time) ?? 0;
             } else {
                 percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
@@ -405,17 +414,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     }
 
     // Sort snapshot for display
-    seriesSnapshot.sort((a, b) => {
-        // Buy/Sell bars always at the bottom
-        if (a.isBuySellBar && !b.isBuySellBar) {
-            return 1;
-        }
-        if (!a.isBuySellBar && b.isBuySellBar) {
-            return -1;
-        }
-        // Then by value descending
-        return Math.abs(b.value) - Math.abs(a.value);
-    });
+    sortCrosshairSnapshot(seriesSnapshot);
 
     const dateLabel = formatCrosshairDateLabel(time);
 
@@ -440,7 +439,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     );
 }
 
-function buildRangeSummary(layout, rawStart, rawEnd) {
+export function buildRangeSummary(layout, rawStart, rawEnd) {
     if (!layout || !Array.isArray(layout.series) || layout.series.length === 0) {
         return null;
     }
@@ -932,7 +931,7 @@ function handlePointerUp(event) {
         try {
             pointerCanvas.releasePointerCapture(event.pointerId);
         } catch (error) {
-            logger.warn('Caught exception:', error);
+            logger.warn('Chart interaction handling failed:', error);
             // Ignore release errors
         }
     }
@@ -1026,4 +1025,36 @@ export function attachCrosshairEvents(canvas, chartManager) {
         );
     }
     pointerEventsAttached = true;
+}
+
+export function sortCrosshairSnapshot(seriesSnapshot) {
+    const fixedOrder = {
+        contribution: 1,
+        balance: 2,
+        appreciation: 3,
+        buyVolume: 4,
+        sellVolume: 5,
+    };
+
+    seriesSnapshot.sort((a, b) => {
+        if (a.key in fixedOrder && b.key in fixedOrder) {
+            return fixedOrder[a.key] - fixedOrder[b.key];
+        }
+        if (a.key in fixedOrder) {
+            return -1;
+        }
+        if (b.key in fixedOrder) {
+            return 1;
+        }
+
+        // Buy/Sell bars always at the bottom
+        if (a.isBuySellBar && !b.isBuySellBar) {
+            return 1;
+        }
+        if (!a.isBuySellBar && b.isBuySellBar) {
+            return -1;
+        }
+        // Then by value descending
+        return Math.abs(b.value) - Math.abs(a.value);
+    });
 }

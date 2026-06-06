@@ -98,5 +98,14 @@
 ## 2026-05-19 - Calendar Heatmap Horizontal Scrolling Accessibility
 
 **Learning:** The calendar heatmap container (`.cal-heatmap-container`) uses `overflow-x: auto` to support viewing the heatmap on smaller screens or when scaled. Without `tabindex="0"` and a `:focus-visible` ring, horizontal scrolling is impossible for keyboard navigation, making parts of the calendar completely inaccessible to non-mouse users.
-
 **Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers like the calendar heatmap to ensure keyboard accessibility.
+
+## 2026-05-16 - Data Visualization Scroll Accessibility
+
+**Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
+**Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
+
+## 2026-05-18 - Keyboard Accessibility for Custom Dropdowns
+
+**Learning:** When custom interactive elements like dropdown lists are built using non-semantic `div` tags, they inherently lack keyboard accessibility. Keyboard-only and screen reader users cannot focus, navigate, or activate these elements without proper roles and tab management.
+**Action:** Always add `role="button"`, `tabindex="0"`, a `keydown` event listener for Enter/Space keys, and a `:focus-visible` styling state when transforming generic `div` containers into interactive dropdown menu options.

@@ -26,22 +26,42 @@ import {
 
 // Data cache
 let yieldDataCache = null;
-let yieldDataLoading = false;
+let yieldDataPromise = null;
+let yieldDataLoading = false; // still used locally by drawYieldChart if we don't refactor it
 
 /**
- * Load yield data from the backend JSON.
+ * Get synchronously cached yield data
+ */
+export function getCachedYieldData() {
+    return yieldDataCache;
+}
+
+/**
+ * Load yield data from the backend JSON with caching.
  */
 export async function loadYieldData() {
-    try {
-        const response = await fetch('../data/yield_data.json');
-        if (!response.ok) {
+    if (yieldDataCache) {
+        return yieldDataCache;
+    }
+    if (yieldDataPromise) {
+        return yieldDataPromise;
+    }
+    yieldDataPromise = (async () => {
+        try {
+            const response = await fetch('../data/yield_data.json');
+            if (!response.ok) {
+                yieldDataPromise = null;
+                return null;
+            }
+            yieldDataCache = await response.json();
+            return yieldDataCache;
+        } catch (error) {
+            logger.warn('Yield chart rendering failed:', error);
+            yieldDataPromise = null;
             return null;
         }
-        return await response.json();
-    } catch (error) {
-        logger.warn('Caught exception:', error);
-        return null;
-    }
+    })();
+    return yieldDataPromise;
 }
 
 /**

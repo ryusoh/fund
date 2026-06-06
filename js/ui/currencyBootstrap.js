@@ -36,7 +36,7 @@ function bootstrapStoredCurrency() {
         });
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Currency bootstrap storage failed:', error);
         // Ignore storage/DOM errors to avoid blocking page load
     }
 }

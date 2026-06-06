@@ -72,12 +72,6 @@ def fetch_dividends(tickers: List[str], cache: Dict[str, Any]) -> Dict[str, Any]
     for ticker_symbol in tickers:
         yf_sym = TICKER_MAP.get(ticker_symbol, ticker_symbol)
 
-        # Check if we need to fetch (if not in cache or if cache is old)
-        # For simplicity in this script, we'll fetch if not present.
-        # In a real scenario, we might want to refresh recently active tickers.
-        if ticker_symbol in cache:
-            continue
-
         logging.info(f"Fetching dividends for {ticker_symbol}...")
         try:
             t = yf.Ticker(yf_sym)
@@ -156,6 +150,8 @@ def calculate_yield_data():
         portfolio_market_value = 0.0
         portfolio_forward_dividend_income = 0.0
         portfolio_ttm_dividend_collected = 0.0
+        portfolio_daily_dividend = 0.0
+        daily_dividends_by_ticker = {}
 
         date_str = current_date.strftime("%Y-%m-%d")
         ttm_start = current_date - timedelta(days=365)
@@ -188,6 +184,13 @@ def calculate_yield_data():
                 if ex_date in holdings_df.index:
                     portfolio_ttm_dividend_collected += holdings_df.at[ex_date, t] * amt
 
+            # 3. Daily dividends received on exactly this date
+            if current_date in div_series.index:
+                ticker_div = holdings_df.at[current_date, t] * div_series.at[current_date]
+                if ticker_div > 0:
+                    portfolio_daily_dividend += ticker_div
+                    daily_dividends_by_ticker[t] = round(ticker_div, 2)
+
         forward_yield = 0.0
         if portfolio_market_value > 0:
             forward_yield = (portfolio_forward_dividend_income / portfolio_market_value) * 100.0
@@ -198,6 +201,8 @@ def calculate_yield_data():
                 "forward_yield": round(forward_yield, 4),
                 "ttm_income": round(portfolio_ttm_dividend_collected, 2),
                 "market_value": round(portfolio_market_value, 2),
+                "daily_dividend": round(portfolio_daily_dividend, 2),
+                "daily_dividends_by_ticker": daily_dividends_by_ticker,
             }
         )
 

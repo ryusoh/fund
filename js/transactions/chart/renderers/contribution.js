@@ -29,8 +29,10 @@ import {
     buildFilteredBalanceSeries,
     applyDrawdownToSeries,
     computeAppreciationSeries,
+    mergeDividendsIntoContribution,
 } from '../data/contribution.js';
 import { drawVolumeChart, drawContributionMarkers } from './contributionComponents.js';
+import { loadYieldData, getCachedYieldData } from './yield.js';
 import {
     parseLocalDate,
     clampTime,
@@ -116,6 +118,32 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         }
     }
 
+    // Load yield data and merge dividends into contribution series
+    let yieldData = getCachedYieldData();
+    if (!yieldData) {
+        yieldData = await loadYieldData();
+    }
+    if (yieldData && contributionSource.length > 0) {
+        let activeTickers = null;
+        if (filtersActive && Array.isArray(filteredTransactions)) {
+            const tickerSet = new Set();
+            for (let i = 0; i < filteredTransactions.length; i++) {
+                const t = filteredTransactions[i];
+                if (t.security) {
+                    tickerSet.add(t.security);
+                }
+            }
+            activeTickers = Array.from(tickerSet);
+        }
+
+        contributionSource = mergeDividendsIntoContribution(
+            contributionSource,
+            yieldData,
+            selectedCurrency,
+            activeTickers
+        );
+    }
+
     let historicalPrices = transactionState.historicalPrices;
     if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
         try {
@@ -128,7 +156,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 historicalPrices = {};
             }
         } catch (error) {
-            logger.warn('Caught exception:', error);
+            logger.warn('Contribution chart rendering failed:', error);
             historicalPrices = {};
         }
     } else {
@@ -378,19 +406,23 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         if (filterFrom) {
             const filterFromTime = filterFrom.getTime();
             // Find peak in contribution data before filter start
-            (mappedContributionSource || []).forEach((item) => {
+            const cSrc = mappedContributionSource || [];
+            for (let i = 0; i < cSrc.length; i++) {
+                const item = cSrc[i];
                 const itemDate = new Date(item.date);
                 if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
                     contributionHistoricalPeak = Math.max(contributionHistoricalPeak, item.value);
                 }
-            });
+            }
             // Find peak in balance data before filter start
-            (mappedBalanceSource || []).forEach((item) => {
+            const bSrc = mappedBalanceSource || [];
+            for (let i = 0; i < bSrc.length; i++) {
+                const item = bSrc[i];
                 const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
                 if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
                     balanceHistoricalPeak = Math.max(balanceHistoricalPeak, item.value);
                 }
-            });
+            }
         }
 
         finalContributionData = applyDrawdownToSeries(
@@ -589,62 +621,66 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     const showChartLabels = getShowChartLabels();
 
     if (showContribution && finalContributionData.length > 0) {
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const contribData = [];
+        for (let i = 0; i < finalContributionData.length; i++) {
+            const item = finalContributionData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                contribData.push({ time, value: item.amount });
+            }
+        }
         animatedSeries.push({
             key: 'contribution',
             color: colors.contribution,
             lineWidth: CHART_LINE_WIDTHS.contribution ?? 2,
             order: 1,
-            data: finalContributionData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.amount,
-                })),
+            data: contribData,
         });
     }
 
     if (showBalance && finalBalanceData.length > 0) {
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const balData = [];
+        for (let i = 0; i < finalBalanceData.length; i++) {
+            const item = finalBalanceData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                balData.push({ time, value: item.value });
+            }
+        }
         animatedSeries.push({
             key: 'balance',
             color: colors.portfolio,
             lineWidth: CHART_LINE_WIDTHS.balance ?? 2,
             order: 2,
-            data: finalBalanceData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.value,
-                })),
+            data: balData,
         });
     }
 
     if (showAppreciation && appreciationData.length > 0) {
         const appreciationGradient = BALANCE_GRADIENTS['appreciation'];
+        // Bolt: Replaced chained .filter().map() with a single loop to eliminate intermediate array and closure allocations
+        const apprecData = [];
+        for (let i = 0; i < appreciationData.length; i++) {
+            const item = appreciationData[i];
+            const time = item.date.getTime();
+            if (!filterStartTime || time >= filterStartTime) {
+                apprecData.push({ time, value: item.value });
+            }
+        }
         animatedSeries.push({
             key: 'appreciation',
             color: appreciationGradient ? appreciationGradient[1] : '#FF8E53',
             lineWidth: CHART_LINE_WIDTHS.appreciation ?? 1,
             order: 1.5,
-            data: appreciationData
-                .filter((item) => {
-                    const t = item.date.getTime();
-                    return !filterStartTime || t >= filterStartTime;
-                })
-                .map((item) => ({
-                    time: item.date.getTime(),
-                    value: item.value,
-                })),
+            data: apprecData,
         });
     }
 
-    animatedSeries.forEach((series) => {
-        const coords = [];
+    for (let sIdx = 0; sIdx < animatedSeries.length; sIdx++) {
+        const series = animatedSeries[sIdx];
+        const coords = new Array(series.data.length);
         if (series.data.length > 0) {
             // Ensure visual continuity by adding a synthetic start point if filtering
             if (filterStartTime && series.data[0].time > filterStartTime) {
@@ -655,17 +691,18 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             }
         }
 
-        series.data.forEach((point) => {
-            coords.push({
+        for (let i = 0; i < series.data.length; i++) {
+            const point = series.data[i];
+            coords[i] = {
                 x: xScale(point.time),
                 y: yScale(point.value),
                 time: point.time,
                 value: point.value,
-            });
-        });
+            };
+        }
 
         series.coords = coords;
-    });
+    }
 
     // Draw divider line between line chart and volume chart
     if (volumeHeight > 0) {
@@ -727,10 +764,11 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     // However, since volume is below, and line chart is above, they don't overlap much.
     // But to be safe and consistent with previous logic:
 
-    sortedSeries.forEach((series, index) => {
+    for (let index = 0; index < sortedSeries.length; index++) {
+        const series = sortedSeries[index];
         const coords = series.coords || [];
         if (coords.length === 0) {
-            return;
+            continue;
         }
 
         // Apply gradient effect for balance chart lines
@@ -761,13 +799,14 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         }
 
         ctx.beginPath();
-        coords.forEach((coord, coordIndex) => {
+        for (let coordIndex = 0; coordIndex < coords.length; coordIndex++) {
+            const coord = coords[coordIndex];
             if (coordIndex === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        });
+        }
         ctx.lineWidth = series.lineWidth;
         ctx.stroke();
 
@@ -786,7 +825,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
             );
             hasAnimatedSeries = true;
         }
-    });
+    }
 
     // ctx.restore(); // Removed inner restore, will restore at the end
 

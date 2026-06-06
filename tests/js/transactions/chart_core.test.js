@@ -6,8 +6,8 @@ describe('composition ticker filtering helper', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
-            ({ buildCompositionDisplayOrder } = chartModule.__chartTestables);
+            const compositionModule = require('@js/transactions/chart/renderers/composition.js');
+            ({ buildCompositionDisplayOrder } = compositionModule);
         });
     });
 
@@ -29,6 +29,45 @@ describe('composition ticker filtering helper', () => {
         const result = buildCompositionDisplayOrder(baseOrder, chartData, ['ANET'], 2);
         expect(result.order).toEqual(['ANET', 'Others']);
         expect(result.filteredOthers).toEqual([40, 45]);
+    });
+});
+
+describe('createChartManager', () => {
+    let createChartManager;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const chartModule = require('@js/transactions/chart.js');
+            createChartManager = chartModule.createChartManager;
+        });
+    });
+
+    it('handles redraw requests and skips when pending', () => {
+        const manager = createChartManager();
+        let rafCallback = null;
+        jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+            rafCallback = cb;
+            return 123;
+        });
+
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+        // Calling again should skip scheduling since it is pending
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+        // Execute the callback
+        if (rafCallback) {
+            rafCallback(1000);
+        }
+
+        // Now we can redraw again
+        manager.redraw();
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(2);
+
+        global.requestAnimationFrame.mockRestore();
     });
 });
 

@@ -103,6 +103,44 @@ describe('analysis lab data loading', () => {
         expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
     });
 
+    describe('fetchText', () => {
+        it('fetches text successfully', async () => {
+            // Arrange
+            global[FLAG] = true;
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                text: jest.fn().mockResolvedValue('markdown content'),
+            });
+            const module = await import('@pages/analysis/lab.js');
+            const { fetchText } = module.__analysisLabTesting;
+
+            // Act
+            const text = await fetchText('../docs/thesis/TEST.md');
+
+            // Assert
+            expect(text).toBe('markdown content');
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/docs/thesis/TEST.md'),
+                { cache: 'no-store' }
+            );
+        });
+
+        it('throws error when fetch fails', async () => {
+            // Arrange
+            global[FLAG] = true;
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: false,
+            });
+            const module = await import('@pages/analysis/lab.js');
+            const { fetchText } = module.__analysisLabTesting;
+
+            // Act & Assert
+            await expect(fetchText('../docs/thesis/TEST.md')).rejects.toThrow(
+                'Failed to load ../docs/thesis/TEST.md'
+            );
+        });
+    });
+
     describe('extractScenarioTitles and stripWrappingQuotes', () => {
         let extractScenarioTitles;
 

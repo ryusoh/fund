@@ -1,3 +1,5 @@
+/* global AbortSignal */
+
 const ALPACA_SNAPSHOTS_URL = 'https://data.alpaca.markets/v2/stocks/snapshots';
 const ALLOWED_ORIGIN = 'https://fund.lyeutsaon.com';
 
@@ -52,7 +54,9 @@ function corsHeaders(origin) {
     try {
         if (origin) {
             const url = new URL(origin);
-            isSubdomain = url.protocol === 'https:' && url.hostname.endsWith('.lyeutsaon.com');
+            isSubdomain =
+                url.protocol === 'https:' &&
+                (url.hostname === 'lyeutsaon.com' || url.hostname.endsWith('.lyeutsaon.com'));
         }
     } catch (err) {
         // eslint-disable-next-line no-console
@@ -77,6 +81,8 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
             'Content-Type': 'application/json',
             'X-Content-Type-Options': 'nosniff',
             'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'X-Frame-Options': 'DENY',
             ...corsHeaders(origin),
             ...extraHeaders,
         },
@@ -128,6 +134,7 @@ async function fetchFromAlpaca(symbols, env) {
             'APCA-API-SECRET-KEY': env.ALPACA_API_SECRET,
             Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
         throw new Error(`Alpaca API error: ${response.status} ${response.statusText}`);
@@ -156,6 +163,7 @@ async function getYahooCrumb(env) {
     const cookieRes = await fetch('https://fc.yahoo.com', {
         headers: { 'User-Agent': YAHOO_UA },
         redirect: 'follow',
+        signal: AbortSignal.timeout(5000),
     });
     const rawCookie = cookieRes.headers.get('set-cookie') ?? '';
     // Keep only name=value pairs (strip attributes like Path, Domain, …)
@@ -168,6 +176,7 @@ async function getYahooCrumb(env) {
     // Step 2 — exchange the cookie for a crumb
     const crumbRes = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', {
         headers: { 'User-Agent': YAHOO_UA, Cookie: cookie },
+        signal: AbortSignal.timeout(5000),
     });
     if (!crumbRes.ok) {
         throw new Error(`Yahoo crumb fetch failed: ${crumbRes.status}`);
@@ -219,6 +228,7 @@ async function fetchFromYahoo(symbols, env) {
     const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}&crumb=${encodeURIComponent(crumb)}`;
     const response = await fetch(url, {
         headers: { 'User-Agent': YAHOO_UA, Cookie: cookie, Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
         // Crumb may have expired mid-session — evict cache so next request re-fetches

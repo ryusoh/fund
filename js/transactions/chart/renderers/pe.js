@@ -234,7 +234,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 chartManager.redraw();
             })
             .catch((error) => {
-                logger.warn('Caught exception:', error);
+                logger.warn('PE chart rendering failed:', error);
                 chartLayouts.pe = null;
                 updateCrosshairUI(null, null);
                 if (emptyState) {

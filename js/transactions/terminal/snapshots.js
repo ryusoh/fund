@@ -3,16 +3,16 @@ import {
     setHistoricalPrices,
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
+    hasActiveTransactionFilters,
 } from '../state.js';
 import { chartLayouts } from '../chart/state.js';
 import {
-    hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
-    buildFxChartSeries,
-    buildDrawdownSeries,
     getContributionSeriesForTransactions,
-} from '../chart.js';
+} from '../chart/data/contribution.js';
+import { buildFxChartSeries } from '../chart/renderers/fx.js';
+import { buildDrawdownSeries } from '../chart/renderers/drawdown.js';
 import { PERFORMANCE_SERIES_CURRENCY } from '../chart/config.js';
 import {
     loadCompositionSnapshotData,
@@ -28,6 +28,7 @@ import {
 } from '../utils.js';
 import { normalizeDateOnly } from '@utils/date.js';
 import { getHoldingAssetClass } from '@js/config.js';
+import { mergeDividendsIntoContribution } from '../chart/data/contribution.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
@@ -1156,7 +1157,7 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
             historicalPrices = {};
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal snapshots processing failed:', error);
         historicalPrices = {};
     }
     return historicalPrices;
@@ -1165,13 +1166,37 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
 async function buildContributionChartSummary(dateRange = transactionState.chartDateRange) {
     const filtersActive = hasActiveTransactionFilters();
     let contributionSource = [];
+    let activeTickers = null;
+
     if (filtersActive) {
         contributionSource = buildContributionSeriesFromTransactions(
             transactionState.filteredTransactions || [],
             { includeSyntheticStart: true }
         );
-    } else if (Array.isArray(transactionState.runningAmountSeries)) {
-        contributionSource = transactionState.runningAmountSeries;
+        const tickerSet = new Set();
+        (transactionState.filteredTransactions || []).forEach((t) => {
+            if (t.security) {
+                tickerSet.add(t.security);
+            }
+        });
+        activeTickers = Array.from(tickerSet);
+    } else {
+        contributionSource = buildContributionSeriesFromTransactions(
+            transactionState.allTransactions || [],
+            { includeSyntheticStart: true }
+        );
+    }
+
+    const yieldData = await loadYieldData();
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    if (contributionSource.length > 0 && yieldData) {
+        contributionSource = mergeDividendsIntoContribution(
+            contributionSource,
+            yieldData,
+            selectedCurrency,
+            activeTickers
+        );
     }
 
     const historicalPrices = await ensureHistoricalPricesAvailable(filtersActive);

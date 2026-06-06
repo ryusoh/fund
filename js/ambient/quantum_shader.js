@@ -99,7 +99,7 @@ function initControls(container, surface, state, uniforms, onStateChange) {
                 surface.setPointerCapture(pointerId);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Quantum shader WebGL failed:', error);
                 // Ignore pointer capture failures on platforms that disallow it.
             }
         }
@@ -151,7 +151,7 @@ function initControls(container, surface, state, uniforms, onStateChange) {
             }
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.warn('Caught exception:', error);
+            console.warn('Quantum shader WebGL failed:', error);
             // Ignore errors from releasePointerCapture on browsers without support.
         }
         container.classList.remove('is-dragging');

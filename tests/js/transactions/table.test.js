@@ -607,6 +607,289 @@ describe('sort indicator vs row order sync', () => {
     });
 });
 
+describe('sort after table becomes visible with date range', () => {
+    let initTable;
+    let setAllTransactions;
+    let setChartDateRange;
+
+    const transactions = [
+        {
+            transactionId: 1,
+            tradeDate: '01/15/2024',
+            orderType: 'Buy',
+            security: 'AAA',
+            quantity: '10',
+            price: '100',
+            netAmount: '1000',
+        },
+        {
+            transactionId: 2,
+            tradeDate: '06/20/2024',
+            orderType: 'Buy',
+            security: 'BBB',
+            quantity: '5',
+            price: '200',
+            netAmount: '1000',
+        },
+        {
+            transactionId: 3,
+            tradeDate: '11/01/2024',
+            orderType: 'Sell',
+            security: 'AAA',
+            quantity: '5',
+            price: '120',
+            netAmount: '-600',
+        },
+    ];
+
+    function setupDom(hidden = true) {
+        document.body.innerHTML = `
+            <div class="table-responsive-container${hidden ? ' is-hidden' : ''}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="header-tradeDate" class="sortable"></th>
+                            <th id="header-orderType" class="filterable"></th>
+                            <th id="header-security" class="sortable"></th>
+                            <th id="header-quantity" class="sortable"></th>
+                            <th id="header-price" class="sortable"></th>
+                            <th id="header-netAmount" class="sortable"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+            <input type="text" id="terminalInput" value="" />
+        `;
+    }
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, setChartDateRange } = require('@js/transactions/state.js'));
+        });
+    });
+
+    it('retains table rows after clicking sort when table transitions from hidden to visible', () => {
+        // 1. Table starts hidden (mirrors real app initialization)
+        setupDom(true);
+        setChartDateRange({ from: '2024-01-01', to: null });
+        setAllTransactions(transactions);
+
+        const controller = initTable();
+        controller.filterAndSort(''); // initial render while hidden
+
+        // Table should be populated (date range NOT applied while hidden)
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(3);
+
+        // 2. Make table visible (simulates user typing "table" command)
+        document.querySelector('.table-responsive-container').classList.remove('is-hidden');
+
+        // 3. Click sort header — this is where the bug manifests
+        document.getElementById('header-tradeDate').click();
+
+        // Table should still have rows (date range applies but all txns are within range)
+        const rows = document.querySelectorAll('#transactionBody tr');
+        expect(rows.length).toBeGreaterThan(0);
+        expect(rows).toHaveLength(3);
+    });
+
+    it('retains table rows after clicking any sort column header', () => {
+        setupDom(false); // table visible from the start
+        setChartDateRange({ from: '2024-01-01', to: null });
+        setAllTransactions(transactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(3);
+
+        // Click each sortable header and verify table still has content
+        const sortableColumns = [
+            'header-tradeDate',
+            'header-security',
+            'header-quantity',
+            'header-price',
+            'header-netAmount',
+        ];
+        for (const headerId of sortableColumns) {
+            document.getElementById(headerId).click();
+            const rows = document.querySelectorAll('#transactionBody tr');
+            expect(rows.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('retains table rows when sort is clicked with terminal input empty', () => {
+        setupDom(false);
+        setAllTransactions(transactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(3);
+
+        // Ensure terminal input is empty (post-command state)
+        document.getElementById('terminalInput').value = '';
+
+        document.getElementById('header-security').click();
+
+        const rows = document.querySelectorAll('#transactionBody tr');
+        expect(rows.length).toBeGreaterThan(0);
+    });
+});
+
+describe('sort after table visible - date parse robustness', () => {
+    let initTable;
+    let setAllTransactions;
+    let setChartDateRange;
+
+    const transactions = [
+        {
+            transactionId: 1,
+            tradeDate: '03/15/2024',
+            orderType: 'Buy',
+            security: 'AAA',
+            quantity: '10',
+            price: '100',
+            netAmount: '1000',
+        },
+        {
+            transactionId: 2,
+            tradeDate: '06/20/2024',
+            orderType: 'Buy',
+            security: 'BBB',
+            quantity: '5',
+            price: '200',
+            netAmount: '1000',
+        },
+    ];
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="header-tradeDate" class="sortable"></th>
+                            <th id="header-security" class="sortable"></th>
+                            <th id="header-quantity" class="sortable"></th>
+                            <th id="header-price" class="sortable"></th>
+                            <th id="header-netAmount" class="sortable"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+            <input type="text" id="terminalInput" value="" />
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('@js/transactions/table.js'));
+            ({ setAllTransactions, setChartDateRange } = require('@js/transactions/state.js'));
+        });
+    });
+
+    it('does not lose rows when Date.parse receives a Date object from normalizeDateOnly', () => {
+        // Simulate the scenario: date range is active and table is visible
+        setChartDateRange({ from: '2024-01-01', to: null });
+        setAllTransactions(transactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        // All transactions are within range and should be shown
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(2);
+
+        // Now click sort — the date range filter runs again with table visible
+        document.getElementById('header-tradeDate').click();
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(2);
+
+        // Click another column
+        document.getElementById('header-security').click();
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(2);
+    });
+
+    it('handles MM/DD/YYYY date format correctly in date range filter', () => {
+        // Use MM/DD/YYYY format like the real CSV data
+        const mmddyyyyTransactions = [
+            {
+                transactionId: 1,
+                tradeDate: '01/15/2024',
+                orderType: 'Buy',
+                security: 'AAA',
+                quantity: '10',
+                price: '100',
+                netAmount: '1000',
+            },
+            {
+                transactionId: 2,
+                tradeDate: '12/31/2023',
+                orderType: 'Buy',
+                security: 'BBB',
+                quantity: '5',
+                price: '200',
+                netAmount: '1000',
+            },
+        ];
+
+        setChartDateRange({ from: '2024-01-01', to: null });
+        setAllTransactions(mmddyyyyTransactions);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        // Only the 2024 transaction should pass the filter
+        const rows = document.querySelectorAll('#transactionBody tr');
+        expect(rows).toHaveLength(1);
+
+        // Sort should not clear the table
+        document.getElementById('header-price').click();
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(1);
+    });
+
+    it('survives sort when normalizeDateOnly returns a Date object (simulating browser behavior)', () => {
+        // This test validates that the filter works even if Date.parse
+        // doesn't correctly handle a Date object coerced to string.
+        // In some browsers, Date.parse(dateObj) returns NaN because
+        // Date.parse(dateObj.toString()) fails on timezone abbreviations.
+        setChartDateRange({ from: '2024-01-01', to: null });
+        setAllTransactions(transactions);
+
+        // Patch normalizeDateOnly to verify the filter handles Date objects correctly
+        // by making Date.parse fail for any non-ISO string or Date object
+        const originalDateParse = Date.parse;
+        jest.spyOn(Date, 'parse').mockImplementation((val) => {
+            // If a Date object is passed, simulate browser failure
+            if (val instanceof Date) {
+                return NaN;
+            }
+            // If the string looks like Date.toString() output, simulate failure
+            if (typeof val === 'string' && /\d{2}:\d{2}:\d{2}\s+GMT/.test(val)) {
+                return NaN;
+            }
+            return originalDateParse.call(Date, val);
+        });
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        // Should still show transactions - the fix should not rely on Date.parse for Date objects
+        const rows = document.querySelectorAll('#transactionBody tr');
+        expect(rows.length).toBeGreaterThan(0);
+
+        // Sort should work
+        document.getElementById('header-tradeDate').click();
+        expect(document.querySelectorAll('#transactionBody tr').length).toBeGreaterThan(0);
+
+        Date.parse.mockRestore();
+    });
+});
+
 describe('ticker alias filtering', () => {
     let initTable;
     let setAllTransactions;
