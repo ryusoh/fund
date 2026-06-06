@@ -172,6 +172,49 @@ describe('plot command chart toggling', () => {
     );
 });
 
+describe('plot command hides table when showing chart', () => {
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    const chartCommands = [
+        ['balance', 'contribution'],
+        ['performance', 'performance'],
+        ['composition', 'composition'],
+        ['sectors', 'sectors'],
+        ['geography', 'geography'],
+        ['fx', 'fx'],
+        ['drawdown', 'drawdown'],
+        ['concentration', 'concentration'],
+        ['pe', 'pe'],
+        ['rolling', 'rolling'],
+        ['volatility', 'volatility'],
+        ['beta', 'beta'],
+        ['yield', 'yield'],
+    ];
+
+    test.each(chartCommands)(
+        'plot %s hides the transaction table when it is visible',
+        async (commandArgs) => {
+            jest.resetModules();
+            const session = initTerminalSession({ tableVisible: true });
+            const tableContainer = document.querySelector('.table-responsive-container');
+
+            // Table should start visible
+            expect(tableContainer.classList.contains('is-hidden')).toBe(false);
+
+            await session.submitCommand(`plot ${commandArgs}`);
+
+            // Table must be hidden when chart is shown
+            expect(tableContainer.classList.contains('is-hidden')).toBe(true);
+
+            // Chart section must be visible
+            const chartSection = document.getElementById('runningAmountSection');
+            expect(chartSection.classList.contains('is-hidden')).toBe(false);
+        }
+    );
+});
+
 describe('plot command help strings', () => {
     let session;
 

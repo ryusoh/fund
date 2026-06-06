@@ -326,9 +326,13 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             appendMessage(`Hidden ${handler.hiddenName}`);
         } else {
             setActiveChart(handler.key);
+            const tableContainer = document.querySelector('.table-responsive-container');
             if (section) {
                 section.classList.remove('is-hidden');
                 chartManager.update();
+            }
+            if (tableContainer) {
+                tableContainer.classList.add('is-hidden');
             }
 
             let result = handler.getBaseMsg(dateRange);
