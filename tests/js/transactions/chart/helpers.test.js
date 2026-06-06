@@ -7,6 +7,9 @@ import {
     colorWithAlpha,
     lightenColor,
     darkenColor,
+    createTimeInterpolator,
+    injectSyntheticStartPoint,
+    injectCarryForwardStartPoint,
 } from '../../../../js/transactions/chart/helpers.js';
 
 describe('Chart Helpers', () => {
@@ -159,6 +162,275 @@ describe('Chart Helpers', () => {
                 expect(darkenColor('', 0.5)).toBe('');
                 expect(darkenColor('invalid-color', 0.5)).toBe('invalid-color');
             });
+        });
+    });
+
+    describe('createTimeInterpolator', () => {
+        it('should return null for non-finite time', () => {
+            const interpolator = createTimeInterpolator([{ time: 10, value: 5 }]);
+            expect(interpolator(NaN)).toBeNull();
+            expect(interpolator(Infinity)).toBeNull();
+        });
+
+        it('should return a function that returns null for empty or invalid array', () => {
+            let interpolator = createTimeInterpolator([]);
+            expect(interpolator(10)).toBeNull();
+
+            interpolator = createTimeInterpolator(null);
+            expect(interpolator(10)).toBeNull();
+        });
+
+        it('should clamp time to array bounds', () => {
+            const points = [
+                { time: 10, value: 100 },
+                { time: 20, value: 200 },
+            ];
+            const interpolator = createTimeInterpolator(points);
+            expect(interpolator(5)).toBe(100);
+            expect(interpolator(25)).toBe(200);
+        });
+
+        it('should return exact value if time matches exactly', () => {
+            const points = [
+                { time: 10, value: 100 },
+                { time: 20, value: 200 },
+            ];
+            const interpolator = createTimeInterpolator(points);
+            expect(interpolator(10)).toBe(100);
+            expect(interpolator(20)).toBe(200);
+        });
+
+        it('should interpolate values between points', () => {
+            const points = [
+                { time: 10, value: 100 },
+                { time: 20, value: 200 },
+            ];
+            const interpolator = createTimeInterpolator(points);
+            expect(interpolator(15)).toBe(150);
+            expect(interpolator(12)).toBe(120);
+            expect(interpolator(18)).toBe(180);
+        });
+
+        it('should handle identical times (vertical line)', () => {
+            const points = [
+                { time: 10, value: 100 },
+                { time: 10, value: 200 },
+            ];
+            const interpolator = createTimeInterpolator(points);
+            expect(interpolator(10)).toBe(100); // returns first value
+        });
+
+        it('should handle single point', () => {
+            const points = [{ time: 10, value: 100 }];
+            const interpolator = createTimeInterpolator(points);
+            expect(interpolator(10)).toBe(100);
+        });
+    });
+
+    describe('injectSyntheticStartPoint', () => {
+        const fullSeries = [
+            { date: new Date('2023-01-01'), value: 100, synthetic: true },
+            { date: new Date('2023-01-02'), value: 110 },
+            { date: new Date('2023-01-03'), value: 120 },
+        ];
+
+        it('should return original data if inputs are invalid', () => {
+            expect(injectSyntheticStartPoint(null, fullSeries)).toBeNull();
+            expect(injectSyntheticStartPoint([], fullSeries)).toEqual([]);
+            expect(injectSyntheticStartPoint([{ date: new Date() }], null)).toEqual([
+                { date: expect.any(Date) },
+            ]);
+            expect(injectSyntheticStartPoint([{ date: new Date() }], [])).toEqual([
+                { date: expect.any(Date) },
+            ]);
+        });
+
+        it('should return original data if no matching full series date', () => {
+            const filtered = [{ date: new Date('2024-01-01'), value: 200 }];
+            expect(injectSyntheticStartPoint(filtered, fullSeries)).toBe(filtered);
+        });
+
+        it('should return original data if previous point is not synthetic', () => {
+            const series = [
+                { date: new Date('2023-01-01'), value: 100 }, // Not synthetic
+                { date: new Date('2023-01-02'), value: 110 },
+            ];
+            const filtered = [series[1]];
+            expect(injectSyntheticStartPoint(filtered, series)).toBe(filtered);
+        });
+
+        it('should return original data if previous point is not 0 (or close to 0)', () => {
+            const series = [
+                { date: new Date('2023-01-01'), value: 50, synthetic: true },
+                { date: new Date('2023-01-02'), value: 110 },
+            ];
+            const filtered = [series[1]];
+            expect(injectSyntheticStartPoint(filtered, series)).toBe(filtered);
+        });
+
+        it('should inject synthetic start point', () => {
+            const series = [
+                { date: new Date('2023-01-01'), value: 0, synthetic: true },
+                { date: new Date('2023-01-02'), value: 110 },
+            ];
+            const filtered = [series[1]];
+
+            const result = injectSyntheticStartPoint(filtered, series);
+            expect(result).toHaveLength(2);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].value).toBe(0);
+            expect(result[0].date).toEqual(new Date('2023-01-01'));
+        });
+
+        it('should clamp injected point to filterFrom date', () => {
+            const series = [
+                { date: new Date('2023-01-01'), value: 0, synthetic: true },
+                { date: new Date('2023-01-05'), value: 110 },
+            ];
+            const filtered = [series[1]];
+            const filterFrom = new Date('2023-01-03');
+
+            const result = injectSyntheticStartPoint(filtered, series, filterFrom);
+            expect(result).toHaveLength(2);
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].value).toBe(0); // From the previousPoint
+            expect(result[0].date).toEqual(filterFrom);
+        });
+
+        it('should avoid duplicate points at filterFrom', () => {
+            const series = [
+                { date: new Date('2023-01-01'), value: 0, synthetic: true },
+                { date: new Date('2023-01-03'), value: 110 },
+            ];
+            const filtered = [series[1]]; // Starts at 2023-01-03
+            const filterFrom = new Date('2023-01-03');
+
+            // The synthetic point would be at 2023-01-03, but we already have a point there
+            const result = injectSyntheticStartPoint(filtered, series, filterFrom);
+            expect(result).toBe(filtered); // No new point added
+        });
+
+        it('should handle invalid date objects gracefully', () => {
+            const invalidDateFiltered = [{ date: new Date('invalid'), value: 10 }];
+            expect(injectSyntheticStartPoint(invalidDateFiltered, fullSeries)).toBe(
+                invalidDateFiltered
+            );
+
+            const validFiltered = [{ date: new Date('2023-01-02'), value: 110 }];
+            const invalidSeries = [
+                { date: new Date('invalid'), value: 0, synthetic: true },
+                { date: new Date('2023-01-02'), value: 110 },
+            ];
+            expect(injectSyntheticStartPoint(validFiltered, invalidSeries)).toBe(validFiltered);
+        });
+    });
+
+    describe('injectCarryForwardStartPoint', () => {
+        const fullSeries = [
+            { date: new Date('2023-01-01'), value: 100 },
+            { date: new Date('2023-01-02'), value: 110 },
+            { date: new Date('2023-01-05'), value: 120 },
+        ];
+
+        it('should return original data if inputs are invalid', () => {
+            const filtered = [{ date: new Date('2023-01-05'), value: 120 }];
+            expect(injectCarryForwardStartPoint(filtered, fullSeries, null)).toBe(filtered);
+            expect(injectCarryForwardStartPoint(null, fullSeries, new Date())).toBeNull();
+            expect(injectCarryForwardStartPoint(filtered, null, new Date())).toBe(filtered);
+            expect(injectCarryForwardStartPoint(filtered, [], new Date())).toBe(filtered);
+        });
+
+        it('should return original data if no point exists before filterFrom', () => {
+            const filtered = [{ date: new Date('2023-01-01'), value: 100 }];
+            const filterFrom = new Date('2022-12-31');
+            expect(injectCarryForwardStartPoint(filtered, fullSeries, filterFrom)).toBe(filtered);
+        });
+
+        it('should return original data if first filtered point is before or at filterFrom', () => {
+            const filtered = [{ date: new Date('2023-01-02'), value: 110 }];
+            const filterFrom = new Date('2023-01-02'); // Same date
+            expect(injectCarryForwardStartPoint(filtered, fullSeries, filterFrom)).toBe(filtered);
+
+            const filterFromAfter = new Date('2023-01-03'); // Filter starts after first point
+            expect(injectCarryForwardStartPoint(filtered, fullSeries, filterFromAfter)).toBe(
+                filtered
+            );
+        });
+
+        it('should inject carry forward point with previous value', () => {
+            const filtered = [{ date: new Date('2023-01-05'), value: 120 }];
+            const filterFrom = new Date('2023-01-03');
+
+            const result = injectCarryForwardStartPoint(filtered, fullSeries, filterFrom);
+            expect(result).toHaveLength(2);
+            expect(result[0].date).toEqual(filterFrom);
+            expect(result[0].value).toBe(110); // Carried forward from 2023-01-02
+            expect(result[0].synthetic).toBe(true);
+            expect(result[0].carryForward).toBe(true);
+        });
+
+        it('should use custom valueKey', () => {
+            const customSeries = [
+                { date: new Date('2023-01-01'), customVal: 100 },
+                { date: new Date('2023-01-02'), customVal: 110 },
+            ];
+            const filtered = [];
+            const filterFrom = new Date('2023-01-03');
+
+            const result = injectCarryForwardStartPoint(
+                filtered,
+                customSeries,
+                filterFrom,
+                'customVal'
+            );
+            expect(result).toHaveLength(1);
+            expect(result[0].customVal).toBe(110);
+            expect(result[0].synthetic).toBe(true);
+        });
+
+        it('should handle invalid dates in series', () => {
+            const seriesWithInvalid = [
+                { date: new Date('invalid'), value: 100 },
+                { date: new Date('2023-01-02'), value: 110 },
+            ];
+            const filtered = [];
+            const filterFrom = new Date('2023-01-03');
+
+            const result = injectCarryForwardStartPoint(filtered, seriesWithInvalid, filterFrom);
+            expect(result).toHaveLength(1);
+            expect(result[0].value).toBe(110);
+        });
+
+        it('should skip null items in series', () => {
+            const seriesWithNull = [
+                { date: new Date('2023-01-01'), value: 100 },
+                null,
+                { date: new Date('2023-01-05'), value: 120 },
+            ];
+            const filtered = [{ date: new Date('2023-01-05'), value: 120 }];
+            const filterFrom = new Date('2023-01-03');
+
+            const result = injectCarryForwardStartPoint(filtered, seriesWithNull, filterFrom);
+            expect(result).toHaveLength(2);
+            expect(result[0].value).toBe(100);
+        });
+
+        it('should skip if carried value is not finite', () => {
+            const seriesWithNaN = [{ date: new Date('2023-01-01'), value: NaN }];
+            const filtered = [];
+            const filterFrom = new Date('2023-01-03');
+
+            expect(injectCarryForwardStartPoint(filtered, seriesWithNaN, filterFrom)).toBe(
+                filtered
+            );
+        });
+
+        it('should handle invalid filterFrom', () => {
+            const filtered = [{ date: new Date('2023-01-05'), value: 120 }];
+            const invalidFilterFrom = new Date('invalid');
+            expect(injectCarryForwardStartPoint(filtered, fullSeries, invalidFilterFrom)).toBe(
+                filtered
+            );
         });
     });
 });
