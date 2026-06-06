@@ -543,7 +543,7 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Caught exception:', error);
+            logger.warn('Composition chart rendering failed:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {

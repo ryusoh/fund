@@ -78,8 +78,45 @@ def calculate_daily_values_with_date(
 
             # Get the actual date of the latest close price
             last_idx = hist.index[-1]
-            actual_date = last_idx.strftime("%Y-%m-%d")
             market_price = hist["Close"].iloc[-1]
+
+            # If history() returns NaN for the latest row, fall back to
+            # yfinance info["regularMarketPrice"] which is the official
+            # regular-session close price (available immediately after close,
+            # unlike history() which has a delay finalising daily bars).
+            if pd.isna(market_price):
+                try:
+                    reg_price = ticker_obj.info.get("regularMarketPrice")
+                except Exception:
+                    reg_price = None
+                if reg_price is not None and pd.notna(reg_price):
+                    print(
+                        f"Warning: history() returned NaN for {ticker} on "
+                        f"{last_idx.strftime('%Y-%m-%d')}. "
+                        f"Using regularMarketPrice={reg_price}.",
+                        file=sys.stderr,
+                    )
+                    market_price = float(reg_price)
+                else:
+                    # Last resort: walk backwards for an older valid close
+                    close_col = hist["Close"]
+                    resolved = False
+                    for offset in range(1, len(close_col)):
+                        idx = -(offset + 1)
+                        price_candidate = close_col.iloc[idx]
+                        if pd.notna(price_candidate):
+                            last_idx = hist.index[idx]
+                            market_price = price_candidate
+                            resolved = True
+                            break
+                    if not resolved:
+                        print(
+                            f"Warning: No valid close price found for {ticker}. Skipping.",
+                            file=sys.stderr,
+                        )
+                        continue
+
+            actual_date = last_idx.strftime("%Y-%m-%d")
             currency = "USD"
 
             fx_to_usd = fx_rates.get(currency)
@@ -156,6 +193,7 @@ def main():
     header = []
     last_date = None
     file_content = ""
+    all_rows = []
     if HISTORICAL_CSV.exists():
         with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
             file_content = f.read()
@@ -170,6 +208,25 @@ def main():
                 import logging
 
                 logging.warning("Historical CSV is empty")
+
+    # Drop trailing row if all value columns are NaN (corrupt from a previous failed run)
+    if header and all_rows:
+        last_row_values = all_rows[-1][1:]  # skip the date column
+        if all(v.strip().lower() == "nan" or v.strip() == "" for v in last_row_values):
+            corrupt_date = all_rows[-1][0]
+            print(
+                f"Dropping corrupt NaN row for {corrupt_date} from CSV.",
+                file=sys.stderr,
+            )
+            all_rows.pop()
+            last_date = all_rows[-1][0] if all_rows else None
+            # Rebuild file_content without the corrupt row
+            lines = [",".join(header)]
+            for row in all_rows:
+                lines.append(",".join(row))
+            file_content = "\n".join(lines) + "\n"
+            with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
+                f.write(file_content)
 
     if not header:
         print("Calculating current portfolio value...")

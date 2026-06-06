@@ -25,7 +25,7 @@ function readStoredCurrency() {
         }
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Currency toggle storage failed:', error);
         // Ignore storage errors (e.g., private mode)
     }
     return null;
@@ -38,7 +38,7 @@ function persistCurrency(currency) {
         }
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Currency toggle storage failed:', error);
         // Ignore storage errors
     }
 }

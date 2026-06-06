@@ -45,7 +45,7 @@ function prefersReducedMotion() {
         return w.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Text highlight reduced motion check failed:', error);
         return false;
     }
 }

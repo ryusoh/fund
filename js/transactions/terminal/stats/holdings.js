@@ -51,7 +51,7 @@ ${table}
 `;
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Holdings stats processing failed:', error);
         // fallback to legacy text
     }
 
@@ -62,7 +62,7 @@ ${table}
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Holdings stats processing failed:', error);
         return 'Error loading holdings data.';
     }
 }

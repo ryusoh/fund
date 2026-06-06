@@ -461,14 +461,18 @@ export function computeAppreciationSeries(balanceData, contributionData) {
 
     // Build exact-match map
     const contribByTime = new Map();
-    contributionData.forEach((item) => {
+    for (let i = 0; i < contributionData.length; i++) {
+        const item = contributionData[i];
         contribByTime.set(item.date.getTime(), item.amount);
-    });
+    }
 
     // Sort contribution timestamps for interpolation
-    const contribTimes = contributionData
-        .map((item) => ({ time: item.date.getTime(), value: item.amount }))
-        .sort((a, b) => a.time - b.time);
+    const contribTimes = new Array(contributionData.length);
+    for (let i = 0; i < contributionData.length; i++) {
+        const item = contributionData[i];
+        contribTimes[i] = { time: item.date.getTime(), value: item.amount };
+    }
+    contribTimes.sort((a, b) => a.time - b.time);
 
     const interpolateContrib = (targetTime) => {
         if (contribTimes.length === 0) {
@@ -495,7 +499,8 @@ export function computeAppreciationSeries(balanceData, contributionData) {
     };
 
     const result = [];
-    balanceData.forEach((balItem) => {
+    for (let i = 0; i < balanceData.length; i++) {
+        const balItem = balanceData[i];
         const t = balItem.date.getTime();
         let contribValue = contribByTime.get(t);
         if (contribValue === undefined) {
@@ -511,7 +516,7 @@ export function computeAppreciationSeries(balanceData, contributionData) {
                 value: balItem.value - contribValue,
             });
         }
-    });
+    }
 
     return result;
 }
@@ -538,17 +543,19 @@ export function mergeDividendsIntoContribution(
 
     // Build a Map of dateStr → daily_dividend from yieldData (only non-zero entries)
     const dividendMap = new Map();
-    yieldData.forEach((item) => {
+    for (let i = 0; i < yieldData.length; i++) {
+        const item = yieldData[i];
         let dividend = 0;
 
         if (filterTickers && filterTickers.length > 0) {
             // If filtering is active, only include dividends for the filtered tickers
             if (item.daily_dividends_by_ticker) {
-                filterTickers.forEach((ticker) => {
+                for (let j = 0; j < filterTickers.length; j++) {
+                    const ticker = filterTickers[j];
                     if (item.daily_dividends_by_ticker[ticker]) {
                         dividend += item.daily_dividends_by_ticker[ticker];
                     }
-                });
+                }
             }
             // If item.daily_dividends_by_ticker is missing, dividend remains 0. We DO NOT fall back!
         } else if (item.daily_dividend) {
@@ -560,23 +567,26 @@ export function mergeDividendsIntoContribution(
         if (dividendNum !== 0) {
             dividendMap.set(item.date, dividendNum);
         }
-    });
+    }
 
     if (dividendMap.size === 0) {
         return contributionSeries;
     }
 
     // Clone the series so we don't mutate the original
-    const merged = contributionSeries.map((point) => ({ ...point }));
+    const merged = new Array(contributionSeries.length);
+    for (let i = 0; i < contributionSeries.length; i++) {
+        merged[i] = { ...contributionSeries[i] };
+    }
 
     // Build a Map of dateStr → index from contributionSeries for quick lookup
     const seriesMap = new Map();
-    merged.forEach((point, index) => {
-        seriesMap.set(point.tradeDate, index);
-    });
+    for (let i = 0; i < merged.length; i++) {
+        seriesMap.set(merged[i].tradeDate, i);
+    }
 
     // Process each dividend entry
-    dividendMap.forEach((dividend, dateStr) => {
+    for (const [dateStr, dividend] of dividendMap.entries()) {
         const convertedDividend =
             currency && currency !== 'USD'
                 ? convertValueToCurrency(dividend, dateStr, currency)
@@ -599,18 +609,19 @@ export function mergeDividendsIntoContribution(
                 sellVolume: convertedDividend,
             });
         }
-    });
+    }
 
     // Re-sort by date
     merged.sort((a, b) => (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0));
 
     // Recalculate cumulative amounts
     let cumulative = 0;
-    merged.forEach((point) => {
+    for (let i = 0; i < merged.length; i++) {
+        const point = merged[i];
         cumulative += point.netAmount;
         point.amount = cumulative;
         point.value = cumulative;
-    });
+    }
 
     return merged;
 }

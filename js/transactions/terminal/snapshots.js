@@ -1157,7 +1157,7 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
             historicalPrices = {};
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal snapshots processing failed:', error);
         historicalPrices = {};
     }
     return historicalPrices;

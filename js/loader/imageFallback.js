@@ -1,4 +1,3 @@
-/* istanbul ignore file */
 /* Simple <img> fallback: looks for data-fallbacks='["url1","url2",...]' */
 (function () {
     try {
@@ -12,7 +11,7 @@
                 list = JSON.parse(listAttr);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Image fallback handling failed:', error);
                 list = [];
             }
             if (!Array.isArray(list) || list.length === 0) {
@@ -45,6 +44,6 @@
         }
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Image fallback handling failed:', error);
     }
 })();

@@ -81,6 +81,8 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
             'Content-Type': 'application/json',
             'X-Content-Type-Options': 'nosniff',
             'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'X-Frame-Options': 'DENY',
             ...corsHeaders(origin),
             ...extraHeaders,
         },
