@@ -1,8 +1,8 @@
 /* global KeyboardEvent */
 import { jest } from '@jest/globals';
-import { initTerminal } from '@js/transactions/terminal.js';
-import { transactionState } from '@js/transactions/state.js';
-import { CURRENCY_SYMBOLS } from '@js/config.js';
+import { initTerminal } from '../../../js/transactions/terminal.js';
+import { transactionState } from '../../../js/transactions/state.js';
+import { CURRENCY_SYMBOLS } from '../../../js/config.js';
 
 function resetTransactionState() {
     transactionState.commandHistory = [];

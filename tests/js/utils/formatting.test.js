@@ -1,6 +1,6 @@
 // File: /Users/lz/dev/fund/js/tests/formatting.test.js
 import * as formatting from '@utils/formatting.js';
-import { CURRENCY_SYMBOLS } from '@js/config.js';
+import { CURRENCY_SYMBOLS } from '../../../js/config.js';
 import fxData from '../data/mock_fx_data.json';
 
 const rates = fxData.rates;

@@ -22,7 +22,7 @@ describe('Yield Chart Rendering & Interaction', () => {
         jest.resetModules();
         jest.clearAllMocks();
 
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawEndValue: jest.fn(),
             drawMountainFill: jest.fn(),
@@ -33,13 +33,13 @@ describe('Yield Chart Rendering & Interaction', () => {
             ]),
         }));
 
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../js/transactions/chart/interaction.js', () => ({
             updateLegend: jest.fn(),
             updateCrosshairUI: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -52,7 +52,7 @@ describe('Yield Chart Rendering & Interaction', () => {
             drawSeriesGlow: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/config.js', () => ({
+        jest.doMock('../../../js/transactions/chart/config.js', () => ({
             CHART_LINE_WIDTHS: { main: 2 },
             mountainFill: { enabled: true },
             BENCHMARK_GRADIENTS: {
@@ -60,7 +60,7 @@ describe('Yield Chart Rendering & Interaction', () => {
             },
         }));
 
-        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+        jest.doMock('../../../js/transactions/chart/helpers.js', () => ({
             getChartColors: jest.fn().mockReturnValue({
                 primary: '#ff0000',
                 secondary: '#00ff00',
@@ -71,7 +71,7 @@ describe('Yield Chart Rendering & Interaction', () => {
             parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
         }));
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: jest.fn((val, date, currency) => {
                 if (currency === 'EUR') {
                     return val * 2;
@@ -82,10 +82,10 @@ describe('Yield Chart Rendering & Interaction', () => {
             formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
         }));
 
-        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
-        const coreModule = await import('@js/transactions/chart/core.js');
-        const interactionModule = await import('@js/transactions/chart/interaction.js');
-        const stateModule = await import('@js/transactions/state.js');
+        const yieldModule = await import('../../../js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('../../../js/transactions/chart/core.js');
+        const interactionModule = await import('../../../js/transactions/chart/interaction.js');
+        const stateModule = await import('../../../js/transactions/state.js');
 
         drawYieldChart = yieldModule.drawYieldChart;
         drawAxes = coreModule.drawAxes;
@@ -142,12 +142,12 @@ describe('Yield Chart Rendering & Interaction', () => {
 
     afterEach(() => {
         jest.resetModules();
-        jest.dontMock('@js/transactions/chart/core.js');
-        jest.dontMock('@js/transactions/chart/interaction.js');
-        jest.dontMock('@js/transactions/chart/animation.js');
-        jest.dontMock('@js/transactions/chart/config.js');
-        jest.dontMock('@js/transactions/chart/helpers.js');
-        jest.dontMock('@js/transactions/utils.js');
+        jest.dontMock('../../../js/transactions/chart/core.js');
+        jest.dontMock('../../../js/transactions/chart/interaction.js');
+        jest.dontMock('../../../js/transactions/chart/animation.js');
+        jest.dontMock('../../../js/transactions/chart/config.js');
+        jest.dontMock('../../../js/transactions/chart/helpers.js');
+        jest.dontMock('../../../js/transactions/utils.js');
     });
 
     test('uses offsetWidth/offsetHeight for logical scaling on High-DPI screens', async () => {
@@ -246,7 +246,7 @@ describe('Yield Chart Right-Axis Alignment', () => {
         jest.clearAllMocks();
         fillTextCalls = [];
 
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawEndValue: jest.fn(),
             drawMountainFill: jest.fn(),
@@ -257,13 +257,13 @@ describe('Yield Chart Right-Axis Alignment', () => {
             ]),
         }));
 
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../js/transactions/chart/interaction.js', () => ({
             updateLegend: jest.fn(),
             updateCrosshairUI: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -276,7 +276,7 @@ describe('Yield Chart Right-Axis Alignment', () => {
             drawSeriesGlow: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/config.js', () => ({
+        jest.doMock('../../../js/transactions/chart/config.js', () => ({
             CHART_LINE_WIDTHS: { main: 2 },
             mountainFill: { enabled: true },
             BENCHMARK_GRADIENTS: {
@@ -284,7 +284,7 @@ describe('Yield Chart Right-Axis Alignment', () => {
             },
         }));
 
-        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+        jest.doMock('../../../js/transactions/chart/helpers.js', () => ({
             getChartColors: jest.fn().mockReturnValue({
                 primary: '#ff0000',
                 secondary: '#00ff00',
@@ -295,7 +295,7 @@ describe('Yield Chart Right-Axis Alignment', () => {
             parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
         }));
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: jest.fn((val, date, currency) => {
                 if (currency === 'EUR') {
                     return val * 2;
@@ -306,8 +306,8 @@ describe('Yield Chart Right-Axis Alignment', () => {
             formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
         }));
 
-        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
-        const coreModule = await import('@js/transactions/chart/core.js');
+        const yieldModule = await import('../../../js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('../../../js/transactions/chart/core.js');
 
         drawYieldChart = yieldModule.drawYieldChart;
         drawAxes = coreModule.drawAxes;
@@ -364,12 +364,12 @@ describe('Yield Chart Right-Axis Alignment', () => {
 
     afterEach(() => {
         jest.resetModules();
-        jest.dontMock('@js/transactions/chart/core.js');
-        jest.dontMock('@js/transactions/chart/interaction.js');
-        jest.dontMock('@js/transactions/chart/animation.js');
-        jest.dontMock('@js/transactions/chart/config.js');
-        jest.dontMock('@js/transactions/chart/helpers.js');
-        jest.dontMock('@js/transactions/utils.js');
+        jest.dontMock('../../../js/transactions/chart/core.js');
+        jest.dontMock('../../../js/transactions/chart/interaction.js');
+        jest.dontMock('../../../js/transactions/chart/animation.js');
+        jest.dontMock('../../../js/transactions/chart/config.js');
+        jest.dontMock('../../../js/transactions/chart/helpers.js');
+        jest.dontMock('../../../js/transactions/utils.js');
     });
 
     test('right-axis has same number of ticks as left-axis', async () => {
@@ -532,7 +532,7 @@ describe('Yield Chart Label Toggle', () => {
         jest.resetModules();
         jest.clearAllMocks();
 
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawEndValue: jest.fn(),
             drawMountainFill: jest.fn(),
@@ -543,13 +543,13 @@ describe('Yield Chart Label Toggle', () => {
             ]),
         }));
 
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../js/transactions/chart/interaction.js', () => ({
             updateLegend: jest.fn(),
             updateCrosshairUI: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -562,7 +562,7 @@ describe('Yield Chart Label Toggle', () => {
             drawSeriesGlow: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/config.js', () => ({
+        jest.doMock('../../../js/transactions/chart/config.js', () => ({
             CHART_LINE_WIDTHS: { main: 2 },
             mountainFill: { enabled: true },
             BENCHMARK_GRADIENTS: {
@@ -570,7 +570,7 @@ describe('Yield Chart Label Toggle', () => {
             },
         }));
 
-        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+        jest.doMock('../../../js/transactions/chart/helpers.js', () => ({
             getChartColors: jest.fn().mockReturnValue({
                 primary: '#ff0000',
                 secondary: '#00ff00',
@@ -581,7 +581,7 @@ describe('Yield Chart Label Toggle', () => {
             parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
         }));
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: jest.fn((val, date, currency) => {
                 if (currency === 'EUR') {
                     return val * 2;
@@ -592,9 +592,9 @@ describe('Yield Chart Label Toggle', () => {
             formatCurrencyInline: jest.fn((val, { currency }) => `${val} ${currency}`),
         }));
 
-        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
-        const coreModule = await import('@js/transactions/chart/core.js');
-        const stateModule = await import('@js/transactions/state.js');
+        const yieldModule = await import('../../../js/transactions/chart/renderers/yield.js');
+        const coreModule = await import('../../../js/transactions/chart/core.js');
+        const stateModule = await import('../../../js/transactions/state.js');
 
         drawYieldChart = yieldModule.drawYieldChart;
         drawEndValue = coreModule.drawEndValue;
@@ -651,12 +651,12 @@ describe('Yield Chart Label Toggle', () => {
 
     afterEach(() => {
         jest.resetModules();
-        jest.dontMock('@js/transactions/chart/core.js');
-        jest.dontMock('@js/transactions/chart/interaction.js');
-        jest.dontMock('@js/transactions/chart/animation.js');
-        jest.dontMock('@js/transactions/chart/config.js');
-        jest.dontMock('@js/transactions/chart/helpers.js');
-        jest.dontMock('@js/transactions/utils.js');
+        jest.dontMock('../../../js/transactions/chart/core.js');
+        jest.dontMock('../../../js/transactions/chart/interaction.js');
+        jest.dontMock('../../../js/transactions/chart/animation.js');
+        jest.dontMock('../../../js/transactions/chart/config.js');
+        jest.dontMock('../../../js/transactions/chart/helpers.js');
+        jest.dontMock('../../../js/transactions/utils.js');
         // Reset state to default
         transactionState.showChartLabels = true;
     });

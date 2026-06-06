@@ -3,10 +3,10 @@ import {
     parseCommandPalette,
     deriveCompositionTickerFilters,
     matchesAssetClass,
-} from '@js/transactions/table/parser.js';
-import * as config from '@js/config.js';
+} from '../../../js/transactions/table/parser.js';
+import * as config from '../../../js/config.js';
 
-jest.mock('@js/config.js');
+jest.mock('../../../js/config.js');
 
 describe('normalizeTickerToken', () => {
     it('normalizes standard tokens', () => {

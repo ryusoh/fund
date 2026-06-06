@@ -25,20 +25,20 @@ describe('Concentration Chart Renderer', () => {
             series: { AAPL: [100] },
         });
 
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/state.js', () => ({
             transactionState: {
                 chartDateRange: { from: null, to: null },
             },
         }));
-        jest.doMock('@js/transactions/chart/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: {},
         }));
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/interaction.js', () => ({
             updateCrosshairUI: jest.fn(),
             updateLegend: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -49,26 +49,26 @@ describe('Concentration Chart Renderer', () => {
             scheduleConcentrationAnimation: jest.fn(),
             drawSeriesGlow: jest.fn(),
         }));
-        jest.doMock('@js/transactions/dataLoader.js', () => ({
+        jest.doMock('../../../../../js/transactions/dataLoader.js', () => ({
             loadCompositionSnapshotData,
         }));
-        jest.doMock('@js/utils/logger.js', () => ({
+        jest.doMock('../../../../../js/utils/logger.js', () => ({
             logger: { warn: jest.fn() },
         }));
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawMountainFill: jest.fn(),
             drawEndValue: jest.fn(),
         }));
-        jest.doMock('@js/config.js', () => ({
+        jest.doMock('../../../../../js/config.js', () => ({
             mountainFill: { enabled: true },
             CHART_LINE_WIDTHS: { contribution: 2 },
             BENCHMARK_GRADIENTS: { '^LZ': ['#fff', '#000'] },
         }));
-        jest.doMock('@js/utils/colors.js', () => ({
+        jest.doMock('../../../../../js/utils/colors.js', () => ({
             getChartColors: jest.fn(() => ({ portfolio: '#fff' })),
         }));
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../../../js/transactions/utils.js', () => ({
             parseLocalDate: jest.fn((date) => {
                 if (date === 'invalid') {
                     return new Date('invalid');
@@ -76,10 +76,10 @@ describe('Concentration Chart Renderer', () => {
                 return new Date(date);
             }),
         }));
-        jest.doMock('@js/utils/date.js', () => ({
+        jest.doMock('../../../../../js/utils/date.js', () => ({
             clampTime: jest.fn((val) => val),
         }));
-        jest.doMock('@js/utils/smoothing.js', () => ({
+        jest.doMock('../../../../../js/utils/smoothing.js', () => ({
             createTimeInterpolator: jest.fn(() => jest.fn()),
         }));
 
@@ -90,7 +90,7 @@ describe('Concentration Chart Renderer', () => {
             })
         );
 
-        const module = await import('@js/transactions/chart/renderers/concentration.js');
+        const module = await import('../../../../../js/transactions/chart/renderers/concentration.js');
         drawConcentrationChart = module.drawConcentrationChart;
         buildConcentrationSeries = module.buildConcentrationSeries;
     });

@@ -15,8 +15,8 @@ describe('perlin-plane lazy loading', () => {
         }));
 
         // Ensure PERLIN_BACKGROUND_SETTINGS.enabled is false (it is by default in config)
-        jest.mock('@js/config.js', () => {
-            const actual = jest.requireActual('@js/config.js');
+        jest.mock('../../../../js/config.js', () => {
+            const actual = jest.requireActual('../../../../js/config.js');
             return {
                 ...actual,
                 PERLIN_BACKGROUND_SETTINGS: {
@@ -27,7 +27,7 @@ describe('perlin-plane lazy loading', () => {
         });
 
         // Minimal mocks to allow module to load
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../js/transactions/state.js', () => ({
             setAllTransactions: jest.fn(),
             setFilteredTransactions: jest.fn(),
             setSplitHistory: jest.fn(),
@@ -48,7 +48,7 @@ describe('perlin-plane lazy loading', () => {
             },
         }));
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../js/transactions/dataLoader.js', () => ({
             loadTransactionData: jest.fn().mockResolvedValue([]),
             loadSplitHistory: jest.fn().mockResolvedValue([]),
             loadPortfolioSeries: jest.fn().mockResolvedValue({}),
@@ -57,7 +57,7 @@ describe('perlin-plane lazy loading', () => {
             loadFxDailyRates: jest.fn().mockResolvedValue(null),
         }));
 
-        jest.mock('@js/transactions/utils.js', () => ({
+        jest.mock('../../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: jest.fn((v) => v),
             formatCurrency: jest.fn(),
         }));
@@ -83,7 +83,7 @@ describe('Terminal index page', () => {
         `;
 
         // Mock convertValueToCurrency so we can test convertCurrencySeries logic in isolation
-        jest.mock('@js/transactions/utils.js', () => ({
+        jest.mock('../../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: jest.fn((value, date, currency) => {
                 if (currency === 'EUR') {
                     return value * 0.9;
@@ -94,7 +94,7 @@ describe('Terminal index page', () => {
             isDarkTheme: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../js/transactions/state.js', () => ({
             setAllTransactions: jest.fn(),
             setFilteredTransactions: jest.fn(),
             setSplitHistory: jest.fn(),
@@ -113,7 +113,7 @@ describe('Terminal index page', () => {
             },
         }));
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../js/transactions/dataLoader.js', () => ({
             loadTransactionData: jest.fn().mockResolvedValue([]),
             loadSplitHistory: jest.fn().mockResolvedValue([]),
             loadPortfolioSeries: jest.fn().mockResolvedValue({}),

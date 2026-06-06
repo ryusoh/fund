@@ -9,7 +9,7 @@ describe('getConcentrationText', () => {
             }),
         });
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
             loadCompositionSnapshotData: jest.fn().mockResolvedValue({
                 dates: ['2023-01-01'],
                 composition: {
@@ -20,7 +20,7 @@ describe('getConcentrationText', () => {
             }),
         }));
 
-        jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
+        jest.mock('../../../../../js/transactions/terminal/stats/formatting.js', () => ({
             renderAsciiTable: jest.fn().mockReturnValue('MOCK_TABLE'),
             formatTicker: jest.fn((t) => t),
             formatPercent: jest.fn((p) => `${(p * 100).toFixed(1)}%`),
@@ -32,11 +32,11 @@ describe('getConcentrationText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getConcentrationText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getConcentrationText();
         expect(result).toBe(
             'Composition snapshot unavailable. Run `plot composition` first to generate this data.'
@@ -44,7 +44,7 @@ describe('getConcentrationText', () => {
     });
 
     it('returns error if no positive weights', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         // Need to provide a snapshot that getLatestCompositionSnapshot will parse,
         // but results in holdings with 0 weights
         loadCompositionSnapshotData.mockResolvedValueOnce({
@@ -55,7 +55,7 @@ describe('getConcentrationText', () => {
         });
 
         const { getConcentrationText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getConcentrationText();
         // Since getLatestCompositionSnapshot itself filters out <=0 values, it returns null
         // if no positive weights exist at all in any date.
@@ -66,14 +66,14 @@ describe('getConcentrationText', () => {
 
     it('calculates HHI and returns formatted tables', async () => {
         const { getConcentrationText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getConcentrationText();
 
         expect(result).toContain('MOCK_TABLE');
 
         // Ensure formatting functions were called
         const { renderAsciiTable, formatPercent } =
-            await import('@js/transactions/terminal/stats/formatting.js');
+            await import('../../../../../js/transactions/terminal/stats/formatting.js');
         expect(renderAsciiTable).toHaveBeenCalledTimes(2);
         expect(formatPercent).toHaveBeenCalled();
 
@@ -84,7 +84,7 @@ describe('getConcentrationText', () => {
     it('handles fetch failure for ETF HHI data', async () => {
         global.fetch = jest.fn().mockResolvedValue({ ok: false });
         const { getConcentrationText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getConcentrationText();
         expect(result).toContain('MOCK_TABLE');
         expect(result).toContain('VT=4019'); // Fallback value
@@ -102,11 +102,11 @@ describe('getDurationStatsText', () => {
                 splitHistory: [],
             },
         };
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../../js/transactions/state.js', () => ({
             transactionState: mockState.transactionState,
         }));
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
             loadCompositionSnapshotData: jest.fn().mockResolvedValue({
                 dates: ['2023-01-01'],
                 composition: {
@@ -115,7 +115,7 @@ describe('getDurationStatsText', () => {
             }),
         }));
 
-        jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
+        jest.mock('../../../../../js/transactions/terminal/stats/formatting.js', () => ({
             renderAsciiTable: jest.fn().mockReturnValue('MOCK_DURATION_TABLE'),
             formatDurationLabel: jest.fn((d) => `${d}d`),
             formatYearsValue: jest.fn((y) => `${y}y`),
@@ -130,11 +130,11 @@ describe('getDurationStatsText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getDurationStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getDurationStatsText();
         expect(result).toBe(
             'Composition snapshot unavailable. Run `plot composition` first to generate this data.'
@@ -143,7 +143,7 @@ describe('getDurationStatsText', () => {
 
     it('returns error if no transaction data is available', async () => {
         const { getDurationStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getDurationStatsText();
         expect(result).toBe(
             'Transaction history not loaded yet, unable to compute holding durations.'
@@ -161,11 +161,11 @@ describe('getDurationStatsText', () => {
         ];
 
         const { getDurationStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getDurationStatsText();
         expect(result).toContain('MOCK_DURATION_TABLE');
 
-        const { renderAsciiTable } = await import('@js/transactions/terminal/stats/formatting.js');
+        const { renderAsciiTable } = await import('../../../../../js/transactions/terminal/stats/formatting.js');
         expect(renderAsciiTable).toHaveBeenCalledTimes(2);
     });
 });
@@ -181,11 +181,11 @@ describe('getLifespanStatsText', () => {
                 splitHistory: [],
             },
         };
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../../js/transactions/state.js', () => ({
             transactionState: mockState.transactionState,
         }));
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
             loadCompositionSnapshotData: jest.fn().mockResolvedValue({
                 dates: ['2023-01-01'],
                 composition: {
@@ -194,7 +194,7 @@ describe('getLifespanStatsText', () => {
             }),
         }));
 
-        jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
+        jest.mock('../../../../../js/transactions/terminal/stats/formatting.js', () => ({
             renderAsciiTable: jest.fn().mockReturnValue('MOCK_LIFESPAN_TABLE'),
             formatDurationLabel: jest.fn((d) => `${d}d`),
             formatYearsValue: jest.fn((y) => `${y}y`),
@@ -209,11 +209,11 @@ describe('getLifespanStatsText', () => {
     });
 
     it('returns error if no snapshot is available', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { getLifespanStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getLifespanStatsText();
         expect(result).toBe(
             'Composition snapshot unavailable. Run `plot composition` first to generate this data.'
@@ -222,7 +222,7 @@ describe('getLifespanStatsText', () => {
 
     it('returns error if no transaction data is available', async () => {
         const { getLifespanStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getLifespanStatsText();
         expect(result).toBe(
             'Transaction history not loaded yet, unable to compute holding lifespans.'
@@ -240,11 +240,11 @@ describe('getLifespanStatsText', () => {
         ];
 
         const { getLifespanStatsText } =
-            await import('@js/transactions/terminal/stats/analysis.js');
+            await import('../../../../../js/transactions/terminal/stats/analysis.js');
         const result = await getLifespanStatsText();
         expect(result).toContain('MOCK_LIFESPAN_TABLE');
 
-        const { renderAsciiTable } = await import('@js/transactions/terminal/stats/formatting.js');
+        const { renderAsciiTable } = await import('../../../../../js/transactions/terminal/stats/formatting.js');
         // Called for summary table and open table
         expect(renderAsciiTable).toHaveBeenCalledTimes(2);
     });

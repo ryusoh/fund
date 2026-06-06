@@ -21,37 +21,37 @@ describe('Geography Chart Renderer', () => {
 
         loadGeographySnapshotData = jest.fn();
 
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/state.js', () => ({
             transactionState: {
                 chartDateRange: { from: null, to: null },
                 selectedCurrency: 'USD',
             },
         }));
-        jest.doMock('@js/transactions/chart/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: {},
         }));
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/interaction.js', () => ({
             updateCrosshairUI: jest.fn(),
             updateLegend: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
             stopPeAnimation: jest.fn(),
             stopConcentrationAnimation: jest.fn(),
         }));
-        jest.doMock('@js/transactions/dataLoader.js', () => ({
+        jest.doMock('../../../../../js/transactions/dataLoader.js', () => ({
             loadGeographySnapshotData,
         }));
-        jest.doMock('@js/utils/logger.js', () => ({
+        jest.doMock('../../../../../js/utils/logger.js', () => ({
             logger: { warn: jest.fn() },
         }));
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
         }));
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../../../js/transactions/utils.js', () => ({
             parseLocalDate: jest.fn((date) => {
                 if (date === 'invalid') {
                     return new Date('invalid');
@@ -63,14 +63,14 @@ describe('Geography Chart Renderer', () => {
             formatCurrencyInlineValue: jest.fn((val) => `$${val}`),
             formatPercentInline: jest.fn((val) => `${val}%`),
         }));
-        jest.doMock('@js/utils/date.js', () => ({
+        jest.doMock('../../../../../js/utils/date.js', () => ({
             clampTime: jest.fn((val) => val),
         }));
-        jest.doMock('@js/utils/smoothing.js', () => ({
+        jest.doMock('../../../../../js/utils/smoothing.js', () => ({
             createTimeInterpolator: jest.fn(() => jest.fn()),
         }));
 
-        const module = await import('@js/transactions/chart/renderers/geography.js');
+        const module = await import('../../../../../js/transactions/chart/renderers/geography.js');
         drawGeographyChart = module.drawGeographyChart;
         drawGeographyAbsoluteChart = module.drawGeographyAbsoluteChart;
     });
@@ -148,7 +148,7 @@ describe('Geography Chart Renderer', () => {
     });
 
     it('filters dates correctly', async () => {
-        const mockState = require('@js/transactions/state.js').transactionState;
+        const mockState = require('../../../../../js/transactions/state.js').transactionState;
         mockState.chartDateRange = { from: '2023-01-02', to: '2023-01-03' };
 
         const mockData = {
@@ -167,7 +167,7 @@ describe('Geography Chart Renderer', () => {
     });
 
     it('handles empty filtered dates array safely', async () => {
-        const mockState = require('@js/transactions/state.js').transactionState;
+        const mockState = require('../../../../../js/transactions/state.js').transactionState;
         mockState.chartDateRange = { from: '2023-02-01', to: '2023-02-02' };
 
         const mockData = {

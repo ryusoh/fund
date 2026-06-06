@@ -49,7 +49,7 @@ describe('Misc Command Handlers', () => {
             const filterAndSort = jest.fn();
             const chartManager = { update: jest.fn() };
 
-            const { handleAllCommand } = await import('@js/transactions/terminal/handlers/misc.js');
+            const { handleAllCommand } = await import('../../../../../js/transactions/terminal/handlers/misc.js');
 
             // Act
             await handleAllCommand([], {

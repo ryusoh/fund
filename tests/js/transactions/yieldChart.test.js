@@ -4,17 +4,17 @@ import { jest } from '@jest/globals';
 jest.setTimeout(30000);
 
 // Mock essential modules
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => ({
+jest.mock('../../../js/transactions/terminalStats.js', () => ({
     getStatsText: jest.fn(),
     getDynamicStatsText: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/renderers/yield.js', () => {
+jest.mock('../../../js/transactions/chart/renderers/yield.js', () => {
     return {
         loadYieldData: jest.fn(),
         drawYieldChart: jest.fn(),
@@ -25,7 +25,7 @@ let transactionState;
 let loadYieldDataMock;
 
 function resetTransactionState() {
-    transactionState = require('@js/transactions/state.js').transactionState;
+    transactionState = require('../../../js/transactions/state.js').transactionState;
     transactionState.commandHistory = [];
     transactionState.historyIndex = -1;
     transactionState.activeChart = null;
@@ -61,8 +61,8 @@ async function initTerminalSession() {
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
     }
 
-    const { initTerminal } = require('@js/transactions/terminal.js');
-    const { filterAndSort } = require('@js/transactions/table.js').initTable({
+    const { initTerminal } = require('../../../js/transactions/terminal.js');
+    const { filterAndSort } = require('../../../js/transactions/table.js').initTable({
         onFilterChange: () => {},
     });
 
@@ -98,7 +98,7 @@ describe('Yield Chart Terminal Integration', () => {
 
     beforeEach(async () => {
         jest.resetModules();
-        const yieldMod = await import('@js/transactions/chart/renderers/yield.js');
+        const yieldMod = await import('../../../js/transactions/chart/renderers/yield.js');
         loadYieldDataMock = yieldMod.loadYieldData;
         loadYieldDataMock.mockResolvedValue(mockData);
     });

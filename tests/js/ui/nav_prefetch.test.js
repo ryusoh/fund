@@ -115,7 +115,7 @@ describe('nav_prefetch.js', () => {
 
     function loadScript() {
         jest.isolateModules(() => {
-            require('@js/ui/nav_prefetch.js');
+            require('../../../js/ui/nav_prefetch.js');
         });
     }
 

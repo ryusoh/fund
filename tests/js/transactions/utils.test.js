@@ -7,8 +7,8 @@ import {
     convertBetweenCurrencies,
     convertValueToCurrency,
     clearFxRateCache,
-} from '@js/transactions/utils.js';
-import { transactionState } from '@js/transactions/state.js';
+} from '../../../js/transactions/utils.js';
+import { transactionState } from '../../../js/transactions/state.js';
 
 describe('formatCurrencyCompact', () => {
     test('uses B suffix for KRW when value exceeds one billion', () => {

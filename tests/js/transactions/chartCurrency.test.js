@@ -16,7 +16,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             return Number(val);
         });
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: mockConvertValueToCurrency,
             formatCurrencyCompact: jest.fn(),
             formatCurrencyInlineValue: jest.fn(),
@@ -57,7 +57,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             splitHistory: [],
         };
 
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../js/transactions/state.js', () => ({
             transactionState,
             setChartVisibility: jest.fn(),
             setHistoricalPrices: jest.fn(),
@@ -73,7 +73,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             }),
         }));
 
-        jest.doMock('@js/config.js', () => ({
+        jest.doMock('../../../js/config.js', () => ({
             ANIMATED_LINE_SETTINGS: {},
             CHART_SMOOTHING: { enabled: false }, // Disable smoothing to simplify data flow
             CHART_MARKERS: {},
@@ -86,7 +86,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         }));
 
         // Mock chart/config.js for contribution.js renderer
-        jest.doMock('@js/transactions/chart/config.js', () => ({
+        jest.doMock('../../../js/transactions/chart/config.js', () => ({
             BALANCE_GRADIENTS: {
                 contribution: ['#4CAF50', '#81C784'],
                 balance: ['#2196F3', '#64B5F6'],
@@ -98,7 +98,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             FX_GRADIENTS: {},
         }));
 
-        jest.doMock('@js/plugins/glowTrailAnimator.js', () => ({
+        jest.doMock('../../../js/plugins/glowTrailAnimator.js', () => ({
             createGlowTrailAnimator: jest.fn(() => ({
                 isEnabledFor: jest.fn(),
                 stop: jest.fn(),
@@ -108,11 +108,11 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
             })),
         }));
 
-        jest.doMock('@js/utils/smoothing.js', () => ({
+        jest.doMock('../../../js/utils/smoothing.js', () => ({
             smoothFinancialData: jest.fn((data) => data.map((p) => ({ x: p.x, y: p.y }))), // Identity pass-through
         }));
 
-        jest.doMock('@js/transactions/chart/renderers/yield.js', () => ({
+        jest.doMock('../../../js/transactions/chart/renderers/yield.js', () => ({
             getCachedYieldData: jest.fn(() => null),
             loadYieldData: jest.fn(() => Promise.resolve(null)),
         }));
@@ -160,7 +160,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         };
 
         // Load the module under test
-        const chartModule = require('@js/transactions/chart.js');
+        const chartModule = require('../../../js/transactions/chart.js');
         createChartManager = chartModule.createChartManager;
     });
 
@@ -369,7 +369,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             return Number(val);
         });
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: mockConvertValueToCurrency,
             formatCurrencyCompact: jest.fn(),
             formatCurrencyInlineValue: jest.fn(),
@@ -407,7 +407,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             splitHistory: [],
         };
 
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../js/transactions/state.js', () => ({
             transactionState,
             setChartVisibility: jest.fn(),
             setHistoricalPrices: jest.fn(),
@@ -423,7 +423,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             }),
         }));
 
-        jest.doMock('@js/config.js', () => ({
+        jest.doMock('../../../js/config.js', () => ({
             ANIMATED_LINE_SETTINGS: {},
             CHART_SMOOTHING: { enabled: false },
             CHART_MARKERS: {},
@@ -435,7 +435,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             getHoldingAssetClass: jest.fn(),
         }));
 
-        jest.doMock('@js/transactions/chart/config.js', () => ({
+        jest.doMock('../../../js/transactions/chart/config.js', () => ({
             BALANCE_GRADIENTS: {
                 contribution: ['#4CAF50', '#81C784'],
                 balance: ['#2196F3', '#64B5F6'],
@@ -447,7 +447,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             FX_GRADIENTS: {},
         }));
 
-        jest.doMock('@js/plugins/glowTrailAnimator.js', () => ({
+        jest.doMock('../../../js/plugins/glowTrailAnimator.js', () => ({
             createGlowTrailAnimator: jest.fn(() => ({
                 isEnabledFor: jest.fn(),
                 stop: jest.fn(),
@@ -457,7 +457,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             })),
         }));
 
-        jest.doMock('@js/utils/smoothing.js', () => ({
+        jest.doMock('../../../js/utils/smoothing.js', () => ({
             smoothFinancialData: jest.fn((data) => data.map((p) => ({ x: p.x, y: p.y }))),
         }));
 
@@ -502,7 +502,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
             return 1;
         };
 
-        const chartModule = require('@js/transactions/chart.js');
+        const chartModule = require('../../../js/transactions/chart.js');
         createChartManager = chartModule.createChartManager;
     });
 
@@ -549,7 +549,7 @@ describe('Regression: DrawdownAbs Currency Scaling', () => {
         ];
 
         // Mock that filters are now active
-        const stateModule = require('@js/transactions/state.js');
+        const stateModule = require('../../../js/transactions/state.js');
         stateModule.hasActiveTransactionFilters.mockReturnValue(true);
 
         const chartManager = createChartManager();

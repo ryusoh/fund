@@ -1,36 +1,36 @@
 import { jest } from '@jest/globals';
-import { drawFxChart, buildFxChartSeries } from '@js/transactions/chart/renderers/fx.js';
-import { transactionState } from '@js/transactions/state.js';
-import { chartLayouts } from '@js/transactions/chart/state.js';
-import { createTimeInterpolator } from '@js/transactions/chart/helpers.js';
+import { drawFxChart, buildFxChartSeries } from '../../../js/transactions/chart/renderers/fx.js';
+import { transactionState } from '../../../js/transactions/state.js';
+import { chartLayouts } from '../../../js/transactions/chart/state.js';
+import { createTimeInterpolator } from '../../../js/transactions/chart/helpers.js';
 
 // Mock helpers
-jest.mock('@js/transactions/chart/helpers.js', () => ({
+jest.mock('../../../js/transactions/chart/helpers.js', () => ({
     getChartColors: jest.fn().mockReturnValue({ fx: '#000000', grid: '#cccccc' }),
     createTimeInterpolator: jest.fn(),
     clampTime: jest.fn(),
-    parseLocalDate: jest.requireActual('@js/transactions/chart/helpers.js').parseLocalDate,
+    parseLocalDate: jest.requireActual('../../../js/transactions/chart/helpers.js').parseLocalDate,
     getSmoothingConfig: jest.fn().mockReturnValue({ enabled: false }),
 }));
 
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../js/transactions/utils.js', () => ({
     convertBetweenCurrencies: jest.fn().mockReturnValue(1.5),
 }));
 
-jest.mock('@js/transactions/chart/core.js', () => ({
+jest.mock('../../../js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawEndValue: jest.fn(),
     computePercentTickInfo: jest.fn().mockReturnValue({ ticks: [0, 10, 20], range: 20 }),
     drawMountainFill: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/interaction.js', () => ({
+jest.mock('../../../js/transactions/chart/interaction.js', () => ({
     updateCrosshairUI: jest.fn(),
     updateLegend: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/animation.js', () => ({
+jest.mock('../../../js/transactions/chart/animation.js', () => ({
     stopFxAnimation: jest.fn(),
     isAnimationEnabled: jest.fn().mockReturnValue(false),
     advanceFxAnimation: jest.fn().mockReturnValue(1),

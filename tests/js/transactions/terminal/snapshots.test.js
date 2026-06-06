@@ -1,21 +1,21 @@
-import { getYieldSnapshotLine, getFxSnapshotLine } from '@js/transactions/terminal/snapshots.js';
-import { transactionState } from '@js/transactions/state.js';
-import { loadYieldData } from '@js/transactions/chart/renderers/yield.js';
-import { buildFxChartSeries } from '@js/transactions/chart/renderers/fx.js';
+import { getYieldSnapshotLine, getFxSnapshotLine } from '../../../../js/transactions/terminal/snapshots.js';
+import { transactionState } from '../../../../js/transactions/state.js';
+import { loadYieldData } from '../../../../js/transactions/chart/renderers/yield.js';
+import { buildFxChartSeries } from '../../../../js/transactions/chart/renderers/fx.js';
 
-jest.mock('@js/transactions/chart/renderers/yield.js', () => ({
+jest.mock('../../../../js/transactions/chart/renderers/yield.js', () => ({
     loadYieldData: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/renderers/fx.js', () => ({
+jest.mock('../../../../js/transactions/chart/renderers/fx.js', () => ({
     buildFxChartSeries: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/helpers.js', () => ({
+jest.mock('../../../../js/transactions/chart/helpers.js', () => ({
     parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
 }));
 
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../js/transactions/utils.js', () => ({
     formatCurrency: jest.fn((val, { currency }) => `${val} ${currency} formatted`),
     convertValueToCurrency: jest.fn((val, date, currency) => {
         if (currency === 'EUR') {
@@ -136,19 +136,19 @@ describe('getPESnapshotLine', () => {
 
     beforeEach(async () => {
         jest.resetModules();
-        jest.mock('@js/transactions/chart/renderers/pe.js', () => ({
+        jest.mock('../../../../js/transactions/chart/renderers/pe.js', () => ({
             loadPEData: jest.fn(),
             buildPESeries: jest.fn(),
         }));
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../js/transactions/state.js', () => ({
             transactionState: { chartDateRange: { from: null, to: null } },
         }));
-        jest.mock('@js/transactions/chart/helpers.js', () => ({
+        jest.mock('../../../../js/transactions/chart/helpers.js', () => ({
             parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
         }));
 
-        loadPEData = (await import('@js/transactions/chart/renderers/pe.js')).loadPEData;
-        const { buildPESeries } = await import('@js/transactions/chart/renderers/pe.js');
+        loadPEData = (await import('../../../../js/transactions/chart/renderers/pe.js')).loadPEData;
+        const { buildPESeries } = await import('../../../../js/transactions/chart/renderers/pe.js');
 
         buildPESeries.mockImplementation((dates, portfolioPEs, tickerPEs, weights, from, to) => {
             const result = [];
@@ -165,7 +165,7 @@ describe('getPESnapshotLine', () => {
             return result;
         });
 
-        getPESnapshotLine = (await import('@js/transactions/terminal/snapshots.js'))
+        getPESnapshotLine = (await import('../../../../js/transactions/terminal/snapshots.js'))
             .getPESnapshotLine;
     });
 
@@ -185,7 +185,7 @@ describe('getPESnapshotLine', () => {
 
     it('returns "No PE data in range" when series is empty', async () => {
         loadPEData.mockResolvedValue({ dates: ['2024-01-01'], portfolio_pe: [15] });
-        const { transactionState } = await import('@js/transactions/state.js');
+        const { transactionState } = await import('../../../../js/transactions/state.js');
         transactionState.chartDateRange = { from: '2025-01-01', to: '2025-02-01' };
 
         const result = await getPESnapshotLine();
@@ -229,26 +229,26 @@ describe('getContributionSummaryText', () => {
     beforeEach(async () => {
         jest.resetModules();
 
-        jest.mock('@js/transactions/chart/renderers/yield.js', () => ({
+        jest.mock('../../../../js/transactions/chart/renderers/yield.js', () => ({
             loadYieldData: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/data/contribution.js', () => ({
+        jest.mock('../../../../js/transactions/chart/data/contribution.js', () => ({
             buildFilteredBalanceSeries: jest.fn(),
             buildContributionSeriesFromTransactions: jest.fn(),
             getContributionSeriesForTransactions: jest.fn(),
             mergeDividendsIntoContribution: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/renderers/fx.js', () => ({
+        jest.mock('../../../../js/transactions/chart/renderers/fx.js', () => ({
             buildFxChartSeries: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/renderers/drawdown.js', () => ({
+        jest.mock('../../../../js/transactions/chart/renderers/drawdown.js', () => ({
             buildDrawdownSeries: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../js/transactions/state.js', () => ({
             transactionState: {
                 chartDateRange: { from: null, to: null },
                 selectedCurrency: 'USD',
@@ -262,27 +262,27 @@ describe('getContributionSummaryText', () => {
             hasActiveTransactionFilters: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/utils.js', () => ({
+        jest.mock('../../../../js/transactions/utils.js', () => ({
             formatCurrency: jest.fn((val) => `$${val.toFixed(2)}`),
             convertValueToCurrency: jest.fn((val) => val),
             convertBetweenCurrencies: jest.fn(),
             formatCurrencyInline: jest.fn(),
         }));
 
-        const yieldModule = await import('@js/transactions/chart/renderers/yield.js');
+        const yieldModule = await import('../../../../js/transactions/chart/renderers/yield.js');
         loadYieldData = yieldModule.loadYieldData;
 
-        const stateModule = await import('@js/transactions/state.js');
+        const stateModule = await import('../../../../js/transactions/state.js');
         hasActiveTransactionFilters = stateModule.hasActiveTransactionFilters;
         transactionState = stateModule.transactionState;
 
-        const contribModule = await import('@js/transactions/chart/data/contribution.js');
+        const contribModule = await import('../../../../js/transactions/chart/data/contribution.js');
         buildFilteredBalanceSeries = contribModule.buildFilteredBalanceSeries;
         buildContributionSeriesFromTransactions =
             contribModule.buildContributionSeriesFromTransactions;
         mergeDividendsIntoContribution = contribModule.mergeDividendsIntoContribution;
 
-        const snapshotsModule = await import('@js/transactions/terminal/snapshots.js');
+        const snapshotsModule = await import('../../../../js/transactions/terminal/snapshots.js');
         getContributionSummaryText = snapshotsModule.getContributionSummaryText;
     });
 

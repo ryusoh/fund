@@ -1,6 +1,6 @@
 /* global document */
 import { jest } from '@jest/globals';
-import { transactionState, setZoomed, isZoomed } from '@js/transactions/state.js';
+import { transactionState, setZoomed, isZoomed } from '../../../js/transactions/state.js';
 
 // Mock GSAP
 const timelineMock = {
@@ -125,11 +125,11 @@ describe('toggleZoom function', () => {
         };
 
         // Import state and zoom from the same module cache
-        stateModule = await import('@js/transactions/state.js');
+        stateModule = await import('../../../js/transactions/state.js');
         stateModule.transactionState.isZoomed = false;
 
         // Dynamic import after mocks are set up
-        const zoomModule = await import('@js/transactions/zoom.js');
+        const zoomModule = await import('../../../js/transactions/zoom.js');
         toggleZoom = zoomModule.toggleZoom;
     });
 
@@ -299,10 +299,10 @@ describe('zoom CSS classes', () => {
             set: jest.fn(),
         };
 
-        stateModule = await import('@js/transactions/state.js');
+        stateModule = await import('../../../js/transactions/state.js');
         stateModule.transactionState.isZoomed = false;
 
-        const zoomModule = await import('@js/transactions/zoom.js');
+        const zoomModule = await import('../../../js/transactions/zoom.js');
         toggleZoom = zoomModule.toggleZoom;
     });
 
@@ -350,10 +350,10 @@ describe('getZoomState function', () => {
     beforeEach(async () => {
         jest.resetModules();
 
-        stateModule = await import('@js/transactions/state.js');
+        stateModule = await import('../../../js/transactions/state.js');
         stateModule.transactionState.isZoomed = false;
 
-        const zoomModule = await import('@js/transactions/zoom.js');
+        const zoomModule = await import('../../../js/transactions/zoom.js');
         getZoomState = zoomModule.getZoomState;
     });
 

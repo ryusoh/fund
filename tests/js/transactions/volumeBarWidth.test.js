@@ -9,12 +9,12 @@ describe('Volume bar width and centering', () => {
         jest.resetModules();
 
         // Mock drawAxes and drawMarker used by contributionComponents
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawMarker: jest.fn(),
         }));
 
-        const mod = require('@js/transactions/chart/renderers/contributionComponents.js');
+        const mod = require('../../../js/transactions/chart/renderers/contributionComponents.js');
         drawVolumeChart = mod.drawVolumeChart;
 
         fillRectCalls = [];

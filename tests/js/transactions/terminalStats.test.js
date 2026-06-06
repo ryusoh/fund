@@ -1,10 +1,10 @@
-import * as terminalStats from '@js/transactions/terminalStats.js';
-import * as formatting from '@js/transactions/terminal/stats/formatting.js';
-import * as transactions from '@js/transactions/terminal/stats/transactions.js';
-import * as holdings from '@js/transactions/terminal/stats/holdings.js';
-import * as financial from '@js/transactions/terminal/stats/financial.js';
-import * as staticStats from '@js/transactions/terminal/stats/static.js';
-import * as analysis from '@js/transactions/terminal/stats/analysis.js';
+import * as terminalStats from '../../../js/transactions/terminalStats.js';
+import * as formatting from '../../../js/transactions/terminal/stats/formatting.js';
+import * as transactions from '../../../js/transactions/terminal/stats/transactions.js';
+import * as holdings from '../../../js/transactions/terminal/stats/holdings.js';
+import * as financial from '../../../js/transactions/terminal/stats/financial.js';
+import * as staticStats from '../../../js/transactions/terminal/stats/static.js';
+import * as analysis from '../../../js/transactions/terminal/stats/analysis.js';
 
 describe('terminalStats exports', () => {
     it('re-exports formatting functions', () => {

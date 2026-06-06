@@ -1,7 +1,7 @@
 import {
     aggregateCompositionSeries,
     buildCompositionDisplayOrder,
-} from '@js/transactions/chart/renderers/composition.js';
+} from '../../../../../js/transactions/chart/renderers/composition.js';
 
 describe('aggregateCompositionSeries', () => {
     it('returns null for invalid inputs', () => {
@@ -89,12 +89,12 @@ describe('drawCompositionChart', () => {
             transactionState: { chartDateRange: {} },
             chartLayouts: {},
         };
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../../js/transactions/state.js', () => ({
             transactionState: mockState.transactionState,
             getCompositionFilterTickers: jest.fn().mockReturnValue([]),
             getCompositionAssetClassFilter: jest.fn().mockReturnValue(null),
         }));
-        jest.mock('@js/transactions/chart/state.js', () => ({
+        jest.mock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: mockState.chartLayouts,
         }));
 
@@ -109,7 +109,7 @@ describe('drawCompositionChart', () => {
         };
         mockChartManager = { redraw: jest.fn() };
 
-        jest.mock('@js/transactions/dataLoader.js', () => ({
+        jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
             loadCompositionSnapshotData: jest.fn().mockResolvedValue({
                 dates: ['2023-01-01', '2023-01-02'],
                 total_values: [1000, 2000],
@@ -119,17 +119,17 @@ describe('drawCompositionChart', () => {
             }),
         }));
 
-        jest.mock('@js/transactions/chart/core.js', () => ({
+        jest.mock('../../../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/interaction.js', () => ({
+        jest.mock('../../../../../js/transactions/chart/interaction.js', () => ({
             updateCrosshairUI: jest.fn(),
             updateLegend: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
 
-        jest.mock('@js/transactions/chart/animation.js', () => ({
+        jest.mock('../../../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -143,11 +143,11 @@ describe('drawCompositionChart', () => {
     });
 
     it('handles empty data', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce(null);
 
         const { drawCompositionChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
         drawCompositionChart(mockCtx, mockChartManager);
 
         // Wait for async
@@ -160,7 +160,7 @@ describe('drawCompositionChart', () => {
 
     it('draws percent chart', async () => {
         const { drawCompositionChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
         drawCompositionChart(mockCtx, mockChartManager);
 
         // Wait for async load
@@ -174,7 +174,7 @@ describe('drawCompositionChart', () => {
 
     it('draws absolute chart', async () => {
         const { drawCompositionAbsoluteChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
         drawCompositionAbsoluteChart(mockCtx, mockChartManager);
 
         // Wait for async load
@@ -185,7 +185,7 @@ describe('drawCompositionChart', () => {
     });
 
     it('includes both explicit tickers and asset-class-matched tickers with OR logic', async () => {
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
         loadCompositionSnapshotData.mockResolvedValueOnce({
             dates: ['2023-01-01', '2023-01-02'],
             total_values: [1000, 2000],
@@ -199,11 +199,11 @@ describe('drawCompositionChart', () => {
 
         // AAPL is a stock, VT and VOO are ETFs, MSFT is a stock
         // Filter: etf + MSFT → should show VT, VOO (etf) and MSFT (explicit ticker)
-        const stateModule = await import('@js/transactions/state.js');
+        const stateModule = await import('../../../../../js/transactions/state.js');
         stateModule.getCompositionFilterTickers.mockReturnValue(['MSFT']);
         stateModule.getCompositionAssetClassFilter.mockReturnValue('etf');
 
-        jest.mock('@js/config.js', () => ({
+        jest.mock('../../../../../js/config.js', () => ({
             COLOR_PALETTES: { COMPOSITION_CHART_COLORS: ['#1', '#2', '#3', '#4', '#5'] },
             getHoldingAssetClass: jest.fn((ticker) => {
                 if (ticker === 'VT' || ticker === 'VOO') {
@@ -214,7 +214,7 @@ describe('drawCompositionChart', () => {
         }));
 
         const { drawCompositionChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
         drawCompositionChart(mockCtx, mockChartManager);
 
         await new Promise(process.nextTick);
@@ -233,7 +233,7 @@ describe('drawCompositionChart', () => {
         mockState.transactionState.chartDateRange = { from: '2023-01-02', to: '2023-01-02' };
 
         const { drawCompositionChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
         drawCompositionChart(mockCtx, mockChartManager);
 
         // Wait for async load
@@ -250,9 +250,9 @@ describe('drawCompositionChart', () => {
 
     it('sets chartLayouts.composition to null on empty snapshot data', async () => {
         const { drawCompositionChart } =
-            await import('@js/transactions/chart/renderers/composition.js');
-        const { chartLayouts } = await import('@js/transactions/chart/state.js');
-        const { loadCompositionSnapshotData } = await import('@js/transactions/dataLoader.js');
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+        const { chartLayouts } = await import('../../../../../js/transactions/chart/state.js');
+        const { loadCompositionSnapshotData } = await import('../../../../../js/transactions/dataLoader.js');
 
         loadCompositionSnapshotData.mockResolvedValueOnce({ valid: true, data: [] });
 

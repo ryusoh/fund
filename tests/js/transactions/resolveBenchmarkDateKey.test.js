@@ -1,4 +1,4 @@
-import { resolveBenchmarkDateKey } from '@js/transactions/benchmark.js';
+import { resolveBenchmarkDateKey } from '../../../js/transactions/benchmark.js';
 
 describe('resolveBenchmarkDateKey', () => {
     const buildMap = (keys) => new Map(keys.map((key) => [key, Math.random()]));

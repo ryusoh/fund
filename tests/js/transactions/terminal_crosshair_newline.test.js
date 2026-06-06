@@ -12,7 +12,7 @@ describe('Terminal Crosshair Multi-line Support', () => {
     beforeEach(async () => {
         document.body.innerHTML = '<div id="terminal"></div>';
         jest.resetModules();
-        const terminalModule = await import('@js/transactions/terminal.js');
+        const terminalModule = await import('../../../js/transactions/terminal.js');
         updateTerminalCrosshair = terminalModule.updateTerminalCrosshair;
         jest.useFakeTimers();
     });

@@ -3,8 +3,8 @@ import {
     autocompleteCommand,
     resetAutocompleteState,
     autocompleteState,
-} from '@js/transactions/terminal/autocomplete.js';
-import * as constants from '@js/transactions/terminal/constants.js';
+} from '../../../../js/transactions/terminal/autocomplete.js';
+import * as constants from '../../../../js/transactions/terminal/constants.js';
 
 describe('autocomplete.js', () => {
     let input;

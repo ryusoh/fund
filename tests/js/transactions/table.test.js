@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-jest.mock('@js/transactions/layout.js', () => ({
+jest.mock('../../../js/transactions/layout.js', () => ({
     adjustMobilePanels: jest.fn(),
 }));
 
@@ -19,8 +19,8 @@ describe('transactions table sorting', () => {
         `;
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -196,8 +196,8 @@ describe('transaction date filtering visibility guard', () => {
         global.requestAnimationFrame = (cb) => cb();
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(sampleTransactions);
@@ -242,8 +242,8 @@ describe('composition ticker filters derived from table search', () => {
         `;
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions([
@@ -349,8 +349,8 @@ describe('asset class filters', () => {
         `;
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(sampleTransactions);
@@ -492,8 +492,8 @@ describe('sort indicator vs row order sync', () => {
         setupDom();
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
 
         setAllTransactions(transactions);
@@ -668,8 +668,8 @@ describe('sort after table becomes visible with date range', () => {
         global.requestAnimationFrame = (cb) => cb();
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, setChartDateRange } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, setChartDateRange } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -789,8 +789,8 @@ describe('sort after table visible - date parse robustness', () => {
         `;
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, setChartDateRange } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, setChartDateRange } = require('../../../js/transactions/state.js'));
         });
     });
 
@@ -907,8 +907,8 @@ describe('ticker alias filtering', () => {
         `;
 
         jest.isolateModules(() => {
-            ({ initTable } = require('@js/transactions/table.js'));
-            ({ setAllTransactions, transactionState } = require('@js/transactions/state.js'));
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({ setAllTransactions, transactionState } = require('../../../js/transactions/state.js'));
         });
     });
 

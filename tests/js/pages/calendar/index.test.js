@@ -26,8 +26,8 @@ jest.mock('@utils/date.js', () => ({
     getNyDate: jest.fn(() => new Date('2025-01-15T12:00:00Z')),
 }));
 
-jest.mock('@js/config.js', () => {
-    const originalModule = jest.requireActual('@js/config.js');
+jest.mock('../../../../js/config.js', () => {
+    const originalModule = jest.requireActual('../../../../js/config.js');
     return {
         ...originalModule,
         getCalendarRange: jest.fn(() => 3), // Mock to return 3 months for test consistency

@@ -1,4 +1,4 @@
-import { buildPESeries } from '@js/transactions/chart/renderers/pe.js';
+import { buildPESeries } from '../../../../../js/transactions/chart/renderers/pe.js';
 
 describe('loadPEData', () => {
     beforeEach(() => {
@@ -22,7 +22,7 @@ describe('loadPEData', () => {
             tickerWeights: { AAPL: 0.6, MSFT: 0.4 },
         };
 
-        jest.doMock('@js/transactions/realtimeData.js', () => ({
+        jest.doMock('../../../../../js/transactions/realtimeData.js', () => ({
             fetchRealTimeData: jest.fn().mockResolvedValue(mockRealtimeData),
         }));
 
@@ -32,7 +32,7 @@ describe('loadPEData', () => {
         });
 
         // We need to re-import loadPEData because we mocked a dependency
-        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
         const data = await peModule.loadPEData();
 
         expect(data.dates).toEqual(['2023-01-01', '2023-01-02', '2023-01-03']);
@@ -67,7 +67,7 @@ describe('loadPEData', () => {
             tickerWeights: {},
         };
 
-        jest.doMock('@js/transactions/realtimeData.js', () => ({
+        jest.doMock('../../../../../js/transactions/realtimeData.js', () => ({
             fetchRealTimeData: jest.fn().mockResolvedValue(mockRealtimeData),
         }));
 
@@ -76,7 +76,7 @@ describe('loadPEData', () => {
             json: () => Promise.resolve(mockPEData),
         });
 
-        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
         const data = await peModule.loadPEData();
 
         expect(data.forward_pe.portfolio_forward_pe).toBe(18);
@@ -160,16 +160,16 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         };
         mockChartLayouts = {};
 
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/state.js', () => ({
             transactionState: mockTransactionState,
         }));
-        jest.doMock('@js/transactions/chart/state.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: mockChartLayouts,
         }));
-        jest.doMock('@js/utils/logger.js', () => ({
+        jest.doMock('../../../../../js/utils/logger.js', () => ({
             logger: { warn: jest.fn() },
         }));
-        jest.doMock('@js/transactions/chart/animation.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/animation.js', () => ({
             stopPerformanceAnimation: jest.fn(),
             stopContributionAnimation: jest.fn(),
             stopFxAnimation: jest.fn(),
@@ -180,17 +180,17 @@ describe('drawPEChart GSPC benchmark visibility', () => {
             schedulePeAnimation: jest.fn(),
             drawSeriesGlow: jest.fn(),
         }));
-        jest.doMock('@js/transactions/chart/interaction.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/interaction.js', () => ({
             updateCrosshairUI: jest.fn(),
             updateLegend: jest.fn(),
             drawCrosshairOverlay: jest.fn(),
         }));
-        jest.doMock('@js/transactions/chart/core.js', () => ({
+        jest.doMock('../../../../../js/transactions/chart/core.js', () => ({
             drawAxes: jest.fn(),
             drawMountainFill: jest.fn(),
             drawEndValue: jest.fn(() => null),
         }));
-        jest.doMock('@js/config.js', () => ({
+        jest.doMock('../../../../../js/config.js', () => ({
             mountainFill: { enabled: false },
             CHART_LINE_WIDTHS: { contribution: 2 },
         }));
@@ -208,7 +208,7 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
         mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
 
-        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
 
         // Inject cached PE data with benchmark
         const peData = {
@@ -254,8 +254,8 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
         mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
 
-        const { updateLegend } = await import('@js/transactions/chart/interaction.js');
-        const peModule = await import('@js/transactions/chart/renderers/pe.js');
+        const { updateLegend } = await import('../../../../../js/transactions/chart/interaction.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
 
         const peData = {
             dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
@@ -324,16 +324,16 @@ describe('getPESnapshotText', () => {
             transactionState: { chartDateRange: {} },
             chartLayouts: {},
         };
-        jest.mock('@js/transactions/state.js', () => ({
+        jest.mock('../../../../../js/transactions/state.js', () => ({
             transactionState: mockState.transactionState,
         }));
-        jest.mock('@js/transactions/chart/state.js', () => ({
+        jest.mock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: mockState.chartLayouts,
         }));
     });
 
     it('returns loading state if series is empty', async () => {
-        const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe('Loading PE data...');
     });
 
@@ -345,7 +345,7 @@ describe('getPESnapshotText', () => {
                 { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
-        const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 10.00x | Range: 10.00x - 20.00x | Harmonic Mean (1 / Σ(w/PE))'
         );
@@ -360,7 +360,7 @@ describe('getPESnapshotText', () => {
                 { date: new Date(2023, 0, 3), pe: 10 },
             ],
         };
-        const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 20.00x | Range: 20.00x - 20.00x | Harmonic Mean (1 / Σ(w/PE))'
         );
@@ -374,7 +374,7 @@ describe('getPESnapshotText', () => {
                 benchmark_forward_pe: { '^GSPC': 22 },
             },
         };
-        const { getPESnapshotText } = await import('@js/transactions/chart/renderers/pe.js');
+        const { getPESnapshotText } = await import('../../../../../js/transactions/chart/renderers/pe.js');
         expect(getPESnapshotText()).toBe(
             'Current: 15.00x | Range: 15.00x - 15.00x | Harmonic Mean (1 / Σ(w/PE)) | Forward: 18.00x (S&P 500: 22.00x)'
         );

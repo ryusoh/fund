@@ -2,9 +2,9 @@ import {
     drawYieldChart,
     loadYieldData,
     getCachedYieldData,
-} from '@js/transactions/chart/renderers/yield.js';
+} from '../../../../../js/transactions/chart/renderers/yield.js';
 
-jest.mock('@js/transactions/state.js', () => ({
+jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         performanceSeries: {},
         selectedCurrency: 'USD',
@@ -13,18 +13,18 @@ jest.mock('@js/transactions/state.js', () => ({
     getShowChartLabels: jest.fn(),
     legendState: { yieldDirty: false },
 }));
-jest.mock('@js/transactions/chart/state.js', () => ({
+jest.mock('../../../../../js/transactions/chart/state.js', () => ({
     chartLayouts: {},
 }));
-jest.mock('@js/transactions/dataLoader.js', () => ({
+jest.mock('../../../../../js/transactions/dataLoader.js', () => ({
     loadYieldData: jest.fn(() => Promise.resolve({ series: [], xLabels: [] })),
 }));
-jest.mock('@js/transactions/chart/interaction.js', () => ({
+jest.mock('../../../../../js/transactions/chart/interaction.js', () => ({
     updateCrosshairUI: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
     updateLegend: jest.fn(),
 }));
-jest.mock('@js/transactions/chart/animation.js', () => ({
+jest.mock('../../../../../js/transactions/chart/animation.js', () => ({
     stopPeAnimation: jest.fn(),
     stopConcentrationAnimation: jest.fn(),
     stopYieldAnimation: jest.fn(),
@@ -35,7 +35,7 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
     advancePerformanceAnimation: jest.fn(() => 1),
     schedulePerformanceAnimation: jest.fn(),
 }));
-jest.mock('@js/transactions/chart/core.js', () => ({
+jest.mock('../../../../../js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
 }));
 

@@ -2,13 +2,13 @@
 import { jest } from '@jest/globals';
 
 // Mock modules
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => {
-    const original = jest.requireActual('@js/transactions/terminalStats.js');
+jest.mock('../../../js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('../../../js/transactions/terminalStats.js');
     return {
         ...original,
         getStatsText: jest.fn(),
@@ -17,9 +17,9 @@ jest.mock('@js/transactions/terminalStats.js', () => {
 });
 
 // Mock buildFxChartSeries to return predictable data
-jest.mock('@js/transactions/chart/renderers/fx.js', () => {
+jest.mock('../../../js/transactions/chart/renderers/fx.js', () => {
     return {
-        ...jest.requireActual('@js/transactions/chart/renderers/fx.js'),
+        ...jest.requireActual('../../../js/transactions/chart/renderers/fx.js'),
         buildFxChartSeries: jest.fn().mockImplementation(() => {
             return [
                 {
@@ -42,8 +42,8 @@ describe('Regression: FX Duplicate Output in "all" command', () => {
         jest.resetModules();
 
         // Get fresh modules
-        ({ initTerminal } = require('@js/transactions/terminal.js'));
-        transactionState = require('@js/transactions/state.js').transactionState;
+        ({ initTerminal } = require('../../../js/transactions/terminal.js'));
+        transactionState = require('../../../js/transactions/state.js').transactionState;
 
         // Setup state
         transactionState.fxRatesByCurrency = {

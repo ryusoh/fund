@@ -1,13 +1,13 @@
-import { createUiController } from '@js/transactions/ui.js';
+import { createUiController } from '../../../js/transactions/ui.js';
 import {
     setChartVisibility,
     setActiveChart,
     transactionState,
     setChartDateRange,
-} from '@js/transactions/state.js';
-import { adjustMobilePanels } from '@js/transactions/layout.js';
+} from '../../../js/transactions/state.js';
+import { adjustMobilePanels } from '../../../js/transactions/layout.js';
 
-jest.mock('@js/transactions/state.js', () => ({
+jest.mock('../../../js/transactions/state.js', () => ({
     setChartVisibility: jest.fn(),
     setActiveChart: jest.fn(),
     setChartDateRange: jest.fn(),
@@ -16,7 +16,7 @@ jest.mock('@js/transactions/state.js', () => ({
     },
 }));
 
-jest.mock('@js/transactions/layout.js', () => ({
+jest.mock('../../../js/transactions/layout.js', () => ({
     adjustMobilePanels: jest.fn(),
 }));
 

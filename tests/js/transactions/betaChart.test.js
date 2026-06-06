@@ -24,8 +24,8 @@ describe('Beta Chart Renderer Tests', () => {
     });
 
     it('should correctly calculate beta and align time ranges', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { drawBetaChart } = require('@js/transactions/chart/renderers/beta.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
+        const { drawBetaChart } = require('../../../js/transactions/chart/renderers/beta.js');
 
         // Create some mock data
         // We need at least 126+1 points for a 6-month rolling window (126 returns)
@@ -93,7 +93,7 @@ describe('Beta Chart Renderer Tests', () => {
 
         await drawBetaChart(mockCtx, mockChartManager, 0);
 
-        const { chartLayouts } = require('@js/transactions/chart/state.js');
+        const { chartLayouts } = require('../../../js/transactions/chart/state.js');
         const betaLayout = chartLayouts.beta;
 
         expect(betaLayout).not.toBeNull();

@@ -26,7 +26,7 @@ describe('Autocomplete Completeness', () => {
 
     beforeAll(async () => {
         // Load constants module
-        const constants = await import('@js/transactions/terminal/constants.js');
+        const constants = await import('../../../js/transactions/terminal/constants.js');
         COMMAND_ALIASES = constants.COMMAND_ALIASES;
         PLOT_SUBCOMMANDS = constants.PLOT_SUBCOMMANDS;
         STATS_SUBCOMMANDS = constants.STATS_SUBCOMMANDS;

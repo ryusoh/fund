@@ -1,21 +1,21 @@
-import { mergeDividendsIntoContribution } from '@js/transactions/chart/data/contribution.js';
+import { mergeDividendsIntoContribution } from '../../../../../js/transactions/chart/data/contribution.js';
 
-jest.mock('@js/transactions/state.js', () => ({
+jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         selectedCurrency: 'USD',
         splitHistory: [],
     },
 }));
 
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../../js/transactions/utils.js', () => ({
     convertValueToCurrency: jest.fn((value) => value),
 }));
 
-jest.mock('@js/transactions/calculations.js', () => ({
+jest.mock('../../../../../js/transactions/calculations.js', () => ({
     getSplitAdjustment: jest.fn(() => 1),
 }));
 
-jest.mock('@js/transactions/chart/helpers.js', () => ({
+jest.mock('../../../../../js/transactions/chart/helpers.js', () => ({
     parseLocalDate: jest.fn((d) => new Date(d).getTime()),
 }));
 

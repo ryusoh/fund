@@ -6,9 +6,9 @@ describe('rolling/cumulative snapshot hints', () => {
     });
 
     test('getPerformanceSnapshotLine includes hint about rolling command', async () => {
-        const { transactionState } = await import('@js/transactions/state.js');
+        const { transactionState } = await import('../../../js/transactions/state.js');
         const { getPerformanceSnapshotLine } =
-            await import('@js/transactions/terminal/snapshots.js');
+            await import('../../../js/transactions/terminal/snapshots.js');
 
         transactionState.activeChart = 'performance';
         transactionState.performanceSeries = {
@@ -26,8 +26,8 @@ describe('rolling/cumulative snapshot hints', () => {
     });
 
     test('getRollingSnapshotLine includes hint about cumulative command', async () => {
-        const { transactionState } = await import('@js/transactions/state.js');
-        const { getRollingSnapshotLine } = await import('@js/transactions/terminal/snapshots.js');
+        const { transactionState } = await import('../../../js/transactions/state.js');
+        const { getRollingSnapshotLine } = await import('../../../js/transactions/terminal/snapshots.js');
 
         transactionState.activeChart = 'rolling';
         transactionState.performanceSeries = {
@@ -54,22 +54,22 @@ describe('rolling/cumulative autocomplete', () => {
     });
 
     test('rolling is included in COMMAND_ALIASES for autocomplete', async () => {
-        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        const { COMMAND_ALIASES } = await import('../../../js/transactions/terminal/constants.js');
         expect(COMMAND_ALIASES).toContain('rolling');
     });
 
     test('cumulative is included in COMMAND_ALIASES for autocomplete', async () => {
-        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        const { COMMAND_ALIASES } = await import('../../../js/transactions/terminal/constants.js');
         expect(COMMAND_ALIASES).toContain('cumulative');
     });
 
     test('rolling is in PLOT_SUBCOMMANDS', async () => {
-        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = await import('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('rolling');
     });
 
     test('cumulative is not in PLOT_SUBCOMMANDS', async () => {
-        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = await import('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).not.toContain('cumulative');
     });
 });
@@ -80,13 +80,13 @@ describe('rolling/cumulative command handlers exist', () => {
     });
 
     test('handleRollingCommand is exported', async () => {
-        const { handleRollingCommand } = await import('@js/transactions/terminal/handlers/misc.js');
+        const { handleRollingCommand } = await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleRollingCommand).toBe('function');
     });
 
     test('handleCumulativeCommand is exported', async () => {
         const { handleCumulativeCommand } =
-            await import('@js/transactions/terminal/handlers/misc.js');
+            await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleCumulativeCommand).toBe('function');
     });
 
@@ -139,32 +139,32 @@ describe('composition/sectors autocomplete', () => {
     });
 
     test('composition is included in COMMAND_ALIASES for autocomplete', async () => {
-        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        const { COMMAND_ALIASES } = await import('../../../js/transactions/terminal/constants.js');
         expect(COMMAND_ALIASES).toContain('composition');
     });
 
     test('sectors is included in COMMAND_ALIASES for autocomplete', async () => {
-        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        const { COMMAND_ALIASES } = await import('../../../js/transactions/terminal/constants.js');
         expect(COMMAND_ALIASES).toContain('sectors');
     });
 
     test('geography is included in COMMAND_ALIASES for autocomplete', async () => {
-        const { COMMAND_ALIASES } = await import('@js/transactions/terminal/constants.js');
+        const { COMMAND_ALIASES } = await import('../../../js/transactions/terminal/constants.js');
         expect(COMMAND_ALIASES).toContain('geography');
     });
 
     test('composition is in PLOT_SUBCOMMANDS', async () => {
-        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = await import('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('composition');
     });
 
     test('sectors is in PLOT_SUBCOMMANDS', async () => {
-        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = await import('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('sectors');
     });
 
     test('geography is in PLOT_SUBCOMMANDS', async () => {
-        const { PLOT_SUBCOMMANDS } = await import('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = await import('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('geography');
     });
 });
@@ -176,18 +176,18 @@ describe('composition/sectors command handlers exist', () => {
 
     test('handleCompositionCommand is exported', async () => {
         const { handleCompositionCommand } =
-            await import('@js/transactions/terminal/handlers/misc.js');
+            await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleCompositionCommand).toBe('function');
     });
 
     test('handleSectorsCommand is exported', async () => {
-        const { handleSectorsCommand } = await import('@js/transactions/terminal/handlers/misc.js');
+        const { handleSectorsCommand } = await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleSectorsCommand).toBe('function');
     });
 
     test('handleGeographyCommand is exported', async () => {
         const { handleGeographyCommand } =
-            await import('@js/transactions/terminal/handlers/misc.js');
+            await import('../../../js/transactions/terminal/handlers/misc.js');
         expect(typeof handleGeographyCommand).toBe('function');
     });
 

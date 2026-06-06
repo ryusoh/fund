@@ -21,14 +21,14 @@ describe('drawAxes', () => {
         jest.resetModules();
 
         // Use a simple mock without referencing 'jest' to avoid ReferenceError in some environments
-        jest.doMock('@js/transactions/chart/helpers.js', () => ({
+        jest.doMock('../../../js/transactions/chart/helpers.js', () => ({
             niceNumber: (r) => r,
             getMonoFontFamily: () => 'Monospace',
             colorWithAlpha: () => 'rgba(0,0,0,1)',
             clamp01: (v) => v,
         }));
 
-        const coreModule = require('@js/transactions/chart/core.js');
+        const coreModule = require('../../../js/transactions/chart/core.js');
         drawAxes = coreModule.drawAxes;
 
         // Stateful mock context

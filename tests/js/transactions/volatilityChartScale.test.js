@@ -69,9 +69,9 @@ describe('Volatility Chart Scaling', () => {
     });
 
     test('volatility chart should have a negative yMin buffer to keep 0% visible', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { drawVolatilityChart } = require('@js/transactions/chart/renderers/volatility.js');
-        const core = require('@js/transactions/chart/core.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
+        const { drawVolatilityChart } = require('../../../js/transactions/chart/renderers/volatility.js');
+        const core = require('../../../js/transactions/chart/core.js');
 
         // Spy on drawAxes to inspect the scale parameters
         const drawAxesSpy = jest.spyOn(core, 'drawAxes');
@@ -113,9 +113,9 @@ describe('Volatility Chart Scaling', () => {
     });
 
     test('should correctly calculate rolling volatility after array optimization', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { chartLayouts } = require('@js/transactions/chart/state.js');
-        const { drawVolatilityChart } = require('@js/transactions/chart/renderers/volatility.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
+        const { chartLayouts } = require('../../../js/transactions/chart/state.js');
+        const { drawVolatilityChart } = require('../../../js/transactions/chart/renderers/volatility.js');
 
         const points = [];
         let val = 1.0;

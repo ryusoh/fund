@@ -1,7 +1,7 @@
 import { initTiltEffect } from '@ui/tilt_effect.js';
-import { TILT_EFFECT } from '@js/config.js';
+import { TILT_EFFECT } from '../../../js/config.js';
 
-jest.mock('@js/config.js', () => ({
+jest.mock('../../../js/config.js', () => ({
     TILT_EFFECT: { enabled: true },
 }));
 

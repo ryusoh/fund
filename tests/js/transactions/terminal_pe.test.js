@@ -4,18 +4,18 @@ import { jest } from '@jest/globals';
 jest.setTimeout(15000);
 
 // Mock essential modules
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => ({
+jest.mock('../../../js/transactions/terminalStats.js', () => ({
     getStatsText: jest.fn(),
     getDynamicStatsText: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/renderers/pe.js', () => {
-    const original = jest.requireActual('@js/transactions/chart/renderers/pe.js');
+jest.mock('../../../js/transactions/chart/renderers/pe.js', () => {
+    const original = jest.requireActual('../../../js/transactions/chart/renderers/pe.js');
     return {
         ...original,
         loadPEData: jest.fn(),
@@ -26,7 +26,7 @@ let transactionState;
 let loadPEDataMock;
 
 function resetTransactionState() {
-    transactionState = require('@js/transactions/state.js').transactionState;
+    transactionState = require('../../../js/transactions/state.js').transactionState;
     transactionState.commandHistory = [];
     transactionState.historyIndex = -1;
     transactionState.activeChart = null;
@@ -62,8 +62,8 @@ async function initTerminalSession() {
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
     }
 
-    const { initTerminal } = require('@js/transactions/terminal.js');
-    const { filterAndSort } = require('@js/transactions/table.js').initTable({
+    const { initTerminal } = require('../../../js/transactions/terminal.js');
+    const { filterAndSort } = require('../../../js/transactions/table.js').initTable({
         onFilterChange: () => {},
     });
 
@@ -105,7 +105,7 @@ describe('PE Ratio Terminal Integration', () => {
 
     beforeEach(async () => {
         jest.resetModules();
-        const peMod = await import('@js/transactions/chart/renderers/pe.js');
+        const peMod = await import('../../../js/transactions/chart/renderers/pe.js');
         loadPEDataMock = peMod.loadPEData;
         loadPEDataMock.mockResolvedValue(mockData);
     });
