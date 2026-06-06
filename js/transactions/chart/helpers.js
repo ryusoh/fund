@@ -258,14 +258,25 @@ export function parseColorToRgb(baseColor) {
     const ctx = COLOR_PARSER_CONTEXT;
     ctx.save();
     try {
+        ctx.fillStyle = '#000000';
         ctx.fillStyle = baseColor;
-        const computed = ctx.fillStyle;
+        const computed1 = ctx.fillStyle;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = baseColor;
+        const computed2 = ctx.fillStyle;
+
         ctx.restore();
-        if (computed && computed !== baseColor) {
-            return parseColorToRgb(computed);
+
+        if (computed1 !== computed2) {
+            return null;
+        }
+
+        if (computed1 && computed1 !== baseColor) {
+            return parseColorToRgb(computed1);
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Chart helpers execution failed:', error);
         ctx.restore();
         return null;
     }

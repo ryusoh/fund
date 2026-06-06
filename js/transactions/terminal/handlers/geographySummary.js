@@ -11,7 +11,7 @@ export async function getGeographySummaryText() {
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Geography summary processing failed:', error);
         return 'Error: Unable to load geography summary. Run data generation first.';
     }
 }

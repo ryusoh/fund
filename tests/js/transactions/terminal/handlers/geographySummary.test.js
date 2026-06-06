@@ -41,7 +41,10 @@ describe('geographySummary handler', () => {
         const result = await getGeographySummaryText();
 
         expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
-        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Geography summary processing failed:',
+            expect.any(Error)
+        );
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 
@@ -51,7 +54,7 @@ describe('geographySummary handler', () => {
 
         const result = await getGeographySummaryText();
 
-        expect(logger.warn).toHaveBeenCalledWith('Caught exception:', error);
+        expect(logger.warn).toHaveBeenCalledWith('Geography summary processing failed:', error);
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 });

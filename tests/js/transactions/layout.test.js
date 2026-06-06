@@ -42,7 +42,11 @@ describe('adjustMobilePanels', () => {
         });
 
         // Mock offsetHeight
-        Object.defineProperty(legend, 'offsetHeight', { value: 20, writable: true, configurable: true });
+        Object.defineProperty(legend, 'offsetHeight', {
+            value: 20,
+            writable: true,
+            configurable: true,
+        });
     });
 
     it('resets heights for desktop (>768px)', () => {
@@ -154,12 +158,18 @@ describe('adjustMobilePanels', () => {
     it('tests branches in adjustChartContainerHeight', () => {
         // cardStyles without paddingTop or paddingBottom
         window.getComputedStyle = jest.fn().mockImplementation((el) => {
-            if (el === legend) {return {};}
+            if (el === legend) {
+                return {};
+            }
             return {};
         });
 
         // legend height
-        Object.defineProperty(legend, 'offsetHeight', { value: 0, writable: true, configurable: true });
+        Object.defineProperty(legend, 'offsetHeight', {
+            value: 0,
+            writable: true,
+            configurable: true,
+        });
 
         adjustMobilePanels();
         // Since plotSection padding is 0, legend is 0, inner = 684 - 8 = 676

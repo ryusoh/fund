@@ -7,7 +7,7 @@ export async function getCagrText() {
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal stats processing failed:', error);
         return 'Error loading CAGR data.';
     }
 }
@@ -20,7 +20,7 @@ export async function getAnnualReturnText() {
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal stats processing failed:', error);
         return 'Error loading annual returns.';
     }
 }
@@ -33,7 +33,7 @@ export async function getRatioText() {
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal stats processing failed:', error);
         return 'Error loading Sharpe and Sortino ratios.';
     }
 }

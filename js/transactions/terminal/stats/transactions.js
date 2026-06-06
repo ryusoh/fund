@@ -113,7 +113,7 @@ ${table}
 `;
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Transactions stats processing failed:', error);
         // Fall through to legacy text fallback
     }
 
@@ -124,7 +124,7 @@ ${table}
         }
         return await response.text();
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Transactions stats processing failed:', error);
         return 'Error loading transaction stats.';
     }
 }
