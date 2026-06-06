@@ -786,7 +786,7 @@ def compute_benchmark_pe_from_proxy(
             ts = pd.Timestamp(date_str).tz_localize(None)
             if ts in dates:
                 if pd.isna(result.loc[ts]):
-                    result.loc[ts] = pe_val
+                    result.loc[ts] = pe_val  # type: ignore[call-overload]
             else:
                 idx = dates.get_indexer([ts], method="nearest")[0]
                 if idx != -1 and pd.isna(result.iloc[idx]):
@@ -840,7 +840,7 @@ def fetch_benchmark_pe_daily(
                             }
                         )
         except Exception as e:
-            print(f"Warning: Exception fetching EPS data for {t}: {e}")
+            print(f"Warning: Exception fetching EPS data for {proxy_ticker}: {e}")
 
         try:
             quarterly = stock.quarterly_income_stmt
@@ -857,7 +857,7 @@ def fetch_benchmark_pe_daily(
                                 }
                             )
         except Exception as e:
-            print(f"Warning: Exception fetching quarterly EPS data for {t}: {e}")
+            print(f"Warning: Exception fetching quarterly EPS data for {proxy_ticker}: {e}")
 
         # Add current trailing EPS as today's anchor
         if trailing_eps and trailing_eps > 0:
