@@ -80,6 +80,7 @@ function applyCurrencyIcons() {
         button.textContent = '';
         button.appendChild(iconElement);
         button.setAttribute('aria-label', `${currency} currency`);
+        button.setAttribute('title', `${currency} currency`);
     });
 }
 

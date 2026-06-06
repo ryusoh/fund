@@ -99,3 +99,8 @@
 
 **Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
 **Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
+
+## 2025-03-09 - Ensure Visually Ambiguous Icon Buttons Have Tooltips
+
+**Learning:** Adding `aria-label` to icon-only buttons (like navigation chevrons) or visually ambiguous buttons (like `¥` which can represent CNY or JPY) is sufficient for screen readers, but sighted users relying on mouse navigation are left with no way to discover the action or disambiguate identical symbols.
+**Action:** Always complement `aria-label` on icon-only and visually ambiguous buttons with a `title` attribute to provide a native browser tooltip for sighted mouse users.
