@@ -42,7 +42,8 @@ function displayTransactions(transactions) {
 
     const currentCurrency = transactionState.selectedCurrency;
 
-    transactions.forEach((transaction) => {
+    for (let i = 0; i < transactions.length; i++) {
+        const transaction = transactions[i];
         const row = document.createElement('tr');
         const orderTypeClass = transaction.orderType.toLowerCase();
         const runningTotals = runningTotalsMap.get(transaction.transactionId) || {};
@@ -105,16 +106,18 @@ function displayTransactions(transactions) {
         row.appendChild(tdPortfolio);
 
         tbody.appendChild(row);
-    });
+    }
 
     requestAnimationFrame(adjustMobilePanels);
 }
 
 function updateSortIndicators() {
-    document.querySelectorAll('th.sortable').forEach((th) => {
+    const sortables = document.querySelectorAll('th.sortable');
+    for (let i = 0; i < sortables.length; i++) {
+        const th = sortables[i];
         th.removeAttribute('data-sort');
         th.setAttribute('aria-sort', 'none');
-    });
+    }
     const activeSorter = document.getElementById(`header-${transactionState.sortState.column}`);
     if (activeSorter) {
         activeSorter.setAttribute('data-sort', transactionState.sortState.order);
@@ -126,10 +129,14 @@ function updateSortIndicators() {
 }
 
 function closeAllFilterDropdowns() {
-    document.querySelectorAll('.filter-dropdown').forEach((d) => d.remove());
-    document
-        .querySelectorAll('.table-responsive-container thead th.filter-active')
-        .forEach((th) => th.classList.remove('filter-active'));
+    const dropdowns = document.querySelectorAll('.filter-dropdown');
+    for (let i = 0; i < dropdowns.length; i++) {
+        dropdowns[i].remove();
+    }
+    const activeThs = document.querySelectorAll('.table-responsive-container thead th.filter-active');
+    for (let i = 0; i < activeThs.length; i++) {
+        activeThs[i].classList.remove('filter-active');
+    }
 }
 
 function applyFilters(transactions, parsedCommands, term, currentCurrency) {
@@ -234,15 +241,17 @@ function createFilterDropdown(column) {
     const values = new Set();
     const sortedOptions = [];
 
-    transactionState.allTransactions.forEach((t) => {
+    for (let i = 0; i < transactionState.allTransactions.length; i++) {
+        const t = transactionState.allTransactions[i];
         if (t[column]) {
             values.add(t[column]);
         }
-    });
+    }
     sortedOptions.push('All');
     sortedOptions.push(...Array.from(values).sort());
 
-    sortedOptions.forEach((option) => {
+    for (let i = 0; i < sortedOptions.length; i++) {
+        const option = sortedOptions[i];
         const div = document.createElement('div');
         div.className = 'filter-option';
         div.textContent = option;
@@ -258,7 +267,7 @@ function createFilterDropdown(column) {
             closeAllFilterDropdowns();
         });
         dropdown.appendChild(div);
-    });
+    }
 
     return dropdown;
 }
