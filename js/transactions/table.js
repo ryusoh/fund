@@ -133,7 +133,9 @@ function closeAllFilterDropdowns() {
     for (let i = 0; i < dropdowns.length; i++) {
         dropdowns[i].remove();
     }
-    const activeThs = document.querySelectorAll('.table-responsive-container thead th.filter-active');
+    const activeThs = document.querySelectorAll(
+        '.table-responsive-container thead th.filter-active'
+    );
     for (let i = 0; i < activeThs.length; i++) {
         activeThs[i].classList.remove('filter-active');
     }

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { buildFilteredBalanceSeries } from '@js/transactions/chart/data/contribution.js';
+import { buildFilteredBalanceSeries } from '../../../js/transactions/chart/data/contribution.js';
 
 // Regression: buildFilteredBalanceSeries sorted MM/DD/YYYY tradeDate strings
 // lexicographically ("01/05/2024" < "06/01/2020") so firstDate was set to a later

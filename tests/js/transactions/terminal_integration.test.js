@@ -2,13 +2,13 @@
 import { jest } from '@jest/globals';
 
 // Mock modules
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => {
-    const original = jest.requireActual('@js/transactions/terminalStats.js');
+jest.mock('../../../js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('../../../js/transactions/terminalStats.js');
     return {
         ...original,
         getStatsText: jest.fn(),
@@ -32,12 +32,12 @@ describe('terminal plot command integration', () => {
         jest.resetModules();
 
         // Dynamic requires to get fresh modules/mocks
-        ({ initTerminal } = require('@js/transactions/terminal.js'));
-        const zoomModule = require('@js/transactions/zoom.js');
+        ({ initTerminal } = require('../../../js/transactions/terminal.js'));
+        const zoomModule = require('../../../js/transactions/zoom.js');
         toggleZoom = zoomModule.toggleZoom;
         getZoomState = zoomModule.getZoomState;
 
-        const statsModule = require('@js/transactions/terminalStats.js');
+        const statsModule = require('../../../js/transactions/terminalStats.js');
         getDynamicStatsText = statsModule.getDynamicStatsText;
 
         // Reset mocks

@@ -3,13 +3,13 @@ import {
     applySecurityFilter,
     applyValueFilters,
     applyTextFilter,
-} from '@js/transactions/table/filter.js';
-import * as utils from '@js/transactions/utils.js';
-import * as parser from '@js/transactions/table/parser.js';
+} from '../../../js/transactions/table/filter.js';
+import * as utils from '../../../js/transactions/utils.js';
+import * as parser from '../../../js/transactions/table/parser.js';
 import * as dateUtils from '@utils/date.js';
 
-jest.mock('@js/transactions/utils.js');
-jest.mock('@js/transactions/table/parser.js');
+jest.mock('../../../js/transactions/utils.js');
+jest.mock('../../../js/transactions/table/parser.js');
 jest.mock('@utils/date.js');
 
 describe('applyDateRangeFilter', () => {

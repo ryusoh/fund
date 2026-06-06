@@ -1,5 +1,5 @@
 import { initMarquee } from '@ui/marquee.js';
-import { MARQUEE_CONFIG } from '@js/config.js';
+import { MARQUEE_CONFIG } from '../../../js/config.js';
 
 describe('Marquee', () => {
     let originalGsap;

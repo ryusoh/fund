@@ -6,7 +6,7 @@ describe('Chart data helpers', () => {
 
         beforeEach(async () => {
             jest.resetModules();
-            const helpers = await import('@js/transactions/chart/helpers.js');
+            const helpers = await import('../../../js/transactions/chart/helpers.js');
             injectCarryForwardStartPoint = helpers.injectCarryForwardStartPoint;
         });
 
@@ -120,9 +120,9 @@ describe('Chart data helpers', () => {
             // or different capitalizations could cause issues in cumulative calculation.
 
             jest.resetModules();
-            const state = await import('@js/transactions/state.js');
-            const contribution = await import('@js/transactions/chart/data/contribution.js');
-            const utils = await import('@js/transactions/utils.js');
+            const state = await import('../../../js/transactions/state.js');
+            const contribution = await import('../../../js/transactions/chart/data/contribution.js');
+            const utils = await import('../../../js/transactions/utils.js');
 
             // Mock selected currency to EUR
             state.transactionState.selectedCurrency = 'EUR';
@@ -170,8 +170,8 @@ describe('Chart data helpers', () => {
 
         test('buildContributionSeriesFromTransactions handles duplicate or messy dates without resetting to zero', async () => {
             jest.resetModules();
-            const state = await import('@js/transactions/state.js');
-            const contribution = await import('@js/transactions/chart/data/contribution.js');
+            const state = await import('../../../js/transactions/state.js');
+            const contribution = await import('../../../js/transactions/chart/data/contribution.js');
 
             // USD mode
             state.transactionState.selectedCurrency = 'USD';
@@ -192,9 +192,9 @@ describe('Chart data helpers', () => {
 
         test('buildContributionSeriesFromTransactions maintains cumulative sum and correct keys for non-USD', async () => {
             jest.resetModules();
-            const state = await import('@js/transactions/state.js');
-            const contribution = await import('@js/transactions/chart/data/contribution.js');
-            const utils = await import('@js/transactions/utils.js');
+            const state = await import('../../../js/transactions/state.js');
+            const contribution = await import('../../../js/transactions/chart/data/contribution.js');
+            const utils = await import('../../../js/transactions/utils.js');
 
             state.transactionState.selectedCurrency = 'GBP';
             jest.spyOn(utils, 'convertValueToCurrency').mockImplementation(
@@ -230,7 +230,7 @@ describe('Chart data helpers', () => {
 
         test('buildContributionSeriesFromTransactions sorts mixed date formats correctly (not alphabetically)', async () => {
             jest.resetModules();
-            const contribution = await import('@js/transactions/chart/data/contribution.js');
+            const contribution = await import('../../../js/transactions/chart/data/contribution.js');
 
             const transactions = [
                 { tradeDate: '2025-01-01', netAmount: '100.00', orderType: 'Buy' },
@@ -255,7 +255,7 @@ describe('Chart data helpers', () => {
 
         beforeEach(async () => {
             jest.resetModules();
-            const contribution = await import('@js/transactions/chart/data/contribution.js');
+            const contribution = await import('../../../js/transactions/chart/data/contribution.js');
             applyDrawdownToSeries = contribution.applyDrawdownToSeries;
         });
 
@@ -323,7 +323,7 @@ describe('Chart data helpers', () => {
 
         beforeEach(async () => {
             jest.resetModules();
-            const helpers = await import('@js/transactions/chart/helpers.js');
+            const helpers = await import('../../../js/transactions/chart/helpers.js');
             parseLocalDate = helpers.parseLocalDate;
         });
 
@@ -398,7 +398,7 @@ describe('Chart data helpers', () => {
         let helpers;
         beforeEach(async () => {
             jest.resetModules();
-            helpers = await import('@js/transactions/chart/helpers.js');
+            helpers = await import('../../../js/transactions/chart/helpers.js');
         });
 
         test('returns filteredData when no filterFrom provided', () => {
@@ -467,7 +467,7 @@ describe('Chart data helpers', () => {
         let helpers;
         beforeEach(async () => {
             jest.resetModules();
-            helpers = await import('@js/transactions/chart/helpers.js');
+            helpers = await import('../../../js/transactions/chart/helpers.js');
         });
 
         test('returns filteredData when inputs are invalid', () => {

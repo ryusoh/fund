@@ -1,7 +1,7 @@
-import { buildRangeSummary, sortCrosshairSnapshot } from '@js/transactions/chart/interaction.js';
-import { formatCurrencyInline } from '@js/transactions/utils.js';
+import { buildRangeSummary, sortCrosshairSnapshot } from '../../../../js/transactions/chart/interaction.js';
+import { formatCurrencyInline } from '../../../../js/transactions/utils.js';
 
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../js/transactions/utils.js', () => ({
     formatCurrencyInline: jest.fn((val) => `$${val.toFixed(2)}`),
     formatPercentInline: jest.fn((val) => `${val.toFixed(2)}%`),
 }));

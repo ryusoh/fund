@@ -3,7 +3,7 @@ import {
     applyTransactionFIFO,
     computeRunningTotals,
     parseCSV,
-} from '@js/transactions/calculations.js';
+} from '../../../js/transactions/calculations.js';
 
 describe('calculations.js', () => {
     test('getSplitAdjustment calculates adjustment multiplier', () => {
@@ -72,7 +72,7 @@ describe('calculations.js', () => {
     });
 
     test('applyTransactionFIFO handles tradeDate before 1970/invalid date', () => {
-        const { applyTransactionFIFO } = require('@js/transactions/calculations.js');
+        const { applyTransactionFIFO } = require('../../../js/transactions/calculations.js');
         const lots = [];
         const splitHistory = [];
         const result = applyTransactionFIFO(
@@ -91,7 +91,7 @@ describe('calculations.js', () => {
     });
 
     test('getSplitAdjustment handles tradeDate < 1970', () => {
-        const { getSplitAdjustment } = require('@js/transactions/calculations.js');
+        const { getSplitAdjustment } = require('../../../js/transactions/calculations.js');
         const splitHistory = [{ symbol: 'AAPL', splitDate: '1980-08-31', splitMultiplier: 4 }];
         // The implementation uses parseDateFallback which handles '1900-01-01' correctly as before '1980-08-31'.
         // If we want to hit the fallback condition where getTime() is falsy/NaN, we need an unparseable date
@@ -102,7 +102,7 @@ describe('calculations.js', () => {
         const {
             getSplitAdjustment,
             clearSplitAdjustmentCache,
-        } = require('@js/transactions/calculations.js');
+        } = require('../../../js/transactions/calculations.js');
         clearSplitAdjustmentCache();
         const splitHistory = [{ symbol: 'AAPL', splitDate: '1980-08-31', splitMultiplier: 4 }];
         // Date paring in Firefox handles MM/DD/YYYY but the fallback branch splits by '-'
@@ -113,7 +113,7 @@ describe('calculations.js', () => {
         const {
             getSplitAdjustment,
             clearSplitAdjustmentCache,
-        } = require('@js/transactions/calculations.js');
+        } = require('../../../js/transactions/calculations.js');
         clearSplitAdjustmentCache();
         const splitHistory = [{ symbol: 'AAPL', splitDate: '2000-08-31', splitMultiplier: 4 }];
         expect(getSplitAdjustment(splitHistory, 'AAPL', '01/01/2000')).toBe(4);
@@ -124,7 +124,7 @@ describe('calculations.js', () => {
         const {
             getSplitAdjustment,
             clearSplitAdjustmentCache,
-        } = require('@js/transactions/calculations.js');
+        } = require('../../../js/transactions/calculations.js');
         clearSplitAdjustmentCache();
         const splitHistory = [{ symbol: 'AAPL', splitDate: '1980-08-31', splitMultiplier: 4 }];
         // Date parsing returning < 0 is not triggered directly by just passing '1900-01-01' because new Date('1900-01-01') is negative,
@@ -305,7 +305,7 @@ describe('calculations.js', () => {
         getSplitAdjustment(splitHistory, 'AAPL', '2020-01-01');
 
         // This should hit the line in calculations.js
-        const { clearSplitAdjustmentCache } = require('@js/transactions/calculations.js');
+        const { clearSplitAdjustmentCache } = require('../../../js/transactions/calculations.js');
         clearSplitAdjustmentCache();
 
         // No easy way to check internal Map, but we've executed the line.

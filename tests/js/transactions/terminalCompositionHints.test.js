@@ -2,12 +2,12 @@
 import { jest } from '@jest/globals';
 
 // Mock dependencies
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/dataLoader.js', () => ({
+jest.mock('../../../js/transactions/dataLoader.js', () => ({
     loadCompositionSnapshotData: jest.fn().mockResolvedValue({
         dates: ['2023-01-01'],
         total_values: [10000],
@@ -18,8 +18,8 @@ jest.mock('@js/transactions/dataLoader.js', () => ({
     }),
 }));
 
-import { initTerminal } from '@js/transactions/terminal.js';
-import { transactionState } from '@js/transactions/state.js';
+import { initTerminal } from '../../../js/transactions/terminal.js';
+import { transactionState } from '../../../js/transactions/state.js';
 
 function setupDom() {
     document.body.innerHTML = `

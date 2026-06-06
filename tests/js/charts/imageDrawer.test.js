@@ -303,7 +303,7 @@ describe('drawImage', () => {
     });
 
     it('should use global pixel height when LOGO_SIZE.mode is px', async () => {
-        const config = await import('@js/config.js');
+        const config = await import('../../../js/config.js');
         const original = { ...config.LOGO_SIZE };
         config.LOGO_SIZE.mode = 'px';
         config.LOGO_SIZE.value = 18;
@@ -331,7 +331,7 @@ describe('drawImage', () => {
     });
 
     it('should clamp to minPx when LOGO_SIZE.minPx is large', async () => {
-        const config = await import('@js/config.js');
+        const config = await import('../../../js/config.js');
         const original = { ...config.LOGO_SIZE };
         config.LOGO_SIZE.mode = 'ratio';
         config.LOGO_SIZE.value = 0.01; // tiny
@@ -343,7 +343,7 @@ describe('drawImage', () => {
     });
 
     it('should set target height to minPx when smaller than computed (covers line 54)', async () => {
-        const config = await import('@js/config.js');
+        const config = await import('../../../js/config.js');
         const original = { ...config.LOGO_SIZE };
         // Ensure value is small so targetH < minPx, and minPx is comfortably below band clamp
         config.LOGO_SIZE.mode = 'ratio';
@@ -368,7 +368,7 @@ describe('drawImage', () => {
     });
 
     it('should clamp target height to band*(1 - margin) when larger than band (also line 54)', async () => {
-        const config = await import('@js/config.js');
+        const config = await import('../../../js/config.js');
         const original = { ...config.LOGO_SIZE };
         // Make value very large so targetH > band*(1 - margin)
         config.LOGO_SIZE.mode = 'ratio';
@@ -392,7 +392,7 @@ describe('drawImage', () => {
     });
 
     it('should keep computed target height when within min and band (hits line 54 without clamping)', async () => {
-        const config = await import('@js/config.js');
+        const config = await import('../../../js/config.js');
         const original = { ...config.LOGO_SIZE };
         config.LOGO_SIZE.mode = 'ratio';
         config.LOGO_SIZE.value = 0.2; // outerRadius * 0.2 = 20, between minPx=14 and band*(1 - margin)=49
@@ -414,7 +414,7 @@ describe('drawImage', () => {
 
     it('should fall back to default LOGO_SIZE when config is missing', () => {
         jest.isolateModules(() => {
-            jest.doMock('@js/config.js', () => ({}), { virtual: true });
+            jest.doMock('../../../js/config.js', () => ({}), { virtual: true });
             const { drawImage: drawWithDefault } = require('@charts/imageDrawer.js');
             drawWithDefault(ctx, arc, img, {});
             expect(ctx.drawImage).toHaveBeenCalled();

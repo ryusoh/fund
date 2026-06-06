@@ -1,11 +1,11 @@
-import { drawPerformanceChart } from '@js/transactions/chart/renderers/performance.js';
-import { transactionState } from '@js/transactions/state.js';
-import { chartLayouts } from '@js/transactions/chart/state.js';
-import { drawAxes } from '@js/transactions/chart/core.js';
-import { convertBetweenCurrencies } from '@js/transactions/utils.js';
-import {} from '@js/transactions/chart/helpers.js';
+import { drawPerformanceChart } from '../../../../../js/transactions/chart/renderers/performance.js';
+import { transactionState } from '../../../../../js/transactions/state.js';
+import { chartLayouts } from '../../../../../js/transactions/chart/state.js';
+import { drawAxes } from '../../../../../js/transactions/chart/core.js';
+import { convertBetweenCurrencies } from '../../../../../js/transactions/utils.js';
+import {} from '../../../../../js/transactions/chart/helpers.js';
 
-jest.mock('@js/transactions/state.js', () => ({
+jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         performanceSeries: {},
         selectedCurrency: 'USD',
@@ -15,16 +15,16 @@ jest.mock('@js/transactions/state.js', () => ({
     getShowChartLabels: jest.fn(() => true),
     legendState: { performanceDirty: false },
 }));
-jest.mock('@js/transactions/chart/state.js', () => ({
+jest.mock('../../../../../js/transactions/chart/state.js', () => ({
     chartLayouts: {},
 }));
-jest.mock('@js/transactions/chart/interaction.js', () => ({
+jest.mock('../../../../../js/transactions/chart/interaction.js', () => ({
     updateCrosshairUI: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
     updateLegend: jest.fn(),
     legendState: { performanceDirty: false },
 }));
-jest.mock('@js/transactions/chart/animation.js', () => ({
+jest.mock('../../../../../js/transactions/chart/animation.js', () => ({
     stopPerformanceAnimation: jest.fn(),
     stopContributionAnimation: jest.fn(),
     stopFxAnimation: jest.fn(),
@@ -33,18 +33,18 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
     schedulePerformanceAnimation: jest.fn(),
     drawSeriesGlow: jest.fn(),
 }));
-jest.mock('@js/transactions/chart/core.js', () => ({
+jest.mock('../../../../../js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawMountainFill: jest.fn(),
     drawEndValue: jest.fn(() => ({ x: 0, y: 0, width: 10, height: 10 })),
 }));
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../../js/transactions/utils.js', () => ({
     convertBetweenCurrencies: jest.fn((val) => val),
     formatCurrencyCompact: jest.fn((val) => `$${val}`),
     formatCurrencyInlineValue: jest.fn((val) => `$${val}`),
 }));
-jest.mock('@js/transactions/chart/helpers.js', () => {
-    const actual = jest.requireActual('@js/transactions/chart/helpers.js');
+jest.mock('../../../../../js/transactions/chart/helpers.js', () => {
+    const actual = jest.requireActual('../../../../../js/transactions/chart/helpers.js');
     return {
         ...actual,
         getChartColors: jest.fn(() => ({
@@ -58,7 +58,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
         parseLocalDate: jest.fn((str) => new Date(str)),
     };
 });
-jest.mock('@js/utils/smoothing.js', () => ({
+jest.mock('../../../../../js/utils/smoothing.js', () => ({
     smoothFinancialData: jest.fn((data) => data),
 }));
 

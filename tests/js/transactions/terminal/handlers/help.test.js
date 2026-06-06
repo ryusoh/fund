@@ -1,6 +1,6 @@
-import { handleHelpCommand } from '@js/transactions/terminal/handlers/help.js';
+import { handleHelpCommand } from '../../../../../js/transactions/terminal/handlers/help.js';
 
-jest.mock('@js/transactions/terminal/constants.js', () => ({
+jest.mock('../../../../../js/transactions/terminal/constants.js', () => ({
     HELP_SUBCOMMANDS: ['filter', 'other'],
 }));
 

@@ -6,7 +6,7 @@ describe('generateYearBasedTicks Label Logic', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
+            const chartModule = require('../../../js/transactions/chart.js');
             ({ generateYearBasedTicks } = chartModule.__chartTestables);
         });
         Object.defineProperty(window, 'innerWidth', {

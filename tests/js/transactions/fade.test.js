@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { requestFadeUpdate, setFadePreserveSecondLast } from '@js/transactions/fade.js';
+import { requestFadeUpdate, setFadePreserveSecondLast } from '../../../js/transactions/fade.js';
 
 describe('Fade Effect Logic', () => {
     let outputContainer;
@@ -205,14 +205,14 @@ describe('Fade Effect Logic', () => {
 
     test('initFade registers scroll listener', () => {
         const mockAddEventListener = jest.spyOn(outputContainer, 'addEventListener');
-        return import('@js/transactions/fade.js').then(({ initFade }) => {
+        return import('../../../js/transactions/fade.js').then(({ initFade }) => {
             initFade(outputContainer);
             expect(mockAddEventListener).toHaveBeenCalledWith('scroll', expect.any(Function));
         });
     });
 
     test('initFade handles null container', () => {
-        return import('@js/transactions/fade.js').then(({ initFade }) => {
+        return import('../../../js/transactions/fade.js').then(({ initFade }) => {
             initFade(null);
         });
     });
@@ -236,7 +236,7 @@ describe('fade.js early returns', () => {
     });
 
     test('skips update if child node is falsy', async () => {
-        const mod = await import('@js/transactions/fade.js');
+        const mod = await import('../../../js/transactions/fade.js');
         // create a fake children list where one is explicitly falsy
         Object.defineProperty(outputContainer, 'children', {
             get: () => [null, undefined],
@@ -247,7 +247,7 @@ describe('fade.js early returns', () => {
     });
 
     test('preserves third-last child', async () => {
-        const mod = await import('@js/transactions/fade.js');
+        const mod = await import('../../../js/transactions/fade.js');
 
         const child0 = document.createElement('div');
         Object.defineProperty(child0, 'offsetTop', { value: 0, writable: true });

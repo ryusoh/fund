@@ -48,8 +48,8 @@ describe('Terminal Sectors Command', () => {
     });
 
     test('plot sectors command updates state and shows section', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { handlePlotCommand } = require('@js/transactions/terminal/handlers/plot.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
+        const { handlePlotCommand } = require('../../../js/transactions/terminal/handlers/plot.js');
 
         const mockAppendMessage = jest.fn();
         const mockChartManager = { update: jest.fn() };
@@ -76,8 +76,8 @@ describe('Terminal Sectors Command', () => {
     });
 
     test('plot sectors abs command updates state to sectorsAbs', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
-        const { handlePlotCommand } = require('@js/transactions/terminal/handlers/plot.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
+        const { handlePlotCommand } = require('../../../js/transactions/terminal/handlers/plot.js');
 
         const mockAppendMessage = jest.fn();
         const mockChartManager = { update: jest.fn() };
@@ -98,11 +98,11 @@ describe('Terminal Sectors Command', () => {
     });
 
     test('abs and per commands switch between sector views', async () => {
-        const { transactionState } = require('@js/transactions/state.js');
+        const { transactionState } = require('../../../js/transactions/state.js');
         const {
             handleAbsCommand,
             handlePercentageCommand,
-        } = require('@js/transactions/terminal/handlers/misc.js');
+        } = require('../../../js/transactions/terminal/handlers/misc.js');
 
         const mockAppendMessage = jest.fn();
         const mockChartManager = { update: jest.fn() };

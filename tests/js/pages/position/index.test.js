@@ -2,7 +2,7 @@ import { initCurrencyToggle } from '@ui/currencyToggleManager.js';
 import { loadAndDisplayPortfolioData } from '@services/dataService.js';
 import { initFooterToggle } from '@ui/footerToggle.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
-import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
+import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '../../../../js/config.js';
 
 // Mock all imported modules
 jest.mock('@ui/currencyToggleManager.js', () => ({

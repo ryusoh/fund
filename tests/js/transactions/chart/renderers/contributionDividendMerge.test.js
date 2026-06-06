@@ -28,7 +28,7 @@ const mockGetContributionSeries = jest.fn(() => [
     },
 ]);
 
-jest.mock('@js/transactions/chart/data/contribution.js', () => ({
+jest.mock('../../../../../js/transactions/chart/data/contribution.js', () => ({
     getContributionSeriesForTransactions: mockGetContributionSeries,
     buildFilteredBalanceSeries: jest.fn(() => []),
     applyDrawdownToSeries: jest.fn((data) => data),
@@ -49,12 +49,12 @@ const FAKE_YIELD_DATA = [
 const mockLoadYieldData = jest.fn(() => Promise.resolve(FAKE_YIELD_DATA));
 const mockGetCachedYieldData = jest.fn(() => null); // <-- Not cached!
 
-jest.mock('@js/transactions/chart/renderers/yield.js', () => ({
+jest.mock('../../../../../js/transactions/chart/renderers/yield.js', () => ({
     loadYieldData: mockLoadYieldData,
     getCachedYieldData: mockGetCachedYieldData,
 }));
 
-jest.mock('@js/transactions/state.js', () => ({
+jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         selectedCurrency: 'USD',
         chartVisibility: {},
@@ -83,27 +83,27 @@ jest.mock('@js/transactions/state.js', () => ({
     hasActiveTransactionFilters: jest.fn(() => true),
 }));
 
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../../js/transactions/utils.js', () => ({
     formatCurrencyCompact: jest.fn((v) => `$${v}`),
     formatCurrencyInline: jest.fn((v) => `$${v}`),
     convertValueToCurrency: jest.fn((v) => v),
 }));
 
-jest.mock('@js/transactions/calculations.js', () => ({
+jest.mock('../../../../../js/transactions/calculations.js', () => ({
     getSplitAdjustment: jest.fn(() => 1),
 }));
 
-jest.mock('@js/transactions/chart/state.js', () => ({
+jest.mock('../../../../../js/transactions/chart/state.js', () => ({
     chartLayouts: {},
 }));
 
-jest.mock('@js/transactions/chart/interaction.js', () => ({
+jest.mock('../../../../../js/transactions/chart/interaction.js', () => ({
     updateLegend: jest.fn(),
     drawCrosshairOverlay: jest.fn(),
     legendState: { contributionDirty: true },
 }));
 
-jest.mock('@js/transactions/chart/animation.js', () => ({
+jest.mock('../../../../../js/transactions/chart/animation.js', () => ({
     stopPerformanceAnimation: jest.fn(),
     stopContributionAnimation: jest.fn(),
     stopFxAnimation: jest.fn(),
@@ -115,7 +115,7 @@ jest.mock('@js/transactions/chart/animation.js', () => ({
     drawSeriesGlow: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/core.js', () => ({
+jest.mock('../../../../../js/transactions/chart/core.js', () => ({
     drawAxes: jest.fn(),
     drawStartValue: jest.fn(),
     drawEndValue: jest.fn(),
@@ -124,7 +124,7 @@ jest.mock('@js/transactions/chart/core.js', () => ({
     drawMarker: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/renderers/contributionComponents.js', () => ({
+jest.mock('../../../../../js/transactions/chart/renderers/contributionComponents.js', () => ({
     drawVolumeChart: jest.fn(() => ({
         buyVolumeMap: new Map(),
         sellVolumeMap: new Map(),
@@ -132,8 +132,8 @@ jest.mock('@js/transactions/chart/renderers/contributionComponents.js', () => ({
     drawContributionMarkers: jest.fn(),
 }));
 
-jest.mock('@js/transactions/chart/helpers.js', () => {
-    const actual = jest.requireActual('@js/transactions/chart/helpers.js');
+jest.mock('../../../../../js/transactions/chart/helpers.js', () => {
+    const actual = jest.requireActual('../../../../../js/transactions/chart/helpers.js');
     return {
         ...actual,
         getChartColors: jest.fn(() => ({
@@ -146,7 +146,7 @@ jest.mock('@js/transactions/chart/helpers.js', () => {
     };
 });
 
-jest.mock('@js/config.js', () => ({
+jest.mock('../../../../../js/config.js', () => ({
     CONTRIBUTION_CHART_SETTINGS: { startYAxisAtZero: true, paddingRatio: 0.05, minPaddingValue: 0 },
     CHART_MARKERS: { showContributionMarkers: false },
     mountainFill: { enabled: false },
@@ -154,16 +154,16 @@ jest.mock('@js/config.js', () => ({
     ANIMATED_LINE_SETTINGS: { enabled: false, charts: { contribution: { enabled: false } } },
 }));
 
-jest.mock('@js/transactions/chart/config.js', () => ({
+jest.mock('../../../../../js/transactions/chart/config.js', () => ({
     BALANCE_GRADIENTS: {},
     BENCHMARK_GRADIENTS: {},
 }));
 
-jest.mock('@js/utils/smoothing.js', () => ({
+jest.mock('../../../../../js/utils/smoothing.js', () => ({
     smoothFinancialData: jest.fn((data) => data),
 }));
 
-jest.mock('@js/utils/logger.js', () => ({
+jest.mock('../../../../../js/utils/logger.js', () => ({
     logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
@@ -220,7 +220,7 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
     it('calls mergeDividendsIntoContribution even when yield data was not pre-cached', async () => {
         const {
             drawContributionChart,
-        } = require('@js/transactions/chart/renderers/contribution.js');
+        } = require('../../../../../js/transactions/chart/renderers/contribution.js');
 
         const ctx = makeCtxStub();
         const chartManager = { update: jest.fn() };
@@ -245,7 +245,7 @@ describe('drawContributionChart – dividend merge when yield data is not pre-ca
 
         const {
             drawContributionChart,
-        } = require('@js/transactions/chart/renderers/contribution.js');
+        } = require('../../../../../js/transactions/chart/renderers/contribution.js');
 
         const ctx = makeCtxStub();
         const chartManager = { update: jest.fn() };

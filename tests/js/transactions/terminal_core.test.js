@@ -2,13 +2,13 @@
 import { jest } from '@jest/globals';
 
 // Mock zoom module functions since they are imported by terminal.js
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => {
-    const original = jest.requireActual('@js/transactions/terminalStats.js');
+jest.mock('../../../js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('../../../js/transactions/terminalStats.js');
     return {
         ...original,
         getStatsText: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('@js/transactions/terminalStats.js', () => {
 let transactionState;
 
 function resetTransactionState() {
-    transactionState = require('@js/transactions/state.js').transactionState;
+    transactionState = require('../../../js/transactions/state.js').transactionState;
     transactionState.commandHistory = [];
     transactionState.historyIndex = -1;
     transactionState.activeChart = null;
@@ -108,7 +108,7 @@ function initTerminalSession({
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
     }
 
-    const { initTerminal } = require('@js/transactions/terminal.js');
+    const { initTerminal } = require('../../../js/transactions/terminal.js');
     initTerminal({
         filterAndSort,
         toggleTable,
@@ -341,7 +341,7 @@ describe('updateTerminalCrosshair displays dateLabel correctly', () => {
     });
 
     test('uses snapshot.dateLabel for the date display, not snapshot.label', () => {
-        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+        const { updateTerminalCrosshair } = require('../../../js/transactions/terminal.js');
 
         // Call with a snapshot that has dateLabel (the correct property)
         const snapshot = {
@@ -360,7 +360,7 @@ describe('updateTerminalCrosshair displays dateLabel correctly', () => {
     });
 
     test('handles missing dateLabel gracefully', () => {
-        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+        const { updateTerminalCrosshair } = require('../../../js/transactions/terminal.js');
 
         const snapshot = {
             time: Date.parse('2024-06-15'),
@@ -377,7 +377,7 @@ describe('updateTerminalCrosshair displays dateLabel correctly', () => {
     });
 
     test('hides overlay when snapshot is null', async () => {
-        const { updateTerminalCrosshair } = require('@js/transactions/terminal.js');
+        const { updateTerminalCrosshair } = require('../../../js/transactions/terminal.js');
 
         // First show the overlay
         updateTerminalCrosshair(

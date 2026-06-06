@@ -1,18 +1,18 @@
 import { jest } from '@jest/globals';
 
 // Mock dependencies
-jest.mock('@js/transactions/utils.js', () => ({
+jest.mock('../../../../../js/transactions/utils.js', () => ({
     formatCurrency: jest.fn((val, opts) => `FCURR_${val}_${opts.currency}`),
 }));
 
-jest.mock('@js/transactions/terminal/stats/formatting.js', () => ({
+jest.mock('../../../../../js/transactions/terminal/stats/formatting.js', () => ({
     renderAsciiTable: jest.fn(({ rows }) => rows.map((r) => r.join(',')).join('\n')),
     formatTicker: jest.fn((val) => `TICKER_${val}`),
     formatShareValue: jest.fn((val) => `SHARE_${val}`),
     formatResidualValue: jest.fn((val) => `RESID_${val}`),
 }));
 
-jest.mock('@js/transactions/terminal/stats/analysis.js', () => ({
+jest.mock('../../../../../js/transactions/terminal/stats/analysis.js', () => ({
     buildLotSnapshots: jest.fn(),
 }));
 
@@ -26,7 +26,7 @@ describe('Holdings Stats Module', () => {
         globalFetchSpy = global.fetch;
 
         buildLotSnapshotsMock =
-            require('@js/transactions/terminal/stats/analysis.js').buildLotSnapshots;
+            require('../../../../../js/transactions/terminal/stats/analysis.js').buildLotSnapshots;
     });
 
     afterEach(() => {
@@ -36,11 +36,11 @@ describe('Holdings Stats Module', () => {
     describe('getHoldingsText', () => {
         beforeEach(() => {
             // reset cache
-            require('@js/transactions/terminal/stats/holdings.js').__holdingsDataCache = null;
+            require('../../../../../js/transactions/terminal/stats/holdings.js').__holdingsDataCache = null;
         });
 
         test('handles invalid currency and empty average_price/total_cost', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({
@@ -66,7 +66,7 @@ describe('Holdings Stats Module', () => {
         });
 
         test('uses cache if already loaded and falls back to USD if currency not found', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             // First call to populate cache
             globalFetchSpy.mockImplementationOnce(() => {
                 return Promise.resolve({
@@ -86,7 +86,7 @@ describe('Holdings Stats Module', () => {
         });
 
         test('catches exception on json fetch and logs warning', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.reject(new Error('JSON FETCH ERROR'));
@@ -100,7 +100,7 @@ describe('Holdings Stats Module', () => {
         });
 
         test('catches exception on text fetch and returns error string', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
                     return Promise.resolve({ ok: false });
@@ -115,7 +115,7 @@ describe('Holdings Stats Module', () => {
 
         test('fetches and formats JSON holding data correctly for USD', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
@@ -159,7 +159,7 @@ describe('Holdings Stats Module', () => {
 
         test('returns "No current holdings." when data is empty', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
@@ -180,7 +180,7 @@ describe('Holdings Stats Module', () => {
 
         test('falls back to text file on JSON failure', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             globalFetchSpy.mockImplementation((url) => {
                 if (url.includes('holdings.json')) {
@@ -204,7 +204,7 @@ describe('Holdings Stats Module', () => {
 
         test('returns error string when both json and txt endpoints fail', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             globalFetchSpy.mockImplementation(() => {
                 return Promise.resolve({ ok: false });
@@ -220,7 +220,7 @@ describe('Holdings Stats Module', () => {
 
     describe('getHoldingsDebugText', () => {
         test('skips tickers with infinite shares', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             const lotsByTicker = new Map([
                 ['INF_CORP', [{ qty: Infinity }]],
                 ['GOOD_CORP', [{ qty: 10 }]],
@@ -233,7 +233,7 @@ describe('Holdings Stats Module', () => {
         });
 
         test('returns "No non-zero share balances" when all are zero', async () => {
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
             const lotsByTicker = new Map([['ZERO_CORP', [{ qty: 0 }]]]);
             buildLotSnapshotsMock.mockReturnValue({ lotsByTicker });
 
@@ -243,7 +243,7 @@ describe('Holdings Stats Module', () => {
 
         test('returns error string if lotsByTicker is null or empty', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             buildLotSnapshotsMock.mockReturnValue({ lotsByTicker: new Map() });
 
@@ -256,7 +256,7 @@ describe('Holdings Stats Module', () => {
 
         test('ignores zero-balance shares correctly', async () => {
             // Arrange
-            const moduleLocal = require('@js/transactions/terminal/stats/holdings.js');
+            const moduleLocal = require('../../../../../js/transactions/terminal/stats/holdings.js');
 
             const lotsByTicker = new Map([
                 ['EMPTY_CORP', [{ qty: 10 }, { qty: -10 }]], // nets to 0

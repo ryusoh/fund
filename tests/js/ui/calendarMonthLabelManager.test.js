@@ -1,4 +1,4 @@
-import { CURRENCY_SYMBOLS, COLORS, CALENDAR_MONTH_LABEL_HIGHLIGHT } from '@js/config.js';
+import { CURRENCY_SYMBOLS, COLORS, CALENDAR_MONTH_LABEL_HIGHLIGHT } from '../../../js/config.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { setThinkingHighlight } from '@ui/textHighlightManager.js';
 

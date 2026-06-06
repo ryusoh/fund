@@ -1,5 +1,5 @@
 import * as responsive from '@ui/responsive.js';
-import { UI_BREAKPOINTS, CALENDAR_SELECTORS } from '@js/config.js';
+import { UI_BREAKPOINTS, CALENDAR_SELECTORS } from '../../../js/config.js';
 
 describe('Responsive Utilities', () => {
     let htmlElement;

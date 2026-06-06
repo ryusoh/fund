@@ -15,7 +15,7 @@ import {
     CALENDAR_SELECTORS,
     CALENDAR_CONFIG,
     INITIAL_CHART_DATE_RANGE,
-} from '@js/config.js';
+} from '../../js/config.js';
 import { isLocalhost } from '@utils/host';
 
 jest.mock('@utils/host');
@@ -103,7 +103,7 @@ describe('Configuration', () => {
                 value: 500,
             });
             jest.isolateModules(() => {
-                const { CALENDAR_CONFIG } = require('@js/config.js');
+                const { CALENDAR_CONFIG } = require('../../js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(1);
             });
         });
@@ -114,7 +114,7 @@ describe('Configuration', () => {
                 value: 1024,
             });
             jest.isolateModules(() => {
-                const { CALENDAR_CONFIG } = require('@js/config.js');
+                const { CALENDAR_CONFIG } = require('../../js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(3);
             });
         });

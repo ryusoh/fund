@@ -5,13 +5,13 @@
 import { jest } from '@jest/globals';
 
 // Mock zoom
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => {
-    const original = jest.requireActual('@js/transactions/terminalStats.js');
+jest.mock('../../../js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('../../../js/transactions/terminalStats.js');
     return {
         ...original,
         getStatsText: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock('@js/transactions/terminalStats.js', () => {
 let transactionState;
 
 function resetTransactionState() {
-    transactionState = require('@js/transactions/state.js').transactionState;
+    transactionState = require('../../../js/transactions/state.js').transactionState;
     transactionState.commandHistory = [];
     transactionState.historyIndex = -1;
     transactionState.activeChart = null;
@@ -89,7 +89,7 @@ function initTerminalSession({
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
     }
 
-    const { initTerminal } = require('@js/transactions/terminal.js');
+    const { initTerminal } = require('../../../js/transactions/terminal.js');
     initTerminal({
         filterAndSort,
         toggleTable,
@@ -449,13 +449,13 @@ describe('plot marketcap command', () => {
 
 describe('marketcap autocomplete', () => {
     test('marketcap is in PLOT_SUBCOMMANDS', () => {
-        const { PLOT_SUBCOMMANDS } = require('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = require('../../../js/transactions/terminal/constants.js');
         expect(PLOT_SUBCOMMANDS).toContain('marketcap');
         expect(PLOT_SUBCOMMANDS).toContain('marketcap-abs');
     });
 
     test('marketcap autocomplete filters correctly', () => {
-        const { PLOT_SUBCOMMANDS } = require('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = require('../../../js/transactions/terminal/constants.js');
         const filtered = PLOT_SUBCOMMANDS.filter((cmd) => cmd.startsWith('market'));
         expect(filtered).toEqual(['marketcap', 'marketcap-abs']);
     });
@@ -463,7 +463,7 @@ describe('marketcap autocomplete', () => {
 
 describe('marketcap data loader', () => {
     test('loadMarketcapSnapshotData is exported', () => {
-        const { loadMarketcapSnapshotData } = require('@js/transactions/dataLoader.js');
+        const { loadMarketcapSnapshotData } = require('../../../js/transactions/dataLoader.js');
         expect(typeof loadMarketcapSnapshotData).toBe('function');
     });
 });
@@ -473,7 +473,7 @@ describe('marketcap chart renderer', () => {
         const {
             drawMarketcapChart,
             drawMarketcapAbsoluteChart,
-        } = require('@js/transactions/chart/renderers/marketcap.js');
+        } = require('../../../js/transactions/chart/renderers/marketcap.js');
         expect(typeof drawMarketcapChart).toBe('function');
         expect(typeof drawMarketcapAbsoluteChart).toBe('function');
     });
@@ -506,7 +506,7 @@ describe('marketcap crosshair support', () => {
 
 describe('marketcap snapshot', () => {
     test('getMarketcapSnapshotLine is exported', () => {
-        const { getMarketcapSnapshotLine } = require('@js/transactions/terminal/snapshots.js');
+        const { getMarketcapSnapshotLine } = require('../../../js/transactions/terminal/snapshots.js');
         expect(typeof getMarketcapSnapshotLine).toBe('function');
     });
 });

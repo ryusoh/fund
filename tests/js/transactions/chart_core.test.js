@@ -6,7 +6,7 @@ describe('composition ticker filtering helper', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const compositionModule = require('@js/transactions/chart/renderers/composition.js');
+            const compositionModule = require('../../../js/transactions/chart/renderers/composition.js');
             ({ buildCompositionDisplayOrder } = compositionModule);
         });
     });
@@ -38,7 +38,7 @@ describe('createChartManager', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
+            const chartModule = require('../../../js/transactions/chart.js');
             createChartManager = chartModule.createChartManager;
         });
     });
@@ -78,7 +78,7 @@ describe('Minimum Tick Count Verification', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
+            const chartModule = require('../../../js/transactions/chart.js');
             ({ generateConcreteTicks, computePercentTickInfo } = chartModule.__chartTestables);
         });
     });
@@ -118,7 +118,7 @@ describe('Filtered Balance Series Fallback Price Mechanism', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const chartModule = require('@js/transactions/chart.js');
+            const chartModule = require('../../../js/transactions/chart.js');
             ({ buildFilteredBalanceSeries } = chartModule.__chartTestables);
         });
     });
@@ -232,7 +232,7 @@ describe('buildContributionSeriesFromTransactions Currency Handling', () => {
             return Number(val);
         });
 
-        jest.doMock('@js/transactions/utils.js', () => ({
+        jest.doMock('../../../js/transactions/utils.js', () => ({
             convertValueToCurrency: mockConvertValueToCurrency,
             formatCurrencyCompact: jest.fn(),
             formatCurrencyInlineValue: jest.fn(),
@@ -241,7 +241,7 @@ describe('buildContributionSeriesFromTransactions Currency Handling', () => {
         }));
 
         transactionState = { selectedCurrency: 'USD', splitHistory: [] };
-        jest.doMock('@js/transactions/state.js', () => ({
+        jest.doMock('../../../js/transactions/state.js', () => ({
             transactionState,
             setChartVisibility: jest.fn(),
             setHistoricalPrices: jest.fn(),
@@ -251,7 +251,7 @@ describe('buildContributionSeriesFromTransactions Currency Handling', () => {
             getCompositionAssetClassFilter: jest.fn(),
         }));
 
-        jest.doMock('@js/config.js', () => ({
+        jest.doMock('../../../js/config.js', () => ({
             ANIMATED_LINE_SETTINGS: {},
             CHART_SMOOTHING: {},
             CHART_MARKERS: {},
@@ -263,7 +263,7 @@ describe('buildContributionSeriesFromTransactions Currency Handling', () => {
             getHoldingAssetClass: jest.fn(),
         }));
 
-        jest.doMock('@js/plugins/glowTrailAnimator.js', () => ({
+        jest.doMock('../../../js/plugins/glowTrailAnimator.js', () => ({
             createGlowTrailAnimator: jest.fn(() => ({
                 isEnabledFor: jest.fn(),
                 stop: jest.fn(),
@@ -273,12 +273,12 @@ describe('buildContributionSeriesFromTransactions Currency Handling', () => {
             })),
         }));
 
-        jest.doMock('@js/utils/smoothing.js', () => ({
+        jest.doMock('../../../js/utils/smoothing.js', () => ({
             smoothFinancialData: jest.fn(),
         }));
 
         // Load module
-        const chartModule = require('@js/transactions/chart.js');
+        const chartModule = require('../../../js/transactions/chart.js');
         buildContributionSeriesFromTransactions =
             chartModule.buildContributionSeriesFromTransactions;
     });
@@ -325,7 +325,7 @@ describe('drawAxes Y-Axis Label Clipping Prevention', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            const coreModule = require('@js/transactions/chart/core.js');
+            const coreModule = require('../../../js/transactions/chart/core.js');
             drawAxes = coreModule.drawAxes;
         });
 
@@ -452,7 +452,7 @@ describe('nudgeLabelPosition', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            ({ nudgeLabelPosition } = require('@js/transactions/chart/core.js'));
+            ({ nudgeLabelPosition } = require('../../../js/transactions/chart/core.js'));
         });
     });
 
@@ -522,7 +522,7 @@ describe('drawStartValue returns bounds', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            ({ drawStartValue } = require('@js/transactions/chart/core.js'));
+            ({ drawStartValue } = require('../../../js/transactions/chart/core.js'));
         });
     });
 
@@ -630,7 +630,7 @@ describe('drawEndValue collision avoidance', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.isolateModules(() => {
-            ({ drawEndValue } = require('@js/transactions/chart/core.js'));
+            ({ drawEndValue } = require('../../../js/transactions/chart/core.js'));
         });
     });
 
@@ -704,7 +704,7 @@ describe('computeAppreciationSeries', () => {
         jest.isolateModules(() => {
             ({
                 computeAppreciationSeries,
-            } = require('@js/transactions/chart/data/contribution.js'));
+            } = require('../../../js/transactions/chart/data/contribution.js'));
         });
     });
 

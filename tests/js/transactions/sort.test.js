@@ -1,7 +1,7 @@
-import { sortTransactions } from '@js/transactions/table/sort.js';
-import * as utils from '@js/transactions/utils.js';
+import { sortTransactions } from '../../../js/transactions/table/sort.js';
+import * as utils from '../../../js/transactions/utils.js';
 
-jest.mock('@js/transactions/utils.js');
+jest.mock('../../../js/transactions/utils.js');
 
 describe('sortTransactions', () => {
     let transactions;

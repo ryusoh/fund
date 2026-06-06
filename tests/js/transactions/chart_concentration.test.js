@@ -6,7 +6,7 @@ describe('Concentration chart helpers', () => {
 
         beforeEach(async () => {
             jest.resetModules();
-            const mod = await import('@js/transactions/chart/renderers/concentration.js');
+            const mod = await import('../../../js/transactions/chart/renderers/concentration.js');
             buildConcentrationSeries = mod.buildConcentrationSeries;
         });
 

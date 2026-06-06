@@ -1,5 +1,5 @@
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
-import { COLOR_PALETTES } from '@js/config.js';
+import { COLOR_PALETTES } from '../../../js/config.js';
 
 describe('Color Utilities', () => {
     describe('getBlueColorForSlice', () => {

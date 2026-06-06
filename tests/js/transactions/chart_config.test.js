@@ -1,4 +1,4 @@
-import { BENCHMARK_GRADIENTS } from '@js/transactions/chart/config.js';
+import { BENCHMARK_GRADIENTS } from '../../../js/transactions/chart/config.js';
 
 describe('Chart Configuration Color Consistency', () => {
     test('major benchmarks should use consistent color schemes', () => {

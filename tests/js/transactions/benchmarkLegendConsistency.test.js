@@ -28,8 +28,8 @@ describe('Benchmark Legend Consistency Tests', () => {
 
     benchmarkChartTypes.forEach((chartType) => {
         test(`legend clicks in ${chartType} chart toggle benchmarks as radio buttons`, async () => {
-            const { transactionState } = require('@js/transactions/state.js');
-            const { updateLegend } = require('@js/transactions/chart/interaction.js');
+            const { transactionState } = require('../../../js/transactions/state.js');
+            const { updateLegend } = require('../../../js/transactions/chart/interaction.js');
 
             transactionState.activeChart = chartType;
 

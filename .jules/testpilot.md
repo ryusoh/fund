@@ -99,6 +99,8 @@ Result: Tested and verified gracefull exits for zero data/series, increasing sys
 ## 2025-02-23 - Internal testing functions via rewire mock injection
 
 To test highly internal functions isolated in a module closure safely, we inject test execution context by hooking window instead of modifying real feature logic in production code. Exposing through `testContent` rewrites directly isolates scope.
+
 ## 2026-06-06 - Added JSDOM testing for IIFE scripts
+
 **Learning:** When unit testing Immediately Invoked Function Expressions (IIFEs) that modify the DOM directly in Jest, rely on `jest.resetModules()` in `beforeEach` and dynamically `require()` the file inside the test suite or test helper function to re-evaluate the script logic cleanly against the mocked DOM.
 **Action:** Implemented this pattern for `js/loader/imageFallback.js` in `tests/js/loader/imageFallback.test.js`.

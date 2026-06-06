@@ -2,13 +2,13 @@
 import { jest } from '@jest/globals';
 
 // Mock zoom
-jest.mock('@js/transactions/zoom.js', () => ({
+jest.mock('../../../js/transactions/zoom.js', () => ({
     toggleZoom: jest.fn().mockResolvedValue({ zoomed: false, message: 'Mock Zoomed Out' }),
     getZoomState: jest.fn(),
 }));
 
-jest.mock('@js/transactions/terminalStats.js', () => {
-    const original = jest.requireActual('@js/transactions/terminalStats.js');
+jest.mock('../../../js/transactions/terminalStats.js', () => {
+    const original = jest.requireActual('../../../js/transactions/terminalStats.js');
     return {
         ...original,
         getStatsText: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('@js/transactions/terminalStats.js', () => {
 let transactionState;
 
 function resetTransactionState() {
-    transactionState = require('@js/transactions/state.js').transactionState;
+    transactionState = require('../../../js/transactions/state.js').transactionState;
     transactionState.commandHistory = [];
     transactionState.historyIndex = -1;
     transactionState.activeChart = null;
@@ -87,7 +87,7 @@ function initTerminalSession({
         global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
     }
 
-    const { initTerminal } = require('@js/transactions/terminal.js');
+    const { initTerminal } = require('../../../js/transactions/terminal.js');
     initTerminal({
         filterAndSort,
         toggleTable,
@@ -156,7 +156,7 @@ describe('plot command chart toggling', () => {
             // Ensure section has a clean start for visibility toggle test
             chartSection.classList.add('is-hidden');
 
-            const localState = require('@js/transactions/state.js').transactionState;
+            const localState = require('../../../js/transactions/state.js').transactionState;
 
             // First call activates the chart
             await session.submitCommand(command);
@@ -228,7 +228,7 @@ describe('plot command help strings', () => {
     });
 
     test('all subcommands in PLOT_SUBCOMMANDS must be documented in help output', async () => {
-        const { PLOT_SUBCOMMANDS } = require('@js/transactions/terminal/constants.js');
+        const { PLOT_SUBCOMMANDS } = require('../../../js/transactions/terminal/constants.js');
         await session.submitCommand('plot');
         const output = getLastTerminalMessage();
 
@@ -251,7 +251,7 @@ describe('plot command date range handling', () => {
 
     test('retains active date filter across chart toggles', async () => {
         const session = initTerminalSession();
-        const localState = require('@js/transactions/state.js').transactionState;
+        const localState = require('../../../js/transactions/state.js').transactionState;
 
         await session.submitCommand('plot balance 2025');
         expect(localState.chartDateRange).toEqual({
@@ -281,7 +281,7 @@ describe('plot command date range handling', () => {
 
     test('allows explicit reset via special tokens', async () => {
         const session = initTerminalSession();
-        const localState = require('@js/transactions/state.js').transactionState;
+        const localState = require('../../../js/transactions/state.js').transactionState;
 
         await session.submitCommand('plot balance 2025');
         expect(localState.chartDateRange.from).toBe('2025-01-01');
@@ -300,7 +300,7 @@ describe('plot command date range handling', () => {
 
     test('ignores unrecognized date tokens and keeps existing range', async () => {
         const session = initTerminalSession();
-        const localState = require('@js/transactions/state.js').transactionState;
+        const localState = require('../../../js/transactions/state.js').transactionState;
 
         await session.submitCommand('plot balance 2025');
 

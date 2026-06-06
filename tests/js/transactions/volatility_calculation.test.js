@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
-import { drawVolatilityChart } from '@js/transactions/chart/renderers/volatility.js';
-import { transactionState } from '@js/transactions/state.js';
-import { chartLayouts } from '@js/transactions/chart/state.js';
+import { drawVolatilityChart } from '../../../js/transactions/chart/renderers/volatility.js';
+import { transactionState } from '../../../js/transactions/state.js';
+import { chartLayouts } from '../../../js/transactions/chart/state.js';
 
 describe('Volatility Calculation Optimization', () => {
     let ctxStub;

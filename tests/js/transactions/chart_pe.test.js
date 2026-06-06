@@ -7,8 +7,8 @@ describe('PE chart helpers', () => {
 
         beforeEach(async () => {
             jest.resetModules();
-            const mod = await import('@js/transactions/chart/renderers/pe.js');
-            const helperMod = await import('@js/transactions/chart/helpers.js');
+            const mod = await import('../../../js/transactions/chart/renderers/pe.js');
+            const helperMod = await import('../../../js/transactions/chart/helpers.js');
             buildPESeries = mod.buildPESeries;
             parseLocalDate = helperMod.parseLocalDate;
         });

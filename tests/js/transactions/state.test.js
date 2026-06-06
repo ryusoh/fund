@@ -30,7 +30,7 @@ import {
     getCompositionAssetClassFilter,
     setZoomed,
     isZoomed,
-} from '@js/transactions/state.js';
+} from '../../../js/transactions/state.js';
 
 describe('state.js', () => {
     beforeEach(() => {
@@ -247,7 +247,7 @@ describe('state.js', () => {
             setCompositionFilterTickers,
             setCompositionAssetClassFilter,
             hasActiveTransactionFilters,
-        } = require('@js/transactions/state.js');
+        } = require('../../../js/transactions/state.js');
         setCompositionFilterTickers([]);
         setCompositionAssetClassFilter(null);
         expect(hasActiveTransactionFilters()).toBe(false);
@@ -257,7 +257,7 @@ describe('state.js', () => {
         const {
             getCompositionFilterTickers,
             transactionState,
-        } = require('@js/transactions/state.js');
+        } = require('../../../js/transactions/state.js');
         const oldVal = transactionState.compositionFilterTickers;
         transactionState.compositionFilterTickers = undefined;
         expect(getCompositionFilterTickers()).toEqual([]);
@@ -268,7 +268,7 @@ describe('state.js', () => {
         const {
             getCompositionAssetClassFilter,
             transactionState,
-        } = require('@js/transactions/state.js');
+        } = require('../../../js/transactions/state.js');
         const oldVal = transactionState.compositionAssetClassFilter;
         transactionState.compositionAssetClassFilter = undefined;
         expect(getCompositionAssetClassFilter()).toBeNull();
@@ -279,7 +279,7 @@ describe('state.js', () => {
         const {
             hasActiveTransactionFilters,
             transactionState,
-        } = require('@js/transactions/state.js');
+        } = require('../../../js/transactions/state.js');
         transactionState.allTransactions = null;
         transactionState.filteredTransactions = null;
         expect(hasActiveTransactionFilters()).toBe(false);
