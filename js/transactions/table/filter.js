@@ -8,7 +8,8 @@ export function applyDateRangeFilter(transactions, rangeStart, rangeEnd) {
     }
     return transactions.filter((transaction) => {
         const normalized = normalizeDateOnly(transaction.tradeDate);
-        const tradeTime = Date.parse(normalized || transaction.tradeDate);
+        const tradeTime =
+            normalized instanceof Date ? normalized.getTime() : Date.parse(transaction.tradeDate);
         if (!Number.isFinite(tradeTime)) {
             return false;
         }

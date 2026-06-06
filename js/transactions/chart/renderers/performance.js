@@ -59,11 +59,12 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         return a.localeCompare(b);
     });
 
-    orderedKeys.forEach((key) => {
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    });
+    }
 
     const allPossibleSeries = orderedKeys.map((key) => {
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
@@ -120,26 +121,34 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     let normalizedSeriesToDraw = seriesToDraw.map(cloneSeries);
 
     if (filterFrom || filterTo) {
+        // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
         normalizedSeriesToDraw = normalizedSeriesToDraw.map((series) => {
-            const filteredData = series.data
-                .map((d) => ({ ...d, date: parseLocalDate(d.date) }))
-                .filter((d) => {
-                    const pointDate = d.date;
-                    return (
-                        (!filterFrom || pointDate >= filterFrom) &&
-                        (!filterTo || pointDate <= filterTo)
-                    );
-                });
+            const normalizedData = [];
+            let startValue = 0;
+            let hasStartValue = false;
 
-            if (filteredData.length === 0) {
-                return { ...series, data: [] };
+            for (let j = 0; j < series.data.length; j++) {
+                const d = series.data[j];
+                const pointDate = parseLocalDate(d.date);
+
+                if (
+                    (!filterFrom || pointDate >= filterFrom) &&
+                    (!filterTo || pointDate <= filterTo)
+                ) {
+                    if (!hasStartValue) {
+                        startValue = d.value;
+                        hasStartValue = true;
+                    }
+                    normalizedData.push({
+                        ...d,
+                        date: pointDate,
+                        value:
+                            Number.isFinite(startValue) && startValue !== 0
+                                ? d.value / startValue
+                                : 1,
+                    });
+                }
             }
-
-            const startValue = filteredData[0].value;
-            const normalizedData = filteredData.map((d) => ({
-                ...d,
-                value: Number.isFinite(startValue) && startValue !== 0 ? d.value / startValue : 1,
-            }));
 
             return {
                 ...series,
@@ -274,10 +283,11 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const performanceBaselineY = yScale(0);
 
-    seriesForDrawing.forEach((series) => {
+    for (let i = 0; i < seriesForDrawing.length; i++) {
+        const series = seriesForDrawing[i];
         const isVisible = transactionState.chartVisibility[series.key] !== false;
         if (!isVisible || !Array.isArray(series.data) || series.data.length === 0) {
-            return;
+            continue;
         }
 
         // Apply smoothing to the series data
@@ -326,13 +336,14 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        coords.forEach((coord, index) => {
-            if (index === 0) {
+        for (let j = 0; j < coords.length; j++) {
+            const coord = coords[j];
+            if (j === 0) {
                 ctx.moveTo(coord.x, coord.y);
             } else {
                 ctx.lineTo(coord.x, coord.y);
             }
-        });
+        }
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
@@ -363,7 +374,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    });
+    }
 
     if (renderedSeries.length === 0) {
         stopPerformanceAnimation();
@@ -389,7 +400,8 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {
-        renderedSeries.forEach((series) => {
+        for (let i = 0; i < renderedSeries.length; i++) {
+            const series = renderedSeries[i];
             const { x, y, color, value } = series;
 
             const bounds = drawEndValue(
@@ -409,7 +421,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
             if (bounds) {
                 labelBounds.push(bounds);
             }
-        });
+        }
     }
 
     chartLayouts.performance = {

@@ -27,14 +27,16 @@ function bootstrapStoredCurrency() {
                     target = button;
                 }
                 button.classList.remove('active');
+                button.setAttribute('aria-pressed', 'false');
             });
             if (target) {
                 target.classList.add('active');
+                target.setAttribute('aria-pressed', 'true');
             }
         });
     } catch (error) {
         // eslint-disable-next-line no-console
-        console.warn('Caught exception:', error);
+        console.warn('Currency bootstrap storage failed:', error);
         // Ignore storage/DOM errors to avoid blocking page load
     }
 }

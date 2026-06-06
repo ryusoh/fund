@@ -1,6 +1,10 @@
 import { logger } from '@utils/logger.js';
 import { getNyDate, isTradingDay } from '@utils/date.js';
-import { fetchPortfolioData } from '@services/dataService.js';
+import {
+    fetchPortfolioData,
+    fetchMarketRatiosForTickers,
+    _calculateDynamicPeValues,
+} from '@services/dataService.js';
 
 const FX_DATA_URL = '../data/fx_data.json';
 
@@ -18,7 +22,11 @@ async function fetchJSON(url) {
  *   date: string,
  *   balance: number,
  *   composition: Array<{ticker: string, value: number, percent: number}>,
- *   fxRates: Object
+ *   fxRates: Object,
+ *   pe: number | null,
+ *   forwardPe: number | null,
+ *   tickerPEs: Object,
+ *   tickerWeights: Object
  * } | null>}
  */
 export async function fetchRealTimeData() {
@@ -45,9 +53,19 @@ export async function fetchRealTimeData() {
 
         let totalBalanceUSD = 0;
         const composition = [];
+        const tickers = Object.keys(holdings);
+
+        const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickers);
+
+        let weightSum = 0;
+        let weightedYieldSum = 0;
+        let weightedFwdYieldSum = 0;
+        const tickerPEs = {};
+        const tickerWeights = {};
 
         // 1. Calculate Balance and Composition
-        Object.entries(holdings).forEach(([ticker, details]) => {
+        tickers.forEach((ticker) => {
+            const details = holdings[ticker];
             const shares = parseFloat(details.shares) || 0;
             const price = parseFloat(prices[ticker]) || 0;
             if (shares > 0 && price > 0) {
@@ -58,8 +76,31 @@ export async function fetchRealTimeData() {
                     value,
                     // percent calculated later
                 });
+
+                const ratioSnapshot = marketRatiosByTicker.get(ticker);
+                if (ratioSnapshot) {
+                    const { trailingValue, forwardValue } = _calculateDynamicPeValues(
+                        ratioSnapshot,
+                        price
+                    );
+
+                    if (Number.isFinite(trailingValue) && trailingValue > 0) {
+                        tickerPEs[ticker] = trailingValue;
+                        weightedYieldSum += value / trailingValue;
+                    }
+                    if (Number.isFinite(forwardValue) && forwardValue > 0) {
+                        weightedFwdYieldSum += value / forwardValue;
+                    }
+                }
+                tickerWeights[ticker] = value;
+                weightSum += value;
             }
         });
+
+        const portfolioPE =
+            weightSum > 0 && weightedYieldSum > 0 ? weightSum / weightedYieldSum : null;
+        const portfolioFwdPE =
+            weightSum > 0 && weightedFwdYieldSum > 0 ? weightSum / weightedFwdYieldSum : null;
 
         // 2. Add Composition Percentages
         if (totalBalanceUSD > 0) {
@@ -81,6 +122,10 @@ export async function fetchRealTimeData() {
             balance: totalBalanceUSD,
             composition,
             fxRates: fx.rates || { USD: 1.0 },
+            pe: portfolioPE,
+            forwardPe: portfolioFwdPE,
+            tickerPEs,
+            tickerWeights,
         };
     } catch (error) {
         logger.warn('Failed to fetch real-time data:', error);

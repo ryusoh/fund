@@ -1,3 +1,4 @@
+import { getNumberFormatter } from '../../../utils/formatting.js';
 import { transactionState } from '../../state.js';
 import { getSplitAdjustment } from '../../calculations.js';
 import { loadCompositionSnapshotData } from '../../dataLoader.js';
@@ -29,22 +30,24 @@ function normalizeTickerKey(ticker) {
 }
 
 function computeWeightedMedian(entries, weightGetter, valueGetter) {
-    const normalized = entries
-        .map((entry) => {
-            const weight = weightGetter(entry);
-            const value = valueGetter(entry);
-            if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(value)) {
-                return null;
-            }
-            return { weight, value };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.value - b.value);
+    const normalized = [];
+    let totalWeight = 0;
+    for (let i = 0; i < entries.length; i += 1) {
+        const entry = entries[i];
+        const weight = weightGetter(entry);
+        const value = valueGetter(entry);
+        if (Number.isFinite(weight) && weight > 0 && Number.isFinite(value)) {
+            normalized.push({ weight, value });
+            totalWeight += weight;
+        }
+    }
 
-    const totalWeight = normalized.reduce((sum, item) => sum + item.weight, 0);
     if (totalWeight <= 0) {
         return null;
     }
+
+    normalized.sort((a, b) => a.value - b.value);
+
     let cumulative = 0;
     for (let i = 0; i < normalized.length; i += 1) {
         cumulative += normalized[i].weight;
@@ -315,15 +318,19 @@ export async function getDurationStatsText() {
             if (!lots || lots.length === 0) {
                 return null;
             }
-            const totalQty = lots.reduce((sum, lot) => sum + lot.qty, 0);
+            let totalQty = 0;
+            for (let i = 0; i < lots.length; i++) {
+                totalQty += lots[i].qty;
+            }
             if (totalQty <= 0) {
                 return null;
             }
-            const avgAgeDays =
-                lots.reduce((sum, lot) => {
-                    const diffMs = Math.max(0, baselineDate - lot.date);
-                    return sum + lot.qty * (diffMs / MS_IN_DAY);
-                }, 0) / totalQty;
+            let ageDaysSum = 0;
+            for (let i = 0; i < lots.length; i++) {
+                const diffMs = Math.max(0, baselineDate - lots[i].date);
+                ageDaysSum += lots[i].qty * (diffMs / MS_IN_DAY);
+            }
+            const avgAgeDays = ageDaysSum / totalQty;
             return {
                 ticker: formatTicker(holding.ticker),
                 weight: holding.weight,
@@ -334,11 +341,15 @@ export async function getDurationStatsText() {
         })
         .filter(Boolean);
 
-    const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
-    const weightedAvgDays =
-        totalWeight > 0
-            ? entries.reduce((sum, entry) => sum + entry.weight * entry.avgAgeDays, 0) / totalWeight
-            : null;
+    let totalWeight = 0;
+    for (let i = 0; i < entries.length; i++) {
+        totalWeight += entries[i].weight;
+    }
+    let weightedAvgDaysSum = 0;
+    for (let i = 0; i < entries.length; i++) {
+        weightedAvgDaysSum += entries[i].weight * entries[i].avgAgeDays;
+    }
+    const weightedAvgDays = totalWeight > 0 ? weightedAvgDaysSum / totalWeight : null;
     const medianDays = computeWeightedMedian(
         entries,
         (entry) => entry.weight,
@@ -350,41 +361,47 @@ export async function getDurationStatsText() {
         summaryRows.push([
             'Weighted Avg Age (Open)',
             Number.isFinite(weightedAvgDays)
-                ? `${Math.round(weightedAvgDays).toLocaleString()} days (${formatDurationLabel(weightedAvgDays)})`
+                ? `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgDays))} days (${formatDurationLabel(weightedAvgDays)})`
                 : 'N/A',
         ]);
         summaryRows.push([
             'Weighted Median Age (Open)',
             Number.isFinite(medianDays)
-                ? `${Math.round(medianDays).toLocaleString()} days (${formatDurationLabel(medianDays)})`
+                ? `${getNumberFormatter(undefined, 0, 0).format(Math.round(medianDays))} days (${formatDurationLabel(medianDays)})`
                 : 'N/A',
         ]);
     }
 
-    const totalClosedQty = hasClosedData
-        ? closedSales.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
-        : 0;
-    const weightedClosedAvgDays =
-        totalClosedQty > 0
-            ? closedSales.reduce(
-                  (sum, item) => sum + (Number(item.qty) || 0) * (Number(item.days) || 0),
-                  0
-              ) / totalClosedQty
-            : null;
+    let totalClosedQty = 0;
+    if (hasClosedData) {
+        for (let i = 0; i < closedSales.length; i++) {
+            totalClosedQty += Number(closedSales[i].qty) || 0;
+        }
+    }
+    let closedDaysSum = 0;
+    if (totalClosedQty > 0) {
+        for (let i = 0; i < closedSales.length; i++) {
+            closedDaysSum += (Number(closedSales[i].qty) || 0) * (Number(closedSales[i].days) || 0);
+        }
+    }
+    const weightedClosedAvgDays = totalClosedQty > 0 ? closedDaysSum / totalClosedQty : null;
     if (Number.isFinite(weightedClosedAvgDays)) {
         summaryRows.push([
             'Weighted Avg Age (Closed)',
-            `${Math.round(weightedClosedAvgDays).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedClosedAvgDays))} days (${formatDurationLabel(
                 weightedClosedAvgDays
             )})`,
         ]);
     }
 
-    const totalOpenShareWeight = entries.reduce((sum, entry) => sum + entry.openShares, 0);
-    const openShareWeightedSum = entries.reduce(
-        (sum, entry) => sum + entry.openShares * entry.avgAgeDays,
-        0
-    );
+    let totalOpenShareWeight = 0;
+    for (let i = 0; i < entries.length; i++) {
+        totalOpenShareWeight += entries[i].openShares;
+    }
+    let openShareWeightedSum = 0;
+    for (let i = 0; i < entries.length; i++) {
+        openShareWeightedSum += entries[i].openShares * entries[i].avgAgeDays;
+    }
     const allDenominator = totalOpenShareWeight + totalClosedQty;
     const weightedAvgAll =
         allDenominator > 0
@@ -394,7 +411,7 @@ export async function getDurationStatsText() {
     if (Number.isFinite(weightedAvgAll)) {
         summaryRows.push([
             'Weighted Avg Age (All)',
-            `${Math.round(weightedAvgAll).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgAll))} days (${formatDurationLabel(
                 weightedAvgAll
             )})`,
         ]);
@@ -414,7 +431,7 @@ export async function getDurationStatsText() {
         .map((entry) => [
             entry.ticker,
             `${entry.percent.toFixed(2)}%`,
-            Math.round(entry.avgAgeDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.avgAgeDays)),
             formatYearsValue(entry.avgAgeDays),
         ]);
 
@@ -464,7 +481,10 @@ export async function getLifespanStatsText() {
                 return null;
             }
             const lots = lotsByTicker?.get(normalizedTicker) || [];
-            const openShares = lots.reduce((sum, lot) => sum + lot.qty, 0);
+            let openShares = 0;
+            for (let i = 0; i < lots.length; i++) {
+                openShares += lots[i].qty;
+            }
             if (!Number.isFinite(openShares) || openShares <= 0) {
                 return null;
             }
@@ -483,7 +503,7 @@ export async function getLifespanStatsText() {
         .map((entry) => [
             entry.ticker,
             formatShareValueShort(entry.openShares),
-            Math.round(entry.spanDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.spanDays)),
             formatYearsValue(entry.spanDays),
         ]);
 
@@ -517,7 +537,7 @@ export async function getLifespanStatsText() {
         .map((entry) => [
             entry.ticker,
             formatShareValueShort(entry.shares),
-            Math.round(entry.spanDays).toLocaleString(),
+            getNumberFormatter(undefined, 0, 0).format(Math.round(entry.spanDays)),
             formatYearsValue(entry.spanDays),
         ]);
 
@@ -531,17 +551,23 @@ export async function getLifespanStatsText() {
         : '';
 
     const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
-    const openShareSum = openEntries.reduce((sum, entry) => sum + entry.openShares, 0);
-    const openWeightedSpanSum = openEntries.reduce(
-        (sum, entry) => sum + entry.spanDays * entry.openShares,
-        0
-    );
+    let openShareSum = 0;
+    for (let i = 0; i < openEntries.length; i++) {
+        openShareSum += openEntries[i].openShares;
+    }
+    let openWeightedSpanSum = 0;
+    for (let i = 0; i < openEntries.length; i++) {
+        openWeightedSpanSum += openEntries[i].spanDays * openEntries[i].openShares;
+    }
     const weightedAvgOpen = openShareSum > 0 ? openWeightedSpanSum / openShareSum : null;
-    const closedShareSum = closedEntries.reduce((sum, entry) => sum + entry.shares, 0);
-    const closedWeightedSpanSum = closedEntries.reduce(
-        (sum, entry) => sum + entry.spanDays * entry.shares,
-        0
-    );
+    let closedShareSum = 0;
+    for (let i = 0; i < closedEntries.length; i++) {
+        closedShareSum += closedEntries[i].shares;
+    }
+    let closedWeightedSpanSum = 0;
+    for (let i = 0; i < closedEntries.length; i++) {
+        closedWeightedSpanSum += closedEntries[i].spanDays * closedEntries[i].shares;
+    }
     const weightedAvgClosed = closedShareSum > 0 ? closedWeightedSpanSum / closedShareSum : null;
     const combinedDenominator = openShareSum + closedShareSum;
     const weightedAvgAll =
@@ -552,7 +578,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgOpen)) {
         summaryRows.push([
             'Weighted Avg (Open)',
-            `${Math.round(weightedAvgOpen).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgOpen))} days (${formatDurationLabel(
                 weightedAvgOpen
             )})`,
         ]);
@@ -560,7 +586,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgClosed)) {
         summaryRows.push([
             'Weighted Avg (Closed)',
-            `${Math.round(weightedAvgClosed).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgClosed))} days (${formatDurationLabel(
                 weightedAvgClosed
             )})`,
         ]);
@@ -568,7 +594,7 @@ export async function getLifespanStatsText() {
     if (Number.isFinite(weightedAvgAll)) {
         summaryRows.push([
             'Weighted Avg (All)',
-            `${Math.round(weightedAvgAll).toLocaleString()} days (${formatDurationLabel(
+            `${getNumberFormatter(undefined, 0, 0).format(Math.round(weightedAvgAll))} days (${formatDurationLabel(
                 weightedAvgAll
             )})`,
         ]);
@@ -576,13 +602,13 @@ export async function getLifespanStatsText() {
     if (openEntries.length) {
         summaryRows.push([
             'Longest Open Position',
-            `${openEntries[0].ticker} · ${Math.round(openEntries[0].spanDays).toLocaleString()} days`,
+            `${openEntries[0].ticker} · ${getNumberFormatter(undefined, 0, 0).format(Math.round(openEntries[0].spanDays))} days`,
         ]);
     }
     if (closedEntries.length) {
         summaryRows.push([
             'Longest Closed Position',
-            `${closedEntries[0].ticker} · ${Math.round(closedEntries[0].spanDays).toLocaleString()} days`,
+            `${closedEntries[0].ticker} · ${getNumberFormatter(undefined, 0, 0).format(Math.round(closedEntries[0].spanDays))} days`,
         ]);
     }
     if (!openEntries.length && !closedEntries.length) {
@@ -628,7 +654,10 @@ export async function getConcentrationText() {
         return 'No positive weights in composition data.';
     }
 
-    const totalWeight = holdings.reduce((sum, item) => sum + item.weight, 0);
+    let totalWeight = 0;
+    for (let i = 0; i < holdings.length; i++) {
+        totalWeight += holdings[i].weight;
+    }
     if (totalWeight <= 0) {
         return 'No positive weights in composition data.';
     }
@@ -642,10 +671,13 @@ export async function getConcentrationText() {
         .sort((a, b) => b.normalizedWeight - a.normalizedWeight);
 
     // Calculate adjusted HHI using ETF internal diversification
-    const hhi = normalized.reduce(
-        (sum, item) => sum + calculateAdjustedHhiContribution(item.ticker, item.normalizedWeight),
-        0
-    );
+    let hhi = 0;
+    for (let i = 0; i < normalized.length; i++) {
+        hhi += calculateAdjustedHhiContribution(
+            normalized[i].ticker,
+            normalized[i].normalizedWeight
+        );
+    }
     const effectiveHoldings = hhi > 0 ? 1 / hhi : null;
     let top3Weight = 0;
     let top5Weight = 0;

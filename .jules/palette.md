@@ -59,8 +59,48 @@
 
 **Action:** Always append `:not(:disabled)` to `:hover` pseudo-classes on interactive elements (e.g., `.btn:hover:not(:disabled)`) to ensure hover styling is only applied when the element is actually usable.
 
+## 2026-04-14 - Interactive Container Scroll Accessibility
+
+**Learning:** Vertical scrolling containers (like `.left-col` and `.right-col` in analysis or `.chart-card` in terminal) with `overflow-y: auto` cannot be scrolled via keyboard unless they are explicitly focusable. Arrow keys will scroll the whole page instead of the container content.
+**Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling matching the container's `border-radius` to scrollable containers.
+
 ## 2026-04-18 - Nested Grid Layout Scrollable Columns Accessibility
 
 **Learning:** When using CSS Grid or Flexbox to create complex dashboard layouts with independently scrollable columns (e.g., `overflow-y: auto` on `.left-col` or `.right-col`), these containers must be explicitly focusable. Otherwise, keyboard users cannot scroll their contents if the content exceeds the viewport height.
 
 **Action:** Always add `tabindex="0"` and an appropriate `:focus-visible` styling (e.g., `outline: 2px solid rgba(255, 255, 255, 0.5)`) to structurally scrollable column containers in complex layouts to enable keyboard scrolling.
+
+## 2026-04-21 - Terminal Input UX
+
+**Learning:** Terminal emulator text inputs natively receive browser spellcheck by default, which incorrectly flags commands and stock tickers as spelling errors with distracting red underlines, breaking UI immersion.
+**Action:** Always add `spellcheck="false"` to text inputs that act as CLIs or expect non-prose data to prevent native browser interference.
+
+## 2026-04-22 - Layout Containers Accessibility Pitfall
+
+**Learning:** Adding `tabindex="0"` to non-interactive structural or layout containers (like `.left-col` or `.right-col`) to make them scrollable is an accessibility anti-pattern. It creates confusing stops for screen reader users on elements that have no interactive purpose or semantic meaning.
+**Action:** Do not add `tabindex="0"` to non-interactive structural or layout layout containers. Let the user scroll naturally without forcing focus onto the layout structure itself.
+
+## 2026-05-08 - Accessible Toggle Bootstrap
+
+**Learning:** During page load bootstrap scripts that restore UI toggle states (like currency toggles) without a framework, the initialization script often updates the visual CSS class (`active`) but forgets to sync the corresponding ARIA attribute (`aria-pressed`). This creates a mismatch for screen readers, announcing an incorrect state on initial load.
+**Action:** Always ensure that bootstrap scripts that manually modify `.active` CSS classes on toggles also explicitly update the `aria-pressed` attribute to maintain accessibility parity.
+
+## 2026-05-14 - Dynamic Content Accessibility
+
+**Learning:** Asynchronous data updates in footers or summaries are missed by screen readers unless explicitly marked.
+**Action:** Add `aria-live="polite"` to parent containers or footers (e.g., `#table-footer-summary`) that are dynamically populated.
+
+## 2026-05-15 - Explicitly Define Utility Classes for Accessibility
+
+**Learning:** The application uses utility classes like `.sr-only` for screen reader accessible labels (e.g., in `terminal/index.html`). However, because the project does not use a CSS framework like Tailwind or Bootstrap, the class was missing from the CSS, causing screen-reader-only text to be visually rendered.
+**Action:** Always ensure that any utility class used for accessibility (like `.sr-only`) is explicitly defined in the project's base CSS (`css/base.css`) so that it functions correctly without relying on external frameworks.
+
+## 2026-05-16 - Data Visualization Scroll Accessibility
+
+**Learning:** Horizontally scrollable data visualization containers (like the calendar heatmap using `overflow-x: auto`) must be explicitly focusable. Otherwise, keyboard-only users cannot scroll to view off-screen data points.
+**Action:** Always add `tabindex="0"` and appropriate `:focus-visible` styling to horizontally scrollable data visualization containers.
+
+## 2026-05-18 - Keyboard Accessibility for Custom Dropdowns
+
+**Learning:** When custom interactive elements like dropdown lists are built using non-semantic `div` tags, they inherently lack keyboard accessibility. Keyboard-only and screen reader users cannot focus, navigate, or activate these elements without proper roles and tab management.
+**Action:** Always add `role="button"`, `tabindex="0"`, a `keydown` event listener for Enter/Space keys, and a `:focus-visible` styling state when transforming generic `div` containers into interactive dropdown menu options.

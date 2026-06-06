@@ -55,9 +55,20 @@
                         return globalScope.caches
                             .open(CACHE_NAME)
                             .then((cache) => cache.add(absoluteUrl))
-                            .catch(() => warmFetchFallback(absoluteUrl));
+                            .catch((error) => {
+                                // eslint-disable-next-line no-console
+                                console.warn(
+                                    'Video warmup fallback triggered due to error:',
+                                    error
+                                );
+                                return warmFetchFallback(absoluteUrl);
+                            });
                     })
-                    .catch(() => warmFetchFallback(absoluteUrl));
+                    .catch((error) => {
+                        // eslint-disable-next-line no-console
+                        console.warn('Video warmup fallback triggered due to error:', error);
+                        return warmFetchFallback(absoluteUrl);
+                    });
             } else {
                 warmFetchFallback(absoluteUrl);
             }
@@ -68,7 +79,7 @@
                     video.load();
                 } catch (error) {
                     // eslint-disable-next-line no-console
-                    console.warn('Caught exception:', error);
+                    console.warn('Video warmup failed:', error);
                     // Ignore playback readiness errors; fallback will still cache the source
                 }
             }

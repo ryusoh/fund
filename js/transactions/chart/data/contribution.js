@@ -84,7 +84,14 @@ export function buildContributionSeriesFromTransactions(
         }
     });
 
-    const uniqueDates = Array.from(dailyMap.keys()).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    // Bolt: Replaced Array.from(dailyMap.keys()).sort() with explicit pre-allocated array and manual iteration to reduce GC overhead
+    const uniqueDates = new Array(dailyMap.size);
+    let dateIdx = 0;
+    for (const dateStr of dailyMap.keys()) {
+        uniqueDates[dateIdx++] = dateStr;
+    }
+    uniqueDates.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
     const series = [];
     let cumulativeAmount = 0;
 
@@ -124,10 +131,17 @@ export function buildContributionSeriesFromTransactions(
         if (entry.orderTypes.size === 1) {
             orderType = entry.orderTypes.values().next().value;
         } else if (entry.orderTypes.size > 0) {
-            const types = Array.from(entry.orderTypes).map((t) => String(t).toLowerCase());
-            if (types.every((t) => t === 'buy')) {
+            let allBuy = true;
+            let allSell = true;
+            for (const t of entry.orderTypes) {
+                const lowerT = String(t).toLowerCase();
+                if (lowerT !== 'buy') {allBuy = false;}
+                if (lowerT !== 'sell') {allSell = false;}
+                if (!allBuy && !allSell) {break;}
+            }
+            if (allBuy) {
                 orderType = 'buy';
-            } else if (types.every((t) => t === 'sell')) {
+            } else if (allSell) {
                 orderType = 'sell';
             }
         }
@@ -409,16 +423,21 @@ export function applyDrawdownToSeries(data, valueKey, initialPeak = -Infinity) {
     // Sort by date first
     const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     let runningPeak = initialPeak;
-    return sorted.map((p) => {
+    const len = sorted.length;
+    // Bolt: Use pre-allocated Array and a standard loop instead of .map() to avoid closure allocations and eliminate array growth overhead.
+    const result = new Array(len);
+    for (let i = 0; i < len; i++) {
+        const p = sorted[i];
         const val = p[valueKey];
         if (val > runningPeak) {
             runningPeak = val;
         }
-        return {
+        result[i] = {
             ...p,
             [valueKey]: val - runningPeak, // <= 0
         };
-    });
+    }
+    return result;
 }
 
 /**
@@ -495,4 +514,103 @@ export function computeAppreciationSeries(balanceData, contributionData) {
     });
 
     return result;
+}
+
+/**
+ * Merge daily dividend data into a contribution series.
+ * Dividends reduce the cumulative contribution (cash returned to investor).
+ *
+ * @param {Array} contributionSeries - from buildContributionSeriesFromTransactions
+ * @param {Array|null} yieldData - from yield_data.json [{date, daily_dividend, ...}]
+ * @param {string} currency - target currency
+ * @param {Array|null} filterTickers - optional array of ticker symbols to filter by
+ * @returns {Array} merged series with dividends subtracted
+ */
+export function mergeDividendsIntoContribution(
+    contributionSeries,
+    yieldData,
+    currency,
+    filterTickers = null
+) {
+    if (!Array.isArray(yieldData) || yieldData.length === 0) {
+        return contributionSeries;
+    }
+
+    // Build a Map of dateStr → daily_dividend from yieldData (only non-zero entries)
+    const dividendMap = new Map();
+    yieldData.forEach((item) => {
+        let dividend = 0;
+
+        if (filterTickers && filterTickers.length > 0) {
+            // If filtering is active, only include dividends for the filtered tickers
+            if (item.daily_dividends_by_ticker) {
+                filterTickers.forEach((ticker) => {
+                    if (item.daily_dividends_by_ticker[ticker]) {
+                        dividend += item.daily_dividends_by_ticker[ticker];
+                    }
+                });
+            }
+            // If item.daily_dividends_by_ticker is missing, dividend remains 0. We DO NOT fall back!
+        } else if (item.daily_dividend) {
+            // No filtering active: use the aggregate daily_dividend
+            dividend = item.daily_dividend;
+        }
+
+        const dividendNum = Number(dividend) || 0;
+        if (dividendNum !== 0) {
+            dividendMap.set(item.date, dividendNum);
+        }
+    });
+
+    if (dividendMap.size === 0) {
+        return contributionSeries;
+    }
+
+    // Clone the series so we don't mutate the original
+    const merged = contributionSeries.map((point) => ({ ...point }));
+
+    // Build a Map of dateStr → index from contributionSeries for quick lookup
+    const seriesMap = new Map();
+    merged.forEach((point, index) => {
+        seriesMap.set(point.tradeDate, index);
+    });
+
+    // Process each dividend entry
+    dividendMap.forEach((dividend, dateStr) => {
+        const convertedDividend =
+            currency && currency !== 'USD'
+                ? convertValueToCurrency(dividend, dateStr, currency)
+                : dividend;
+
+        if (seriesMap.has(dateStr)) {
+            // Date already exists in contribution series: add sellVolume, mark dividend delta
+            const idx = seriesMap.get(dateStr);
+            merged[idx].sellVolume = (merged[idx].sellVolume || 0) + convertedDividend;
+            merged[idx].netAmount = (merged[idx].netAmount || 0) - convertedDividend;
+        } else {
+            // Insert a new point for this dividend date
+            merged.push({
+                tradeDate: dateStr,
+                amount: 0, // will be recalculated
+                value: 0,
+                orderType: 'sell',
+                netAmount: -convertedDividend,
+                buyVolume: 0,
+                sellVolume: convertedDividend,
+            });
+        }
+    });
+
+    // Re-sort by date
+    merged.sort((a, b) => (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0));
+
+    // Recalculate cumulative amounts
+    let cumulative = 0;
+    merged.forEach((point) => {
+        cumulative += point.netAmount;
+        point.amount = cumulative;
+        point.value = cumulative;
+    });
+
+    return merged;
 }

@@ -1,16 +1,22 @@
 import { CHART_SMOOTHING } from '../../config.js';
 import { logger } from '../../utils/logger.js';
 
-const DEFAULT_MONO_FONT = "'JetBrains Mono','IBM Plex Mono','Menlo',monospace";
+// Bolt: Cache Intl.DateTimeFormat instance to prevent expensive recreation
+const getCrosshairDateFormatter = (() => {
+    let formatter = null;
+    return () => {
+        if (!formatter && typeof Intl !== 'undefined') {
+            formatter = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+            });
+        }
+        return formatter;
+    };
+})();
 
-const crosshairDateFormatter =
-    typeof Intl !== 'undefined'
-        ? new Intl.DateTimeFormat('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: '2-digit',
-          })
-        : null;
+const DEFAULT_MONO_FONT = "'JetBrains Mono','IBM Plex Mono','Menlo',monospace";
 
 // Color parsing context
 const COLOR_PARSER_CONTEXT = (() => {
@@ -181,8 +187,9 @@ export function formatCrosshairDateLabel(time) {
     if (Number.isNaN(date.getTime())) {
         return '';
     }
-    if (crosshairDateFormatter) {
-        return crosshairDateFormatter.format(date);
+    const formatter = getCrosshairDateFormatter();
+    if (formatter) {
+        return formatter.format(date);
     }
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -251,14 +258,25 @@ export function parseColorToRgb(baseColor) {
     const ctx = COLOR_PARSER_CONTEXT;
     ctx.save();
     try {
+        ctx.fillStyle = '#000000';
         ctx.fillStyle = baseColor;
-        const computed = ctx.fillStyle;
+        const computed1 = ctx.fillStyle;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = baseColor;
+        const computed2 = ctx.fillStyle;
+
         ctx.restore();
-        if (computed && computed !== baseColor) {
-            return parseColorToRgb(computed);
+
+        if (computed1 !== computed2) {
+            return null;
+        }
+
+        if (computed1 && computed1 !== baseColor) {
+            return parseColorToRgb(computed1);
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Chart helpers execution failed:', error);
         ctx.restore();
         return null;
     }

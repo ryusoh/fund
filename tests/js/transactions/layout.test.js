@@ -42,7 +42,11 @@ describe('adjustMobilePanels', () => {
         });
 
         // Mock offsetHeight
-        Object.defineProperty(legend, 'offsetHeight', { value: 20, writable: true });
+        Object.defineProperty(legend, 'offsetHeight', {
+            value: 20,
+            writable: true,
+            configurable: true,
+        });
     });
 
     it('resets heights for desktop (>768px)', () => {
@@ -56,6 +60,15 @@ describe('adjustMobilePanels', () => {
         expect(tableContainer.style.height).toBe('');
         expect(plotSection.style.height).toBe('');
         expect(chartContainer.style.height).toBe('');
+    });
+
+    it('resets heights for desktop (>768px) with missing elements', () => {
+        window.innerWidth = 800;
+        tableContainer.remove();
+        plotSection.remove();
+        chartContainer.remove();
+
+        expect(() => adjustMobilePanels()).not.toThrow();
     });
 
     it('handles mobile view with missing elements', () => {
@@ -119,5 +132,47 @@ describe('adjustMobilePanels', () => {
 
         expect(chartContainer.style.height).toBe('');
         expect(plotSection.style.height).toBe('');
+    });
+
+    it('handles null panel in calculatePanelHeight', () => {
+        plotSection.remove();
+        expect(() => adjustMobilePanels()).not.toThrow();
+    });
+
+    it('handles missing chart container when adjusting height', () => {
+        chartContainer.remove();
+        expect(() => adjustMobilePanels()).not.toThrow();
+    });
+
+    it('handles hidden plotSection and chartContainer is present but plotSection is somehow null', () => {
+        plotSection.classList.add('is-hidden');
+        chartContainer.style.height = '400px';
+        plotSection.style.height = '400px';
+        document.body.innerHTML = `
+            <div id="runningAmountSection" class="is-hidden">
+                <div class="chart-container"></div>
+            </div>
+        `;
+    });
+
+    it('tests branches in adjustChartContainerHeight', () => {
+        // cardStyles without paddingTop or paddingBottom
+        window.getComputedStyle = jest.fn().mockImplementation((el) => {
+            if (el === legend) {
+                return {};
+            }
+            return {};
+        });
+
+        // legend height
+        Object.defineProperty(legend, 'offsetHeight', {
+            value: 0,
+            writable: true,
+            configurable: true,
+        });
+
+        adjustMobilePanels();
+        // Since plotSection padding is 0, legend is 0, inner = 684 - 8 = 676
+        expect(chartContainer.style.height).toBe('676px');
     });
 });

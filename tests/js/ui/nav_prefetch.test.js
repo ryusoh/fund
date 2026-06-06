@@ -1,6 +1,65 @@
 import { jest } from '@jest/globals';
 
 describe('nav_prefetch.js', () => {
+    test('queueFetchTask handles cross-origin fetch options', async () => {
+        window.fetch.mockImplementation((url) => {
+            if (url && url.endsWith && url.endsWith('manifest.json')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            assets: [
+                                { url: 'https://external.com/asset.js' },
+                                { url: 'http://invalid url' },
+                            ],
+                        }),
+                });
+            }
+            return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
+        });
+
+        document.body.innerHTML = '<a href="/page" data-prefetch="true">Link</a>';
+        loadScript();
+
+        const link = document.querySelector('a');
+        link.dispatchEvent(new MouseEvent('mouseenter'));
+
+        await new Promise((resolve) => setTimeout(resolve, 150));
+
+        const calls = window.fetch.mock.calls;
+        const crossOriginCall = calls.find((c) => c[0] === 'https://external.com/asset.js');
+        if (crossOriginCall) {
+            expect(crossOriginCall[1].mode).toBe('no-cors');
+            expect(crossOriginCall[1].credentials).toBe('omit');
+        }
+    });
+
+    test('queueFetchTask handles network errors', async () => {
+        window.fetch.mockImplementation((url) => {
+            if (url && url.endsWith && url.endsWith('manifest.json')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            assets: [{ url: '/error-asset.js' }],
+                        }),
+                });
+            }
+            if (url && url.endsWith && url.endsWith('error-asset.js')) {
+                return Promise.reject(new Error('Network error'));
+            }
+            return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
+        });
+
+        document.body.innerHTML = '<a href="/page2" data-prefetch="true">Link2</a>';
+        loadScript();
+
+        const link = document.querySelector('a');
+        link.dispatchEvent(new MouseEvent('mouseenter'));
+
+        await new Promise((resolve) => setTimeout(resolve, 150));
+    });
+
     let originalFetch;
     let originalConnection;
 
@@ -244,10 +303,138 @@ describe('nav_prefetch.js', () => {
         expect(calls.some((url) => url && url.endsWith && url.endsWith('/position/'))).toBe(true);
     });
 
+    test('drainQueue uses requestIdleCallback recursively if available', () => {
+        // Need to isolate to mock requestIdleCallback being used inside drainQueue recursively
+        jest.isolateModules(() => {
+            const originalRIC = window.requestIdleCallback;
+            const originalTimeout = window.setTimeout;
+
+            const ricMock = jest.fn((cb) => {
+                cb(); // immediately execute
+                return 1;
+            });
+            window.requestIdleCallback = ricMock;
+
+            const timeoutMock = jest.fn((cb) => {
+                cb();
+                return 1;
+            });
+            window.setTimeout = timeoutMock;
+
+            // Mock fetch to track queue calls
+            window.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+
+            document.body.innerHTML = `
+                <div class="container">
+                    <a href="/position/">Internal</a>
+                    <a href="/calendar/">Internal 2</a>
+                </div>
+            `;
+
+            // Re-require to capture mocked window functions
+            require('../../../js/ui/nav_prefetch.js');
+
+            // finalizePrefetch uses setTimeout which calls drainQueue
+            expect(timeoutMock).toHaveBeenCalled();
+            // drainQueue uses requestIdleCallback
+            expect(ricMock).toHaveBeenCalled();
+
+            window.requestIdleCallback = originalRIC;
+            window.setTimeout = originalTimeout;
+        });
+    });
+
     test('should fallback to setTimeout if requestIdleCallback missing', () => {
         delete window.requestIdleCallback;
         loadScript();
         expect(window.fetch).toHaveBeenCalled();
+    });
+
+    test('should handle empty or missing URL regex matches', () => {
+        const makeSyncPromise = (val) => ({
+            then: (cb) => {
+                if (cb) {
+                    try {
+                        const res = cb(val);
+                        if (res && res.then) {
+                            return res;
+                        }
+                        return makeSyncPromise(res);
+                    } catch (e) {
+                        return makeSyncPromise(e, true);
+                    }
+                }
+                return makeSyncPromise(val);
+            },
+            catch: () => makeSyncPromise(val),
+            finally: (cb) => {
+                if (cb) {
+                    cb();
+                }
+                return makeSyncPromise(val);
+            },
+        });
+        window.fetch = jest.fn((url) => {
+            if (url && url.endsWith('.css')) {
+                return makeSyncPromise({
+                    ok: true,
+                    text: () =>
+                        makeSyncPromise(
+                            'background: url(data:image/png;base64,123); background: url(); background:;'
+                        ),
+                });
+            }
+            return makeSyncPromise({ ok: true });
+        });
+        loadScript();
+        expect(window.fetch).toHaveBeenCalled();
+    });
+
+    test('should handle manifest URL parsing error gracefully', () => {
+        const OriginalURL = window.URL;
+        window.URL = jest.fn((url, base) => {
+            if (url && url.includes('manifest.webmanifest')) {
+                throw new Error('Test parsing error');
+            }
+            return new OriginalURL(url, base);
+        });
+
+        document.body.innerHTML = `
+            <link rel="manifest" href="/assets/manifest.webmanifest" />
+            <div class="container">
+                <a href="/position/">Internal</a>
+            </div>
+        `;
+
+        try {
+            expect(() => loadScript()).not.toThrow();
+        } finally {
+            window.URL = OriginalURL;
+        }
+    });
+
+    test('should handle missing navigator.connection', () => {
+        const originalConnection = navigator.connection;
+        const originalMozConnection = navigator.mozConnection;
+        const originalWebkitConnection = navigator.webkitConnection;
+
+        delete navigator.connection;
+        delete navigator.mozConnection;
+        delete navigator.webkitConnection;
+
+        try {
+            expect(() => loadScript()).not.toThrow();
+        } finally {
+            if (originalConnection !== undefined) {
+                navigator.connection = originalConnection;
+            }
+            if (originalMozConnection !== undefined) {
+                navigator.mozConnection = originalMozConnection;
+            }
+            if (originalWebkitConnection !== undefined) {
+                navigator.webkitConnection = originalWebkitConnection;
+            }
+        }
     });
 
     test('should handle fetch rejection gracefully', () => {

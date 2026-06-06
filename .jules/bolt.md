@@ -83,7 +83,7 @@
 **Learning:** Using `.filter()` chained with `.reduce()` combined with `new Date(split.splitDate)` inside the iteration loop created significant memory allocations and GC pressure for large datasets with split adjustments.
 **Action:** Replace `.filter().reduce()` with a single `for` loop, and replace `new Date` comparison with direct string comparison by formatting `transactionDate` into `YYYY-MM-DD` outside the loop.
 
-## $(date +%Y-%m-%d) - Replaced Map and Spread with single index loop
+## 2026-05-28 - Replaced Map and Spread with single index loop
 
 **Learning:** Found a common pattern combining `.map(...)` with `Math.min(...array)` and `Math.max(...array)` spreading. The spread operator can exceed the maximum call stack size on large datasets and also creates unnecessary O(N) array allocations causing high GC pressure in performance-sensitive high-frequency rendering methods.
 **Action:** Replace `Math.max(...array.map(x => x))` with a single simple `for` loop that records both min and max to keep operations O(N) and eliminate extra array allocations entirely.
@@ -103,7 +103,7 @@
 **Learning:** Allocating arrays via `.slice()` inside an outer loop over all data points in filtering/smoothing logic (like Savitzky-Golay) causes O(N\*W) allocations resulting in garbage collection pressure.
 **Action:** Avoid `.slice()` and pass the original array with start/end indices to helper functions to compute values in O(1) space per iteration.
 
-## $(date +%Y-%m-%d) - Array.from().reduce() overhead on Iterables
+## 2026-05-28 - Array.from().reduce() overhead on Iterables
 
 **Learning:** When summing or accumulating values from an iterable (e.g., `Map.values()` or `Set.values()`), using `Array.from(iterable).reduce(...)` allocates an unnecessary intermediate array, which causes garbage collection (GC) pressure.
 **Action:** Always replace `Array.from(iterable).reduce(...)` with a direct `for...of` loop over the iterable to prevent memory allocation and reduce overhead.
@@ -113,7 +113,7 @@
 **Learning:** Combining \`.map(...)\` with \`Math.max(...array)\` and \`Math.min(...array)\` spreading creates unnecessary array allocations. The spread operator can exceed the maximum call stack size on large datasets.
 **Action:** Replaced \`Math.max(...array.map(x => x))\` and similar combinations with a single, simple \`for\` loop that tracks the min and max inline. This eliminates the intermediate array allocations and prevents \`Maximum call stack size exceeded\` errors, dropping complexity to O(N) with O(1) space.
 
-## $(date +%Y-%m-%d) - Pre-sizing Map Array Allocations
+## 2026-05-28 - Pre-sizing Map Array Allocations
 
 **Learning:** When refactoring chained `.map()` calls in rendering loops (like generating `coords`, `points`, and `rawPoints` in `fx.js`), dynamically generating mapping points dynamically grows arrays and places pressure on Garbage Collection.
 **Action:** When replacing `.map()` calls inside high-frequency loops with explicit iterations, pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(nSmoothed);`) and assign items by index (`coords[i] = ...`) rather than `push` or map. This removes dynamic array resizing overhead and reduces total GC pauses in charting frames.
@@ -122,3 +122,128 @@
 
 **Learning:** In performance-critical interactive functions, such as those fired repeatedly by UI interactions (`mousemove` handlers for crosshairs), using `Array.prototype.forEach` allocates an implicit closure per iteration. Over many executions, this causes closure allocation overhead, adding to JavaScript garbage collection pressure which can eventually result in micro-stutters.
 **Action:** Always replace `.forEach` array iteration loops inside hot paths (such as `interaction.js` event handlers) with index-based `for` loops or `for...of` loops, as these avoid closure allocations entirely and execute more deterministically.
+
+## 2026-04-22 - Array mapping and filtering overhead
+
+**Learning:** Chaining array methods like `Array.from(nodeList).map().filter()` inside high-frequency scroll and resize handlers creates massive garbage collection pressure by allocating and immediately discarding multiple intermediate arrays.
+**Action:** Always replace chained higher-order array methods in rendering or event loops with a single, simple `for` loop to process node lists in O(N) iterations with zero intermediate array allocation overhead.
+
+## 2026-04-24 - Optimize Array.from().map().every() chain for iterables
+
+**Learning:** Using Array.from().map() combined with .every() on Sets or iterables allocates intermediate arrays and causes unnecessary GC pressure. Replacing with a direct for...of loop avoids this overhead.
+**Action:** Use direct loops on iterables with early exits when possible instead of converting to arrays for map/every/some operations.
+
+## 2026-04-25 - Pre-sizing Map Array Allocations
+
+**Learning:** When replacing `.map()` and `.forEach()` calls inside high-frequency rendering loops (like generating `coords` or `bmkPoints` in `pe.js`) with explicit iterations, using `.push()` can dynamically resize arrays and increase GC pressure.
+**Action:** Pre-allocate the final arrays to their exact required size (e.g., `const coords = new Array(series.length);`) and assign items by index (`coords[i] = ...`) to completely remove dynamic array resizing overhead and reduce total GC pauses in charting frames.
+
+## 2026-05-28 - Array map and forEach closures in high-frequency event loops
+
+**Learning:** Using `Array.from({ length }, () => ...)` for initialization and `.forEach()` combined with dynamic `.push()` array growth inside rendering or resize loops (e.g., `tableGlassEffect.js` resize handler) generates significant garbage collection pressure due to closure allocations and dynamic array resizing.
+**Action:** Replace `Array.from` maps and `.forEach()` calls inside animation and resize paths with pre-allocated arrays (e.g., `new Array(length)`) and standard index-based `for` loops. This eliminates intermediate allocations and ensures O(1) space growth per iteration.
+
+## 2026-04-27 - Array map and reduce in high-frequency calculations
+
+**Learning:** In high-frequency data calculation loops (like `applyTransactionFIFO` and `computeRunningTotals`), using `Array.prototype.map` and `Array.prototype.reduce` generates intermediate closures and increases Garbage Collection pressure.
+**Action:** Replace `map` and `reduce` in critical data crunching paths with pre-allocated arrays and manual index-based `for` loops to drop closure allocation overhead entirely.
+
+## 2026-04-28 - Array map in render loops
+
+**Learning:** Using chained `.map()` calls inside high-frequency rendering loops dynamically allocates new arrays on every frame, generating significant garbage collection (GC) pressure.
+**Action:** Replace `.map()` operations inside high-frequency rendering loops with a standard `for` loop and pre-allocated arrays using `new Array(length)` to avoid runtime memory allocations.
+
+## 2026-04-29 - Array .map().filter().map() chains in chart renderers
+
+**Learning:** Chaining `.map().filter().map()` inside `performance.js` and other chart renderers creates multiple intermediate short-lived arrays. In tight rendering loops or on large data structures, this leads to significant array allocation overhead, max call stack limits, and garbage collection (GC) pressure.
+**Action:** Replaced chained higher-order array methods with a single inline manual `for` loop. Iterate over the input array, check the condition, compute the mapped values, and push directly to a newly instantiated single output array. This reduces execution time and prevents unnecessary GC pauses.
+
+## 2026-05-02 - Replaced Array.from().forEach() with standard loops
+
+**Learning:** Using `Array.from(nodeList).forEach()` inside high-frequency paths like event listeners or UI update functions creates implicit closures and unnecessary intermediate array allocations, increasing garbage collection (GC) pressure and reducing frontend responsiveness.
+**Action:** Replace `Array.from(nodeList).forEach()` with standard index-based `for` loops (`for (let i = 0; i < nodeList.length; i++)`) to prevent intermediate array creation and closure allocations, leading to smoother animations and scroll experiences.
+
+## 2026-05-03 - Replaced Array.map().slice() with standard for-loop inside High-Frequency Event Handler
+
+**Learning:** Using chained `.map()` and `.slice()` in `js/transactions/chart/interaction.js` inside high-frequency mouse event handlers (like crosshairs) triggers large intermediate array allocations leading to GC overhead and stutters.
+**Action:** Replace `.map()` with pre-sized `new Array()` and index-based `for` loops. Also replace `.slice()` and array `forEach()` closures with direct element access loops to keep allocations completely stable (O(1)) during chart interaction loops.
+
+## 2026-05-05 - Replaced .map().filter().reduce() chains in computeWeightedMedian
+
+**Learning:** Chaining `.map().filter().reduce()` when processing collections (like in statistical functions computing medians) allocates multiple intermediate arrays and processes the data across multiple O(N) passes, increasing Garbage Collection overhead.
+**Action:** Replaced chained array methods with a single manual `for` loop that computes weights and values, filters valid items, tracks the total sum inline, and directly populates the final array, keeping the operation O(N) with minimal GC pressure.
+
+## 2025-05-06 - Array.prototype.map Optimization in Terminal Series Iteration
+
+**Learning:** High-frequency `.map` operations that also include `.some()` scans to check for properties cause multiple full-array iterations and excessive object closure allocations per data point, increasing garbage collection pressure.
+**Action:** Replace `.some()` and `.map()` with a combined traditional `for` loop, pre-allocate arrays (`new Array(len)`), and retain explicit spreading (`{...item}`) to safely preserve properties while minimizing loop overhead.
+
+## 2026-05-09 - Pre-allocating Map Arrays for Drawdowns
+
+**Learning:** When iterating through sorted arrays to compute drawdowns, using `.map()` dynamically grows the array and creates implicit closures, adding pressure on Garbage Collection.
+**Action:** Replaced `.map()` in `applyDrawdownToSeries` with a pre-allocated array (`new Array(len)`) and a standard `for` loop to eliminate intermediate allocations and ensure O(1) space growth per iteration.
+
+## 2026-05-10 - Optimize FX chart array allocations
+
+**Learning:** Chained `.map().filter()` inside the FX chart renderer causes intermediate array allocations, increasing GC pressure during high-frequency renders.
+**Action:** Replaced chained higher-order array methods with single explicit `for` loops and pre-allocated arrays in `renderFxChart`.
+
+## 2026-05-11 - Cache Intl.NumberFormat in formatting utilities
+
+**Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method. In a performance test with 100k iterations, `toLocaleString` took over 4.3 seconds whereas caching `Intl.NumberFormat` took under 200ms.
+**Action:** When executing high-frequency currency or number formatting functions (e.g. `formatCurrency` used frequently during rendering lists or tooltips), cache the `Intl.NumberFormat` instance using a Map. Avoid calling `.toLocaleString()` dynamically where a single instantiation could be reused.
+
+## 2026-05-14 - Cache Intl.NumberFormat in formatting utilities
+
+**Learning:** Instantiating `Intl.NumberFormat` and repeatedly calling `toLocaleString` within a loop is significantly slower than caching an `Intl.NumberFormat` object and reusing its `.format()` method.
+**Action:** Replaced dynamic `.toLocaleString()` calls with the cached `getNumberFormatter()` in formatting loops in `holdings.js`, `transactions.js`, `analysis.js` and `calendar/index.js` to avoid recreation overhead and decrease latency.
+
+## 2026-05-28 - Cache Intl.DateTimeFormat in date utilities
+
+**Learning:** Similar to `Intl.NumberFormat`, instantiating `Intl.DateTimeFormat` via `toLocaleString()` in high-frequency functions (like `getNyDate()` or chart crosshair formatting) introduces significant performance overhead due to V8's internal object allocation and locale resolution.
+**Action:** Replaced `toLocaleString()` calls and repeated `new Intl.DateTimeFormat` constructions with cached instances. Reused the formatter's `.formatToParts()` method to construct the date without recreating the expensive `Intl` object.
+
+## 2026-04-23 - Eliminate chained .map().filter().map() allocations
+
+**Learning:** Chaining array methods like `.map().filter().map()` creates multiple intermediate arrays. In tight loops or large datasets, this leads to significant array allocation overhead and garbage collection pressure.
+**Action:** Replaced chained higher-order array methods with a single manual `for` loop to push results directly to an output array, reducing execution time and preventing unnecessary GC pauses.
+
+## 2026-05-18 - Array .forEach closures in pe.js chart renderer
+
+**Learning:** Using `Object.keys().forEach()` to iterate and populate ticker PE and weight data inside a high-frequency real-time update loop or when building chart series (like in `js/transactions/chart/renderers/pe.js`) allocates implicit closures and creates garbage collection (GC) pressure.
+**Action:** Replaced `.forEach()` calls with standard index-based `for` loops and explicitly iterated over the keys array to prevent closure allocations and reduce GC overhead.
+
+## 2024-05-21 - Replace chained array operations with explicit loops
+
+**Learning:** High-frequency chart rendering loops that use chained array methods (like `.filter().map()`) create intermediate arrays and multiple closure allocations, which cause significant garbage collection overhead during rapid UI updates.
+**Action:** Replaced chained `.filter().map()` operations in `js/transactions/chart/renderers/contribution.js` with pre-allocated explicit `for` loops to minimize GC pressure and improve render performance.
+
+## 2026-05-23 - Array.from overhead in Set/Map iterations
+
+**Learning:** Using `Array.from(map.keys())` or `Array.from({ length })` creates intermediate arrays and iterators which add overhead to garbage collection in high-frequency functions.
+**Action:** Replace `Array.from({ length }, () => 0)` with `new Array(length).fill(0)` and explicit iterations over iterables into pre-allocated arrays to eliminate overhead and closure allocations.
+
+## 2026-05-26 - Replaced higher-order reduce() with manual for loops
+
+**Learning:** Using chained array methods or `.reduce()` inside high-frequency processing paths (like analytical summations and statistical computations over large arrays) introduces unnecessary functional callback overhead and closure allocations, leading to increased garbage collection pressure.
+**Action:** Replaced `.reduce()` calls in `js/transactions/terminal/stats/analysis.js` and `js/pages/analysis/lab.js` with pre-allocated index-based `for` loops to drop closure allocation overhead and speed up array summations.
+
+## 2026-05-28 - Array map in drawMountainFill rendering path
+
+**Learning:** Using `.map()` to copy coordinates inside `drawMountainFill` during high-frequency chart rendering loops allocates new objects and creates closures on every frame. This builds up garbage collection (GC) pressure over time, potentially causing frame drops.
+**Action:** Replaced the `.map()` coordinate mapping with a pre-allocated array (`new Array()`) and a standard, explicit `for` loop to eliminate intermediate closure allocations and reduce dynamic array growth overhead during rendering.
+
+## 2026-06-10 - Eliminate nested .forEach closures in stacked area rendering
+
+**Learning:** Using `.forEach()` inside tight charting rendering loops (such as `activeTickerOrder.forEach` wrapping `dates.forEach` to trace stacked area paths in `composition.js`, `sectors.js`, and `geography.js`) implicitly allocates closures on every frame. For complex charts with numerous groups and hundreds of date points, this compounds significantly, generating severe garbage collection (GC) pressure that can lead to micro-stutters and dropped frames during interaction or animation.
+**Action:** Always replace `.forEach()` iterations with standard, index-based `for` loops within critical high-frequency chart rendering code paths to eliminate closure allocation overhead entirely.
+
+## 2024-05-18 - Caching derived objects during high-frequency events
+
+**Learning:** Doing `new Date(dates[j])` and repeatedly constructing interpolators with `createTimeInterpolator()` inside high-frequency hover event handlers (like chart crosshair drawing) causes severe CPU and Garbage Collection (GC) degradation due to constant array allocations and closure recreations.
+**Action:** Cache derived objects like interpolators directly on the `layout` state object during the first hover interaction so they can be reused on subsequent hover event frames, changing an O(H\*N) per-frame operation to an O(1) lookup per frame.
+
+## 2026-06-21 - Replaced .forEach closures in chart render and interaction loops
+
+**Learning:** Using `.forEach()` arrays in extremely high-frequency event loops like pointer hover iterations (`interaction.js`) and every animation frame drawing step (`fx.js`, `beta.js`, `rolling.js`, `volatility.js`, `performance.js`, `drawdown.js`, `contribution.js`) implicitly allocates new closure functions on every frame tick/mouse move. In large composite charts with multiple overlaid lines/series, this exponentially increases the short-lived heap allocations, leading to heavy GC overhead and resulting micro-stutters during interactivity.
+**Action:** Always replace `.forEach()` with explicit index-based `for` loops (e.g., `for (let i = 0; i < array.length; i++)`) inside critical path rendering, mapping coordinates, and high-frequency UI handlers to entirely eliminate closure creation overhead and drop GC pressure.

@@ -1,5 +1,4 @@
 import { logger } from '@utils/logger.js';
-import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 import {
     transactionState,
     setAllTransactions,
@@ -32,13 +31,21 @@ function convertCurrencySeries(series, targetCurrency) {
         return series;
     }
 
-    const hasNetAmount = series.some((entry) =>
-        Object.prototype.hasOwnProperty.call(entry, 'netAmount')
-    );
+    const len = series.length;
+    let hasNetAmount = false;
+    for (let i = 0; i < len; i += 1) {
+        if (Object.prototype.hasOwnProperty.call(series[i], 'netAmount')) {
+            hasNetAmount = true;
+            break;
+        }
+    }
+
+    const resultSeries = new Array(len);
 
     if (hasNetAmount) {
         let cumulative = 0;
-        return series.map((item) => {
+        for (let i = 0; i < len; i += 1) {
+            const item = series[i];
             const dateRef = item.tradeDate || item.date;
             const convertedNet = convertValueToCurrency(item.netAmount, dateRef, targetCurrency);
             cumulative += convertedNet;
@@ -49,17 +56,20 @@ function convertCurrencySeries(series, targetCurrency) {
             if (item.synthetic && item.orderType === 'padding') {
                 result.amount = cumulative;
             }
-            return result;
-        });
+            resultSeries[i] = result;
+        }
+        return resultSeries;
     }
 
-    return series.map((item) => {
+    for (let i = 0; i < len; i += 1) {
+        const item = series[i];
         const result = { ...item };
         if ('value' in item) {
             result.value = convertValueToCurrency(item.value, item.date, targetCurrency);
         }
-        return result;
-    });
+        resultSeries[i] = result;
+    }
+    return resultSeries;
 }
 import {
     loadSplitHistory,
@@ -144,13 +154,16 @@ function ensureSyntheticStart(series, { dateKey, valueKey, zeroProps = {} }) {
     }
 
     const rawDate = first?.[dateKey];
-    const firstDate = rawDate instanceof Date ? new Date(rawDate) : new Date(rawDate);
+    // Parse as UTC if it's a string to avoid timezone shifts
+    const firstDate =
+        rawDate instanceof Date
+            ? new Date(rawDate)
+            : new Date(rawDate + (rawDate.includes('T') ? '' : 'T00:00:00Z'));
     if (Number.isNaN(firstDate.getTime())) {
         return series;
     }
-    firstDate.setHours(0, 0, 0, 0);
     const syntheticDate = new Date(firstDate);
-    syntheticDate.setDate(syntheticDate.getDate() - 1);
+    syntheticDate.setUTCDate(syntheticDate.getUTCDate() - 1);
     const formattedDate =
         rawDate instanceof Date ? syntheticDate : syntheticDate.toISOString().split('T')[0];
 
@@ -265,7 +278,13 @@ async function loadTransactions() {
 
 function initialize() {
     if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
-        perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+        import('../../vendor/perlin-plane.js')
+            .then(({ mountPerlinPlaneBackground }) => {
+                perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
+            })
+            .catch((err) => {
+                logger.error('Failed to load perlin-plane background:', err);
+            });
     }
 
     // Initialize glass effects for terminal pane, chart card, and transaction table
@@ -443,3 +462,9 @@ window.addEventListener('keydown', (event) => {
         cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
     }
 });
+
+export const __terminalTesting = {
+    buildFxRateMaps,
+    ensureSyntheticStart,
+    convertCurrencySeries,
+};

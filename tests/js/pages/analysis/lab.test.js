@@ -103,20 +103,105 @@ describe('analysis lab data loading', () => {
         expect(baseScenario.precomputedEarningsCagr).toBeCloseTo(0.6 * 0.1 + 0.4 * 0.25, 5);
     });
 
-    it('extracts scenario titles from thesis markdown headings', async () => {
-        global[FLAG] = true;
-        const module = await import('@pages/analysis/lab.js');
-        const { extractScenarioTitles } = module.__analysisLabTesting;
-        const markdown = `
+    describe('fetchText', () => {
+        it('fetches text successfully', async () => {
+            // Arrange
+            global[FLAG] = true;
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                text: jest.fn().mockResolvedValue('markdown content'),
+            });
+            const module = await import('@pages/analysis/lab.js');
+            const { fetchText } = module.__analysisLabTesting;
+
+            // Act
+            const text = await fetchText('../docs/thesis/TEST.md');
+
+            // Assert
+            expect(text).toBe('markdown content');
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/docs/thesis/TEST.md'),
+                { cache: 'no-store' }
+            );
+        });
+
+        it('throws error when fetch fails', async () => {
+            // Arrange
+            global[FLAG] = true;
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: false,
+            });
+            const module = await import('@pages/analysis/lab.js');
+            const { fetchText } = module.__analysisLabTesting;
+
+            // Act & Assert
+            await expect(fetchText('../docs/thesis/TEST.md')).rejects.toThrow(
+                'Failed to load ../docs/thesis/TEST.md'
+            );
+        });
+    });
+
+    describe('extractScenarioTitles and stripWrappingQuotes', () => {
+        let extractScenarioTitles;
+
+        beforeEach(async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            extractScenarioTitles = module.__analysisLabTesting.extractScenarioTitles;
+        });
+
+        it('extracts scenario titles from thesis markdown headings', () => {
+            const markdown = `
 ### 4.2 Bull Case – “Hypergrowth Bonus”
 ### 4.3 Base Case – 'Steady State'
 ### 4.4 Bear Case – Collapse
 `;
-        const titles = extractScenarioTitles(markdown);
-        expect(titles).toEqual({
-            bull: 'Hypergrowth Bonus',
-            base: 'Steady State',
-            bear: 'Collapse',
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: 'Hypergrowth Bonus',
+                base: 'Steady State',
+                bear: 'Collapse',
+            });
+        });
+
+        it('strips standard and smart quotes correctly', () => {
+            const markdown = `
+### Bull Case - "Double Quotes"
+### Base Case - 'Single Quotes'
+### Bear Case - “Smart Double Quotes”
+`;
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: 'Double Quotes',
+                base: 'Single Quotes',
+                bear: 'Smart Double Quotes',
+            });
+        });
+
+        it('strips smart single quotes correctly', () => {
+            const markdown = '### Bull Case - ‘Smart Single Quotes’';
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({ bull: 'Smart Single Quotes' });
+        });
+
+        it('leaves mismatched or missing quotes untouched', () => {
+            const markdown = `
+### Bull Case - "Mismatched'
+### Base Case - No Quotes
+### Bear Case - "
+`;
+            const titles = extractScenarioTitles(markdown);
+            expect(titles).toEqual({
+                bull: '"Mismatched\'',
+                base: 'No Quotes',
+                bear: '"',
+            });
+        });
+
+        it('returns null for empty, missing, or malformed strings', () => {
+            expect(extractScenarioTitles('')).toBeNull();
+            expect(extractScenarioTitles(null)).toBeNull();
+            expect(extractScenarioTitles('### Just Some Heading')).toBeNull();
         });
     });
 
@@ -150,6 +235,89 @@ describe('analysis lab data loading', () => {
             expect(bayesOutput.textContent).toContain(
                 '<img src=x onerror=alert(1)> Malicious Name'
             );
+        });
+    });
+
+    describe('normalizeConfig', () => {
+        it('normalizes a basic raw config correctly', async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            const { normalizeConfig } = module.__analysisLabTesting;
+            const raw = {
+                symbol: 'TEST',
+                market: { price: '100', eps: '5' },
+                scenarios: [],
+            };
+            const result = normalizeConfig(raw);
+            expect(result.symbol).toBe('TEST');
+            expect(result.market.price).toBe(100);
+            expect(result.market.eps).toBe(5);
+            expect(result.marketValue).toBe(0);
+        });
+
+        it('uses holdingDetails for fallback and calculates marketValue', async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            const { normalizeConfig } = module.__analysisLabTesting;
+            const raw = {
+                symbol: 'TEST',
+                market: { price: 50 },
+                scenarios: [],
+            };
+            const holdingDetails = { shares: 10 };
+            const result = normalizeConfig(raw, holdingDetails);
+            expect(result.position.shares).toBe(10);
+            expect(result.marketValue).toBe(500);
+        });
+    });
+
+    describe('buildPortfolioConfig', () => {
+        it('returns null for empty configs or zero total value', async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            const { buildPortfolioConfig } = module.__analysisLabTesting;
+            expect(buildPortfolioConfig([])).toBeNull();
+
+            const zeroValueConfig = { marketValue: 0, weight: 0, scenarios: [] };
+            expect(buildPortfolioConfig([zeroValueConfig])).toBeNull();
+        });
+
+        it('builds portfolio config correctly for valid inputs', async () => {
+            global[FLAG] = true;
+            const module = await import('@pages/analysis/lab.js');
+            const { buildPortfolioConfig } = module.__analysisLabTesting;
+
+            const cfg1 = {
+                marketValue: 1000,
+                weight: 0.5,
+                scenarios: [],
+                model: {
+                    preferences: { targetCagr: 0.1, kellyScale: 0.5, benchmark: { value: 100 } },
+                },
+                risk: { volatility: 0.2 },
+                market: { price: 100 },
+                position: { shares: 10 },
+                metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 0.5, earningsCagr: 0.1 }] },
+            };
+
+            const cfg2 = {
+                marketValue: 1000,
+                weight: 0.5,
+                scenarios: [],
+                model: {
+                    preferences: { targetCagr: 0.15, kellyScale: 1.0, benchmark: { value: 150 } },
+                },
+                risk: { volatility: 0.4 },
+                market: { price: 50 },
+                position: { shares: 20 },
+                metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 0.5, earningsCagr: 0.2 }] },
+            };
+
+            const portfolio = buildPortfolioConfig([cfg1, cfg2]);
+            expect(portfolio.symbol).toBe('PORT');
+            expect(portfolio.marketValue).toBe(2000);
+            expect(portfolio.model.preferences.targetCagr).toBeCloseTo(0.125);
+            expect(portfolio.model.preferences.kellyScale).toBeCloseTo(0.75);
         });
     });
 });

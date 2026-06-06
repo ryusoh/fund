@@ -176,6 +176,14 @@ describe('state.js', () => {
     });
 
     test('setSelectedCurrency and getSelectedCurrency', () => {
+        setSelectedCurrency('');
+        expect(getSelectedCurrency()).toBe('USD');
+        setSelectedCurrency('');
+        expect(getSelectedCurrency()).toBe('USD');
+        setSelectedCurrency('');
+        expect(getSelectedCurrency()).toBe('USD');
+        setSelectedCurrency(''); // Should ignore
+        expect(getSelectedCurrency()).toBe('USD');
         setSelectedCurrency('CNY');
         expect(getSelectedCurrency()).toBe('CNY');
         expect(transactionState.currencySymbol).toBe('¥');
@@ -197,6 +205,18 @@ describe('state.js', () => {
         expect(getCompositionFilterTickers()).toEqual(['AAPL', 'MSFT']); // Deduplicates and cleans
 
         setCompositionFilterTickers(null);
+        expect(getCompositionFilterTickers()).toEqual([]);
+
+        setCompositionFilterTickers([]);
+        expect(getCompositionFilterTickers()).toEqual([]);
+
+        setCompositionFilterTickers([]);
+        expect(getCompositionFilterTickers()).toEqual([]);
+
+        setCompositionFilterTickers([]);
+        expect(getCompositionFilterTickers()).toEqual([]);
+
+        setCompositionFilterTickers([]);
         expect(getCompositionFilterTickers()).toEqual([]);
 
         setCompositionFilterTickers([123]);

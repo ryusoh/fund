@@ -33,8 +33,10 @@ function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
         return null;
     }
-    const aggregated = Array.from({ length: seriesLength }, () => 0);
-    tickers.forEach((ticker) => {
+    // Bolt: Use new Array(length).fill(0) instead of Array.from to reduce GC overhead
+    const aggregated = new Array(seriesLength).fill(0);
+    for (let tIdx = 0; tIdx < tickers.length; tIdx += 1) {
+        const ticker = tickers[tIdx];
         const values = chartData[ticker] || [];
         for (let i = 0; i < seriesLength; i += 1) {
             const value = Number(values[i] ?? 0);
@@ -42,7 +44,7 @@ function aggregateCompositionSeries(tickers, chartData, seriesLength) {
                 aggregated[i] += value;
             }
         }
-    });
+    }
     return aggregated;
 }
 
@@ -201,18 +203,23 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     });
 
     const explicitTickerFilters = getCompositionFilterTickers();
+    const assetClassFilter = getCompositionAssetClassFilter();
     let derivedTickerFilters = explicitTickerFilters;
-    if (!derivedTickerFilters.length) {
-        const assetClassFilter = getCompositionAssetClassFilter();
-        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
-            const shouldMatchEtf = assetClassFilter === 'etf';
-            derivedTickerFilters = baseTickerOrder.filter((ticker) => {
-                if (typeof ticker === 'string' && ticker.toUpperCase() === 'OTHERS') {
-                    return false;
-                }
-                const assetClass = getHoldingAssetClass(ticker);
-                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
-            });
+    if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
+        const shouldMatchEtf = assetClassFilter === 'etf';
+        const classMatchedTickers = baseTickerOrder.filter((ticker) => {
+            if (typeof ticker === 'string' && ticker.toUpperCase() === 'OTHERS') {
+                return false;
+            }
+            const ac = getHoldingAssetClass(ticker);
+            return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
+        });
+        if (explicitTickerFilters.length) {
+            // OR: explicit tickers + asset-class-matched tickers
+            const merged = new Set([...explicitTickerFilters, ...classMatchedTickers]);
+            derivedTickerFilters = [...merged];
+        } else {
+            derivedTickerFilters = classMatchedTickers;
         }
     }
 
@@ -331,11 +338,13 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     // 7. Render Stacked Areas
     const cumulativeValues = new Array(dates.length).fill(0);
 
-    activeTickerOrder.forEach((ticker, tickerIndex) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let tickerIndex = 0; tickerIndex < activeTickerOrder.length; tickerIndex += 1) {
+        const ticker = activeTickerOrder[tickerIndex];
         const values =
             ticker === 'Others' && usingFilteredOthers ? filteredOthers : chartData[ticker] || [];
         if (!Array.isArray(values) || values.length !== dates.length) {
-            return;
+            continue;
         }
         const color = resolveTickerColor(ticker) || colors[tickerIndex % colors.length];
         ctx.beginPath();
@@ -343,7 +352,9 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
 
-        dates.forEach((dateStr, index) => {
+        // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
+        for (let index = 0; index < dates.length; index += 1) {
+            const dateStr = dates[index];
             const x = xScale(parseLocalDate(dateStr).getTime());
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
@@ -351,7 +362,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             } else {
                 ctx.lineTo(x, y);
             }
-        });
+        }
 
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
@@ -366,7 +377,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
-    });
+    }
 
     // 8. Prepare Legend and Crosshair Data
     const latestIndex = dates.length - 1;
@@ -532,7 +543,7 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             renderCompositionChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Caught exception:', error);
+            logger.warn('Composition chart rendering failed:', error);
             if (valueMode === 'absolute') {
                 chartLayouts.compositionAbs = null;
             } else {

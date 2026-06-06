@@ -119,7 +119,7 @@ lint-fix:
 	npx --yes stylelint "**/*.css" --fix || true
 
 markdownlint-fix:
-	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**"
+	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 js-test:
 	npm test

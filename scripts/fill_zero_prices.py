@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
+import logging
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -203,8 +204,8 @@ def update_transactions(
                 net_amount = quantity * final_price
                 sign = 1 if (row.get("Order Type", "").lower() == "buy") else -1
                 row["Net Amount"] = f"{net_amount * sign:.4f}"
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError) as e:
+                logging.warning(f"Error calculating Net Amount for {symbol}: {e}")
 
         updated_rows.append(row)
         modifications.append(

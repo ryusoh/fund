@@ -170,7 +170,7 @@ describe('video_warmup.js', () => {
         loadScript();
         jest.runAllTimers();
 
-        expect(consoleSpy).toHaveBeenCalledWith('Caught exception:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Video warmup failed:', expect.any(Error));
         consoleSpy.mockRestore();
     });
 
@@ -333,9 +333,8 @@ describe('video_warmup.js', () => {
                 require('@ui/video_warmup.js');
             });
             expect(true).toBe(true);
-        } catch {
-            // It will throw because video_warmup.js accesses `window.location.href`, etc.
-            // But we hit line 4
+        } catch (err) {
+            console.warn('Caught expected error during warmup test:', err);
         } finally {
             global.window = originalWindow;
         }

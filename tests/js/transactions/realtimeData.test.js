@@ -13,6 +13,8 @@ let mockFetchPortfolioData;
 
 jest.mock('@services/dataService.js', () => ({
     fetchPortfolioData: (...args) => mockFetchPortfolioData(...args),
+    fetchMarketRatiosForTickers: jest.fn(() => Promise.resolve(new Map())),
+    _calculateDynamicPeValues: jest.fn(() => ({ trailingValue: null, forwardValue: null })),
 }));
 
 jest.mock('@utils/logger.js', () => ({

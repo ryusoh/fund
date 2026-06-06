@@ -37,8 +37,44 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 - Targeted missing error logs in `js/transactions/chart/renderers/marketcap.js`, `sectors.js`, `concentration.js`, `composition.js`, `geography.js`, `pe.js`, `dataLoader.js`, `cdnFallback.js`, `twrr.js`, and `nav_prefetch.js` where exceptions were caught but silenced.
 - Injected `logger.warn('Caught exception:', error)` (or `console.warn` where appropriate) to ensure resilience and trackable debugging without failing the user experience.
 
-## 2025-05-15 - Insecure CORS Origin Validation
+## 2025-04-18 - [SECURITY ENHANCEMENT] Replace innerHTML with Safe DOM Manipulation
 
-**Vulnerability:** CORS origin validation in `worker/src/index.js` used a naive string `.endsWith()` check, allowing arbitrary domains like `attacker.com/bypass.lyeutsaon.com` or `malicious-lyeutsaon.com` to pass origin validation, and didn't enforce the `https:` protocol.
-**Learning:** Naive string manipulation for URL parsing in security-critical contexts easily leads to bypasses.
-**Prevention:** Always use the `URL` constructor to securely parse origins and explicitly validate the `hostname` and `protocol` properties.
+**Vulnerability:** The application was using `.innerHTML` to inject a loading spinner into a button (`btnRunMonteCarlo`) in `js/pages/analysis/lab.js`. Although the injected string was hardcoded and not an immediate XSS vulnerability, the continued use of `.innerHTML` represents a latent risk. If the hardcoded string is later modified to include variables or dynamic input, it could silently introduce an XSS vector.
+**Learning:** Security auditing tools and strict policies (like Trusted Types) flag all uses of `.innerHTML` as potential sinks. To satisfy defense-in-depth principles, even safe uses of dangerous sinks should be refactored.
+**Prevention:** Avoid `.innerHTML` entirely. Use safe, standard DOM APIs like `document.createElement`, `Element.replaceChildren()`, and `document.createTextNode` to construct and inject elements dynamically, completely eliminating the HTML parsing vector.
+
+## 2025-04-20 - [HIGH] Fix overly permissive CORS configuration bypass
+
+**Vulnerability:** The CORS validation logic in `worker/src/index.js` checked if the Origin header ended with `.lyeutsaon.com` using a simple string `endsWith` method. This allowed a malicious origin like `https://malicious.lyeutsaon.com.evil.com` to bypass CORS validation. Also, since there was no protocol check, a `http:` scheme would also be permitted.
+**Learning:** Naive string manipulation for Origin validation is insecure, especially since browsers pass the entire scheme+hostname+port in the Origin header. Validation must isolate the hostname.
+**Prevention:** Always use the `URL` constructor to securely parse the `hostname` and explicitly enforce the `https:` protocol when verifying CORS Origins.
+
+## 2026-05-15 - [HIGH] Missing Security Headers and Input Validations in Cloudflare Worker
+
+**Vulnerability:** The Cloudflare worker JSON response was missing critical security headers like `X-Content-Type-Options` and `Strict-Transport-Security`. Furthermore, the input validation logic for the `symbols` parameter was completely missing length checks, which could lead to DoS or massive external API requests if a user sent a massive payload.
+**Learning:** Even serverless/edge APIs need standard defense-in-depth headers. Additionally, any API endpoint parsing lists from query parameters must impose strict constraints on payload lengths and element counts to prevent resource exhaustion downstream.
+**Prevention:** Added `X-Content-Type-Options: nosniff` and `Strict-Transport-Security: max-age=31536000; includeSubDomains` to the base `jsonResponse` utility. Imposed a 1000 character limit on the raw `symbols` parameter and a 100 symbol absolute limit on the parsed array, returning a 400 response for violations.
+
+## 2025-05-13 - [HIGH] Insecure Random Number Generation in Financial Simulations
+
+**Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
+**Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG).
+**Prevention:** Replace `Math.random()` with a secure implementation utilizing `crypto.getRandomValues()` when available in the environment, ensuring randomness integrity for financial computations.
+
+## 2024-05-14 - Added Security Headers
+
+**Vulnerability:** Missing security headers.
+**Learning:** Static site headers in Cloudflare Pages are configured via `_headers`. API worker responses need headers set programmatically in `worker/src/index.js`.
+**Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.
+
+## 2025-05-24 - [SECURITY ENHANCEMENT] Add Timeout to External API Calls in Cloudflare Worker
+
+**Vulnerability:** External `fetch` requests to third-party APIs (like Alpaca and Yahoo Finance) in the Cloudflare Worker (`worker/src/index.js`) did not have an explicit timeout configured. If the upstream service became unresponsive or excessively slow, the worker execution could hang until it hit the platform's hard limits, leading to resource exhaustion, elevated latency, and potential Denial of Service (DoS) for the application.
+**Learning:** Cloudflare Workers and standard `fetch` APIs do not have a default timeout for outbound requests. When building resilient security architectures, relying on external availability without bounds check is a risk.
+**Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
+
+## 2025-05-24 - [SECURITY ENHANCEMENT] Add Content-Security-Policy and X-Frame-Options to Worker APIs
+
+**Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
+**Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
+**Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.

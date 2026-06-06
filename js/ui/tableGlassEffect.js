@@ -112,13 +112,17 @@ export class TableGlassEffect {
     initParticles() {
         const electric = this.options.threeD?.electric || {};
         const count = Math.max(12, (electric.arcCount || 3) * 8);
-        this.state.energyParticles = Array.from({ length: count }, () => ({
-            progress: Math.random(), // 0 to 1 along the path
-            speed: 0.2 + Math.random() * 0.5,
-            size: 1.2 + Math.random() * 1.6,
-            flickerOffset: Math.random() * Math.PI * 2,
-            offset: (Math.random() - 0.5) * 10, // Perpendicular offset
-        }));
+        // Bolt: Replace Array.from with pre-allocated array and explicit loop to eliminate GC overhead
+        this.state.energyParticles = new Array(count);
+        for (let i = 0; i < count; i++) {
+            this.state.energyParticles[i] = {
+                progress: Math.random(), // 0 to 1 along the path
+                speed: 0.2 + Math.random() * 0.5,
+                size: 1.2 + Math.random() * 1.6,
+                flickerOffset: Math.random() * Math.PI * 2,
+                offset: (Math.random() - 0.5) * 10, // Perpendicular offset
+            };
+        }
     }
 
     resize() {
@@ -192,7 +196,10 @@ export class TableGlassEffect {
                 // We need the canvas position to calculate relative row offsets accurately
                 const canvasRect = this.canvas.getBoundingClientRect();
 
-                rows.forEach((row) => {
+                // Bolt: Replaced forEach and dynamic array push with explicit loop and pre-sized array for better GC performance
+                this.rows = new Array(rows.length);
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
                     const rowRect = row.getBoundingClientRect();
 
                     // Calculate top relative to the canvas itself
@@ -200,12 +207,12 @@ export class TableGlassEffect {
                     // we simply ask "where is the row relative to the canvas?"
                     const relativeTop = rowRect.top - canvasRect.top;
 
-                    this.rows.push({
+                    this.rows[i] = {
                         top: relativeTop,
                         height: rowRect.height,
                         element: row,
-                    });
-                });
+                    };
+                }
             }
         }
     }

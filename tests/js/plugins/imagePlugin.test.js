@@ -208,8 +208,8 @@ describe('imagePlugin', () => {
         try {
             // Remove the property entirely so typeof navigator === 'undefined'
             delete global.navigator;
-        } catch {
-            /* ignore */
+        } catch (err) {
+            console.warn('Caught expected error in test:', err);
         }
         try {
             mockChart.data.datasets[0].images = [{ src: 'http://example.com/a.png' }];
@@ -222,8 +222,8 @@ describe('imagePlugin', () => {
             } else {
                 try {
                     delete global.navigator;
-                } catch {
-                    /* ignore */
+                } catch (err) {
+                    console.warn('Caught expected error in test:', err);
                 }
             }
         }

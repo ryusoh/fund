@@ -98,7 +98,7 @@ async function loadAnalysisTickerPaths() {
     return analysisTickerPathCache;
 }
 
-async function fetchMarketRatiosForTickers(tickers = []) {
+export async function fetchMarketRatiosForTickers(tickers = []) {
     if (!Array.isArray(tickers) || tickers.length === 0) {
         return new Map();
     }
@@ -262,7 +262,7 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
     return { sortedHoldings, totalPortfolioValue, totalPnl };
 }
 
-function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
+export function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
     let trailingValue = ratioSnapshot.pe;
     let forwardValue = ratioSnapshot.forwardPe;
 

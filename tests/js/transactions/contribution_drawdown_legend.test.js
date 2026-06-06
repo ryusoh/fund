@@ -133,7 +133,7 @@ describe('drawContributionChart Legend Logic', () => {
             createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
             canvas: { offsetWidth: 800, offsetHeight: 400 },
         };
-        chartManager = {};
+        chartManager = { update: jest.fn() };
         jest.clearAllMocks();
 
         // Reset state

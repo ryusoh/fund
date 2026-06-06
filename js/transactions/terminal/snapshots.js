@@ -3,16 +3,16 @@ import {
     setHistoricalPrices,
     getCompositionFilterTickers,
     getCompositionAssetClassFilter,
+    hasActiveTransactionFilters,
 } from '../state.js';
 import { chartLayouts } from '../chart/state.js';
 import {
-    hasActiveTransactionFilters,
     buildContributionSeriesFromTransactions,
     buildFilteredBalanceSeries,
-    buildFxChartSeries,
-    buildDrawdownSeries,
     getContributionSeriesForTransactions,
-} from '../chart.js';
+} from '../chart/data/contribution.js';
+import { buildFxChartSeries } from '../chart/renderers/fx.js';
+import { buildDrawdownSeries } from '../chart/renderers/drawdown.js';
 import { PERFORMANCE_SERIES_CURRENCY } from '../chart/config.js';
 import {
     loadCompositionSnapshotData,
@@ -28,6 +28,7 @@ import {
 } from '../utils.js';
 import { normalizeDateOnly } from '@utils/date.js';
 import { getHoldingAssetClass } from '@js/config.js';
+import { mergeDividendsIntoContribution } from '../chart/data/contribution.js';
 import { formatSummaryBlock, formatAppreciationBlock } from '@utils/formatting.js';
 import { getConcentrationText } from './stats/analysis.js';
 import { loadPEData, buildPESeries } from '../chart/renderers/pe.js';
@@ -144,10 +145,15 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
                 dailyMap.set(dayStr, item);
             });
 
-            return Array.from(dailyMap.values()).map((item) => ({
-                date: new Date(item[dateKey] || item.date),
-                value: Number(item[valueKey] || item.value),
-            }));
+            const result = new Array(dailyMap.size);
+            let idx = 0;
+            for (const item of dailyMap.values()) {
+                result[idx++] = {
+                    date: new Date(item[dateKey] || item.date),
+                    value: Number(item[valueKey] || item.value),
+                };
+            }
+            return result;
         };
 
         // Check if filters are active
@@ -405,31 +411,30 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
             return;
         }
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
-        const normalizedPoints = rawPoints
-            .map((point) => {
-                const dateObj = parseDateSafe(point.date);
-                if (!dateObj) {
-                    return null;
-                }
-                const convertedValue = convertBetweenCurrencies(
-                    point.value,
-                    sourceCurrency,
-                    point.date,
-                    selectedCurrency
-                );
-                return {
-                    date: dateObj,
-                    value: Number.isFinite(convertedValue) ? convertedValue : null,
-                };
-            })
-            .filter(
-                (point) =>
-                    point &&
-                    Number.isFinite(point.value) &&
-                    (!filterFrom || point.date >= filterFrom) &&
-                    (!filterTo || point.date <= filterTo)
-            )
-            .sort((a, b) => a.date - b.date);
+        const normalizedPoints = [];
+        for (let i = 0; i < rawPoints.length; i++) {
+            const point = rawPoints[i];
+            const dateObj = parseDateSafe(point.date);
+            if (!dateObj) {
+                continue;
+            }
+            const convertedValue = convertBetweenCurrencies(
+                point.value,
+                sourceCurrency,
+                point.date,
+                selectedCurrency
+            );
+            const value = Number.isFinite(convertedValue) ? convertedValue : null;
+            if (
+                value !== null &&
+                Number.isFinite(value) &&
+                (!filterFrom || dateObj >= filterFrom) &&
+                (!filterTo || dateObj <= filterTo)
+            ) {
+                normalizedPoints.push({ date: dateObj, value });
+            }
+        }
+        normalizedPoints.sort((a, b) => a.date - b.date);
 
         if (normalizedPoints.length === 0) {
             if (showAllSeries) {
@@ -670,16 +675,13 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -717,14 +719,39 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
 
     let displayHoldings = holdings;
     const filterTickers = getCompositionFilterTickers();
-    if (Array.isArray(filterTickers) && filterTickers.length > 0) {
-        const normalized = new Set(
-            filterTickers.map((ticker) => (typeof ticker === 'string' ? ticker.toUpperCase() : ''))
-        );
-        const selected = holdings.filter((holding) => normalized.has(holding.ticker.toUpperCase()));
+    const assetClassFilter = getCompositionAssetClassFilter();
+
+    // Build a matcher that combines explicit tickers and asset class with OR logic
+    const explicitSet =
+        Array.isArray(filterTickers) && filterTickers.length > 0
+            ? new Set(
+                  filterTickers.map((ticker) =>
+                      typeof ticker === 'string' ? ticker.toUpperCase() : ''
+                  )
+              )
+            : null;
+    const hasClassFilter = assetClassFilter === 'etf' || assetClassFilter === 'stock';
+    const shouldMatchEtf = assetClassFilter === 'etf';
+
+    if (explicitSet || hasClassFilter) {
+        const selected = holdings.filter((holding) => {
+            const upperTicker = holding.ticker.toUpperCase();
+            if (explicitSet && explicitSet.has(upperTicker)) {
+                return true;
+            }
+            if (hasClassFilter) {
+                if (upperTicker === 'OTHERS') {
+                    return false;
+                }
+                const ac = getHoldingAssetClass(holding.ticker);
+                return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
+            }
+            return false;
+        });
         if (selected.length > 0) {
+            const selectedSet = new Set(selected.map((h) => h.ticker.toUpperCase()));
             const remainder = holdings.filter(
-                (holding) => !normalized.has(holding.ticker.toUpperCase())
+                (holding) => !selectedSet.has(holding.ticker.toUpperCase())
             );
             if (remainder.length > 0) {
                 const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
@@ -736,35 +763,6 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
                 });
             }
             displayHoldings = selected;
-        }
-    } else {
-        const assetClassFilter = getCompositionAssetClassFilter();
-        if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
-            const shouldMatchEtf = assetClassFilter === 'etf';
-            const selected = holdings.filter((holding) => {
-                if (holding.ticker && holding.ticker.toUpperCase() === 'OTHERS') {
-                    return false;
-                }
-                const assetClass = getHoldingAssetClass(holding.ticker);
-                return shouldMatchEtf ? assetClass === 'etf' : assetClass !== 'etf';
-            });
-            if (selected.length > 0) {
-                const remainder = holdings.filter((holding) =>
-                    shouldMatchEtf
-                        ? getHoldingAssetClass(holding.ticker) !== 'etf'
-                        : getHoldingAssetClass(holding.ticker) === 'etf'
-                );
-                if (remainder.length > 0) {
-                    const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
-                    const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
-                    selected.push({
-                        ticker: 'Others',
-                        percent: totalPercent,
-                        absolute: totalAbsolute,
-                    });
-                }
-                displayHoldings = selected;
-            }
         }
     }
 
@@ -820,16 +818,13 @@ export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -910,16 +905,13 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -1000,16 +992,13 @@ export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = 
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    const filteredIndices = dates
-        .map((dateStr, index) => {
-            const date = parseDateSafe(dateStr);
-            return { index, date };
-        })
-        .filter(
-            ({ date }) =>
-                date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)
-        )
-        .map(({ index }) => index);
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
 
     let targetIndex =
         filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
@@ -1168,7 +1157,7 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
             historicalPrices = {};
         }
     } catch (error) {
-        logger.warn('Caught exception:', error);
+        logger.warn('Terminal snapshots processing failed:', error);
         historicalPrices = {};
     }
     return historicalPrices;
@@ -1177,13 +1166,37 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
 async function buildContributionChartSummary(dateRange = transactionState.chartDateRange) {
     const filtersActive = hasActiveTransactionFilters();
     let contributionSource = [];
+    let activeTickers = null;
+
     if (filtersActive) {
         contributionSource = buildContributionSeriesFromTransactions(
             transactionState.filteredTransactions || [],
             { includeSyntheticStart: true }
         );
-    } else if (Array.isArray(transactionState.runningAmountSeries)) {
-        contributionSource = transactionState.runningAmountSeries;
+        const tickerSet = new Set();
+        (transactionState.filteredTransactions || []).forEach((t) => {
+            if (t.security) {
+                tickerSet.add(t.security);
+            }
+        });
+        activeTickers = Array.from(tickerSet);
+    } else {
+        contributionSource = buildContributionSeriesFromTransactions(
+            transactionState.allTransactions || [],
+            { includeSyntheticStart: true }
+        );
+    }
+
+    const yieldData = await loadYieldData();
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    if (contributionSource.length > 0 && yieldData) {
+        contributionSource = mergeDividendsIntoContribution(
+            contributionSource,
+            yieldData,
+            selectedCurrency,
+            activeTickers
+        );
     }
 
     const historicalPrices = await ensureHistoricalPricesAvailable(filtersActive);

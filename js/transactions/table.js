@@ -8,8 +8,14 @@ import {
 } from './state.js';
 import { computeRunningTotals } from './calculations.js';
 import { formatDate, formatCurrency, convertValueToCurrency } from './utils.js';
+import { getNumberFormatter } from '../utils/formatting.js';
 import { adjustMobilePanels } from './layout.js';
-import { parseCommandPalette, deriveCompositionTickerFilters } from './table/parser.js';
+import {
+    parseCommandPalette,
+    deriveCompositionTickerFilters,
+    normalizeTickerToken,
+    matchesAssetClass,
+} from './table/parser.js';
 import {
     applyDateRangeFilter,
     applySecurityFilter,
@@ -79,10 +85,9 @@ function displayTransactions(transactions) {
         row.appendChild(tdSecurity);
 
         const tdQuantity = document.createElement('td');
-        tdQuantity.textContent = parseFloat(transaction.quantity).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
+        tdQuantity.textContent = getNumberFormatter(undefined, 2, 2).format(
+            parseFloat(transaction.quantity)
+        );
         row.appendChild(tdQuantity);
 
         const tdPrice = document.createElement('td');
@@ -132,8 +137,23 @@ function applyFilters(transactions, parsedCommands, term, currentCurrency) {
     const multiTickerSet =
         parsedCommands.tickers.length > 0 ? new Set(parsedCommands.tickers) : null;
 
-    filtered = applySecurityFilter(filtered, parsedCommands, multiTickerSet);
-    filtered = applyValueFilters(filtered, parsedCommands, currentCurrency);
+    // When both tickers and assetClass are specified, use OR logic:
+    // include transactions matching any ticker OR matching the asset class
+    if (multiTickerSet && parsedCommands.assetClass) {
+        filtered = filtered.filter((t) => {
+            const ticker = normalizeTickerToken(t.security) || t.security.toUpperCase();
+            if (multiTickerSet.has(ticker)) {
+                return true;
+            }
+            return matchesAssetClass(t.security, parsedCommands.assetClass);
+        });
+        // Apply remaining value filters without assetClass (already handled above)
+        const commandsWithoutClass = { ...parsedCommands, assetClass: null };
+        filtered = applyValueFilters(filtered, commandsWithoutClass, currentCurrency);
+    } else {
+        filtered = applySecurityFilter(filtered, parsedCommands, multiTickerSet);
+        filtered = applyValueFilters(filtered, parsedCommands, currentCurrency);
+    }
     filtered = applyTextFilter(filtered, term);
 
     return filtered;
@@ -226,7 +246,10 @@ function createFilterDropdown(column) {
         const div = document.createElement('div');
         div.className = 'filter-option';
         div.textContent = option;
-        div.addEventListener('click', (e) => {
+        div.role = 'button';
+        div.tabIndex = 0;
+
+        const triggerOption = (e) => {
             e.stopPropagation();
             const command =
                 option === 'All' ? '' : `${column === 'orderType' ? 'type' : 'security'}:${option}`;
@@ -236,6 +259,14 @@ function createFilterDropdown(column) {
             }
             filterAndSort(command);
             closeAllFilterDropdowns();
+        };
+
+        div.addEventListener('click', triggerOption);
+        div.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerOption(e);
+            }
         });
         dropdown.appendChild(div);
     });

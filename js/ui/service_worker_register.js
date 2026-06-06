@@ -37,6 +37,15 @@ function getHostname() {
 (function () {
     try {
         if (isLocalHostname(getHostname())) {
+            // On localhost, actively unregister any lingering service workers
+            // so stale production caches never interfere with local development.
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    registrations.forEach(function (registration) {
+                        registration.unregister();
+                    });
+                });
+            }
             return;
         }
 

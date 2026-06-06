@@ -5,7 +5,7 @@
     "main": "js/main.js",
     "scripts": {
         "test": "NODE_NO_WARNINGS=1 jest --coverage",
-        "dev": "python3 -m http.server 8000 --bind 127.0.0.1",
+        "dev": "python3 scripts/dev_server.py 8000",
         "lint:js": "eslint .",
         "lint:css": "stylelint \"**/*.css\"",
         "lint": "npm run lint:js && npm run lint:css",
@@ -28,22 +28,22 @@
         "fund:update-all": "python3 -m scripts.cli update-all"
     },
     "devDependencies": {
-        "@babel/core": "^7.29.0",
-        "@babel/preset-env": "^7.29.2",
-        "@stylistic/stylelint-plugin": "^5.1.0",
+        "@babel/core": "^7.29.7",
+        "@babel/preset-env": "^7.29.7",
+        "@stylistic/stylelint-plugin": "^5.2.0",
         "@testing-library/jest-dom": "^6.9.1",
-        "babel-jest": "^30.3.0",
-        "eslint": "^10.2.0",
+        "babel-jest": "^30.4.1",
+        "eslint": "^10.4.1",
         "husky": "^9.1.6",
-        "jest": "^30.3.0",
-        "jest-environment-jsdom": "^30.3.0",
+        "jest": "^30.4.2",
+        "jest-environment-jsdom": "^30.4.1",
         "js-yaml": "^4.1.1",
-        "lint-staged": "^16.4.0",
-        "markdownlint-cli2": "^0.22.0",
-        "prettier": "^3.8.2",
-        "stylelint": "^17.7.0",
+        "lint-staged": "^17.0.7",
+        "markdownlint-cli2": "^0.22.1",
+        "prettier": "^3.8.3",
+        "stylelint": "^17.12.0",
         "stylelint-config-standard": "^40.0.0",
-        "wrangler": "^4.82.0"
+        "wrangler": "^4.96.0"
     },
     "lint-staged": {
         "*.js": [
@@ -69,7 +69,8 @@
             "<rootDir>/tests/js/**/*.test.js"
         ],
         "modulePathIgnorePatterns": [
-            "<rootDir>/venv/"
+            "<rootDir>/venv/",
+            "<rootDir>/.claude/"
         ],
         "collectCoverageFrom": [
             "js/**/*.js",

@@ -227,8 +227,8 @@ def attempt_fallbacks(
                 series.name = ticker
                 retrieved[ticker] = series
                 continue
-        except Exception:
-            pass
+        except Exception as e:
+            logging.warning(f"Failed to fetch {ticker} from primary source: {e}")
 
         stooq_series = fetch_stooq_price(fetch_symbol, start=start, end=end)
         if stooq_series is not None:

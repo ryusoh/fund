@@ -4,5 +4,6 @@
     },
     "MD041": false,
     "MD013": false,
-    "MD007": { "indent": 4 }
+    "MD007": { "indent": 4 },
+    "ignores": [".claude/**"]
 }

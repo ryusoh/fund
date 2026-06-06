@@ -207,7 +207,9 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
     );
 
     const cumulativeValues = new Array(dates.length).fill(0);
-    baseCountryOrder.forEach((country) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let cIdx = 0; cIdx < baseCountryOrder.length; cIdx += 1) {
+        const country = baseCountryOrder[cIdx];
         const values = chartData[country] || [];
         const color = resolveCountryColor(country);
         ctx.beginPath();
@@ -215,7 +217,9 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
 
-        dates.forEach((dateStr, index) => {
+        // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
+        for (let index = 0; index < dates.length; index += 1) {
+            const dateStr = dates[index];
             const x = xScale(parseLocalDate(dateStr).getTime());
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
@@ -223,7 +227,7 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
             } else {
                 ctx.lineTo(x, y);
             }
-        });
+        }
 
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
@@ -238,7 +242,7 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
-    });
+    }
 
     const latestIndex = dates.length - 1;
 
@@ -368,7 +372,7 @@ function drawGeographyChartLoader(ctx, chartManager, valueMode) {
             renderGeographyChartWithMode(ctx, chartManager, data, { valueMode });
         })
         .catch((error) => {
-            logger.warn('Caught exception:', error);
+            logger.warn('Geography chart rendering failed:', error);
             updateCrosshairUI(null, null);
             if (emptyState) {
                 emptyState.style.display = 'block';

@@ -128,7 +128,7 @@
                 fetchUrl = new window.URL(url);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Navigation prefetch failed:', error);
                 return undefined;
             }
 
@@ -144,7 +144,11 @@
                 options.mode = 'no-cors';
             }
 
-            return fetch(fetchUrl.href, options).catch(() => undefined);
+            return fetch(fetchUrl.href, options).catch((error) => {
+                // eslint-disable-next-line no-console
+                console.warn('Prefetch request failed:', error);
+                return undefined;
+            });
         });
     }
 
@@ -160,7 +164,11 @@
             const task = queue.shift();
             Promise.resolve()
                 .then(task)
-                .catch(() => undefined)
+                .catch((error) => {
+                    // eslint-disable-next-line no-console
+                    console.warn('Prefetch task failed:', error);
+                    return undefined;
+                })
                 .finally(() => {
                     if (queue.length) {
                         if ('requestIdleCallback' in window) {
@@ -215,7 +223,9 @@
             });
 
             tasks.push(
-                discoveryTask.catch(() => {
+                discoveryTask.catch((error) => {
+                    // eslint-disable-next-line no-console
+                    console.warn('Discovery task failed:', error);
                     return undefined;
                 })
             );
@@ -234,7 +244,11 @@
                 }
                 return res.text().then((text) => extractBackgroundUrls(text, cssUrl));
             })
-            .catch(() => []);
+            .catch((error) => {
+                // eslint-disable-next-line no-console
+                console.warn('CSS background fetch failed:', error);
+                return [];
+            });
     }
 
     function extractBackgroundUrls(cssText, cssUrl) {
@@ -267,7 +281,7 @@
                 urls.add(resolved);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Navigation prefetch failed:', error);
                 // Ignore invalid URLs
             }
         }
@@ -310,7 +324,7 @@
                 resolved = new window.URL(href, window.location.href);
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.warn('Caught exception:', error);
+                console.warn('Navigation prefetch failed:', error);
                 return;
             }
             if (resolved.origin !== window.location.origin) {

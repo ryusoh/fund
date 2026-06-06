@@ -1,4 +1,4 @@
-import { buildDrawdownSeries } from '../../../js/transactions/chart.js';
+import { buildDrawdownSeries } from '../../../js/transactions/chart/renderers/drawdown.js';
 
 describe('buildDrawdownSeries', () => {
     test('returns empty array for invalid input', () => {

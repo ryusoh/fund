@@ -303,13 +303,14 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         }
 
         ctx.beginPath();
-        coords.forEach((c, idx) => {
+        for (let idx = 0; idx < coords.length; idx++) {
+            const c = coords[idx];
             if (idx === 0) {
                 ctx.moveTo(c.x, c.y);
             } else {
                 ctx.lineTo(c.x, c.y);
             }
-        });
+        }
         ctx.strokeStyle = resolvedColor;
         if (gradientStops) {
             const grad = ctx.createLinearGradient(padding.left, 0, padding.left + plotWidth, 0);

@@ -1,5 +1,36 @@
 import { logger } from './logger.js';
 
+// Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
+const numberFormatCache = new Map();
+export function getNumberFormatter(
+    locale = undefined,
+    minFrac = 2,
+    maxFrac = 2,
+    extraOptionsOrCurrency = {}
+) {
+    let extraOptions = {};
+    if (typeof extraOptionsOrCurrency === 'string') {
+        extraOptions = { style: 'currency', currency: extraOptionsOrCurrency };
+    } else if (extraOptionsOrCurrency && typeof extraOptionsOrCurrency === 'object') {
+        extraOptions = extraOptionsOrCurrency;
+    }
+
+    const extraKey = Object.keys(extraOptions).length ? JSON.stringify(extraOptions) : '';
+    const key = `${locale}-${minFrac}-${maxFrac}-${extraKey}`;
+
+    let formatter = numberFormatCache.get(key);
+    if (!formatter) {
+        const options = {
+            minimumFractionDigits: minFrac,
+            maximumFractionDigits: maxFrac,
+            ...extraOptions,
+        };
+        formatter = new Intl.NumberFormat(locale, options);
+        numberFormatCache.set(key, formatter);
+    }
+    return formatter;
+}
+
 /**
  * Formats a numeric value as a currency string in the target currency.
  * @param {number} valueInUSD - The value in USD.
@@ -17,9 +48,11 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
     }
 
     const rate = exchangeRates[targetCurrency];
+    const formatter = getNumberFormatter();
+
     if (typeof rate !== 'number') {
         logger.warn(`Exchange rate for ${targetCurrency} not found. Displaying in USD.`);
-        return `${currencySymbols['USD'] || '$'}${numValueInUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `${currencySymbols['USD'] || '$'}${formatter.format(numValueInUSD)}`;
     }
 
     // Work with the absolute value for conversion and formatting
@@ -27,10 +60,7 @@ export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, curren
     const symbol = currencySymbols[targetCurrency] || targetCurrency; // Fallback to code if symbol missing
 
     // Format the number with locale-specific thousand separators and 2 decimal places.
-    const formattedNumber = absoluteConvertedValue.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formattedNumber = formatter.format(absoluteConvertedValue);
 
     return `${symbol}${formattedNumber}`;
 }
@@ -256,12 +286,8 @@ export function toFixed(num, decimalPlaces) {
  * @returns {string} The formatted currency string.
  */
 export function formatAsCurrency(amount, currency) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
+    const formatter = getNumberFormatter('en-US', 2, 2, currency);
+    return formatter.format(amount);
 }
 
 /**
@@ -319,10 +345,8 @@ function defaultCurrencyFormatter(value) {
         return '$0.00';
     }
     const sign = numeric < 0 ? '-' : '';
-    const formatted = Math.abs(numeric).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formatter = getNumberFormatter('en-US');
+    const formatted = formatter.format(Math.abs(numeric));
     return `${sign}$${formatted}`;
 }
 

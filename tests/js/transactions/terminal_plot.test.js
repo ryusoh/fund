@@ -137,8 +137,8 @@ describe('plot command chart toggling', () => {
         ['performance', 'performance', 'Hidden performance chart.'],
         ['composition', 'composition', 'Hidden composition chart.'],
         ['sectors', 'sectors', 'Hidden sector allocation chart.'],
-        ['geography', 'geography', 'Hidden geography chart.'],
-        ['fx', 'fx', 'Hidden FX chart.'],
+        ['geography', 'geography', 'Hidden geography allocation chart.'],
+        ['fx', 'fx', 'Hidden FX rate chart.'],
         ['drawdown', 'drawdown', 'Hidden drawdown chart.'],
         ['concentration', 'concentration', 'Hidden concentration chart.'],
         ['pe', 'pe', 'Hidden P/E ratio chart.'],
@@ -233,7 +233,7 @@ describe('plot command date range handling', () => {
             from: '2025-01-01',
             to: '2025-12-31',
         });
-        expect(getLastTerminalMessage()).toContain('Showing FX chart (base USD) for 2025.');
+        expect(getLastTerminalMessage()).toContain('Showing FX rate chart for 2025.');
     }, 30000);
 
     test('allows explicit reset via special tokens', async () => {

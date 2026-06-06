@@ -106,9 +106,17 @@ export function initCalendarResponsiveHandlers() {
 
         const resolveHeatmapRect = () => {
             const domainNodes = heatmapRoot.querySelectorAll('[data-ch-domain]');
-            const domainRects = Array.from(domainNodes)
-                .map((node) => rectFromElement(node))
-                .filter(Boolean);
+
+            // Bolt: Replaced Array.from(domainNodes).map().filter() chain with a single
+            // for-loop to prevent allocating intermediate arrays and reduce GC pressure
+            // inside high-frequency scroll and resize event handlers.
+            const domainRects = [];
+            for (let i = 0; i < domainNodes.length; i++) {
+                const rect = rectFromElement(domainNodes[i]);
+                if (rect) {
+                    domainRects.push(rect);
+                }
+            }
 
             if (domainRects.length) {
                 return mergeRects(domainRects);

@@ -5,14 +5,20 @@
  */
 /* global self */
 
-self.onmessage = function (e) {
-    const { type, payload } = e.data;
+export function initWorker(selfContext) {
+    selfContext.onmessage = function (e) {
+        const { type, payload } = e.data;
 
-    if (type === 'RUN_SIMULATION') {
-        const result = runSimulation(payload);
-        self.postMessage({ type: 'SIMULATION_COMPLETE', result });
-    }
-};
+        if (type === 'RUN_SIMULATION') {
+            const result = runSimulation(payload);
+            selfContext.postMessage({ type: 'SIMULATION_COMPLETE', result });
+        }
+    };
+}
+
+if (typeof self !== 'undefined' && typeof window === 'undefined') {
+    initWorker(self);
+}
 
 function runSimulation(config) {
     const { scenarios, volatility, horizon, paths = 10000 } = config;
@@ -85,8 +91,21 @@ function runSimulation(config) {
     };
 }
 
+function secureRandom() {
+    if (
+        typeof self !== 'undefined' &&
+        self.crypto &&
+        typeof self.crypto.getRandomValues === 'function'
+    ) {
+        const array = new Uint32Array(1);
+        self.crypto.getRandomValues(array);
+        return array[0] / (0xffffffff + 1);
+    }
+    return Math.random();
+}
+
 function pickScenario(scenarios) {
-    const r = Math.random();
+    const r = secureRandom();
     let sum = 0;
     for (const s of scenarios) {
         sum += s.prob;
@@ -98,8 +117,8 @@ function pickScenario(scenarios) {
 }
 
 function normalSample(mean, stdDev) {
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = secureRandom();
+    const u2 = secureRandom();
     const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
     return mean + z * stdDev;
 }

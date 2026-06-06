@@ -480,10 +480,14 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     }
     clampedBaselineY = Math.min(Math.max(clampedBaselineY, bounds.top), bounds.bottom);
 
-    const areaCoords = (coords.length === 1 ? [coords[0], coords[0]] : coords).map((coord) => ({
-        x: coord.x,
-        y: coord.y,
-    }));
+    const baseCoords = coords.length === 1 ? [coords[0], coords[0]] : coords;
+    const areaCoords = new Array(baseCoords.length);
+    for (let i = 0; i < baseCoords.length; i++) {
+        areaCoords[i] = {
+            x: baseCoords[i].x,
+            y: baseCoords[i].y,
+        };
+    }
 
     const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
     const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));

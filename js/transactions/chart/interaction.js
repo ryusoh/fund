@@ -259,7 +259,10 @@ export function drawCrosshairOverlay(ctx, layout) {
         const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
 
         // Enhance ALL non-zero holdings so Y-position hit testing can match any stock
-        const enhanceHolding = (holding) => {
+        const allEnhancedHoldings = new Array(nonZeroHoldings.length);
+
+        for (let i = 0; i < nonZeroHoldings.length; i++) {
+            const holding = nonZeroHoldings[i];
             const absoluteValue = isAbsoluteMode
                 ? holding.value
                 : convertValueToCurrency(
@@ -272,13 +275,22 @@ export function drawCrosshairOverlay(ctx, layout) {
             if (!isAbsoluteMode) {
                 percentValue = holding.value;
             } else if (layout.percentSeriesMap && layout.percentSeriesMap[holding.key]) {
-                const dates = layout.dates || [];
-                const interpolator = createTimeInterpolator(
-                    dates.map((d, i) => ({
-                        time: new Date(d).getTime(),
-                        value: layout.percentSeriesMap[holding.key][i],
-                    }))
-                );
+                // Bolt: Cache interpolators on layout to avoid rebuilding them and repeatedly calling new Date() on every hover event frame
+                layout.percentInterpolators = layout.percentInterpolators || {};
+                let interpolator = layout.percentInterpolators[holding.key];
+                if (!interpolator) {
+                    const dates = layout.dates || [];
+                    const timePoints = new Array(dates.length);
+                    const holdingSeries = layout.percentSeriesMap[holding.key];
+                    for (let j = 0; j < dates.length; j++) {
+                        timePoints[j] = {
+                            time: new Date(dates[j]).getTime(),
+                            value: holdingSeries[j],
+                        };
+                    }
+                    interpolator = createTimeInterpolator(timePoints);
+                    layout.percentInterpolators[holding.key] = interpolator;
+                }
                 percentValue = interpolator(time) ?? 0;
             } else {
                 percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
@@ -286,7 +298,8 @@ export function drawCrosshairOverlay(ctx, layout) {
 
             const currencyText = formatCurrencyInline(absoluteValue);
             const percentText = `${percentValue.toFixed(2)}%`;
-            return {
+
+            allEnhancedHoldings[i] = {
                 ...holding,
                 percent: percentValue,
                 absoluteValue,
@@ -294,20 +307,23 @@ export function drawCrosshairOverlay(ctx, layout) {
                 formattedPercent: percentText,
                 formattedValue: currencyText,
             };
-        };
+        }
 
-        const allEnhancedHoldings = nonZeroHoldings.map(enhanceHolding);
         // Top 7 for display in snapshot panel and dots
-        const enhancedHoldings = allEnhancedHoldings.slice(0, 7);
+        const limit = Math.min(allEnhancedHoldings.length, 7);
+        const enhancedHoldings = new Array(limit);
+        const visibleKeys = new Set();
 
         // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
-        for (let i = 0; i < enhancedHoldings.length; i++) {
-            seriesSnapshot.push(enhancedHoldings[i]);
+        for (let i = 0; i < limit; i++) {
+            const enhanced = allEnhancedHoldings[i];
+            enhancedHoldings[i] = enhanced;
+            seriesSnapshot.push(enhanced);
+            visibleKeys.add(enhanced.key);
         }
 
         // Draw dots for composition chart (stacked)
         if (hasHover && typeof layout.yScale === 'function') {
-            const visibleKeys = new Set(enhancedHoldings.map((h) => h.key));
             let stackValue = 0;
 
             for (let i = 0; i < layout.series.length; i++) {
@@ -398,17 +414,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     }
 
     // Sort snapshot for display
-    seriesSnapshot.sort((a, b) => {
-        // Buy/Sell bars always at the bottom
-        if (a.isBuySellBar && !b.isBuySellBar) {
-            return 1;
-        }
-        if (!a.isBuySellBar && b.isBuySellBar) {
-            return -1;
-        }
-        // Then by value descending
-        return Math.abs(b.value) - Math.abs(a.value);
-    });
+    sortCrosshairSnapshot(seriesSnapshot);
 
     const dateLabel = formatCrosshairDateLabel(time);
 
@@ -433,7 +439,7 @@ export function drawCrosshairOverlay(ctx, layout) {
     );
 }
 
-function buildRangeSummary(layout, rawStart, rawEnd) {
+export function buildRangeSummary(layout, rawStart, rawEnd) {
     if (!layout || !Array.isArray(layout.series) || layout.series.length === 0) {
         return null;
     }
@@ -925,7 +931,7 @@ function handlePointerUp(event) {
         try {
             pointerCanvas.releasePointerCapture(event.pointerId);
         } catch (error) {
-            logger.warn('Caught exception:', error);
+            logger.warn('Chart interaction handling failed:', error);
             // Ignore release errors
         }
     }
@@ -1008,5 +1014,47 @@ export function attachCrosshairEvents(canvas, chartManager) {
         container.addEventListener('pointerleave', handleContainerLeave);
         containerPointerBound = true;
     }
+    const card = canvas.closest('.chart-card');
+    if (card) {
+        card.addEventListener(
+            'wheel',
+            (event) => {
+                event.preventDefault();
+            },
+            { passive: false }
+        );
+    }
     pointerEventsAttached = true;
+}
+
+export function sortCrosshairSnapshot(seriesSnapshot) {
+    const fixedOrder = {
+        contribution: 1,
+        balance: 2,
+        appreciation: 3,
+        buyVolume: 4,
+        sellVolume: 5,
+    };
+
+    seriesSnapshot.sort((a, b) => {
+        if (a.key in fixedOrder && b.key in fixedOrder) {
+            return fixedOrder[a.key] - fixedOrder[b.key];
+        }
+        if (a.key in fixedOrder) {
+            return -1;
+        }
+        if (b.key in fixedOrder) {
+            return 1;
+        }
+
+        // Buy/Sell bars always at the bottom
+        if (a.isBuySellBar && !b.isBuySellBar) {
+            return 1;
+        }
+        if (!a.isBuySellBar && b.isBuySellBar) {
+            return -1;
+        }
+        // Then by value descending
+        return Math.abs(b.value) - Math.abs(a.value);
+    });
 }

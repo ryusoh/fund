@@ -18,23 +18,114 @@ import { updateCrosshairUI, updateLegend, drawCrosshairOverlay } from '../intera
 import { drawAxes, drawMountainFill, drawEndValue } from '../core.js';
 import { getChartColors, createTimeInterpolator, clampTime, parseLocalDate } from '../helpers.js';
 
+import { fetchRealTimeData } from '../../realtimeData.js';
+
 // Data cache
 let peDataCache = null;
 let peDataLoading = false;
 
 /**
- * Load PE ratio data from the backend JSON.
+ * Load PE ratio data from the backend JSON and merge real-time data if available.
  * @returns {Promise<Object|null>}
  */
 export async function loadPEData() {
     try {
-        const response = await fetch('../data/output/figures/pe_ratio.json');
-        if (!response.ok) {
+        const [response, realtime] = await Promise.all([
+            fetch('../data/output/figures/pe_ratio.json').catch(() => null),
+            fetchRealTimeData().catch((err) => {
+                logger.warn('Real-time PE data fetch failed:', err);
+                return null;
+            }),
+        ]);
+
+        let data = null;
+        if (response && response.ok) {
+            data = await response.json();
+        }
+
+        if (data && realtime && realtime.date && realtime.pe !== null) {
+            const lastDate = data.dates[data.dates.length - 1];
+            if (lastDate === realtime.date || lastDate < realtime.date) {
+                if (lastDate === realtime.date) {
+                    data.portfolio_pe[data.portfolio_pe.length - 1] = realtime.pe;
+
+                    const idx = data.dates.length - 1;
+                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                    const peKeys = Object.keys(data.ticker_pe || {});
+                    for (let k = 0; k < peKeys.length; k += 1) {
+                        const ticker = peKeys[k];
+                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker] || null;
+                    }
+
+                    const weightKeys = Object.keys(data.ticker_weights || {});
+                    for (let k = 0; k < weightKeys.length; k += 1) {
+                        const ticker = weightKeys[k];
+                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker] || null;
+                    }
+                } else {
+                    data.dates.push(realtime.date);
+                    data.portfolio_pe.push(realtime.pe);
+
+                    // Pad existing ticker arrays
+                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                    const peKeys = Object.keys(data.ticker_pe || {});
+                    for (let k = 0; k < peKeys.length; k += 1) {
+                        const ticker = peKeys[k];
+                        data.ticker_pe[ticker].push(realtime.tickerPEs[ticker] || null);
+                    }
+
+                    const weightKeys = Object.keys(data.ticker_weights || {});
+                    for (let k = 0; k < weightKeys.length; k += 1) {
+                        const ticker = weightKeys[k];
+                        data.ticker_weights[ticker].push(realtime.tickerWeights[ticker] || null);
+                    }
+                }
+
+                const idx = data.dates.length - 1;
+                // Add new tickers that may not exist in historical data
+                data.ticker_pe = data.ticker_pe || {};
+                data.ticker_weights = data.ticker_weights || {};
+
+                // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+                const newPEKeys = Object.keys(realtime.tickerPEs || {});
+                for (let k = 0; k < newPEKeys.length; k += 1) {
+                    const ticker = newPEKeys[k];
+                    if (!data.ticker_pe[ticker]) {
+                        data.ticker_pe[ticker] = new Array(idx + 1).fill(null);
+                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker];
+                    }
+                }
+
+                const newWeightKeys = Object.keys(realtime.tickerWeights || {});
+                for (let k = 0; k < newWeightKeys.length; k += 1) {
+                    const ticker = newWeightKeys[k];
+                    if (!data.ticker_weights[ticker]) {
+                        data.ticker_weights[ticker] = new Array(idx + 1).fill(null);
+                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker];
+                    }
+                }
+
+                if (realtime.forwardPe !== null) {
+                    data.forward_pe = data.forward_pe || {};
+                    data.forward_pe.portfolio_forward_pe = realtime.forwardPe;
+                    if (!data.forward_pe.target_date) {
+                        const parts = realtime.date.split('-');
+                        if (parts.length === 3) {
+                            parts[0] = String(Number(parts[0]) + 1);
+                            data.forward_pe.target_date = parts.join('-');
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!data) {
             // eslint-disable-next-line no-console
             console.warn('pe_ratio.json not found');
             return null;
         }
-        return await response.json();
+
+        return data;
     } catch (error) {
         // eslint-disable-next-line no-console
         console.warn('Failed to load PE data:', error);
@@ -82,24 +173,29 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
         }
 
         // Gather per-ticker PE values and weights for crosshair
+        // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
         const dayTickerPEs = {};
         if (tickerPE && typeof tickerPE === 'object') {
-            Object.keys(tickerPE).forEach((ticker) => {
+            const keys = Object.keys(tickerPE);
+            for (let k = 0; k < keys.length; k += 1) {
+                const ticker = keys[k];
                 const val = tickerPE[ticker][i];
                 if (val !== null && val !== undefined && Number.isFinite(val)) {
                     dayTickerPEs[ticker] = val;
                 }
-            });
+            }
         }
 
         const dayTickerWeights = {};
         if (tickerWeights && typeof tickerWeights === 'object') {
-            Object.keys(tickerWeights).forEach((ticker) => {
+            const keys = Object.keys(tickerWeights);
+            for (let k = 0; k < keys.length; k += 1) {
+                const ticker = keys[k];
                 const val = tickerWeights ? tickerWeights[ticker][i] : null;
                 if (val !== null && val !== undefined && Number.isFinite(val)) {
                     dayTickerWeights[ticker] = val;
                 }
-            });
+            }
         }
 
         result.push({ date, pe, tickerPEs: dayTickerPEs, tickerWeights: dayTickerWeights });
@@ -138,7 +234,7 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 chartManager.redraw();
             })
             .catch((error) => {
-                logger.warn('Caught exception:', error);
+                logger.warn('PE chart rendering failed:', error);
                 chartLayouts.pe = null;
                 updateCrosshairUI(null, null);
                 if (emptyState) {
@@ -310,11 +406,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     const benchmarkFwdPE = forwardPE ? forwardPE.benchmark_forward_pe || {} : {};
 
     // Include benchmark values in Y range (only for the first visible benchmark)
-    const { chartVisibility } = transactionState;
     let visibleBenchmarkKey = null;
 
-    // Only support ^GSPC
-    if (chartVisibility['^GSPC'] !== false && benchmarkData['^GSPC']) {
+    // Only support ^GSPC — always show it in PE chart regardless of
+    // benchmark selection in other charts (it's the only PE benchmark)
+    if (benchmarkData['^GSPC']) {
         visibleBenchmarkKey = '^GSPC';
     }
 
@@ -393,10 +489,14 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ];
             const bmkColor = bmkGradientStops[1] || '#999';
             // Mountain fill for benchmark
-            const bmkCoords = bmkSeries.map((point) => ({
-                x: xScale(point.date.getTime()),
-                y: yScale(point.pe),
-            }));
+            const bmkCoords = new Array(bmkSeries.length);
+            for (let i = 0; i < bmkSeries.length; i += 1) {
+                const point = bmkSeries[i];
+                bmkCoords[i] = {
+                    x: xScale(point.date.getTime()),
+                    y: yScale(point.pe),
+                };
+            }
 
             const bmkGradient = ctx.createLinearGradient(
                 0,
@@ -410,7 +510,9 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ctx.beginPath();
             if (bmkCoords.length > 0) {
                 ctx.moveTo(bmkCoords[0].x, plotHeight + padding.top);
-                bmkCoords.forEach((p) => ctx.lineTo(p.x, p.y));
+                for (let i = 0; i < bmkCoords.length; i += 1) {
+                    ctx.lineTo(bmkCoords[i].x, bmkCoords[i].y);
+                }
                 ctx.lineTo(bmkCoords[bmkCoords.length - 1].x, plotHeight + padding.top);
             }
             ctx.closePath();
@@ -434,13 +536,12 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             ctx.beginPath();
             ctx.lineWidth = Math.max(1, lineThickness - 0.5);
             ctx.globalAlpha = 0.8;
-            bmkCoords.forEach((coord, index) => {
-                if (index === 0) {
-                    ctx.moveTo(coord.x, coord.y);
-                } else {
-                    ctx.lineTo(coord.x, coord.y);
+            if (bmkCoords.length > 0) {
+                ctx.moveTo(bmkCoords[0].x, bmkCoords[0].y);
+                for (let i = 1; i < bmkCoords.length; i += 1) {
+                    ctx.lineTo(bmkCoords[i].x, bmkCoords[i].y);
                 }
-            });
+            }
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
@@ -559,7 +660,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
             }
 
             // Store for crosshair
-            const bmkPoints = bmkSeries.map((p) => ({ time: p.date.getTime(), value: p.pe }));
+            const bmkPoints = new Array(bmkSeries.length);
+            for (let i = 0; i < bmkSeries.length; i += 1) {
+                const p = bmkSeries[i];
+                bmkPoints[i] = { time: p.date.getTime(), value: p.pe };
+            }
             benchmarkRendered.push({
                 key: visibleBenchmarkKey,
                 color: bmkColor,
@@ -569,12 +674,16 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         }
     }
 
-    const coords = series.map((point) => ({
-        x: xScale(point.date.getTime()),
-        y: yScale(point.pe),
-        time: point.date.getTime(),
-        value: point.pe,
-    }));
+    const coords = new Array(series.length);
+    for (let i = 0; i < series.length; i += 1) {
+        const point = series[i];
+        coords[i] = {
+            x: xScale(point.date.getTime()),
+            y: yScale(point.pe),
+            time: point.date.getTime(),
+            value: point.pe,
+        };
+    }
 
     // Mountain fill
     const baselineY = yScale(yMin);
@@ -599,13 +708,12 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     }
     ctx.beginPath();
     ctx.lineWidth = lineThickness;
-    coords.forEach((coord, index) => {
-        if (index === 0) {
-            ctx.moveTo(coord.x, coord.y);
-        } else {
-            ctx.lineTo(coord.x, coord.y);
+    if (coords.length > 0) {
+        ctx.moveTo(coords[0].x, coords[0].y);
+        for (let i = 1; i < coords.length; i += 1) {
+            ctx.lineTo(coords[i].x, coords[i].y);
         }
-    });
+    }
     ctx.stroke();
 
     // --- Draw forward PE dashed line ---
@@ -713,7 +821,11 @@ export function drawPEChart(ctx, chartManager, timestamp) {
     }
 
     // --- Layout for crosshair ---
-    const pePoints = series.map((p) => ({ time: p.date.getTime(), value: p.pe }));
+    const pePoints = new Array(series.length);
+    for (let i = 0; i < series.length; i += 1) {
+        const p = series[i];
+        pePoints[i] = { time: p.date.getTime(), value: p.pe };
+    }
 
     chartLayouts.pe = {
         key: 'pe',
@@ -745,20 +857,26 @@ export function drawPEChart(ctx, chartManager, timestamp) {
                 formatValue: (v) => `${v.toFixed(1)}x`,
                 formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
             },
-            // Benchmark crosshair series
-            ...benchmarkRendered.map((bmk) => ({
-                key: bmk.key,
-                name: bmk.key,
-                label: bmk.key,
-                color: bmk.color,
-                getValueAtTime: createTimeInterpolator(bmk.points),
-                formatValue: (v) => `${v.toFixed(1)}x`,
-                formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
-            })),
         ],
         rawSeries: series,
         forwardPE: forwardPE || null,
     };
+
+    // Benchmark crosshair series
+    // Bolt: Use explicit O(N) loop instead of chained .map() and spread operator
+    // to eliminate GC overhead and avoid intermediate array allocations
+    for (let i = 0; i < benchmarkRendered.length; i += 1) {
+        const bmk = benchmarkRendered[i];
+        chartLayouts.pe.series.push({
+            key: bmk.key,
+            name: bmk.key,
+            label: bmk.key,
+            color: bmk.color,
+            getValueAtTime: createTimeInterpolator(bmk.points),
+            formatValue: (v) => `${v.toFixed(1)}x`,
+            formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`,
+        });
+    }
 
     drawCrosshairOverlay(ctx, chartLayouts.pe);
 
@@ -797,7 +915,13 @@ export function drawPEChart(ctx, chartManager, timestamp) {
         });
     }
 
+    // Ensure ^GSPC is not dimmed in the PE legend — it's the only
+    // benchmark here and should always appear active regardless of
+    // benchmark selection in other charts (performance, drawdown, etc.)
+    const savedGSPCVisibility = transactionState.chartVisibility['^GSPC'];
+    transactionState.chartVisibility['^GSPC'] = true;
     updateLegend(legendItems, chartManager);
+    transactionState.chartVisibility['^GSPC'] = savedGSPCVisibility;
 }
 
 /**

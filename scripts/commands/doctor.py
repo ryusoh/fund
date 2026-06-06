@@ -83,8 +83,8 @@ def _run(args) -> None:
             import importlib.metadata as m  # type: ignore
 
             ver = m.version("argcomplete")
-        except Exception:
-            pass
+        except Exception as e:
+            _warn(f"Failed to get argcomplete version: {e}")
         _ok(f"argcomplete importable (version {ver})")
     except Exception as e:
         _warn(f"argcomplete not importable: {e}. Install with: pip install argcomplete")

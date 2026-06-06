@@ -1,46 +1,53 @@
 import { createUiController } from '@js/transactions/ui.js';
 import {
-    transactionState,
-    setActiveChart,
-    setChartDateRange,
     setChartVisibility,
+    setActiveChart,
+    transactionState,
+    setChartDateRange,
 } from '@js/transactions/state.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
 
 jest.mock('@js/transactions/state.js', () => ({
+    setChartVisibility: jest.fn(),
+    setActiveChart: jest.fn(),
+    setChartDateRange: jest.fn(),
     transactionState: {
         activeChart: 'contribution',
     },
-    setActiveChart: jest.fn(),
-    setChartDateRange: jest.fn(),
-    setChartVisibility: jest.fn(),
 }));
 
 jest.mock('@js/transactions/layout.js', () => ({
     adjustMobilePanels: jest.fn(),
 }));
 
-describe('ui.js', () => {
-    let uiController;
+describe('ui controller', () => {
     let chartManager;
+    let uiController;
 
     beforeEach(() => {
+        chartManager = {
+            update: jest.fn(),
+            redraw: jest.fn(),
+        };
+
+        // Reset document body
         document.body.innerHTML = `
             <div class="table-responsive-container"></div>
             <table id="transactionTable"></table>
             <div id="runningAmountSection"></div>
             <div class="chart-legend">
                 <div class="legend-item" data-series="series1"></div>
+                <div class="legend-item" data-series="series2"></div>
             </div>
         `;
 
-        chartManager = {
-            update: jest.fn(),
-            redraw: jest.fn(),
-        };
-
         uiController = createUiController({ chartManager });
-        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb());
+
+        // Mock requestAnimationFrame to execute synchronously
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+            cb();
+            return 1;
+        });
     });
 
     afterEach(() => {

@@ -15,3 +15,4 @@ venv/
 ai/status/
 js/vendor/
 **/*.min.js
+.claude/

@@ -206,6 +206,14 @@ describe('Footer CSS Consistency', () => {
         });
     });
 
+    describe('Calendar heatmap highlight border', () => {
+        it('calendar.css #cal-heatmap svg should have overflow visible to prevent today border clipping', () => {
+            const css = readCssFile('css/calendar.css');
+            const overflow = extractCssProperty(css, '#cal-heatmap svg', 'overflow');
+            expect(overflow).toBe('visible');
+        });
+    });
+
     describe('HTML pages reference correct CSS', () => {
         it('index.html should include main_index.css', () => {
             const html = readCssFile('index.html');

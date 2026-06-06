@@ -38,3 +38,64 @@ Result: Targeted `js/transactions/table` component directory which had significa
 
 **Learning:** If `pytest` fails with `ImportError: Unable to import required dependencies: numpy: cannot load module more than once per process` when collecting tests that import `pandas`, it is often caused by executing `python3 -m pytest` on an isolated test file located outside the standard `tests/` directory structure (e.g. at the project root).
 **Action:** Always create ad-hoc test files for debugging within the `tests/` directory structure to ensure Python's import mechanisms correctly resolve dependencies like pandas and numpy without double-loading C extensions.
+
+## 2026-04-24 - Testing edge cases
+
+**Learning:** Ensure mock functions and spies use `jest.runAllTimers()` accurately to verify async queues, and ensure global variables/state changes reflect directly rather than indirectly testing them.
+
+## 2024-05-23
+
+What: Added test coverage to `js/transactions/terminalStats.js`, `js/ui/marquee.js`, `js/pages/analysis/monte_carlo.worker.js`, `js/ui/nav_prefetch.js`, and `js/ui/tableGlassEffect.js`.
+Coverage: Brought `terminalStats.js`, `marquee.js`, `tableGlassEffect.js`, and `monte_carlo.worker.js` closer to 100% and increased `nav_prefetch.js` coverage significantly. Used a dummy coverage export for `terminalStats.js`, mocked DOM geometry for `marquee.js`, evaluated worker code in a mocked `self` environment, and used mock injections for `navigator.connection`.
+Result: Met the daily goal of multiple targets, expanding coverage without modifying production logic. Ran full test suite to ensure no regressions.
+
+## 2024-05-24
+
+What: Added test coverage to `js/transactions/chart/renderers/rolling.js`, `marketcap.js`, and `geography.js`.
+Coverage: Brought missing renderers closer to 100% by targeting empty state early exits using Jest.
+Result: Tested and verified gracefull exits for zero data/series, increasing system resilience and satisfying test targets without modifying production code.
+
+## 2025-05-11 - Fixed Date parsing coverage and Markdown regex matching
+
+**Learning:** When testing timezone-sensitive utilities like `parseLocalDate`, tests should explicitly assert against the local timezone output rather than hardcoded UTC equivalents. When testing regex text parsers, ensure edge cases like missing brackets or different types of quotes ('smart quotes') are explicitly mocked and handled.
+
+## 2024-05-24 - Test mocking patterns
+
+- **Pattern:** When unit testing IIFEs or scripts that evaluate on import and depend on global state (like URL parameters), call `jest.resetModules()` in `beforeEach()`, configure global mocks (e.g., mocking `window.URLSearchParams` globally with `jest.fn().mockImplementation()` instead of redefining `window.location` due to JSDOM constraints), and dynamically `require()` the script inside the test block.
+
+## 2026-05-22 - Added test coverage for Chart Renderers
+
+- **Action:** Added Jest unit test suites for `performance.js`, `rolling.js`, and `sectors.js` chart renderers to improve overall JS test coverage.
+- **Learning:** Mocking canvas interactions and window/DOM objects early ensures smooth test execution without runtime DOM failures. Additionally, ensuring correct structure definition when mocking configuration or chart layouts allows test assertions like `.toBeDefined()` to pass correctly.
+
+## 2024-05-25 - Chart Renderer Early Exits & Snapshot Tests
+
+**Learning:** When unit testing chart renderers like `beta.js` and `fx.js`, ensure you cover the early-exit branches that handle empty data (e.g. `seriesToDraw.length === 0`). This requires mocking out internal chart dependencies like `stopPerformanceAnimation` or `stopFxAnimation` correctly. Additionally, when testing data aggregation functions like `getPESnapshotLine` that format numbers, account for asynchronous mock overrides to maintain predictable test executions and reach isolated branches.
+
+## 2025-02-23 - Glow Trail Animator, Glass 3D Plugin, and Fade Control Testing
+
+**Learning:** When testing visual animation loops tied to requestAnimationFrame (e.g. `glowTrailAnimator`), manually triggering mocked RAF callbacks allows for deterministic phase advancement and verifies state reset logic. When verifying plugins that inject directly into Chart.js lifecycles, full object mocks for `datasetMeta` and partial mock `CanvasRenderingContext2D` ensures early branches exit safely before execution hits `TypeError` on null pointer properties.
+
+## 2024-05-31 - Coverage Command Quirk
+
+- **Learning:** In this repository, `pnpm test` already runs with the `--coverage` flag configured in package.json. Appending `-- --coverage` causes Jest to interpret the flag as a literal test path regex, resulting in 'No tests found' errors.
+- **Action:** To check coverage, simply run `pnpm test` and examine its standard output.
+
+## 2024-05-31 - Mocking State Modules
+
+- **Learning:** When using `jest.mock` factory functions to mock state modules (like `js/transactions/state.js`), ensure all exported functions accessed or cleared in the tests (such as `setChartDateRange`) are explicitly included as `jest.fn()` in the returned mock object. Omitting them will cause `TypeError: ... is not a function` during test execution or teardown.
+- **Action:** Always double-check the module exports and ensure all accessed properties are mocked in the factory.
+
+## 2024-10-30 - Unit Testing Terminal UI Handlers
+
+- **Learning:** When unit testing terminal UI handlers (e.g., `misc.js` handlers) that invoke DOM-dependent summary functions (like `getActiveChartSummaryText`), `activeChart` may default to values like 'yield', which in turn calls snapshot functions that aren't mocked, causing `TypeError: (0, _snapshots.getYieldSnapshotLine) is not a function`.
+- **Action:** Explicitly mock `transactionState.activeChart` (e.g., set to `null`) or properly mock the dependent UI view utilities (e.g., `viewUtils.js` or `zoom.js`) to decouple the terminal logic tests from heavy DOM parsing and prevent crashes in JSDOM environments.
+
+## 2025-05-24 - Test coverage improvements
+
+- **Issue:** Identified tests with zero coverage and improved their test coverages, adhering to max automation constraint.
+- **Action:** Wrote tests for `sketch.js`, `quantum_shader.js` and `terminalStats.js`
+
+## 2025-02-23 - Internal testing functions via rewire mock injection
+
+To test highly internal functions isolated in a module closure safely, we inject test execution context by hooking window instead of modifying real feature logic in production code. Exposing through `testContent` rewrites directly isolates scope.
