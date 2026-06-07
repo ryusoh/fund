@@ -252,3 +252,8 @@
 
 **Learning:** High-frequency chart data processing paths and UI update loops using `.forEach()` and `.map()` result in unnecessary closure allocations and intermediate array creation, which increases Garbage Collection (GC) pressure and causes performance degradation.
 **Action:** Replace `.forEach()` and `.map()` inside `js/transactions/chart/data/contribution.js` and `js/transactions/table.js` with explicit `for` loops and pre-allocated arrays (e.g., `new Array(length)`) to eliminate closure allocations and reduce GC overhead.
+
+## 2026-06-25 - Optimize composition data merging to O(N+M) and eliminate closures
+
+**Learning:** Using `.forEach()` with an internal `.find()` loop (e.g., iterating through historical keys to find matching real-time keys) creates an O(N x M) time complexity bottleneck and implicit closure allocations on every call, increasing garbage collection (GC) pressure.
+**Action:** Replace nested array methods with an O(N+M) approach by pre-computing a lookup `Map` for O(1) matching. Use standard `for` loops rather than `.forEach` to completely eliminate intermediate array allocations and closure creation.
