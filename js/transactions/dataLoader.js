@@ -380,21 +380,30 @@ export async function loadCompositionSnapshotData() {
                     // Merge composition values
                     const composition = data.composition || data.series; // Support flexibility
                     if (composition) {
+                        // Pre-compute real-time map for O(1) lookups
+                        const rtMap = new Map();
+                        const rtLen = realtime.composition.length;
+                        for (let i = 0; i < rtLen; i++) {
+                            const rtItem = realtime.composition[i];
+                            rtMap.set(normalizeTicker(rtItem.ticker), rtItem.percent);
+                        }
+
                         // For each ticker in historical composition, update/add point
-                        Object.keys(composition).forEach((ticker) => {
+                        const compKeys = Object.keys(composition);
+                        const compLen = compKeys.length;
+                        for (let i = 0; i < compLen; i++) {
+                            const ticker = compKeys[i];
                             if (!Array.isArray(composition[ticker])) {
-                                return;
+                                continue;
                             }
                             // Find real-time percent for this ticker
-                            const rtItem = realtime.composition.find(
-                                (i) => normalizeTicker(i.ticker) === ticker
-                            );
-                            const rtPercent = rtItem ? rtItem.percent : 0;
+                            const rtPercent = rtMap.has(ticker) ? rtMap.get(ticker) : 0;
                             composition[ticker][targetIndex] = rtPercent;
-                        });
+                        }
 
                         // Add new tickers found in real-time but not history
-                        realtime.composition.forEach((rtItem) => {
+                        for (let i = 0; i < rtLen; i++) {
+                            const rtItem = realtime.composition[i];
                             const normalizedTicker = normalizeTicker(rtItem.ticker);
                             if (Math.abs(rtItem.percent) > 0.001) {
                                 // Only if significant
@@ -410,7 +419,7 @@ export async function loadCompositionSnapshotData() {
                                     composition[normalizedTicker][targetIndex] = rtItem.percent;
                                 }
                             }
-                        });
+                        }
                     }
                 }
             }
