@@ -104,6 +104,7 @@ To test highly internal functions isolated in a module closure safely, we inject
 
 **Learning:** When unit testing Immediately Invoked Function Expressions (IIFEs) that modify the DOM directly in Jest, rely on `jest.resetModules()` in `beforeEach` and dynamically `require()` the file inside the test suite or test helper function to re-evaluate the script logic cleanly against the mocked DOM.
 **Action:** Implemented this pattern for `js/loader/imageFallback.js` in `tests/js/loader/imageFallback.test.js`.
+
 ## 2024-06-06 - Unit Test Coverage for Chart Helpers
 
 **Action:** Added comprehensive unit test coverage for `createTimeInterpolator`, `injectSyntheticStartPoint`, and `injectCarryForwardStartPoint` utility functions in `js/transactions/chart/helpers.js`.

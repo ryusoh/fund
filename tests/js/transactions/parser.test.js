@@ -72,7 +72,6 @@ describe('parseCommandPalette - key/value parsing', () => {
     it('identifies standalone tickers', () => {
         const result = parseCommandPalette('AAPL text MSFT');
         // 'text' parses as TEXT because it is letters only, which normalized as a valid ticker format
-        // wait... wait, 'text' normalized is TEXT. So it considers it a ticker.
         expect(result.commands.tickers).toEqual(['AAPL', 'TEXT', 'MSFT']);
     });
 

@@ -150,11 +150,6 @@ describe('nav_current_page', () => {
     test('handles links without parent elements safely', () => {
         setupLocation('/orphan');
 
-        // Use a detached container so that querySelectorAll can find it
-        // if we mock document.querySelectorAll. Wait, `document.querySelectorAll`
-        // searches the DOM tree. If it's in the DOM tree, it has a parent.
-        // Let's mock document.querySelectorAll directly.
-
         const orphanLink = document.createElement('a');
         orphanLink.href = '/orphan';
 

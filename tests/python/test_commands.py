@@ -775,11 +775,6 @@ class TestCLIEdgeCases(unittest.TestCase):
     def test_cli_module_execution(self):
         import runpy
 
-        # To avoid the actual main executing and causing SystemExit, we just catch SystemExit
-        # Wait, if we mock scripts.cli.main we shouldn't execute the real one.
-        # run_module re-imports the code and executes it, which doesn't use the patched scripts.cli.main
-        # because runpy creates a new module namespace. Let's patch sys.exit instead of mock_main
-        # or better yet, mock main within the runpy context using a different approach.
         with patch('sys.exit'):
             with patch("sys.argv", ["fund"]):
                 try:
