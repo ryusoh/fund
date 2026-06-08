@@ -435,16 +435,17 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     });
 
     const seriesForCrosshair = [];
-    activeTickerOrder.forEach((ticker) => {
+    for (let i = 0; i < activeTickerOrder.length; i += 1) {
+        const ticker = activeTickerOrder[i];
         const values =
             ticker === 'Others' && usingFilteredOthers ? filteredOthers : chartData[ticker];
         if (!Array.isArray(values) || values.length !== dates.length) {
-            return;
+            continue;
         }
-        const points = dateTimes.map((time, idx) => ({
-            time,
-            value: values[idx],
-        }));
+        const points = new Array(dateTimes.length);
+        for (let j = 0; j < dateTimes.length; j += 1) {
+            points[j] = { time: dateTimes[j], value: values[j] };
+        }
         const label = ticker === 'BRKB' ? 'BRK-B' : ticker;
         const color = resolveTickerColor(ticker);
         seriesForCrosshair.push({
@@ -460,9 +461,9 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                 valueMode === 'absolute'
                     ? formatCurrencyInlineValue(delta, selectedCurrency)
                     : formatPercentInline(delta),
-            originalIndex: activeTickerOrder.indexOf(ticker),
+            originalIndex: i,
         });
-    });
+    }
 
     const sortedSeriesForCrosshair = seriesForCrosshair.sort((a, b) => {
         const indexA = activeTickerOrder.indexOf(a.key);

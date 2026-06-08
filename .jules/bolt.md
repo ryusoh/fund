@@ -257,3 +257,7 @@
 
 **Learning:** Using `.forEach()` with an internal `.find()` loop (e.g., iterating through historical keys to find matching real-time keys) creates an O(N x M) time complexity bottleneck and implicit closure allocations on every call, increasing garbage collection (GC) pressure.
 **Action:** Replace nested array methods with an O(N+M) approach by pre-computing a lookup `Map` for O(1) matching. Use standard `for` loops rather than `.forEach` to completely eliminate intermediate array allocations and closure creation.
+
+## 2026-06-25 - Optimize crosshair index lookup in composition.js
+**Learning:** When refactoring array iteration methods (like `.forEach()`) to standard `for` loops in high-frequency rendering paths, retaining `.indexOf()` calls (e.g., `activeTickerOrder.indexOf(ticker)`) preserves an O(N) lookup.
+**Action:** Replace `.indexOf()` calls on the iterated array with the current loop's index variable (e.g., `i`) to reduce complexity to O(1) constant time, eliminating unnecessary full-array scans per iteration.
