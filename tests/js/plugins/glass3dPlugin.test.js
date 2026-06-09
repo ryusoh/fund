@@ -120,6 +120,46 @@ describe('glass3dPlugin', () => {
         expect(ctx.fill).toHaveBeenCalled();
     });
 
+    it('should render contact-hardening shadow with two passes (sharp + soft)', () => {
+        // Track all filter values set during beforeDatasetsDraw
+        const filterValues = [];
+        const fillCounts = { before: 0 };
+        const origFilter = Object.getOwnPropertyDescriptor(ctx, 'filter') || {};
+        let currentFilter = '';
+        Object.defineProperty(ctx, 'filter', {
+            get() {
+                return currentFilter;
+            },
+            set(v) {
+                currentFilter = v;
+                if (typeof v === 'string' && v.includes('blur')) {
+                    filterValues.push(v);
+                }
+            },
+            configurable: true,
+        });
+        const origFill = ctx.fill;
+        ctx.fill = jest.fn((...args) => origFill(...args));
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+
+        // Shadow should produce two blur passes: a sharp contact shadow and a soft ambient shadow
+        expect(filterValues.length).toBeGreaterThanOrEqual(2);
+
+        // Extract blur pixel values
+        const blurPixels = filterValues.map((f) => {
+            const m = f.match(/blur\((\d+(?:\.\d+)?)px\)/);
+            return m ? parseFloat(m[1]) : 0;
+        });
+
+        // There should be at least one small blur (contact) and one large blur (ambient)
+        const minBlur = Math.min(...blurPixels);
+        const maxBlur = Math.max(...blurPixels);
+        expect(maxBlur).toBeGreaterThan(minBlur);
+        expect(minBlur).toBeLessThan(20); // contact shadow should be tight
+        expect(maxBlur).toBeGreaterThanOrEqual(20); // ambient shadow should be soft
+    });
+
     it('should parse hex colors correctly for top highlights', () => {
         arcs[0].options = { backgroundColor: '#ff0000' };
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});

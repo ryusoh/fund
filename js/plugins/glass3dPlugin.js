@@ -227,9 +227,28 @@ function drawShadow(ctx, centerX, centerY, outerRadius, depth, options, pointer,
     const offsetY = shadowCfg.offsetYPx ?? depth * 0.7;
     const opacity = shadowCfg.opacity ?? 0.22;
     const blur = shadowCfg.blur ?? 28;
+    const px = pointer.x * 0.35;
 
+    // --- Contact shadow: sharp, close to the object ---
+    const contactBlur = Math.round(blur * 0.3);
+    const contactOpacity = opacity * 0.6;
+    const contactRadius = outerRadius * 0.88;
     ctx.save();
-    ctx.translate(centerX + pointer.x * 0.35, centerY + offsetY);
+    ctx.translate(centerX + px, centerY + offsetY * 0.55);
+    ctx.scale(scaleX * 0.97, scaleY * squash * 1.05);
+    const contactGrad = ctx.createRadialGradient(0, 0, contactRadius * 0.35, 0, 0, contactRadius);
+    contactGrad.addColorStop(0, `rgba(0, 0, 0, ${contactOpacity})`);
+    contactGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = contactGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, contactRadius, contactRadius, 0, 0, Math.PI * 2);
+    ctx.filter = `blur(${contactBlur}px)`;
+    ctx.fill();
+    ctx.restore();
+
+    // --- Ambient shadow: soft, diffuse, further out ---
+    ctx.save();
+    ctx.translate(centerX + px, centerY + offsetY);
     ctx.scale(scaleX, scaleY * squash);
     const radius = outerRadius * 0.92;
     const gradient = ctx.createRadialGradient(0, 0, radius * 0.1, 0, 0, radius);
