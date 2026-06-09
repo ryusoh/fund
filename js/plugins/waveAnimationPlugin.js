@@ -170,6 +170,14 @@ export const waveAnimationPlugin = {
                 ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
                 ctx.fillStyle = grad;
                 ctx.fill();
+
+                // Diffraction fringe: light bending around the opaque wavefront edge
+                // produces a thin blue-white rim glow, connecting to the glass palette
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(160, 210, 255, ${(op * 0.35).toFixed(3)})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
             }
         });
         ctx.restore();
