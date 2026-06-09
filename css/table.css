@@ -6,9 +6,23 @@
     /* Enable horizontal scroll if content overflows */
     -webkit-overflow-scrolling: touch;
     /* Smooth scrolling on iOS for better UX */
+
+    /* Hide scrollbars but keep functionality */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+
     /* Rounded corners for the top part of the content-block */
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+}
+
+/* Hide scrollbar aggressively for Chrome, Safari and Opera */
+.table-responsive-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    -webkit-appearance: none !important;
 }
 
 @media (min-width: 1024px) {
