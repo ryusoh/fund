@@ -277,11 +277,13 @@ body.body-calendar {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)) !important;
 }
 
-/* Enhanced shadows and blur for all calendar cells */
+/* Enhanced shadows and blur for all calendar cells.
+   Shadow offset biased lower-left (light from upper-right, azimuth 315°). */
 .ch-subdomain-bg {
     -webkit-backdrop-filter: blur(10px) !important;
     backdrop-filter: blur(10px) !important;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2)) !important;
+    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+        drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18)) !important;
 }
 
 /* Zoom functionality */

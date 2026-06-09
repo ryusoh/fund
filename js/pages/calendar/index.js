@@ -22,6 +22,7 @@ import { logger } from '@utils/logger.js';
 import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
 import { ensureEntryDisplay, precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
+import { applyBevelGlass } from '@pages/calendar/bevelGlassPlugin.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 import {
     initBackgroundSweepEffect,
@@ -91,6 +92,7 @@ function queuePostPaintFrame() {
         const args = latestPostPaintArgs;
         renderLabels(args.cal, args.byDate, args.state, args.currencySymbols);
         applyCurrencyColors(d3, args.state, args.byDate);
+        applyBevelGlass(d3);
     });
 }
 
@@ -99,6 +101,7 @@ function schedulePostPaintUpdates(cal, byDate, state, currencySymbols) {
 
     if (state?.isCalendarTransition) {
         pendingPostPaintAfterTransition = true;
+
         return;
     }
 
@@ -454,6 +457,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         /* istanbul ignore next: event handler execution in test environment */
         state.isAnimating = true;
         state.isCalendarTransition = true;
+
         cal.previous();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -475,6 +479,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
         /* istanbul ignore next: event handler execution in test environment */
         state.isAnimating = true;
         state.isCalendarTransition = true;
+
         cal.next();
         /* istanbul ignore next: event handler execution in test environment */
         // Release navigation lock after a short delay
@@ -507,6 +512,7 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
                 /* istanbul ignore next: event handler execution in test environment */
                 state.isAnimating = true;
                 state.isCalendarTransition = true;
+
                 state.labelsVisible = !state.labelsVisible;
                 /* istanbul ignore next: event handler execution in test environment */
                 cal.jumpTo(getNyDate());
@@ -691,11 +697,13 @@ function _executeTouchNavigation(horizontalDistance, cal, state) {
         logger.log('Touch swipe right detected - navigating to previous month');
         state.isCalendarTransition = true;
         state.isAnimating = true;
+
         cal.previous();
     } else if (horizontalDistance <= 0 && nextBtn && !nextBtn.disabled) {
         logger.log('Touch swipe left detected - navigating to next month');
         state.isCalendarTransition = true;
         state.isAnimating = true;
+
         cal.next();
     } else {
         logger.log('Swipe ignored - button disabled');
