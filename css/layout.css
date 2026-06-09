@@ -21,22 +21,34 @@
 }
 
 body:not(.body-calendar) .content-block {
-    -webkit-backdrop-filter: blur(5px);
-    backdrop-filter: blur(5px);
+    /* iOS Fluid Glass Effect with Volumetric 3D Depth */
+    background-color: rgba(30, 30, 33, 0.4); /* Subtle dark base */
+
+    /* Volumetric 3D Sheen - Simulates light hitting a curved glass surface */
+    background-image: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        /* Specular wash catching light at the top-left */ rgba(255, 255, 255, 0.01) 35%,
+        /* Quickly fading to transparent */ rgba(0, 0, 0, 0.15) 75%,
+        /* Gathering ambient shadow */ rgba(0, 0, 0, 0.5) 100%
+            /* Deep occlusion shadow at the bottom-right */
+    );
+
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+
     /* Remove physical borders to fix Safari backdrop-filter bleed artifacts */
     border: none;
     box-shadow:
-        /* 1. Ambient outer depth (beneath the pane) */
-        0 4px 12px rgba(0, 0, 0, 0.3),
-        0 8px 32px rgba(0, 0, 0, 0.15),
-        /* 2. Outer rim (replaces physical border) - thin highlight top/right, thin shadow bottom/left */
-        inset 0 2px 0 0 rgba(255, 255, 255, 0.15),
-        inset -2px 0 0 0 rgba(255, 255, 255, 0.1),
-        inset 0 -2px 0 0 rgba(0, 0, 0, 0.25),
-        inset 2px 0 0 0 rgba(0, 0, 0, 0.15),
-        /* 3. Inner bevel - a slightly wider inset offset creating the sloped glass edge effect */
-        inset 2px -2px 0 0 rgba(255, 255, 255, 0.07),
-        inset -2px 2px 0 0 rgba(0, 0, 0, 0.2);
+        /* 1. Deep, soft ambient shadow for floating elevation */
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        /* 2. Perfectly Anti-Aliased Smooth Bevel */
+        /* By using a 1px blur instead of a 0px hard stop, we force the browser to beautifully anti-alias the curve */
+        /* Smooth, luminous top-left rim highlight */ inset 1px 1px 1px rgba(255, 255, 255, 0.25),
+        /* Smooth, deep bottom-right rim shadow */ inset -1px -1px 1px rgba(0, 0, 0, 0.4),
+        /* Thick, polished inner glass volume (slope) */ inset 2px 2px 6px rgba(255, 255, 255, 0.1),
+        inset -2px -2px 6px rgba(0, 0, 0, 0.3);
 }
 
 #fundPieChartContainer {
