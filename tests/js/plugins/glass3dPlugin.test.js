@@ -124,8 +124,6 @@ describe('glass3dPlugin', () => {
     it('should render contact-hardening shadow with two passes (sharp + soft)', () => {
         // Track all filter values set during beforeDatasetsDraw
         const filterValues = [];
-        const fillCounts = { before: 0 };
-        const origFilter = Object.getOwnPropertyDescriptor(ctx, 'filter') || {};
         let currentFilter = '';
         Object.defineProperty(ctx, 'filter', {
             get() {
@@ -199,6 +197,46 @@ describe('glass3dPlugin', () => {
                 g._stops.some((s) => s.color.includes('0, 0, 0'))
         );
         expect(beerLambertGradients.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should render chromatic dispersion with 3 color-channel rim passes', () => {
+        // Track radial gradients and their color stops created during beforeDatasetsDraw
+        const radialGradients = [];
+        ctx.createRadialGradient = jest.fn((...args) => {
+            const stops = [];
+            const g = {
+                addColorStop: jest.fn((offset, color) => stops.push({ offset, color })),
+                _stops: stops,
+                _args: args,
+            };
+            radialGradients.push(g);
+            return g;
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+
+        // Find gradients for each spectral channel:
+        // sky-blue (outer), electric blue core, lavender (inner)
+        const warmGradients = radialGradients.filter((g) =>
+            g._stops.some((s) => /rgba?\(70,\s*205,\s*255/.test(s.color))
+        );
+        const coreGradients = radialGradients.filter((g) =>
+            g._stops.some((s) => /rgba?\(80,\s*185,\s*255/.test(s.color))
+        );
+        const coolGradients = radialGradients.filter((g) =>
+            g._stops.some((s) => /rgba?\(90,\s*140,\s*255/.test(s.color))
+        );
+
+        // Each spectral channel should have at least one gradient pass
+        expect(warmGradients.length).toBeGreaterThanOrEqual(1);
+        expect(coreGradients.length).toBeGreaterThanOrEqual(1);
+        expect(coolGradients.length).toBeGreaterThanOrEqual(1);
+
+        // The radii should differ between channels (offset creates dispersion)
+        // Compare the outer radius arg (index 5) of the warm vs cool gradient
+        const redOuterR = warmGradients[0]._args[5];
+        const blueOuterR = coolGradients[0]._args[5];
+        expect(redOuterR).not.toBe(blueOuterR);
     });
 
     it('should parse hex colors correctly for top highlights', () => {

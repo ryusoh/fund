@@ -348,45 +348,58 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     const width = rimCfg.width ?? 1.2;
     const opacity = rimCfg.opacity ?? 0.3;
     const squash = options.squash ?? 1;
+    const px = pointer.x * 0.3;
+    const py = pointer.y * 0.3;
+    const dispersion = rimCfg.dispersion ?? 10;
+
+    // Chromatic dispersion derived from the electric trail palette
+    // so the rim feels part of the same energy system.
+    // Outer: sky-blue (from primary 140,205,255), core: pale electric blue,
+    // inner: lavender shift (from tertiary 180,140,255).
+    const channels = [
+        { color: [70, 205, 255], offset: dispersion, opacityScale: 0.08 }, // sky-blue (outer)
+        { color: [80, 185, 255], offset: 0, opacityScale: 0.12 }, // electric blue core
+        { color: [90, 140, 255], offset: -dispersion, opacityScale: 0.14 }, // lavender (inner)
+    ];
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
-    // Create subtle glow effect instead of stroke lines
-    const gradient = ctx.createRadialGradient(
-        centerX + pointer.x * 0.3,
-        centerY + pointer.y * 0.3,
-        outerRadius - width * 2,
-        centerX + pointer.x * 0.3,
-        centerY + pointer.y * 0.3,
-        outerRadius + width
-    );
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-    gradient.addColorStop(0.7, `rgba(255, 255, 255, ${opacity * 0.5})`);
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    const bandWidth = width * 50;
 
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(
-        centerX + pointer.x * 0.3,
-        centerY + pointer.y * 0.3,
-        outerRadius,
-        outerRadius * squash,
-        0,
-        0,
-        Math.PI * 2
-    );
-    ctx.ellipse(
-        centerX + pointer.x * 0.2,
-        centerY + pointer.y * 0.2,
-        innerRadius,
-        innerRadius * squash,
-        0,
-        Math.PI * 2,
-        0,
-        true
-    );
-    ctx.fill('evenodd');
+    channels.forEach(({ color, offset, opacityScale }) => {
+        const outerR = outerRadius + offset;
+        const gradient = ctx.createRadialGradient(
+            centerX + px,
+            centerY + py,
+            outerR - bandWidth,
+            centerX + px,
+            centerY + py,
+            outerR + width
+        );
+        const [r, g, b] = color;
+        const peakOpacity = opacity * opacityScale;
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+        gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${peakOpacity})`);
+        gradient.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${peakOpacity * 0.6})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(centerX + px, centerY + py, outerR, outerR * squash, 0, 0, Math.PI * 2);
+        ctx.ellipse(
+            centerX + pointer.x * 0.2,
+            centerY + pointer.y * 0.2,
+            innerRadius,
+            innerRadius * squash,
+            0,
+            Math.PI * 2,
+            0,
+            true
+        );
+        ctx.fill('evenodd');
+    });
+
     ctx.restore();
 }
 
