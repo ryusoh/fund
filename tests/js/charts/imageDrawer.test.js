@@ -23,6 +23,7 @@ describe('drawImage', () => {
             drawImage: jest.fn(),
             fillRect: jest.fn(),
             scale: jest.fn(),
+            createRadialGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
             get globalAlpha() {
                 return storedGlobalAlpha;
             },
@@ -491,17 +492,12 @@ describe('drawImage', () => {
     });
 
     it('should apply glass refraction tint overlay on the offscreen canvas', () => {
-        // Enable glass refraction via logoInfo
-        logoInfo.glassRefraction = true;
-
         drawImage(ctx, arc, img, logoInfo);
 
         // The offscreen context should have a blue-tint overlay drawn via fillRect
-        // after the main image, using a composite mode that tints without destroying
         expect(offscreenCtx.fillRect).toHaveBeenCalled();
 
-        // Should set a composite operation for the tint pass (not just source-over)
-        // The tint uses 'source-atop' to only color pixels that already have content
+        // Track composite operations on re-run
         const compositeOps = [];
         Object.defineProperty(offscreenCtx, 'globalCompositeOperation', {
             get() {
@@ -514,11 +510,23 @@ describe('drawImage', () => {
             configurable: true,
         });
 
-        // Re-run to capture composite operations
         drawImage._sharedCanvas = undefined;
         drawImage._sharedCtx = undefined;
         drawImage(ctx, arc, img, logoInfo);
         expect(compositeOps).toContain('source-atop');
+    });
+
+    it('should amplify glass tint and add caustic glow on hover', () => {
+        // Draw with hover = true
+        drawImage(ctx, arc, img, logoInfo, null, true);
+
+        // Hover caustic glow uses createRadialGradient on offscreen ctx
+        expect(offscreenCtx.createRadialGradient).toHaveBeenCalled();
+
+        // Should call fillRect at least twice (tint + caustic glow)
+        // (fillRect is also called for other paths, but hover adds extra)
+        const fillRectCalls = offscreenCtx.fillRect.mock.calls.length;
+        expect(fillRectCalls).toBeGreaterThanOrEqual(2);
     });
 
     it('should trigger line 68 - add PI when defaultRotation < -PI/2', () => {
