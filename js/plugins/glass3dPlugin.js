@@ -673,6 +673,39 @@ function drawBeerLambertOverlay(ctx, meta, options) {
     ctx.restore();
 }
 
+function drawAtmosphericFade(ctx, centerX, centerY, outerRadius, innerRadius, options) {
+    const squash = options.squash ?? 1;
+    const fadeOpacity = 0.12;
+
+    ctx.save();
+
+    // Clip to the donut ring so the gradient only affects the face
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, outerRadius, outerRadius * squash, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, innerRadius, innerRadius * squash, 0, Math.PI * 2, 0, true);
+    ctx.clip('evenodd');
+
+    // Top-to-bottom gradient: transparent at top (near edge), dark at bottom (far edge)
+    const gradient = ctx.createLinearGradient(
+        centerX,
+        centerY - outerRadius * squash,
+        centerX,
+        centerY + outerRadius * squash
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(1, `rgba(0, 0, 0, ${fadeOpacity})`);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(
+        centerX - outerRadius,
+        centerY - outerRadius * squash,
+        outerRadius * 2,
+        outerRadius * squash * 2
+    );
+    ctx.restore();
+}
+
 function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, options, state, squash) {
     const glow = options.ambientGlow || {};
     const innerOpacity = glow.innerOpacity ?? 0.2;
@@ -782,6 +815,7 @@ export const glass3dPlugin = {
         };
 
         drawBeerLambertOverlay(ctx, meta, options);
+        drawAtmosphericFade(ctx, centerX, centerY, outerRadius, innerRadius, options);
         drawAmbientGlow(
             ctx,
             centerX,

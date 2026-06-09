@@ -239,6 +239,49 @@ describe('glass3dPlugin', () => {
         expect(redOuterR).not.toBe(blueOuterR);
     });
 
+    it('should apply atmospheric back-edge fade on the doughnut face', () => {
+        // Track linear gradients created during afterDatasetsDraw
+        const linearGradients = [];
+        ctx.createLinearGradient = jest.fn((...args) => {
+            const stops = [];
+            const g = {
+                addColorStop: jest.fn((offset, color) => stops.push({ offset, color })),
+                _stops: stops,
+                _args: args,
+            };
+            linearGradients.push(g);
+            return g;
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+        linearGradients.length = 0;
+        ctx.createLinearGradient.mockClear();
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Find a top-to-bottom gradient where y1 < y2 (top to bottom),
+        // with a transparent top and dark bottom stop
+        const atmosphericGradients = linearGradients.filter((g) => {
+            const [, y1, , y2] = g._args;
+            if (y2 <= y1) {
+                return false;
+            }
+            const hasTransparentTop = g._stops.some(
+                (s) => s.offset <= 0.1 && s.color.includes('0)')
+            );
+            const hasDarkBottom = g._stops.some(
+                (s) =>
+                    s.offset >= 0.8 && /rgba?\(0,\s*0,\s*0/.test(s.color) && !s.color.includes('0)')
+            );
+            return hasTransparentTop && hasDarkBottom;
+        });
+
+        expect(atmosphericGradients.length).toBeGreaterThanOrEqual(1);
+
+        // Should clip to the donut ring (clip() must be called)
+        expect(ctx.clip).toHaveBeenCalled();
+    });
+
     it('should parse hex colors correctly for top highlights', () => {
         arcs[0].options = { backgroundColor: '#ff0000' };
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
