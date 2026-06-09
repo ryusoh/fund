@@ -530,4 +530,28 @@ describe('TableGlassEffect', () => {
 
         effect.dispose();
     });
+
+    it('should trigger resize when tbody children mutate (data refresh regression)', async () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+
+        jest.spyOn(effect, 'resize');
+
+        const tbody = container.querySelector('tbody');
+        const newRow = document.createElement('tr');
+        Object.defineProperty(newRow, 'getBoundingClientRect', {
+            value: () => ({ top: 150, height: 50, left: 0, width: 800 }),
+        });
+
+        // Mutate the DOM to simulate a data refresh replacing rows
+        tbody.appendChild(newRow);
+
+        // Wait for the MutationObserver microtask to fire
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(effect.resize).toHaveBeenCalled();
+
+        effect.dispose();
+    });
 });

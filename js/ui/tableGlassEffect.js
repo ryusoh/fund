@@ -100,6 +100,15 @@ export class TableGlassEffect {
         this.resizeObserver = new ResizeObserver(() => this.resize());
         this.resizeObserver.observe(target);
 
+        // Observe DOM mutations in the tbody to catch data refreshes
+        // When data refreshes, rows are replaced, making cached row references stale.
+        const tbody = this.container.querySelector('tbody');
+        if (tbody) {
+            // eslint-disable-next-line no-undef
+            this.mutationObserver = new MutationObserver(() => this.resize());
+            this.mutationObserver.observe(tbody, { childList: true });
+        }
+
         this.initParticles();
         this.resize();
         this.startLoop();
@@ -693,6 +702,9 @@ export class TableGlassEffect {
         }
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
+        }
+        if (this.mutationObserver) {
+            this.mutationObserver.disconnect();
         }
         if (this.canvas && this.canvas.parentNode) {
             this.canvas.parentNode.removeChild(this.canvas);

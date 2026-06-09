@@ -135,9 +135,9 @@ tbody {
     /* Embedded Recessed Well Effect */
     background-color: rgba(0, 0, 0, 0.15); /* Darkens the well to look carved out */
 
-    /* Inverted Bevel: Light source top-left means top-left of a hole is in shadow, 
+    /* Inverted Bevel: Light source top-left means top-left of a hole is in shadow,
        bottom-right of a hole catches the light */
-    box-shadow: 
+    box-shadow:
         /* Deep inner shadow from the top lip */
         inset 0 4px 10px rgba(0, 0, 0, 0.3),
         /* Catchlight on the bottom lip */ inset 0 -1px 1px rgba(255, 255, 255, 0.15),
