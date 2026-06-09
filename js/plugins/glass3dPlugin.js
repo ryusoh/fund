@@ -656,7 +656,7 @@ function drawElectricTrail(
     const offsetX = pointer.x * 0.2;
     const offsetY = pointer.y * 0.2;
     const speedMultiplier = electric.streakSpeedMultiplier ?? 1;
-    const segments = 20;
+    const segments = 12;
 
     // Head color: hot white-blue plasma
     const headColor = 'rgba(220, 240, 255, 1)';
@@ -747,10 +747,19 @@ function drawElectricTrail(
                 continue;
             }
 
-            ctx.strokeStyle = flare > 0.1 ? flareColor : color;
-            ctx.shadowColor = flare > 0.1 ? flareColor : color;
-            ctx.shadowBlur = arcThickness * (4 + flare * 8);
-            ctx.lineWidth = arcThickness * 2.5 * cometFade * (1 + flare * 0.5);
+            const ghostColor = flare > 0.1 ? flareColor : color;
+            const ghostWidth = arcThickness * 2.5 * cometFade * (1 + flare * 0.5);
+
+            // Glow pass: wider, dimmer stroke (replaces expensive shadowBlur)
+            ctx.strokeStyle = ghostColor;
+            ctx.lineWidth = ghostWidth * 3;
+            ctx.globalAlpha = ghostAlpha * 0.25;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
+            ctx.stroke();
+
+            // Core pass
+            ctx.lineWidth = ghostWidth;
             ctx.globalAlpha = ghostAlpha;
             ctx.beginPath();
             ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
@@ -790,12 +799,17 @@ function drawElectricTrail(
                 continue;
             }
 
-            // Main stroke — shifts to flare white in the specular zone
+            // Glow pass: wide, dim stroke simulates the blur halo
             const mainColor = flare > 0.15 ? flareColor : color;
-            const glowColor = flare > 0.15 ? flareColor : segColor;
             ctx.strokeStyle = mainColor;
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = thickness * 3 * (0.5 + headMix * 2 + flare * 4);
+            ctx.lineWidth = thickness * (2.5 + headMix * 2 + flare * 3);
+            ctx.globalAlpha = alpha * 0.2;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+            ctx.stroke();
+
+            // Core pass: sharp, bright — uses color temperature shift
+            ctx.strokeStyle = flare > 0.15 ? flareColor : segColor;
             ctx.lineWidth = thickness;
             ctx.globalAlpha = alpha;
             ctx.beginPath();
@@ -806,8 +820,6 @@ function drawElectricTrail(
             if (headMix > 0.05 || flare > 0.2) {
                 const coreMix = Math.max(headMix, flare);
                 ctx.strokeStyle = flareColor;
-                ctx.shadowColor = flareColor;
-                ctx.shadowBlur = thickness * (5 + flare * 6);
                 ctx.lineWidth = thickness * (0.4 + flare * 0.3);
                 ctx.globalAlpha = alpha * coreMix * 0.9;
                 ctx.beginPath();
@@ -849,19 +861,18 @@ function drawEnergyParticles(
         const y = centerY + Math.sin(angle) * radius * squash + pointer.y * 0.15;
         const flicker = 0.5 + 0.5 * Math.sin(state.phase * Math.PI * 4 + particle.flickerOffset);
         const color = colors[idx % colors.length] || 'rgba(0,255,255,0.6)';
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 8 + flicker * 8;
+        const pSize = particle.size + flicker * 1.5;
+        // Glow halo: larger, dimmer ellipse (replaces expensive shadowBlur)
         ctx.fillStyle = color;
+        ctx.globalAlpha = 0.15 * flicker;
         ctx.beginPath();
-        ctx.ellipse(
-            x,
-            y,
-            particle.size + flicker * 1.5,
-            (particle.size + flicker) * 0.6,
-            angle,
-            0,
-            Math.PI * 2
-        );
+        ctx.ellipse(x, y, pSize * 2.5, pSize * 1.5, angle, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core particle
+        ctx.globalAlpha = 0.6 + 0.4 * flicker;
+        ctx.beginPath();
+        ctx.ellipse(x, y, pSize, (particle.size + flicker) * 0.6, angle, 0, Math.PI * 2);
         ctx.fill();
     });
     ctx.restore();

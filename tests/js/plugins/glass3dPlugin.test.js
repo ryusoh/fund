@@ -420,32 +420,32 @@ describe('glass3dPlugin', () => {
 
     it('should modulate electric trail brightness by Fresnel grazing angle', () => {
         // Fresnel predicts glancing angles reflect more light → brighter trail segments
-        // We capture shadowBlur as a proxy for Fresnel boost (it scales with the effect)
-        const shadowBlurs = [];
-        let currentShadowBlur = 0;
-        Object.defineProperty(ctx, 'shadowBlur', {
+        // We capture globalAlpha as a proxy for Fresnel boost (it scales with the effect)
+        const alphaValues = [];
+        let currentAlpha = 1;
+        Object.defineProperty(ctx, 'globalAlpha', {
             get() {
-                return currentShadowBlur;
+                return currentAlpha;
             },
             set(v) {
-                currentShadowBlur = v;
-                if (v > 0) {
-                    shadowBlurs.push(v);
+                currentAlpha = v;
+                if (v > 0 && v < 1) {
+                    alphaValues.push(v);
                 }
             },
             configurable: true,
         });
 
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
-        shadowBlurs.length = 0;
+        alphaValues.length = 0;
 
         glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
 
-        // Trail segments should produce varying shadowBlur values because Fresnel
+        // Trail segments should produce varying alpha values because Fresnel
         // modulates brightness based on the segment's angular position on the torus
-        expect(shadowBlurs.length).toBeGreaterThanOrEqual(10);
-        const uniqueBlurs = new Set(shadowBlurs.map((v) => v.toFixed(2)));
-        expect(uniqueBlurs.size).toBeGreaterThan(3);
+        expect(alphaValues.length).toBeGreaterThanOrEqual(10);
+        const uniqueAlphas = new Set(alphaValues.map((v) => v.toFixed(3)));
+        expect(uniqueAlphas.size).toBeGreaterThan(3);
     });
 
     it('should parse hex colors correctly for top highlights', () => {
