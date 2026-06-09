@@ -107,7 +107,7 @@ describe('Magnetic Nav', () => {
         );
     });
 
-    it('should apply magnetic effect to calendar navigation buttons', () => {
+    it('should not apply magnetic effect to calendar navigation buttons', () => {
         initMagneticNav();
         const calBtn = document.querySelector('#calendar-navigation-controls .cal-nav-btn');
 
@@ -124,23 +124,7 @@ describe('Magnetic Nav', () => {
         });
 
         calBtn.dispatchEvent(mouseMoveEvent);
-        expect(mockGsap.to).toHaveBeenCalled();
-
-        // Verify child <i> gets parallax effect too
-        const icon = calBtn.querySelector('i');
-        const callArgs = mockGsap.to.mock.calls.map((c) => c[0]);
-        expect(callArgs).toContain(icon);
-
-        mockGsap.to.mockClear();
-        const mouseLeaveEvent = new MouseEvent('mouseleave');
-        calBtn.dispatchEvent(mouseLeaveEvent);
-        expect(mockGsap.to).toHaveBeenCalledWith(
-            calBtn,
-            expect.objectContaining({
-                x: 0,
-                y: 0,
-                ease: 'elastic.out(1, 0.3)',
-            })
-        );
+        // Calendar nav buttons are excluded from magnetic effect
+        expect(mockGsap.to).not.toHaveBeenCalled();
     });
 });
