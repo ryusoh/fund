@@ -49,6 +49,10 @@ uniform float u_beamIntensity; // peak brightness of the beam (0-1)
 uniform vec3 u_trailAngles;   // head angle of each trail arc (radians)
 uniform float u_trailWidth;   // angular width of each trail arc (radians)
 
+// Fluid dynamics during slice transitions
+uniform float u_fluidAngle;      // tracking angle of the moving slice
+uniform float u_suctionVelocity; // angular velocity of the slice transition (rad/s)
+
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
 
@@ -264,7 +268,18 @@ void main() {
     // --- Film thickness from domain-warped noise ---
     // Use polar-aware coordinates: stretch along tangent direction
     // so the noise forms elongated streaks like real fluid film flow.
-    float angleNorm = angle / TWO_PI;
+    // Parabolic flow profile: center of the band (0.5) moves fastest, edges stick to glass
+    float flowProfile = 1.0 - pow(abs(r_norm - 0.5) * 2.0, 2.0);
+    
+    // Rigidly track the slice position so the oil pattern doesn't slide under the light
+    float baseAngle = angle - u_fluidAngle;
+    
+    // Dynamic shear: only stretches WHILE moving (suction effect). Relaxes to natural blobs when stopped.
+    float shear = u_suctionVelocity * 0.15 * flowProfile;
+    float shearedAngle = baseAngle - shear;
+    
+    float angleNorm = shearedAngle / TWO_PI;
+    
     float tangential = angleNorm * u_outerRadius * 0.06; // arc-length scaled
     float radial = r_norm * 2.0;                          // compressed radially
     vec2 noisePos = vec2(tangential, radial);
@@ -276,8 +291,12 @@ void main() {
     // Fix undefined smoothstep behavior
     float pointerInfluence = (1.0 - smoothstep(0.0, 100.0, pointerDist)) * 0.5;
 
+    // Chromatic dispersion shifts due to physical fluid pressure wave during high-velocity suction
+    // Instead of thinning, the fluid bunches up (thickens), shifting the colors up into the blue orders
+    float suctionShift = abs(u_suctionVelocity) * 150.0 * flowProfile;
+
     // Trail shifts thickness same way as cursor — chromatic dispersion
-    float thickness = u_filmThicknessBase + u_filmThicknessRange * (noise * 0.5 + 0.5 + pointerInfluence + trailFlow * 0.6);
+    float thickness = u_filmThicknessBase + suctionShift + u_filmThicknessRange * (noise * 0.5 + 0.5 + pointerInfluence + trailFlow * 0.6);
     thickness = max(150.0, thickness);
 
     // Viewing angle (approximate: more grazing at band edges)
@@ -413,6 +432,8 @@ function initGL(canvas) {
         'u_beamIntensity',
         'u_trailAngles',
         'u_trailWidth',
+        'u_fluidAngle',
+        'u_suctionVelocity',
     ];
     for (const name of names) {
         uniforms[name] = gl.getUniformLocation(program, name);
@@ -542,13 +563,24 @@ export const thinFilmPlugin = {
                 // Snap to target if appearing from nothing
                 state.currentMid = targetMid;
                 state.currentSpan = targetSpan;
+                state.smoothedVelocity = 0;
             } else {
                 let diff = targetMid - state.currentMid;
                 diff =
                     ((((diff + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
+
+                // Track transition velocity for physical fluid suction effect
+                const currentVelocity = diff / Math.max(dt, 0.001);
+                state.smoothedVelocity = state.smoothedVelocity || 0;
+                state.smoothedVelocity +=
+                    (currentVelocity - state.smoothedVelocity) * (1.0 - Math.exp(-dt * 8.0));
+
                 state.currentMid += diff * factor;
                 state.currentSpan += (targetSpan - state.currentSpan) * factor;
             }
+        } else {
+            // Decay velocity when hovering off
+            state.smoothedVelocity = (state.smoothedVelocity || 0) * Math.exp(-dt * 5.0);
         }
         state.wasHovered = isHovered;
 
@@ -620,6 +652,8 @@ export const thinFilmPlugin = {
         }
         gl.uniform3f(uniforms.u_trailAngles, trailAngles[0], trailAngles[1], trailAngles[2]);
         gl.uniform1f(uniforms.u_trailWidth, trailWidth);
+        gl.uniform1f(uniforms.u_fluidAngle, state.currentMid);
+        gl.uniform1f(uniforms.u_suctionVelocity, state.smoothedVelocity || 0.0);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
