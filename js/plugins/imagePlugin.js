@@ -101,7 +101,15 @@ export const imagePlugin = {
                     }
 
                     if (loadedImages[imageUrl]) {
-                        drawImage(ctx, arc, loadedImages[imageUrl], logoInfo, magneticOffset);
+                        const isHovered = index === hoveredSliceIndex;
+                        drawImage(
+                            ctx,
+                            arc,
+                            loadedImages[imageUrl],
+                            logoInfo,
+                            magneticOffset,
+                            isHovered
+                        );
                     } else {
                         // Image is not loaded yet, start loading
                         const img = new Image();

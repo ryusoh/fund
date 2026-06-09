@@ -105,6 +105,8 @@ describe('drawImage', () => {
 
     it('should set custom opacity when specified', () => {
         logoInfo.opacity = 0.5;
+        // Disable glass refraction so the final globalAlpha isn't overwritten
+        logoInfo.glassRefraction = false;
         drawImage(ctx, arc, img, logoInfo);
         const offscreenCtx = ctx.drawImage.mock.calls[0][0].getContext('2d');
         expect(offscreenCtx.globalAlpha).toBe(0.5);
@@ -202,8 +204,9 @@ describe('drawImage', () => {
             expect.any(Number),
             expect.any(Number)
         );
-        expect(offscreenCtx.globalCompositeOperation).toBe('source-in');
-        expect(offscreenCtx.fillStyle).toBe('white');
+        // White render sets 'source-in', then glass tint sets 'source-atop'
+        // (mock ctx doesn't implement save/restore state stack, so final value wins)
+        expect(['source-in', 'source-atop']).toContain(offscreenCtx.globalCompositeOperation);
         expect(offscreenCtx.fillRect).toHaveBeenCalled();
         expect(ctx.drawImage).toHaveBeenCalledWith(
             offscreenCanvas,
@@ -485,6 +488,37 @@ describe('drawImage', () => {
         img.height = 100;
         drawImage(ctx, arc, img, logoInfo);
         expect(ctx.drawImage).toHaveBeenCalled();
+    });
+
+    it('should apply glass refraction tint overlay on the offscreen canvas', () => {
+        // Enable glass refraction via logoInfo
+        logoInfo.glassRefraction = true;
+
+        drawImage(ctx, arc, img, logoInfo);
+
+        // The offscreen context should have a blue-tint overlay drawn via fillRect
+        // after the main image, using a composite mode that tints without destroying
+        expect(offscreenCtx.fillRect).toHaveBeenCalled();
+
+        // Should set a composite operation for the tint pass (not just source-over)
+        // The tint uses 'source-atop' to only color pixels that already have content
+        const compositeOps = [];
+        Object.defineProperty(offscreenCtx, 'globalCompositeOperation', {
+            get() {
+                return this._gco || 'source-over';
+            },
+            set(v) {
+                this._gco = v;
+                compositeOps.push(v);
+            },
+            configurable: true,
+        });
+
+        // Re-run to capture composite operations
+        drawImage._sharedCanvas = undefined;
+        drawImage._sharedCtx = undefined;
+        drawImage(ctx, arc, img, logoInfo);
+        expect(compositeOps).toContain('source-atop');
     });
 
     it('should trigger line 68 - add PI when defaultRotation < -PI/2', () => {

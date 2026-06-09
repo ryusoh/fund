@@ -228,6 +228,18 @@ export function drawImage(ctx, arc, img, logoInfo, magneticOffset) {
             offCtx.restore();
         }
 
+        // Glass refraction tint: a subtle blue color wash simulating the icon
+        // being viewed through curved tinted glass. Uses source-atop to only
+        // tint pixels that already have content (the logo), preserving transparency.
+        if (logoInfo.glassRefraction !== false) {
+            offCtx.save();
+            offCtx.globalCompositeOperation = 'source-atop';
+            offCtx.globalAlpha = 0.1;
+            offCtx.fillStyle = 'rgba(140, 200, 255, 1)';
+            offCtx.fillRect(0, 0, drawW, drawH);
+            offCtx.restore();
+        }
+
         offCtx.restore();
 
         ctx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
