@@ -262,3 +262,8 @@
 
 **Learning:** When refactoring array iteration methods (like `.forEach()`) to standard `for` loops in high-frequency rendering paths, retaining `.indexOf()` calls (e.g., `activeTickerOrder.indexOf(ticker)`) preserves an O(N) lookup.
 **Action:** Replace `.indexOf()` calls on the iterated array with the current loop's index variable (e.g., `i`) to reduce complexity to O(1) constant time, eliminating unnecessary full-array scans per iteration.
+
+## 2026-06-25 - Replaced .forEach closures in marketcap chart rendering loops
+
+**Learning:** Using `.forEach()` arrays in extremely high-frequency chart rendering loops (such as `js/transactions/chart/renderers/marketcap.js`) implicitly allocates new closure functions on every frame tick. In large composite charts with multiple overlaid lines/series, this exponentially increases the short-lived heap allocations, leading to heavy GC overhead and resulting micro-stutters during interactivity.
+**Action:** Replace `.forEach()` with explicit index-based `for` loops (e.g., `for (let c = 0; c < baseCategoryOrder.length; c += 1)`) inside critical path rendering and mapping to entirely eliminate closure creation overhead and drop GC pressure.

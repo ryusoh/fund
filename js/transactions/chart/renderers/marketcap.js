@@ -123,7 +123,8 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
     // Get categories from data (not hardcoded) to support all categories dynamically
     const dataCategories = Object.keys(rawSeries);
 
-    dataCategories.forEach((category) => {
+    for (let c = 0; c < dataCategories.length; c += 1) {
+        const category = dataCategories[c];
         const values = rawSeries[category] || [];
         const mappedValues =
             filterFrom || filterTo
@@ -141,7 +142,7 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         } else {
             chartData[category] = mappedValues;
         }
-    });
+    }
 
     // Sort categories in consistent order (defined order first, then any others by value)
     const baseCategoryOrder = [...dataCategories].sort((a, b) => {
@@ -240,7 +241,9 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
     );
 
     const cumulativeValues = new Array(dates.length).fill(0);
-    baseCategoryOrder.forEach((category) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let c = 0; c < baseCategoryOrder.length; c += 1) {
+        const category = baseCategoryOrder[c];
         const values = chartData[category] || [];
         const color = resolveCategoryColor(category);
         ctx.beginPath();
@@ -248,7 +251,9 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
 
-        dates.forEach((dateStr, index) => {
+        // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
+        for (let index = 0; index < dates.length; index += 1) {
+            const dateStr = dates[index];
             const x = xScale(parseLocalDate(dateStr).getTime());
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
@@ -256,7 +261,7 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
             } else {
                 ctx.lineTo(x, y);
             }
-        });
+        }
 
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
@@ -271,7 +276,7 @@ function renderMarketcapChartWithMode(ctx, chartManager, data, options = {}) {
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
-    });
+    }
 
     const latestIndex = dates.length - 1;
 
