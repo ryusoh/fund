@@ -31,6 +31,7 @@ describe('thinFilmPlugin', () => {
         useProgram: jest.fn(),
         uniform1f: jest.fn(),
         uniform2f: jest.fn(),
+        uniform3f: jest.fn(),
         drawArrays: jest.fn(),
         getExtension: jest.fn(() => ({ loseContext: jest.fn() })),
         VERTEX_SHADER: 0x8b31,
@@ -213,5 +214,142 @@ describe('thinFilmPlugin', () => {
         const endCall = mockGL.uniform1f.mock.calls.find((c) => c[0] === 'u_endAngle');
         expect(endCall).toBeTruthy();
         expect(endCall[1]).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('should position trail disruption at the HEAD (arcStart+arcSpan), not the tail', () => {
+        // In drawElectricTrail: t=0 is tail (at arcStart), t=1 is head (at arcStart+arcSpan)
+        // The disruption must match the bright head, not the dim tail.
+        chart.hoveredSliceIndex = 0;
+        chart.$glass3d = { continuousPhase: 0 };
+        chart.options.plugins.glass3dPlugin = {
+            electric: { arcCount: 1, width: 0.22, streakSpeedMultiplier: 1 },
+        };
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const trailCall = mockGL.uniform3f.mock.calls.find((c) => c[0] === 'u_trailAngles');
+        expect(trailCall).toBeTruthy();
+
+        // arcSpan = width * 2π * 0.75
+        const arcSpan = 0.22 * Math.PI * 2 * 0.75;
+        // phase=0 → arcStart=0, head = arcStart + arcSpan
+        const expectedHead = arcSpan;
+        expect(trailCall[1]).toBeCloseTo(expectedHead, 2);
+    });
+
+    it('should pass trail width matching drawElectricTrail arcSpan', () => {
+        chart.hoveredSliceIndex = 0;
+        chart.$glass3d = { continuousPhase: 0.5 };
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const widthCall = mockGL.uniform1f.mock.calls.find((c) => c[0] === 'u_trailWidth');
+        expect(widthCall).toBeTruthy();
+        // Must match arcSpan = widthFactor * 2π * 0.75
+        const expectedWidth = 0.22 * Math.PI * 2 * 0.75;
+        expect(widthCall[1]).toBeCloseTo(expectedWidth, 4);
+    });
+
+    it('shader should not contain undefined smoothstep behavior (edge0 >= edge1)', () => {
+        chart.hoveredSliceIndex = 0;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const shaderSourceCall = mockGL.shaderSource.mock.calls.find((c) =>
+            c[1].includes('u_trailAngles')
+        );
+        expect(shaderSourceCall).toBeTruthy();
+        const shaderCode = shaderSourceCall[1];
+
+        // WebGL GLSL spec: "Results are undefined if edge0 >= edge1".
+        // Apple GPUs strictly enforce this and produce hard binary steps.
+        // E.g., smoothstep(1.0, 0.0, x) is INVALID. Must be 1.0 - smoothstep(0.0, 1.0, x).
+        const lines = shaderCode.split('\n');
+        for (const line of lines) {
+            // Find smoothstep(a, b, x)
+            const match = line.match(/smoothstep\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,/);
+            if (match) {
+                const arg1 = parseFloat(match[1]);
+                const arg2 = parseFloat(match[2]);
+                if (!isNaN(arg1) && !isNaN(arg2)) {
+                    expect(arg1).toBeLessThan(arg2); // Fail if arg1 >= arg2
+                }
+            }
+        }
+    });
+
+    it('shader should constrain trail disruption to a narrow radial band matching the trail', () => {
+        chart.hoveredSliceIndex = 0;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const shaderSourceCall = mockGL.shaderSource.mock.calls.find((c) =>
+            c[1].includes('u_trailAngles')
+        );
+        expect(shaderSourceCall).toBeTruthy();
+        const shaderCode = shaderSourceCall[1];
+
+        // The trail weaves radially: baseRadius=0.65, offset=sin(angle*2 + i*2.1)*0.08
+        // The shader must compute this trailR and constrain the flow radially.
+        // IT MUST NOT USE `angle` for this, because JS uses localPhase (constant for the arc).
+        // It should derive it from headAngle or arcStart.
+        expect(shaderCode).toMatch(/trailR\s*=\s*0\.65\s*\+\s*sin/);
+        expect(shaderCode).not.toMatch(/sin\(\s*angle\s*\*\s*2\.0/); // This caused the desync!
+        expect(shaderCode).toMatch(/radialFalloff\s*=/);
+    });
+
+    it('shader should explicitly skip inactive trails marked with negative angles', () => {
+        chart.hoveredSliceIndex = 0;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const shaderSourceCall = mockGL.shaderSource.mock.calls.find((c) =>
+            c[1].includes('u_trailAngles')
+        );
+        expect(shaderSourceCall).toBeTruthy();
+        const shaderCode = shaderSourceCall[1];
+
+        // JS passes -100 for unused trails. The shader must skip them to prevent phantom wakes.
+        expect(shaderCode).toMatch(/if\s*\(\s*headAngle\s*<\s*-50\.0\s*\)\s*continue\s*;/);
+    });
+
+    it('should handle missing glass3d state gracefully', () => {
+        chart.hoveredSliceIndex = 0;
+        chart.$glass3d = undefined;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        expect(mockGL.drawArrays).toHaveBeenCalled();
+        const trailCall = mockGL.uniform3f.mock.calls.find((c) => c[0] === 'u_trailAngles');
+        expect(trailCall).toBeTruthy();
+    });
+
+    it('shader should not have a hard divide at the trail head (needs bow wave)', () => {
+        chart.hoveredSliceIndex = 0;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        // Find the fragment shader source
+        const shaderSourceCall = mockGL.shaderSource.mock.calls.find((c) =>
+            c[1].includes('u_trailAngles')
+        );
+        expect(shaderSourceCall).toBeTruthy();
+        const shaderCode = shaderSourceCall[1];
+
+        // To avoid a bright divide when angle passes headAngle, da must be mapped
+        // to a continuous [-PI, PI] range rather than wrapping abruptly at 0 -> 2PI.
+        // It must have both a bow wave (leading edge) and wake (trailing edge).
+        expect(shaderCode).toMatch(/mod\(.+PI,\s*TWO_PI\)\s*-\s*PI/);
+        expect(shaderCode).toMatch(/smoothstep/); // Should have a leading fade
+    });
+
+    it('shader should pass turbulence into filmNoise for duck-on-water effect', () => {
+        chart.hoveredSliceIndex = 0;
+        thinFilmPlugin.afterDatasetsDraw(chart);
+
+        const shaderSourceCall = mockGL.shaderSource.mock.calls.find((c) =>
+            c[1].includes('u_trailAngles')
+        );
+        expect(shaderSourceCall).toBeTruthy();
+        const shaderCode = shaderSourceCall[1];
+
+        // A proper physical disruption alters the fluid dynamics (turbulence).
+        // It shouldn't just shift thickness or offset coordinates rigidly.
+        // We expect filmNoise to take a turbulence parameter: filmNoise(vec2, float)
+        expect(shaderCode).toMatch(/float\s+filmNoise\s*\(\s*vec2\s+\w+,\s*float\s+\w+\s*\)/);
+        expect(shaderCode).toMatch(/filmNoise\s*\(\s*noisePos,\s*trailFlow\s*\)/);
     });
 });

@@ -45,6 +45,10 @@ uniform vec2 u_beamCenter;  // where the beam hits the slice (physical pixels)
 uniform float u_beamRadius; // beam spread radius (physical pixels)
 uniform float u_beamIntensity; // peak brightness of the beam (0-1)
 
+// Electric trail: positions of up to 3 orbiting arcs
+uniform vec3 u_trailAngles;   // head angle of each trail arc (radians)
+uniform float u_trailWidth;   // angular width of each trail arc (radians)
+
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
 
@@ -80,7 +84,7 @@ float snoise(vec2 v) {
 }
 
 // Domain-warped FBM for organic oil-film thickness patterns
-float filmNoise(vec2 p) {
+float filmNoise(vec2 p, float turbulence) {
     float f = 0.0;
     f += 0.50 * snoise(p);
     f += 0.25 * snoise(p * 2.01);
@@ -91,7 +95,9 @@ float filmNoise(vec2 p) {
         snoise(p + vec2(1.7, 9.2)),
         snoise(p + vec2(8.3, 2.8))
     );
-    f += 0.4 * snoise(p + warp * 0.6);
+
+    // Turbulence heavily amplifies the swirl offset for the duck-on-water effect
+    f += (0.4 + turbulence * 0.4) * snoise(p + warp * (0.6 + turbulence * 2.0));
 
     return f; // roughly [-1, 1]
 }
@@ -221,6 +227,40 @@ void main() {
     // Radial position within the band [0, 1]
     float r_norm = (dist - u_innerRadius) / max(u_outerRadius - u_innerRadius, 1.0);
 
+    // --- Electric trail wake: disrupts oil like a duck on water ---
+    // Wide influence zone (2.5× trail width) ensures no visible cutoff.
+    // The trail pushes the oil film, displacing its surface pattern.
+    float trailFlow = 0.0;
+    float wakeZone = u_trailWidth * 2.5;
+    for (int i = 0; i < 3; i++) {
+        float headAngle = (i == 0) ? u_trailAngles.x
+                        : (i == 1) ? u_trailAngles.y
+                                   : u_trailAngles.z;
+        // Skip inactive trails (JS passes -100 for them)
+        if (headAngle < -50.0) continue;
+
+        float da = headAngle - angle;
+        // Map to [-PI, PI] to avoid the bright divide (hard wrap-around discontinuity)
+        da = mod(da + PI, TWO_PI) - PI;
+
+        // Product of leading bow wave (fade in) and trailing wake (fade out)
+        float bowWave = smoothstep(-0.2 * u_trailWidth, 0.0, da);
+        // Fix undefined smoothstep behavior (edge0 >= edge1 is invalid in WebGL)
+        float wake = 1.0 - smoothstep(0.0, wakeZone, da);
+
+        // --- RADIAL CONSTRAINT ---
+        // The trail weaves at a specific narrow radius within the band.
+        // To sync perfectly with JS, we must use the constant base phase (arcStart)
+        // for the entire arc, NOT the pixel's angle!
+        float arcStart = headAngle - u_trailWidth;
+        float trailR = 0.65 + sin(arcStart * 2.0 + float(i) * 2.1) * 0.08;
+        float rDist = abs(r_norm - trailR);
+        // Influence 3x wider radially to make the wake more pronounced
+        float radialFalloff = 1.0 - smoothstep(0.0, 0.24, rDist);
+
+        trailFlow = max(trailFlow, bowWave * wake * radialFalloff);
+    }
+
     // --- Film thickness from domain-warped noise ---
     // Use polar-aware coordinates: stretch along tangent direction
     // so the noise forms elongated streaks like real fluid film flow.
@@ -229,13 +269,15 @@ void main() {
     float radial = r_norm * 2.0;                          // compressed radially
     vec2 noisePos = vec2(tangential, radial);
     noisePos += vec2(u_time * 0.1, u_time * -0.06);
-    float noise = filmNoise(noisePos);
+    float noise = filmNoise(noisePos, trailFlow);
 
     // Pointer proximity: locally shift film thickness
     float pointerDist = length(pixel - u_pointer);
-    float pointerInfluence = smoothstep(100.0, 0.0, pointerDist) * 0.5;
+    // Fix undefined smoothstep behavior
+    float pointerInfluence = (1.0 - smoothstep(0.0, 100.0, pointerDist)) * 0.5;
 
-    float thickness = u_filmThicknessBase + u_filmThicknessRange * (noise * 0.5 + 0.5 + pointerInfluence);
+    // Trail shifts thickness same way as cursor — chromatic dispersion
+    float thickness = u_filmThicknessBase + u_filmThicknessRange * (noise * 0.5 + 0.5 + pointerInfluence + trailFlow * 0.6);
     thickness = max(150.0, thickness);
 
     // Viewing angle (approximate: more grazing at band edges)
@@ -279,10 +321,10 @@ void main() {
 
     // Soft feathering at arc edges
     float featherArc = smoothstep(0.0, 0.05 * arcSpan, a) *
-                        smoothstep(arcSpan, arcSpan - 0.05 * arcSpan, a);
+                        (1.0 - smoothstep(arcSpan - 0.05 * arcSpan, arcSpan, a));
 
     // Radial feathering
-    float featherRadial = smoothstep(0.0, 0.08, r_norm) * smoothstep(1.0, 0.92, r_norm);
+    float featherRadial = smoothstep(0.0, 0.08, r_norm) * (1.0 - smoothstep(0.92, 1.0, r_norm));
 
     float feather = featherArc * featherRadial;
 
@@ -369,6 +411,8 @@ function initGL(canvas) {
         'u_beamCenter',
         'u_beamRadius',
         'u_beamIntensity',
+        'u_trailAngles',
+        'u_trailWidth',
     ];
     for (const name of names) {
         uniforms[name] = gl.getUniformLocation(program, name);
@@ -439,20 +483,8 @@ export const thinFilmPlugin = {
         if (typeof window === 'undefined') {
             return;
         }
-        const hoveredIndex = chart.hoveredSliceIndex;
         const meta = chart.getDatasetMeta(0);
         if (!meta || meta.data.length === 0) {
-            return;
-        }
-
-        // Only render when a slice is actively hovered
-        if (hoveredIndex === undefined || !meta.data[hoveredIndex]) {
-            // Clear overlay if it exists
-            if (chart._thinFilmState) {
-                const { gl, overlay } = chart._thinFilmState;
-                gl.viewport(0, 0, overlay.width, overlay.height);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-            }
             return;
         }
 
@@ -461,15 +493,72 @@ export const thinFilmPlugin = {
             return;
         }
 
-        syncSize(state, chart.canvas);
+        const now = window.performance.now();
+        const dt = Math.min((now - (state.lastFrameTime || now)) / 1000, 0.1);
+        state.lastFrameTime = now;
 
-        const { gl, program, uniforms, overlay } = state;
-        const dpr = window.devicePixelRatio || 1;
-        const arc = meta.data[hoveredIndex];
+        const hoveredIndex = chart.hoveredSliceIndex;
+        const isHovered = hoveredIndex !== undefined && meta.data[hoveredIndex];
+        const targetOpacity = isHovered ? 0.55 : 0.0;
+
+        if (state.currentOpacity === undefined) {
+            state.currentOpacity = 0.0;
+            state.currentMid = 0;
+            state.currentSpan = 0;
+            state.wasHovered = false;
+        }
+
+        const factor = 1.0 - Math.exp(-dt * 15.0);
+        const opacityFactor = 1.0 - Math.exp(-dt * 10.0);
+
+        state.currentOpacity += (targetOpacity - state.currentOpacity) * opacityFactor;
+
+        if (state.currentOpacity < 0.005 && targetOpacity === 0) {
+            state.currentOpacity = 0;
+            const { gl, overlay } = state;
+            gl.viewport(0, 0, overlay.width, overlay.height);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            state.wasHovered = false;
+            return;
+        }
+
+        let renderIndex = isHovered ? hoveredIndex : state.lastHoveredIndex;
+        if (renderIndex === undefined || !meta.data[renderIndex]) {
+            renderIndex = 0;
+        }
+        state.lastHoveredIndex = renderIndex;
+
+        const arc = meta.data[renderIndex];
         const props = arc.getProps(
             ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
             true
         );
+
+        if (isHovered) {
+            const targetMid = (props.startAngle + props.endAngle) / 2;
+            const targetSpan = props.endAngle - props.startAngle;
+
+            if (state.currentOpacity < 0.01 && !state.wasHovered) {
+                // Snap to target if appearing from nothing
+                state.currentMid = targetMid;
+                state.currentSpan = targetSpan;
+            } else {
+                let diff = targetMid - state.currentMid;
+                diff =
+                    ((((diff + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
+                state.currentMid += diff * factor;
+                state.currentSpan += (targetSpan - state.currentSpan) * factor;
+            }
+        }
+        state.wasHovered = isHovered;
+
+        const renderStartAngle = state.currentMid - state.currentSpan / 2;
+        const renderEndAngle = state.currentMid + state.currentSpan / 2;
+
+        syncSize(state, chart.canvas);
+
+        const { gl, program, uniforms, overlay } = state;
+        const dpr = window.devicePixelRatio || 1;
 
         // Pointer position (in physical pixels, top-left origin like Canvas 2D)
         const cursor = chart._cursorPos;
@@ -488,8 +577,8 @@ export const thinFilmPlugin = {
         gl.uniform2f(uniforms.u_center, props.x * dpr, props.y * dpr);
         gl.uniform1f(uniforms.u_innerRadius, props.innerRadius * dpr);
         gl.uniform1f(uniforms.u_outerRadius, props.outerRadius * dpr);
-        gl.uniform1f(uniforms.u_startAngle, props.startAngle);
-        gl.uniform1f(uniforms.u_endAngle, props.endAngle);
+        gl.uniform1f(uniforms.u_startAngle, renderStartAngle);
+        gl.uniform1f(uniforms.u_endAngle, renderEndAngle);
         gl.uniform2f(uniforms.u_resolution, overlay.width, overlay.height);
 
         const elapsed = (window.performance.now() - state.startTime) / 1000;
@@ -498,17 +587,39 @@ export const thinFilmPlugin = {
         gl.uniform1f(uniforms.u_filmThicknessRange, 300.0);
         gl.uniform2f(uniforms.u_pointer, pointerX, pointerY);
         gl.uniform1f(uniforms.u_refractiveIndex, 1.4);
-        gl.uniform1f(uniforms.u_opacity, 0.55);
+        gl.uniform1f(uniforms.u_opacity, state.currentOpacity);
 
-        // Spotlight beam: centered on the hovered arc's midpoint
-        const midAngle = (props.startAngle + props.endAngle) / 2;
+        // Spotlight beam: centered on the smoothed midpoint
         const midRadius = (props.innerRadius + props.outerRadius) / 2;
-        const beamX = (props.x + Math.cos(midAngle) * midRadius) * dpr;
-        const beamY = (props.y + Math.sin(midAngle) * midRadius) * dpr;
+        const beamX = (props.x + Math.cos(state.currentMid) * midRadius) * dpr;
+        const beamY = (props.y + Math.sin(state.currentMid) * midRadius) * dpr;
         const band = (props.outerRadius - props.innerRadius) * dpr;
         gl.uniform2f(uniforms.u_beamCenter, beamX, beamY);
         gl.uniform1f(uniforms.u_beamRadius, band * 1.2);
         gl.uniform1f(uniforms.u_beamIntensity, 1.0);
+
+        // Electric trail positions from glass3dPlugin state
+        const glassState = chart.$glass3d;
+        const continuousPhase = glassState ? glassState.continuousPhase || 0 : 0;
+        const electricCfg = chart.options?.plugins?.glass3dPlugin?.electric || {};
+        const arcCount = electricCfg.arcCount ?? 3;
+        const speedMul = electricCfg.streakSpeedMultiplier ?? 1;
+        const trailWidthFactor = electricCfg.width ?? 0.22;
+        const trailWidth = trailWidthFactor * Math.PI * 2 * 0.75;
+        const trailAngles = [];
+        for (let i = 0; i < 3; i++) {
+            if (i < arcCount) {
+                const localPhase = continuousPhase * speedMul + (i / arcCount) * 0.65;
+                const arcStart = localPhase * Math.PI * 2;
+                // Head is at arcStart + arcSpan (t=1 in drawElectricTrail)
+                const headAngle = (arcStart + trailWidth) % (Math.PI * 2);
+                trailAngles.push(headAngle);
+            } else {
+                trailAngles.push(-100);
+            }
+        }
+        gl.uniform3f(uniforms.u_trailAngles, trailAngles[0], trailAngles[1], trailAngles[2]);
+        gl.uniform1f(uniforms.u_trailWidth, trailWidth);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
