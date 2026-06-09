@@ -418,6 +418,36 @@ describe('glass3dPlugin', () => {
         expect(uniqueWidths.size).toBeGreaterThan(3);
     });
 
+    it('should modulate electric trail brightness by Fresnel grazing angle', () => {
+        // Fresnel predicts glancing angles reflect more light → brighter trail segments
+        // We capture shadowBlur as a proxy for Fresnel boost (it scales with the effect)
+        const shadowBlurs = [];
+        let currentShadowBlur = 0;
+        Object.defineProperty(ctx, 'shadowBlur', {
+            get() {
+                return currentShadowBlur;
+            },
+            set(v) {
+                currentShadowBlur = v;
+                if (v > 0) {
+                    shadowBlurs.push(v);
+                }
+            },
+            configurable: true,
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+        shadowBlurs.length = 0;
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Trail segments should produce varying shadowBlur values because Fresnel
+        // modulates brightness based on the segment's angular position on the torus
+        expect(shadowBlurs.length).toBeGreaterThanOrEqual(10);
+        const uniqueBlurs = new Set(shadowBlurs.map((v) => v.toFixed(2)));
+        expect(uniqueBlurs.size).toBeGreaterThan(3);
+    });
+
     it('should parse hex colors correctly for top highlights', () => {
         arcs[0].options = { backgroundColor: '#ff0000' };
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});

@@ -670,6 +670,17 @@ function drawElectricTrail(
     const reflStart = reflPhase * Math.PI * 2;
     const flareColor = 'rgba(240, 250, 255, 1)';
 
+    // Fresnel modulation: trails glow brighter at glancing angles on the torus
+    const fresnelCfg = options.fresnel || {};
+    const fresnelR0 = fresnelCfg.r0 ?? 0.04;
+    const fresnelExp = fresnelCfg.exponent ?? 5;
+    const fresnelBoost = fresnelCfg.trailBoost ?? 0.6;
+
+    const fresnelAt = (angle) => {
+        const grazing = 1 - Math.abs(Math.sin(angle) * squash);
+        return fresnelR0 + (1 - fresnelR0) * Math.pow(grazing, fresnelExp);
+    };
+
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
@@ -727,8 +738,10 @@ function drawElectricTrail(
 
             // Asymmetric comet fade: fast rise at head (t≈1), long decay into tail (t≈0)
             const cometFade = Math.pow(t, 0.6) * Math.pow(1 - Math.pow(t, 3), 0.5);
-            const flare = specularOverlap((segStart + segEnd) / 2);
-            const ghostAlpha = cometFade * (0.2 + flare * 0.3) * pulseBase;
+            const segMid = (segStart + segEnd) / 2;
+            const flare = specularOverlap(segMid);
+            const fresnel = 1 + fresnelAt(segMid) * fresnelBoost;
+            const ghostAlpha = cometFade * (0.2 + flare * 0.3) * pulseBase * fresnel;
 
             if (ghostAlpha < 0.005) {
                 continue;
@@ -766,8 +779,11 @@ function drawElectricTrail(
             }
 
             // Specular flare: boost when crossing the reflection band
-            const flare = specularOverlap((segStart + segEnd) / 2);
-            const alpha = cometFade * pulse * (1 + flare * 1.5);
+            const mainSegMid = (segStart + segEnd) / 2;
+            const flare = specularOverlap(mainSegMid);
+            // Fresnel modulation: glancing angles on the torus surface reflect more light
+            const fresnel = 1 + fresnelAt(mainSegMid) * fresnelBoost;
+            const alpha = cometFade * pulse * (1 + flare * 1.5) * fresnel;
             const thickness = arcThickness * (0.2 + 0.8 * cometFade) * (1 + flare * 0.4);
 
             if (alpha < 0.005) {
