@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -71,13 +71,44 @@ precommit: hooks fmt-check
 
 # ⚠️ CI PARITY NOTE: This target is called by GitHub Actions CI (.github/workflows/ci.yml)
 # Any new checks added here must work in CI (no local-only tools/paths)
-precommit-fix: fmt lint-fix markdownlint-fix js-test
-	$(PY) -m ruff check --fix scripts tests
-	$(PY) -m pytest --cov=scripts --cov-report=term-missing
+# Parallelised: format → lint-fix → test → verify (each phase runs sub-tasks concurrently)
+precommit-fix:
+	@# Phase 1: Format (black + prettier touch different file types)
+	@$(MAKE) -j2 _fmt-black _fmt-prettier
+	@# Phase 2: Lint-fix (eslint, stylelint, markdownlint, ruff — all different file types)
+	@$(MAKE) -j4 _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff
+	@# Phase 3: Test (JS + Python in parallel)
+	@$(MAKE) -j2 js-test _pytest
+	@# Phase 4: Final verification
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
 	git checkout data/transactions.csv 2>/dev/null || true; \
 	exit $$STATUS
+
+_fmt-black:
+	$(PY) -m black .
+
+_fmt-prettier:
+	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
+		npx --yes prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+	else \
+		echo "No Prettier targets"; \
+	fi
+
+_lintfix-eslint:
+	npx --yes eslint . --ext .js --fix || true
+
+_lintfix-stylelint:
+	npx --yes stylelint "**/*.css" --fix || true
+
+_lintfix-markdown:
+	npm exec -- markdownlint-cli2 --fix "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+
+_lintfix-ruff:
+	$(PY) -m ruff check --fix scripts tests
+
+_pytest:
+	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all
