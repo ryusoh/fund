@@ -272,3 +272,22 @@ export function updatePieChart(data) {
         }
     }
 }
+
+export function hoverSliceByTicker(ticker) {
+    if (!fundChartInstance) {
+        return;
+    }
+    if (!ticker) {
+        fundChartInstance.hoveredSliceIndex = undefined;
+        fundChartInstance.update();
+        return;
+    }
+    const labels = fundChartInstance.data?.labels || [];
+    const index = labels.indexOf(ticker);
+    if (index !== -1) {
+        fundChartInstance.hoveredSliceIndex = index;
+    } else {
+        fundChartInstance.hoveredSliceIndex = undefined;
+    }
+    fundChartInstance.update();
+}

@@ -24,7 +24,7 @@ import {
     PIE_CHART_GLASS_EFFECT,
     UI_BREAKPOINTS,
 } from '@js/config.js';
-import { triggerCenterToggle } from '@charts/allocationChartManager.js';
+import { triggerCenterToggle, hoverSliceByTicker } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
@@ -128,7 +128,10 @@ async function startApp() {
 
         // Initialize table glass effect
         try {
-            new TableGlassEffect('.table-responsive-container', TABLE_GLASS_EFFECT);
+            new TableGlassEffect('.table-responsive-container', {
+                ...TABLE_GLASS_EFFECT,
+                onHoverRow: (ticker) => hoverSliceByTicker(ticker),
+            });
         } catch (e) {
             logger.error('Failed to initialize table glass effect:', e);
         }

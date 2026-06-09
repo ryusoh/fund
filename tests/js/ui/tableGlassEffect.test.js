@@ -994,5 +994,35 @@ describe('TableGlassEffect', () => {
 
             effect.dispose();
         });
+
+        it('should trigger onHoverRow callback with the ticker when hovering over a row, and with null when leaving', () => {
+            const onHoverRowMock = jest.fn();
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+                onHoverRow: onHoverRowMock,
+            });
+
+            const row = container.querySelector('tr');
+            row.setAttribute('data-ticker', 'AAPL');
+
+            expect(effect.rows.length).toBe(1);
+            expect(effect.rows[0].element).toBe(row);
+
+            document.elementFromPoint.mockReturnValue({
+                closest: jest.fn().mockReturnValue(row),
+            });
+
+            // Simulate mouse entering the row
+            effect.handleMouseMove({ clientX: 400, clientY: 125 });
+
+            expect(onHoverRowMock).toHaveBeenCalledWith('AAPL');
+            onHoverRowMock.mockClear();
+
+            // Simulate mouse leaving
+            effect.handleMouseLeave();
+            expect(onHoverRowMock).toHaveBeenCalledWith(null);
+
+            effect.dispose();
+        });
     });
 });

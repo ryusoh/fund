@@ -413,6 +413,41 @@ describe('chartManager', () => {
                 chartOptions.onHover(outsideEvent, [], mockChartInstance);
             }).not.toThrow();
         });
+
+        describe('hoverSliceByTicker', () => {
+            it('should no-op when chart not initialized', () => {
+                expect(() => {
+                    chartManager.hoverSliceByTicker('AAPL');
+                }).not.toThrow();
+            });
+
+            it('should clear hoveredSliceIndex and call update when ticker is null or empty', () => {
+                chartManager.updatePieChart(data);
+                mockChartInstance.hoveredSliceIndex = 1;
+
+                chartManager.hoverSliceByTicker(null);
+                expect(mockChartInstance.hoveredSliceIndex).toBeUndefined();
+                expect(mockChartInstance.update).toHaveBeenCalled();
+            });
+
+            it('should update hoveredSliceIndex and call update when ticker matches a label', () => {
+                chartManager.updatePieChart(data);
+                mockChartInstance.hoveredSliceIndex = undefined;
+
+                chartManager.hoverSliceByTicker('GOOG');
+                expect(mockChartInstance.hoveredSliceIndex).toBe(1);
+                expect(mockChartInstance.update).toHaveBeenCalled();
+            });
+
+            it('should set hoveredSliceIndex to undefined and call update when ticker does not match labels', () => {
+                chartManager.updatePieChart(data);
+                mockChartInstance.hoveredSliceIndex = 0;
+
+                chartManager.hoverSliceByTicker('TSLA');
+                expect(mockChartInstance.hoveredSliceIndex).toBeUndefined();
+                expect(mockChartInstance.update).toHaveBeenCalled();
+            });
+        });
     });
 
     describe('imagePlugin', () => {

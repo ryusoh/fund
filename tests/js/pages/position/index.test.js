@@ -23,6 +23,7 @@ jest.mock('@services/dataService.js', () => ({
 }));
 jest.mock('@charts/allocationChartManager.js', () => ({
     triggerCenterToggle: jest.fn(),
+    hoverSliceByTicker: jest.fn(),
 }));
 
 describe('position page entry point', () => {
