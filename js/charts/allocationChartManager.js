@@ -5,6 +5,7 @@ import { imagePlugin } from '@plugins/imagePlugin.js';
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
 import { glass3dPlugin } from '@plugins/glass3dPlugin.js';
+import { thinFilmPlugin } from '@plugins/thinFilmPlugin.js';
 
 let fundChartInstance = null;
 let isTablePersisting = false; // State variable for table persistence
@@ -253,7 +254,13 @@ export function updatePieChart(data) {
                     checkAndToggleVerticalScroll();
                 },
             },
-            plugins: [imagePlugin, customArcBordersPlugin, waveAnimationPlugin, glass3dPlugin],
+            plugins: [
+                imagePlugin,
+                customArcBordersPlugin,
+                waveAnimationPlugin,
+                glass3dPlugin,
+                thinFilmPlugin,
+            ],
         });
         fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
         if (fundChartInstance.canvas && !fundChartInstance._glassMouseLeaveBound) {
