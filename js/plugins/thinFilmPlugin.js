@@ -270,16 +270,16 @@ void main() {
     // so the noise forms elongated streaks like real fluid film flow.
     // Parabolic flow profile: center of the band (0.5) moves fastest, edges stick to glass
     float flowProfile = 1.0 - pow(abs(r_norm - 0.5) * 2.0, 2.0);
-    
+
     // Rigidly track the slice position so the oil pattern doesn't slide under the light
     float baseAngle = angle - u_fluidAngle;
-    
+
     // Dynamic shear: only stretches WHILE moving (suction effect). Relaxes to natural blobs when stopped.
     float shear = u_suctionVelocity * 0.15 * flowProfile;
     float shearedAngle = baseAngle - shear;
-    
+
     float angleNorm = shearedAngle / TWO_PI;
-    
+
     float tangential = angleNorm * u_outerRadius * 0.06; // arc-length scaled
     float radial = r_norm * 2.0;                          // compressed radially
     vec2 noisePos = vec2(tangential, radial);
@@ -555,6 +555,7 @@ export const thinFilmPlugin = {
             true
         );
 
+        let diff = 0;
         if (isHovered) {
             const targetMid = (props.startAngle + props.endAngle) / 2;
             const targetSpan = props.endAngle - props.startAngle;
@@ -565,23 +566,24 @@ export const thinFilmPlugin = {
                 state.currentSpan = targetSpan;
                 state.smoothedVelocity = 0;
             } else {
-                let diff = targetMid - state.currentMid;
+                diff = targetMid - state.currentMid;
                 diff =
                     ((((diff + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
-
-                // Track transition velocity for physical fluid suction effect
-                const currentVelocity = diff / Math.max(dt, 0.001);
-                state.smoothedVelocity = state.smoothedVelocity || 0;
-                state.smoothedVelocity +=
-                    (currentVelocity - state.smoothedVelocity) * (1.0 - Math.exp(-dt * 8.0));
 
                 state.currentMid += diff * factor;
                 state.currentSpan += (targetSpan - state.currentSpan) * factor;
             }
-        } else {
-            // Decay velocity when hovering off
-            state.smoothedVelocity = (state.smoothedVelocity || 0) * Math.exp(-dt * 5.0);
         }
+
+        // Artificial velocity from opacity changes (surge when hovering in/out)
+        const opacityVelocity = (targetOpacity - state.currentOpacity) * 15.0;
+
+        // Track combined transition velocity for physical fluid suction effect
+        const currentVelocity = diff / Math.max(dt, 0.001) + opacityVelocity;
+        state.smoothedVelocity = state.smoothedVelocity || 0;
+        state.smoothedVelocity +=
+            (currentVelocity - state.smoothedVelocity) * (1.0 - Math.exp(-dt * 8.0));
+
         state.wasHovered = isHovered;
 
         const renderStartAngle = state.currentMid - state.currentSpan / 2;
