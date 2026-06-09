@@ -3,18 +3,37 @@
     flex-direction: column;
     padding: 22px 24px 26px;
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(17, 17, 17, 0.5);
     position: relative;
     overflow: hidden;
     overscroll-behavior: contain;
     touch-action: none;
     width: 100%;
     box-sizing: border-box;
+
+    /* iOS Fluid Glass Effect with Volumetric 3D Depth */
+    background-color: rgba(30, 30, 33, 0.4);
+    background-image: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.01) 35%,
+        rgba(0, 0, 0, 0.15) 75%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
+
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    backdrop-filter: blur(36px) saturate(180%);
     background-clip: padding-box;
-    -webkit-backdrop-filter: blur(36px);
-    backdrop-filter: blur(36px);
-    box-shadow: 0 24px 34px rgba(0, 0, 0, 0.35);
+
+    /* Remove physical borders to fix Safari backdrop-filter bleed artifacts */
+    border: none;
+    box-shadow:
+        /* Floating elevation */
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        /* Perfectly Anti-Aliased Smooth Bevel */ inset 1px 1px 1px rgba(255, 255, 255, 0.25),
+        inset -1px -1px 1px rgba(0, 0, 0, 0.4),
+        inset 2px 2px 6px rgba(255, 255, 255, 0.1),
+        inset -2px -2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .chart-card:focus-visible {
