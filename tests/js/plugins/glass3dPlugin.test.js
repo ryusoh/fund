@@ -368,6 +368,56 @@ describe('glass3dPlugin', () => {
         expect(ctx.clip).toHaveBeenCalled();
     });
 
+    it('should render electric trails with alpha taper (fade-in/out)', () => {
+        // Track globalAlpha values and lineWidth values during afterDatasetsDraw
+        const alphaValues = [];
+        const lineWidths = [];
+        let currentAlpha = 1;
+        Object.defineProperty(ctx, 'globalAlpha', {
+            get() {
+                return currentAlpha;
+            },
+            set(v) {
+                currentAlpha = v;
+                if (v > 0 && v < 1) {
+                    alphaValues.push(v);
+                }
+            },
+            configurable: true,
+        });
+        let currentLineWidth = 0;
+        Object.defineProperty(ctx, 'lineWidth', {
+            get() {
+                return currentLineWidth;
+            },
+            set(v) {
+                currentLineWidth = v;
+                if (v > 0) {
+                    lineWidths.push(v);
+                }
+            },
+            configurable: true,
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+        alphaValues.length = 0;
+        lineWidths.length = 0;
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Sub-segments should produce many varying alpha values (fade-in/out)
+        // 3 arcs × 16 segments = 48 alpha sets, plus Fresnel adds more
+        expect(alphaValues.length).toBeGreaterThanOrEqual(20);
+
+        // Alpha values should vary (not all the same) — confirming taper
+        const uniqueAlphas = new Set(alphaValues.map((v) => v.toFixed(3)));
+        expect(uniqueAlphas.size).toBeGreaterThan(3);
+
+        // Line widths should also vary (thickness taper)
+        const uniqueWidths = new Set(lineWidths.map((v) => v.toFixed(3)));
+        expect(uniqueWidths.size).toBeGreaterThan(3);
+    });
+
     it('should parse hex colors correctly for top highlights', () => {
         arcs[0].options = { backgroundColor: '#ff0000' };
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});

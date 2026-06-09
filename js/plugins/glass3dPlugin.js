@@ -629,36 +629,116 @@ function drawElectricTrail(
     const widthFactor = electric.width ?? 0.22;
     const arcThickness = electric.arcThickness ?? 2.4;
     const bandThickness = outerRadius - innerRadius;
-    const radius = innerRadius + bandThickness * 0.65;
+    const baseRadius = innerRadius + bandThickness * 0.65;
     const offsetX = pointer.x * 0.2;
     const offsetY = pointer.y * 0.2;
     const speedMultiplier = electric.streakSpeedMultiplier ?? 1;
+    const segments = 20;
+
+    // Head color: hot white-blue plasma
+    const headColor = 'rgba(220, 240, 255, 1)';
+    // Tail tint shifts toward cool violet
+    const tailColor = 'rgba(140, 100, 255, 1)';
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
 
+    const cx = centerX + offsetX;
+    const cy = centerY + offsetY;
+
     for (let i = 0; i < arcCount; i += 1) {
         const color = colors[i % colors.length];
         const localPhase = state.continuousPhase * speedMultiplier + (i / arcCount) * 0.65;
-        const startAngle = localPhase * Math.PI * 2;
-        const endAngle = startAngle + widthFactor * Math.PI * 2 * 0.75;
-        ctx.strokeStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = arcThickness * 3;
-        ctx.lineWidth = arcThickness;
-        ctx.beginPath();
-        ctx.ellipse(
-            centerX + offsetX,
-            centerY + offsetY,
-            radius,
-            radius * squash,
-            0,
-            startAngle,
-            endAngle
-        );
-        ctx.stroke();
+        const arcStart = localPhase * Math.PI * 2;
+        const arcSpan = widthFactor * Math.PI * 2 * 0.75;
+
+        // Each trail orbits at a slightly different radius (weave within the band)
+        const radiusOffset = Math.sin(localPhase * Math.PI * 4 + i * 2.1) * bandThickness * 0.08;
+        const trailRadius = baseRadius + radiusOffset;
+
+        // Energy pulse: sinusoidal throb along the trail phase
+        const pulsePhase = state.continuousPhase * 3 + i * 1.7;
+        const pulseBase = 0.7 + 0.3 * Math.sin(pulsePhase * Math.PI * 2);
+
+        // --- Ghost afterglow trail (wider, dimmer, slightly behind) ---
+        const ghostOffset = arcSpan * 0.15;
+        const ghostRadius = trailRadius + bandThickness * 0.05 * (i % 2 === 0 ? 1 : -1);
+        for (let s = 0; s < segments; s += 1) {
+            const t = (s + 0.5) / segments;
+            const segStart = arcStart - ghostOffset + arcSpan * (s / segments);
+            const segEnd = arcStart - ghostOffset + arcSpan * ((s + 1) / segments);
+
+            // Asymmetric comet fade: fast rise at head (t≈1), long decay into tail (t≈0)
+            const cometFade = Math.pow(t, 0.6) * Math.pow(1 - Math.pow(t, 3), 0.5);
+            const ghostAlpha = cometFade * 0.2 * pulseBase;
+
+            if (ghostAlpha < 0.005) {
+                continue;
+            }
+
+            ctx.strokeStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = arcThickness * 4;
+            ctx.lineWidth = arcThickness * 2.5 * cometFade;
+            ctx.globalAlpha = ghostAlpha;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
+            ctx.stroke();
+        }
+
+        // --- Main plasma trail with color temperature shift ---
+        for (let s = 0; s < segments; s += 1) {
+            const t = (s + 0.5) / segments; // 0 = tail, 1 = head
+            const segStart = arcStart + arcSpan * (s / segments);
+            const segEnd = arcStart + arcSpan * ((s + 1) / segments);
+
+            // Asymmetric comet envelope: sharp bright head, long diffuse tail
+            const cometFade = Math.pow(t, 0.5) * Math.pow(1 - Math.pow(t, 4), 0.4);
+            const pulse = pulseBase * (0.85 + 0.15 * Math.sin(t * Math.PI * 6 + pulsePhase));
+
+            // Color temperature: interpolate from tail (cool base color) → head (hot white-blue)
+            // Head segments (t > 0.7) shift to hot white, tail stays as the base color
+            const headMix = Math.pow(Math.max(0, (t - 0.4) / 0.6), 2);
+            const tailMix = Math.pow(Math.max(0, (0.5 - t) / 0.5), 1.5);
+            let segColor = color;
+            if (headMix > 0.01) {
+                segColor = applyAlpha(headColor, headMix * 0.8);
+            } else if (tailMix > 0.01) {
+                segColor = applyAlpha(tailColor, tailMix * 0.5);
+            }
+
+            const alpha = cometFade * pulse;
+            const thickness = arcThickness * (0.2 + 0.8 * cometFade);
+
+            if (alpha < 0.005) {
+                continue;
+            }
+
+            // Main stroke
+            ctx.strokeStyle = color;
+            ctx.shadowColor = segColor;
+            ctx.shadowBlur = thickness * 3 * (0.5 + headMix * 2);
+            ctx.lineWidth = thickness;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+            ctx.stroke();
+
+            // Hot core overlay at the head: a thinner, brighter white-blue stroke
+            if (headMix > 0.05) {
+                ctx.strokeStyle = headColor;
+                ctx.shadowColor = headColor;
+                ctx.shadowBlur = thickness * 5;
+                ctx.lineWidth = thickness * 0.4;
+                ctx.globalAlpha = alpha * headMix * 0.9;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+                ctx.stroke();
+            }
+        }
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
 }
 
