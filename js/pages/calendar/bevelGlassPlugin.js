@@ -92,7 +92,7 @@ export function applyBevelGlass(d3Instance, selector) {
 
     ensureDefs(svgEl);
 
-    // Clean up old canvas overlay from previous implementations
+    // One-time cleanup of old canvas overlay from previous implementations
     if (heatmapEl._bevelCanvas) {
         const old = heatmapEl._bevelCanvas;
         if (old.parentElement) {
@@ -101,29 +101,27 @@ export function applyBevelGlass(d3Instance, selector) {
         heatmapEl._bevelCanvas = null;
     }
 
-    const todayStr = getTodayStr();
+    const defaultGrad = `url(#${GRAD_ID})`;
+    const todayGrad = `url(#${GRAD_TODAY_ID})`;
 
-    d3Instance
-        .select(svgEl)
-        .selectAll('rect.ch-subdomain-bg')
-        .each(function () {
-            const cell = d3Instance.select(this);
+    // Batch: apply default stroke to all cells in one D3 call (no per-cell work)
+    const allCells = d3Instance.select(svgEl).selectAll('rect.ch-subdomain-bg');
+    allCells.attr('stroke', defaultGrad).attr('stroke-width', 1.5);
 
-            const parent = d3Instance.select(this.parentNode);
-            const datum = parent.datum ? parent.datum() : null;
-            const t = datum && typeof datum === 'object' ? datum.t : null;
-            let isToday = false;
-            if (t != null) {
-                const dt = new Date(t);
-                if (Number.isFinite(dt.getTime())) {
-                    const ds = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-                    isToday = ds === todayStr;
-                }
-            }
+    // Single pass: find today's cell by timestamp range (avoids Date→string per cell)
+    const now = new Date();
+    const todayStart = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = todayStart + 86400000;
 
-            const gradUrl = isToday ? `url(#${GRAD_TODAY_ID})` : `url(#${GRAD_ID})`;
-            cell.attr('stroke', gradUrl).attr('stroke-width', isToday ? 2 : 1.5);
-        });
+    allCells.each(function () {
+        const parent = this.parentNode;
+        const datum = parent.__data__;
+        const t = datum && typeof datum === 'object' ? datum.t : null;
+        if (t != null && t >= todayStart && t < todayEnd) {
+            this.setAttribute('stroke', todayGrad);
+            this.setAttribute('stroke-width', '2');
+        }
+    });
 }
 
 // No-ops: strokes live on the cell rects — they move/die with the cells.
