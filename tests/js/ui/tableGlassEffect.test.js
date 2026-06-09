@@ -1,4 +1,4 @@
-/* global HTMLCanvasElement */
+/* global HTMLCanvasElement, __dirname */
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 
 describe('TableGlassEffect', () => {
@@ -891,6 +891,22 @@ describe('TableGlassEffect', () => {
             );
 
             effect.dispose();
+        });
+    });
+
+    describe('Table Glass CSS hover styles', () => {
+        it('should not contain hover highlights for table header and footer summary rows in table.css', () => {
+            const fs = require('fs');
+            const path = require('path');
+            const cssPath = path.resolve(__dirname, '../../../css/table.css');
+            const cssContent = fs.readFileSync(cssPath, 'utf8');
+
+            // Header hover should not exist
+            expect(cssContent).not.toMatch(/thead\s+tr\s+th:hover/);
+            expect(cssContent).not.toMatch(/th:hover/);
+
+            // Footer summary hover should not exist
+            expect(cssContent).not.toMatch(/#table-footer-summary:hover/);
         });
     });
 });

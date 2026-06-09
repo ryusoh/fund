@@ -167,14 +167,6 @@ tbody tr:hover {
     background-image: none;
 }
 
-/* Hover effect for header cells */
-thead tr th:hover {
-    background-color: rgba(60, 60, 63, 0.75);
-    /* Consistent hover color */
-    background-image: none;
-    /* Remove gradient on hover */
-}
-
 #table-footer-summary {
     /* Mimics tfoot td */
     /* Copied from th and thead tr th for consistency */
@@ -196,13 +188,6 @@ thead tr th:hover {
     /* Ensure it respects the rounded corners of .footer-wrapper and .content-block */
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
-}
-
-#table-footer-summary:hover {
-    background-color: rgba(60, 60, 63, 0.75);
-    /* Consistent hover color, matches th:hover */
-    background-image: none;
-    /* Remove gradient on hover */
 }
 
 /* Media Query for mobile devices - Table specific */
