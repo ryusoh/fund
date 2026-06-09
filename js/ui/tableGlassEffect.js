@@ -147,9 +147,27 @@ export class TableGlassEffect {
         this.resize();
         this.startLoop();
 
-        // Mouse movement for parallax/interaction
-        this.container.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.container.addEventListener('mouseleave', () => this.handleMouseLeave());
+        // Mouse/Touch movement for parallax/interaction
+        this._mouseMoveHandler = (e) => this.handleMouseMove(e);
+        this._mouseLeaveHandler = () => this.handleMouseLeave();
+        this._touchStartHandler = (e) => {
+            if (e.touches && e.touches[0]) {
+                this.handleMouseMove(e.touches[0]);
+            }
+        };
+        this._touchMoveHandler = (e) => {
+            if (e.touches && e.touches[0]) {
+                this.handleMouseMove(e.touches[0]);
+            }
+        };
+        this._touchEndHandler = () => this.handleMouseLeave();
+
+        this.container.addEventListener('mousemove', this._mouseMoveHandler);
+        this.container.addEventListener('mouseleave', this._mouseLeaveHandler);
+        this.container.addEventListener('touchstart', this._touchStartHandler, { passive: true });
+        this.container.addEventListener('touchmove', this._touchMoveHandler, { passive: true });
+        this.container.addEventListener('touchend', this._touchEndHandler, { passive: true });
+        this.container.addEventListener('touchcancel', this._touchEndHandler, { passive: true });
     }
 
     initParticles() {
@@ -823,6 +841,14 @@ export class TableGlassEffect {
         }
         if (this.mutationObserver) {
             this.mutationObserver.disconnect();
+        }
+        if (this._mouseMoveHandler) {
+            this.container.removeEventListener('mousemove', this._mouseMoveHandler);
+            this.container.removeEventListener('mouseleave', this._mouseLeaveHandler);
+            this.container.removeEventListener('touchstart', this._touchStartHandler);
+            this.container.removeEventListener('touchmove', this._touchMoveHandler);
+            this.container.removeEventListener('touchend', this._touchEndHandler);
+            this.container.removeEventListener('touchcancel', this._touchEndHandler);
         }
         if (this.canvas && this.canvas.parentNode) {
             this.canvas.parentNode.removeChild(this.canvas);

@@ -1068,5 +1068,49 @@ describe('TableGlassEffect', () => {
 
             HTMLCanvasElement.prototype.getContext = originalGetContext;
         });
+
+        it('should handle touchstart and touchmove events by mapping them to handleMouseMove', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const moveSpy = jest.spyOn(effect, 'handleMouseMove');
+
+            // Dispatch touchstart event
+            const touchStartEvt = new Event('touchstart');
+            Object.defineProperty(touchStartEvt, 'touches', {
+                value: [{ clientX: 200, clientY: 100 }],
+            });
+            container.dispatchEvent(touchStartEvt);
+
+            expect(moveSpy).toHaveBeenCalledWith(touchStartEvt.touches[0]);
+
+            // Dispatch touchmove event
+            const touchMoveEvt = new Event('touchmove');
+            Object.defineProperty(touchMoveEvt, 'touches', {
+                value: [{ clientX: 300, clientY: 150 }],
+            });
+            container.dispatchEvent(touchMoveEvt);
+
+            expect(moveSpy).toHaveBeenLastCalledWith(touchMoveEvt.touches[0]);
+
+            effect.dispose();
+        });
+
+        it('should handle touchend and touchcancel events by mapping them to handleMouseLeave', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const leaveSpy = jest.spyOn(effect, 'handleMouseLeave');
+
+            // Dispatch touchend event
+            const touchEndEvt = new Event('touchend');
+            container.dispatchEvent(touchEndEvt);
+
+            expect(leaveSpy).toHaveBeenCalled();
+
+            // Dispatch touchcancel event
+            const touchCancelEvt = new Event('touchcancel');
+            container.dispatchEvent(touchCancelEvt);
+
+            expect(leaveSpy).toHaveBeenCalledTimes(2);
+
+            effect.dispose();
+        });
     });
 });

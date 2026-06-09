@@ -282,6 +282,38 @@ export function updatePieChart(data) {
                 fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
                 fundChartInstance._cursorPos = null;
             });
+
+            const handleTouchEnd = () => {
+                fundChartInstance.hoveredSliceIndex = undefined;
+                if (!isTablePersisting) {
+                    const tableElement = document.querySelector('table');
+                    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+                    const footerWrapperElement = document.querySelector('.footer-wrapper');
+                    const contentBlock = document.querySelector('.content-block');
+
+                    if (contentBlock) {
+                        contentBlock.classList.add('hidden');
+                    }
+                    if (tableElement) {
+                        tableElement.classList.add('hidden');
+                    }
+                    allDataRows.forEach((row) => row.classList.add('hidden'));
+                    if (footerWrapperElement) {
+                        footerWrapperElement.classList.add('hidden');
+                    }
+                    fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+                    fundChartInstance._cursorPos = null;
+                }
+                fundChartInstance.update();
+                checkAndToggleVerticalScroll();
+            };
+            fundChartInstance.canvas.addEventListener('touchend', handleTouchEnd, {
+                passive: true,
+            });
+            fundChartInstance.canvas.addEventListener('touchcancel', handleTouchEnd, {
+                passive: true,
+            });
+
             fundChartInstance._glassMouseLeaveBound = true;
         }
     }
