@@ -64,6 +64,8 @@ export class TableGlassEffect {
             pointer: { x: 0, y: 0 },
             pointerSmoothed: { x: 0, y: 0 },
             hoveredRowIndex: -1,
+            lastHoveredRowIndex: -1,
+            spotlightAlpha: 0,
         };
         this.resizePaused = false;
 
@@ -293,7 +295,12 @@ export class TableGlassEffect {
                             break;
                         }
                     }
+                    if (this.state.hoveredRowIndex === -1) {
+                        this.state.pointerSmoothed.x = this.state.pointer.x;
+                        this.state.pointerSmoothed.y = this.state.pointer.y;
+                    }
                     this.state.hoveredRowIndex = foundIndex;
+                    this.state.lastHoveredRowIndex = foundIndex;
                 } else {
                     this.state.hoveredRowIndex = -1;
                 }
@@ -364,6 +371,15 @@ export class TableGlassEffect {
         this.state.lastPointer.x = this.state.pointer.x;
         this.state.lastPointer.y = this.state.pointer.y;
 
+        // Update spotlight alpha transition
+        if (this.state.spotlightAlpha === undefined) {
+            this.state.spotlightAlpha = 0;
+        }
+        const targetAlpha = this.state.hoveredRowIndex !== -1 ? 1.0 : 0.0;
+        const alphaSpeed = this.state.hoveredRowIndex !== -1 ? 5.0 : 3.0; // Fast fade-in, slightly slower fade-out
+        this.state.spotlightAlpha += (targetAlpha - this.state.spotlightAlpha) * delta * alphaSpeed;
+        this.state.spotlightAlpha = Math.max(0.0, Math.min(1.0, this.state.spotlightAlpha));
+
         // Update particles
         const particles = this.state.energyParticles;
         for (let i = 0; i < particles.length; i++) {
@@ -398,15 +414,24 @@ export class TableGlassEffect {
     }
 
     drawRowHoverEffect() {
-        if (
-            !this.options.rowHoverEffect?.enabled ||
-            !this.rows ||
-            this.state.hoveredRowIndex === -1
-        ) {
+        if (!this.options.rowHoverEffect?.enabled || !this.rows) {
             return;
         }
 
-        const row = this.rows[this.state.hoveredRowIndex];
+        const activeIndex =
+            this.state.hoveredRowIndex !== -1
+                ? this.state.hoveredRowIndex
+                : this.state.lastHoveredRowIndex;
+        if (activeIndex === undefined || activeIndex === -1) {
+            return;
+        }
+
+        const alpha = this.state.spotlightAlpha !== undefined ? this.state.spotlightAlpha : 1.0;
+        if (alpha < 0.001) {
+            return;
+        }
+
+        const row = this.rows[activeIndex];
         if (!row) {
             return;
         }
@@ -419,10 +444,11 @@ export class TableGlassEffect {
         const settings = this.options.rowHoverEffect;
 
         this.ctx.save();
+        this.ctx.globalAlpha = alpha;
         this.ctx.globalCompositeOperation = 'source-over';
 
-        // Mouse relative to canvas
-        const mouseX = ((this.state.pointer.x + 1) / 2) * this.width;
+        // Mouse relative to canvas (using smoothed pointer for smooth physical chase)
+        const mouseX = ((this.state.pointerSmoothed.x + 1) / 2) * this.width;
 
         const spotlightRadius = settings.spotlightRadius || 300;
 

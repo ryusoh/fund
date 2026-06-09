@@ -517,6 +517,9 @@ describe('TableGlassEffect', () => {
             clientY: 125, // Middle of row
         });
 
+        // Force spotlightAlpha to 1.0 to simulate completed transition
+        effect.state.spotlightAlpha = 1.0;
+
         // Force draw
         effect.draw();
 
@@ -796,10 +799,12 @@ describe('TableGlassEffect', () => {
                 pointerVelocity: 'u_vel',
                 oilBoostMultiplier: 'u_oil_boost',
                 oilBlueMixFactor: 'u_oil_blue',
+                spotlightAlpha: 'u_spot_alpha',
             };
 
             effect.state.pointerVelocity = 3.5;
             effect.state.hoveredRowIndex = 0;
+            effect.state.spotlightAlpha = 0.85;
 
             effect.draw();
 
@@ -807,6 +812,7 @@ describe('TableGlassEffect', () => {
             expect(mockUniform1f).toHaveBeenCalledWith('u_rad', 400.0);
             expect(mockUniform1f).toHaveBeenCalledWith('u_oil_boost', 1.2);
             expect(mockUniform1f).toHaveBeenCalledWith('u_oil_blue', 0.7);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_spot_alpha', 0.85);
             effect.dispose();
         });
 
@@ -874,6 +880,11 @@ describe('TableGlassEffect', () => {
             // Verify that fragmentShaderSource does not contain "specularHighlight" in color calculation
             expect(fragmentShaderSource).not.toMatch(/\+\s*specularHighlight/);
 
+            // Verify that spotlightIntensity is scaled by u_spotlightAlpha
+            expect(fragmentShaderSource).toMatch(
+                /spotlightIntensity\s*=\s*pow\(\s*spotlightIntensity,\s*2\.0\s*\)\s*\*\s*u_spotlightAlpha/
+            );
+
             // Verify that filmVisibility is natively boosted by spotlightIntensity within the oil film itself with u_oilBoostMultiplier uniform
             expect(fragmentShaderSource).toMatch(
                 /filmVisibility\s*=\s*totalIntensity\s*\*\s*fresnelMod\s*\*\s*2\.0\s*\*\s*\(\s*1\.0\s*\+\s*spotlightIntensity\s*\*\s*u_oilBoostMultiplier\)/
@@ -885,9 +896,14 @@ describe('TableGlassEffect', () => {
                 /finalFilmColor\s*=\s*mix\(\s*filmColor,\s*glassBlue,\s*spotlightIntensity\s*\*\s*u_oilBlueMixFactor\)/
             );
 
-            // Verify that final color is computed natively from finalFilmColor * filmVisibility
+            // Verify that final color is computed natively from finalFilmColor * filmVisibility * u_spotlightAlpha
             expect(fragmentShaderSource).toMatch(
-                /color\s*=\s*finalFilmColor\s*\*\s*filmVisibility/
+                /color\s*=\s*finalFilmColor\s*\*\s*filmVisibility\s*\*\s*u_spotlightAlpha/
+            );
+
+            // Verify that finalAlpha is scaled by u_spotlightAlpha to allow smooth transition out
+            expect(fragmentShaderSource).toMatch(
+                /finalAlpha\s*=\s*rimAlpha\s*\*\s*u_spotlightAlpha/
             );
 
             effect.dispose();
@@ -907,6 +923,76 @@ describe('TableGlassEffect', () => {
 
             // Footer summary hover should not exist
             expect(cssContent).not.toMatch(/#table-footer-summary:hover/);
+        });
+    });
+
+    describe('Fluid dynamic transition', () => {
+        it('should initialize spotlightAlpha to 0 and lastHoveredRowIndex to -1', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            expect(effect.state.spotlightAlpha).toBe(0);
+            expect(effect.state.lastHoveredRowIndex).toBe(-1);
+            effect.dispose();
+        });
+
+        it('should transition spotlightAlpha smoothly during update', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.state.hoveredRowIndex = 0;
+            effect.update(1000); // set lastTime
+            effect.update(1100); // delta = 0.1s
+
+            expect(effect.state.spotlightAlpha).toBeGreaterThan(0);
+            expect(effect.state.spotlightAlpha).toBeLessThan(1.0);
+
+            effect.update(2100); // advance 1s to reach near 1.0
+            expect(effect.state.spotlightAlpha).toBeCloseTo(1.0, 2);
+
+            // Hover left
+            effect.state.hoveredRowIndex = -1;
+            effect.update(2200); // delta = 0.1s
+            expect(effect.state.spotlightAlpha).toBeLessThan(1.0);
+
+            effect.dispose();
+        });
+
+        it('should snap pointerSmoothed to pointer on first enter to prevent sweeping from off-screen', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            // Set pointer off-screen initially
+            effect.state.pointer = { x: -10, y: -10 };
+            effect.state.pointerSmoothed = { x: -10, y: -10 };
+            effect.state.hoveredRowIndex = -1;
+
+            const row1 = container.querySelector('tr');
+            document.elementFromPoint.mockReturnValue({
+                closest: jest.fn().mockReturnValue(row1),
+            });
+
+            // Move mouse onto row 1 (X=0.5, Y=0.5)
+            effect.handleMouseMove({ clientX: 600, clientY: 125 });
+
+            // Since it was previously -1, pointerSmoothed should snap immediately to pointer coordinates
+            expect(effect.state.pointerSmoothed.x).toBe(effect.state.pointer.x);
+            expect(effect.state.pointerSmoothed.y).toBe(effect.state.pointer.y);
+
+            effect.dispose();
+        });
+
+        it('should store lastHoveredRowIndex on mouse leave to allow smooth fade out', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            effect.state.hoveredRowIndex = 0;
+            effect.state.lastHoveredRowIndex = 0;
+
+            effect.handleMouseLeave();
+
+            expect(effect.state.hoveredRowIndex).toBe(-1);
+            expect(effect.state.lastHoveredRowIndex).toBe(0); // remains 0 to allow fade out
+
+            effect.dispose();
         });
     });
 });

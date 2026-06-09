@@ -25,6 +25,7 @@ uniform float u_pointerVelocity;
 
 uniform float u_oilBoostMultiplier;
 uniform float u_oilBlueMixFactor;
+uniform float u_spotlightAlpha;
 
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
@@ -173,9 +174,9 @@ void main() {
     // Gaussian falloff for the mouse spotlight
     float distToPointer = distance(vec2(x, y), u_pointer);
 
-    // Smooth spotlight that falls off completely at u_spotlightRadius
+    // Smooth spotlight that falls off completely at u_spotlightRadius, scaled by fade transition
     float spotlightIntensity = max(0.0, 1.0 - (distToPointer / u_spotlightRadius));
-    spotlightIntensity = pow(spotlightIntensity, 2.0);
+    spotlightIntensity = pow(spotlightIntensity, 2.0) * u_spotlightAlpha;
 
     // Ambient base intensity for the entire border
     float ambientIntensity = 0.35;
@@ -243,12 +244,12 @@ void main() {
     // Natively blend the thin film iridescence with the blue color under the spotlight
     vec3 finalFilmColor = mix(filmColor, glassBlue, spotlightIntensity * u_oilBlueMixFactor);
 
-    // Combine iridescence natively (no separate white glowing layer)
-    vec3 color = finalFilmColor * filmVisibility;
+    // Combine iridescence natively (no separate white glowing layer), scaled by u_spotlightAlpha
+    vec3 color = finalFilmColor * filmVisibility * u_spotlightAlpha;
 
 
-    // The physical rim is permanently solid. Its opacity is strictly its distance falloff.
-    float finalAlpha = rimAlpha;
+    // The physical rim is permanently solid. Its opacity is strictly its distance falloff, scaled by u_spotlightAlpha.
+    float finalAlpha = rimAlpha * u_spotlightAlpha;
 
     // Output color directly. Additive blending (SRC_ALPHA, ONE) will multiply rgb by finalAlpha
     gl_FragColor = vec4(color, finalAlpha);
@@ -364,6 +365,7 @@ export class TableGlassWebGL {
             pointerVelocity: gl.getUniformLocation(this.program, 'u_pointerVelocity'),
             oilBoostMultiplier: gl.getUniformLocation(this.program, 'u_oilBoostMultiplier'),
             oilBlueMixFactor: gl.getUniformLocation(this.program, 'u_oilBlueMixFactor'),
+            spotlightAlpha: gl.getUniformLocation(this.program, 'u_spotlightAlpha'),
         };
 
         // Blend mode for glowing effects
@@ -392,14 +394,16 @@ export class TableGlassWebGL {
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        if (state.hoveredRowIndex === -1) {
-            return; // Clear but do not draw the ambient border if no data row is hovered
+        const alpha = state.spotlightAlpha !== undefined ? state.spotlightAlpha : 0.0;
+        if (state.hoveredRowIndex === -1 && alpha < 0.001) {
+            return; // Clear but do not draw if not hovering and fully faded out
         }
 
         gl.useProgram(this.program);
 
-        const mouseX = ((state.pointer.x + 1) / 2) * width;
-        const mouseY = ((state.pointer.y + 1) / 2) * height;
+        // Compute mouse position using smoothed coordinates for a physical fluid dynamic chase
+        const mouseX = ((state.pointerSmoothed.x + 1) / 2) * width;
+        const mouseY = ((state.pointerSmoothed.y + 1) / 2) * height;
 
         gl.uniform2f(this.uniforms.resolution, width, height);
         // We pass logical pixels to shader, it handles its own coordinates
@@ -422,6 +426,7 @@ export class TableGlassWebGL {
                 : 0.7
         );
         gl.uniform1f(this.uniforms.pointerVelocity, state.pointerVelocity || 0.0);
+        gl.uniform1f(this.uniforms.spotlightAlpha, alpha);
 
         const firstRow = rows[0];
         const lastRow = rows[rows.length - 1];
