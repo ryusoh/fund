@@ -55,11 +55,16 @@ describe('TableGlassEffect', () => {
             createLinearGradient: jest.fn(() => ({
                 addColorStop: jest.fn(),
             })),
+            createRadialGradient: jest.fn(() => ({
+                addColorStop: jest.fn(),
+            })),
+            fillRect: jest.fn(),
             fill: jest.fn(),
             stroke: jest.fn(),
             scale: jest.fn(),
             arc: jest.fn(),
             setLineDash: jest.fn(),
+            rect: jest.fn(),
         };
 
         // eslint-disable-next-line no-undef
@@ -526,7 +531,7 @@ describe('TableGlassEffect', () => {
         // Note: The mock row top is relative to viewport (100).
         // Container top is 0. Canvas top is 0.
         // So row.top in logic should be 100.
-        expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 100, 802, 50);
+        expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 100, 800, 50);
 
         effect.dispose();
     });
@@ -553,5 +558,68 @@ describe('TableGlassEffect', () => {
         expect(effect.resize).toHaveBeenCalled();
 
         effect.dispose();
+    });
+
+    describe('WebGL Boundary and Regression Constraints', () => {
+        it('should pass exact physical bounding box coordinates to WebGL to prevent outward bleeding', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            // Mock a WebGL context to capture the uniform assignments
+            const mockUniform1f = jest.fn();
+            effect.webglLayer.gl = {
+                clearColor: jest.fn(),
+                clear: jest.fn(),
+                useProgram: jest.fn(),
+                uniform2f: jest.fn(),
+                uniform1f: mockUniform1f,
+                drawArrays: jest.fn(),
+                COLOR_BUFFER_BIT: 16640,
+                TRIANGLES: 4,
+            };
+            effect.webglLayer.program = {};
+            effect.webglLayer.uniforms = {
+                resolution: 'u_res',
+                pointer: 'u_ptr',
+                time: 'u_time',
+                spotlightRadius: 'u_rad',
+                tbodyTop: 'u_top',
+                tbodyBottom: 'u_bottom',
+                tbodyLeft: 'u_left',
+                tbodyWidth: 'u_width',
+            };
+
+            effect.state.pointer = { x: 0, y: -0.375 };
+            effect.state.hoveredRowIndex = 0;
+
+            const drawSpy = jest.spyOn(effect.webglLayer, 'draw');
+
+            // Trigger draw loop
+            effect.drawRowHoverEffect();
+
+            expect(drawSpy).toHaveBeenCalled();
+
+            // Assert that the exact bounds of the rows were extracted and passed as uniforms
+            const firstRow = effect.rows[0];
+            const lastRow = effect.rows[effect.rows.length - 1];
+
+            expect(mockUniform1f).toHaveBeenCalledWith('u_top', firstRow.top);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_left', firstRow.left);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_width', firstRow.width);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_bottom', lastRow.top + lastRow.height);
+        });
+
+        it('should not throw if webglLayer is disposed before draw', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+            effect.webglLayer.dispose();
+            effect.webglLayer = null;
+
+            expect(() => {
+                effect.drawRowHoverEffect(400, 200);
+            }).not.toThrow();
+        });
     });
 });

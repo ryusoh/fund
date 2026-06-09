@@ -1,4 +1,5 @@
 import { PIE_CHART_GLASS_EFFECT } from '@js/config.js';
+import { TableGlassWebGL } from './tableGlassWebGL.js';
 
 export class TableGlassEffect {
     constructor(containerSelector, options = {}) {
@@ -100,6 +101,9 @@ export class TableGlassEffect {
         this.resizeObserver = new ResizeObserver(() => this.resize());
         this.resizeObserver.observe(target);
 
+        // Initialize WebGL overlay
+        this.webglLayer = new TableGlassWebGL(this);
+
         // Observe DOM mutations in the tbody to catch data refreshes
         // When data refreshes, rows are replaced, making cached row references stale.
         const tbody = this.container.querySelector('tbody');
@@ -184,16 +188,21 @@ export class TableGlassEffect {
         const visibleHeight = this.container.clientHeight - headerHeight;
         this.height = Math.max(1, visibleHeight);
         this.canvas.style.height = `${this.height}px`;
+
+        if (this.webglLayer) {
+            this.webglLayer.resize(this.width, this.height, this.dpr);
+        }
+
         // For sticky canvas, negative margin pulls content up so the canvas doesn't consume layout space
         if (this._scrollable) {
             this.canvas.style.marginBottom = `-${this.height}px`;
         }
 
         // Handle high DPI displays
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = this.width * dpr;
-        this.canvas.height = this.height * dpr;
-        this.ctx.scale(dpr, dpr);
+        this.dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this.width * this.dpr;
+        this.canvas.height = this.height * this.dpr;
+        this.ctx.scale(this.dpr, this.dpr);
 
         // Track rows for hover effect
         this.rows = [];
@@ -211,13 +220,16 @@ export class TableGlassEffect {
                     const row = rows[i];
                     const rowRect = row.getBoundingClientRect();
 
-                    // Calculate top relative to the canvas itself
+                    // Calculate top and left relative to the canvas itself
                     // This handles all offset/header/padding logic implicitly because
                     // we simply ask "where is the row relative to the canvas?"
                     const relativeTop = rowRect.top - canvasRect.top;
+                    const relativeLeft = rowRect.left - canvasRect.left;
 
                     this.rows[i] = {
                         top: relativeTop,
+                        left: relativeLeft,
+                        width: rowRect.width,
                         height: rowRect.height,
                         element: row,
                     };
@@ -317,8 +329,8 @@ export class TableGlassEffect {
     drawRowHoverEffect() {
         if (
             !this.options.rowHoverEffect?.enabled ||
-            this.state.hoveredRowIndex === -1 ||
-            !this.rows
+            !this.rows ||
+            this.state.hoveredRowIndex === -1
         ) {
             return;
         }
@@ -328,29 +340,22 @@ export class TableGlassEffect {
             return;
         }
 
-        // Get the position of the row relative to the canvas
-        // We use getBoundingClientRect for both to ensure 1:1 visual alignment
-        const canvasRect = this.canvas.getBoundingClientRect();
-        const rowRect = row.element.getBoundingClientRect();
-
-        // Calculate Y relative to the canvas origin (0,0 of the drawing context)
-        const rowTopRelativeToCanvas = rowRect.top - canvasRect.top;
-        const actualHeight = row.element.offsetHeight;
+        const rowTopRelativeToCanvas = row.top;
+        const actualHeight = row.height;
+        const rowLeft = row.left;
+        const actualWidth = row.width;
 
         const settings = this.options.rowHoverEffect;
 
         this.ctx.save();
-        // 'source-over' ensures the effect is drawn on top of the canvas content
-        // We use transparency in the gradients to let the underlying content show through
         this.ctx.globalCompositeOperation = 'source-over';
 
-        // Calculate mouse X relative to canvas
-        // pointer.x is -1 to 1. Convert back to pixels.
+        // Mouse relative to canvas
         const mouseX = ((this.state.pointer.x + 1) / 2) * this.width;
+
         const spotlightRadius = settings.spotlightRadius || 300;
 
-        // 1. Spotlight Background (Radial Gradient)
-        // Center the gradient on the mouse X, but vertically centered on the row
+        // 1. Hovered Row Spotlight Background
         const gradient = this.ctx.createRadialGradient(
             mouseX,
             rowTopRelativeToCanvas + actualHeight / 2,
@@ -359,16 +364,13 @@ export class TableGlassEffect {
             rowTopRelativeToCanvas + actualHeight / 2,
             spotlightRadius
         );
-
         gradient.addColorStop(0, settings.color || 'rgba(255, 255, 255, 0.05)');
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(0, rowTopRelativeToCanvas, this.width, actualHeight);
+        this.ctx.fillRect(rowLeft, rowTopRelativeToCanvas, actualWidth, actualHeight);
 
-        // 2. Border Reveal (Masked by the same spotlight gradient)
-        // We want the borders to be visible only near the mouse
-
+        // 2. Hovered Row Border Reveal
         const borderGradient = this.ctx.createRadialGradient(
             mouseX,
             rowTopRelativeToCanvas + actualHeight / 2,
@@ -383,19 +385,27 @@ export class TableGlassEffect {
         this.ctx.strokeStyle = borderGradient;
         this.ctx.lineWidth = 1;
 
-        // Top border
+        // Draw top and bottom border of the currently hovered row (subtle physical 2D border)
         this.ctx.beginPath();
-        this.ctx.moveTo(0, rowTopRelativeToCanvas);
-        this.ctx.lineTo(this.width, rowTopRelativeToCanvas);
-        this.ctx.stroke();
-
-        // Bottom border
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, rowTopRelativeToCanvas + actualHeight);
-        this.ctx.lineTo(this.width, rowTopRelativeToCanvas + actualHeight);
+        this.ctx.moveTo(rowLeft, rowTopRelativeToCanvas);
+        this.ctx.lineTo(rowLeft + actualWidth, rowTopRelativeToCanvas);
+        this.ctx.moveTo(rowLeft, rowTopRelativeToCanvas + actualHeight);
+        this.ctx.lineTo(rowLeft + actualWidth, rowTopRelativeToCanvas + actualHeight);
         this.ctx.stroke();
 
         this.ctx.restore();
+
+        // 3. Whole Pane Caustic Grid & Rim (WebGL Fluid Overlay)
+        if (this.webglLayer) {
+            this.webglLayer.draw(
+                this.state,
+                this.options,
+                this.width,
+                this.height,
+                this.dpr,
+                this.rows
+            );
+        }
     }
 
     // Helper to get point along rounded rectangle path
@@ -700,6 +710,11 @@ export class TableGlassEffect {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
+        if (this.webglLayer) {
+            this.webglLayer.dispose();
+            this.webglLayer = null;
+        }
+
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
