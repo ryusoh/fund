@@ -65,15 +65,15 @@ function updateWaveState(chart, currentOuterRadiusValue) {
 
     // Spawn new waves if conditions are met
     if (
-        currentOuterRadiusValue > 0 && // Ensure there's an outer edge to spawn from
+        currentOuterRadiusValue > 0 &&
         now - animState.lastSpawnTime > config.SPAWN_INTERVAL &&
         animState.waves.length < config.MAX_WAVES
     ) {
         animState.waves.push({
-            radius: currentOuterRadiusValue, // Start at the current outer edge of the doughnut
+            radius: currentOuterRadiusValue,
             opacity: config.spawnOpacity,
-            spawnRadius: currentOuterRadiusValue, // Store initial radius for opacity calculation
-            targetRadius: currentOuterRadiusValue + config.EXPANSION_DISTANCE, // Expand outwards
+            spawnRadius: currentOuterRadiusValue,
+            targetRadius: currentOuterRadiusValue + config.EXPANSION_DISTANCE,
         });
         animState.lastSpawnTime = now;
     }
@@ -152,9 +152,23 @@ export const waveAnimationPlugin = {
         }
         animState.waves.forEach((wave) => {
             if (wave.radius > outerRadius + 3 && wave.opacity > 0 && centerX && centerY) {
+                const r = wave.radius;
+                const rgb = animState.config.BASE_COLOR_RGB_TRIPLET;
+
+                // Solid dark body with a bright leading-edge wavefront.
+                // The bulk of the disc is opaque black (atmosphere/grounding),
+                // with energy concentrated at the expanding outer rim.
+                const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
+                const op = wave.opacity;
+                grad.addColorStop(0, `rgba(${rgb}, ${op.toFixed(3)})`);
+                grad.addColorStop(0.85, `rgba(${rgb}, ${op.toFixed(3)})`);
+                // Leading edge: slight intensity peak at the wavefront
+                grad.addColorStop(0.95, `rgba(${rgb}, ${Math.min(1, op * 1.4).toFixed(3)})`);
+                grad.addColorStop(1, `rgba(${rgb}, 0)`);
+
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, wave.radius, 0, Math.PI * 2, false);
-                ctx.fillStyle = `rgba(${animState.config.BASE_COLOR_RGB_TRIPLET}, ${wave.opacity})`;
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
                 ctx.fill();
             }
         });

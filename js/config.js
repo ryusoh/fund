@@ -280,6 +280,7 @@ export const PLUGIN_CONFIGS = {
         SPAWN_OPACITY: 0.25,
         TARGET_OPACITY_FADE: 0.005,
         BASE_COLOR_RGB_TRIPLET: '0, 0, 0',
+        WAVE_SQUASH: 0.9,
     },
 };
 

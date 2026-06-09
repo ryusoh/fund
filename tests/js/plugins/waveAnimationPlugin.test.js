@@ -36,9 +36,16 @@ describe('waveAnimationPlugin', () => {
                 beginPath: jest.fn(),
                 rect: jest.fn(),
                 arc: jest.fn(),
+                ellipse: jest.fn(),
                 clip: jest.fn(),
                 fill: jest.fn(),
+                stroke: jest.fn(),
                 fillStyle: '',
+                strokeStyle: '',
+                lineWidth: 0,
+                createRadialGradient: jest.fn(() => ({
+                    addColorStop: jest.fn(),
+                })),
             },
             draw: jest.fn(),
         };
@@ -496,6 +503,23 @@ describe('waveAnimationPlugin', () => {
         expect(() => {
             waveAnimationPlugin.afterDestroy(chart);
         }).not.toThrow();
+    });
+
+    it('should render waves with leading-edge highlight gradient', () => {
+        // Set up a wave that's already past the outer radius
+        mockChart.waveAnimation = {
+            waves: [{ radius: 150, opacity: 0.3, targetRadius: 200, spawnRadius: 100 }],
+            lastSpawnTime: 0,
+            animationFrameId: null,
+            config: {
+                BASE_COLOR_RGB_TRIPLET: '0, 0, 0',
+            },
+        };
+
+        waveAnimationPlugin.beforeDatasetsDraw(mockChart, {}, {});
+
+        // Should use a radial gradient for leading-edge highlight (not flat fillStyle)
+        expect(mockChart.ctx.createRadialGradient).toHaveBeenCalled();
     });
 
     it('should handle missing chart metadata with fallbacks (lines 122-123)', () => {
