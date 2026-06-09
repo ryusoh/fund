@@ -239,6 +239,72 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should update row relative bounds and hover state on container scroll', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            rowHoverEffect: { enabled: true },
+        });
+
+        // Mock getBoundingClientRect for the container and canvas
+        HTMLCanvasElement.prototype.getBoundingClientRect = jest.fn(() => ({
+            width: 800,
+            height: 400,
+            top: 0,
+            left: 0,
+        }));
+
+        // Mock row element
+        const tbody = container.querySelector('tbody');
+        const row1 = document.createElement('tr');
+        // Initial state: row is at top 100
+        row1.getBoundingClientRect = jest.fn(() => ({ top: 100, height: 50, left: 0, width: 800 }));
+        tbody.innerHTML = '';
+        tbody.appendChild(row1);
+
+        // Ensure it detects scrollability
+        Object.defineProperty(effect.container, 'scrollHeight', {
+            value: 1000,
+            configurable: true,
+        });
+        const originalGetComputedStyle = window.getComputedStyle;
+        window.getComputedStyle = jest.fn((el) => {
+            if (el === effect.container) {
+                return { overflow: 'auto', overflowY: 'auto' };
+            }
+            return originalGetComputedStyle(el);
+        });
+
+        effect.resize(); // Populates effect.rows
+
+        window.getComputedStyle = originalGetComputedStyle;
+
+        // Simulate mouse move over the row
+        document.elementFromPoint.mockReturnValue({
+            closest: jest.fn().mockReturnValue(row1),
+        });
+        effect.handleMouseMove({ clientX: 400, clientY: 125 });
+
+        expect(effect.state.hoveredRowIndex).toBe(0);
+        expect(effect.rows[0].top).toBe(100);
+
+        // Simulate scroll: row moves up to top: 50
+        row1.getBoundingClientRect = jest.fn(() => ({ top: 50, height: 50, left: 0, width: 800 }));
+
+        // If row moved up to 50, the mouse at clientY 125 is now below the row!
+        // It hits another element (or null)
+        document.elementFromPoint.mockReturnValue(null);
+
+        // Dispatch scroll event
+        const scrollEvent = new Event('scroll');
+        effect.container.dispatchEvent(scrollEvent);
+
+        // Assert the relative bounds were updated
+        expect(effect.rows[0].top).toBe(50);
+        // Assert hover state was re-evaluated and lost because mouse is no longer over the row
+        expect(effect.state.hoveredRowIndex).toBe(-1);
+
+        effect.dispose();
+    });
+
     it('should not draw electric trails if electric.enabled is false', () => {
         const effect = new TableGlassEffect('.table-responsive-container', {
             threeD: { electric: { enabled: false } },

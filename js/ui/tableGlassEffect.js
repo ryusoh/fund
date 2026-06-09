@@ -227,6 +227,27 @@ export class TableGlassEffect {
         this.container.addEventListener('pointercancel', this._pointerCancelHandler, {
             passive: true,
         });
+
+        this._scrollHandler = () => {
+            if (this._scrollable && this.rows && this.rows.length > 0) {
+                const canvasRect = this.canvas.getBoundingClientRect();
+                for (let i = 0; i < this.rows.length; i++) {
+                    const row = this.rows[i];
+                    if (row.element) {
+                        const rowRect = row.element.getBoundingClientRect();
+                        row.top = rowRect.top - canvasRect.top;
+                        row.left = rowRect.left - canvasRect.left;
+                    }
+                }
+            }
+            if (this.state.lastPointerRaw && this.state.lastPointerRaw.x !== -10) {
+                this.handleMouseMove({
+                    clientX: this.state.lastPointerRaw.x,
+                    clientY: this.state.lastPointerRaw.y,
+                });
+            }
+        };
+        this.container.addEventListener('scroll', this._scrollHandler, { passive: true });
     }
 
     initParticles() {
@@ -362,6 +383,12 @@ export class TableGlassEffect {
         }
     }
     handleMouseMove(e) {
+        if (!this.state.lastPointerRaw) {
+            this.state.lastPointerRaw = { x: -10, y: -10 };
+        }
+        this.state.lastPointerRaw.x = e.clientX;
+        this.state.lastPointerRaw.y = e.clientY;
+
         const rect = this.container.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
@@ -414,6 +441,12 @@ export class TableGlassEffect {
     }
 
     handleMouseLeave() {
+        if (!this.state.lastPointerRaw) {
+            this.state.lastPointerRaw = { x: -10, y: -10 };
+        }
+        this.state.lastPointerRaw.x = -10;
+        this.state.lastPointerRaw.y = -10;
+
         // Move pointer far off-screen so WebGL and Canvas trails don't freeze in the center
         this.state.pointer.x = -10;
         this.state.pointer.y = -10;
@@ -931,7 +964,7 @@ export class TableGlassEffect {
         if (this._contentBlockObserver) {
             this._contentBlockObserver.disconnect();
         }
-        if (this._mouseMoveHandler) {
+        if (this.container) {
             this.container.removeEventListener('mousemove', this._mouseMoveHandler);
             this.container.removeEventListener('mouseleave', this._mouseLeaveHandler);
             this.container.removeEventListener('touchstart', this._touchStartHandler);
@@ -942,9 +975,15 @@ export class TableGlassEffect {
             this.container.removeEventListener('pointermove', this._pointerMoveHandler);
             this.container.removeEventListener('pointerup', this._pointerUpHandler);
             this.container.removeEventListener('pointercancel', this._pointerCancelHandler);
+            if (this._scrollHandler) {
+                this.container.removeEventListener('scroll', this._scrollHandler);
+            }
+            if (this.canvas && this.canvas.parentElement) {
+                this.canvas.parentElement.removeChild(this.canvas);
+            }
+            this.container.glassEffect = null;
         }
-        if (this.canvas && this.canvas.parentNode) {
-            this.canvas.parentNode.removeChild(this.canvas);
-        }
+        this.ctx = null;
+        this.canvas = null;
     }
 }
