@@ -163,6 +163,14 @@ export function updatePieChart(data) {
                     }
                 },
                 onHover: (event, activeElements, chart) => {
+                    if (window.innerWidth <= UI_BREAKPOINTS.MOBILE && activeElements.length === 0) {
+                        // On mobile, never hide the table from onHover with empty activeElements.
+                        // iOS Safari/Chrome fire onHover from many sources (pointerleave,
+                        // pointermove, mouseleave, internal Chart.js updates) — all of which
+                        // would incorrectly dismiss the table. Dismissal on mobile is handled
+                        // exclusively by the global touchstart listener (tapping outside).
+                        return;
+                    }
                     const tableElement = document.querySelector('table');
                     const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
                     const footerWrapperElement = document.querySelector('.footer-wrapper');
@@ -284,6 +292,10 @@ export function updatePieChart(data) {
             });
 
             const handleTouchEnd = () => {
+                if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
+                    fundChartInstance.update();
+                    return;
+                }
                 fundChartInstance.hoveredSliceIndex = undefined;
                 if (!isTablePersisting) {
                     const tableElement = document.querySelector('table');
@@ -315,6 +327,64 @@ export function updatePieChart(data) {
             });
 
             fundChartInstance._glassMouseLeaveBound = true;
+        }
+
+        if (!fundChartInstance._hasGlobalTouchBound) {
+            fundChartInstance._hasGlobalTouchBound = true;
+
+            const handleGlobalTouch = (e) => {
+                if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                    return;
+                }
+                const chartContainer = document.getElementById('fundPieChartContainer');
+                const contentBlock = document.querySelector('.content-block');
+
+                if (!chartContainer || !contentBlock) {
+                    return;
+                }
+
+                if (chartContainer.contains(e.target) || contentBlock.contains(e.target)) {
+                    return;
+                }
+
+                isTablePersisting = false;
+                if (fundChartInstance) {
+                    fundChartInstance.hoveredSliceIndex = undefined;
+                    fundChartInstance.showLogos = false;
+                    fundChartInstance.update();
+                }
+
+                const tableElement = document.querySelector('table');
+                const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+                const footerWrapperElement = document.querySelector('.footer-wrapper');
+
+                if (contentBlock) {
+                    contentBlock.classList.add('hidden');
+                }
+                if (tableElement) {
+                    tableElement.classList.add('hidden');
+                }
+                allDataRows.forEach((row) => row.classList.add('hidden'));
+                if (footerWrapperElement) {
+                    footerWrapperElement.classList.add('hidden');
+                }
+                checkAndToggleVerticalScroll();
+            };
+
+            document.addEventListener('touchstart', handleGlobalTouch, { passive: true });
+
+            const originalDestroy = fundChartInstance.destroy;
+            const newDestroy = function () {
+                document.removeEventListener('touchstart', handleGlobalTouch);
+                if (originalDestroy) {
+                    originalDestroy.apply(this, arguments);
+                }
+            };
+            if (originalDestroy && originalDestroy._isMockFunction) {
+                Object.setPrototypeOf(newDestroy, originalDestroy);
+                Object.assign(newDestroy, originalDestroy);
+            }
+            fundChartInstance.destroy = newDestroy;
         }
     }
 }

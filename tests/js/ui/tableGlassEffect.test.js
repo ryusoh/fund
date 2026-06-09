@@ -1094,7 +1094,13 @@ describe('TableGlassEffect', () => {
             effect.dispose();
         });
 
-        it('should handle touchend and touchcancel events by mapping them to handleMouseLeave', () => {
+        it('should handle touchend and touchcancel events by mapping them to handleMouseLeave on desktop', () => {
+            // Desktop: innerWidth > 768
+            Object.defineProperty(window, 'innerWidth', {
+                value: 1024,
+                configurable: true,
+                writable: true,
+            });
             const effect = new TableGlassEffect('.table-responsive-container');
             const leaveSpy = jest.spyOn(effect, 'handleMouseLeave');
 
@@ -1109,6 +1115,146 @@ describe('TableGlassEffect', () => {
             container.dispatchEvent(touchCancelEvt);
 
             expect(leaveSpy).toHaveBeenCalledTimes(2);
+
+            effect.dispose();
+        });
+
+        it('should NOT call handleMouseLeave on touchend when on mobile layout', () => {
+            // Mobile: innerWidth <= 768
+            Object.defineProperty(window, 'innerWidth', {
+                value: 500,
+                configurable: true,
+                writable: true,
+            });
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const leaveSpy = jest.spyOn(effect, 'handleMouseLeave');
+
+            // Dispatch touchend event
+            const touchEndEvt = new Event('touchend');
+            container.dispatchEvent(touchEndEvt);
+
+            // On mobile, touchend should NOT trigger handleMouseLeave
+            // so the row hover and pie chart slice highlight persist
+            expect(leaveSpy).not.toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        it('should still call handleMouseLeave on touchcancel even on mobile', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                value: 500,
+                configurable: true,
+                writable: true,
+            });
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const leaveSpy = jest.spyOn(effect, 'handleMouseLeave');
+
+            const touchCancelEvt = new Event('touchcancel');
+            container.dispatchEvent(touchCancelEvt);
+
+            // touchcancel should always clean up regardless of viewport
+            expect(leaveSpy).toHaveBeenCalledTimes(1);
+
+            effect.dispose();
+        });
+
+        it('should handle pointer events for Chrome mobile compatibility', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const moveSpy = jest.spyOn(effect, 'handleMouseMove');
+
+            // Dispatch pointerdown event (simulating Chrome mobile touch)
+            const pointerDownEvt = new Event('pointerdown');
+            Object.defineProperty(pointerDownEvt, 'pointerType', { value: 'touch' });
+            Object.defineProperty(pointerDownEvt, 'clientX', { value: 200 });
+            Object.defineProperty(pointerDownEvt, 'clientY', { value: 100 });
+            container.dispatchEvent(pointerDownEvt);
+
+            expect(moveSpy).toHaveBeenCalledWith(pointerDownEvt);
+
+            // Dispatch pointermove event
+            const pointerMoveEvt = new Event('pointermove');
+            Object.defineProperty(pointerMoveEvt, 'pointerType', { value: 'touch' });
+            Object.defineProperty(pointerMoveEvt, 'clientX', { value: 300 });
+            Object.defineProperty(pointerMoveEvt, 'clientY', { value: 150 });
+            container.dispatchEvent(pointerMoveEvt);
+
+            expect(moveSpy).toHaveBeenLastCalledWith(pointerMoveEvt);
+
+            effect.dispose();
+        });
+
+        it('should not call handleMouseMove for non-touch pointer events (mouse)', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const moveSpy = jest.spyOn(effect, 'handleMouseMove');
+
+            // Mouse pointer events should be ignored (mousemove handles those)
+            const pointerDownEvt = new Event('pointerdown');
+            Object.defineProperty(pointerDownEvt, 'pointerType', { value: 'mouse' });
+            Object.defineProperty(pointerDownEvt, 'clientX', { value: 200 });
+            Object.defineProperty(pointerDownEvt, 'clientY', { value: 100 });
+            container.dispatchEvent(pointerDownEvt);
+
+            expect(moveSpy).not.toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        it('should NOT call handleMouseLeave on pointerup with touch pointerType on mobile', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                value: 500,
+                configurable: true,
+                writable: true,
+            });
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const leaveSpy = jest.spyOn(effect, 'handleMouseLeave');
+
+            const pointerUpEvt = new Event('pointerup');
+            Object.defineProperty(pointerUpEvt, 'pointerType', { value: 'touch' });
+            container.dispatchEvent(pointerUpEvt);
+
+            // On mobile, pointerup (touch) should preserve hover state
+            expect(leaveSpy).not.toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        it('should preserve onHoverRow callback state on mobile after touchend', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                value: 500,
+                configurable: true,
+                writable: true,
+            });
+            const onHoverRow = jest.fn();
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+                onHoverRow,
+            });
+
+            // Simulate a touch that finds a row
+            const row = container.querySelector('tr');
+            document.elementFromPoint = jest.fn(() => row);
+
+            // touchstart triggers handleMouseMove → finds row → calls onHoverRow
+            const touchStartEvt = new Event('touchstart');
+            Object.defineProperty(touchStartEvt, 'touches', {
+                value: [{ clientX: 200, clientY: 125 }],
+            });
+            container.dispatchEvent(touchStartEvt);
+
+            // onHoverRow should have been called with non-null (row was found)
+            // The exact ticker depends on data-ticker attribute, but it was called
+            expect(onHoverRow).toHaveBeenCalled();
+
+            // Now touchend fires on mobile — should NOT clear the hover
+            onHoverRow.mockClear();
+            const touchEndEvt = new Event('touchend');
+            container.dispatchEvent(touchEndEvt);
+
+            // On mobile, onHoverRow should NOT have been called with null
+            expect(onHoverRow).not.toHaveBeenCalled();
+
+            // The hoveredRowIndex should still be set
+            expect(effect.state.hoveredRowIndex).not.toBe(-1);
 
             effect.dispose();
         });

@@ -38,6 +38,8 @@ function setupMocks() {
         // Store the plugins array separately for imagePlugin tests
         chartOptions.pluginInstances = config.plugins || [];
         mockChartInstance.data = config.data;
+        mockChartInstance.canvas =
+            document.getElementById('fundPieChart') || document.createElement('canvas');
         return mockChartInstance;
     });
 
@@ -59,14 +61,23 @@ describe('chartManager', () => {
         jest.resetModules(); // Reset modules before each test
         setupMocks();
         chartManager = require('@charts/allocationChartManager.js');
+        Object.defineProperty(window, 'innerWidth', {
+            value: 1024,
+            configurable: true,
+            writable: true,
+        });
 
         document.body.innerHTML = `
-        <canvas id="fundPieChart"></canvas>
+        <div id="fundPieChartContainer">
+            <canvas id="fundPieChart"></canvas>
+        </div>
         <div class="content-block hidden">
-            <table><tbody>
-                <tr data-ticker="AAPL"><td>AAPL</td></tr>
-                <tr data-ticker="GOOG"><td>GOOG</td></tr>
-            </tbody></table>
+            <div class="table-responsive-container">
+                <table class="hidden"><tbody>
+                    <tr data-ticker="AAPL" class="hidden"><td>AAPL</td></tr>
+                    <tr data-ticker="GOOG" class="hidden"><td>GOOG</td></tr>
+                </tbody></table>
+            </div>
             <div class="footer-wrapper"></div>
         </div>
     `;
@@ -326,11 +337,13 @@ describe('chartManager', () => {
             const googRow = document.querySelector('tr[data-ticker="GOOG"]');
             const event = { x: 150, y: 150 }; // Center coordinates
 
-            // Test mobile behavior - should not show all rows
+            // Test mobile behavior - onHover with empty activeElements is a no-op on mobile,
+            // so rows stay in whatever state they were (hidden from initialization)
             Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
 
             chartOptions.onHover(event, [], mockChartInstance);
 
+            // Rows remain hidden (their initial state from the DOM), not re-hidden by onHover
             expect(aaplRow.classList.contains('hidden')).toBe(true);
             expect(googRow.classList.contains('hidden')).toBe(true);
 
@@ -343,12 +356,15 @@ describe('chartManager', () => {
             expect(googRow.classList.contains('hidden')).toBe(false);
         });
 
-        it('onHover: should hide table and rows when not hovering anything (lines 221-223)', () => {
+        it('onHover: should hide table and rows on desktop when not hovering anything (lines 221-223)', () => {
             chartManager.updatePieChart(data);
             const table = document.querySelector('table');
             const aaplRow = document.querySelector('tr[data-ticker="AAPL"]');
             const googRow = document.querySelector('tr[data-ticker="GOOG"]');
             const footerWrapper = document.querySelector('.footer-wrapper');
+
+            // Ensure desktop viewport
+            Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
 
             // First show the table
             table.classList.remove('hidden');
@@ -356,7 +372,7 @@ describe('chartManager', () => {
             googRow.classList.remove('hidden');
             footerWrapper.classList.remove('hidden');
 
-            // Hover outside any active elements
+            // Hover outside any active elements on desktop
             const event = { x: 50, y: 50 }; // Outside chart area
             chartOptions.onHover(event, [], mockChartInstance);
 
@@ -369,6 +385,9 @@ describe('chartManager', () => {
         it('onHover: should handle missing getDatasetMeta (lines 178-180)', () => {
             chartManager.updatePieChart(data);
             const table = document.querySelector('table');
+
+            // Ensure desktop viewport so the empty-activeElements path runs fully
+            Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
 
             // Mock getDatasetMeta to return undefined
             mockChartInstance.getDatasetMeta = jest.fn(() => undefined);
@@ -447,6 +466,170 @@ describe('chartManager', () => {
             expect(() => {
                 chartOptions.onHover(outsideEvent, [], mockChartInstance);
             }).not.toThrow();
+        });
+
+        it('should verify detailed mobile touch behavior flow', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            // Set mobile layout
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // Mock ResizeObserver & MutationObserver
+            const originalResizeObserver = global.ResizeObserver;
+            const originalMutationObserver = global.MutationObserver;
+            global.ResizeObserver = class ResizeObserver {
+                observe() {}
+                disconnect() {}
+            };
+            global.MutationObserver = class MutationObserver {
+                observe() {}
+                disconnect() {}
+            };
+
+            // Initialize TableGlassEffect on the table container
+            const { TableGlassEffect } = require('@ui/tableGlassEffect.js');
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                onHoverRow: (ticker) => chartManager.hoverSliceByTicker(ticker),
+            });
+
+            // 1. Simulate hover/touch on chart slice to show the table
+            const event = { x: 200, y: 200 };
+            const activeElements = [{ index: 0 }];
+            chartOptions.onHover(event, activeElements, mockChartInstance);
+
+            // Table should be visible
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // 2. Simulate touchend on the chart canvas (user lifts finger from slice)
+            const canvasElement = document.getElementById('fundPieChart');
+            const touchEndEvt = new Event('touchend');
+            canvasElement.dispatchEvent(touchEndEvt);
+
+            // On mobile layout, the table should STAY visible after lifting finger from chart
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // 3. Simulate touch on the table container (user interacts with the table)
+            const tableContainer = document.querySelector('.table-responsive-container');
+            const touchStart = new Event('touchstart');
+            Object.defineProperty(touchStart, 'touches', {
+                value: [{ clientX: 200, clientY: 100 }],
+            });
+            tableContainer.dispatchEvent(touchStart);
+
+            const touchEnd = new Event('touchend');
+            tableContainer.dispatchEvent(touchEnd);
+
+            // Table should remain visible
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // 4. Simulate tapping outside (document touchstart)
+            const outsideTouch = new Event('touchstart', { bubbles: true });
+            Object.defineProperty(outsideTouch, 'target', { value: document.body });
+            document.dispatchEvent(outsideTouch);
+
+            // Table should now hide!
+            expect(table.classList.contains('hidden')).toBe(true);
+            expect(contentBlock.classList.contains('hidden')).toBe(true);
+
+            effect.dispose();
+            global.ResizeObserver = originalResizeObserver;
+            global.MutationObserver = originalMutationObserver;
+        });
+
+        it('should NOT hide table on mobile when Chart.js fires onHover from a pointerleave/mouseleave event', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            // Set mobile layout
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // 1. Simulate hover/touch on chart slice to show the table
+            const hoverEvent = { x: 200, y: 200 };
+            const activeElements = [{ index: 0 }];
+            chartOptions.onHover(hoverEvent, activeElements, mockChartInstance);
+
+            // Table should be visible
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // 2. Simulate Chart.js firing onHover from a pointerleave event
+            const pointerLeaveNative = new Event('pointerleave');
+            const leaveEvent = { x: 200, y: 200, native: pointerLeaveNative };
+            chartOptions.onHover(leaveEvent, [], mockChartInstance);
+
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // 3. Also test with mouseleave
+            const mouseLeaveNative = new Event('mouseleave');
+            const mouseLeaveEvent = { x: 200, y: 200, native: mouseLeaveNative };
+            chartOptions.onHover(mouseLeaveEvent, [], mockChartInstance);
+
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+        });
+
+        it('should NOT hide table on mobile when onHover fires with no native event (Chart.js internal)', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // Show the table first
+            chartOptions.onHover({ x: 200, y: 200 }, [{ index: 0 }], mockChartInstance);
+            expect(table.classList.contains('hidden')).toBe(false);
+
+            // Chart.js may fire onHover with no native event during animation/update cycles
+            chartOptions.onHover({ x: 0, y: 0 }, [], mockChartInstance);
+
+            // Table should STAY visible — only global touchstart outside should dismiss
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+        });
+
+        it('should NOT hide table on mobile when onHover fires with native=null', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // Show the table first
+            chartOptions.onHover({ x: 200, y: 200 }, [{ index: 0 }], mockChartInstance);
+            expect(table.classList.contains('hidden')).toBe(false);
+
+            // Explicitly null native event
+            chartOptions.onHover({ x: 0, y: 0, native: null }, [], mockChartInstance);
+
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+        });
+
+        it('should NOT hide table on mobile when onHover fires from pointermove with empty activeElements', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // Show the table first
+            chartOptions.onHover({ x: 200, y: 200 }, [{ index: 0 }], mockChartInstance);
+            expect(table.classList.contains('hidden')).toBe(false);
+
+            // Chart.js may fire onHover from pointermove when the pointer moves
+            // to a non-slice area while finger is still held
+            const pointerMoveNative = new Event('pointermove');
+            chartOptions.onHover({ x: 0, y: 0, native: pointerMoveNative }, [], mockChartInstance);
+
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
         });
 
         describe('hoverSliceByTicker', () => {

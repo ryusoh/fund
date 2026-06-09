@@ -1,4 +1,4 @@
-import { PIE_CHART_GLASS_EFFECT } from '@js/config.js';
+import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
 import { TableGlassWebGL } from './tableGlassWebGL.js';
 
 function isDataRow(row) {
@@ -160,14 +160,52 @@ export class TableGlassEffect {
                 this.handleMouseMove(e.touches[0]);
             }
         };
-        this._touchEndHandler = () => this.handleMouseLeave();
+        // On mobile, touchend preserves the hover state so the pie chart
+        // slice highlight persists after lifting a finger from a table row.
+        // touchcancel always clears state (e.g. interrupted gestures).
+        this._touchEndHandler = () => {
+            if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                this.handleMouseLeave();
+            }
+        };
+        this._touchCancelHandler = () => this.handleMouseLeave();
+
+        // Pointer events for Chrome mobile compatibility.
+        // Chrome fires pointer events instead of touch events in many cases.
+        // Only handle touch-type pointers; mouse pointers are handled by mousemove/mouseleave.
+        this._pointerDownHandler = (e) => {
+            if (e.pointerType === 'touch') {
+                this.handleMouseMove(e);
+            }
+        };
+        this._pointerMoveHandler = (e) => {
+            if (e.pointerType === 'touch') {
+                this.handleMouseMove(e);
+            }
+        };
+        this._pointerUpHandler = (e) => {
+            if (e.pointerType === 'touch' && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                this.handleMouseLeave();
+            }
+        };
+        this._pointerCancelHandler = (e) => {
+            if (e.pointerType === 'touch') {
+                this.handleMouseLeave();
+            }
+        };
 
         this.container.addEventListener('mousemove', this._mouseMoveHandler);
         this.container.addEventListener('mouseleave', this._mouseLeaveHandler);
         this.container.addEventListener('touchstart', this._touchStartHandler, { passive: true });
         this.container.addEventListener('touchmove', this._touchMoveHandler, { passive: true });
         this.container.addEventListener('touchend', this._touchEndHandler, { passive: true });
-        this.container.addEventListener('touchcancel', this._touchEndHandler, { passive: true });
+        this.container.addEventListener('touchcancel', this._touchCancelHandler, { passive: true });
+        this.container.addEventListener('pointerdown', this._pointerDownHandler, { passive: true });
+        this.container.addEventListener('pointermove', this._pointerMoveHandler, { passive: true });
+        this.container.addEventListener('pointerup', this._pointerUpHandler, { passive: true });
+        this.container.addEventListener('pointercancel', this._pointerCancelHandler, {
+            passive: true,
+        });
     }
 
     initParticles() {
@@ -848,7 +886,11 @@ export class TableGlassEffect {
             this.container.removeEventListener('touchstart', this._touchStartHandler);
             this.container.removeEventListener('touchmove', this._touchMoveHandler);
             this.container.removeEventListener('touchend', this._touchEndHandler);
-            this.container.removeEventListener('touchcancel', this._touchEndHandler);
+            this.container.removeEventListener('touchcancel', this._touchCancelHandler);
+            this.container.removeEventListener('pointerdown', this._pointerDownHandler);
+            this.container.removeEventListener('pointermove', this._pointerMoveHandler);
+            this.container.removeEventListener('pointerup', this._pointerUpHandler);
+            this.container.removeEventListener('pointercancel', this._pointerCancelHandler);
         }
         if (this.canvas && this.canvas.parentNode) {
             this.canvas.parentNode.removeChild(this.canvas);
