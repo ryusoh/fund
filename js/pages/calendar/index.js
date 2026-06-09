@@ -73,6 +73,7 @@ let pendingPostPaintAfterTransition = false;
 let pendingDataRefresh = null;
 const fetchedMonthKeys = new Set();
 const cachedMonthRange = { min: null, max: null };
+let isInitialLoad = true;
 
 function queuePostPaintFrame() {
     if (pendingPostPaintFrame !== null) {
@@ -90,9 +91,32 @@ function queuePostPaintFrame() {
             return;
         }
         const args = latestPostPaintArgs;
-        renderLabels(args.cal, args.byDate, args.state, args.currencySymbols);
-        applyCurrencyColors(d3, args.state, args.byDate);
-        applyBevelGlass(d3);
+
+        if (isInitialLoad) {
+            // Frame 1: applyCurrencyColors (most visual impact — colors the cells)
+            applyCurrencyColors(d3, args.state, args.byDate);
+
+            // Frame 2: applyBevelGlass (SVG filter injection)
+            scheduler(() => {
+                if (!latestPostPaintArgs || !d3) {
+                    return;
+                }
+                applyBevelGlass(d3);
+
+                // Frame 3: renderLabels (text content — least visually jarring)
+                scheduler(() => {
+                    if (!latestPostPaintArgs || !d3) {
+                        return;
+                    }
+                    renderLabels(args.cal, args.byDate, args.state, args.currencySymbols);
+                });
+            });
+        } else {
+            // Synchronous update for month navigation to prevent flickering
+            applyCurrencyColors(d3, args.state, args.byDate);
+            applyBevelGlass(d3);
+            renderLabels(args.cal, args.byDate, args.state, args.currencySymbols);
+        }
     });
 }
 
@@ -1094,6 +1118,19 @@ export async function initCalendar() {
                 activate();
             }
         }
+
+        // Trigger entrance animation
+        if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+            window.requestAnimationFrame(() => {
+                const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+                if (wrapper) {
+                    wrapper.classList.add('calendar-ready');
+                }
+                isInitialLoad = false;
+            });
+        } else {
+            isInitialLoad = false;
+        }
     } catch (error) {
         logger.error('Error initializing calendar:', error);
         logger.log(error);
@@ -1212,6 +1249,20 @@ export function autoInitCalendar() {
         });
     }
 }
+
+export const __testables = {
+    get isInitialLoad() {
+        return isInitialLoad;
+    },
+    set isInitialLoad(value) {
+        isInitialLoad = value;
+    },
+    resetInitialLoadState: () => {
+        isInitialLoad = true;
+    },
+    queuePostPaintFrame,
+    schedulePostPaintUpdates,
+};
 
 // Auto-initialize the calendar
 autoInitCalendar();

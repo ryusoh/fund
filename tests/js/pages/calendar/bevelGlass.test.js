@@ -321,14 +321,14 @@ describe('bevelGlassPlugin', () => {
             expect(light.getAttribute('elevation')).toBe('62');
         });
 
-        it('CSS references the cell bevel filter on .ch-subdomain-bg', () => {
+        it('CSS references the cell bevel filter on .bevel-ready .ch-subdomain-bg', () => {
             const fs = require('fs');
             const path = require('path');
             const calCss = fs.readFileSync(
                 path.resolve(process.cwd(), 'css/calendar.css'),
                 'utf-8'
             );
-            const bgBlock = calCss.match(/\.ch-subdomain-bg\s*\{([^}]+)\}/);
+            const bgBlock = calCss.match(/\.bevel-ready\s+\.ch-subdomain-bg\s*\{([^}]+)\}/);
             expect(bgBlock).not.toBeNull();
             expect(bgBlock[1]).toMatch(/url\(#bgl-cell-bevel\)/);
         });

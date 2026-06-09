@@ -205,6 +205,10 @@ export function applyBevelGlass(d3Instance, selector) {
             this.setAttribute('stroke-width', '2');
         }
     });
+
+    if (heatmapEl && heatmapEl.classList) {
+        heatmapEl.classList.add('bevel-ready');
+    }
 }
 
 // No-ops: strokes live on the cell rects — they move/die with the cells.
