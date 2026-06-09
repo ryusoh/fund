@@ -15,18 +15,25 @@ function toggleCenterPersistence(chart) {
     const tableElement = document.querySelector('table');
     const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
     const footerWrapperElement = document.querySelector('.footer-wrapper');
+    const contentBlock = document.querySelector('.content-block');
 
     isTablePersisting = !isTablePersisting;
     chart.showLogos = isTablePersisting;
     chart.update();
 
     if (isTablePersisting) {
+        if (contentBlock) {
+            contentBlock.classList.remove('hidden');
+        }
         tableElement.classList.remove('hidden');
         allDataRows.forEach((row) => row.classList.remove('hidden'));
         if (footerWrapperElement) {
             footerWrapperElement.classList.remove('hidden');
         }
     } else {
+        if (contentBlock) {
+            contentBlock.classList.add('hidden');
+        }
         tableElement.classList.add('hidden');
         allDataRows.forEach((row) => row.classList.add('hidden'));
         if (footerWrapperElement) {
@@ -159,6 +166,7 @@ export function updatePieChart(data) {
                     const tableElement = document.querySelector('table');
                     const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
                     const footerWrapperElement = document.querySelector('.footer-wrapper');
+                    const contentBlock = document.querySelector('.content-block');
 
                     const mouseX = event.x;
                     const mouseY = event.y;
@@ -239,11 +247,17 @@ export function updatePieChart(data) {
                     chart.update();
 
                     if (tableShouldBeVisible) {
+                        if (contentBlock) {
+                            contentBlock.classList.remove('hidden');
+                        }
                         tableElement.classList.remove('hidden');
                         if (footerWrapperElement) {
                             footerWrapperElement.classList.remove('hidden');
                         }
                     } else {
+                        if (contentBlock) {
+                            contentBlock.classList.add('hidden');
+                        }
                         tableElement.classList.add('hidden');
                         allDataRows.forEach((row) => row.classList.add('hidden'));
                         if (footerWrapperElement) {

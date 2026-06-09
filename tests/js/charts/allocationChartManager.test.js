@@ -62,11 +62,13 @@ describe('chartManager', () => {
 
         document.body.innerHTML = `
         <canvas id="fundPieChart"></canvas>
-        <table><tbody>
-            <tr data-ticker="AAPL"><td>AAPL</td></tr>
-            <tr data-ticker="GOOG"><td>GOOG</td></tr>
-        </tbody></table>
-        <div class="footer-wrapper"></div>
+        <div class="content-block hidden">
+            <table><tbody>
+                <tr data-ticker="AAPL"><td>AAPL</td></tr>
+                <tr data-ticker="GOOG"><td>GOOG</td></tr>
+            </tbody></table>
+            <div class="footer-wrapper"></div>
+        </div>
     `;
         data = {
             labels: ['AAPL', 'GOOG'],
@@ -115,6 +117,39 @@ describe('chartManager', () => {
 
             chartManager.triggerCenterToggle();
             expect(table.classList.contains('hidden')).toBe(true);
+        });
+
+        it('should toggle content-block hidden class on triggerCenterToggle', () => {
+            chartManager.updatePieChart(data);
+            const contentBlock = document.querySelector('.content-block');
+
+            // Ensure it starts hidden
+            contentBlock.classList.add('hidden');
+
+            chartManager.triggerCenterToggle();
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            chartManager.triggerCenterToggle();
+            expect(contentBlock.classList.contains('hidden')).toBe(true);
+        });
+
+        it('onHover: should hide/show content-block dynamically on slice hover', () => {
+            chartManager.updatePieChart(data);
+            const contentBlock = document.querySelector('.content-block');
+            const event = { x: 200, y: 200 };
+            const activeElements = [{ index: 0 }];
+
+            // Ensure starts hidden
+            contentBlock.classList.add('hidden');
+
+            // Hover on slice
+            chartOptions.onHover(event, activeElements, mockChartInstance);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // Hover off
+            const outsideEvent = { x: 50, y: 50 };
+            chartOptions.onHover(outsideEvent, [], mockChartInstance);
+            expect(contentBlock.classList.contains('hidden')).toBe(true);
         });
 
         it('onClick: should toggle table persistence when clicking chart center', () => {

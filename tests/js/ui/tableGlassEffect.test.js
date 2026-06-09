@@ -588,6 +588,10 @@ describe('TableGlassEffect', () => {
                 tbodyBottom: 'u_bottom',
                 tbodyLeft: 'u_left',
                 tbodyWidth: 'u_width',
+                oilBoostMultiplier: 'u_oil_boost',
+                oilBlueMixFactor: 'u_oil_blue',
+                spotlightAlpha: 'u_spotlight_alpha',
+                pointerVelocity: 'u_velocity',
             };
 
             effect.state.pointer = { x: 0, y: -0.375 };
@@ -1023,6 +1027,46 @@ describe('TableGlassEffect', () => {
             expect(onHoverRowMock).toHaveBeenCalledWith(null);
 
             effect.dispose();
+        });
+
+        it('should style WebGL canvas with display: block and z-index: 0 to prevent iOS Safari descender bar bugs', () => {
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            // Mock getContext('webgl') to return a minimal valid WebGL context so initialization succeeds and canvas is appended
+            HTMLCanvasElement.prototype.getContext = jest.fn(function (type, attrs) {
+                if (type === 'webgl') {
+                    return {
+                        createShader: jest.fn(() => ({})),
+                        shaderSource: jest.fn(),
+                        compileShader: jest.fn(),
+                        getShaderParameter: jest.fn(() => true),
+                        createProgram: jest.fn(() => ({})),
+                        attachShader: jest.fn(),
+                        linkProgram: jest.fn(),
+                        getProgramParameter: jest.fn(() => true),
+                        createBuffer: jest.fn(() => ({})),
+                        bindBuffer: jest.fn(),
+                        bufferData: jest.fn(),
+                        getAttribLocation: jest.fn(() => 0),
+                        enableVertexAttribArray: jest.fn(),
+                        vertexAttribPointer: jest.fn(),
+                        getUniformLocation: jest.fn(() => ({})),
+                        enable: jest.fn(),
+                        blendFunc: jest.fn(),
+                        viewport: jest.fn(),
+                    };
+                }
+                // Call original mock for 2D context
+                return originalGetContext.call(this, type, attrs);
+            });
+
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const webglCanvas = container.querySelector('.table-glass-webgl');
+            expect(webglCanvas).toBeTruthy();
+            expect(webglCanvas.style.display).toBe('block');
+            expect(webglCanvas.style.zIndex).toBe('0');
+            effect.dispose();
+
+            HTMLCanvasElement.prototype.getContext = originalGetContext;
         });
     });
 });
