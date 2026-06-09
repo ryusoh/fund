@@ -16,6 +16,7 @@ function createMockCtx() {
         translate: jest.fn(),
         scale: jest.fn(),
         clip: jest.fn(),
+        fillRect: jest.fn(),
         createRadialGradient: jest.fn(gradient),
         createLinearGradient: jest.fn(gradient),
         filter: '',
@@ -158,6 +159,46 @@ describe('glass3dPlugin', () => {
         expect(maxBlur).toBeGreaterThan(minBlur);
         expect(minBlur).toBeLessThan(20); // contact shadow should be tight
         expect(maxBlur).toBeGreaterThanOrEqual(20); // ambient shadow should be soft
+    });
+
+    it('should apply Beer-Lambert gradient overlay on each arc slice', () => {
+        // Track linear gradients created during afterDatasetsDraw
+        const gradientsCreated = [];
+        const gradientStub = () => {
+            const stops = [];
+            const g = {
+                addColorStop: jest.fn((offset, color) => stops.push({ offset, color })),
+                _stops: stops,
+            };
+            gradientsCreated.push(g);
+            return g;
+        };
+        ctx.createLinearGradient = jest.fn(gradientStub);
+        ctx.createRadialGradient = jest.fn(gradientStub);
+
+        // beforeDatasetsDraw must run first to init state
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+
+        // Reset tracking after beforeDatasetsDraw
+        gradientsCreated.length = 0;
+        ctx.createLinearGradient.mockClear();
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Should create at least one linear gradient per arc slice for Beer-Lambert overlay
+        // We have 2 arcs, so expect at least 2 linear gradients used for the overlay
+        const linearGradientCalls = ctx.createLinearGradient.mock.calls;
+        expect(linearGradientCalls.length).toBeGreaterThanOrEqual(2);
+
+        // Each Beer-Lambert gradient should have stops that include both
+        // a lighter (white/transparent) and darker (black/transparent) stop
+        const beerLambertGradients = gradientsCreated.filter(
+            (g) =>
+                g._stops.length >= 2 &&
+                g._stops.some((s) => s.color.includes('255, 255, 255')) &&
+                g._stops.some((s) => s.color.includes('0, 0, 0'))
+        );
+        expect(beerLambertGradients.length).toBeGreaterThanOrEqual(2);
     });
 
     it('should parse hex colors correctly for top highlights', () => {

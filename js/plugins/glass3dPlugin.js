@@ -617,6 +617,49 @@ function drawEnergyParticles(
     ctx.restore();
 }
 
+function drawBeerLambertOverlay(ctx, meta, options) {
+    const lightVec = computeLightVector(options);
+    const lightAngle = Math.atan2(lightVec.y, lightVec.x);
+    const highlightOpacity = 0.18;
+    const shadowOpacity = 0.14;
+
+    ctx.save();
+    meta.data.forEach((arc) => {
+        const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arc.getProps(
+            ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
+            true
+        );
+
+        // Gradient runs from the light direction toward the opposite side
+        const gradX1 = x + Math.cos(lightAngle) * outerRadius;
+        const gradY1 = y + Math.sin(lightAngle) * outerRadius;
+        const gradX2 = x - Math.cos(lightAngle) * outerRadius;
+        const gradY2 = y - Math.sin(lightAngle) * outerRadius;
+
+        const gradient = ctx.createLinearGradient(gradX1, gradY1, gradX2, gradY2);
+        // Light-facing side: slight white wash (less absorption path)
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${highlightOpacity})`);
+        // Middle: neutral
+        gradient.addColorStop(0.45, 'rgba(0, 0, 0, 0)');
+        // Shadow side: deeper/darker (longer absorption path through colored glass)
+        gradient.addColorStop(1, `rgba(0, 0, 0, ${shadowOpacity})`);
+
+        // Clip to this specific arc slice
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.arc(x, y, outerRadius, startAngle, endAngle);
+        ctx.arc(x, y, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.clip();
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x - outerRadius, y - outerRadius, outerRadius * 2, outerRadius * 2);
+        ctx.restore();
+    });
+    ctx.restore();
+}
+
 function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, options, state, squash) {
     const glow = options.ambientGlow || {};
     const innerOpacity = glow.innerOpacity ?? 0.2;
@@ -725,6 +768,7 @@ export const glass3dPlugin = {
             y: state.pointerSmoothed.y * state.maxOffset,
         };
 
+        drawBeerLambertOverlay(ctx, meta, options);
         drawAmbientGlow(
             ctx,
             centerX,
