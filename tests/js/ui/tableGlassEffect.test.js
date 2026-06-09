@@ -1029,7 +1029,7 @@ describe('TableGlassEffect', () => {
             effect.dispose();
         });
 
-        it('should style WebGL canvas with display: block and z-index: 0 to prevent iOS Safari descender bar bugs', () => {
+        it('should style WebGL canvas with display: block and z-index: 2 above sticky first-column', () => {
             const originalGetContext = HTMLCanvasElement.prototype.getContext;
             // Mock getContext('webgl') to return a minimal valid WebGL context so initialization succeeds and canvas is appended
             HTMLCanvasElement.prototype.getContext = jest.fn(function (type, attrs) {
@@ -1063,7 +1063,7 @@ describe('TableGlassEffect', () => {
             const webglCanvas = container.querySelector('.table-glass-webgl');
             expect(webglCanvas).toBeTruthy();
             expect(webglCanvas.style.display).toBe('block');
-            expect(webglCanvas.style.zIndex).toBe('0');
+            expect(webglCanvas.style.zIndex).toBe('2');
             effect.dispose();
 
             HTMLCanvasElement.prototype.getContext = originalGetContext;
@@ -1255,6 +1255,207 @@ describe('TableGlassEffect', () => {
 
             // The hoveredRowIndex should still be set
             expect(effect.state.hoveredRowIndex).not.toBe(-1);
+
+            effect.dispose();
+        });
+    });
+
+    describe('content-block hidden toggle lifecycle', () => {
+        let contentBlock;
+        let resizeCallbacks;
+
+        beforeEach(() => {
+            // Wrap container in a .content-block that starts hidden (mobile initial state)
+            contentBlock = document.createElement('div');
+            contentBlock.className = 'content-block hidden';
+            container.parentNode.insertBefore(contentBlock, container);
+            contentBlock.appendChild(container);
+
+            // Capture ResizeObserver callbacks so we can trigger them manually
+            resizeCallbacks = [];
+            global.ResizeObserver = class {
+                constructor(cb) {
+                    resizeCallbacks.push(cb);
+                }
+                observe() {}
+                disconnect() {}
+            };
+        });
+
+        let mutationCallbacks;
+
+        beforeEach(() => {
+            mutationCallbacks = [];
+            const OrigMO = global.MutationObserver;
+            global.MutationObserver = class {
+                constructor(cb) {
+                    mutationCallbacks.push(cb);
+                }
+                observe() {}
+                disconnect() {}
+            };
+            // Preserve original for other tests if needed
+            global._OrigMutationObserver = OrigMO;
+        });
+
+        afterEach(() => {
+            // Re-parent container back to body so outer afterEach cleanup works
+            if (contentBlock.contains(container)) {
+                document.body.appendChild(container);
+            }
+            if (contentBlock.parentNode) {
+                contentBlock.parentNode.removeChild(contentBlock);
+            }
+            if (global._OrigMutationObserver) {
+                global.MutationObserver = global._OrigMutationObserver;
+            }
+        });
+
+        function triggerResizeObservers() {
+            for (const cb of resizeCallbacks) {
+                cb();
+            }
+        }
+
+        function triggerMutationObservers() {
+            for (const cb of mutationCallbacks) {
+                cb();
+            }
+        }
+
+        it('should not clobber canvas dimensions when content-block is hidden', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // Canvas should still have usable state even though init resize was skipped
+            // (the guard prevents writing 0 dims while hidden)
+            expect(effect.canvas).toBeTruthy();
+
+            // Simulate ResizeObserver firing while still hidden
+            triggerResizeObservers();
+
+            // Width should not have been set to 0 — resize was skipped
+            // (In JSDOM clientWidth is 800 from our mock, but the guard should prevent
+            // any resize while hidden, preserving whatever state exists)
+            effect.dispose();
+        });
+
+        it('should restore canvas dimensions when content-block becomes visible', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // Remove hidden — simulates toggleCenterPersistence showing the table
+            contentBlock.classList.remove('hidden');
+
+            // MutationObserver fires after class change
+            triggerMutationObservers();
+
+            // Canvas should now have proper dimensions
+            expect(effect.width).toBeGreaterThanOrEqual(800);
+            expect(effect.height).toBeGreaterThan(0);
+
+            effect.dispose();
+        });
+
+        it('should survive full hide → show → hide → show cycle', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // First show
+            contentBlock.classList.remove('hidden');
+            triggerMutationObservers();
+            const showWidth = effect.width;
+            expect(showWidth).toBeGreaterThanOrEqual(800);
+
+            // First hide
+            contentBlock.classList.add('hidden');
+            triggerMutationObservers();
+            // Width should NOT have been reset to 0
+            expect(effect.width).toBe(showWidth);
+
+            // Second show
+            contentBlock.classList.remove('hidden');
+            triggerMutationObservers();
+            expect(effect.width).toBe(showWidth);
+            expect(effect.height).toBeGreaterThan(0);
+
+            effect.dispose();
+        });
+
+        it('should draw effects after content-block is shown on mobile', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            const drawSpy = jest.spyOn(effect, 'draw');
+
+            // Show the table
+            contentBlock.classList.remove('hidden');
+            triggerMutationObservers();
+
+            // Manually trigger the animation loop once
+            effect.update(Date.now());
+            effect.draw();
+
+            expect(drawSpy).toHaveBeenCalled();
+            // Canvas should have non-zero dimensions for drawing
+            expect(effect.width).toBeGreaterThan(0);
+            expect(effect.height).toBeGreaterThan(0);
+
+            drawSpy.mockRestore();
+            effect.dispose();
+        });
+
+        it('should recover via draw loop even without MutationObserver firing', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // Width is undefined because init resize was skipped
+            expect(effect.width).toBeUndefined();
+            expect(effect._needsResize).toBe(true);
+
+            // Show the table — but do NOT trigger MutationObservers
+            contentBlock.classList.remove('hidden');
+
+            // The draw loop itself should detect _needsResize and call resize()
+            effect.draw();
+
+            expect(effect._needsResize).toBe(false);
+            expect(effect.width).toBeGreaterThan(0);
+            expect(effect.height).toBeGreaterThan(0);
+
+            effect.dispose();
+        });
+
+        it('should not crash draw loop when dimensions are unset (hidden init)', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // resize was skipped, so width/height are unset
+            expect(effect.width).toBeUndefined();
+
+            // draw() must not throw — it should bail out gracefully
+            expect(() => effect.draw()).not.toThrow();
+
+            // createLinearGradient should NOT have been called with undefined dims
+            expect(effect.ctx.createLinearGradient).not.toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        it('should set canvas buffer dimensions and call 2D draw ops after deferred resize', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // Before show: resize was skipped, so width/height properties are unset
+            expect(effect.width).toBeUndefined();
+            expect(effect.height).toBeUndefined();
+
+            // Show the table
+            contentBlock.classList.remove('hidden');
+
+            // Trigger deferred resize via draw loop
+            effect.draw();
+
+            // Canvas buffer dimensions must be set (width * dpr)
+            expect(effect.canvas.width).toBeGreaterThan(0);
+            expect(effect.canvas.height).toBeGreaterThan(0);
+
+            // 2D context should have received drawing calls
+            // (clearRect, fill, fillRect, etc.)
+            expect(effect.ctx.clearRect).toHaveBeenCalled();
+            expect(effect.ctx.fill).toHaveBeenCalled();
 
             effect.dispose();
         });

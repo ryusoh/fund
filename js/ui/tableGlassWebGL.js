@@ -279,9 +279,9 @@ export class TableGlassWebGL {
         this.canvas.style.left = '0';
         this.canvas.style.width = '100%';
         this.canvas.style.display = 'block';
-        // Ensure it sits above the 2D canvas but behind the text.
-        // The 2D canvas is z-index -1. We can be z-index 0, but the parent container holds the text.
-        this.canvas.style.zIndex = '0';
+        // Above 2D canvas (z-index: -1) and sticky first-column (z-index: 1).
+        // pointer-events: none ensures it doesn't block interaction.
+        this.canvas.style.zIndex = '2';
 
         // Handle sticky positioning
         this.syncPositionStyle();

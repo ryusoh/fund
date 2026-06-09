@@ -131,6 +131,27 @@ export class TableGlassEffect {
         this.resizeObserver = new ResizeObserver(() => this.resize());
         this.resizeObserver.observe(target);
 
+        // Also observe the parent .content-block which gets display:none toggled.
+        // ResizeObserver on the table alone misses re-show because the table's
+        // intrinsic size doesn't change — only its parent's display does.
+        const contentBlock = this.container.closest('.content-block');
+        if (contentBlock) {
+            this.resizeObserver.observe(contentBlock);
+
+            // MutationObserver catches class attribute changes (hidden toggle)
+            // that ResizeObserver misses on display:none → visible transitions.
+            // eslint-disable-next-line no-undef
+            this._contentBlockObserver = new MutationObserver(() => {
+                if (!contentBlock.classList.contains('hidden')) {
+                    this.resize();
+                }
+            });
+            this._contentBlockObserver.observe(contentBlock, {
+                attributes: true,
+                attributeFilter: ['class'],
+            });
+        }
+
         // Initialize WebGL overlay
         this.webglLayer = new TableGlassWebGL(this);
 
@@ -229,6 +250,15 @@ export class TableGlassEffect {
             return;
         }
 
+        // Skip resize when container is hidden (display:none via .hidden class).
+        // Writing zero dimensions to the canvas would clobber it for the next re-show.
+        const contentBlock = this.container.closest('.content-block');
+        if (contentBlock && contentBlock.classList.contains('hidden')) {
+            this._needsResize = true;
+            return;
+        }
+        this._needsResize = false;
+
         // Re-check header height on resize if needed
         let headerHeight = 0;
         if (this.options.excludeHeader) {
@@ -254,6 +284,10 @@ export class TableGlassEffect {
                 if (this.canvas !== this.container.firstChild) {
                     this.container.insertBefore(this.canvas, this.container.firstChild);
                 }
+                // Keep WebGL canvas right after the 2D canvas so sticky works
+                if (this.webglLayer?.canvas) {
+                    this.container.insertBefore(this.webglLayer.canvas, this.canvas.nextSibling);
+                }
             } else {
                 this.canvas.style.position = 'absolute';
                 this.canvas.style.marginBottom = '';
@@ -275,6 +309,12 @@ export class TableGlassEffect {
         this.height = Math.max(1, visibleHeight);
         this.canvas.style.height = `${this.height}px`;
 
+        // Handle high DPI displays (must be set before WebGL resize)
+        this.dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this.width * this.dpr;
+        this.canvas.height = this.height * this.dpr;
+        this.ctx.scale(this.dpr, this.dpr);
+
         if (this.webglLayer) {
             this.webglLayer.resize(this.width, this.height, this.dpr);
         }
@@ -283,12 +323,6 @@ export class TableGlassEffect {
         if (this._scrollable) {
             this.canvas.style.marginBottom = `-${this.height}px`;
         }
-
-        // Handle high DPI displays
-        this.dpr = window.devicePixelRatio || 1;
-        this.canvas.width = this.width * this.dpr;
-        this.canvas.height = this.height * this.dpr;
-        this.ctx.scale(this.dpr, this.dpr);
 
         // Track rows for hover effect
         this.rows = [];
@@ -463,6 +497,20 @@ export class TableGlassEffect {
     }
 
     draw() {
+        // Deferred resize: content-block was hidden during init/resize, now visible
+        if (this._needsResize) {
+            const cb = this.container.closest('.content-block');
+            if (!cb || !cb.classList.contains('hidden')) {
+                this._needsResize = false;
+                this.resize();
+            }
+        }
+
+        // Nothing to draw until resize() has set dimensions
+        if (!this.width || !this.height) {
+            return;
+        }
+
         this.ctx.clearRect(0, 0, this.width, this.height);
 
         const radius = this.options.excludeHeader ? 0 : 8; // Border radius
@@ -879,6 +927,9 @@ export class TableGlassEffect {
         }
         if (this.mutationObserver) {
             this.mutationObserver.disconnect();
+        }
+        if (this._contentBlockObserver) {
+            this._contentBlockObserver.disconnect();
         }
         if (this._mouseMoveHandler) {
             this.container.removeEventListener('mousemove', this._mouseMoveHandler);
