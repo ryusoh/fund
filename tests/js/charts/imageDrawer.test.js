@@ -516,17 +516,24 @@ describe('drawImage', () => {
         expect(compositeOps).toContain('source-atop');
     });
 
-    it('should amplify glass tint and add caustic glow on hover', () => {
-        // Draw with hover = true
+    it('should amplify glass tint on hover', () => {
+        // Track globalAlpha values during hover draw
+        const alphaValues = [];
+        Object.defineProperty(offscreenCtx, 'globalAlpha', {
+            get() {
+                return this._ga ?? 1;
+            },
+            set(v) {
+                this._ga = v;
+                alphaValues.push(v);
+            },
+            configurable: true,
+        });
+
         drawImage(ctx, arc, img, logoInfo, null, true);
 
-        // Hover caustic glow uses createRadialGradient on offscreen ctx
-        expect(offscreenCtx.createRadialGradient).toHaveBeenCalled();
-
-        // Should call fillRect at least twice (tint + caustic glow)
-        // (fillRect is also called for other paths, but hover adds extra)
-        const fillRectCalls = offscreenCtx.fillRect.mock.calls.length;
-        expect(fillRectCalls).toBeGreaterThanOrEqual(2);
+        // Hover tint alpha should be 0.3 (stronger than non-hover 0.15)
+        expect(alphaValues).toContain(0.3);
     });
 
     it('should trigger line 68 - add PI when defaultRotation < -PI/2', () => {

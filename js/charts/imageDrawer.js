@@ -228,37 +228,15 @@ export function drawImage(ctx, arc, img, logoInfo, magneticOffset, isHovered) {
             offCtx.restore();
         }
 
-        // Glass refraction tint: blue color wash simulating the icon viewed through
-        // curved tinted glass. Amplified on hover to simulate focused caustic light.
-        // Uses source-atop to only tint existing logo pixels, preserving transparency.
+        // Glass refraction tint: subtle blue color wash on logo pixels only.
+        // Uses source-atop so only existing (non-transparent) pixels are tinted.
         if (logoInfo.glassRefraction !== false) {
-            const tintAlpha = isHovered ? 0.35 : 0.18;
             offCtx.save();
             offCtx.globalCompositeOperation = 'source-atop';
-            offCtx.globalAlpha = tintAlpha;
-            offCtx.fillStyle = 'rgba(140, 200, 255, 1)';
+            offCtx.globalAlpha = isHovered ? 0.3 : 0.15;
+            offCtx.fillStyle = 'rgba(50, 100, 180, 1)';
             offCtx.fillRect(0, 0, drawW, drawH);
             offCtx.restore();
-
-            // Hover caustic glow: bright center spot simulating light focused by glass curvature
-            if (isHovered) {
-                offCtx.save();
-                offCtx.globalCompositeOperation = 'source-atop';
-                const glow = offCtx.createRadialGradient(
-                    drawW / 2,
-                    drawH / 2,
-                    0,
-                    drawW / 2,
-                    drawH / 2,
-                    Math.max(drawW, drawH) / 2
-                );
-                glow.addColorStop(0, 'rgba(200, 230, 255, 0.3)');
-                glow.addColorStop(0.6, 'rgba(160, 210, 255, 0.1)');
-                glow.addColorStop(1, 'rgba(140, 200, 255, 0)');
-                offCtx.fillStyle = glow;
-                offCtx.fillRect(0, 0, drawW, drawH);
-                offCtx.restore();
-            }
         }
 
         offCtx.restore();

@@ -167,12 +167,6 @@ export function updatePieChart(data) {
 
                     chart._cursorPos = { x: mouseX, y: mouseY };
 
-                    // If table is persisting due to a click (on desktop), hover logic should not alter table visibility
-                    if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
-                        chart.update();
-                        return;
-                    }
-
                     let isOverCenter = false;
                     chart.hoveredSliceIndex = undefined;
 
@@ -203,6 +197,17 @@ export function updatePieChart(data) {
                         chart.glassPointerTarget = { x: 0, y: 0 };
                     }
 
+                    // Set hoveredSliceIndex for visual effects (logo tint, etc.)
+                    if (!isOverCenter && activeElements.length > 0) {
+                        chart.hoveredSliceIndex = activeElements[0].index;
+                    }
+
+                    // If table is persisting due to a click (on desktop), skip table visibility logic
+                    if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                        chart.update();
+                        return;
+                    }
+
                     let tableShouldBeVisible = false;
                     let specificRowToShow = null;
 
@@ -215,8 +220,6 @@ export function updatePieChart(data) {
                     } else if (activeElements.length > 0 && chart.data.labels?.length > 0) {
                         const activeSegment = activeElements[0];
                         const dataIndex = activeSegment.index;
-
-                        chart.hoveredSliceIndex = dataIndex;
 
                         if (dataIndex >= 0 && dataIndex < chart.data.labels.length) {
                             const ticker = chart.data.labels[dataIndex];
