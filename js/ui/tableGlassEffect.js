@@ -338,6 +338,32 @@ export class TableGlassEffect {
         this.state.pointerSmoothed.y +=
             (this.state.pointer.y - this.state.pointerSmoothed.y) * damping;
 
+        // Calculate pointer velocity (only if mouse is actively hovering and not leave/reset)
+        let instantVelocity = 0;
+        if (
+            this.state.hoveredRowIndex !== -1 &&
+            this.state.lastPointer &&
+            this.state.pointer.x !== -10
+        ) {
+            const dx = this.state.pointer.x - this.state.lastPointer.x;
+            const dy = this.state.pointer.y - this.state.lastPointer.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            instantVelocity = delta > 0 ? dist / delta : 0;
+        }
+
+        const velocityDamping = 0.1;
+        if (this.state.pointerVelocity === undefined) {
+            this.state.pointerVelocity = 0;
+        }
+        this.state.pointerVelocity +=
+            (instantVelocity - this.state.pointerVelocity) * velocityDamping;
+
+        if (!this.state.lastPointer) {
+            this.state.lastPointer = { x: 0, y: 0 };
+        }
+        this.state.lastPointer.x = this.state.pointer.x;
+        this.state.lastPointer.y = this.state.pointer.y;
+
         // Update particles
         const particles = this.state.energyParticles;
         for (let i = 0; i < particles.length; i++) {

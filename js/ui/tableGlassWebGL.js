@@ -21,6 +21,7 @@ uniform float u_tbodyTop;
 uniform float u_tbodyBottom;
 uniform float u_tbodyLeft;
 uniform float u_tbodyWidth;
+uniform float u_pointerVelocity;
 
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
@@ -52,18 +53,20 @@ float snoise(vec2 v) {
 }
 
 // Domain-warped FBM for organic oil-film thickness patterns
-float filmNoise(vec2 p) {
+float filmNoise(vec2 p, float turbulence) {
     float f = 0.0;
     // Base turbulence
     f += 0.50 * snoise(p);
     f += 0.25 * snoise(p * 2.01);
-    
+    f += 0.125 * snoise(p * 4.03);
+
     // Domain warp: feed noise back as coordinate offset for organic swirls
     vec2 warp = vec2(
         snoise(p + vec2(1.7, 9.2)),
         snoise(p + vec2(8.3, 2.8))
     );
-    f += 0.6 * snoise(p + warp * 1.5);
+    // Turbulence heavily amplifies the swirl offset
+    f += (0.6 + turbulence * 0.4) * snoise(p + warp * (1.5 + turbulence * 2.0));
     return f; // roughly [-1, 1]
 }
 
@@ -117,7 +120,7 @@ vec3 thinFilmColor(float opd) {
     xyz /= max(ySum, 0.001);
     xyz *= 2.8; // Brightness boost
     vec3 rgb = xyzToSRGB(xyz);
-    
+
     // Reinhard tonemap and peak expansion
     rgb = rgb / (rgb + vec3(1.0));
     rgb *= 1.8;
@@ -131,14 +134,14 @@ void main() {
     // Calculate logical pixel coordinates (top-down, matching DOM)
     float x = v_uv.x * u_resolution.x;
     float y = (1.0 - v_uv.y) * u_resolution.y;
-    
+
     // Apply a small 1px inset to perfectly hug the CSS border
     float inset = 1.0;
     float tbodyTop = u_tbodyTop + inset;
     float tbodyBottom = u_tbodyBottom - inset;
     float tbodyLeft = u_tbodyLeft + inset;
     float tbodyWidth = u_tbodyWidth - (inset * 2.0);
-    
+
     // HARD CLIPPING: The user strictly requested the effect does not bleed OUTSIDE the table borders.
     // If a pixel is outside the table geometry, discard it immediately.
     if (x < tbodyLeft || x > tbodyLeft + tbodyWidth || y < tbodyTop || y > tbodyBottom) {
@@ -151,93 +154,99 @@ void main() {
     float rightDist = abs(x - (tbodyLeft + tbodyWidth));
     float topDist = abs(y - tbodyTop);
     float bottomDist = abs(y - tbodyBottom);
-    
+
     // Distance to the absolute closest edge
     float minRimDist = min(min(leftDist, rightDist), min(topDist, bottomDist));
-    
+
     // The inward rim effect area (thickness of the glowing rim zone)
     float rimThickness = 30.0;
-    
+
     // Optimization & Clipping: only render if we are near the rim
     if (minRimDist > rimThickness) {
         gl_FragColor = vec4(0.0);
         return;
     }
-    
+
     // Gaussian falloff for the mouse spotlight
     float distToPointer = distance(vec2(x, y), u_pointer);
-    
+
     // Smooth spotlight that falls off completely at u_spotlightRadius
     float spotlightIntensity = max(0.0, 1.0 - (distToPointer / u_spotlightRadius));
     spotlightIntensity = pow(spotlightIntensity, 2.0);
-    
-    // Ambient base intensity so the entire border is clearly visible at all times
-    float ambientIntensity = 0.85;
-    float totalIntensity = min(1.0, ambientIntensity + spotlightIntensity * 0.5);
-    
+
+    // Ambient base intensity for the entire border
+    float ambientIntensity = 0.35;
+    float totalIntensity = min(1.0, ambientIntensity + spotlightIntensity * 0.65);
+
     // Alpha falloff: max alpha (1.0) exactly on the border (minRimDist == 0),
     // fading out smoothly to 0.0 as we move away from the border.
     // We use a power curve so it stays bright near the core and drops off softly.
     float rimAlpha = pow(1.0 - (minRimDist / rimThickness), 2.5);
-    
+
+    // Dynamic shear/warp based on pointer velocity and proximity
+    float velocityDisruption = u_pointerVelocity * spotlightIntensity;
+
     // Calculate the physical Thin Film color
-    // Use physical coordinates + time to drive the simplex noise
+    // Use physical coordinates + time to drive the simplex noise, warped by velocity disruption
     vec2 noiseUv = vec2(x, y) * 0.005 - vec2(0.0, u_time * 0.2);
-    
+    noiseUv += vec2(velocityDisruption * 0.05, -velocityDisruption * 0.03);
+
     // Distort the film thickness where the mouse is (mouse wake effect)
     float wake = spotlightIntensity * 0.5;
-    
-    float noiseVal = filmNoise(noiseUv);
+
+    // Local turbulence driven by cursor speed
+    float localTurbulence = velocityDisruption * 1.5;
+    float noiseVal = filmNoise(noiseUv, localTurbulence);
     float noiseNorm = noiseVal * 0.5 + 0.5;
-    
+
     // Spotlight influence shifts the film thickness (like cursor proximity in thinFilmPlugin)
+    // Plus, rapid movement causes a suction/chromatic dispersion shift
+    float chromaticDispersionShift = velocityDisruption * 200.0;
     float pointerInfluence = wake;
-    
+
     // EXACT Oil on glass physics parameters from thinFilmPlugin.js
     float baseThickness = 300.0; // nm
     float range = 600.0;
-    float thickness = baseThickness + range * (noiseNorm + pointerInfluence);
+    float thickness = baseThickness + chromaticDispersionShift + range * (noiseNorm + pointerInfluence);
     thickness = max(150.0, thickness);
-    
+
     float refractiveIndex = 1.4;
-    
+
     // Simulate optical curvature at the rim
     // 1.0 right on the edge, 0.0 towards the inside
     float r_norm = 1.0 - (minRimDist / rimThickness);
     float cosTheta = mix(0.65, 1.0, 1.0 - r_norm);
-    
+
     // Snell refraction
     float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
     float cosThetaT = sqrt(max(0.0, 1.0 - (sinTheta * sinTheta) / (refractiveIndex * refractiveIndex)));
-    
+
     // Optical path difference
     float opd = 2.0 * refractiveIndex * thickness * cosThetaT;
-    
+
     // Generate vivid rainbow iridescence (Oil Pattern)
     vec3 filmColor = thinFilmColor(opd);
-    
-    // Spotlight Beam Color (subtle cool white)
-    vec3 beamCoreColor = vec3(0.97, 0.97, 1.0);
-    vec3 beamEdgeColor = vec3(0.75, 0.82, 1.0);
-    vec3 beamColor = mix(beamCoreColor, beamEdgeColor, 1.0 - totalIntensity);
-    
-    // Standard intensities using total composite lighting (Ambient + Mouse)
-    float beamLight = totalIntensity * 0.8;
-    float beamGlow = totalIntensity * 0.4;
-    
+
     // Fresnel
     float schlick = pow(1.0 - cosTheta, 4.0);
     float fresnelMod = mix(0.5, 1.0, schlick);
-    float filmVisibility = beamLight * fresnelMod * 1.5; // Slight boost to ensure oil is visible
-    
-    // Combine beam glow + iridescence
-    vec3 color = beamColor * beamGlow * 0.5 
-               + beamColor * beamLight * 0.2 
-               + filmColor * filmVisibility;
-               
+
+    // Boost film visibility around spotlight core natively within the oil film itself (by WebGL)
+    float filmVisibility = totalIntensity * fresnelMod * 2.0 * (1.0 + spotlightIntensity * 1.2);
+
+    // Richer blue color for the WebGL oil film spotlight
+    vec3 glassBlue = vec3(0.2, 0.5, 1.0);
+
+    // Natively blend the thin film iridescence with the blue color under the spotlight
+    vec3 finalFilmColor = mix(filmColor, glassBlue, spotlightIntensity * 0.7);
+
+    // Combine iridescence natively (no separate white glowing layer)
+    vec3 color = finalFilmColor * filmVisibility;
+
+
     // The physical rim is permanently solid. Its opacity is strictly its distance falloff.
     float finalAlpha = rimAlpha;
-    
+
     // Output color directly. Additive blending (SRC_ALPHA, ONE) will multiply rgb by finalAlpha
     gl_FragColor = vec4(color, finalAlpha);
 }
@@ -349,6 +358,7 @@ export class TableGlassWebGL {
             tbodyBottom: gl.getUniformLocation(this.program, 'u_tbodyBottom'),
             tbodyLeft: gl.getUniformLocation(this.program, 'u_tbodyLeft'),
             tbodyWidth: gl.getUniformLocation(this.program, 'u_tbodyWidth'),
+            pointerVelocity: gl.getUniformLocation(this.program, 'u_pointerVelocity'),
         };
 
         // Blend mode for glowing effects
@@ -394,6 +404,7 @@ export class TableGlassWebGL {
             this.uniforms.spotlightRadius,
             options.rowHoverEffect.spotlightRadius || 300.0
         );
+        gl.uniform1f(this.uniforms.pointerVelocity, state.pointerVelocity || 0.0);
 
         const firstRow = rows[0];
         const lastRow = rows[rows.length - 1];
@@ -409,7 +420,7 @@ export class TableGlassWebGL {
         if (this.canvas && this.canvas.parentNode) {
             this.canvas.parentNode.removeChild(this.canvas);
         }
-        if (this.gl) {
+        if (this.gl && typeof this.gl.getExtension === 'function') {
             const ext = this.gl.getExtension('WEBGL_lose_context');
             if (ext) {
                 ext.loseContext();

@@ -1,3 +1,4 @@
+/* global HTMLCanvasElement */
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 
 describe('TableGlassEffect', () => {
@@ -67,18 +68,15 @@ describe('TableGlassEffect', () => {
             rect: jest.fn(),
         };
 
-        // eslint-disable-next-line no-undef
         Object.defineProperty(HTMLCanvasElement.prototype, 'clientWidth', {
             configurable: true,
             value: 800,
         });
-        // eslint-disable-next-line no-undef
         Object.defineProperty(HTMLCanvasElement.prototype, 'clientHeight', {
             configurable: true,
             value: 400,
         });
         // Mock canvas getBoundingClientRect to allow relative calc
-        // eslint-disable-next-line no-undef
         HTMLCanvasElement.prototype.getBoundingClientRect = jest.fn(() => ({
             width: 800,
             height: 400,
@@ -86,7 +84,6 @@ describe('TableGlassEffect', () => {
             left: 0,
         }));
 
-        // eslint-disable-next-line no-undef
         HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
         // Mock RAF
         originalRequestAnimationFrame = window.requestAnimationFrame;
@@ -733,6 +730,155 @@ describe('TableGlassEffect', () => {
                 effect.handleMouseMove({ clientX: 400, clientY: 100 });
                 expect(effect.state.hoveredRowIndex).toBe(-1);
             });
+
+            effect.dispose();
+        });
+
+        it('should track and smooth pointerVelocity on mouse move', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+
+            // Initial velocity should be 0 or undefined (will default to 0 on first update)
+            expect(effect.state.pointerVelocity).toBeUndefined();
+
+            // Mock lastPointer and set hoveredRowIndex to simulate hover
+            effect.state.hoveredRowIndex = 0;
+            effect.state.lastPointer = { x: 0, y: 0 };
+
+            // Move pointer
+            effect.state.pointer = { x: 0.5, y: 0.5 };
+
+            // Run update to set lastTime = 1000
+            effect.update(1000);
+
+            // Move pointer more
+            effect.state.pointer = { x: 1.0, y: 1.0 };
+
+            // Run update with delta of 0.1s (1100ms)
+            effect.update(1100);
+
+            // Smooth velocity should become non-zero
+            expect(effect.state.pointerVelocity).toBeGreaterThan(0);
+
+            effect.dispose();
+        });
+
+        it('should pass u_pointerVelocity uniform to WebGL', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            const mockUniform1f = jest.fn();
+            effect.webglLayer.gl = {
+                clearColor: jest.fn(),
+                clear: jest.fn(),
+                useProgram: jest.fn(),
+                uniform2f: jest.fn(),
+                uniform1f: mockUniform1f,
+                drawArrays: jest.fn(),
+                COLOR_BUFFER_BIT: 16640,
+                TRIANGLES: 4,
+            };
+            effect.webglLayer.program = {};
+            effect.webglLayer.uniforms = {
+                resolution: 'u_res',
+                pointer: 'u_ptr',
+                time: 'u_time',
+                spotlightRadius: 'u_rad',
+                tbodyTop: 'u_top',
+                tbodyBottom: 'u_bottom',
+                tbodyLeft: 'u_left',
+                tbodyWidth: 'u_width',
+                pointerVelocity: 'u_vel',
+            };
+
+            effect.state.pointerVelocity = 3.5;
+            effect.state.hoveredRowIndex = 0;
+
+            effect.draw();
+
+            expect(mockUniform1f).toHaveBeenCalledWith('u_vel', 3.5);
+            effect.dispose();
+        });
+
+        it('should compile fragment shader with native iridescence boost and no separate spotlight beam layer', () => {
+            const mockCreateShader = jest.fn(() => ({}));
+            const mockShaderSource = jest.fn();
+            const mockCompileShader = jest.fn();
+            const mockGetShaderParameter = jest.fn(() => true);
+            const mockCreateProgram = jest.fn(() => ({}));
+            const mockGetProgramParameter = jest.fn(() => true);
+
+            const glMock = {
+                createShader: mockCreateShader,
+                shaderSource: mockShaderSource,
+                compileShader: mockCompileShader,
+                getShaderParameter: mockGetShaderParameter,
+                createProgram: mockCreateProgram,
+                attachShader: jest.fn(),
+                linkProgram: jest.fn(),
+                getProgramParameter: mockGetProgramParameter,
+                createBuffer: jest.fn(() => ({})),
+                bindBuffer: jest.fn(),
+                bufferData: jest.fn(),
+                getAttribLocation: jest.fn(() => 0),
+                enableVertexAttribArray: jest.fn(),
+                vertexAttribPointer: jest.fn(),
+                getUniformLocation: jest.fn(() => ({})),
+                enable: jest.fn(),
+                blendFunc: jest.fn(),
+                viewport: jest.fn(),
+            };
+
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = jest.fn((ctxType) => {
+                if (ctxType === 'webgl') {
+                    return glMock;
+                }
+                return originalGetContext(ctxType);
+            });
+
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            HTMLCanvasElement.prototype.getContext = originalGetContext;
+
+            // Find the fragment shader source code passed to gl.shaderSource
+            let fragmentShaderSource = '';
+            for (let i = 0; i < mockShaderSource.mock.calls.length; i++) {
+                const call = mockShaderSource.mock.calls[i];
+                const src = call[1];
+                if (src.includes('void main()') && src.includes('precision highp float;')) {
+                    fragmentShaderSource = src;
+                    break;
+                }
+            }
+
+            expect(fragmentShaderSource).toBeTruthy();
+
+            // The fragment shader should not contain separate spotlight beam/glow variables
+            expect(fragmentShaderSource).not.toMatch(/beamLight/);
+            expect(fragmentShaderSource).not.toMatch(/beamGlow/);
+            expect(fragmentShaderSource).not.toMatch(/beamColor/);
+
+            // Verify that fragmentShaderSource does not contain "specularHighlight" in color calculation
+            expect(fragmentShaderSource).not.toMatch(/\+\s*specularHighlight/);
+
+            // Verify that filmVisibility is natively boosted by spotlightIntensity within the oil film itself with factor 1.2
+            expect(fragmentShaderSource).toMatch(
+                /filmVisibility\s*=\s*totalIntensity\s*\*\s*fresnelMod\s*\*\s*2\.0\s*\*\s*\(\s*1\.0\s*\+\s*spotlightIntensity\s*\*\s*1\.2\)/
+            );
+
+            // Verify that glassBlue vector and finalFilmColor mixing are present to make the spotlight bluer
+            expect(fragmentShaderSource).toMatch(/glassBlue\s*=\s*vec3\(0\.2,\s*0\.5,\s*1\.0\)/);
+            expect(fragmentShaderSource).toMatch(
+                /finalFilmColor\s*=\s*mix\(\s*filmColor,\s*glassBlue,\s*spotlightIntensity\s*\*\s*0\.7\)/
+            );
+
+            // Verify that final color is computed natively from finalFilmColor * filmVisibility
+            expect(fragmentShaderSource).toMatch(
+                /color\s*=\s*finalFilmColor\s*\*\s*filmVisibility/
+            );
 
             effect.dispose();
         });
