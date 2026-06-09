@@ -151,13 +151,22 @@ body.body-calendar {
     position: relative;
 }
 
+/*
+ * Beveled glass effect on nav button icons (chevrons + circle).
+ * Uses an SVG feSpecularLighting filter (injected by bevelGlassPlugin.js)
+ * that computes physics-based specular highlights on the glyph edges.
+ * Light direction: azimuth 315deg, elevation 62deg (matching glass3dPlugin).
+ */
+.cal-nav-btn > i {
+    filter: url(#bgl-nav-bevel);
+}
+
 /* Make the circle icon visually bolder to match the chevron visual weight */
 .cal-nav-btn .fa-circle-o {
     -webkit-text-stroke: 0.8px currentColor;
 }
 
 .cal-nav-btn:hover:not(:disabled) {
-    color: rgba(180, 180, 185, 1);
     filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5)) drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4))
         drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 0 1.5px rgba(255, 255, 255, 0.3));
     transform: translateY(-1px);
@@ -265,9 +274,23 @@ body.body-calendar {
     fill: rgba(255, 255, 255, 0.4) !important;
 }
 
-.ch-subdomain-highlight {
-    stroke: rgba(255, 255, 255, 0.8) !important;
-    stroke-width: 1px !important;
+/* Override Cal-Heatmap vendor stroke so bevel gradient is preserved.
+   Highlight/hover glow is rendered via filter, not stroke replacement. */
+.ch-subdomain-highlight,
+.ch-subdomain-bg.highlight {
+    stroke: url(#bgl-edge-today) !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+        drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18))
+        drop-shadow(0 0 5px rgba(255, 255, 255, 0.45)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) !important;
+}
+
+.ch-subdomain-bg:hover {
+    stroke: url(#bgl-edge) !important;
+    stroke-width: 1.5px !important;
+    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+        drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18))
+        drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)) !important;
 }
 
 .ch-subdomain[data-v] {

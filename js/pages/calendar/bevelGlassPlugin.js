@@ -15,6 +15,7 @@ import { CALENDAR_SELECTORS } from '@js/config.js';
 const NS = 'http://www.w3.org/2000/svg';
 const GRAD_ID = 'bgl-edge';
 const GRAD_TODAY_ID = 'bgl-edge-today';
+const NAV_FILTER_ID = 'bgl-nav-bevel';
 
 function makeGradient(id, highlightAlpha, shadowAlpha) {
     const g = document.createElementNS(NS, 'linearGradient');
@@ -72,6 +73,70 @@ function getTodayStr() {
     ].join('-');
 }
 
+// -- Nav button SVG filter (feSpecularLighting bevel) --
+
+function ensureNavBevelFilter() {
+    if (document.querySelector(`#${NAV_FILTER_ID}`)) {
+        return;
+    }
+
+    const svg = document.createElementNS(NS, 'svg');
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    svg.setAttribute('aria-hidden', 'true');
+
+    const defs = document.createElementNS(NS, 'defs');
+    const filter = document.createElementNS(NS, 'filter');
+    filter.id = NAV_FILTER_ID;
+    filter.setAttribute('color-interpolation-filters', 'sRGB');
+    filter.setAttribute('x', '-20%');
+    filter.setAttribute('y', '-20%');
+    filter.setAttribute('width', '140%');
+    filter.setAttribute('height', '140%');
+
+    // 1. Blur source alpha → height map
+    const blur = document.createElementNS(NS, 'feGaussianBlur');
+    blur.setAttribute('in', 'SourceAlpha');
+    blur.setAttribute('stdDeviation', '0.4');
+    blur.setAttribute('result', 'bump');
+
+    // 2. Specular lighting — physics-based highlights on edges
+    //    azimuth 315° = upper-right, elevation 62° — matches glass3dPlugin
+    const spec = document.createElementNS(NS, 'feSpecularLighting');
+    spec.setAttribute('in', 'bump');
+    spec.setAttribute('surfaceScale', '3');
+    spec.setAttribute('specularConstant', '0.8');
+    spec.setAttribute('specularExponent', '25');
+    spec.setAttribute('lighting-color', '#ffffff');
+    spec.setAttribute('result', 'spec');
+
+    const light = document.createElementNS(NS, 'feDistantLight');
+    light.setAttribute('azimuth', '315');
+    light.setAttribute('elevation', '62');
+    spec.appendChild(light);
+
+    // 3. Clip specular to source shape
+    const clipSpec = document.createElementNS(NS, 'feComposite');
+    clipSpec.setAttribute('in', 'spec');
+    clipSpec.setAttribute('in2', 'SourceAlpha');
+    clipSpec.setAttribute('operator', 'in');
+    clipSpec.setAttribute('result', 'specClip');
+
+    // 4. Overlay specular highlights on original graphic
+    const merge = document.createElementNS(NS, 'feComposite');
+    merge.setAttribute('in', 'specClip');
+    merge.setAttribute('in2', 'SourceGraphic');
+    merge.setAttribute('operator', 'arithmetic');
+    merge.setAttribute('k1', '0');
+    merge.setAttribute('k2', '1');
+    merge.setAttribute('k3', '1');
+    merge.setAttribute('k4', '0');
+
+    filter.append(blur, spec, clipSpec, merge);
+    defs.appendChild(filter);
+    svg.appendChild(defs);
+    document.body.prepend(svg);
+}
+
 // -- Public API --
 
 export function applyBevelGlass(d3Instance, selector) {
@@ -91,6 +156,7 @@ export function applyBevelGlass(d3Instance, selector) {
     }
 
     ensureDefs(svgEl);
+    ensureNavBevelFilter();
 
     // One-time cleanup of old canvas overlay from previous implementations
     if (heatmapEl._bevelCanvas) {
