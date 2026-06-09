@@ -521,25 +521,48 @@ function drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options
     const startAngle = phase * Math.PI * 2;
     const endAngle = startAngle + width * Math.PI * 2;
     const squash = options.squash ?? 1;
+    const midRadius = (outerRadius + innerRadius) / 2;
+    const bandWidth = (outerRadius - innerRadius) * 0.55;
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    const gradient = ctx.createLinearGradient(0, centerY - outerRadius, 0, centerY + outerRadius);
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = Math.max(2, (outerRadius - innerRadius) * 0.55);
-    ctx.beginPath();
-    ctx.ellipse(
-        centerX,
-        centerY,
-        (outerRadius + innerRadius) / 2,
-        ((outerRadius + innerRadius) / 2) * squash,
-        0,
-        startAngle,
-        endAngle
-    );
-    ctx.stroke();
+
+    // Gaussian beam optics: a specular caustic on curved glass is a sharp core
+    // surrounded by a softer bloom halo, with Fresnel blue-shift at grazing edges.
+    // 3 smooth passes replicate this layered structure without segmentation seams.
+
+    const passes = [
+        // Pass 1 — Bloom halo: wide, soft, white — the diffuse scatter around the caustic
+        { widthScale: 1.6, alpha: intensity * 0.25, color: [255, 255, 255] },
+        // Pass 2 — Core highlight: sharp, bright, near-white with very subtle blue shift
+        { widthScale: 0.7, alpha: intensity, color: [240, 248, 255] },
+        // Pass 3 — Fresnel edge: narrow inner rim, blue-tinted — grazing-angle Fresnel reflection
+        { widthScale: 0.3, alpha: intensity * 0.4, color: [180, 215, 255] },
+    ];
+
+    for (const pass of passes) {
+        const lw = Math.max(1, bandWidth * pass.widthScale);
+        const [r, g, b] = pass.color;
+
+        // Top-to-bottom gradient: overhead light = bright at top, fade to transparent at bottom
+        const gradient = ctx.createLinearGradient(
+            0,
+            centerY - outerRadius,
+            0,
+            centerY + outerRadius
+        );
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${pass.alpha.toFixed(3)})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = lw;
+        ctx.globalAlpha = pass.alpha;
+
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, midRadius, midRadius * squash, 0, startAngle, endAngle);
+        ctx.stroke();
+    }
+
     ctx.restore();
 }
 

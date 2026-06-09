@@ -423,4 +423,60 @@ describe('glass3dPlugin', () => {
         glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
         expect(() => glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {})).not.toThrow();
     });
+
+    it('should render reflection with Gaussian beam passes and Fresnel blue tint', () => {
+        // Track alpha values during afterDatasetsDraw (where drawReflection lives)
+        const alphaValues = [];
+        let currentAlpha = 1;
+        Object.defineProperty(ctx, 'globalAlpha', {
+            get() {
+                return currentAlpha;
+            },
+            set(v) {
+                currentAlpha = v;
+                alphaValues.push(v);
+            },
+            configurable: true,
+        });
+
+        // Track gradients to find blue-tinted Fresnel pass
+        const linearGradients = [];
+        ctx.createLinearGradient = jest.fn((...args) => {
+            const stops = [];
+            const g = {
+                addColorStop: jest.fn((offset, color) => stops.push({ offset, color })),
+                _stops: stops,
+                _args: args,
+            };
+            linearGradients.push(g);
+            return g;
+        });
+
+        // beforeDatasetsDraw must run first to init state
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+
+        // Reset tracking before afterDatasetsDraw
+        alphaValues.length = 0;
+        linearGradients.length = 0;
+        ctx.stroke = jest.fn();
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Gaussian beam structure: bloom + core + Fresnel edge = 3 stroke passes
+        expect(ctx.stroke.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+        // Each pass has a different alpha (bloom dimmer, core brighter, Fresnel mid)
+        const subUnitAlphas = alphaValues.filter((v) => v > 0 && v < 1);
+        const uniqueAlphas = new Set(subUnitAlphas.map((v) => v.toFixed(3)));
+        expect(uniqueAlphas.size).toBeGreaterThanOrEqual(2);
+
+        // Fresnel edge pass should produce a gradient with blue > red (blue-shifted)
+        const blueTintedGradients = linearGradients.filter((g) =>
+            g._stops.some((s) => {
+                const m = s.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                return m && parseInt(m[3]) > parseInt(m[1]);
+            })
+        );
+        expect(blueTintedGradients.length).toBeGreaterThanOrEqual(1);
+    });
 });
