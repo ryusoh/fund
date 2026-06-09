@@ -636,9 +636,15 @@ export const TABLE_GLASS_EFFECT = {
     excludeHeader: true,
     rowHoverEffect: {
         enabled: true,
+        // Subtle spotlight effect
         color: 'rgba(255, 255, 255, 0.03)', // Very faint white/blue tint
         borderColor: 'rgba(255, 255, 255, 0.15)', // Subtle border reveal
-        spotlightRadius: 500, // Narrower soft radius (increased 2x from 200)
+        spotlightRadius: 500, // Large soft radius
+    },
+    oilSpotlight: {
+        radius: 400, // 2x increased range for WebGL oil film (from 200)
+        boostMultiplier: 1.2, // Native iridescence boost factor under mouse
+        blueMixFactor: 0.7, // Native blue mix factor under mouse
     },
     chromaticAberration: {
         enabled: true, // Disabled for cleaner look

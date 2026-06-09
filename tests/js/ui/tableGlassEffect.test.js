@@ -762,9 +762,14 @@ describe('TableGlassEffect', () => {
             effect.dispose();
         });
 
-        it('should pass u_pointerVelocity uniform to WebGL', () => {
+        it('should pass u_pointerVelocity and oilSpotlight uniforms to WebGL', () => {
             const effect = new TableGlassEffect('.table-responsive-container', {
                 rowHoverEffect: { enabled: true },
+                oilSpotlight: {
+                    radius: 400.0,
+                    boostMultiplier: 1.2,
+                    blueMixFactor: 0.7,
+                },
             });
 
             const mockUniform1f = jest.fn();
@@ -789,6 +794,8 @@ describe('TableGlassEffect', () => {
                 tbodyLeft: 'u_left',
                 tbodyWidth: 'u_width',
                 pointerVelocity: 'u_vel',
+                oilBoostMultiplier: 'u_oil_boost',
+                oilBlueMixFactor: 'u_oil_blue',
             };
 
             effect.state.pointerVelocity = 3.5;
@@ -797,6 +804,9 @@ describe('TableGlassEffect', () => {
             effect.draw();
 
             expect(mockUniform1f).toHaveBeenCalledWith('u_vel', 3.5);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_rad', 400.0);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_oil_boost', 1.2);
+            expect(mockUniform1f).toHaveBeenCalledWith('u_oil_blue', 0.7);
             effect.dispose();
         });
 
@@ -864,15 +874,15 @@ describe('TableGlassEffect', () => {
             // Verify that fragmentShaderSource does not contain "specularHighlight" in color calculation
             expect(fragmentShaderSource).not.toMatch(/\+\s*specularHighlight/);
 
-            // Verify that filmVisibility is natively boosted by spotlightIntensity within the oil film itself with factor 1.2
+            // Verify that filmVisibility is natively boosted by spotlightIntensity within the oil film itself with u_oilBoostMultiplier uniform
             expect(fragmentShaderSource).toMatch(
-                /filmVisibility\s*=\s*totalIntensity\s*\*\s*fresnelMod\s*\*\s*2\.0\s*\*\s*\(\s*1\.0\s*\+\s*spotlightIntensity\s*\*\s*1\.2\)/
+                /filmVisibility\s*=\s*totalIntensity\s*\*\s*fresnelMod\s*\*\s*2\.0\s*\*\s*\(\s*1\.0\s*\+\s*spotlightIntensity\s*\*\s*u_oilBoostMultiplier\)/
             );
 
-            // Verify that glassBlue vector and finalFilmColor mixing are present to make the spotlight bluer
+            // Verify that glassBlue vector and finalFilmColor mixing are present to make the spotlight bluer with u_oilBlueMixFactor uniform
             expect(fragmentShaderSource).toMatch(/glassBlue\s*=\s*vec3\(0\.2,\s*0\.5,\s*1\.0\)/);
             expect(fragmentShaderSource).toMatch(
-                /finalFilmColor\s*=\s*mix\(\s*filmColor,\s*glassBlue,\s*spotlightIntensity\s*\*\s*0\.7\)/
+                /finalFilmColor\s*=\s*mix\(\s*filmColor,\s*glassBlue,\s*spotlightIntensity\s*\*\s*u_oilBlueMixFactor\)/
             );
 
             // Verify that final color is computed natively from finalFilmColor * filmVisibility

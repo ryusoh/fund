@@ -23,6 +23,9 @@ uniform float u_tbodyLeft;
 uniform float u_tbodyWidth;
 uniform float u_pointerVelocity;
 
+uniform float u_oilBoostMultiplier;
+uniform float u_oilBlueMixFactor;
+
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
 
@@ -232,13 +235,13 @@ void main() {
     float fresnelMod = mix(0.5, 1.0, schlick);
 
     // Boost film visibility around spotlight core natively within the oil film itself (by WebGL)
-    float filmVisibility = totalIntensity * fresnelMod * 2.0 * (1.0 + spotlightIntensity * 1.2);
+    float filmVisibility = totalIntensity * fresnelMod * 2.0 * (1.0 + spotlightIntensity * u_oilBoostMultiplier);
 
     // Richer blue color for the WebGL oil film spotlight
     vec3 glassBlue = vec3(0.2, 0.5, 1.0);
 
     // Natively blend the thin film iridescence with the blue color under the spotlight
-    vec3 finalFilmColor = mix(filmColor, glassBlue, spotlightIntensity * 0.7);
+    vec3 finalFilmColor = mix(filmColor, glassBlue, spotlightIntensity * u_oilBlueMixFactor);
 
     // Combine iridescence natively (no separate white glowing layer)
     vec3 color = finalFilmColor * filmVisibility;
@@ -359,6 +362,8 @@ export class TableGlassWebGL {
             tbodyLeft: gl.getUniformLocation(this.program, 'u_tbodyLeft'),
             tbodyWidth: gl.getUniformLocation(this.program, 'u_tbodyWidth'),
             pointerVelocity: gl.getUniformLocation(this.program, 'u_pointerVelocity'),
+            oilBoostMultiplier: gl.getUniformLocation(this.program, 'u_oilBoostMultiplier'),
+            oilBlueMixFactor: gl.getUniformLocation(this.program, 'u_oilBlueMixFactor'),
         };
 
         // Blend mode for glowing effects
@@ -402,7 +407,19 @@ export class TableGlassWebGL {
         gl.uniform1f(this.uniforms.time, state.continuousPhase);
         gl.uniform1f(
             this.uniforms.spotlightRadius,
-            options.rowHoverEffect.spotlightRadius || 300.0
+            options.oilSpotlight?.radius !== undefined ? options.oilSpotlight.radius : 400.0
+        );
+        gl.uniform1f(
+            this.uniforms.oilBoostMultiplier,
+            options.oilSpotlight?.boostMultiplier !== undefined
+                ? options.oilSpotlight.boostMultiplier
+                : 1.2
+        );
+        gl.uniform1f(
+            this.uniforms.oilBlueMixFactor,
+            options.oilSpotlight?.blueMixFactor !== undefined
+                ? options.oilSpotlight.blueMixFactor
+                : 0.7
         );
         gl.uniform1f(this.uniforms.pointerVelocity, state.pointerVelocity || 0.0);
 
