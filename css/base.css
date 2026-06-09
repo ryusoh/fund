@@ -110,7 +110,7 @@ body.icon-font-ready .fa {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 footer a:focus-visible {
