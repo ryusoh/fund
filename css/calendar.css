@@ -76,7 +76,7 @@ body.body-calendar {
     .cal-nav-btn:focus,
     .cal-nav-btn:focus:hover {
         /* Reset to base state on mobile to prevent shimmer during swipes */
-        color: rgba(85, 85, 85, 0.9) !important;
+        color: rgba(120, 120, 125, 0.5) !important;
         filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
             drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
             drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2)) !important;
@@ -87,7 +87,7 @@ body.body-calendar {
     .cal-heatmap-container.touch-active .cal-nav-btn,
     .cal-heatmap-container.touch-active .cal-nav-btn:hover,
     .cal-heatmap-container.touch-active .cal-nav-btn:focus {
-        color: rgba(85, 85, 85, 0.9) !important;
+        color: rgba(120, 120, 125, 0.5) !important;
         filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))
             drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5))
             drop-shadow(0 0 0 1px rgba(255, 255, 255, 0.2)) !important;
@@ -133,8 +133,8 @@ body.body-calendar {
     background: transparent;
     border: none;
     outline: none;
-    /* Remove ugly focus outline */
-    color: rgba(85, 85, 85, 0.9);
+    /* Remove ugly focus outline — darkened to match neutral cell after specular filter brightens */
+    color: rgba(75, 75, 80, 0.5);
     padding: 12px;
     cursor: pointer;
     font-size: 24px;
@@ -280,7 +280,7 @@ body.body-calendar {
 .ch-subdomain-bg.highlight {
     stroke: url(#bgl-edge-today) !important;
     stroke-width: 2px !important;
-    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+    filter: url(#bgl-cell-bevel) drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
         drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18))
         drop-shadow(0 0 5px rgba(255, 255, 255, 0.45)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) !important;
 }
@@ -288,7 +288,7 @@ body.body-calendar {
 .ch-subdomain-bg:hover {
     stroke: url(#bgl-edge) !important;
     stroke-width: 1.5px !important;
-    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+    filter: url(#bgl-cell-bevel) drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
         drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18))
         drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)) !important;
 }
@@ -305,7 +305,7 @@ body.body-calendar {
 .ch-subdomain-bg {
     -webkit-backdrop-filter: blur(10px) !important;
     backdrop-filter: blur(10px) !important;
-    filter: drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
+    filter: url(#bgl-cell-bevel) drop-shadow(-1px 1px 2px rgba(0, 0, 0, 0.25))
         drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18)) !important;
 }
 

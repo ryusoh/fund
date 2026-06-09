@@ -16,6 +16,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const GRAD_ID = 'bgl-edge';
 const GRAD_TODAY_ID = 'bgl-edge-today';
 const NAV_FILTER_ID = 'bgl-nav-bevel';
+const CELL_FILTER_ID = 'bgl-cell-bevel';
 
 function makeGradient(id, highlightAlpha, shadowAlpha) {
     const g = document.createElementNS(NS, 'linearGradient');
@@ -43,6 +44,52 @@ function makeGradient(id, highlightAlpha, shadowAlpha) {
     return g;
 }
 
+function makeBevelFilter(id, { stdDev, surfaceScale, specConst, specExp }) {
+    const filter = document.createElementNS(NS, 'filter');
+    filter.id = id;
+    filter.setAttribute('color-interpolation-filters', 'sRGB');
+    filter.setAttribute('x', '-10%');
+    filter.setAttribute('y', '-10%');
+    filter.setAttribute('width', '120%');
+    filter.setAttribute('height', '120%');
+
+    const blur = document.createElementNS(NS, 'feGaussianBlur');
+    blur.setAttribute('in', 'SourceAlpha');
+    blur.setAttribute('stdDeviation', String(stdDev));
+    blur.setAttribute('result', 'bump');
+
+    const spec = document.createElementNS(NS, 'feSpecularLighting');
+    spec.setAttribute('in', 'bump');
+    spec.setAttribute('surfaceScale', String(surfaceScale));
+    spec.setAttribute('specularConstant', String(specConst));
+    spec.setAttribute('specularExponent', String(specExp));
+    spec.setAttribute('lighting-color', '#ffffff');
+    spec.setAttribute('result', 'spec');
+
+    const light = document.createElementNS(NS, 'feDistantLight');
+    light.setAttribute('azimuth', '315');
+    light.setAttribute('elevation', '62');
+    spec.appendChild(light);
+
+    const clip = document.createElementNS(NS, 'feComposite');
+    clip.setAttribute('in', 'spec');
+    clip.setAttribute('in2', 'SourceAlpha');
+    clip.setAttribute('operator', 'in');
+    clip.setAttribute('result', 'specClip');
+
+    const merge = document.createElementNS(NS, 'feComposite');
+    merge.setAttribute('in', 'specClip');
+    merge.setAttribute('in2', 'SourceGraphic');
+    merge.setAttribute('operator', 'arithmetic');
+    merge.setAttribute('k1', '0');
+    merge.setAttribute('k2', '1');
+    merge.setAttribute('k3', '1');
+    merge.setAttribute('k4', '0');
+
+    filter.append(blur, spec, clip, merge);
+    return filter;
+}
+
 function ensureDefs(svgEl) {
     if (svgEl._bglReady) {
         return;
@@ -61,16 +108,21 @@ function ensureDefs(svgEl) {
         defs.appendChild(makeGradient(GRAD_TODAY_ID, 0.75, 0.35));
     }
 
-    svgEl._bglReady = true;
-}
+    if (!defs.querySelector(`#${CELL_FILTER_ID}`)) {
+        // High specExp (100) concentrates specular on bevel edges only.
+        // With our light at elevation 62°, flat surfaces get N·H ≈ 0.952,
+        // so 0.952^100 ≈ 0.007 (invisible) while bevel peaks stay bright.
+        defs.appendChild(
+            makeBevelFilter(CELL_FILTER_ID, {
+                stdDev: 0.5,
+                surfaceScale: 3,
+                specConst: 0.8,
+                specExp: 100,
+            })
+        );
+    }
 
-function getTodayStr() {
-    const now = new Date();
-    return [
-        now.getFullYear(),
-        String(now.getMonth() + 1).padStart(2, '0'),
-        String(now.getDate()).padStart(2, '0'),
-    ].join('-');
+    svgEl._bglReady = true;
 }
 
 // -- Nav button SVG filter (feSpecularLighting bevel) --
@@ -85,53 +137,18 @@ function ensureNavBevelFilter() {
     svg.setAttribute('aria-hidden', 'true');
 
     const defs = document.createElementNS(NS, 'defs');
-    const filter = document.createElementNS(NS, 'filter');
-    filter.id = NAV_FILTER_ID;
-    filter.setAttribute('color-interpolation-filters', 'sRGB');
+    const filter = makeBevelFilter(NAV_FILTER_ID, {
+        stdDev: 0.4,
+        surfaceScale: 3,
+        specConst: 0.8,
+        specExp: 25,
+    });
+    // Nav filter needs wider margins for thin glyphs
     filter.setAttribute('x', '-20%');
     filter.setAttribute('y', '-20%');
     filter.setAttribute('width', '140%');
     filter.setAttribute('height', '140%');
 
-    // 1. Blur source alpha → height map
-    const blur = document.createElementNS(NS, 'feGaussianBlur');
-    blur.setAttribute('in', 'SourceAlpha');
-    blur.setAttribute('stdDeviation', '0.4');
-    blur.setAttribute('result', 'bump');
-
-    // 2. Specular lighting — physics-based highlights on edges
-    //    azimuth 315° = upper-right, elevation 62° — matches glass3dPlugin
-    const spec = document.createElementNS(NS, 'feSpecularLighting');
-    spec.setAttribute('in', 'bump');
-    spec.setAttribute('surfaceScale', '3');
-    spec.setAttribute('specularConstant', '0.8');
-    spec.setAttribute('specularExponent', '25');
-    spec.setAttribute('lighting-color', '#ffffff');
-    spec.setAttribute('result', 'spec');
-
-    const light = document.createElementNS(NS, 'feDistantLight');
-    light.setAttribute('azimuth', '315');
-    light.setAttribute('elevation', '62');
-    spec.appendChild(light);
-
-    // 3. Clip specular to source shape
-    const clipSpec = document.createElementNS(NS, 'feComposite');
-    clipSpec.setAttribute('in', 'spec');
-    clipSpec.setAttribute('in2', 'SourceAlpha');
-    clipSpec.setAttribute('operator', 'in');
-    clipSpec.setAttribute('result', 'specClip');
-
-    // 4. Overlay specular highlights on original graphic
-    const merge = document.createElementNS(NS, 'feComposite');
-    merge.setAttribute('in', 'specClip');
-    merge.setAttribute('in2', 'SourceGraphic');
-    merge.setAttribute('operator', 'arithmetic');
-    merge.setAttribute('k1', '0');
-    merge.setAttribute('k2', '1');
-    merge.setAttribute('k3', '1');
-    merge.setAttribute('k4', '0');
-
-    filter.append(blur, spec, clipSpec, merge);
     defs.appendChild(filter);
     svg.appendChild(defs);
     document.body.prepend(svg);

@@ -294,6 +294,46 @@ describe('bevelGlassPlugin', () => {
         });
     });
 
+    describe('cell bevel SVG filter', () => {
+        it('creates the cell bevel filter in the heatmap SVG defs', () => {
+            const { svg } = buildSvgDom(['2026-01-15']);
+            const d3 = makeD3Stub();
+
+            applyBevelGlass(d3, '#cal-heatmap');
+
+            const filter = svg.querySelector('#bgl-cell-bevel');
+            expect(filter).not.toBeNull();
+            expect(filter.tagName.toLowerCase()).toBe('filter');
+        });
+
+        it('cell filter has feSpecularLighting with matching light direction', () => {
+            buildSvgDom(['2026-01-15']);
+            const d3 = makeD3Stub();
+
+            applyBevelGlass(d3, '#cal-heatmap');
+
+            const svg = document.querySelector('#cal-heatmap svg');
+            const spec = svg.querySelector('#bgl-cell-bevel feSpecularLighting');
+            expect(spec).not.toBeNull();
+
+            const light = spec.querySelector('feDistantLight');
+            expect(light.getAttribute('azimuth')).toBe('315');
+            expect(light.getAttribute('elevation')).toBe('62');
+        });
+
+        it('CSS references the cell bevel filter on .ch-subdomain-bg', () => {
+            const fs = require('fs');
+            const path = require('path');
+            const calCss = fs.readFileSync(
+                path.resolve(process.cwd(), 'css/calendar.css'),
+                'utf-8'
+            );
+            const bgBlock = calCss.match(/\.ch-subdomain-bg\s*\{([^}]+)\}/);
+            expect(bgBlock).not.toBeNull();
+            expect(bgBlock[1]).toMatch(/url\(#bgl-cell-bevel\)/);
+        });
+    });
+
     describe('clearBevelGlass / destroyBevelGlass', () => {
         it('clearBevelGlass is a no-op (strokes live on cells)', () => {
             expect(() => clearBevelGlass()).not.toThrow();
