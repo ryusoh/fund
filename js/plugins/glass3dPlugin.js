@@ -428,6 +428,60 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
     ctx.restore();
 }
 
+function drawFresnelHighlight(ctx, meta, options, pointer) {
+    const squash = options.squash ?? 1;
+    const fresnelCfg = options.fresnel || {};
+    const baseReflectance = fresnelCfg.r0 ?? 0.04; // glass at normal incidence ~4%
+    const intensity = fresnelCfg.intensity ?? 0.35;
+    const exponent = fresnelCfg.exponent ?? 5; // Schlick's approximation power
+    const lightVec = computeLightVector(options);
+    const lightAngle = Math.atan2(lightVec.y, lightVec.x);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    meta.data.forEach((arc) => {
+        const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arc.getProps(
+            ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
+            true
+        );
+
+        const midAngle = (startAngle + endAngle) / 2;
+
+        // Schlick's Fresnel approximation for a torus cross-section.
+        // The grazing factor measures how edge-on this arc segment is:
+        // segments at the sides of the ring (3/9 o'clock) are glancing,
+        // segments at top/bottom face the viewer more directly.
+        const grazing = 1 - Math.abs(Math.sin(midAngle) * squash);
+        const fresnel = baseReflectance + (1 - baseReflectance) * Math.pow(grazing, exponent);
+
+        // Modulate by light direction — segments facing the light get a boost,
+        // segments facing away get attenuated. This breaks left/right symmetry.
+        const lightDot = 0.5 + 0.5 * Math.cos(midAngle - lightAngle);
+        const alpha = fresnel * intensity * (0.4 + 0.6 * lightDot);
+
+        if (alpha < 0.005) {
+            return;
+        }
+
+        const bandRadius = (outerRadius + innerRadius) / 2;
+        const bandWidth = (outerRadius - innerRadius) * 0.5;
+        const cx = x + (pointer?.x || 0) * 0.2;
+        const cy = y + (pointer?.y || 0) * 0.2;
+
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = 'rgba(200, 225, 255, 1)';
+        ctx.lineWidth = bandWidth;
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, bandRadius, bandRadius * squash, 0, startAngle, endAngle);
+        ctx.stroke();
+    });
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
 function drawTopHighlight(ctx, centerX, centerY, outerRadius, innerRadius, options, pointer) {
     const highlightCfg = options.topHighlight || {};
     const intensity = highlightCfg.intensity ?? 0.4;
@@ -841,6 +895,7 @@ export const glass3dPlugin = {
 
         drawBeerLambertOverlay(ctx, meta, options);
         drawAtmosphericFade(ctx, centerX, centerY, outerRadius, innerRadius, options);
+        drawFresnelHighlight(ctx, meta, options, pointer);
         drawAmbientGlow(
             ctx,
             centerX,

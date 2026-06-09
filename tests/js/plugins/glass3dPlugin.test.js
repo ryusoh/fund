@@ -294,6 +294,37 @@ describe('glass3dPlugin', () => {
         expect(causticGradients.length).toBeGreaterThanOrEqual(1);
     });
 
+    it('should apply Fresnel angle-dependent highlight per arc segment', () => {
+        // Track globalAlpha values set during afterDatasetsDraw
+        const alphaValues = [];
+        let currentAlpha = 1;
+        Object.defineProperty(ctx, 'globalAlpha', {
+            get() {
+                return currentAlpha;
+            },
+            set(v) {
+                currentAlpha = v;
+                if (v > 0 && v < 1) {
+                    alphaValues.push(v);
+                }
+            },
+            configurable: true,
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+        alphaValues.length = 0;
+
+        glass3dPlugin.afterDatasetsDraw(chart, { meta: {} }, {});
+
+        // Fresnel highlight should set different alpha values for different arcs
+        // (at least 2 arcs in our test setup, each getting a unique Fresnel reflectance)
+        expect(alphaValues.length).toBeGreaterThanOrEqual(2);
+
+        // The alpha values should NOT all be the same — Fresnel varies by angle
+        const unique = new Set(alphaValues.map((v) => v.toFixed(4)));
+        expect(unique.size).toBeGreaterThan(1);
+    });
+
     it('should apply atmospheric back-edge fade on the doughnut face', () => {
         // Track linear gradients created during afterDatasetsDraw
         const linearGradients = [];
