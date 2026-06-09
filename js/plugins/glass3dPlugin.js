@@ -640,6 +640,13 @@ function drawElectricTrail(
     // Tail tint shifts toward cool violet
     const tailColor = 'rgba(140, 100, 255, 1)';
 
+    // Reflection band angular range — trails flare when crossing the specular zone
+    const reflectionCfg = options.reflection || {};
+    const reflWidth = reflectionCfg.width ?? 0.2;
+    const reflPhase = state.phase || 0;
+    const reflStart = reflPhase * Math.PI * 2;
+    const flareColor = 'rgba(240, 250, 255, 1)';
+
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
@@ -661,6 +668,32 @@ function drawElectricTrail(
         const pulsePhase = state.continuousPhase * 3 + i * 1.7;
         const pulseBase = 0.7 + 0.3 * Math.sin(pulsePhase * Math.PI * 2);
 
+        // Compute specular overlap for a segment mid-angle.
+        // Returns 0–1: how deeply this angle sits inside the reflection band.
+        const specularOverlap = (angle) => {
+            // Normalize angle into [0, 2π) range
+            const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            // Check against the reflection band (which may wrap around 2π)
+            const rStart = ((reflStart % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            const rSpan = reflWidth * Math.PI * 2;
+            let dist;
+            if (rStart + rSpan <= Math.PI * 2) {
+                // Band doesn't wrap
+                if (a >= rStart && a <= rStart + rSpan) {
+                    dist = Math.min(a - rStart, rStart + rSpan - a) / (rSpan * 0.5);
+                    return 1 - dist;
+                }
+                return 0;
+            }
+            // Band wraps around 2π
+            if (a >= rStart || a <= (rStart + rSpan) % (Math.PI * 2)) {
+                const wrapped = a >= rStart ? a - rStart : a + Math.PI * 2 - rStart;
+                dist = Math.min(wrapped, rSpan - wrapped) / (rSpan * 0.5);
+                return 1 - Math.max(0, dist);
+            }
+            return 0;
+        };
+
         // --- Ghost afterglow trail (wider, dimmer, slightly behind) ---
         const ghostOffset = arcSpan * 0.15;
         const ghostRadius = trailRadius + bandThickness * 0.05 * (i % 2 === 0 ? 1 : -1);
@@ -671,16 +704,17 @@ function drawElectricTrail(
 
             // Asymmetric comet fade: fast rise at head (t≈1), long decay into tail (t≈0)
             const cometFade = Math.pow(t, 0.6) * Math.pow(1 - Math.pow(t, 3), 0.5);
-            const ghostAlpha = cometFade * 0.2 * pulseBase;
+            const flare = specularOverlap((segStart + segEnd) / 2);
+            const ghostAlpha = cometFade * (0.2 + flare * 0.3) * pulseBase;
 
             if (ghostAlpha < 0.005) {
                 continue;
             }
 
-            ctx.strokeStyle = color;
-            ctx.shadowColor = color;
-            ctx.shadowBlur = arcThickness * 4;
-            ctx.lineWidth = arcThickness * 2.5 * cometFade;
+            ctx.strokeStyle = flare > 0.1 ? flareColor : color;
+            ctx.shadowColor = flare > 0.1 ? flareColor : color;
+            ctx.shadowBlur = arcThickness * (4 + flare * 8);
+            ctx.lineWidth = arcThickness * 2.5 * cometFade * (1 + flare * 0.5);
             ctx.globalAlpha = ghostAlpha;
             ctx.beginPath();
             ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
@@ -708,30 +742,35 @@ function drawElectricTrail(
                 segColor = applyAlpha(tailColor, tailMix * 0.5);
             }
 
-            const alpha = cometFade * pulse;
-            const thickness = arcThickness * (0.2 + 0.8 * cometFade);
+            // Specular flare: boost when crossing the reflection band
+            const flare = specularOverlap((segStart + segEnd) / 2);
+            const alpha = cometFade * pulse * (1 + flare * 1.5);
+            const thickness = arcThickness * (0.2 + 0.8 * cometFade) * (1 + flare * 0.4);
 
             if (alpha < 0.005) {
                 continue;
             }
 
-            // Main stroke
-            ctx.strokeStyle = color;
-            ctx.shadowColor = segColor;
-            ctx.shadowBlur = thickness * 3 * (0.5 + headMix * 2);
+            // Main stroke — shifts to flare white in the specular zone
+            const mainColor = flare > 0.15 ? flareColor : color;
+            const glowColor = flare > 0.15 ? flareColor : segColor;
+            ctx.strokeStyle = mainColor;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = thickness * 3 * (0.5 + headMix * 2 + flare * 4);
             ctx.lineWidth = thickness;
             ctx.globalAlpha = alpha;
             ctx.beginPath();
             ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
             ctx.stroke();
 
-            // Hot core overlay at the head: a thinner, brighter white-blue stroke
-            if (headMix > 0.05) {
-                ctx.strokeStyle = headColor;
-                ctx.shadowColor = headColor;
-                ctx.shadowBlur = thickness * 5;
-                ctx.lineWidth = thickness * 0.4;
-                ctx.globalAlpha = alpha * headMix * 0.9;
+            // Hot core overlay at the head OR in the specular zone
+            if (headMix > 0.05 || flare > 0.2) {
+                const coreMix = Math.max(headMix, flare);
+                ctx.strokeStyle = flareColor;
+                ctx.shadowColor = flareColor;
+                ctx.shadowBlur = thickness * (5 + flare * 6);
+                ctx.lineWidth = thickness * (0.4 + flare * 0.3);
+                ctx.globalAlpha = alpha * coreMix * 0.9;
                 ctx.beginPath();
                 ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
                 ctx.stroke();
