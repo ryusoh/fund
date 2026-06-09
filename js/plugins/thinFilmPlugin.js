@@ -53,6 +53,10 @@ uniform float u_trailWidth;   // angular width of each trail arc (radians)
 uniform float u_fluidAngle;      // tracking angle of the moving slice
 uniform float u_suctionVelocity; // angular velocity of the slice transition (rad/s)
 
+// Reflection band (glass panel) for optical refraction
+uniform float u_reflStart;
+uniform float u_reflSpan;
+
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
 
@@ -282,6 +286,21 @@ void main() {
 
     float tangential = angleNorm * u_outerRadius * 0.06; // arc-length scaled
     float radial = r_norm * 2.0;                          // compressed radially
+
+    // --- Optical Refraction from Glass Panel ---
+    // The reflective specular band acts like a curved magnifying lens passing over the oil
+    float reflMid = u_reflStart + u_reflSpan * 0.5;
+    float dRefl = angle - reflMid;
+    dRefl = mod(dRefl + PI, TWO_PI) - PI;
+
+    // 1.0 at center of reflection band, 0.0 at edges
+    float reflIntensity = smoothstep(u_reflSpan * 0.5, 0.0, abs(dRefl));
+
+    // Warp the noise domain to simulate optical refraction through thick curved glass
+    float glassRefraction = reflIntensity * 0.25;
+    tangential += glassRefraction * sign(dRefl);
+    radial += glassRefraction * (1.0 - abs(r_norm - 0.5) * 2.0); // Bends outward radially
+
     vec2 noisePos = vec2(tangential, radial);
     noisePos += vec2(u_time * 0.1, u_time * -0.06);
     float noise = filmNoise(noisePos, trailFlow);
@@ -297,6 +316,10 @@ void main() {
 
     // Trail shifts thickness same way as cursor — chromatic dispersion
     float thickness = u_filmThicknessBase + suctionShift + u_filmThicknessRange * (noise * 0.5 + 0.5 + pointerInfluence + trailFlow * 0.6);
+
+    // The thick glass panel also alters the optical path length, shifting the interference pattern
+    thickness += reflIntensity * 90.0;
+
     thickness = max(150.0, thickness);
 
     // Viewing angle (approximate: more grazing at band edges)
@@ -434,6 +457,8 @@ function initGL(canvas) {
         'u_trailWidth',
         'u_fluidAngle',
         'u_suctionVelocity',
+        'u_reflStart',
+        'u_reflSpan',
     ];
     for (const name of names) {
         uniforms[name] = gl.getUniformLocation(program, name);
@@ -656,6 +681,15 @@ export const thinFilmPlugin = {
         gl.uniform1f(uniforms.u_trailWidth, trailWidth);
         gl.uniform1f(uniforms.u_fluidAngle, state.currentMid);
         gl.uniform1f(uniforms.u_suctionVelocity, state.smoothedVelocity || 0.0);
+
+        // Reflection band from glass3dPlugin state
+        const reflectionCfg = chart.options?.plugins?.glass3dPlugin?.reflection || {};
+        const reflWidth = reflectionCfg.width ?? 0.2;
+        const reflPhase = glassState ? glassState.phase || 0 : 0;
+        const reflStart = reflPhase * Math.PI * 2;
+        const reflSpan = reflWidth * Math.PI * 2;
+        gl.uniform1f(uniforms.u_reflStart, reflStart);
+        gl.uniform1f(uniforms.u_reflSpan, reflSpan);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
