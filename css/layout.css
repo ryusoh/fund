@@ -23,6 +23,20 @@
 body:not(.body-calendar) .content-block {
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
+    /* Remove physical borders to fix Safari backdrop-filter bleed artifacts */
+    border: none;
+    box-shadow:
+        /* 1. Ambient outer depth (beneath the pane) */
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        0 8px 32px rgba(0, 0, 0, 0.15),
+        /* 2. Outer rim (replaces physical border) - thin highlight top/right, thin shadow bottom/left */
+        inset 0 2px 0 0 rgba(255, 255, 255, 0.15),
+        inset -2px 0 0 0 rgba(255, 255, 255, 0.1),
+        inset 0 -2px 0 0 rgba(0, 0, 0, 0.25),
+        inset 2px 0 0 0 rgba(0, 0, 0, 0.15),
+        /* 3. Inner bevel - a slightly wider inset offset creating the sloped glass edge effect */
+        inset 2px -2px 0 0 rgba(255, 255, 255, 0.07),
+        inset -2px 2px 0 0 rgba(0, 0, 0, 0.2);
 }
 
 #fundPieChartContainer {
