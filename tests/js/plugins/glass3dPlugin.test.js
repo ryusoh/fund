@@ -239,6 +239,61 @@ describe('glass3dPlugin', () => {
         expect(redOuterR).not.toBe(blueOuterR);
     });
 
+    it('should render a caustic light ring inside the shadow boundary', () => {
+        // Count how many blur filter passes drawShadow produces (contact + ambient + caustic)
+        const filterValues = [];
+        let currentFilter = '';
+        Object.defineProperty(ctx, 'filter', {
+            get() {
+                return currentFilter;
+            },
+            set(v) {
+                currentFilter = v;
+                if (typeof v === 'string' && v.includes('blur')) {
+                    filterValues.push(v);
+                }
+            },
+            configurable: true,
+        });
+
+        // Track radial gradients to find the caustic one
+        const radialGradients = [];
+        ctx.createRadialGradient = jest.fn((...args) => {
+            const stops = [];
+            const g = {
+                addColorStop: jest.fn((offset, color) => stops.push({ offset, color })),
+                _stops: stops,
+                _args: args,
+            };
+            radialGradients.push(g);
+            return g;
+        });
+
+        glass3dPlugin.beforeDatasetsDraw(chart, { meta: {} }, {});
+
+        // Should have 3 blur passes: contact shadow, ambient shadow, caustic ring
+        expect(filterValues.length).toBeGreaterThanOrEqual(3);
+
+        // The caustic gradient should use a bright color (not pure black)
+        // with a ring shape: transparent center, bright band, transparent outer
+        const causticGradients = radialGradients.filter((g) => {
+            const hasBrightStop = g._stops.some(
+                (s) =>
+                    s.offset > 0.2 &&
+                    s.offset < 0.95 &&
+                    /rgba?\(\d+,\s*\d+,\s*255/.test(s.color) &&
+                    !s.color.endsWith(', 0)')
+            );
+            // Must also have a transparent inner region (ring, not filled disc)
+            const hasHollowCenter = g._stops.some(
+                (s) => s.offset <= 0.5 && s.color.includes(', 0)')
+            );
+            return hasBrightStop && hasHollowCenter;
+        });
+
+        expect(causticGradients.length).toBeGreaterThanOrEqual(1);
+    });
+
     it('should apply atmospheric back-edge fade on the doughnut face', () => {
         // Track linear gradients created during afterDatasetsDraw
         const linearGradients = [];

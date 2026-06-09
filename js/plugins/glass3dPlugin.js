@@ -260,6 +260,31 @@ function drawShadow(ctx, centerX, centerY, outerRadius, depth, options, pointer,
     ctx.filter = `blur(${blur}px)`;
     ctx.fill();
     ctx.restore();
+
+    // --- Caustic ring: light focused by refraction through curved glass ---
+    // A glass torus bends light inward, creating a bright concentrated ring
+    // just inside the shadow boundary.
+    const causticRadius = radius * 0.85;
+    const causticBlur = Math.round(blur * 0.5);
+    const causticOpacity = 0.08;
+    ctx.save();
+    ctx.translate(centerX + px, centerY + offsetY * 0.9);
+    ctx.scale(scaleX, scaleY * squash);
+    const causticGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, causticRadius);
+    // Hollow center — no light concentration in the middle
+    causticGrad.addColorStop(0, 'rgba(140, 200, 255, 0)');
+    causticGrad.addColorStop(0.5, 'rgba(140, 200, 255, 0)');
+    // Bright ring where refracted light converges
+    causticGrad.addColorStop(0.75, `rgba(140, 200, 255, ${causticOpacity})`);
+    causticGrad.addColorStop(0.9, `rgba(180, 220, 255, ${causticOpacity * 0.7})`);
+    // Fade out at the edge
+    causticGrad.addColorStop(1, 'rgba(140, 200, 255, 0)');
+    ctx.fillStyle = causticGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, causticRadius, causticRadius, 0, 0, Math.PI * 2);
+    ctx.filter = `blur(${causticBlur}px)`;
+    ctx.fill();
+    ctx.restore();
 }
 
 function computeLightVector(options) {
