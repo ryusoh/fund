@@ -235,8 +235,8 @@ describe('TableGlassEffect', () => {
 
         // Then simulate mouse leave
         effect.handleMouseLeave();
-        expect(effect.state.pointer.x).toBe(0);
-        expect(effect.state.pointer.y).toBe(0);
+        expect(effect.state.pointer.x).toBe(-10);
+        expect(effect.state.pointer.y).toBe(-10);
         expect(effect.state.hoveredRowIndex).toBe(-1);
 
         effect.dispose();
@@ -595,8 +595,8 @@ describe('TableGlassEffect', () => {
 
             const drawSpy = jest.spyOn(effect.webglLayer, 'draw');
 
-            // Trigger draw loop
-            effect.drawRowHoverEffect();
+            // Trigger main draw loop (which now contains WebGL)
+            effect.draw();
 
             expect(drawSpy).toHaveBeenCalled();
 
@@ -618,8 +618,123 @@ describe('TableGlassEffect', () => {
             effect.webglLayer = null;
 
             expect(() => {
-                effect.drawRowHoverEffect(400, 200);
+                effect.drawRowHoverEffect();
             }).not.toThrow();
+        });
+
+        it('should clear but not render the WebGL border when not hovering over data rows', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            const mockClear = jest.fn();
+            const mockDrawArrays = jest.fn();
+            const mockUseProgram = jest.fn();
+
+            effect.webglLayer.gl = {
+                clearColor: jest.fn(),
+                clear: mockClear,
+                useProgram: mockUseProgram,
+                uniform2f: jest.fn(),
+                uniform1f: jest.fn(),
+                drawArrays: mockDrawArrays,
+                COLOR_BUFFER_BIT: 16640,
+                TRIANGLES: 4,
+            };
+            effect.webglLayer.program = {};
+            effect.webglLayer.uniforms = {
+                resolution: 'u_res',
+                pointer: 'u_ptr',
+                time: 'u_time',
+                spotlightRadius: 'u_rad',
+                tbodyTop: 'u_top',
+                tbodyBottom: 'u_bottom',
+                tbodyLeft: 'u_left',
+                tbodyWidth: 'u_width',
+            };
+
+            const drawSpy = jest.spyOn(effect.webglLayer, 'draw');
+
+            // 1. Mouse is off-screen (hoveredRowIndex = -1)
+            effect.handleMouseLeave();
+            effect.draw();
+
+            expect(effect.state.hoveredRowIndex).toBe(-1);
+            expect(drawSpy).toHaveBeenCalled();
+            // It MUST clear the previous frame
+            expect(mockClear).toHaveBeenCalled();
+            // It MUST NOT render the ambient border
+            expect(mockUseProgram).not.toHaveBeenCalled();
+            expect(mockDrawArrays).not.toHaveBeenCalled();
+
+            // 2. Mouse enters a valid data row (hoveredRowIndex = 0)
+            mockClear.mockClear();
+            effect.state.pointer = { x: 0, y: -0.375 }; // Maps to Y=125, which is inside row 0 (100 to 150)
+            effect.state.hoveredRowIndex = 0; // The mouse event listener handles this in reality
+            effect.draw(); // This runs the WebGL render
+
+            expect(effect.state.hoveredRowIndex).toBe(0);
+            expect(mockClear).toHaveBeenCalled();
+            expect(mockUseProgram).toHaveBeenCalled();
+            expect(mockDrawArrays).toHaveBeenCalled();
+        });
+
+        it('should initialize hoveredRowIndex to -1', () => {
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+            expect(effect.state.hoveredRowIndex).toBe(-1);
+            effect.dispose();
+        });
+
+        it('should treat header rows and footer rows as non-data rows and set hoveredRowIndex to -1 on hover', () => {
+            const tbody = container.querySelector('tbody');
+
+            // Create mocked elements for header, footer and summary rows
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            thead.appendChild(headerRow);
+            container.appendChild(thead);
+
+            const tfoot = document.createElement('tfoot');
+            const footerRow = document.createElement('tr');
+            tfoot.appendChild(footerRow);
+            container.appendChild(tfoot);
+
+            const summaryRow = document.createElement('tr');
+            summaryRow.className = 'total-row';
+            tbody.appendChild(summaryRow);
+
+            const thRow = document.createElement('tr');
+            const th = document.createElement('th');
+            thRow.appendChild(th);
+            tbody.appendChild(thRow);
+
+            // Mock getBoundingClientRect and offsetHeight for the new rows to avoid NaN
+            Object.defineProperty(summaryRow, 'getBoundingClientRect', {
+                value: () => ({ top: 150, height: 50, left: 0, width: 800 }),
+            });
+            Object.defineProperty(thRow, 'getBoundingClientRect', {
+                value: () => ({ top: 200, height: 50, left: 0, width: 800 }),
+            });
+
+            // Re-instantiate or trigger resize to pick up the new rows
+            const effect = new TableGlassEffect('.table-responsive-container', {
+                rowHoverEffect: { enabled: true },
+            });
+
+            const testCases = [headerRow, footerRow, summaryRow, thRow];
+
+            testCases.forEach((el) => {
+                document.elementFromPoint.mockReturnValue({
+                    closest: jest.fn().mockReturnValue(el),
+                });
+
+                effect.handleMouseMove({ clientX: 400, clientY: 100 });
+                expect(effect.state.hoveredRowIndex).toBe(-1);
+            });
+
+            effect.dispose();
         });
     });
 });

@@ -164,28 +164,21 @@ void main() {
         return;
     }
     
-    // Pointer spotlight masking (mouse proximity)
-    float distToPointer = distance(vec2(x, y), u_pointer);
-    if (distToPointer > u_spotlightRadius) {
-        gl_FragColor = vec4(0.0);
-        return;
-    }
-    
     // Gaussian falloff for the mouse spotlight
-    float spotlightIntensity = pow(1.0 - (distToPointer / u_spotlightRadius), 2.0);
+    float distToPointer = distance(vec2(x, y), u_pointer);
+    
+    // Smooth spotlight that falls off completely at u_spotlightRadius
+    float spotlightIntensity = max(0.0, 1.0 - (distToPointer / u_spotlightRadius));
+    spotlightIntensity = pow(spotlightIntensity, 2.0);
+    
+    // Ambient base intensity so the entire border is clearly visible at all times
+    float ambientIntensity = 0.85;
+    float totalIntensity = min(1.0, ambientIntensity + spotlightIntensity * 0.5);
     
     // Alpha falloff: max alpha (1.0) exactly on the border (minRimDist == 0),
     // fading out smoothly to 0.0 as we move away from the border.
     // We use a power curve so it stays bright near the core and drops off softly.
     float rimAlpha = pow(1.0 - (minRimDist / rimThickness), 2.5);
-    
-    // Combined intensity
-    float alpha = rimAlpha * spotlightIntensity;
-    
-    if (alpha <= 0.01) {
-        gl_FragColor = vec4(0.0);
-        return;
-    }
     
     // Calculate the physical Thin Film color
     // Use physical coordinates + time to drive the simplex noise
@@ -198,7 +191,7 @@ void main() {
     float noiseNorm = noiseVal * 0.5 + 0.5;
     
     // Spotlight influence shifts the film thickness (like cursor proximity in thinFilmPlugin)
-    float pointerInfluence = spotlightIntensity * 0.5;
+    float pointerInfluence = wake;
     
     // EXACT Oil on glass physics parameters from thinFilmPlugin.js
     float baseThickness = 300.0; // nm
@@ -226,11 +219,11 @@ void main() {
     // Spotlight Beam Color (subtle cool white)
     vec3 beamCoreColor = vec3(0.97, 0.97, 1.0);
     vec3 beamEdgeColor = vec3(0.75, 0.82, 1.0);
-    vec3 beamColor = mix(beamCoreColor, beamEdgeColor, 1.0 - spotlightIntensity);
+    vec3 beamColor = mix(beamCoreColor, beamEdgeColor, 1.0 - totalIntensity);
     
-    // Standard intensities (reverted massive boosts that caused white washout)
-    float beamLight = spotlightIntensity * 0.8;
-    float beamGlow = spotlightIntensity * 0.4;
+    // Standard intensities using total composite lighting (Ambient + Mouse)
+    float beamLight = totalIntensity * 0.8;
+    float beamGlow = totalIntensity * 0.4;
     
     // Fresnel
     float schlick = pow(1.0 - cosTheta, 4.0);
@@ -242,8 +235,8 @@ void main() {
                + beamColor * beamLight * 0.2 
                + filmColor * filmVisibility;
                
-    // Smooth alpha based on distance from the edge (fades inward)
-    float finalAlpha = rimAlpha * spotlightIntensity;
+    // The physical rim is permanently solid. Its opacity is strictly its distance falloff.
+    float finalAlpha = rimAlpha;
     
     // Output color directly. Additive blending (SRC_ALPHA, ONE) will multiply rgb by finalAlpha
     gl_FragColor = vec4(color, finalAlpha);
@@ -384,9 +377,8 @@ export class TableGlassWebGL {
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        // Don't draw if pointer is perfectly zeroed
-        if (state.pointer.x === 0 && state.pointer.y === 0) {
-            return;
+        if (state.hoveredRowIndex === -1) {
+            return; // Clear but do not draw the ambient border if no data row is hovered
         }
 
         gl.useProgram(this.program);

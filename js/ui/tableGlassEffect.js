@@ -1,6 +1,33 @@
 import { PIE_CHART_GLASS_EFFECT } from '@js/config.js';
 import { TableGlassWebGL } from './tableGlassWebGL.js';
 
+function isDataRow(row) {
+    if (!row) {
+        return false;
+    }
+    // Exclude header rows
+    if (row.closest('thead') || row.querySelector('th')) {
+        return false;
+    }
+    // Exclude footer rows
+    if (row.closest('tfoot')) {
+        return false;
+    }
+    const className = row.className ? row.className.toLowerCase() : '';
+    const id = row.id ? row.id.toLowerCase() : '';
+    if (
+        className.includes('footer') ||
+        className.includes('total') ||
+        className.includes('summary') ||
+        id.includes('footer') ||
+        id.includes('total') ||
+        id.includes('summary')
+    ) {
+        return false;
+    }
+    return true;
+}
+
 export class TableGlassEffect {
     constructor(containerSelector, options = {}) {
         this.container = document.querySelector(containerSelector);
@@ -36,6 +63,7 @@ export class TableGlassEffect {
             energyParticles: [],
             pointer: { x: 0, y: 0 },
             pointerSmoothed: { x: 0, y: 0 },
+            hoveredRowIndex: -1,
         };
         this.resizePaused = false;
 
@@ -214,10 +242,13 @@ export class TableGlassEffect {
                 // We need the canvas position to calculate relative row offsets accurately
                 const canvasRect = this.canvas.getBoundingClientRect();
 
-                // Bolt: Replaced forEach and dynamic array push with explicit loop and pre-sized array for better GC performance
-                this.rows = new Array(rows.length);
+                // Build data rows array, filtering out header/footer rows
+                const tempRows = [];
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
+                    if (!isDataRow(row)) {
+                        continue;
+                    }
                     const rowRect = row.getBoundingClientRect();
 
                     // Calculate top and left relative to the canvas itself
@@ -226,14 +257,15 @@ export class TableGlassEffect {
                     const relativeTop = rowRect.top - canvasRect.top;
                     const relativeLeft = rowRect.left - canvasRect.left;
 
-                    this.rows[i] = {
+                    tempRows.push({
                         top: relativeTop,
                         left: relativeLeft,
                         width: rowRect.width,
                         height: rowRect.height,
                         element: row,
-                    };
+                    });
                 }
+                this.rows = tempRows;
             }
         }
     }
@@ -252,7 +284,7 @@ export class TableGlassEffect {
                 // Find the closest table row
                 const rowElement = elementUnderMouse.closest('tr');
 
-                if (rowElement && this.container.contains(rowElement)) {
+                if (rowElement && this.container.contains(rowElement) && isDataRow(rowElement)) {
                     // Find the index of this row in our stored rows array
                     let foundIndex = -1;
                     for (let i = 0; i < this.rows.length; i++) {
@@ -272,8 +304,9 @@ export class TableGlassEffect {
     }
 
     handleMouseLeave() {
-        this.state.pointer.x = 0;
-        this.state.pointer.y = 0;
+        // Move pointer far off-screen so WebGL and Canvas trails don't freeze in the center
+        this.state.pointer.x = -10;
+        this.state.pointer.y = -10;
         this.state.hoveredRowIndex = -1;
     }
 
@@ -324,6 +357,18 @@ export class TableGlassEffect {
         this.drawElectricTrails(radius);
         this.drawParticles(radius);
         this.drawReflection(radius);
+
+        // Whole Pane Caustic Grid & Rim (WebGL Fluid Overlay)
+        if (this.webglLayer) {
+            this.webglLayer.draw(
+                this.state,
+                this.options,
+                this.width,
+                this.height,
+                this.dpr,
+                this.rows
+            );
+        }
     }
 
     drawRowHoverEffect() {
@@ -394,18 +439,6 @@ export class TableGlassEffect {
         this.ctx.stroke();
 
         this.ctx.restore();
-
-        // 3. Whole Pane Caustic Grid & Rim (WebGL Fluid Overlay)
-        if (this.webglLayer) {
-            this.webglLayer.draw(
-                this.state,
-                this.options,
-                this.width,
-                this.height,
-                this.dpr,
-                this.rows
-            );
-        }
     }
 
     // Helper to get point along rounded rectangle path
