@@ -31,23 +31,26 @@ Frontier AI labs operate at the intersection of extreme-scale infrastructure, ra
 
 To design an **AI-Native Repository**, we must design for the cognitive and technical constraints of LLM-based agents:
 
-| Constraint                       | Description                                                                                                            | AI-Native Mitigation                                             |
-| :------------------------------- | :--------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------- |
-| **Context Window Limits**        | LLMs have finite attention spans. Huge files (>500 lines) consume tokens and cause the model to lose track of details. | Modular, single-responsibility files and strict boundaries.      |
-| **High Search & Discovery Cost** | Searching files, running ripgrep, and browsing directories takes time, tool calls, and tokens.                         | Self-documenting paths, root-level maps, and clean code layouts. |
-| **Indeterminacy of Environment** | Agents struggle when setup, building, linting, or testing commands are obscure or change frequently.                   | Standardized task runner interfaces (e.g., `Makefile`).          |
-| **Loss of State Across Turns**   | Standard git commits don't explain _why_ an agent did something, and context is lost between chat sessions.            | File-based memory/artifacts (e.g., `task.md`, `.cursorrules`).   |
+| Constraint                       | Description                                                                                                                                                                                              | AI-Native Mitigation                                                                        |
+| :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
+| **Context Economy**              | Modern context windows are large (200k–1M tokens), but context is priced per token and attention dilutes as it fills. The binding constraint is not "can the file fit" but "what else gets crowded out." | Single-responsibility files; load interfaces instead of implementations; stable summaries.  |
+| **High Search & Discovery Cost** | Searching files, running ripgrep, and browsing directories takes time, tool calls, and tokens. Generic names (`utils.js`, `helpers.py`, `index.js` everywhere) make search results noisy.                | Self-documenting paths, distinctive file/function names, root-level maps.                   |
+| **Imprecise Edits**              | Agents edit via exact-string or patch tools. Near-duplicate code blocks and repeated boilerplate cause edits to match the wrong site or fail outright.                                                   | Deduplicate aggressively; keep unique anchors (distinct names, comments) near edit targets. |
+| **Indeterminacy of Environment** | Agents struggle when setup, building, linting, or testing commands are obscure or change frequently.                                                                                                     | Standardized task runner interfaces (e.g., `Makefile`).                                     |
+| **Slow Feedback Loops**          | Agents work in tight edit→verify cycles, often dozens per task. A 10-minute test suite or a lint that can only run repo-wide multiplies every mistake's cost.                                            | Fast, _scoped_ verification: per-file lint, per-suite tests, incremental type-checking.     |
+| **Loss of State Across Turns**   | Standard git commits don't explain _why_ an agent did something, and context is lost between chat sessions.                                                                                              | Auto-loaded context files (`AGENTS.md`/`CLAUDE.md`), memory dirs, task sheets (`task.md`).  |
 
 ---
 
 ## 3. Principles of an AI-Native Repository
 
-An AI-Native Repository is optimized for a machine-in-the-loop workflow. It should follow four main principles:
+An AI-Native Repository is optimized for a machine-in-the-loop workflow. It should follow five main principles:
 
-1. **Self-Documenting & Navigable**: An agent should be able to read one or two root files and instantly understand where everything is and how the system fits together (e.g., via `REPO_MAP.md`).
+1. **Self-Documenting & Navigable**: An agent should be able to read one or two root files and instantly understand where everything is and how the system fits together. Critically, this knowledge belongs in the file the harness **auto-loads** — `AGENTS.md` (the cross-tool standard adopted by Codex, Cursor, Zed, and others) or `CLAUDE.md` (Claude Code). A standalone `REPO_MAP.md` is only useful if the auto-loaded file points to it; otherwise the agent never knows it exists.
 2. **Deterministic Interface (Unified Task Runner)**: The agent should not need to inspect `package.json` to find frontend commands and `pyproject.toml`/`Makefile` to find backend commands. There should be a single, unified command interface (e.g., `Makefile`).
 3. **Low Context Footprint & Strict Boundaries**: Code should be highly modular. Interfaces between modules should be typed so that an agent editing module `A` does not need to read the implementation of module `B`—only its types/interfaces.
-4. **Explicit Agent State & Memory**: The repo should reserve directories for agents to store their execution states, tasks, and rules.
+4. **Fast, Scoped Verification**: This is the highest-leverage property of all. Agents iterate edit→verify far more often than humans, and they verify _honestly_ only when verification is cheap: a single test file runnable in seconds (`make test FILE=...`), per-file lint, incremental type-checking, and machine-readable errors with paths and line numbers. A repo where the only check is "run everything for 10 minutes" trains agents (and humans) to skip checking.
+5. **Explicit Agent State & Memory**: The repo should reserve directories for agents to store their execution states, tasks, and rules.
 
 ---
 
@@ -58,10 +61,10 @@ Based on these principles, here is how a hybrid Python/JavaScript repository can
 ```text
 /fund (Repository Root)
 ├── .github/                  # CI/CD pipelines (agent run verifications)
-├── .gemini/                  # App data directory for agent memory
-│   └── prompt_rules/         # Agent-specific instructions (e.g., lint rules)
-├── .cursorrules              # Global rules for Cursor/Claude/Gemini IDE integrations
-├── REPO_MAP.md               # A high-level map explaining where features live
+├── .claude/ .gemini/ .cursor/  # Per-harness app dirs (skills, subagents, memory, rules)
+├── AGENTS.md                 # Cross-tool agent context file (auto-loaded; the canonical entry)
+├── CLAUDE.md                 # Claude Code context (or a one-line pointer to AGENTS.md)
+├── REPO_MAP.md               # Detailed map, linked FROM AGENTS.md (not auto-loaded itself)
 ├── Makefile                  # The single source of truth for ALL commands
 │
 ├── docs/                     # Architectural documents and design decisions
@@ -102,9 +105,9 @@ Grouping these into `/frontend` prevents the agent from getting confused by root
 
 Nesting these under `/backend` (or `/core`) creates a clear logical separation. The agent immediately knows that anything under `backend/` is Python code governed by `pyproject.toml`.
 
-#### 3. Introduce `REPO_MAP.md` at the Root
+#### 3. Introduce `AGENTS.md` at the Root (with `REPO_MAP.md` as its appendix)
 
-This file is a cheat sheet for the AI. It outlines the directories, the core technologies used, and the locations of key business logic.
+`AGENTS.md` is the cheat sheet harnesses inject automatically at session start: directories, core technologies, key commands, and the locations of business logic. Keep it short (it is paid for in every conversation) and link out to `REPO_MAP.md`/`docs/` for depth. Note that `.cursorrules` is deprecated in favor of `.cursor/rules/`; prefer `AGENTS.md` as the shared layer with thin per-tool files pointing at it.
 
 #### 4. The Unified `Makefile` Contract
 
@@ -235,7 +238,7 @@ graph LR
 
 ### A. Persona (Who the Agent Is)
 
-To ensure the agent writes code aligned with your specific design standards, we define a repo-specific persona (usually in `.cursorrules` or `.agent/agent.md`):
+To ensure the agent writes code aligned with your specific design standards, we define a repo-specific persona (in `AGENTS.md`/`CLAUDE.md`, which harnesses auto-load):
 
 - **Context**: Explain the system's purpose (e.g., _"You are the Senior Quantitative Software Engineer managing the Fund Portfolio system"_).
 - **Architecture Philosophy**: Specify strict guidelines (e.g., _"Minimize dependencies. Prefer pure mathematical functions. Always implement strict types in Python via Mypy/Ruff"_).
@@ -322,13 +325,14 @@ At Anthropic and DeepMind, code usability for agents is treated as a regression 
 
 ---
 
-## 11. LLM-Optimized Code Semantics (Designing for Attention Heads)
+## 11. LLM-Optimized Code Semantics (Token Economy & Edit Precision)
 
-Humans scan code visually, using indentation and alignment. Transformer models read code **token by token** and process it using **attention layers**. An AI-native repository adopts a style guide optimized for token conservation and attention focusing:
+Humans scan code visually. Agents pay per token to read it, locate things in it via text search, and modify it via exact-string or patch edits. The style guide follows from those three mechanics — not from speculative claims about attention internals:
 
-- **Token-Bound File Limits**: File size is strictly limited to $2,000$ tokens (approx. 200–300 lines of code). If a file grows larger, it is split into independent sub-modules. This makes it cheap and fast for the agent's `view_file` tool to parse.
-- **Explicit Imports (No Wildcards)**: Always write `import { getFXRate, convertCurrency } from './currency'` instead of `import * as currency from './currency'`. Wildcards force the LLM to search multiple files to resolve symbol definitions, increasing the risk of hallucination.
-- **Deterministic Side-Effect Annotation**: Since LLMs cannot simulate runtimes, functions are heavily annotated with explicit decorators or docstrings indicating state mutation:
+- **One Read = One Mental Model**: Aim for files that cover a single responsibility in roughly 200–400 lines, so one read yields a complete picture. But beware the opposite failure mode: sharding code into confetti. Every extra file is another search hit to triage and another tool call to open — the doc's own "discovery cost" constraint. Split on responsibility boundaries, not on line counts.
+- **Unique, Greppable Anchors**: Distinctive function and file names make the first search hit the right one. Near-duplicate code blocks are actively dangerous: exact-string edit tools can match the wrong copy. Deduplication is an agent-safety measure, not just hygiene.
+- **Explicit Imports (No Wildcards)**: Always write `import { getFXRate, convertCurrency } from './currency'` instead of `import * as currency from './currency'`. Named imports let the agent resolve a symbol's origin from the import line alone, without opening the module.
+- **Deterministic Side-Effect Annotation**: Agents infer behavior statically rather than by executing it, so functions are annotated with explicit docstrings indicating state mutation:
 
     ```python
     def calculate_position_weights(portfolio: dict) -> dict:
@@ -379,19 +383,19 @@ Just as code has application performance monitoring (APM) tools like Datadog or 
 
 ## 15. Prompt Cache Optimization & Attention Warming
 
-Large codebases waste millions of tokens because the agent must re-read static files on every turn. Frontier labs design their repositories to maximize **Prompt Caching** (such as Anthropic's Prompt Caching or OpenAI's Context Caching):
+Prompt caching (Anthropic's Prompt Caching, OpenAI's context caching) discounts re-reading a byte-identical context prefix. The cache itself is managed by the harness, not the repo — but the repo decides **what sits in that prefix and how often it churns**:
 
-- **Cache-Friendly Layout**: We order the agent's context loading so that static, large system files are loaded first, and volatile files (like the current code modifications) are loaded last.
-- **Deterministic Seeding**: Keep core files (like `docs/architecture.md` and `schemas/api.yaml`) stable and untouched so they remain warm in the LLM's prompt cache across multiple developer turns, reducing token costs by up to 90%.
-- **Compact Commit History**: Before feeding git log history to the agent, a script pre-compiles and summarizes the recent git commits into a single-line summary file `.agent/git_history_summary`, saving thousands of context tokens.
+- **Stable Auto-Loaded Context**: `AGENTS.md`/`CLAUDE.md` and rule files are injected at the top of _every_ session. Each edit to them invalidates the cached prefix for all subsequent conversations, so keep them small, stable, and free of volatile content.
+- **No Volatile Data in Context Files**: Generated stats, dashboards, timestamps, or "last updated" lines do not belong in auto-loaded files — they bust the cache on every regeneration. Link to them instead.
+- **Compact Commit History**: Before feeding git log history to the agent, a script pre-compiles and summarizes recent commits into a single summary file, saving thousands of context tokens per session.
 
 ---
 
 ## 16. Multi-Agent Choreography Configs
 
-For large projects, a single agent model becomes overwhelmed. Frontier labs define teams of specialized agents with narrow scopes and clear communication protocols:
+For large projects, a single agent context becomes polluted. The shipping mechanism for this today is **subagent definitions** — e.g., Claude Code reads markdown files under `.claude/agents/` (frontmatter: `name`, `description`, allowed `tools`; body: the subagent's instructions), and the orchestrating agent delegates scoped tasks to them with fresh contexts. The same idea generalizes to any harness; an illustrative team definition:
 
-- **Agent Team Definitions (`.agent/team.yaml`)**:
+- **Agent Team Definitions** (illustrative; use your harness's native format such as `.claude/agents/*.md`):
 
     ```yaml
     agents:
