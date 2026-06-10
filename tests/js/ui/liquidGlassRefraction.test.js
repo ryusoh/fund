@@ -173,8 +173,8 @@ describe('liquidGlassRefraction math', () => {
 
         test('encodes the caustic mask in the blue channel at the rim', () => {
             const map = buildDisplacementMap(params);
-            expect(pixelAt(map, 1, 25).b).toBeGreaterThan(0);
-            expect(pixelAt(map, 50, 1).b).toBeGreaterThan(0);
+            expect(pixelAt(map, 0, 25).b).toBeGreaterThan(0);
+            expect(pixelAt(map, 50, 0).b).toBeGreaterThan(0);
         });
 
         test('edges displace inward toward the pane center', () => {
@@ -277,8 +277,8 @@ describe('LiquidGlassRefraction lifecycle', () => {
         const filter = document.querySelector('svg defs filter');
         expect(filter).not.toBeNull();
         expect(filter.querySelectorAll('feDisplacementMap')).toHaveLength(3);
-        expect(filter.querySelectorAll('feColorMatrix')).toHaveLength(3);
-        expect(filter.querySelectorAll('feComposite')).toHaveLength(2);
+        expect(filter.querySelectorAll('feColorMatrix')).toHaveLength(4);
+        expect(filter.querySelectorAll('feComposite')).toHaveLength(3);
 
         expect(element.style.backdropFilter).toContain(`url(#${effect.filterId})`);
         expect(element.style.backdropFilter).toContain('blur(5px)');
