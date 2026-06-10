@@ -322,6 +322,27 @@ At Anthropic and DeepMind, code usability for agents is treated as a regression 
         - **Token Cost**: How many tokens did the agent consume?
         - **Time to Fix**: How many tool calls were required?
 - **Impact**: If a refactoring makes the code so spaghetti that the agent can no longer fix the bug in under 5 minutes, the PR is flagged as having poor "Agent Ergonomics."
+- **CI/CD Integration Spec**:
+  The evaluation suite runs as a mandatory CI check on pull requests. A GitHub Actions pipeline (`.github/workflows/agent-evals.yml`) spins up the runner container, executes the mock mutation tests, and gates merging based on agent completion times and token consumption thresholds:
+
+    ```yaml
+    # .github/workflows/agent-evals.yml example
+    name: Agent Ergonomics Regression Test
+    on:
+        pull_request:
+            branches: [main]
+    jobs:
+        run-agent-evals:
+            runs-on: ubuntu-latest
+            steps:
+                - uses: actions/checkout@v6
+                - name: Run Eval Runner
+                  run: |
+                      python3 scripts/evals/run_suite.py \
+                        --agent-model "gemini-3.5-flash" \
+                        --max-tokens 50000 \
+                        --max-duration-seconds 300
+    ```
 
 ---
 
@@ -355,6 +376,24 @@ Frontier labs do not rely solely on simple `grep` or `ripgrep` for code discover
 - **Code Property Graph (CPG)**: A graph representation of the codebase mapping Abstract Syntax Trees (AST), control flow graphs, and data flow. This allows the agent to query: _"What are the dependencies of function X, and what functions modify its parameters downstream?"_
 - **Vector Embeddings Index**: On every git commit, a background hook chunks the codebase and updates a local vector index (like Qdrant or Chroma). When an agent is asked to write code, it uses a semantic search tool (retrieving by code intent, e.g. _"find how we handle FX conversion caches"_) rather than exact string matches.
 - **Symbol Extraction Maps**: A generated `symbols.json` updated on git hooks that lists all classes, methods, and functions with their exact lines, so agents can load symbols without scanning files.
+- **The LSP-to-Agent Bridge (Type-Directed Navigation)**:
+  Rather than forcing the agent to fetch raw code files to resolve references, the harness runs a headless Language Server Protocol (LSP) server (e.g., `pyright` or `typescript-language-server`) within the container sandbox. The agent is equipped with specialized tools like `get_definition`, `find_references`, and `get_hover_types`.
+  This turns symbol resolution into a single API query rather than a series of `grep` and `view_file` calls:
+
+    ```json
+    // Example tool call by the agent
+    {
+        "name": "lsp_find_definition",
+        "arguments": {
+            "file": "backend/src/position/calculator.py",
+            "line": 42,
+            "character": 15
+        }
+    }
+    // Returns the exact location: "backend/src/math/kelly.py", line 105, without the agent reading any intermediate code.
+    ```
+
+    This reduces the token cost of locating code paths by up to 80% and prevents the agent from hallucinating import networks.
 
 ---
 
