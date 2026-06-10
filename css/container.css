@@ -297,6 +297,58 @@
 }
 
 /* =========================================
+   Cross-Document View Transitions
+   App-like navigation between pages: the dock,
+   currency toggle and footer persist in place
+   while the rest of the page cross-fades.
+   ========================================= */
+@view-transition {
+    navigation: auto;
+}
+
+.container,
+.nav-container {
+    view-transition-name: main-nav;
+}
+
+#currencyToggleContainer {
+    view-transition-name: currency-toggle;
+}
+
+footer {
+    view-transition-name: site-footer;
+}
+
+/* Persistent chrome: snap into place, no morph or fade */
+::view-transition-group(main-nav),
+::view-transition-group(currency-toggle),
+::view-transition-group(site-footer) {
+    animation-duration: 0s;
+}
+
+::view-transition-old(main-nav),
+::view-transition-new(main-nav),
+::view-transition-old(currency-toggle),
+::view-transition-new(currency-toggle),
+::view-transition-old(site-footer),
+::view-transition-new(site-footer) {
+    animation-duration: 0s;
+}
+
+/* Quick, subtle cross-fade for the page content */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.18s;
+    animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @view-transition {
+        navigation: none;
+    }
+}
+
+/* =========================================
    Animations
    ========================================= */
 @keyframes pulseOrb {

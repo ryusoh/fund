@@ -18,6 +18,8 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    with http.server.HTTPServer(("127.0.0.1", port), NoCacheHandler) as srv:
+    # ThreadingHTTPServer: browsers open parallel connections; a serial server
+    # stalls them into ERR_CONNECTION_TIMED_OUT on asset-heavy pages.
+    with http.server.ThreadingHTTPServer(("127.0.0.1", port), NoCacheHandler) as srv:
         print(f"Dev server at http://127.0.0.1:{port}  (no-cache)")
         srv.serve_forever()

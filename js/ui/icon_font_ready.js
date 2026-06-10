@@ -1,5 +1,6 @@
 (function () {
     const READY_CLASS = 'icon-font-ready';
+    const STORAGE_KEY = 'fund-icon-font-ready';
     const FALLBACK_DELAY = 4000;
 
     function markReady() {
@@ -7,6 +8,14 @@
             return;
         }
         document.body.classList.add(READY_CLASS);
+        if (document.documentElement) {
+            document.documentElement.classList.add(READY_CLASS);
+        }
+        try {
+            window.localStorage.setItem(STORAGE_KEY, '1');
+        } catch {
+            // Storage unavailable (private mode, quota); icons still unhide via the class.
+        }
     }
 
     function init() {

@@ -101,10 +101,14 @@ body {
     touch-action: manipulation; /* Prevent double-tap to zoom globally, allow pan/pinch */
 }
 
-body:not(.icon-font-ready) .fa {
+/* Icons stay hidden only until the icon font is known to be ready. The ready
+   class lands on <html> pre-paint (inline head script + localStorage) on
+   repeat visits, and on <body> once document.fonts confirms the load. */
+html:not(.icon-font-ready) body:not(.icon-font-ready) .fa {
     visibility: hidden;
 }
 
+html.icon-font-ready .fa,
 body.icon-font-ready .fa {
     visibility: visible;
 }

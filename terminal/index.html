@@ -17,6 +17,16 @@
             content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=auto"
         />
         <title>Terminal</title>
+        <!-- Reveal icon font pre-paint on repeat visits; flag is set by icon_font_ready.js -->
+        <script>
+            try {
+                if (window.localStorage.getItem('fund-icon-font-ready') === '1') {
+                    document.documentElement.classList.add('icon-font-ready');
+                }
+            } catch {
+                /* storage unavailable; icons reveal once the font loads */
+            }
+        </script>
 
         <!-- Preconnect removed: using local assets only -->
         <link rel="shortcut icon" href="../assets/icons/icon-180.png" type="image/png" />
@@ -279,5 +289,21 @@
             data-sw-path="../sw.js"
             data-sw-scope="../"
         ></script>
+        <!-- Prerender nav targets on hover/tap for instant navigation (Chromium) -->
+        <script type="speculationrules">
+            {
+                "prerender": [
+                    {
+                        "where": {
+                            "and": [
+                                { "selector_matches": ".container a, .nav-container a" },
+                                { "href_matches": "/*" }
+                            ]
+                        },
+                        "eagerness": "moderate"
+                    }
+                ]
+            }
+        </script>
     </body>
 </html>

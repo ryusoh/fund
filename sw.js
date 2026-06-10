@@ -1,15 +1,42 @@
-/* Simple service worker for Fund */
-const CACHE_NAME = 'fund-cache-2026-03-22b';
+/* Service worker for Fund.
+ *
+ * Strategy summary:
+ *   - Fund data (anything under /data/): network first so figures stay fresh,
+ *     with cache fallback for offline.
+ *   - Images & fonts: cache first (immutable-ish, speed priority).
+ *   - HTML, CSS, JS: stale-while-revalidate — serve the cached copy instantly
+ *     for app-like navigation between pages, refresh the cache in the
+ *     background so the next visit picks up deploys.
+ */
+const CACHE_NAME = 'fund-cache-2026-06-09a';
 const CORE_ASSETS = [
     './',
     './index.html',
+    './position/',
+    './calendar/',
+    './terminal/',
     './css/base.css',
     './css/layout.css',
     './css/main_index.css',
+    './css/container.css',
+    './css/table.css',
+    './css/toggle.css',
+    './css/calendar.css',
     './css/perf.css',
+    './css/cursor.css',
+    './css/marquee.css',
+    './css/terminal/base.css',
+    './css/terminal/terminal.css',
+    './css/terminal/table.css',
+    './css/terminal/chart.css',
+    './css/terminal/responsive.css',
     './js/ui/scroll_control.js',
     './js/ui/nav_prefetch.js',
+    './js/ui/nav_current_page.js',
+    './js/ui/icon_font_ready.js',
+    './js/ui/currencyBootstrap.js',
     './js/ui/video_warmup.js',
+    './js/vendor/gsap.min.js',
     './assets/vendor/css/font-awesome-4.7.0.min.css',
     './assets/vendor/fonts/fontawesome-webfont.woff2',
     './assets/vendor/fonts/fontawesome-webfont.woff',
@@ -57,8 +84,52 @@ const isValidResponse = (res, req) => {
     );
 };
 
+const putInCache = (req, res) => {
+    const resClone = res.clone();
+    return caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
+};
+
+const fetchAndCache = (req) => {
+    return fetch(req).then((res) => {
+        if (isValidResponse(res, req)) {
+            putInCache(req, res);
+        }
+        return res;
+    });
+};
+
+const cacheFirst = (req) => {
+    return caches.match(req, { ignoreVary: true }).then((cached) => {
+        if (cached) {
+            return cached;
+        }
+        return fetchAndCache(req);
+    });
+};
+
+const networkFirst = (req) => {
+    return fetchAndCache(req).catch(() => caches.match(req, { ignoreVary: true }));
+};
+
+const staleWhileRevalidate = (event, req) => {
+    return caches.match(req, { ignoreVary: true }).then((cached) => {
+        const refresh = fetchAndCache(req);
+        if (cached) {
+            // Serve instantly; keep the worker alive until the refresh settles.
+            event.waitUntil(refresh.catch(() => undefined));
+            return cached;
+        }
+        return refresh.catch(() => caches.match(req, { ignoreVary: true }));
+    });
+};
+
 self.addEventListener('fetch', (event) => {
     const req = event.request;
+
+    if (req.method !== 'GET') {
+        return;
+    }
+
     const url = new URL(req.url);
 
     // Only handle same-origin requests
@@ -66,9 +137,18 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Determine strategy based on file type
-    // Images & Fonts: Cache First (Immutable-ish, speed priority)
-    // HTML, JS, CSS: Network First (Mutable, freshness priority)
+    // Media range requests (e.g. iOS video) must hit the network untouched:
+    // serving a cached 200 to a range request breaks playback.
+    if (req.headers.has('range')) {
+        return;
+    }
+
+    // Fund data is regenerated daily — always prefer the network for it.
+    if (url.pathname.includes('/data/')) {
+        event.respondWith(networkFirst(req));
+        return;
+    }
+
     const isImmutable =
         req.destination === 'image' ||
         req.destination === 'font' ||
@@ -77,37 +157,9 @@ self.addEventListener('fetch', (event) => {
         url.pathname.endsWith('.woff2');
 
     if (isImmutable) {
-        // --- CACHE FIRST ---
-        event.respondWith(
-            caches.match(req).then((cached) => {
-                if (cached) {
-                    return cached;
-                }
-                return fetch(req).then((res) => {
-                    if (isValidResponse(res, req)) {
-                        const resClone = res.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-                    }
-                    return res;
-                });
-            })
-        );
+        event.respondWith(cacheFirst(req));
     } else {
-        // --- NETWORK FIRST ---
-        // (Includes style, script, document, and everything else)
-        event.respondWith(
-            fetch(req)
-                .then((res) => {
-                    if (isValidResponse(res, req)) {
-                        const resClone = res.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-                    }
-                    return res;
-                })
-                .catch(() => {
-                    // Network failed, try cache
-                    return caches.match(req);
-                })
-        );
+        // Documents, styles, scripts: instant from cache, refreshed in background.
+        event.respondWith(staleWhileRevalidate(event, req));
     }
 });
