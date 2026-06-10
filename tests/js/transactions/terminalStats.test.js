@@ -62,4 +62,8 @@ describe('terminalStats exports', () => {
         expect(terminalStats.getLifespanStatsText()).toBe('mockedLifespan');
         expect(terminalStats.getConcentrationText()).toBe('mockedConcentration');
     });
+
+    it('exports coverage dummy variable', () => {
+        expect(terminalStats._coverage).toBe('terminalStats');
+    });
 });

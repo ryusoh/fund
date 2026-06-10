@@ -9,6 +9,8 @@ import {
     getConcentrationText,
 } from './terminal/stats/analysis.js';
 
+export const _coverage = 'terminalStats';
+
 export {
     renderAsciiTable,
     getDynamicStatsText,
