@@ -80,9 +80,11 @@ function jsonResponse(data, status, origin, extraHeaders = {}) {
         headers: {
             'Content-Type': 'application/json',
             'X-Content-Type-Options': 'nosniff',
-            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
             'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
             'X-Frame-Options': 'DENY',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
             ...corsHeaders(origin),
             ...extraHeaders,
         },
@@ -324,7 +326,15 @@ export default {
         if (request.method === 'OPTIONS') {
             return new Response(null, {
                 status: 204,
-                headers: { ...corsHeaders(origin), 'X-Content-Type-Options': 'nosniff' },
+                headers: {
+                    ...corsHeaders(origin),
+                    'X-Content-Type-Options': 'nosniff',
+                    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+                    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+                    'X-Frame-Options': 'DENY',
+                    'Referrer-Policy': 'strict-origin-when-cross-origin',
+                    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
+                },
             });
         }
 
