@@ -341,3 +341,70 @@ Humans scan code visually, using indentation and alignment. Transformer models r
     ```
 
     This prevents the agent from assuming a function has side effects (like saving to database) when it does not.
+
+---
+
+## 12. Code Graph & Semantic Search Indexing (Semantic Layer)
+
+Frontier labs do not rely solely on simple `grep` or `ripgrep` for code discovery. They compile a semantic map of the codebase that agents can query:
+
+- **Code Property Graph (CPG)**: A graph representation of the codebase mapping Abstract Syntax Trees (AST), control flow graphs, and data flow. This allows the agent to query: _"What are the dependencies of function X, and what functions modify its parameters downstream?"_
+- **Vector Embeddings Index**: On every git commit, a background hook chunks the codebase and updates a local vector index (like Qdrant or Chroma). When an agent is asked to write code, it uses a semantic search tool (retrieving by code intent, e.g. _"find how we handle FX conversion caches"_) rather than exact string matches.
+- **Symbol Extraction Maps**: A generated `symbols.json` updated on git hooks that lists all classes, methods, and functions with their exact lines, so agents can load symbols without scanning files.
+
+---
+
+## 13. Continuous Agent Execution (CI/CD Issue-to-PR)
+
+Instead of waiting for a developer to spawn an agent manually, the codebase is configured to run agents asynchronously as part of the repository lifecycle:
+
+- **Issue Autotriage Workflows**: When a bug report or feature request is opened on GitHub/GitLab, a GitHub Action workflow `.github/workflows/agent-resolver.yml` is triggered.
+- **Sandbox Execution**: The workflow runs a Docker container containing the agent. The agent reads the issue, researches the code, writes the code, runs the test suite to verify, and submits a draft Pull Request with a detailed summary.
+- **Human-in-the-loop Review**: Human developers review the agent's PR, comment on lines that need changes, and the agent automatically wakes up to address the review comments.
+
+---
+
+## 14. Agent Telemetry & Tracing (Instrumentation)
+
+Just as code has application performance monitoring (APM) tools like Datadog or OpenTelemetry, agent operations must be instrumented to debug failures and token loops:
+
+- **Trace Loggers**: The repository captures agent logs (using tools like LangSmith, Arize Phoenix, or custom JSON trace files under `.agent/traces/`).
+- **Logged Metrics**:
+    - **Tool Invocation Paths**: Every file read, command execution, and subagent call is recorded.
+    - **Token Budget & Latency**: Measures token usage per turn to prevent agents from getting stuck in infinite self-correction loops.
+    - **Hallucination Flags**: Logs every time the agent tries to call a shell command or read a file path that does not exist.
+- **Impact**: If an agent fails a task, engineers analyze the trace file to determine if the failure was caused by a bad system prompt, a missing tool, or confusing codebase documentation.
+
+---
+
+## 15. Prompt Cache Optimization & Attention Warming
+
+Large codebases waste millions of tokens because the agent must re-read static files on every turn. Frontier labs design their repositories to maximize **Prompt Caching** (such as Anthropic's Prompt Caching or OpenAI's Context Caching):
+
+- **Cache-Friendly Layout**: We order the agent's context loading so that static, large system files are loaded first, and volatile files (like the current code modifications) are loaded last.
+- **Deterministic Seeding**: Keep core files (like `docs/architecture.md` and `schemas/api.yaml`) stable and untouched so they remain warm in the LLM's prompt cache across multiple developer turns, reducing token costs by up to 90%.
+- **Compact Commit History**: Before feeding git log history to the agent, a script pre-compiles and summarizes the recent git commits into a single-line summary file `.agent/git_history_summary`, saving thousands of context tokens.
+
+---
+
+## 16. Multi-Agent Choreography Configs
+
+For large projects, a single agent model becomes overwhelmed. Frontier labs define teams of specialized agents with narrow scopes and clear communication protocols:
+
+- **Agent Team Definitions (`.agent/team.yaml`)**:
+
+    ```yaml
+    agents:
+        - name: QuantitativeArchitect
+          role: Design and verify mathematical formulas for portfolio weights.
+          tools: [read_file, write_file]
+        - name: TestEngineer
+          role: Generate unit tests for new backend modules.
+          tools: [run_command]
+        - name: SecurityAuditor
+          role: Check the code for CORS issues and dependency vulnerabilities.
+          tools: [read_file]
+    ```
+
+- **Choreography Protocol**: Defines how the agents exchange information. The "Architect" writes the code, the "Test Engineer" receives it and writes tests, and the "Auditor" scans the final diff.
+- **Impact**: Decreases token consumption and increases execution success rates by avoiding context pollution (e.g. the Test Engineer does not need to read the mathematical derivations, only the public interface).
