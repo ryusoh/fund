@@ -78,3 +78,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
 **Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
 **Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.
+
+## 2026-05-18 - [SECURITY ENHANCEMENT] Complete Security Headers for Cloudflare Worker
+
+**Vulnerability:** The Cloudflare worker JSON responses and CORS preflight (`OPTIONS`) responses were missing several modern security headers that the static site served (via `_headers`), specifically `Referrer-Policy`, `Permissions-Policy`, and the `preload` directive for `Strict-Transport-Security`.
+**Learning:** Security headers must be comprehensive and consistent across all attack surfaces. If an API endpoint doesn't serve the same strict policies as the frontend, it can create a weaker link for certain browser protections.
+**Prevention:** Added `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()`, and `preload` to `HSTS` across all worker responses (`jsonResponse` and `OPTIONS` preflight).
