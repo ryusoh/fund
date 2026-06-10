@@ -213,3 +213,131 @@ graph TD
     - Create `/backend` and move `scripts/analysis/`, `pyproject.toml`, and python tests.
     - Ensure python scripts resolve data paths (like `data/analysis/`) relative to their execution location or via an environment variable rather than hardcoded root paths.
     - Run python `pytest` and linters to verify.
+
+---
+
+## 7. Agentic Harness Engineering (Persona, Knowledge, Skills, Workflows)
+
+An AI-native repository is not just a collection of directories; it is a **collaborative workspace** where the AI agent is a first-class developer. **Agentic Harness Engineering** is the practice of equipping the repository with the specific persona, knowledge, skills, and workflows the agent needs to operate with high autonomy and minimal errors.
+
+```mermaid
+graph LR
+    H[Agentic Harness] --> P[Persona]
+    H --> K[Knowledge]
+    H --> S[Skills]
+    H --> W[Workflows]
+
+    P --> P1["agent.md / prompt rules"]
+    K --> K1["docs/ / schemas/"]
+    S --> S1["scripts/ / CLI tools"]
+    W --> W1["task.md / CI checks"]
+```
+
+### A. Persona (Who the Agent Is)
+
+To ensure the agent writes code aligned with your specific design standards, we define a repo-specific persona (usually in `.cursorrules` or `.agent/agent.md`):
+
+- **Context**: Explain the system's purpose (e.g., _"You are the Senior Quantitative Software Engineer managing the Fund Portfolio system"_).
+- **Architecture Philosophy**: Specify strict guidelines (e.g., _"Minimize dependencies. Prefer pure mathematical functions. Always implement strict types in Python via Mypy/Ruff"_).
+- **Rule Sets**: Set behavioral constraints (e.g., _"Never run git operations without user confirmation. List files to be committed before staging."_).
+
+### B. Knowledge (What the Agent Knows)
+
+Standard model weights do not know your private business rules or custom algorithms. We explicitly write down this knowledge inside the repository so the agent can reference it:
+
+- **Mathematical Reference Sheets**: If the repo uses Fermat-Pascal-Kelly, we store the formula derivations, hyperparameter limits, and scaling criteria under `docs/fermat-pascal-kelly-system.md`.
+- **API contracts**: We maintain `/schemas` (like OpenAPI or JSON Schema) so the agent knows the exact payload formats without looking at the backend code.
+- **Architecture manuals**: A short `docs/architecture.md` outlining the data flow (e.g., how the Service Worker intercepts fetches, or how `sync_configs.py` populates UI assets).
+
+### C. Skills (What the Agent Can Do)
+
+Skills are **executable tools and automation scripts** checked into the repository that the agent can run to accomplish complex, repetitive, or error-prone tasks.
+
+- **Audit & Verify Scripts**: Instead of the agent reading every JSON file to verify currency conversion manually, we check in a script like `scripts/audit_analysis_data.py`. The agent simply runs the script.
+- **Code/Type Generators**: Scripts that parse backend Python files and automatically export TypeScript interfaces. This gives the agent the "skill" of keeping both layers in sync automatically.
+- **Database/Fixtures Bootstrap**: A quick command (like `make bootstrap-test-db`) that sets up mock data so the agent can run tests in a sandbox instantly.
+
+### D. Workflows (How the Agent Works)
+
+Workflows are **structured, file-based task sheets** and verification pipelines that keep the agent aligned across multiple prompt turns:
+
+- **The Living Task List (`task.md`)**: A markdown file at the root or under `.gemini/` that acts as the agent's memory. The agent updates this file dynamically (`[ ]`, `[/]`, `[x]`) as it works.
+- **Step-by-Step Checklists**: For common procedures (e.g., "Adding a new asset class"), we write a recipe file:
+    1. Add asset symbol in `holdings_details.json`.
+    2. Map currency in `sync_configs.py`.
+    3. Run `make sync` to populate data.
+    4. Run `npm test` and `pytest`.
+- **Pre-commit Verifications**: Git hooks that enforce that the agent runs linting and formatting scripts before asking for commit confirmation. This prevents "lazy commits" with syntax errors.
+
+---
+
+## 8. Hermetic Agent Sandboxing (Nix & Devcontainers)
+
+To prevent agents from modifying global system configurations, introducing dependency mismatches, or encountering different behavior on host machines, a frontier-lab codebase provides an isolated, completely deterministic developer environment:
+
+- **Nix Flakes (`flake.nix`)**: Puts every system tool (such as specific python versions, Node, C++ compilers, linters) in a completely reproducible, read-only store. The agent operates within a shell context created by Nix.
+- **VS Code Devcontainers (`.devcontainer/`)**: Defines a Docker container config specifying the exact OS, extensions, and workspace files:
+
+    ```json
+    // .devcontainer/devcontainer.json example
+    {
+        "name": "AI-Native Dev Environment",
+        "dockerFile": "Dockerfile",
+        "settings": {
+            "python.defaultInterpreterPath": "/usr/local/bin/python",
+            "python.linting.enabled": true
+        },
+        "extensions": ["ms-python.python", "dbaeumer.vscode-eslint"]
+    }
+    ```
+
+- **Impact**: Ensures the agent cannot break your local computer's global packages, and the commands it executes behave identically in local development, subagents, and CI/CD pipelines.
+
+---
+
+## 9. Agent Security Guardrails & AST Auditing
+
+Agents are vulnerable to model hallucinations (generating incorrect imports) and prompt injection attacks (executing commands to steal data or fetch untrusted third-party files). A robust AI-native repository integrates automated verification gates:
+
+- **Dependency Lockdown**: Block agents from randomly installing new libraries unless verified through a sandbox rule. The CI/CD step validates new packages against known vulnerability databases (e.g. `npm audit`, `pip-audit`).
+- **AST-Based Static Analysis (Semgrep)**: Runs semantic checks before letting the agent make changes. For example, Semgrep rules can block the agent from adding `dangerouslySetInnerHTML` in JS or starting raw SQL queries without parameterized inputs.
+- **Mock Execution Sandboxes**: For file-writing operations, the repo can configure a temporary branch where scripts are run and evaluated, preventing an agent from modifying the master branch if tests fail.
+
+---
+
+## 10. First-Class Agent Evals (`/evals`)
+
+At Anthropic and DeepMind, code usability for agents is treated as a regression metric. If the codebase becomes too complex, the agent fails to work on it.
+
+- **Testing the Agent on the Repo**: We define a directory `/evals` containing test suites that verify the agent's ability to maintain the repo.
+- **Workflow**:
+    1. The eval script creates a dummy branch.
+    2. The script introduces a known bug (e.g., break currency conversion in `sync_configs.py`).
+    3. The agent is invoked with a prompt: _"Fix the bug in sync_configs.py"_.
+    4. The script measures:
+        - **Success Rate**: Did the agent fix the bug?
+        - **Token Cost**: How many tokens did the agent consume?
+        - **Time to Fix**: How many tool calls were required?
+- **Impact**: If a refactoring makes the code so spaghetti that the agent can no longer fix the bug in under 5 minutes, the PR is flagged as having poor "Agent Ergonomics."
+
+---
+
+## 11. LLM-Optimized Code Semantics (Designing for Attention Heads)
+
+Humans scan code visually, using indentation and alignment. Transformer models read code **token by token** and process it using **attention layers**. An AI-native repository adopts a style guide optimized for token conservation and attention focusing:
+
+- **Token-Bound File Limits**: File size is strictly limited to $2,000$ tokens (approx. 200–300 lines of code). If a file grows larger, it is split into independent sub-modules. This makes it cheap and fast for the agent's `view_file` tool to parse.
+- **Explicit Imports (No Wildcards)**: Always write `import { getFXRate, convertCurrency } from './currency'` instead of `import * as currency from './currency'`. Wildcards force the LLM to search multiple files to resolve symbol definitions, increasing the risk of hallucination.
+- **Deterministic Side-Effect Annotation**: Since LLMs cannot simulate runtimes, functions are heavily annotated with explicit decorators or docstrings indicating state mutation:
+
+    ```python
+    def calculate_position_weights(portfolio: dict) -> dict:
+        """
+        Calculates weights using the Kelly Criterion.
+
+        Preconditions: portfolio must contain 'shares' and 'price'.
+        Side Effects: None (Does not write to disk or mutate inputs).
+        """
+    ```
+
+    This prevents the agent from assuming a function has side effects (like saving to database) when it does not.
