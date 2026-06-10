@@ -101,40 +101,40 @@ void main() {
     // Normalize coordinates based on device pixel ratio fix
     vec2 st = gl_FragCoord.xy / u_resolution.xy;
     st.x *= u_resolution.x / u_resolution.y;
-    
+
     // Base scale for the rippling caustics
     vec2 pos = st * 3.5;
-    
+
     // Simulate light beam sweeping across (like the original optic sweep)
     float sweepPhase = fract(u_time * 0.15 - (st.x + st.y) * 0.3);
     float beam = smoothstep(0.1, 0.5, sweepPhase) * smoothstep(0.9, 0.5, sweepPhase);
     float specularCore = pow(beam, 6.0) * 1.5;
-    
+
     // Layered voronoi to create rippling glass imperfections
     float v1 = voronoi(pos + u_time * 0.15);
     float v2 = voronoi(pos * 1.5 - u_time * 0.2);
-    
+
     // Combine to get the "light network" effect
     float c = v1 * 0.5 + v2 * 0.5;
     float causticLines = pow(1.0 - c, 3.0);
-    
+
     // Calculate thin film thickness (OPD) based on fluid depth/caustics
     // Maps the fluid structure to 300-500nm film thickness range
     float filmThickness = 300.0 + (c + causticLines * 0.5) * 200.0;
-    
+
     // Get iridescence color based on physical interference
     vec3 iridescence = thinFilmColor(filmThickness);
-    
+
     // The caustic light only fully shines where the sweeping beam hits it
     float ambientCaustic = causticLines * 0.3;
     float activeCaustic = causticLines * beam * 1.5;
-    
+
     // Mix the iridescent physical optics with the beam and caustics
     vec3 color = iridescence * (ambientCaustic + activeCaustic) + vec3(specularCore);
-    
+
     // Vignette so the edges remain dark
     float vignette = smoothstep(1.0, 0.2, length((gl_FragCoord.xy / u_resolution.xy) - vec2(0.5)));
-    
+
     // Calculate alpha: more transparent per user request
     float alpha = clamp((color.r + color.g + color.b) / 3.0, 0.0, 1.0) * vignette * 0.65;
 
@@ -251,10 +251,10 @@ export class WebGLCaustics {
 
     resize() {
         if (!this.enabled || !this.container) return;
-        
+
         const width = this.container.clientWidth;
         const height = this.container.clientHeight;
-        
+
         if (width === 0 || height === 0) return;
 
         this.renderer.setSize(width, height);
