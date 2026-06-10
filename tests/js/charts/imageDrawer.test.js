@@ -436,7 +436,7 @@ describe('drawImage', () => {
     });
 
     it('should handle missing devicePixelRatio', () => {
-        delete global.window.devicePixelRatio;
+        global.window.devicePixelRatio = undefined;
         logoInfo.renderAsWhite = true;
         drawImage(ctx, arc, img, logoInfo);
 

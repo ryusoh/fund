@@ -322,18 +322,19 @@ body.body-calendar {
         drop-shadow(-0.5px 1.5px 3px rgba(0, 0, 0, 0.18)) !important;
 }
 
-/* Zoom functionality */
+/* Zoom functionality.
+   The pane zooms in place — no relative→fixed reposition, so the transition
+   is a pure composited transform/opacity pair. The pane surface (gradient +
+   shadows) lives on ::after and only fades, which keeps the GPU from
+   re-rasterizing large shadow layers every frame of the zoom. */
 .page-center-wrapper {
     /* Entrance animation: hide until JS signals ready */
     opacity: 0;
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition:
+        opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
     width: 100%;
-    background-color: rgba(44, 44, 46, 0);
-    border-radius: 0px;
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
     position: relative;
-    top: 0;
-    left: 0;
     transform-origin: center center;
     will-change: transform;
     backface-visibility: hidden;
@@ -347,22 +348,54 @@ body.body-calendar {
 }
 
 .page-center-wrapper.zoomed {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(1.4);
-    transform-origin: center center;
-    max-width: none;
-    max-height: none;
-    overflow: visible;
-    z-index: 100;
-    background-color: rgba(0, 0, 0, 0.4);
-    box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.25),
-        0 12px 40px rgba(0, 0, 0, 0.2),
-        0 0 0 1px rgba(255, 255, 255, 0.06);
+    /* --zoom-center-shift is measured by JS when the zoom starts, so the
+       glide to viewport center and the scale run as one composited motion. */
+    transform: translateY(var(--zoom-center-shift, 0px)) scale(1.4) translateZ(0);
     border-radius: 8px;
-    margin-top: 0 !important;
+    z-index: 100;
+}
+
+/* Glass slab surface for the zoomed pane (desktop). Sits below the optic
+   sweep (::before, z-index -1). Edge contrast is graded optically instead of
+   a hard 1px ring: a wide elevation penumbra outside, and a grazing-angle
+   absorption vignette inside the rim. */
+@media (min-width: 769px) {
+    .page-center-wrapper::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        border-radius: 8px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+        background-color: rgba(0, 0, 0, 0.4);
+        background-image: linear-gradient(
+            160deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.01) 35%,
+            rgba(0, 0, 0, 0.15) 75%,
+            rgba(0, 0, 0, 0.5) 100%
+        );
+        box-shadow:
+            /* Deep elevation — wide penumbra eases the pane/background contrast */
+            0 30px 70px rgba(0, 0, 0, 0.55),
+            0 12px 28px rgba(0, 0, 0, 0.3),
+            /* Crisp 1px rim: top catchlight, bottom edge occlusion — slab thickness */ inset 0 1px
+                0 rgba(255, 255, 255, 0.28),
+            inset 1px 0 0 rgba(255, 255, 255, 0.09),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+            inset -1px 0 0 rgba(0, 0, 0, 0.3),
+            /* Polished inner glass volume */ inset 2px 3px 8px rgba(255, 255, 255, 0.09),
+            inset -2px -3px 10px rgba(0, 0, 0, 0.32),
+            /* Grazing-angle absorption: inner vignette softens the rim luminance step */ inset 0 0
+                28px rgba(0, 0, 0, 0.22),
+            /* Faint second-surface reflection */ inset 0 -12px 24px rgba(255, 255, 255, 0.05);
+    }
+
+    .page-center-wrapper.zoomed::after {
+        opacity: 1;
+    }
 }
 
 /*

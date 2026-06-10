@@ -1,4 +1,3 @@
-/* global performance, KeyboardEvent */
 /**
  * @jest-environment jsdom
  */

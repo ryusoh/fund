@@ -149,10 +149,9 @@ describe('Ambient Logic', () => {
     });
 
     it('should catch exceptions and log warning', () => {
-        Object.defineProperty(window, 'URLSearchParams', {
-            get: () => {
-                throw new Error('mock init error');
-            },
+        jest.resetModules();
+        window.URLSearchParams = jest.fn().mockImplementation(() => {
+            throw new Error('mock init error');
         });
 
         require('../../../js/ambient/ambient.js');

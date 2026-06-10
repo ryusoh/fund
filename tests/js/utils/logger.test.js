@@ -75,7 +75,7 @@ describe('logger', () => {
         beforeEach(() => {
             // Store and remove process to simulate pure browser environment
             originalProcess = global.process;
-            delete global.process;
+            global.process = undefined;
         });
 
         afterEach(() => {
@@ -124,7 +124,7 @@ describe('logger', () => {
 
         test('detects test hostname as development', async () => {
             // Remove process to force hostname check
-            delete global.process;
+            global.process = undefined;
             global.window = {
                 location: {
                     hostname: 'test.example.com',
@@ -141,7 +141,7 @@ describe('logger', () => {
 
         test('detects staging hostname as development', async () => {
             // Remove process to force hostname check
-            delete global.process;
+            global.process = undefined;
             global.window = {
                 location: {
                     hostname: 'staging.example.com',
@@ -174,7 +174,7 @@ describe('logger', () => {
         });
 
         test('defaults to development when no environment detected', async () => {
-            delete global.window;
+            global.window = undefined;
             jest.resetModules();
             ({ logger } = await import('@utils/logger.js'));
 
@@ -184,8 +184,8 @@ describe('logger', () => {
 
         test('defaults to development when neither process nor window available', async () => {
             // Remove both process and window to hit the fallback path
-            delete global.window;
-            delete global.process;
+            global.window = undefined;
+            global.process = undefined;
             jest.resetModules();
 
             const { logger, isDevelopment } = await import('@utils/logger.js');
@@ -201,7 +201,7 @@ describe('logger', () => {
         test('handles process without env property', async () => {
             // Set process without env to test branch coverage
             global.process = {};
-            delete global.window;
+            global.window = undefined;
             jest.resetModules();
 
             const { logger, isDevelopment } = await import('@utils/logger.js');
@@ -216,7 +216,7 @@ describe('logger', () => {
 
         test('handles window without location property', async () => {
             // Set window without location to test branch coverage
-            delete global.process;
+            global.process = undefined;
             global.window = {};
             jest.resetModules();
 

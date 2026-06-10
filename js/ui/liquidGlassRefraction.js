@@ -234,6 +234,12 @@ function releaseSharedSvg() {
     }
 }
 
+function nowMs() {
+    return typeof window !== 'undefined' && window.performance
+        ? window.performance.now()
+        : Date.now();
+}
+
 const CHANNEL_MATRICES = {
     r: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0',
     g: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0',
@@ -263,6 +269,11 @@ export class LiquidGlassRefraction {
             // (e.g. "blur(24px) saturate(1.8)") chained after the lens.
             frost: null,
             mapScale: 0.5,
+            // Ramp the lens in over this many ms after it first applies:
+            // displacement scales linearly with slab thickness, so this is the
+            // glass optically thickening from zero to full depth instead of
+            // the backdrop snapping into its refracted position. 0 = instant.
+            rampMs: 0,
             ...options,
         };
 
@@ -270,6 +281,12 @@ export class LiquidGlassRefraction {
         if (!this.enabled) {
             return;
         }
+
+        // Lens strength multiplier (0..1) applied to displacement scales and
+        // caustic gain; driven from 0 → 1 by the ramp when rampMs > 0.
+        this._strength = this.options.rampMs > 0 ? 0 : 1;
+        this._rampActive = false;
+        this._baseScale = 0;
 
         this.filterId = `liquid-glass-refraction-${nextFilterId++}`;
         this.canvas = document.createElement('canvas');
@@ -390,6 +407,7 @@ export class LiquidGlassRefraction {
             caustic.setAttribute('k3', '0');
             caustic.setAttribute('k4', '0');
             this.filter.appendChild(caustic);
+            this._causticNode = caustic;
         }
 
         defs.appendChild(this.filter);
@@ -461,14 +479,55 @@ export class LiquidGlassRefraction {
 
         // feDisplacementMap offset = scale · (channel − 0.5); the map encodes
         // shift / maxShift, so scale = 2 · maxShift reproduces CSS pixels.
-        const base = 2 * map.maxShift;
-        this.displacementNodes.r.setAttribute('scale', String(base * this._ratios.r));
-        this.displacementNodes.g.setAttribute('scale', String(base * this._ratios.g));
-        this.displacementNodes.b.setAttribute('scale', String(base * this._ratios.b));
+        this._baseScale = 2 * map.maxShift;
+        this._applyStrength();
 
         const frost = this.options.frost !== null ? this.options.frost : this._inheritedFrost;
         const chain = frost ? `url(#${this.filterId}) ${frost}` : `url(#${this.filterId})`;
         this.element.style.backdropFilter = chain;
+
+        if (this.options.rampMs > 0 && this._strength < 1) {
+            this._startRamp();
+        }
+    }
+
+    _applyStrength() {
+        if (!this.displacementNodes || !this._baseScale) {
+            return;
+        }
+        // Strength scales the effective slab thickness: displacement and the
+        // caustic energy term both grow linearly with it.
+        const base = this._baseScale * this._strength;
+        this.displacementNodes.r.setAttribute('scale', String(base * this._ratios.r));
+        this.displacementNodes.g.setAttribute('scale', String(base * this._ratios.g));
+        this.displacementNodes.b.setAttribute('scale', String(base * this._ratios.b));
+        if (this._causticNode) {
+            this._causticNode.setAttribute('k1', String(this.options.causticGain * this._strength));
+        }
+    }
+
+    _startRamp() {
+        if (this._rampActive) {
+            return;
+        }
+        this._rampActive = true;
+        const start = nowMs();
+        const tick = () => {
+            if (!this.enabled) {
+                this._rampActive = false;
+                return;
+            }
+            const t = Math.min(1, (nowMs() - start) / this.options.rampMs);
+            // Smoothstep: the slab thickens gently, eases in and out.
+            this._strength = t * t * (3 - 2 * t);
+            this._applyStrength();
+            if (t < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                this._rampActive = false;
+            }
+        };
+        requestAnimationFrame(tick);
     }
 
     dispose() {
@@ -489,6 +548,7 @@ export class LiquidGlassRefraction {
         this.filter = null;
         this.feImage = null;
         this.displacementNodes = null;
+        this._causticNode = null;
         this.canvas = null;
         this.ctx = null;
         instanceCount--;

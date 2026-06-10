@@ -191,7 +191,7 @@ describe('thinFilmPlugin', () => {
 
     it('should not crash in non-browser environment', () => {
         const origWindow = global.window;
-        delete global.window;
+        global.window = undefined;
         expect(() => thinFilmPlugin.afterDatasetsDraw(chart)).not.toThrow();
         global.window = origWindow;
     });

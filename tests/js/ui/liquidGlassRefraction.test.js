@@ -1,4 +1,3 @@
-/* global HTMLCanvasElement */
 import {
     LiquidGlassRefraction,
     supportsSvgBackdropFilter,
@@ -340,6 +339,55 @@ describe('LiquidGlassRefraction lifecycle', () => {
             radius: 24,
         });
         expect(effect._lastGeometry).toContain('200x100r24');
+        effect.dispose();
+    });
+
+    test('rampMs thickens the lens in from zero strength', () => {
+        // Queue-based rAF so the ramp can be pumped frame by frame
+        const queue = [];
+        global.requestAnimationFrame = (cb) => {
+            queue.push(cb);
+            return queue.length;
+        };
+        const pump = () => {
+            queue.splice(0).forEach((cb) => cb());
+        };
+        let now = 1000;
+        const nowSpy = jest.spyOn(performance, 'now').mockImplementation(() => now);
+
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            rampMs: 400,
+        });
+        pump(); // run the scheduled first update
+
+        const scales = () =>
+            Array.from(document.querySelectorAll('svg defs filter feDisplacementMap')).map((n) =>
+                parseFloat(n.getAttribute('scale'))
+            );
+        const caustic = document.querySelector('svg defs filter feComposite[k3="0"]');
+
+        // Lens applied, but the slab starts at zero optical thickness
+        expect(element.style.backdropFilter).toContain('url(#');
+        expect(scales().every((s) => s === 0)).toBe(true);
+        expect(parseFloat(caustic.getAttribute('k1'))).toBe(0);
+
+        // Mid-ramp: partial displacement, partial caustics
+        now = 1200; // t = 0.5
+        pump();
+        const mid = scales();
+        expect(mid[1]).toBeGreaterThan(0);
+        expect(mid[1]).toBeLessThan(effect._baseScale);
+
+        // Past the end: full strength, ramp stops
+        now = 1500;
+        pump();
+        expect(scales()[1]).toBeCloseTo(effect._baseScale, 6);
+        expect(parseFloat(caustic.getAttribute('k1'))).toBeCloseTo(0.7, 6);
+        expect(effect._rampActive).toBe(false);
+
+        nowSpy.mockRestore();
         effect.dispose();
     });
 

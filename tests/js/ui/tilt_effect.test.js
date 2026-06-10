@@ -49,7 +49,7 @@ describe('tilt_effect', () => {
 
     test('should return early if no window', () => {
         const originalWindow = global.window;
-        delete global.window;
+        global.window = undefined;
         initTiltEffect();
         global.window = originalWindow; // Can't easily test this in JSDOM, but we cover the branch
     });

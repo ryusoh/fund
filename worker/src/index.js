@@ -1,5 +1,3 @@
-/* global AbortSignal */
-
 const ALPACA_SNAPSHOTS_URL = 'https://data.alpaca.markets/v2/stocks/snapshots';
 const ALLOWED_ORIGIN = 'https://fund.lyeutsaon.com';
 

@@ -32,6 +32,9 @@ import {
 } from '@ui/backgroundSweep.js';
 
 // --- STATE ---
+// The zoom transform transition runs 0.55s; GPU-heavy effects (optic sweep,
+// refraction lens) wait this long after a zoom toggle before starting.
+const ZOOM_SETTLE_MS = 700;
 let calendarInstance = null; // Store calendar instance for resize handling
 let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
@@ -1195,9 +1198,20 @@ function initCalendarSweepObservers() {
         return;
     }
 
+    let sweepSettleTimer = null;
+
     const handleZoomChange = () => {
+        if (sweepSettleTimer) {
+            window.clearTimeout(sweepSettleTimer);
+            sweepSettleTimer = null;
+        }
         if (wrapper.classList.contains('zoomed')) {
-            startCalendarSweepLoop();
+            // Hold the optic sweep until the zoom transform has landed so the
+            // blurred blend layer never competes with the animation for GPU.
+            sweepSettleTimer = window.setTimeout(() => {
+                sweepSettleTimer = null;
+                startCalendarSweepLoop();
+            }, ZOOM_SETTLE_MS);
         } else {
             stopCalendarSweepLoop();
         }
@@ -1239,30 +1253,62 @@ function initCalendarSweepObservers() {
     });
 }
 
-// --- ZOOM PANE LIQUID GLASS ---
-// While the calendar is zoomed, its dark backdrop pane gets the refraction
-// lens (bezel distortion + edge caustics); disposed again on zoom-out so the
-// unzoomed wrapper stays untouched.
+// --- ZOOM PANE: CENTERING + LIQUID GLASS ---
+// When the calendar zooms, the pane glides to the viewport center and scales
+// as one composited transform (--zoom-center-shift is measured here, in the
+// same microtask the class flips, so no intermediate frame paints). The
+// refraction lens (bezel distortion + edge caustics) attaches only after the
+// transform settles — building the displacement map and re-rasterizing the
+// backdrop mid-animation would steal frame budget from the transition — and
+// is disposed on zoom-out so the unzoomed wrapper stays untouched.
 let zoomRefraction = null;
+let zoomRefractionTimer = null;
 
-function initCalendarZoomRefraction() {
+function initCalendarZoomPane() {
     const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
     if (!wrapper) {
         return;
     }
 
+    const centerZoomedPane = () => {
+        // Layout coordinates (offset* ignores transforms), so the measurement
+        // is correct even when re-zooming mid-transition.
+        let layoutTop = 0;
+        let node = wrapper;
+        while (node) {
+            layoutTop += node.offsetTop;
+            node = node.offsetParent;
+        }
+        const layoutCenterY = layoutTop + wrapper.offsetHeight / 2 - window.scrollY;
+        const shiftY = Math.round(window.innerHeight / 2 - layoutCenterY);
+        wrapper.style.setProperty('--zoom-center-shift', `${shiftY}px`);
+    };
+
     const syncZoomRefraction = () => {
         const isZoomed = wrapper.classList.contains('zoomed');
-        if (isZoomed && !zoomRefraction) {
-            try {
-                zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
-            } catch (e) {
-                logger.error('Failed to initialize zoom pane refraction:', e);
+        if (isZoomed && !zoomRefraction && !zoomRefractionTimer) {
+            centerZoomedPane();
+            zoomRefractionTimer = window.setTimeout(() => {
+                zoomRefractionTimer = null;
+                if (!wrapper.classList.contains('zoomed')) {
+                    return;
+                }
+                try {
+                    zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
+                } catch (e) {
+                    logger.error('Failed to initialize zoom pane refraction:', e);
+                    zoomRefraction = null;
+                }
+            }, ZOOM_SETTLE_MS);
+        } else if (!isZoomed) {
+            if (zoomRefractionTimer) {
+                window.clearTimeout(zoomRefractionTimer);
+                zoomRefractionTimer = null;
+            }
+            if (zoomRefraction) {
+                zoomRefraction.dispose();
                 zoomRefraction = null;
             }
-        } else if (!isZoomed && zoomRefraction) {
-            zoomRefraction.dispose();
-            zoomRefraction = null;
         }
     };
 
@@ -1288,7 +1334,7 @@ export function autoInitCalendar() {
         }
         initCalendar().then(() => {
             initCalendarSweepObservers();
-            initCalendarZoomRefraction();
+            initCalendarZoomPane();
         });
     }
 }

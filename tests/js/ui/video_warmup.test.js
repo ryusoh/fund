@@ -327,7 +327,7 @@ describe('video_warmup.js', () => {
         const originalWindow = global.window;
 
         try {
-            delete global.window;
+            global.window = undefined;
 
             jest.isolateModules(() => {
                 require('@ui/video_warmup.js');

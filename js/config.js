@@ -706,10 +706,13 @@ export const DONUT_REFRACTION = {
 
 // Liquid-glass lens for the calendar's zoomed dark pane (.page-center-wrapper.zoomed).
 // frost stays null so the pane keeps its exact brightness — lens and caustics only.
+// The wide bezel refracts the background into the rim, feathering the
+// pane/background boundary optically.
 export const CALENDAR_ZOOM_REFRACTION = {
     ...TABLE_GLASS_EFFECT.refraction,
-    bezelWidth: 12,
-    thickness: 22, // the pane is scaled 1.4x while zoomed; keep the visual bezel modest
+    bezelWidth: 18,
+    thickness: 26,
+    rampMs: 450, // glass "thickens in" so the backdrop eases into refraction
 };
 
 export const MARQUEE_CONFIG = {

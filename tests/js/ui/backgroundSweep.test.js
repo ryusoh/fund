@@ -138,7 +138,7 @@ describe('backgroundSweep.js', () => {
 
     test('returns early if document is undefined (stopBackgroundSweepEffect)', () => {
         const originalDocument = global.document;
-        delete global.document;
+        global.document = undefined;
 
         jest.isolateModules(() => {
             const {
@@ -152,7 +152,7 @@ describe('backgroundSweep.js', () => {
 
     test('returns early if document is undefined (initBackgroundSweepEffect)', () => {
         const originalDocument = global.document;
-        delete global.document;
+        global.document = undefined;
 
         jest.isolateModules(() => {
             const {
@@ -226,7 +226,7 @@ describe('backgroundSweep.js', () => {
         vm.runInContext(
             `
             var originalDoc = document;
-            delete globalThis.document;
+            globalThis.document = undefined;
             var document = undefined;
         `,
             context
