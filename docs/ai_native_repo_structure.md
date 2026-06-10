@@ -118,3 +118,58 @@ The `Makefile` should map all agent operations. This allows the agent to run com
 #### 5. Strict Interface Typing (`/schemas`)
 
 Pydantic exported JSON schemas, OpenAPI specifications, or Protocol Buffers create a compile-time boundary. If the agent modifies the backend API, the frontend compile fails immediately, giving the agent a direct feedback loop to fix its own code.
+
+---
+
+## 5. URL and Routing Preservation (Decoupling Code vs. Delivery)
+
+A common concern when moving static website entries (like `/terminal`, `/position`) into a subfolder like `/frontend` is that public URL endpoints will break or change to `/frontend/terminal` or `/frontend/position`.
+
+This concern is resolved by **decoupling the physical repository layout from the public routing structure**. Repository structure is optimized for **AI developer ergonomics**, while deployment routing is optimized for **user navigation**.
+
+There are two primary ways to manage this separation depending on the deployment strategy:
+
+### A. Deploying Static Roots (Cloudflare Pages, Vercel, Netlify)
+
+If the project is hosted on a static provider (e.g., Cloudflare Pages via `wrangler` or Vercel), the build configuration allows specifying a **Root Directory** or **Publish Directory**:
+
+- **Root Directory (Source)**: Set to `frontend/`. The hosting provider treats this folder as the git root for builds.
+- **Publish Directory (Output)**: Set to `frontend/` (or the build output like `frontend/dist`).
+- **Result**: When deployed, `frontend/terminal/index.html` becomes the server root's `/terminal/index.html`. Users still visit `fund.lyeutsaon.com/terminal`, keeping URLs completely unchanged.
+
+### B. Bundler-Based Rewrite Rules (Vite, Webpack, Next.js)
+
+If using a modern frontend bundler inside `frontend/`, entry-point aliases or output path overrides can map folder paths to clean outputs:
+
+- For MPA (Multi-Page Apps), configure Vite/Webpack to fetch inputs from `frontend/src/pages/` and output them as flat files:
+
+    ```js
+    // vite.config.js example
+    export default {
+        build: {
+            rollupOptions: {
+                input: {
+                    main: 'index.html',
+                    terminal: 'src/pages/terminal/index.html',
+                    position: 'src/pages/position/index.html',
+                },
+            },
+        },
+    };
+    ```
+
+- The built artifact directory (e.g., `dist/`) is served at the domain root, so files are mapped back to their canonical URLs `/terminal` and `/position`.
+
+### C. Server-Level Aliasing (Nginx, Apache, or dev_server.py)
+
+If using a custom dev server (such as Python's `SimpleHTTPRequestHandler`), we can run the server with the root pointed to the `frontend/` directory instead of the project root:
+
+```bash
+# Old dev command:
+python3 scripts/dev_server.py 8000  # served root (included terminal/ at root)
+
+# New dev command:
+cd frontend && python3 ../scripts/dev_server.py 8000  # serves frontend/ at root
+```
+
+This preserves `localhost:8000/terminal/` locally just as it is in production.
