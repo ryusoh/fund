@@ -173,3 +173,43 @@ cd frontend && python3 ../scripts/dev_server.py 8000  # serves frontend/ at root
 ```
 
 This preserves `localhost:8000/terminal/` locally just as it is in production.
+
+---
+
+## 6. Restructuring Strategies & Migration Plan (Managing Risk)
+
+Physical reorganizations of a live codebase run the risk of breaking paths, imports, and CI/CD pipelines. To manage this risk in a hybrid repository, two strategies are recommended:
+
+### Strategy 1: The "Virtual" AI-Native Repo (Zero-Risk, High-Reward)
+
+For codebases where physical file movement is too risky, we can construct a virtual layer that gives AI agents the same context and validation capabilities without altering any directory paths:
+
+1. **Create `REPO_MAP.md` at the Root**: Map current paths to functional areas (e.g. `scripts/analysis/` -> backend engine, `js/pages/` -> page logic).
+2. **Unified `Makefile`**: Bind all testing, formatting, and linting commands under a root `Makefile` so the agent has a single command interface.
+3. **Agent Rules (`.cursorrules` or `.geminiprompt`)**: Provide prompt-level rules to guide the agent through the codebase structure.
+
+- **Impact**: Zero downtime, zero code changes, 90% of the developer experience benefits for AI agents.
+
+### Strategy 2: Incremental, Test-Driven Restructuring (Controlled Physical Migration)
+
+If a physical layout change is desired, it should be executed in discrete, tested stages instead of a single massive change:
+
+```mermaid
+graph TD
+    A[Current Layout] --> B[Stage 1: Normalize JS Imports with Aliases]
+    B --> C[Stage 2: Move Frontend & Update CI/CD]
+    C --> D[Stage 3: Move Backend & Resolve Script Paths]
+    D --> E[Clean AI-Native Layout]
+```
+
+- **Stage 1: Import Path Normalization (JS & Python)**
+    - Replace relative JS imports (e.g., `../../utils.js`) with path aliases (e.g., `@utils/utils.js`) which are already configured in Jest. Once aliases are used, physical movement will not break imports.
+- **Stage 2: Frontend Migration**
+    - Create `/frontend` and move `js/`, `css/`, `package.json`, and page entrypoints.
+    - Update the GitHub Pages workflow publish path from `.` to `frontend`.
+    - Update `scripts/dev_server.py` to serve the `frontend/` directory.
+    - Run JS Jest tests and verify local UI.
+- **Stage 3: Backend Migration**
+    - Create `/backend` and move `scripts/analysis/`, `pyproject.toml`, and python tests.
+    - Ensure python scripts resolve data paths (like `data/analysis/`) relative to their execution location or via an environment variable rather than hardcoded root paths.
+    - Run python `pytest` and linters to verify.
