@@ -1,0 +1,332 @@
+import {
+    OrthographicCamera,
+    PlaneGeometry,
+    Scene,
+    ShaderMaterial,
+    WebGLRenderer,
+    Mesh,
+    Clock,
+} from '../vendor/three.module.js';
+
+const FRAGMENT_SHADER = `
+uniform float u_time;
+uniform vec2 u_resolution;
+
+#define TWO_PI 6.28318530718
+
+// CIE 1931 color matching approximation using Gaussian fits
+vec3 cieXYZ(float lambda) {
+    float x1 = exp(-0.5 * pow((lambda - 442.0) * ((lambda < 442.0) ? 0.0624 : 0.0374), 2.0));
+    float x2 = exp(-0.5 * pow((lambda - 599.8) * ((lambda < 599.8) ? 0.0264 : 0.0323), 2.0));
+    float x3 = exp(-0.5 * pow((lambda - 501.1) * ((lambda < 501.1) ? 0.0490 : 0.0382), 2.0));
+    float x = 0.362 * x1 + 1.056 * x2 - 0.065 * x3;
+
+    float y1 = exp(-0.5 * pow((lambda - 568.8) * ((lambda < 568.8) ? 0.0213 : 0.0247), 2.0));
+    float y2 = exp(-0.5 * pow((lambda - 530.9) * ((lambda < 530.9) ? 0.0613 : 0.0322), 2.0));
+    float y = 0.821 * y1 + 0.286 * y2;
+
+    float z1 = exp(-0.5 * pow((lambda - 437.0) * ((lambda < 437.0) ? 0.0845 : 0.0278), 2.0));
+    float z2 = exp(-0.5 * pow((lambda - 459.0) * ((lambda < 459.0) ? 0.0385 : 0.0725), 2.0));
+    float z = 1.217 * z1 + 0.681 * z2;
+
+    return vec3(x, y, z);
+}
+
+// XYZ -> linear sRGB (D65 illuminant)
+vec3 xyzToSRGB(vec3 xyz) {
+    return vec3(
+        dot(xyz, vec3( 3.2406, -1.5372, -0.4986)),
+        dot(xyz, vec3(-0.9689,  1.8758,  0.0415)),
+        dot(xyz, vec3( 0.0557, -0.2040,  1.0570))
+    );
+}
+
+vec3 thinFilmColor(float opd) {
+    vec3 xyz = vec3(0.0);
+    float ySum = 0.0;
+    float phase, refl;
+    vec3 cmf;
+
+    #define FILM_SAMPLE(LAMBDA) \\
+        phase = TWO_PI * opd / LAMBDA; \\
+        refl = sin(phase * 0.5); refl = refl * refl; \\
+        cmf = cieXYZ(LAMBDA); \\
+        xyz += cmf * refl; \\
+        ySum += cmf.y;
+
+    FILM_SAMPLE(390.0) FILM_SAMPLE(406.0) FILM_SAMPLE(422.0) FILM_SAMPLE(438.0)
+    FILM_SAMPLE(454.0) FILM_SAMPLE(470.0) FILM_SAMPLE(486.0) FILM_SAMPLE(502.0)
+    FILM_SAMPLE(518.0) FILM_SAMPLE(534.0) FILM_SAMPLE(550.0) FILM_SAMPLE(566.0)
+    FILM_SAMPLE(582.0) FILM_SAMPLE(598.0) FILM_SAMPLE(614.0) FILM_SAMPLE(630.0)
+    FILM_SAMPLE(646.0) FILM_SAMPLE(662.0) FILM_SAMPLE(678.0) FILM_SAMPLE(694.0)
+
+    xyz /= max(ySum, 0.001);
+    xyz *= 2.8;
+
+    vec3 rgb = xyzToSRGB(xyz);
+    rgb = rgb / (rgb + vec3(1.0));
+    rgb *= 1.8;
+
+    return clamp(rgb, vec3(0.0), vec3(1.0));
+}
+
+// 2D Random
+vec2 random2(vec2 p) {
+    return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);
+}
+
+// Voronoi distance
+float voronoi(vec2 x) {
+    vec2 n = floor(x);
+    vec2 f = fract(x);
+
+    float m = 8.0;
+    for (int j=-1; j<=1; j++) {
+        for (int i=-1; i<=1; i++) {
+            vec2 g = vec2(float(i),float(j));
+            vec2 o = random2(n + g);
+            // Animate
+            o = 0.5 + 0.5*sin(u_time * 0.5 + 6.2831*o);
+            vec2 r = g + o - f;
+            float d = dot(r,r);
+            if(d < m) {
+                m = d;
+            }
+        }
+    }
+    return sqrt(m);
+}
+
+void main() {
+    // Normalize coordinates based on device pixel ratio fix
+    vec2 st = gl_FragCoord.xy / u_resolution.xy;
+    st.x *= u_resolution.x / u_resolution.y;
+    
+    // Base scale for the rippling caustics
+    vec2 pos = st * 3.5;
+    
+    // Simulate light beam sweeping across (like the original optic sweep)
+    float sweepPhase = fract(u_time * 0.15 - (st.x + st.y) * 0.3);
+    float beam = smoothstep(0.1, 0.5, sweepPhase) * smoothstep(0.9, 0.5, sweepPhase);
+    float specularCore = pow(beam, 6.0) * 1.5;
+    
+    // Layered voronoi to create rippling glass imperfections
+    float v1 = voronoi(pos + u_time * 0.15);
+    float v2 = voronoi(pos * 1.5 - u_time * 0.2);
+    
+    // Combine to get the "light network" effect
+    float c = v1 * 0.5 + v2 * 0.5;
+    float causticLines = pow(1.0 - c, 3.0);
+    
+    // Calculate thin film thickness (OPD) based on fluid depth/caustics
+    // Maps the fluid structure to 300-500nm film thickness range
+    float filmThickness = 300.0 + (c + causticLines * 0.5) * 200.0;
+    
+    // Get iridescence color based on physical interference
+    vec3 iridescence = thinFilmColor(filmThickness);
+    
+    // The caustic light only fully shines where the sweeping beam hits it
+    float ambientCaustic = causticLines * 0.3;
+    float activeCaustic = causticLines * beam * 1.5;
+    
+    // Mix the iridescent physical optics with the beam and caustics
+    vec3 color = iridescence * (ambientCaustic + activeCaustic) + vec3(specularCore);
+    
+    // Vignette so the edges remain dark
+    float vignette = smoothstep(1.0, 0.2, length((gl_FragCoord.xy / u_resolution.xy) - vec2(0.5)));
+    
+    // Calculate alpha: more transparent per user request
+    float alpha = clamp((color.r + color.g + color.b) / 3.0, 0.0, 1.0) * vignette * 0.65;
+
+    gl_FragColor = vec4(color, alpha);
+}
+`;
+
+const VERTEX_SHADER = `
+void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const canUseWebGL = () => {
+    if (typeof window === 'undefined' || !window.WebGLRenderingContext) {
+        return false;
+    }
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        return !!gl;
+    } catch {
+        return false;
+    }
+};
+
+export class WebGLCaustics {
+    constructor(element, options = {}) {
+        this.element = element;
+        this.options = {
+            mixBlendMode: 'screen', // 'screen' behaves better than 'overlay' with Safari stacking
+            opacity: 0.6,
+            ...options,
+        };
+
+        this.enabled = canUseWebGL();
+        if (!this.enabled) {
+            return;
+        }
+
+        // Check for reduced motion
+        this.motionQuery =
+            typeof window.matchMedia === 'function'
+                ? window.matchMedia('(prefers-reduced-motion: reduce)')
+                : null;
+
+        if (this.motionQuery && this.motionQuery.matches) {
+            this.enabled = false;
+            return;
+        }
+
+        this.container = document.createElement('div');
+        this.container.className = 'webgl-caustics-layer';
+        Object.assign(this.container.style, {
+            position: 'absolute',
+            inset: '-1px', // Bleed slightly to cover rounded edges seamlessly
+            zIndex: '-1', // Behind content, above slab shadows
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            mixBlendMode: this.options.mixBlendMode,
+            opacity: '0', // Start hidden for fade-in
+            transition: 'opacity 1s ease',
+            borderRadius: 'inherit', // Inherit rounded rect from parent
+        });
+
+        // Insert at the beginning so it sits under the content
+        if (this.element.firstChild) {
+            this.element.insertBefore(this.container, this.element.firstChild);
+        } else {
+            this.element.appendChild(this.container);
+        }
+
+        this.renderer = new WebGLRenderer({ antialias: false, alpha: true });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+        Object.assign(this.renderer.domElement.style, {
+            width: '100%',
+            height: '100%',
+            display: 'block',
+        });
+
+        this.container.appendChild(this.renderer.domElement);
+
+        this.scene = new Scene();
+
+        // Use orthographic camera for a simple full-screen quad
+        this.camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const geometry = new PlaneGeometry(2, 2);
+        this.material = new ShaderMaterial({
+            transparent: true,
+            depthTest: false,
+            depthWrite: false,
+            uniforms: {
+                u_time: { value: 0 },
+                u_resolution: { value: [1, 1] },
+            },
+            vertexShader: VERTEX_SHADER,
+            fragmentShader: FRAGMENT_SHADER,
+        });
+
+        this.mesh = new Mesh(geometry, this.material);
+        this.scene.add(this.mesh);
+
+        this.clock = new Clock();
+        this.animationFrameId = null;
+        this.isRunning = false;
+
+        this.resizeObserver = new window.ResizeObserver(() => this.resize());
+        this.resizeObserver.observe(this.container);
+
+        this.resize();
+    }
+
+    resize() {
+        if (!this.enabled || !this.container) return;
+        
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+        
+        if (width === 0 || height === 0) return;
+
+        this.renderer.setSize(width, height);
+        const pixelRatio = this.renderer.getPixelRatio();
+        this.material.uniforms.u_resolution.value = [width * pixelRatio, height * pixelRatio];
+    }
+
+    start() {
+        if (!this.enabled || this.isRunning) {
+            return;
+        }
+
+        this.isRunning = true;
+        this.clock.start();
+
+        // Fade in
+        this.container.style.opacity = this.options.opacity.toString();
+
+        const renderLoop = () => {
+            if (!this.isRunning) {
+                return;
+            }
+
+            this.material.uniforms.u_time.value = this.clock.getElapsedTime();
+            this.renderer.render(this.scene, this.camera);
+
+            this.animationFrameId = requestAnimationFrame(renderLoop);
+        };
+
+        renderLoop();
+    }
+
+    stop() {
+        if (!this.isRunning) {
+            return;
+        }
+
+        this.isRunning = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+
+        if (this.container) {
+            this.container.style.opacity = '0';
+        }
+    }
+
+    dispose() {
+        if (!this.enabled) {
+            return;
+        }
+
+        this.stop();
+        this.enabled = false;
+
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+        }
+
+        if (this.geometry) {
+            this.geometry.dispose();
+        }
+        if (this.material) {
+            this.material.dispose();
+        }
+        if (this.renderer) {
+            this.renderer.dispose();
+        }
+
+        if (this.container && this.container.parentNode) {
+            this.container.parentNode.removeChild(this.container);
+        }
+    }
+}

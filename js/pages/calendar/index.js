@@ -1195,8 +1195,13 @@ function initCalendarZoomPane() {
                 zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
 
                 // Start the WebGL Caustics immediately to run alongside the zoom animation
-                zoomCaustics = new WebGLCaustics(wrapper);
-                zoomCaustics.start();
+                if (
+                    !window.AMBIENT_CONFIG ||
+                    window.AMBIENT_CONFIG.webglCausticsEnabled !== false
+                ) {
+                    zoomCaustics = new WebGLCaustics(wrapper);
+                    zoomCaustics.start();
+                }
             } catch (e) {
                 logger.error('Failed to initialize zoom pane effects:', e);
                 zoomRefraction = null;

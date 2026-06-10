@@ -17,10 +17,12 @@ body.body-calendar {
     }
 }
 
-/* Remove the dark container background on the calendar page for a cleaner look */
 .body-calendar .content-block {
     background-color: transparent;
     box-shadow: none;
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
 }
 
 .cal-heatmap-container {
@@ -444,5 +446,8 @@ body.body-calendar {
     .body-calendar .page-center-wrapper .content-block {
         background-color: transparent !important;
         box-shadow: none !important;
+        position: relative;
+        z-index: 1;
+        isolation: isolate;
     }
 }
