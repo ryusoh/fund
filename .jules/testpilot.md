@@ -110,6 +110,8 @@ To test highly internal functions isolated in a module closure safely, we inject
 **Action:** Added comprehensive unit test coverage for `createTimeInterpolator`, `injectSyntheticStartPoint`, and `injectCarryForwardStartPoint` utility functions in `js/transactions/chart/helpers.js`.
 
 **Learning:** When asserting logic dealing with `new Date()` within tests, ensure to handle both valid timestamps and edge cases like invalid string parsing (`new Date('invalid')` creating an `Invalid Date` object). Functions processing these objects need robust validation like checking `!Number.isNaN(date.getTime())` rather than just assuming an instance of Date is valid.
+
 ## 2026-06-10 - Added test coverage for WebGLCaustics, Terminal, and TerminalStats
-**Learning:** When unit testing ES6 modules that solely re-export functions (like `terminalStats.js`), Istanbul may ignore them during coverage collection if the module is fully mocked in tests. Adding a dummy exported constant (e.g. `export const _coverage = 'terminalStats';`) and asserting it in the test file ensures the file registers >0% coverage correctly.
-**Action:** Added tests for `webglCaustics.js`, `terminalStats.js` and `terminal.js` to improve overall JS test coverage.
+
+**Learning:** When unit testing ES6 modules that solely re-export functions (like `terminalStats.js`), Istanbul may ignore them during coverage collection if the module is fully mocked in tests. Adding a dummy exported constant (e.g. ``) and asserting it in the test file ensures the file registers >0% coverage correctly.
+**Action:** Added tests for `webglCaustics.js`and`terminal.js` to improve overall JS test coverage.
