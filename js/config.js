@@ -692,6 +692,26 @@ export const TABLE_GLASS_EFFECT = {
     },
 };
 
+// Liquid-glass donut for the position pie chart: an annular lens that sits
+// under the (translucent) slices and refracts the page background along the
+// ring's outer and inner rims, with caustics and prismatic dispersion.
+export const DONUT_REFRACTION = {
+    ...TABLE_GLASS_EFFECT.refraction,
+    shape: 'annulus',
+    innerRadiusRatio: 0.6, // synced to the chart's real cutout at runtime
+    bezelWidth: 10,
+    thickness: 18,
+    frost: '', // pure lens — rim distortion and caustics only, no frost
+};
+
+// Liquid-glass lens for the calendar's zoomed dark pane (.page-center-wrapper.zoomed).
+// frost stays null so the pane keeps its exact brightness — lens and caustics only.
+export const CALENDAR_ZOOM_REFRACTION = {
+    ...TABLE_GLASS_EFFECT.refraction,
+    bezelWidth: 12,
+    thickness: 22, // the pane is scaled 1.4x while zoomed; keep the visual bezel modest
+};
+
 export const MARQUEE_CONFIG = {
     enabled: true,
     // Size multiplier for marquee content (1 = normal, 2 = twice as large)

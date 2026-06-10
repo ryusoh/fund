@@ -205,6 +205,46 @@ describe('liquidGlassRefraction math', () => {
             const map = buildDisplacementMap(params);
             expect(map.maxShift).toBeCloseTo(maxRefractionShift(params.ior, params.thickness), 9);
         });
+
+        describe('annulus shape (glass donut)', () => {
+            // 200x200 box → outer radius 100, inner radius 50, ring width 50
+            const ringParams = {
+                width: 200,
+                height: 200,
+                radius: 0,
+                bezelWidth: 10,
+                ior: 1.52,
+                thickness: 18,
+                scale: 0.5,
+                shape: 'annulus',
+                innerRadiusRatio: 0.5,
+            };
+
+            test('hole center and mid-ring stay neutral', () => {
+                const map = buildDisplacementMap(ringParams);
+                const hole = pixelAt(map, 50, 50); // r = 0
+                expect(Math.abs(hole.r - 127.5)).toBeLessThanOrEqual(1);
+                expect(Math.abs(hole.g - 127.5)).toBeLessThanOrEqual(1);
+                expect(hole.b).toBe(0);
+                const band = pixelAt(map, 87, 50); // r ≈ 75, between the two bezels
+                expect(Math.abs(band.r - 127.5)).toBeLessThanOrEqual(1);
+                expect(band.b).toBe(0);
+            });
+
+            test('outer rim displaces inward, inner rim outward, both with caustics', () => {
+                const map = buildDisplacementMap(ringParams);
+                // The caustic band is only ~1.5 logical px wide, so it lives in
+                // the outermost map pixel of each rim.
+                // Right side, on the outer rim (logical r ≈ 99): shift −x
+                const outer = pixelAt(map, 99, 50);
+                expect(outer.r).toBeLessThan(115);
+                expect(outer.b).toBeGreaterThan(0);
+                // Right side, on the hole edge (logical r ≈ 51): shift +x
+                const inner = pixelAt(map, 75, 50);
+                expect(inner.r).toBeGreaterThan(140);
+                expect(inner.b).toBeGreaterThan(0);
+            });
+        });
     });
 });
 
@@ -290,6 +330,28 @@ describe('LiquidGlassRefraction lifecycle', () => {
         expect(scales[0]).toBeLessThan(scales[1]);
         expect(scales[1]).toBeLessThan(scales[2]);
 
+        effect.dispose();
+    });
+
+    test('explicit radius option overrides the computed border-radius', () => {
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            radius: 24,
+        });
+        expect(effect._lastGeometry).toContain('200x100r24');
+        effect.dispose();
+    });
+
+    test('omits the caustic nodes when causticGain is zero', () => {
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            causticGain: 0,
+        });
+        const filter = document.querySelector('svg defs filter');
+        expect(filter.querySelectorAll('feColorMatrix')).toHaveLength(3);
+        expect(filter.querySelectorAll('feComposite')).toHaveLength(2);
         effect.dispose();
     });
 

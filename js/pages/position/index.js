@@ -28,8 +28,9 @@ import { triggerCenterToggle, hoverSliceByTicker } from '@charts/allocationChart
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
-import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT } from '@js/config.js';
+import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT, DONUT_REFRACTION } from '@js/config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
+import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
@@ -89,6 +90,61 @@ if (
 
 window.pieChartGlassEffect = cloneGlassEffectConfig(PIE_CHART_GLASS_EFFECT);
 applyResponsiveGlassOpacity();
+
+// Liquid-glass donut: an annular lens positioned under the pie canvas refracts
+// the page background along the ring's rims (bezel distortion + caustics).
+// The slices are translucent, so the optics read through them. The overlay
+// tracks the chart's arc geometry and follows canvas resizes.
+function initDonutRefraction() {
+    const container = document.querySelector('#fundPieChartContainer');
+    const canvas = document.getElementById('fundPieChart');
+    if (!container || !canvas) {
+        return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.position = 'absolute';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.borderRadius = '50%';
+    container.insertBefore(overlay, canvas);
+
+    const lens = new LiquidGlassRefraction(overlay, DONUT_REFRACTION);
+    if (!lens.enabled) {
+        overlay.remove();
+        return;
+    }
+
+    // The canvas must paint above the positioned overlay.
+    canvas.style.position = 'relative';
+    canvas.style.zIndex = '1';
+
+    const sync = () => {
+        if (typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') {
+            return;
+        }
+        const chart = Chart.getChart(canvas);
+        const arc = chart?.getDatasetMeta?.(0)?.data?.[0];
+        if (!arc || !(arc.outerRadius > 0)) {
+            return;
+        }
+        const size = Math.ceil(arc.outerRadius * 2);
+        overlay.style.left = `${Math.round(canvas.offsetLeft + arc.x - arc.outerRadius)}px`;
+        overlay.style.top = `${Math.round(canvas.offsetTop + arc.y - arc.outerRadius)}px`;
+        overlay.style.width = `${size}px`;
+        overlay.style.height = `${size}px`;
+        lens.options.innerRadiusRatio = arc.innerRadius / arc.outerRadius;
+        lens.update();
+    };
+
+    sync();
+    // eslint-disable-next-line no-undef
+    const geometryObserver = new ResizeObserver(() => {
+        requestAnimationFrame(sync);
+        window.setTimeout(sync, 400); // again after the chart's resize animation settles
+    });
+    geometryObserver.observe(canvas);
+}
 
 // Initialize application with visibility checks
 async function startApp() {
@@ -162,6 +218,12 @@ async function startApp() {
             );
             // Now that chart is rendered and initial scroll check is done:
             alignToggleWithChartMobile(); // Align toggle based on the rendered chart
+
+            try {
+                initDonutRefraction();
+            } catch (error) {
+                logger.error('Failed to initialize donut refraction:', error);
+            }
 
             // Trigger toggle animation after chart loads (mobile only)
             if (window.innerWidth <= 768) {

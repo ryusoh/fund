@@ -14,7 +14,9 @@ import {
     getCalendarRange,
     PERLIN_BACKGROUND_SETTINGS,
     CALENDAR_BACKGROUND_EFFECT,
+    CALENDAR_ZOOM_REFRACTION,
 } from '@js/config.js';
+import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
 import { getNyDate } from '@utils/date.js';
 import { getCalendarData } from '@services/dataService.js';
 import { initCalendarResponsiveHandlers } from '@ui/responsive.js';
@@ -1237,6 +1239,46 @@ function initCalendarSweepObservers() {
     });
 }
 
+// --- ZOOM PANE LIQUID GLASS ---
+// While the calendar is zoomed, its dark backdrop pane gets the refraction
+// lens (bezel distortion + edge caustics); disposed again on zoom-out so the
+// unzoomed wrapper stays untouched.
+let zoomRefraction = null;
+
+function initCalendarZoomRefraction() {
+    const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+    if (!wrapper) {
+        return;
+    }
+
+    const syncZoomRefraction = () => {
+        const isZoomed = wrapper.classList.contains('zoomed');
+        if (isZoomed && !zoomRefraction) {
+            try {
+                zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
+            } catch (e) {
+                logger.error('Failed to initialize zoom pane refraction:', e);
+                zoomRefraction = null;
+            }
+        } else if (!isZoomed && zoomRefraction) {
+            zoomRefraction.dispose();
+            zoomRefraction = null;
+        }
+    };
+
+    const observer = new window.MutationObserver(syncZoomRefraction);
+    observer.observe(wrapper, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
+    syncZoomRefraction();
+
+    window.addEventListener('beforeunload', () => {
+        observer.disconnect();
+    });
+}
+
 // --- START ---
 // Avoid auto-running during Jest tests to prevent async side-effects
 export function autoInitCalendar() {
@@ -1246,6 +1288,7 @@ export function autoInitCalendar() {
         }
         initCalendar().then(() => {
             initCalendarSweepObservers();
+            initCalendarZoomRefraction();
         });
     }
 }

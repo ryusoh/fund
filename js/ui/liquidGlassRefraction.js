@@ -127,6 +127,10 @@ const CAUSTIC_NORM = 4;
  * B = caustic concentration mask) and the shift normalisation in CSS
  * pixels. `scale` trades map resolution for speed; the displacement
  * field is smooth so 0.5 is visually lossless.
+ *
+ * `shape` is 'roundedRect' (default) or 'annulus' — a glass ring whose
+ * inner radius is `innerRadiusRatio` of the outer radius, with the bezel
+ * (and its caustics) on both rims.
  */
 export function buildDisplacementMap({
     width,
@@ -136,6 +140,8 @@ export function buildDisplacementMap({
     ior,
     thickness,
     scale = 0.5,
+    shape = 'roundedRect',
+    innerRadiusRatio = 0.6,
 }) {
     const mapW = Math.max(2, Math.round(width * scale));
     const mapH = Math.max(2, Math.round(height * scale));
@@ -145,6 +151,16 @@ export function buildDisplacementMap({
     const maxShift = maxRefractionShift(ior, thickness);
     const eps = 0.5;
 
+    const outerR = Math.min(halfW, halfH);
+    const innerR = outerR * Math.min(0.95, Math.max(0, innerRadiusRatio));
+    const sdfAt =
+        shape === 'annulus'
+            ? (px, py) => {
+                  const d = Math.sqrt(px * px + py * py);
+                  return Math.max(d - outerR, innerR - d);
+              }
+            : (px, py) => roundedRectSDF(px, py, halfW, halfH, r);
+
     const data = new Uint8ClampedArray(mapW * mapH * 4);
     let i = 0;
     for (let my = 0; my < mapH; my++) {
@@ -152,7 +168,7 @@ export function buildDisplacementMap({
         for (let mx = 0; mx < mapW; mx++) {
             const x = ((mx + 0.5) / mapW) * width - halfW;
 
-            const sdf = roundedRectSDF(x, y, halfW, halfH, r);
+            const sdf = sdfAt(x, y);
             const distFromEdge = -sdf;
 
             let dx = 0;
@@ -162,12 +178,8 @@ export function buildDisplacementMap({
                 const shift = refractionShift(distFromEdge, bezelWidth, ior, thickness);
                 if (shift > 0) {
                     // SDF gradient points outward; displace inward.
-                    const gx =
-                        roundedRectSDF(x + eps, y, halfW, halfH, r) -
-                        roundedRectSDF(x - eps, y, halfW, halfH, r);
-                    const gy =
-                        roundedRectSDF(x, y + eps, halfW, halfH, r) -
-                        roundedRectSDF(x, y - eps, halfW, halfH, r);
+                    const gx = sdfAt(x + eps, y) - sdfAt(x - eps, y);
+                    const gy = sdfAt(x, y + eps) - sdfAt(x, y - eps);
                     const len = Math.sqrt(gx * gx + gy * gy);
                     if (len > 1e-9) {
                         dx = (-gx / len) * shift;
@@ -240,6 +252,13 @@ export class LiquidGlassRefraction {
             // Brightness boost where the bezel lens concentrates light
             // (result = refracted · (1 + causticGain · mask)).
             causticGain: 0.7,
+            // Corner radius in px for the lens shape; null = read the element's
+            // computed border-radius (supports % of the smaller box dimension).
+            radius: null,
+            // 'roundedRect' or 'annulus' (glass ring, e.g. a donut chart).
+            shape: 'roundedRect',
+            // Annulus only: inner radius as a fraction of the outer radius.
+            innerRadiusRatio: 0.6,
             // null = keep the pane's existing computed backdrop-filter
             // (e.g. "blur(24px) saturate(1.8)") chained after the lens.
             frost: null,
@@ -398,14 +417,24 @@ export class LiquidGlassRefraction {
             return;
         }
 
-        let radius = 0;
-        try {
-            radius = parseFloat(window.getComputedStyle(this.element).borderTopLeftRadius) || 0;
-        } catch {
+        let radius = this.options.radius;
+        if (typeof radius !== 'number') {
             radius = 0;
+            try {
+                const raw = window.getComputedStyle(this.element).borderTopLeftRadius || '';
+                const value = parseFloat(raw);
+                if (Number.isFinite(value)) {
+                    radius = raw.trim().endsWith('%')
+                        ? (value / 100) * Math.min(width, height)
+                        : value;
+                }
+            } catch {
+                radius = 0;
+            }
         }
 
-        const geometry = `${width}x${height}r${radius}`;
+        const innerRatio = Number(this.options.innerRadiusRatio) || 0;
+        const geometry = `${width}x${height}r${radius}s${this.options.shape}i${innerRatio.toFixed(3)}`;
         if (geometry === this._lastGeometry) {
             return;
         }
@@ -419,6 +448,8 @@ export class LiquidGlassRefraction {
             ior: this.options.ior,
             thickness: this.options.thickness,
             scale: this.options.mapScale,
+            shape: this.options.shape,
+            innerRadiusRatio: innerRatio,
         });
 
         this.canvas.width = map.width;
