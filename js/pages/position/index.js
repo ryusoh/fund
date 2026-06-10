@@ -130,6 +130,13 @@ async function startApp() {
         try {
             new TableGlassEffect('.table-responsive-container', {
                 ...TABLE_GLASS_EFFECT,
+                // The visible glass pane here is the .content-block wrapper, which
+                // already owns the backdrop frost. Mount the lens there: nesting a
+                // second backdrop-filter inside it would darken the pane.
+                refraction: {
+                    ...TABLE_GLASS_EFFECT.refraction,
+                    target: '.content-block',
+                },
                 onHoverRow: (ticker) => hoverSliceByTicker(ticker),
             });
         } catch (e) {

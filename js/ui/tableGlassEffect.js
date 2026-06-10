@@ -1,5 +1,6 @@
 import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
 import { TableGlassWebGL } from './tableGlassWebGL.js';
+import { LiquidGlassRefraction } from './liquidGlassRefraction.js';
 
 function isDataRow(row) {
     if (!row) {
@@ -154,6 +155,26 @@ export class TableGlassEffect {
 
         // Initialize WebGL overlay
         this.webglLayer = new TableGlassWebGL(this);
+
+        // Physically-based backdrop refraction (Liquid Glass lens, Chromium only).
+        // `refraction.target` mounts the lens on an ancestor instead — needed when
+        // the visible glass pane (and its backdrop-filter) is a wrapper like
+        // .content-block: nesting a second backdrop-filter inside it would break
+        // backdrop sampling and darken the pane.
+        if (this.options.refraction && this.options.refraction.enabled !== false) {
+            try {
+                const refractionTarget = this.options.refraction.target
+                    ? this.container.closest(this.options.refraction.target) || this.container
+                    : this.container;
+                this.refractionLayer = new LiquidGlassRefraction(
+                    refractionTarget,
+                    this.options.refraction
+                );
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.warn('Liquid glass refraction unavailable:', error);
+            }
+        }
 
         // Observe DOM mutations in the tbody to catch data refreshes
         // When data refreshes, rows are replaced, making cached row references stale.
@@ -953,6 +974,10 @@ export class TableGlassEffect {
         if (this.webglLayer) {
             this.webglLayer.dispose();
             this.webglLayer = null;
+        }
+        if (this.refractionLayer) {
+            this.refractionLayer.dispose();
+            this.refractionLayer = null;
         }
 
         if (this.resizeObserver) {

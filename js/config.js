@@ -634,6 +634,19 @@ export const PIE_CHART_GLASS_EFFECT = {
 export const TABLE_GLASS_EFFECT = {
     enabled: true,
     excludeHeader: true,
+    // Physically-based backdrop refraction (SVG displacement lens, Chromium only).
+    // Models a convex glass bezel around the pane rim: Snell refraction through
+    // `thickness` px of glass, with Abbe-number chromatic dispersion at the edges.
+    refraction: {
+        enabled: true,
+        bezelWidth: 14, // px ring along the rim where the surface curves
+        thickness: 28, // px slab thickness driving lateral ray shift
+        ior: 1.52, // crown glass index of refraction
+        abbeNumber: 32, // dense flint dispersion
+        dispersionGain: 6, // stylized boost so the prismatic rim fringe reads at viewing distance
+        causticGain: 0.7, // rim caustic brightening where the lens concentrates light
+        frost: null, // null = chain the pane's existing blur/saturation after the lens
+    },
     rowHoverEffect: {
         enabled: true,
         // Subtle spotlight effect

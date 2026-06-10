@@ -287,11 +287,42 @@ function initialize() {
             });
     }
 
-    // Initialize glass effects for terminal pane, chart card, and transaction table
+    // Initialize glass effects for terminal pane, chart card, and transaction table.
+    // Each pane gets backdrop refraction with a lighter frost than the stylesheet
+    // fallback, so the lensing and dispersion stay visible through the glass.
     const glassTargets = [
-        { selector: '.terminal', opts: { excludeHeader: false } },
-        { selector: '.chart-card', opts: { excludeHeader: false } },
-        { selector: '.table-responsive-container', opts: { excludeHeader: true } },
+        {
+            selector: '.terminal',
+            opts: {
+                excludeHeader: false,
+                refraction: {
+                    ...TABLE_GLASS_EFFECT.refraction,
+                    frost: 'blur(14px) saturate(1.7)',
+                },
+            },
+        },
+        {
+            selector: '.chart-card',
+            opts: {
+                excludeHeader: false,
+                refraction: {
+                    ...TABLE_GLASS_EFFECT.refraction,
+                    bezelWidth: 16,
+                    frost: 'blur(20px) saturate(1.7)',
+                },
+            },
+        },
+        {
+            selector: '.table-responsive-container',
+            opts: {
+                excludeHeader: true,
+                refraction: {
+                    ...TABLE_GLASS_EFFECT.refraction,
+                    bezelWidth: 16,
+                    frost: 'blur(20px) saturate(1.7)',
+                },
+            },
+        },
     ];
     for (const { selector, opts } of glassTargets) {
         try {
