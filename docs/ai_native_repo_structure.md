@@ -412,3 +412,47 @@ For large projects, a single agent context becomes polluted. The shipping mechan
 
 - **Choreography Protocol**: Defines how the agents exchange information. The "Architect" writes the code, the "Test Engineer" receives it and writes tests, and the "Auditor" scans the final diff.
 - **Impact**: Decreases token consumption and increases execution success rates by avoiding context pollution (e.g. the Test Engineer does not need to read the mathematical derivations, only the public interface).
+
+---
+
+## 17. The Compounding Loop (What Actually Makes It Frontier)
+
+Everything above is **structure** — and structure is the table stakes. Teams that build their agentic tooling _with_ agents (the way Claude Code is largely written by Claude Code) are distinguished less by machinery than by a **closed feedback loop run as a discipline**. A repo is frontier-level when agent failures systematically make the repo better:
+
+### A. Failures Patch the Repo, Not the Chat
+
+When an agent gets something wrong, the correction goes into a durable artifact — never just the conversation:
+
+- Agent ran the wrong command → fix `AGENTS.md`/the `Makefile`, don't re-explain.
+- Agent skipped verification → add a gate (hook, CI check) that makes skipping impossible.
+- Agent made the same mistake twice → that is a missing lint rule, test, or skill. Twice is a process bug.
+- Agent couldn't find something → rename it or map it; don't blame the search.
+
+The test: **a correction given in January should be impossible to need in March.** Chats evaporate; the repo compounds.
+
+### B. Ratchets Over Prose
+
+Agents comply perfectly with mechanical gates and unevenly with written guidance. Every standard that matters gets promoted up this ladder: _prose rule → checklist/skill → lint or type rule → CI-blocking check_. If it's not enforced, it's a suggestion — for humans and agents alike.
+
+### C. Verification by Observation, Not Assertion
+
+Frontier agent workflows never accept "the change should work." The repo provides affordances for the agent to **see** its own result — launch the dev server, screenshot the UI, curl the endpoint, tail the logs — and the review culture demands that evidence in the PR description. "Tests pass + here is the screenshot" is the unit of done.
+
+### D. Load-Bearing, Tested Documentation
+
+Once agents follow docs literally, a stale doc is worse than no doc — agents follow it off the cliff. Frontier repos treat `AGENTS.md` and recipes as code: reviewed in PRs that change behavior they describe, and ideally CI-checked (a "doc lint" that executes every command the docs claim works).
+
+### E. Inverted Roles, Human Review as the Boundary
+
+The steady state is agents writing most of the code while humans write **specifications and reviews**. The human's leverage moves upstream: defining the eval, the contract, the invariant — and gating merges. Headcount stops being the unit of throughput; review bandwidth and repo clarity are.
+
+### Maturity Ladder
+
+| Level                 | Signature                                                                                                                                       |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Agent-Tolerant** | Agents can work here with hand-holding. (Most repos today.)                                                                                     |
+| **2. Agent-Friendly** | §1–§11 implemented: auto-loaded context, unified commands, fast scoped verification, typed boundaries.                                          |
+| **3. Agent-Operated** | Agents author most changes; CI/issue-to-PR loops (§13); humans specify and review.                                                              |
+| **4. Self-Improving** | The compounding loop runs: failures patch the repo, standards become ratchets, docs are tested, ergonomics are measured (§10) and trend upward. |
+
+Sections 1–16 get a repo to Level 2 and enable Level 3. Level 4 is not a structure you install — it is a habit the team (human and agent) keeps. That habit, not the directory tree, is the extreme frontier.
