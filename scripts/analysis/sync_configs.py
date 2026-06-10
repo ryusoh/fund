@@ -274,6 +274,21 @@ def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any
                     result_metadata['ebitda'], local_currency, trading_currency, fx_rates
                 )
 
+            # Recalculate Enterprise Value because yfinance often mixes USD market cap and CNY cash/debt
+            market_cap = result_metadata.get('marketCap')
+            total_cash = info.get('totalCash')
+            total_debt = info.get('totalDebt')
+            if market_cap is not None:
+                cash_usd = convert_financial_currency(
+                    total_cash, local_currency, trading_currency, fx_rates
+                )
+                debt_usd = convert_financial_currency(
+                    total_debt, local_currency, trading_currency, fx_rates
+                )
+                cash_usd_val = cash_usd if isinstance(cash_usd, (int, float)) else 0.0
+                debt_usd_val = debt_usd if isinstance(debt_usd, (int, float)) else 0.0
+                result_metadata['enterpriseValue'] = market_cap + debt_usd_val - cash_usd_val
+
     return result_metadata  # Returned new variable
 
 

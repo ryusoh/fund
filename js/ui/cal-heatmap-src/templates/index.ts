@@ -8,12 +8,12 @@ import monthTemplate from './month';
 import yearTemplate from './year';
 
 export default [
-  minuteTemplate,
-  hourTemplate,
-  dayTemplate,
-  xDayTemplate,
-  ghDayTemplate,
-  weekTemplate,
-  monthTemplate,
-  yearTemplate,
+    minuteTemplate,
+    hourTemplate,
+    dayTemplate,
+    xDayTemplate,
+    ghDayTemplate,
+    weekTemplate,
+    monthTemplate,
+    yearTemplate,
 ];

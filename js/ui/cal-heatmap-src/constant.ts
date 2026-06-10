@@ -1,14 +1,14 @@
 export enum ScrollDirection {
-  SCROLL_NONE,
-  SCROLL_BACKWARD,
-  SCROLL_FORWARD,
+    SCROLL_NONE,
+    SCROLL_BACKWARD,
+    SCROLL_FORWARD,
 }
 
 export enum Position {
-  TOP,
-  RIGHT,
-  BOTTOM,
-  LEFT,
+    TOP,
+    RIGHT,
+    BOTTOM,
+    LEFT,
 }
 
 export const OPTIONS_DEFAULT_DOMAIN_TYPE = 'hour';

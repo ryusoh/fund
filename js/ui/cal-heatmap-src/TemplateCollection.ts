@@ -6,63 +6,61 @@ import type { Template, TemplateResult } from './index';
 import type DateHelper from './helpers/DateHelper';
 
 export default class TemplateCollection {
-  dateHelper: DateHelper;
+    dateHelper: DateHelper;
 
-  options: Options;
+    options: Options;
 
-  settings: Map<string, TemplateResult>;
+    settings: Map<string, TemplateResult>;
 
-  // Whether the default templates has been initiated
-  initiated: boolean;
+    // Whether the default templates has been initiated
+    initiated: boolean;
 
-  constructor(dateHelper: DateHelper, options: Options) {
-    this.settings = new Map();
-    this.dateHelper = dateHelper;
-    this.options = options;
-    this.initiated = false;
-  }
-
-  get(subDomainType: string): TemplateResult {
-    return this.settings.get(subDomainType)!;
-  }
-
-  has(subDomainType: string): boolean {
-    return this.settings.has(subDomainType);
-  }
-
-  init() {
-    if (!this.initiated) {
-      this.initiated = true;
-      this.add(DefaultTemplates);
+    constructor(dateHelper: DateHelper, options: Options) {
+        this.settings = new Map();
+        this.dateHelper = dateHelper;
+        this.options = options;
+        this.initiated = false;
     }
-  }
 
-  add(templates: Template | Template[]) {
-    this.init();
+    get(subDomainType: string): TemplateResult {
+        return this.settings.get(subDomainType)!;
+    }
 
-    const tplWithParent: string[] = [];
-    castArray(templates).forEach((f) => {
-      const template = f(this.dateHelper, this.options.options);
-      this.settings.set(template.name, template);
+    has(subDomainType: string): boolean {
+        return this.settings.has(subDomainType);
+    }
 
-      if (template.hasOwnProperty('parent')) {
-        tplWithParent.push(template.name);
-      }
-    });
+    init() {
+        if (!this.initiated) {
+            this.initiated = true;
+            this.add(DefaultTemplates);
+        }
+    }
 
-    tplWithParent.forEach((name) => {
-      const parentTemplate = this.settings.get(
-        this.settings.get(name)!.parent!,
-      );
+    add(templates: Template | Template[]) {
+        this.init();
 
-      if (!parentTemplate) {
-        return;
-      }
+        const tplWithParent: string[] = [];
+        castArray(templates).forEach((f) => {
+            const template = f(this.dateHelper, this.options.options);
+            this.settings.set(template.name, template);
 
-      this.settings.set(name, {
-        ...parentTemplate,
-        ...this.settings.get(name),
-      });
-    });
-  }
+            if (template.hasOwnProperty('parent')) {
+                tplWithParent.push(template.name);
+            }
+        });
+
+        tplWithParent.forEach((name) => {
+            const parentTemplate = this.settings.get(this.settings.get(name)!.parent!);
+
+            if (!parentTemplate) {
+                return;
+            }
+
+            this.settings.set(name, {
+                ...parentTemplate,
+                ...this.settings.get(name),
+            });
+        });
+    }
 }
