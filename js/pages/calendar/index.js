@@ -13,9 +13,9 @@ import {
     UI_BREAKPOINTS,
     getCalendarRange,
     PERLIN_BACKGROUND_SETTINGS,
-    CALENDAR_BACKGROUND_EFFECT,
     CALENDAR_ZOOM_REFRACTION,
 } from '@js/config.js';
+import { WebGLCaustics } from '../../ui/webglCaustics.js';
 import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
 import { getNyDate } from '@utils/date.js';
 import { getCalendarData } from '@services/dataService.js';
@@ -26,20 +26,14 @@ import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/c
 import { ensureEntryDisplay, precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
 import { applyBevelGlass } from '@pages/calendar/bevelGlassPlugin.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
-import {
-    initBackgroundSweepEffect,
-    stopBackgroundSweepEffect as stopReusableBackgroundSweepEffect,
-} from '@ui/backgroundSweep.js';
 
 // --- STATE ---
 // The zoom transform transition runs 0.55s; GPU-heavy effects (optic sweep,
 // refraction lens) wait this long after a zoom toggle before starting.
-const ZOOM_SETTLE_MS = 700;
 let calendarInstance = null; // Store calendar instance for resize handling
 let calendarByDate = new Map(); // Store calendar data for resize handling
 let basePaintConfig = null; // Store base paint configuration for resizing
 const touchNavigationState = { isNavigating: false }; // Shared touch navigation state
-let sweepLoopTimer = null;
 let lastFetchedAt = 0;
 
 const appState = {
@@ -1161,98 +1155,6 @@ export async function initCalendar() {
 // --- PERLIN BACKGROUND ---
 let perlinBackgroundHandle = null;
 
-// --- BACKGROUND EFFECT ---
-const { triggerSweep } = initBackgroundSweepEffect({
-    selector: CALENDAR_SELECTORS.pageWrapper,
-    effectConfig: CALENDAR_BACKGROUND_EFFECT,
-});
-
-function stopCalendarSweepLoop() {
-    if (sweepLoopTimer) {
-        clearTimeout(sweepLoopTimer);
-        sweepLoopTimer = null;
-    }
-    stopReusableBackgroundSweepEffect(CALENDAR_SELECTORS.pageWrapper);
-}
-
-function startCalendarSweepLoop() {
-    if (!CALENDAR_BACKGROUND_EFFECT?.enabled) {
-        return;
-    }
-    const { sweepDuration = 3, sweepPauseTime = 2 } = CALENDAR_BACKGROUND_EFFECT;
-    const intervalMs = (sweepDuration + sweepPauseTime) * 1000;
-    const run = () => {
-        triggerSweep();
-        sweepLoopTimer = setTimeout(run, intervalMs);
-    };
-    stopCalendarSweepLoop();
-    run();
-}
-
-function initCalendarSweepObservers() {
-    if (!CALENDAR_BACKGROUND_EFFECT?.enabled) {
-        return;
-    }
-    const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
-    if (!wrapper) {
-        return;
-    }
-
-    let sweepSettleTimer = null;
-
-    const handleZoomChange = () => {
-        if (sweepSettleTimer) {
-            window.clearTimeout(sweepSettleTimer);
-            sweepSettleTimer = null;
-        }
-        if (wrapper.classList.contains('zoomed')) {
-            // Hold the optic sweep until the zoom transform has landed so the
-            // blurred blend layer never competes with the animation for GPU.
-            sweepSettleTimer = window.setTimeout(() => {
-                sweepSettleTimer = null;
-                startCalendarSweepLoop();
-            }, ZOOM_SETTLE_MS);
-        } else {
-            stopCalendarSweepLoop();
-        }
-    };
-
-    let lastZoomState = wrapper.classList.contains('zoomed');
-
-    const observer = new window.MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const isZoomed = wrapper.classList.contains('zoomed');
-                if (isZoomed !== lastZoomState) {
-                    lastZoomState = isZoomed;
-                    handleZoomChange();
-                }
-            }
-        });
-    });
-
-    observer.observe(wrapper, {
-        attributes: true,
-        attributeFilter: ['class'],
-    });
-
-    handleZoomChange();
-
-    const navButtons = document.querySelectorAll('.cal-nav-btn');
-    navButtons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            if (wrapper.classList.contains('zoomed')) {
-                triggerSweep();
-            }
-        });
-    });
-
-    window.addEventListener('beforeunload', () => {
-        observer.disconnect();
-        stopCalendarSweepLoop();
-    });
-}
-
 // --- ZOOM PANE: CENTERING + LIQUID GLASS ---
 // When the calendar zooms, the pane glides to the viewport center and scales
 // as one composited transform (--zoom-center-shift is measured here, in the
@@ -1261,8 +1163,9 @@ function initCalendarSweepObservers() {
 // transform settles — building the displacement map and re-rasterizing the
 // backdrop mid-animation would steal frame budget from the transition — and
 // is disposed on zoom-out so the unzoomed wrapper stays untouched.
+// is disposed on zoom-out so the unzoomed wrapper stays untouched.
 let zoomRefraction = null;
-let zoomRefractionTimer = null;
+let zoomCaustics = null;
 
 function initCalendarZoomPane() {
     const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
@@ -1286,28 +1189,30 @@ function initCalendarZoomPane() {
 
     const syncZoomRefraction = () => {
         const isZoomed = wrapper.classList.contains('zoomed');
-        if (isZoomed && !zoomRefraction && !zoomRefractionTimer) {
+        if (isZoomed && !zoomRefraction) {
             centerZoomedPane();
-            zoomRefractionTimer = window.setTimeout(() => {
-                zoomRefractionTimer = null;
-                if (!wrapper.classList.contains('zoomed')) {
-                    return;
+            try {
+                zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
+
+                // Start the WebGL Caustics immediately to run alongside the zoom animation
+                zoomCaustics = new WebGLCaustics(wrapper);
+                zoomCaustics.start();
+            } catch (e) {
+                logger.error('Failed to initialize zoom pane effects:', e);
+                zoomRefraction = null;
+                if (zoomCaustics) {
+                    zoomCaustics.dispose();
+                    zoomCaustics = null;
                 }
-                try {
-                    zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
-                } catch (e) {
-                    logger.error('Failed to initialize zoom pane refraction:', e);
-                    zoomRefraction = null;
-                }
-            }, ZOOM_SETTLE_MS);
-        } else if (!isZoomed) {
-            if (zoomRefractionTimer) {
-                window.clearTimeout(zoomRefractionTimer);
-                zoomRefractionTimer = null;
             }
+        } else if (!isZoomed) {
             if (zoomRefraction) {
                 zoomRefraction.dispose();
                 zoomRefraction = null;
+            }
+            if (zoomCaustics) {
+                zoomCaustics.dispose();
+                zoomCaustics = null;
             }
         }
     };
@@ -1333,7 +1238,6 @@ export function autoInitCalendar() {
             perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
         }
         initCalendar().then(() => {
-            initCalendarSweepObservers();
             initCalendarZoomPane();
         });
     }
@@ -1373,5 +1277,4 @@ window.addEventListener('pageshow', (event) => {
 window.addEventListener('beforeunload', () => {
     perlinBackgroundHandle?.dispose();
     perlinBackgroundHandle = null;
-    stopCalendarSweepLoop();
 });

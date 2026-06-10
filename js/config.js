@@ -712,7 +712,7 @@ export const CALENDAR_ZOOM_REFRACTION = {
     ...TABLE_GLASS_EFFECT.refraction,
     bezelWidth: 18,
     thickness: 26,
-    rampMs: 450, // glass "thickens in" so the backdrop eases into refraction
+    rampMs: 550, // Match the 0.55s CSS transform duration so it thickens *during* the zoom
 };
 
 export const MARQUEE_CONFIG = {
