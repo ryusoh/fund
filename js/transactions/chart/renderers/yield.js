@@ -200,7 +200,9 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     ctx.textBaseline = 'middle';
 
     // Map yield tick positions to income values for aligned labels
-    yieldTicks.forEach((yieldTick) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let i = 0; i < yieldTicks.length; i++) {
+        const yieldTick = yieldTicks[i];
         // Convert yield tick to a position (0-1 ratio)
         const ratio = (yieldTick - minY) / (maxY - minY);
         // Map that ratio to income scale
@@ -223,7 +225,7 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
                 y
             );
         }
-    });
+    }
     ctx.restore();
 
     // 2. Draw TTM Income Bars (Background)
@@ -233,7 +235,9 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     ctx.fillStyle = (colors.portfolio || '#7a7a7a') + '44'; // Semi-transparent
 
     ctx.beginPath();
-    filteredData.forEach((d, i) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let i = 0; i < filteredData.length; i++) {
+        const d = filteredData[i];
         const t = parseLocalDate(d.date).getTime();
         const x = xScale(t) - barWidth / 2;
         const y = y2Scale(incomes[i]);
@@ -241,7 +245,7 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
         if (h > 0) {
             ctx.rect(x, y, barWidth, h);
         }
-    });
+    }
     ctx.fill();
     ctx.restore();
 
@@ -285,13 +289,15 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     ctx.strokeStyle = grad;
 
     ctx.lineWidth = CHART_LINE_WIDTHS.yield || 1;
-    yieldCoords.forEach((c, i) => {
+    // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let i = 0; i < yieldCoords.length; i++) {
+        const c = yieldCoords[i];
         if (i === 0) {
             ctx.moveTo(c.x, c.y);
         } else {
             ctx.lineTo(c.x, c.y);
         }
-    });
+    }
     ctx.stroke();
 
     const incomePoints = filteredData.map((d, i) => ({
