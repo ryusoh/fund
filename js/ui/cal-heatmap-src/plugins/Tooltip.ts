@@ -103,9 +103,16 @@ export default class Tooltip implements IPlugin {
             const tooltipElem = document.createElement('div');
             tooltipElem.setAttribute('id', DEFAULT_SELECTOR.slice(1));
             tooltipElem.setAttribute('role', 'tooltip');
-            tooltipElem.innerHTML =
-                `<div id="${DEFAULT_SELECTOR.slice(1)}-arrow" data-popper-arrow="true"></div>` +
-                `<span id="${DEFAULT_SELECTOR.slice(1)}-body"></span>`;
+
+            const arrowElem = document.createElement('div');
+            arrowElem.setAttribute('id', `${DEFAULT_SELECTOR.slice(1)}-arrow`);
+            arrowElem.setAttribute('data-popper-arrow', 'true');
+
+            const bodyElem = document.createElement('span');
+            bodyElem.setAttribute('id', `${DEFAULT_SELECTOR.slice(1)}-body`);
+
+            tooltipElem.appendChild(arrowElem);
+            tooltipElem.appendChild(bodyElem);
 
             this.root = document.body.appendChild(tooltipElem);
         }
@@ -157,7 +164,7 @@ export default class Tooltip implements IPlugin {
         }
 
         virtualElement.getBoundingClientRect = () => e.getBoundingClientRect();
-        document.getElementById(`${DEFAULT_SELECTOR.slice(1)}-body`)!.innerHTML = title;
+        document.getElementById(`${DEFAULT_SELECTOR.slice(1)}-body`)!.textContent = title;
 
         this.popperInstance.setOptions(() => ({
             ...this.popperOptions,
