@@ -91,6 +91,65 @@ def fetch_dividends(tickers: List[str], cache: Dict[str, Any]) -> Dict[str, Any]
     return cache
 
 
+def _calculate_daily_yield(current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers):
+    portfolio_market_value = 0.0
+    portfolio_forward_dividend_income = 0.0
+    portfolio_ttm_dividend_collected = 0.0
+    portfolio_daily_dividend = 0.0
+    daily_dividends_by_ticker = {}
+
+    date_str = current_date.strftime("%Y-%m-%d")
+    ttm_start = current_date - timedelta(days=365)
+
+    for t in tickers:
+        shares = holdings_df.at[current_date, t]
+        if shares <= 0:
+            continue
+
+        # Skip tickers without price data (e.g., delisted stocks not in prices DataFrame)
+        if t not in prices_df.columns:
+            continue
+
+        price = prices_df.at[current_date, t]
+        if pd.isna(price) or price <= 0:
+            continue
+
+        portfolio_market_value += shares * price
+
+        # 1. Forward Dividend Income (Proxy using TTM sum at this date)
+        annual_div_per_share = ticker_ttm_divs[t].at[current_date]
+        portfolio_forward_dividend_income += shares * annual_div_per_share
+
+        # 2. TTM Dividends Collected (Actual cash based on historical shares)
+        div_series = ticker_divs[t]
+        ttm_div_events = div_series[
+            (div_series.index > ttm_start) & (div_series.index <= current_date)
+        ]
+        for ex_date, amt in ttm_div_events.items():
+            if ex_date in holdings_df.index:
+                portfolio_ttm_dividend_collected += holdings_df.at[ex_date, t] * amt
+
+        # 3. Daily dividends received on exactly this date
+        if current_date in div_series.index:
+            ticker_div = holdings_df.at[current_date, t] * div_series.at[current_date]
+            if ticker_div > 0:
+                portfolio_daily_dividend += ticker_div
+                daily_dividends_by_ticker[t] = round(ticker_div, 2)
+
+    forward_yield = 0.0
+    if portfolio_market_value > 0:
+        forward_yield = (portfolio_forward_dividend_income / portfolio_market_value) * 100.0
+
+    return {
+        "date": date_str,
+        "forward_yield": round(forward_yield, 4),
+        "ttm_income": round(portfolio_ttm_dividend_collected, 2),
+        "market_value": round(portfolio_market_value, 2),
+        "daily_dividend": round(portfolio_daily_dividend, 2),
+        "daily_dividends_by_ticker": daily_dividends_by_ticker,
+    }
+
+
 def calculate_yield_data():
     """Main calculation logic."""
     if not HOLDINGS_PATH.exists() or not PRICES_PATH.exists():
@@ -147,64 +206,9 @@ def calculate_yield_data():
     logging.info(f"Processing {len(dates)} days...")
 
     for current_date in dates:
-        portfolio_market_value = 0.0
-        portfolio_forward_dividend_income = 0.0
-        portfolio_ttm_dividend_collected = 0.0
-        portfolio_daily_dividend = 0.0
-        daily_dividends_by_ticker = {}
-
-        date_str = current_date.strftime("%Y-%m-%d")
-        ttm_start = current_date - timedelta(days=365)
-
-        for t in tickers:
-            shares = holdings_df.at[current_date, t]
-            if shares <= 0:
-                continue
-
-            # Skip tickers without price data (e.g., delisted stocks not in prices DataFrame)
-            if t not in prices_df.columns:
-                continue
-
-            price = prices_df.at[current_date, t]
-            if pd.isna(price) or price <= 0:
-                continue
-
-            portfolio_market_value += shares * price
-
-            # 1. Forward Dividend Income (Proxy using TTM sum at this date)
-            annual_div_per_share = ticker_ttm_divs[t].at[current_date]
-            portfolio_forward_dividend_income += shares * annual_div_per_share
-
-            # 2. TTM Dividends Collected (Actual cash based on historical shares)
-            div_series = ticker_divs[t]
-            ttm_div_events = div_series[
-                (div_series.index > ttm_start) & (div_series.index <= current_date)
-            ]
-            for ex_date, amt in ttm_div_events.items():
-                if ex_date in holdings_df.index:
-                    portfolio_ttm_dividend_collected += holdings_df.at[ex_date, t] * amt
-
-            # 3. Daily dividends received on exactly this date
-            if current_date in div_series.index:
-                ticker_div = holdings_df.at[current_date, t] * div_series.at[current_date]
-                if ticker_div > 0:
-                    portfolio_daily_dividend += ticker_div
-                    daily_dividends_by_ticker[t] = round(ticker_div, 2)
-
-        forward_yield = 0.0
-        if portfolio_market_value > 0:
-            forward_yield = (portfolio_forward_dividend_income / portfolio_market_value) * 100.0
-
-        results.append(
-            {
-                "date": date_str,
-                "forward_yield": round(forward_yield, 4),
-                "ttm_income": round(portfolio_ttm_dividend_collected, 2),
-                "market_value": round(portfolio_market_value, 2),
-                "daily_dividend": round(portfolio_daily_dividend, 2),
-                "daily_dividends_by_ticker": daily_dividends_by_ticker,
-            }
-        )
+        results.append(_calculate_daily_yield(
+            current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers
+        ))
 
     # Save to JSON
     with OUTPUT_FILE.open("w", encoding="utf-8") as f:
