@@ -16,7 +16,8 @@ try:
     _yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-")
     yf.set_tz_cache_location(_yf_cache_dir)
     atexit.register(shutil.rmtree, _yf_cache_dir, ignore_errors=True)
-except Exception:  # pragma: no cover
+except Exception as e:
+    logging.warning(f"Error: {e}")
     yf = None
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,7 +132,8 @@ def load_fx_rates() -> Dict[str, float]:
         # Ensure USD is always 1.0
         rates['USD'] = 1.0
         return cast(Dict[str, float], rates)
-    except Exception:
+    except Exception as e:
+        logging.warning(f"Error: {e}")
         return {'USD': 1.0}
 
 
@@ -210,7 +212,8 @@ def fetch_market_metadata(symbol: str) -> Dict[str, Any]:  # type: ignore[no-any
         # Explicitly cast to Dict[str, Any] to help mypy
         info = cast(Dict[str, Any], ticker.info or {})
         fast = cast(Dict[str, Any], getattr(ticker, 'fast_info', {}) or {})
-    except Exception:
+    except Exception as e:
+        logging.warning(f"Error: {e}")
         return {}
 
     result_metadata: Dict[str, Any] = {}  # Changed variable name

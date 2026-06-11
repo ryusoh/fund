@@ -49,7 +49,8 @@ def _has_marker_block(rc_path: Path) -> bool:
     try:
         text = rc_path.read_text(encoding="utf-8", errors="ignore")
         return "# >>> fund aliases >>>" in text and "# <<< fund aliases <<<" in text
-    except Exception:
+    except Exception as e:
+        _warn(f"Error reading {rc_path}: {e}")
         return False
 
 
@@ -62,7 +63,8 @@ def _has_completion_line(rc_path: Path) -> bool:
             return True
         # Also accept zsh fallback registration
         return "compdef _fund_complete fund" in text
-    except Exception:
+    except Exception as e:
+        _warn(f"Error reading {rc_path}: {e}")
         return False
 
 
