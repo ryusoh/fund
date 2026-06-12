@@ -272,3 +272,8 @@
 
 **Learning:** Using `.forEach()` to consolidate and process large sets of data, such as mapping and storing daily drawdown entries inside `getDrawdownSnapshotLine()`, creates implicit closures for every iteration. In large datasets with hundreds or thousands of elements, this generates significant garbage collection (GC) overhead during high-frequency snapshot recalculations and terminal output renderings.
 **Action:** Replace `.forEach()` iterations over sorted records with an explicit index-based `for` loop, eliminating closure allocations entirely to lower GC pressure and ensure stable execution time.
+
+## 2026-06-25 - Replace .forEach closures in DomainCollection.ts fill and groupRecords
+
+**Learning:** Using `.forEach()` with internal iterations or map setups (e.g., iterating through `keys` and `data` in `DomainCollection.ts`) creates implicit closure allocations on every call, increasing garbage collection (GC) pressure during calendar heatmap rendering.
+**Action:** Replaced nested array methods and `.forEach` with standard `for` loops rather than `.forEach` to completely eliminate intermediate array allocations and closure creation.
