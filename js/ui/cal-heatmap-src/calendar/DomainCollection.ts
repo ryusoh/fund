@@ -149,10 +149,11 @@ export default class DomainCollection {
     ): void {
         const groupedRecords: GroupedRecords = this.groupRecords(data, x, subDomainKeyExtractor);
 
-        this.keys.forEach((domainKey) => {
+        for (let i = 0; i < this.keys.length; i++) {
+            const domainKey = this.keys[i];
             const records = groupedRecords.get(domainKey) || {};
             this.#setSubDomainValues(domainKey, records, y, groupY, defaultValue);
-        });
+        }
     }
 
     #setSubDomainValues(
@@ -162,14 +163,16 @@ export default class DomainCollection {
         groupY: DataOptions['groupY'],
         defaultValue: DataOptions['defaultValue']
     ): void {
-        this.get(domainKey)!.forEach((subDomain: SubDomain, index: number) => {
+        const subDomains = this.get(domainKey)!;
+        for (let index = 0; index < subDomains.length; index++) {
+            const subDomain = subDomains[index];
             let value: ValueType = defaultValue;
             if (records.hasOwnProperty(subDomain.t)) {
                 value = this.groupValues(this.#extractValues(records[subDomain.t], y), groupY);
             }
 
-            this.get(domainKey)![index].v = value;
-        });
+            subDomains[index].v = value;
+        }
     }
 
     groupRecords(
@@ -179,13 +182,16 @@ export default class DomainCollection {
     ): GroupedRecords {
         const results: GroupedRecords = new Map();
         const validSubDomainTimestamp: Map<Timestamp, Timestamp> = new Map();
-        this.keys.forEach((domainKey) => {
-            this.get(domainKey)!.forEach((subDomain: SubDomain) => {
-                validSubDomainTimestamp.set(subDomain.t, domainKey);
-            });
-        });
+        for (let i = 0; i < this.keys.length; i++) {
+            const domainKey = this.keys[i];
+            const subDomains = this.get(domainKey)!;
+            for (let j = 0; j < subDomains.length; j++) {
+                validSubDomainTimestamp.set(subDomains[j].t, domainKey);
+            }
+        }
 
-        data.forEach((d) => {
+        for (let i = 0; i < data.length; i++) {
+            const d = data[i];
             const timestamp = this.extractTimestamp(d, x, subDomainKeyExtractor);
 
             if (validSubDomainTimestamp.has(timestamp)) {
@@ -196,14 +202,20 @@ export default class DomainCollection {
 
                 results.set(domainKey, records);
             }
-        });
+        }
 
         return results;
     }
 
     // eslint-disable-next-line class-methods-use-this
     #extractValues(data: DataRecord[], y: string | Function): ValueType[] {
-        return data.map((d): ValueType => (typeof y === 'function' ? y(d) : d[y]));
+        const len = data.length;
+        const result = new Array(len);
+        for (let i = 0; i < len; i++) {
+            const d = data[i];
+            result[i] = typeof y === 'function' ? y(d) : d[y];
+        }
+        return result;
     }
 
     // eslint-disable-next-line class-methods-use-this
