@@ -136,14 +136,15 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
 
             // Consolidate by day (keep last value)
             const dailyMap = new Map();
-            sorted.forEach((item) => {
+            for (let i = 0; i < sorted.length; i++) {
+                const item = sorted[i];
                 const d = new Date(item[dateKey] || item.date);
                 if (Number.isNaN(d.getTime())) {
-                    return;
+                    continue;
                 }
                 const dayStr = d.toISOString().split('T')[0];
                 dailyMap.set(dayStr, item);
-            });
+            }
 
             const result = new Array(dailyMap.size);
             let idx = 0;
