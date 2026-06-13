@@ -103,6 +103,21 @@ describe('Table Parser Helpers', () => {
             // processKeyValToken takes the whole token "unknown:value" as the ticker if it fails to parse as a specific key.
             expect(res.commands.tickers).toContain('UNKNOWNVALUE');
         });
+
+        it('should handle unhandled command palette asset normalization logic', () => {
+            const res2 = parseCommandPalette('123:'); // empty value, so val=''
+            // normalizeTickerToken('123') -> null
+            expect(res2.text).toBe('123'); // key is '123'
+        });
+
+        it('should handle unhandled command palette asset normalization logic edge case', () => {
+            const res = parseCommandPalette('class:');
+            expect(res.commands.assetClass).toBe(null);
+            expect(res.commands.tickers).toContain('CLASS');
+
+            const res2 = parseCommandPalette('aapl:');
+            expect(res2.commands.tickers).toContain('AAPL');
+        });
     });
 
     describe('deriveCompositionTickerFilters', () => {
