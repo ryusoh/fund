@@ -14,7 +14,7 @@ describe('TableGlassWebGL', () => {
         mockParentEffect.container.appendChild(mockParentEffect.canvas);
 
         const originalGetContext = HTMLCanvasElement.prototype.getContext;
-        jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function(type, options) {
+        jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function(type, _options) {
             if (type === 'webgl' || type === 'experimental-webgl') {
                 return {
                     createShader: jest.fn(() => ({})),
@@ -56,7 +56,7 @@ describe('TableGlassWebGL', () => {
                     TRIANGLES: 4
                 };
             }
-            return originalGetContext.call(this, type, options);
+            return originalGetContext.call(this, type, _options);
         });
     });
 
@@ -78,7 +78,7 @@ describe('TableGlassWebGL', () => {
     });
 
     test('handles compile error gracefully', () => {
-        HTMLCanvasElement.prototype.getContext.mockImplementationOnce(function(type, options) {
+        HTMLCanvasElement.prototype.getContext.mockImplementationOnce(function() {
             return {
                 createShader: jest.fn(() => ({})),
                 shaderSource: jest.fn(),
@@ -112,7 +112,7 @@ describe('TableGlassWebGL', () => {
     });
 
     test('handles link error gracefully', () => {
-        HTMLCanvasElement.prototype.getContext.mockImplementationOnce(function(type, options) {
+        HTMLCanvasElement.prototype.getContext.mockImplementationOnce(function() {
              return {
                     createShader: jest.fn(() => ({})),
                     shaderSource: jest.fn(),
