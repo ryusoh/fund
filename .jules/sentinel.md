@@ -84,3 +84,9 @@ error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
 **Vulnerability:** The Cloudflare worker JSON responses and CORS preflight (`OPTIONS`) responses were missing several modern security headers that the static site served (via `_headers`), specifically `Referrer-Policy`, `Permissions-Policy`, and the `preload` directive for `Strict-Transport-Security`.
 **Learning:** Security headers must be comprehensive and consistent across all attack surfaces. If an API endpoint doesn't serve the same strict policies as the frontend, it can create a weaker link for certain browser protections.
 **Prevention:** Added `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()`, and `preload` to `HSTS` across all worker responses (`jsonResponse` and `OPTIONS` preflight).
+
+## 2025-05-25 - [HIGH] Insecure Random Number Generation in Financial Simulations
+
+**Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations as a fallback when `crypto.getRandomValues()` was not available. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
+**Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG). A fallback to `Math.random()` defeats the purpose of checking for `crypto`.
+**Prevention:** Replace the `Math.random()` fallback with an explicitly thrown error to ensure the system fails securely rather than quietly returning predictable sequences if the `crypto` API is unavailable.
