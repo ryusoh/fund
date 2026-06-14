@@ -8,18 +8,24 @@ describe('monte_carlo.worker', () => {
         mockPostMessage = jest.fn();
         global.self = {
             postMessage: mockPostMessage,
+            crypto: {
+                getRandomValues: jest.fn(),
+            },
         };
         // Re-assign self.onmessage
         workerModule.initWorker(global.self);
     });
 
     it('processes RUN_SIMULATION message correctly', () => {
-        // mock Math.random to make output predictable and hit all scenario branches
+        // mock crypto.getRandomValues to make output predictable and hit all scenario branches
         let callCount = 0;
-        const mockRandom = jest.spyOn(Math, 'random').mockImplementation(() => {
+        global.self.crypto.getRandomValues.mockImplementation((array) => {
             callCount++;
             // alternate between scenarios
-            return callCount % 2 === 0 ? 0.2 : 0.8;
+            // 0.2 * (0xffffffff + 1) = 858993459.2
+            // 0.8 * (0xffffffff + 1) = 3435973836.8
+            array[0] = callCount % 2 === 0 ? 858993459 : 3435973836;
+            return array;
         });
 
         const payload = {
@@ -62,8 +68,6 @@ describe('monte_carlo.worker', () => {
         expect(typeof arg.result.histogram.min).toBe('number');
         expect(typeof arg.result.histogram.max).toBe('number');
         expect(typeof arg.result.histogram.binSize).toBe('number');
-
-        mockRandom.mockRestore();
     });
 
     it('ignores unsupported message types', () => {
@@ -78,7 +82,11 @@ describe('monte_carlo.worker', () => {
     });
 
     it('picks the last scenario if random > sum of probabilities due to floating point', () => {
-        const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.9999);
+        global.self.crypto.getRandomValues.mockImplementation((array) => {
+            // 0.9999 * (0xffffffff + 1)
+            array[0] = 4294537616;
+            return array;
+        });
 
         const payload = {
             scenarios: [
@@ -99,10 +107,11 @@ describe('monte_carlo.worker', () => {
         });
 
         expect(mockPostMessage).toHaveBeenCalledTimes(1);
-        mockRandom.mockRestore();
     });
 
-    it('uses fallback math random without breaking', () => {
+    it('throws error if crypto is not available', () => {
+        global.self.crypto = undefined;
+
         const payload = {
             scenarios: [{ prob: 1.0, growth: { epsCagr: 0.1 }, valuation: { exitPe: 15 } }],
             volatility: 0.2,
@@ -111,13 +120,13 @@ describe('monte_carlo.worker', () => {
             eps: 10,
         };
 
-        global.self.onmessage({
-            data: {
-                type: 'RUN_SIMULATION',
-                payload,
-            },
-        });
-
-        expect(mockPostMessage).toHaveBeenCalledTimes(1);
+        expect(() => {
+            global.self.onmessage({
+                data: {
+                    type: 'RUN_SIMULATION',
+                    payload,
+                },
+            });
+        }).toThrow('Secure random number generation is not supported in this environment');
     });
 });

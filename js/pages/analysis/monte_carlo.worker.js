@@ -101,7 +101,7 @@ function secureRandom() {
         self.crypto.getRandomValues(array);
         return array[0] / (0xffffffff + 1);
     }
-    return Math.random();
+    throw new Error('Secure random number generation is not supported in this environment');
 }
 
 function pickScenario(scenarios) {
