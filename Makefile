@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -39,11 +39,13 @@ help:
 	@echo "  type          Run mypy type checking"
 	@echo "  sec           Run bandit security checks"
 	@echo "  test          Run Python and JS tests"
+	@echo "  test-js       Scoped fast JS test, no coverage (FILE=path/to.test.js)"
 	@echo "  verify        Lint, type, sec, and tests"
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
+	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
 	@echo "  fund          Show CLI help"
 	@echo "  deploy-worker Deploy Cloudflare Worker"
 
@@ -155,6 +157,11 @@ markdownlint-fix:
 js-test:
 	npm test
 
+# Scoped, fast JS test for the tight edit→verify loop (skips coverage):
+#   make test-js FILE=tests/js/ui/liquidGlassRefraction.test.js
+test-js:
+	npx --yes jest $(FILE)
+
 test: js-test
 	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
@@ -181,6 +188,14 @@ vendor-clean:
 
 serve:
 	npm run dev
+
+# Headless screenshot for visual verification (Chromium-only effects render).
+# Writes a PNG under screenshots/ and prints its path. Needs `npx playwright
+# install chromium` once (after `npm install`).
+#   make screenshot URL=/terminal/
+#   make screenshot URL=/terminal/ ARGS="--full --wait 1500"
+screenshot:
+	node scripts/screenshot.mjs $(URL) $(ARGS)
 
 fund:
 	$(PY) -m scripts.cli --help

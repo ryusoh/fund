@@ -9,6 +9,8 @@ assets/logo/.DS_Store
 node_modules/
 # Test coverage reports
 coverage/
+# Headless screenshot output (visual verification, scripts/screenshot.mjs)
+screenshots/
 .DS_Store
 .gemini/
 

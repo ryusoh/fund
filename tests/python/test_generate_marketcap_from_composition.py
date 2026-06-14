@@ -10,17 +10,24 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
             with patch('builtins.print') as mock_print:
                 result = main()
                 self.assertTrue(result)
-                mock_print.assert_any_call("⚠ data/output/figures/composition.json not found, skipping market cap generation")
+                mock_print.assert_any_call(
+                    "⚠ data/output/figures/composition.json not found, skipping market cap generation"
+                )
 
     def test_missing_fund_mc_file(self):
         with patch('scripts.generate_marketcap_from_composition.Path.exists') as mock_exists:
             # First call for composition.json returns True, second for fund_marketcap_breakdown.json returns False
             mock_exists.side_effect = [True, False, False]
-            with patch('builtins.open', mock_open(read_data='{"dates": [], "series": {}, "total_values": []}')):
+            with patch(
+                'builtins.open',
+                mock_open(read_data='{"dates": [], "series": {}, "total_values": []}'),
+            ):
                 with patch('builtins.print') as mock_print:
                     result = main()
                     self.assertTrue(result)
-                    mock_print.assert_any_call("⚠ data/fund_marketcap_breakdown.json not found, skipping market cap generation")
+                    mock_print.assert_any_call(
+                        "⚠ data/fund_marketcap_breakdown.json not found, skipping market cap generation"
+                    )
 
     @patch('scripts.generate_marketcap_from_composition.Path.exists')
     @patch('scripts.generate_marketcap_from_composition.Path.mkdir')
@@ -36,23 +43,16 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
                 'AAPL': [40, 40],
                 'GOOGL': [0, 90],
                 'MSFT': [0, 0],
-                'UNKNOWN': [10, 10]
-            }
+                'UNKNOWN': [10, 10],
+            },
         }
-        fund_mc_data = {
-            'VT': {
-                'Mega Cap': 50,
-                'Large Cap': 30,
-                'Mid Cap': 20,
-                '_private': 100
-            }
-        }
+        fund_mc_data = {'VT': {'Mega Cap': 50, 'Large Cap': 30, 'Mid Cap': 20, '_private': 100}}
         market_caps_data = {
             'AAPL': 2500 * 1e9,  # Mega Cap
-            'GOOGL': 15 * 1e9,   # Large Cap
-            'MID': 5 * 1e9,      # Mid Cap
-            'SML': 1 * 1e9,      # Small Cap
-            'TINY': 0.1 * 1e9    # Cash/Other
+            'GOOGL': 15 * 1e9,  # Large Cap
+            'MID': 5 * 1e9,  # Mid Cap
+            'SML': 1 * 1e9,  # Small Cap
+            'TINY': 0.1 * 1e9,  # Cash/Other
         }
 
         def mock_json_load(f):
@@ -94,17 +94,13 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
         composition_data = {
             'dates': ['2023-01-01'],
             'total_values': [100],
-            'series': {
-                'MID': [10],
-                'SML': [10],
-                'TINY': [10]
-            }
+            'series': {'MID': [10], 'SML': [10], 'TINY': [10]},
         }
         fund_mc_data = {}
         market_caps_data = {
-            'MID': 5 * 1e9,      # Mid Cap
-            'SML': 1 * 1e9,      # Small Cap
-            'TINY': 0.1 * 1e9    # Cash/Other
+            'MID': 5 * 1e9,  # Mid Cap
+            'SML': 1 * 1e9,  # Small Cap
+            'TINY': 0.1 * 1e9,  # Cash/Other
         }
 
         def mock_json_load(f):
@@ -138,7 +134,9 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
         namespace = {'__name__': '__main__'}
 
         with patch('sys.exit') as mock_exit:
-            with patch('scripts.generate_marketcap_from_composition.Path.exists', return_value=False):
+            with patch(
+                'scripts.generate_marketcap_from_composition.Path.exists', return_value=False
+            ):
                 with patch('builtins.print'):
                     exec(code, namespace)
             mock_exit.assert_called_with(0)
@@ -151,7 +149,10 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
             mock_exit.assert_called_with(1)
 
         with patch('sys.exit') as mock_exit:
-            with patch('scripts.generate_marketcap_from_composition.Path.exists', side_effect=Exception("Test Exception")):
+            with patch(
+                'scripts.generate_marketcap_from_composition.Path.exists',
+                side_effect=Exception("Test Exception"),
+            ):
                 with patch('builtins.print') as mock_print:
                     try:
                         exec(code, namespace)
@@ -159,6 +160,7 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
                         pass
                     mock_exit.assert_called_with(0)
                     mock_print.assert_any_call("⚠ Market cap generation failed: Test Exception")
+
 
 if __name__ == '__main__':
     unittest.main()

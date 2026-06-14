@@ -13,7 +13,9 @@ class TestDevServer(unittest.TestCase):
             handler.send_header = MagicMock()
             handler.end_headers()
 
-            handler.send_header.assert_called_with("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            handler.send_header.assert_called_with(
+                "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+            )
             mock_super_end_headers.assert_called_once()
 
     @patch('scripts.dev_server.http.server.ThreadingHTTPServer')
@@ -43,6 +45,7 @@ class TestDevServer(unittest.TestCase):
         self.assertEqual(mock_server.call_args[0][1].__name__, "NoCacheHandler")
         mock_server_instance.serve_forever.assert_called_once()
         mock_print.assert_called_with("Dev server at http://127.0.0.1:9000  (no-cache)")
+
 
 if __name__ == '__main__':
     unittest.main()

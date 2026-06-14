@@ -23,8 +23,10 @@ class TestWatchTransactions(unittest.TestCase):
         mock_exists.return_value = True
 
         mock_stat_results = [
-            MagicMock(st_mtime=100), MagicMock(st_mtime=200),  # init
-            MagicMock(st_mtime=101), MagicMock(st_mtime=200),  # first iteration (change in first file)
+            MagicMock(st_mtime=100),
+            MagicMock(st_mtime=200),  # init
+            MagicMock(st_mtime=101),
+            MagicMock(st_mtime=200),  # first iteration (change in first file)
         ]
         mock_stat.side_effect = mock_stat_results
 
