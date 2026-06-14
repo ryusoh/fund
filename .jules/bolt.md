@@ -277,3 +277,8 @@
 
 **Learning:** Using `.forEach()` with internal iterations or map setups (e.g., iterating through `keys` and `data` in `DomainCollection.ts`) creates implicit closure allocations on every call, increasing garbage collection (GC) pressure during calendar heatmap rendering.
 **Action:** Replaced nested array methods and `.forEach` with standard `for` loops rather than `.forEach` to completely eliminate intermediate array allocations and closure creation.
+
+## 2026-06-25 - Replace .forEach closures in cal-heatmap UI plugin managers and domain models
+
+**Learning:** Using `.forEach()` with internal iterations or map setups (e.g., iterating through plugin arrays in `PluginManager.ts` and collections in `DomainCollection.ts`) creates implicit closure allocations on every call, increasing garbage collection (GC) pressure during calendar heatmap rendering and high-frequency UI updates.
+**Action:** Replaced nested array methods and `.forEach` with standard explicit `for` loops in `js/ui/cal-heatmap-src/*` codes to completely eliminate intermediate array allocations and closure creations.

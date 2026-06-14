@@ -48,9 +48,10 @@ export default class SubDomainPainter {
                 const subDomainsCollection: SubDomain[] = this.calendar.domainCollection.get(d)!;
                 if (sort === 'desc') {
                     const max = Math.max(...subDomainsCollection.map((s: SubDomain) => s.x));
-                    subDomainsCollection.forEach((s: SubDomain, i: number) => {
+                    for (let i = 0; i < subDomainsCollection.length; i++) {
+                        const s = subDomainsCollection[i];
                         subDomainsCollection[i].x = Math.abs(s.x - max);
-                    });
+                    }
                 }
 
                 return subDomainsCollection;
@@ -144,13 +145,14 @@ export default class SubDomainPainter {
         let classname = '';
 
         if (highlight.length > 0) {
-            highlight.forEach((d) => {
+            for (let i = 0; i < highlight.length; i++) {
+                const d = highlight[i];
                 const unitFn = this.calendar.templateCollection.get(type).extractUnit;
 
                 if (unitFn(+d) === unitFn(timestamp)) {
                     classname = HIGHLIGHT_CLASSNAME;
                 }
-            });
+            }
         }
 
         return [classname, ...otherClasses].join(' ').trim();

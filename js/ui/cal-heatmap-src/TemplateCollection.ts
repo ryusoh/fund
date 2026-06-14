@@ -41,26 +41,29 @@ export default class TemplateCollection {
         this.init();
 
         const tplWithParent: string[] = [];
-        castArray(templates).forEach((f) => {
+        const templatesArray = castArray(templates);
+        for (let i = 0; i < templatesArray.length; i++) {
+            const f = templatesArray[i];
             const template = f(this.dateHelper, this.options.options);
             this.settings.set(template.name, template);
 
             if (template.hasOwnProperty('parent')) {
                 tplWithParent.push(template.name);
             }
-        });
+        }
 
-        tplWithParent.forEach((name) => {
+        for (let i = 0; i < tplWithParent.length; i++) {
+            const name = tplWithParent[i];
             const parentTemplate = this.settings.get(this.settings.get(name)!.parent!);
 
             if (!parentTemplate) {
-                return;
+                continue;
             }
 
             this.settings.set(name, {
                 ...parentTemplate,
                 ...this.settings.get(name),
             });
-        });
+        }
     }
 }

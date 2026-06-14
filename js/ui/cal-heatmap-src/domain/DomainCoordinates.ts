@@ -51,20 +51,23 @@ export default class DomainCoordinates {
             scrollFactor *= -1;
         }
 
-        collection.yankedDomains.forEach((domainKey: Timestamp) => {
+        for (let i = 0; i < collection.yankedDomains.length; i++) {
+            const domainKey = collection.yankedDomains[i];
             exitingTotal +=
                 this.collection.get(domainKey)![verticalOrientation ? 'height' : 'width'];
-        });
-        collection.yankedDomains.forEach((domainKey: Timestamp) => {
+        }
+        for (let i = 0; i < collection.yankedDomains.length; i++) {
+            const domainKey = collection.yankedDomains[i];
             const coor = this.collection.get(domainKey)!;
             this.collection.set(domainKey, {
                 ...coor,
                 x: verticalOrientation ? coor.x : coor.x + exitingTotal * scrollFactor,
                 y: verticalOrientation ? coor.y + exitingTotal * scrollFactor : coor.y,
             });
-        });
+        }
 
-        keys.forEach((domainKey: Timestamp) => {
+        for (let i = 0; i < keys.length; i++) {
+            const domainKey = keys[i];
             const w = this.#getWidth(domainKey);
             const h = this.#getHeight(domainKey);
             if (verticalOrientation) {
@@ -89,7 +92,7 @@ export default class DomainCoordinates {
                 inner_width: w - (verticalOrientation ? 0 : domain.gutter),
                 inner_height: h - (!verticalOrientation ? 0 : domain.gutter),
             });
-        });
+        }
 
         return dimensions;
     }
