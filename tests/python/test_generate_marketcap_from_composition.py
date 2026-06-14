@@ -1,9 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch, mock_open, call
-from pathlib import Path
-import sys
+from unittest.mock import mock_open, patch
 
 from scripts.generate_marketcap_from_composition import main
+
 
 class TestGenerateMarketcapFromComposition(unittest.TestCase):
     def test_missing_composition_file(self):
@@ -14,10 +13,8 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
                 mock_print.assert_any_call("⚠ data/output/figures/composition.json not found, skipping market cap generation")
 
     def test_missing_fund_mc_file(self):
-        def mock_exists(path_obj):
-            return "composition.json" in str(path_obj)
-
         with patch('scripts.generate_marketcap_from_composition.Path.exists') as mock_exists:
+            # First call for composition.json returns True, second for fund_marketcap_breakdown.json returns False
             mock_exists.side_effect = [True, False, False]
             with patch('builtins.open', mock_open(read_data='{"dates": [], "series": {}, "total_values": []}')):
                 with patch('builtins.print') as mock_print:
@@ -148,6 +145,7 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
 
         with patch('sys.exit') as mock_exit:
             with patch('builtins.print'):
+                # Force failure return
                 code_replace_main = code.replace("success = main()", "success = False")
                 exec(code_replace_main, namespace)
             mock_exit.assert_called_with(1)

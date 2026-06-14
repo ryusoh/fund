@@ -1,8 +1,9 @@
-import unittest
-from unittest.mock import MagicMock, patch, ANY
 import runpy
+import unittest
+from unittest.mock import ANY, MagicMock, patch
 
 from scripts.dev_server import NoCacheHandler
+
 
 class TestDevServer(unittest.TestCase):
     @patch('http.server.SimpleHTTPRequestHandler.end_headers')

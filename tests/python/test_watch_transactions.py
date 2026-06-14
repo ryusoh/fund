@@ -1,11 +1,11 @@
-import unittest
-from unittest.mock import MagicMock, patch, call
-from pathlib import Path
 import runpy
 import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
-from scripts.watch_transactions import run_make, poll, WATCH_PATHS, MAKE_TARGET
 import scripts.watch_transactions as wt
+from scripts.watch_transactions import MAKE_TARGET, poll, run_make
+
 
 class TestWatchTransactions(unittest.TestCase):
     @patch('scripts.watch_transactions.subprocess.call')
@@ -30,7 +30,7 @@ class TestWatchTransactions(unittest.TestCase):
 
         mock_sleep.side_effect = KeyboardInterrupt()
 
-        with patch('builtins.print') as mock_print:
+        with patch('builtins.print'):
             poll(5.0)
 
         mock_run_make.assert_called_once_with(MAKE_TARGET)
@@ -46,7 +46,7 @@ class TestWatchTransactions(unittest.TestCase):
         mock_stat.side_effect = FileNotFoundError()
         mock_sleep.side_effect = KeyboardInterrupt()
 
-        with patch('builtins.print') as mock_print:
+        with patch('builtins.print'):
             poll(5.0)
 
         mock_run_make.assert_not_called()
@@ -61,6 +61,7 @@ class TestWatchTransactions(unittest.TestCase):
         with patch.object(sys, 'argv', ['watch_transactions.py', '--interval', '10.0']):
             with patch('time.sleep', side_effect=KeyboardInterrupt()):
                 runpy.run_path("scripts/watch_transactions.py", run_name="__main__")
+
 
 if __name__ == '__main__':
     unittest.main()
