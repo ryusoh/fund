@@ -9,7 +9,11 @@
  * Usage:
  *   node scripts/screenshot.mjs [URL_PATH] [--out FILE] [--port N]
  *                               [--width N] [--height N] [--wait MS] [--full]
+ *                               [--type "TEXT"] [--into SELECTOR]
  *   make screenshot URL=/terminal/
+ *   # Reveal panes hidden until a terminal command runs (table -> `transaction`,
+ *   # chart -> `plot balance`, both -> `reset`), then shoot:
+ *   make screenshot URL=/terminal/ ARGS='--type transaction'
  *
  * Side effects: spawns `scripts/dev_server.py` on --port, writes a PNG under
  * screenshots/ (gitignored). Exits non-zero on navigation/render failure.
@@ -23,7 +27,16 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function parseArgs(argv) {
-    const opts = { url: '/', port: 8123, width: 1440, height: 900, wait: 1200, full: false };
+    const opts = {
+        url: '/',
+        port: 8123,
+        width: 1440,
+        height: 900,
+        wait: 1200,
+        full: false,
+        type: null,
+        into: '#terminalInput',
+    };
     const positional = [];
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
@@ -39,6 +52,10 @@ function parseArgs(argv) {
             opts.height = Number(argv[++i]);
         } else if (a === '--wait') {
             opts.wait = Number(argv[++i]);
+        } else if (a === '--type') {
+            opts.type = argv[++i];
+        } else if (a === '--into') {
+            opts.into = argv[++i];
         } else {
             positional.push(a);
         }
@@ -97,6 +114,13 @@ async function main() {
         const response = await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
         if (response && response.status() >= 400) {
             throw new Error(`HTTP ${response.status()} for ${path}`);
+        }
+        // Optionally drive the page first (e.g. type a terminal command to reveal
+        // panes that are hidden until then), so the resulting state is captured.
+        if (opts.type) {
+            const input = page.locator(opts.into);
+            await input.fill(opts.type, { timeout: 5000 });
+            await input.press('Enter');
         }
         // Let fonts, canvas/WebGL, and the glass animation settle before shooting.
         await sleep(opts.wait);

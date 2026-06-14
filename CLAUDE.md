@@ -52,3 +52,9 @@ edit→verify loop.
 - Verifying a **visual** change means looking at the rendered page, not just green
   tests (§17C of `docs/ai_native_repo_structure.md`). Use
   `make screenshot URL=/<page>/` and read the PNG it prints.
+- **Don't write a command or example into docs/code that you haven't actually run
+  this session.** Verify it first — don't infer behaviour from a name or a `case`
+  label. (E.g. the terminal's real command semantics live in its `help` output /
+  `js/transactions/terminal/handlers/help.js`: `transaction` toggles the table,
+  `plot` needs a subcommand, `all` only clears filters.) Guessing here has twice
+  cost a correction round-trip.

@@ -73,8 +73,16 @@ All in `js/config.js`:
     make screenshot URL=/terminal/
     ```
 
-    It prints the PNG path (under `screenshots/`, gitignored). Note: the **chart
-    and table panes are hidden until a terminal command runs**, so a bare
-    `/terminal/` shot only shows the terminal pane. To verify the table/chart,
-    drive the page first (extend `scripts/screenshot.mjs` to type a command, or
-    check manually via `make serve`).
+    It prints the PNG path (under `screenshots/`, gitignored). The **chart and
+    table panes are hidden until a terminal command runs**, so reveal them first
+    with `--type` (commands per the terminal's own `help`):
+
+    ```sh
+    make screenshot URL=/terminal/ ARGS='--type transaction'    # reveals the table (toggle)
+    make screenshot URL=/terminal/ ARGS='--type "plot balance"' # reveals the chart (plot needs a subcommand)
+    make screenshot URL=/terminal/ ARGS='--type reset'          # reveals both
+    ```
+
+    Note: `--type` runs a real terminal command, so use the actual command names
+    from `help` — e.g. `all` only clears filters and does **not** show the table;
+    bare `plot` does nothing without a subcommand.
