@@ -91,7 +91,9 @@ def fetch_dividends(tickers: List[str], cache: Dict[str, Any]) -> Dict[str, Any]
     return cache
 
 
-def _calculate_daily_yield(current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers):
+def _calculate_daily_yield(
+    current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers
+):
     portfolio_market_value = 0.0
     portfolio_forward_dividend_income = 0.0
     portfolio_ttm_dividend_collected = 0.0
@@ -206,9 +208,11 @@ def calculate_yield_data():
     logging.info(f"Processing {len(dates)} days...")
 
     for current_date in dates:
-        results.append(_calculate_daily_yield(
-            current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers
-        ))
+        results.append(
+            _calculate_daily_yield(
+                current_date, holdings_df, prices_df, ticker_ttm_divs, ticker_divs, tickers
+            )
+        )
 
     # Save to JSON
     with OUTPUT_FILE.open("w", encoding="utf-8") as f:

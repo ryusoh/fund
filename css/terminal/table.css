@@ -33,6 +33,11 @@
         inset 1px 0 0 rgba(255, 255, 255, 0.1),
         inset 0 -1px 0 rgba(0, 0, 0, 0.55),
         inset -1px 0 0 rgba(0, 0, 0, 0.35),
+        /* Luminous bevel rim (ref. github-glass-badge rb2): bright top-weighted
+           inner band + soft top-light feathering down from the upper edge */
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+        inset 0 9px 18px -9px rgba(255, 255, 255, 0.2),
         /* Polished inner glass volume */ inset 2px 3px 8px rgba(255, 255, 255, 0.1),
         inset -2px -3px 10px rgba(0, 0, 0, 0.35),
         /* Faint second-surface reflection (internal bounce off the back face) */ inset 0 -12px 24px

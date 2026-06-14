@@ -60,5 +60,6 @@
 - **Action:** Refactored `normalizeConfig` and `computeScenarioOutcome` in `lab.js`, `convertCurrencySeries` and `ensureSyntheticStart` in `terminal/index.js`, `findFxRate` in `utils.js`, `getActiveChartKey` and large if blocks in `interaction.js`, and `setupTouchNavigation` / `_handleKeyboardNavigation` in `calendar/index.js` to bring complexity < 10. Replaced generic `Caught exception:` with context-specific messages in both `console.warn` and `logger.warn` statements.
 
 ## 2026-06-11 - Exception Handling & Complexity Refactoring
+
 - **Issue:** Several scripts had broad/empty exception handling (`except Exception:`) and high cyclomatic complexity in `scripts/generate_yield_data.py`.
 - **Action:** Fixed empty catch blocks in `sync_configs.py` and `doctor.py` by adding proper context logging. Refactored `calculate_yield_data` into a smaller sub-module to reduce complexity below 10.

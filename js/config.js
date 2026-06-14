@@ -646,6 +646,8 @@ export const TABLE_GLASS_EFFECT = {
         dispersionGain: 6, // stylized boost so the prismatic rim fringe reads at viewing distance
         causticGain: 0.7, // rim caustic brightening where the lens concentrates light
         frost: null, // null = chain the pane's existing blur/saturation after the lens
+        magnification: 0, // interior background "bulge" lens (0 = off); enabled per-pane on the terminal page
+        magnificationPower: 6, // superellipse falloff exponent for the bulge (higher = flatter centre, sharper rim)
     },
     rowHoverEffect: {
         enabled: true,
@@ -691,6 +693,14 @@ export const TABLE_GLASS_EFFECT = {
         },
     },
 };
+
+// Interior magnification ("bulge") strength for the terminal-page glass panes
+// only (terminal, chart card, transaction table). Tunes the github-glass-badge
+// lens that magnifies the page background through the glass. 0 = off;
+// ~0.05 reads as subtle glass thickness, ~0.12 is the reference's pronounced bulge.
+// Kept out of TABLE_GLASS_EFFECT.refraction so the donut and calendar lenses
+// (which spread that object) stay unmagnified.
+export const TERMINAL_GLASS_MAGNIFICATION = 0.05;
 
 // Liquid-glass donut for the position pie chart: an annular lens that sits
 // under the (translucent) slices and refracts the page background along the

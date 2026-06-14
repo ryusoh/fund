@@ -20,6 +20,7 @@ import {
     PERLIN_BACKGROUND_SETTINGS,
     TABLE_GLASS_EFFECT,
     TERMINAL_BACKGROUND_EFFECT,
+    TERMINAL_GLASS_MAGNIFICATION,
     INITIAL_CHART_DATE_RANGE,
 } from '../../config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
@@ -298,6 +299,7 @@ function initialize() {
                 refraction: {
                     ...TABLE_GLASS_EFFECT.refraction,
                     frost: 'blur(14px) saturate(1.7)',
+                    magnification: TERMINAL_GLASS_MAGNIFICATION,
                 },
             },
         },
@@ -309,6 +311,7 @@ function initialize() {
                     ...TABLE_GLASS_EFFECT.refraction,
                     bezelWidth: 16,
                     frost: 'blur(20px) saturate(1.7)',
+                    magnification: TERMINAL_GLASS_MAGNIFICATION,
                 },
             },
         },
@@ -320,6 +323,7 @@ function initialize() {
                     ...TABLE_GLASS_EFFECT.refraction,
                     bezelWidth: 16,
                     frost: 'blur(20px) saturate(1.7)',
+                    magnification: TERMINAL_GLASS_MAGNIFICATION,
                 },
             },
         },

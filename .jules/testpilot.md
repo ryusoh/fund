@@ -103,6 +103,8 @@ To test highly internal functions isolated in a module closure safely, we inject
 **Action:** Added tests for `webglCaustics.js`and`terminal.js` to improve overall JS test coverage.
 
 ## 2026-06-12 - TableGlassWebGL coverage
+
 **Learning:**
+
 - Coverage correctly generated and tracked when testing WebGL implementation by mocking HTMLCanvasElement's getContext to handle experimental-webgl/webgl logic manually. Tests need to verify gracefully degrading components early exits (handling webGL compilation failure or not finding `gl` cleanly).
-**Action:** Implemented test logic to provide 100% test coverage for `tableGlassWebGL.js`, and `parser.js`.
+  **Action:** Implemented test logic to provide 100% test coverage for `tableGlassWebGL.js`, and `parser.js`.

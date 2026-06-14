@@ -142,13 +142,25 @@ export function buildDisplacementMap({
     scale = 0.5,
     shape = 'roundedRect',
     innerRadiusRatio = 0.6,
+    magnification = 0,
+    magnificationPower = 6,
 }) {
     const mapW = Math.max(2, Math.round(width * scale));
     const mapH = Math.max(2, Math.round(height * scale));
     const halfW = width / 2;
     const halfH = height / 2;
     const r = Math.max(0, Math.min(radius, Math.min(halfW, halfH)));
-    const maxShift = maxRefractionShift(ior, thickness);
+    // Interior "bulge" magnification is folded into this same map (rounded-rect
+    // panes only) so it shares the single displacement stage with the rim
+    // refraction. A separate, chained displacement pass would make Chrome's
+    // backdrop-filter drop the trailing (right/bottom) edges to transparent.
+    const bulge = magnification > 0 && shape === 'roundedRect';
+    // Headroom so the combined rim + bulge shift never clamps the encoding. The
+    // normalisation cancels out of the per-channel scale, so widening it leaves
+    // the rim's refraction and dispersion untouched.
+    const maxShift =
+        maxRefractionShift(ior, thickness) +
+        (bulge ? magnification * Math.sqrt(halfW * halfW + halfH * halfH) : 0);
     const eps = 0.5;
 
     const outerR = Math.min(halfW, halfH);
@@ -193,6 +205,21 @@ export function buildDisplacementMap({
                     thickness
                 );
                 caustic = Math.min(1, Math.max(0, (concentration - 1) / CAUSTIC_NORM));
+            }
+
+            // Interior magnification: pull the backdrop sample toward the pane
+            // centre with a hump weight (sin(π·s) over the superellipse distance
+            // s) that is zero at the centre AND tapers back to zero at the rim,
+            // so the bulge lives in the interior and the edges stay covered.
+            if (bulge && distFromEdge > 0) {
+                const s = Math.min(
+                    1,
+                    Math.pow(Math.abs(x) / halfW, magnificationPower) +
+                        Math.pow(Math.abs(y) / halfH, magnificationPower)
+                );
+                const weight = Math.sin(Math.PI * s);
+                dx += -x * magnification * weight;
+                dy += -y * magnification * weight;
             }
 
             data[i++] = 127.5 + 127.5 * (dx / maxShift);
@@ -268,6 +295,14 @@ export class LiquidGlassRefraction {
             // null = keep the pane's existing computed backdrop-filter
             // (e.g. "blur(24px) saturate(1.8)") chained after the lens.
             frost: null,
+            // Interior magnification ("bulge") strength, 0 = off. Adds a second,
+            // achromatic displacement pass that magnifies the backdrop toward the
+            // pane centre (the github-glass-badge lens), applied before the
+            // chromatic rim refraction so the edges keep their prismatic fringe.
+            magnification: 0,
+            // Superellipse falloff exponent for the bulge (higher = flatter
+            // centre, bend concentrated nearer the rim).
+            magnificationPower: 6,
             mapScale: 0.5,
             // Ramp the lens in over this many ms after it first applies:
             // displacement scales linearly with slab thickness, so this is the
@@ -429,8 +464,16 @@ export class LiquidGlassRefraction {
         if (!this.enabled || !this.element.isConnected) {
             return;
         }
-        const width = this.element.clientWidth;
-        const height = this.element.clientHeight;
+        // The SVG filter region maps to the element's border-box, so feImage
+        // paints the lens across that full box. clientWidth/clientHeight exclude
+        // the scrollbar gutter, so on scrollable panes (e.g. the transaction
+        // table) they are narrower than the painted region — building the map
+        // from them stretches it wider and shifts the caustic rim off the right
+        // and bottom edges. Measure the border-box so the map and the painted
+        // region share one coordinate space. (offsetWidth is 0 for detached
+        // nodes; fall back to clientWidth there.)
+        const width = this.element.offsetWidth || this.element.clientWidth;
+        const height = this.element.offsetHeight || this.element.clientHeight;
         if (width < 2 || height < 2) {
             return;
         }
@@ -468,6 +511,8 @@ export class LiquidGlassRefraction {
             scale: this.options.mapScale,
             shape: this.options.shape,
             innerRadiusRatio: innerRatio,
+            magnification: this.options.magnification,
+            magnificationPower: this.options.magnificationPower,
         });
 
         this.canvas.width = map.width;

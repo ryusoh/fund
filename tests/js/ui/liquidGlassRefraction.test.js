@@ -205,6 +205,72 @@ describe('liquidGlassRefraction math', () => {
             expect(map.maxShift).toBeCloseTo(maxRefractionShift(params.ior, params.thickness), 9);
         });
 
+        describe('interior magnification (bulge) folded into the same map', () => {
+            // scale:1 keeps map pixels 1:1 with logical px for these assertions.
+            const magParams = { ...params, scale: 1, magnification: 0.15 };
+            // Decode a pixel's displacement back into CSS px (the byte encoding
+            // is normalised by each map's own maxShift, so raw bytes aren't
+            // comparable across maps — pixel space is).
+            const shiftAt = (map, x, y) => {
+                const i = (y * map.width + x) * 4;
+                return {
+                    dx: ((map.data[i] - 127.5) / 127.5) * map.maxShift,
+                    dy: ((map.data[i + 1] - 127.5) / 127.5) * map.maxShift,
+                };
+            };
+
+            test('leaves the centre neutral', () => {
+                const s = shiftAt(buildDisplacementMap(magParams), 100, 50);
+                expect(Math.abs(s.dx)).toBeLessThan(0.5);
+                expect(Math.abs(s.dy)).toBeLessThan(0.5);
+            });
+
+            test('pulls an interior pixel inward where the rim refraction is zero', () => {
+                // x = 20 → ~20px from the left edge, outside the 14px bezel, so
+                // the plain map is neutral here and any shift is pure bulge.
+                const plain = shiftAt(buildDisplacementMap({ ...params, scale: 1 }), 20, 50);
+                const bulged = shiftAt(buildDisplacementMap(magParams), 20, 50);
+                expect(Math.abs(plain.dx)).toBeLessThan(0.5);
+                expect(bulged.dx).toBeGreaterThan(4); // inward (+x) pull toward centre
+            });
+
+            test('tapers to ~zero added shift at the rim so the edge stays covered', () => {
+                // At the outermost pixel the bulge must add almost nothing on top
+                // of the rim refraction — a shift reaching the rim would make
+                // Chrome's backdrop-filter sample past its snapshot and drop the
+                // right/bottom edge to transparent.
+                const plain = shiftAt(buildDisplacementMap({ ...params, scale: 1 }), 0, 50);
+                const bulged = shiftAt(buildDisplacementMap(magParams), 0, 50);
+                // Rim refraction at the outermost pixel is ~14px; the bulge adds
+                // only ~1.5px there (it ramps up just inside), so the edge keeps
+                // its rim-only behaviour and stays covered.
+                expect(Math.abs(bulged.dx - plain.dx)).toBeLessThan(2.5);
+            });
+
+            test('widens maxShift to fit the added bulge without clamping', () => {
+                const plain = buildDisplacementMap({ ...params });
+                const bulged = buildDisplacementMap({ ...params, magnification: 0.15 });
+                expect(bulged.maxShift).toBeGreaterThan(plain.maxShift);
+            });
+
+            test('does not apply to the annulus (donut) shape', () => {
+                const ring = {
+                    width: 200,
+                    height: 200,
+                    radius: 0,
+                    bezelWidth: 10,
+                    ior: 1.52,
+                    thickness: 18,
+                    scale: 1,
+                    shape: 'annulus',
+                    innerRadiusRatio: 0.5,
+                };
+                const plain = buildDisplacementMap(ring);
+                const withMag = buildDisplacementMap({ ...ring, magnification: 0.3 });
+                expect(withMag.maxShift).toBeCloseTo(plain.maxShift, 9);
+            });
+        });
+
         describe('annulus shape (glass donut)', () => {
             // 200x200 box → outer radius 100, inner radius 50, ring width 50
             const ringParams = {
@@ -265,6 +331,8 @@ describe('LiquidGlassRefraction lifecycle', () => {
         Object.defineProperties(element, {
             clientWidth: { value: 200, configurable: true },
             clientHeight: { value: 100, configurable: true },
+            offsetWidth: { value: 200, configurable: true },
+            offsetHeight: { value: 100, configurable: true },
         });
         document.body.appendChild(element);
 
@@ -328,6 +396,46 @@ describe('LiquidGlassRefraction lifecycle', () => {
         );
         expect(scales[0]).toBeLessThan(scales[1]);
         expect(scales[1]).toBeLessThan(scales[2]);
+
+        effect.dispose();
+    });
+
+    test('magnification stays a single displacement stage reading SourceGraphic', () => {
+        // The bulge is folded into the one rim map — it must NOT add a second
+        // feImage or a chained displacement pass. A chained pass (rim reading a
+        // displaced intermediate) makes Chrome's backdrop-filter drop the
+        // right/bottom edges to transparent, so keeping one stage is load-bearing.
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            magnification: 0.1,
+        });
+
+        const filter = document.querySelector('svg defs filter');
+        expect(filter.querySelectorAll('feImage')).toHaveLength(1);
+        const disps = Array.from(filter.querySelectorAll('feDisplacementMap'));
+        expect(disps).toHaveLength(3);
+        disps.forEach((node) => expect(node.getAttribute('in')).toBe('SourceGraphic'));
+
+        effect.dispose();
+    });
+
+    test('builds the lens at the border-box, not the scrollbar-narrowed content box', () => {
+        // A scrollable pane (e.g. the transaction table) reserves a scrollbar
+        // gutter, so clientWidth is narrower than the border-box that the SVG
+        // filter region — and thus feImage — actually paints across. Building the
+        // map from clientWidth would stretch it wider, shifting the caustic rim
+        // off the right/bottom edge. The map must use the border-box dimensions.
+        Object.defineProperties(element, {
+            clientWidth: { value: 200, configurable: true },
+            clientHeight: { value: 100, configurable: true },
+            offsetWidth: { value: 215, configurable: true }, // +15px scrollbar gutter
+            offsetHeight: { value: 100, configurable: true },
+        });
+
+        const effect = new LiquidGlassRefraction(element, { force: true, frost: '', radius: 16 });
+        expect(effect._lastGeometry).toContain('215x100');
+        expect(effect._lastGeometry).not.toContain('200x100');
 
         effect.dispose();
     });
