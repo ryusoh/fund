@@ -7,6 +7,7 @@ module.exports = [
             'assets/**',
             'js/sketch.js',
             'js/vendor/**',
+            'docs/reference/**',
             'venv/**',
             'dist/**',
             'data/**',

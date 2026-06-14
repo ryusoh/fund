@@ -14,5 +14,6 @@ venv/
 .git/
 ai/status/
 js/vendor/
+docs/reference/
 **/*.min.js
 .claude/

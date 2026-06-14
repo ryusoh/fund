@@ -12,7 +12,10 @@ coverage/
 # Headless screenshot output (visual verification, scripts/screenshot.mjs)
 screenshots/
 .DS_Store
-.gemini/
+
+# Gemini CLI: share reusable commands, keep memory/state (GEMINI.md) local.
+.gemini/*
+!.gemini/commands/
 
 # VS Code workspace files
 *.code-workspace
@@ -23,4 +26,12 @@ worker/.wrangler/
 
 # Coverage artifacts
 .coverage*
-.claude/
+
+# Claude Code: share reusable agent assets, keep personal/transient state local.
+.claude/*
+!.claude/commands/
+!.claude/agents/
+!.claude/skills/
+!.claude/settings.json
+!.claude/launch.json
+# (still ignored by .claude/*: settings.local.json — personal; worktrees/ — transient)

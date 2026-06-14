@@ -101,7 +101,7 @@ async function main() {
         // Let fonts, canvas/WebGL, and the glass animation settle before shooting.
         await sleep(opts.wait);
         await page.screenshot({ path: out, fullPage: opts.full });
-         
+
         console.log(out);
     } finally {
         if (browser) {
@@ -112,7 +112,7 @@ async function main() {
 }
 
 main().catch((err) => {
-     
+
     console.error(err.message || err);
     process.exit(1);
 });
