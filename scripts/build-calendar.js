@@ -1,5 +1,10 @@
 const esbuild = require('esbuild');
 
+// Default writes the shipped bundle; set CALHEATMAP_OUT to build elsewhere
+// (e.g. a temp file for a CI "does the source still compile?" check that must
+// not touch/overwrite the committed bundle).
+const OUTFILE = process.env.CALHEATMAP_OUT || 'js/vendor/cal-heatmap.js';
+
 const d3GlobalsPlugin = {
     name: 'd3-globals',
     setup(build) {
@@ -33,7 +38,7 @@ esbuild
     .build({
         entryPoints: ['js/ui/cal-heatmap-src/CalHeatmap.ts'],
         bundle: true,
-        outfile: 'js/vendor/cal-heatmap.js',
+        outfile: OUTFILE,
         format: 'iife',
         globalName: 'CalHeatmap',
         plugins: [d3GlobalsPlugin, ignoreSCSSPlugin],
@@ -42,7 +47,7 @@ esbuild
     })
     .then(() => {
         const fs = require('fs');
-        const path = 'js/vendor/cal-heatmap.js';
+        const path = OUTFILE;
         let content = fs.readFileSync(path, 'utf8');
         content = content.replace(/Function\("return this"\)\(\)/g, 'globalThis');
         content = content.replace(/Function\('return this'\)\(\)/g, 'globalThis');

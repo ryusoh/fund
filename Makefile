@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js verify js-lint js-test vendor-fetch vendor-verify vendor-clean serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js verify js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -80,6 +80,9 @@ precommit-fix:
 	@# Phase 2: Lint-fix (eslint, stylelint, markdownlint, ruff — all different file types)
 	@$(MAKE) -j4 _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff
 	@# Phase 3: Test (JS + Python in parallel)
+	@# verify-calendar-build first: confirm cal-heatmap-src/*.ts still compiles
+	@# (autonomous agents edit it; the shipped bundle is otherwise only mocked).
+	@$(MAKE) verify-calendar-build
 	@$(MAKE) -j2 js-test _pytest
 	@# Phase 4: Final verification
 	@$(MAKE) precommit; \
@@ -196,6 +199,15 @@ serve:
 #   make screenshot URL=/terminal/ ARGS="--full --wait 1500"
 screenshot:
 	node scripts/screenshot.mjs $(URL) $(ARGS)
+
+# Confirm js/ui/cal-heatmap-src/*.ts still compiles (esbuild bundle succeeds).
+# Builds to a throwaway temp file so the committed bundle is never touched or
+# diffed — source↔bundle drift (stale or intentional) is intentionally tolerated;
+# the smoke test (tests/js/pages/calendar/calHeatmapSmoke.test.js) verifies the
+# *committed* bundle still paints. Catches a broken .ts before anyone rebuilds.
+verify-calendar-build:
+	@echo "Verifying cal-heatmap-src compiles..."
+	@CALHEATMAP_OUT="$$(mktemp -t calheatmap)" npm run --silent vendor:build-calendar >/dev/null
 
 fund:
 	$(PY) -m scripts.cli --help

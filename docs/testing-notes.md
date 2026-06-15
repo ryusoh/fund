@@ -52,6 +52,33 @@ Corollary: a guarded `if (handler) { ...assertions... }` that silently skips whe
 setup half-failed is a **vacuous pass** — prefer asserting the precondition
 (`expect(handler).toBeDefined()`) so a broken setup fails loudly.
 
+## Why `js/ui/cal-heatmap-src/**` is NOT in jest coverage (decided, don't re-add)
+
+It's a maintained fork of the cal-heatmap library, but it's **build source**:
+`scripts/build-calendar.js` esbuild-bundles it to `js/vendor/cal-heatmap.js`, which
+the page loads via `<script>`. Jest **mocks** `global.CalHeatmap` and never imports
+the `.ts` source or the bundle, and there's no TS transform configured. So adding
+`cal-heatmap-src/**/*.ts` to `collectCoverageFrom` would report ~0% across the whole
+library — noise that buries real gaps, not signal. Coverage only means something
+where tests execute the code.
+
+**What protects it instead (added because autonomous agents — bolt/architect —
+edit `cal-heatmap-src/*.ts`, so CI is the only gate):**
+
+- `make verify-calendar-build` — esbuild-compiles the `.ts` to a **temp file**
+  (catches syntax/resolve breakage before anyone rebuilds). Runs in `precommit-fix`.
+- `tests/js/pages/calendar/calHeatmapSmoke.test.js` — loads the **committed**
+  bundle + UMD d3 (like the page) and paints, asserting day cells render. Catches
+  runtime breakage the `CalHeatmap` mock hides. Verified non-vacuous: it fails when
+  the bundle renders nothing.
+
+**Rejected: byte-`diff`ing the bundle against a fresh build.** The minified output
+isn't reproducible across esbuild versions — a rebuild changes only esbuild's
+internal variable names (pure noise), so a diff gate would false-positive. It would
+also forbid an intentionally useful hand-tweak to the bundle. So the gate tests the
+**committed** artifact (what ships) and builds the compile-check to a throwaway temp
+— source↔bundle drift, stale **or** useful, is tolerated as long as what ships works.
+
 ## Prettier won't converge on over-indented Markdown list paragraphs
 
 `make fmt-check` runs Prettier. A continuation paragraph under a list item must be
