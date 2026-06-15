@@ -107,6 +107,21 @@ rolling back) is a one-line change in the factory + the query flag.**
       SVG. `index.test.js` also pins `?renderer=svg` in `beforeEach` (robust safeguard) so
       its Cal-Heatmap-mock integration tests stay valid. `make verify` green (2468 JS + 363 Py).
       **To switch the site to DOM:** set `CALENDAR_RENDERER = 'dom'` in `js/config.js`.
+- [x] **Step 5b — enhanced pure-CSS per-cell glass.** `DomRenderer` cells now layer
+      `SPECULAR` (tight hot-spot) + `SHEEN` (broad dome) + colour fill + `EDGE` (directional
+      rim), with a convex-lens inset-shadow stack (bright top/right fresnel rims, dark
+      bottom/left wells) and **`backdrop-filter: blur+saturate`** so the photo refracts
+      through translucent cells — something the SVG cells never did. Side-by-side zoom shows
+      DOM now meets/exceeds the SVG. 100% CSS, no SVG/WebGL, no per-cell perf cost.
+      `make verify` green (2468 JS + 363 Py).
+      **Decision: do NOT reuse `js/ui/tableGlassEffect.js` for cells.** It is pane-scoped —
+      one `<canvas>` + one WebGL context (`TableGlassWebGL`) + one `LiquidGlassRefraction`
+      (SVG `feDisplacementMap` + `backdrop-filter`) per container, with no per-cell bevel
+      logic. Running it on ~90 tiles hits the browser WebGL-context cap (~16) and ~90
+      `backdrop-filter` lenses (perf wall); and its refraction is SVG-based (the thing we
+      chose to avoid). The mature lens is already reused at the right scope — the calendar
+      pane on zoom (`initCalendarZoomPane` → `CALENDAR_ZOOM_REFRACTION`). Per-cell glass is
+      correctly a CSS job.
 
 ### Step 1 also fixed a pre-existing test-isolation bug (don't reintroduce it)
 
@@ -133,11 +148,11 @@ Fixes applied (keep them):
 
 ## Remaining steps
 
-- [ ] **Step 5b — close the glass-bevel gap so `dom` is shippable.** Improve
-      `DomRenderer`'s glass until it matches the SVG on the _live page_ (see Gotcha 1 for
-      options: richer pure-CSS bevel, or an inline `<svg><filter>`). Done when flipping
-      `CALENDAR_RENDERER='dom'` looks as good as `svg` in Chrome.
-- [ ] **Step 6 — flip the knob, then delete the SVG path** (only after 5b): set
+- [ ] **Verify `dom` on the live page, then flip the knob.** The enhanced CSS glass (5b,
+      done below) looks at/above parity in screenshots, but the static-crop-vs-live-page
+      gap bit us once (Step 4) — **eyeball `/calendar/?renderer=dom` in real Chrome** (pan
+      months, toggle currency/labels, zoom) before setting `CALENDAR_RENDERER='dom'`.
+- [ ] **Step 6 — flip the knob, then delete the SVG path** (only after the check above): set
       `CALENDAR_RENDERER='dom'`, then remove `js/ui/cal-heatmap-src/`, the `d3` +
       `cal-heatmap` `<script>` tags in `calendar/index.html`, `bevelGlassPlugin.js`,
       `SvgRenderer.js`/`svgLabels.js`, and the **SVG-specific tests only** (see test
@@ -158,18 +173,16 @@ Fixes applied (keep them):
 
 ## Gotchas
 
-1. **The specular glass "pillow" — partially closed, NOT yet at full parity.** The SVG
-   bevel (`js/pages/calendar/bevelGlassPlugin.js`) uses `feSpecularLighting` +
-   `feDistantLight` (azimuth 315 = upper-right) + an `objectBoundingBox` gradient stroke
-   on each `<rect>`. `DomRenderer` approximates it with three stacked background layers —
-   `DOME` (radial highlight), the colour fill, and `EDGE` (directional rim) — plus
-   directional inset box-shadows, all lit upper-right (the light direction matters; an
-   earlier spike was mistakenly upper-left). Static zoom crops look close, **but on the
-   live page the gap reads as significant** — so the default knob stays `svg`. **Open
-   work to flip to `dom`:** either push the pure-CSS bevel further (layered radial
-   highlights / a soft top-edge gloss / per-cell `::before` sheen) or adopt the
-   inline-`<svg><filter>` route (`filter: url(#domcal-bevel)` on DOM cells, reusing
-   `feSpecularLighting`) for pixel parity with ~30 lines of SVG defs and no D3.
+1. **The specular glass "pillow" — closed in pure CSS (Step 5b).** The SVG bevel
+   (`js/pages/calendar/bevelGlassPlugin.js`) uses `feSpecularLighting` + `feDistantLight`
+   (azimuth 315 = upper-right) on each `<rect>`. `DomRenderer` matches it with layered
+   backgrounds — `SPECULAR` (hot-spot) + `SHEEN` (dome) + colour fill + `EDGE` (rim) —
+   convex-lens inset shadows, and `backdrop-filter` refraction, all lit upper-right (the
+   light direction matters; an early spike was mistakenly upper-left). At/above parity in
+   screenshots; **still confirm on the live page before flipping the knob.** Rejected
+   alternatives, for the record: the inline-`<svg><filter>` feSpecularLighting route
+   (works, but reintroduces SVG) and reusing `tableGlassEffect.js` (pane-scoped —
+   infeasible per-cell; see the Step 5b note in "Done so far").
 2. **Glass is visual — verify in Chrome, not tests.** Unit tests cannot see a
    bevel. Per `CLAUDE.md` / `docs/ai_native_repo_structure.md` §17C, a visual
    change is verified by looking at the rendered page (`make screenshot`).

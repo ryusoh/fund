@@ -55,7 +55,11 @@ debugging an odd/flaky JS test, read `docs/testing-notes.md`.
 - Changes scoped to one page must not leak to others (e.g. terminal glass effects).
 - Verifying a **visual** change means looking at the rendered page, not just green
   tests (§17C of `docs/ai_native_repo_structure.md`). Use
-  `make screenshot URL=/<page>/` and read the PNG it prints.
+  `make screenshot URL=/<page>/` and read the PNG it prints. But a screenshot only
+  proves it _rendered_ — **not that it looks good**. Don't claim visual parity or
+  "matches/exceeds" a reference from screenshots (cropped/zoomed ones especially);
+  aesthetic quality is the user's call. For fidelity-sensitive effects (glass,
+  lighting), have the user view the live page before you change a default.
 - **Don't write a command or example into docs/code that you haven't actually run
   this session.** Verify it first — don't infer behaviour from a name or a `case`
   label. (E.g. the terminal's real command semantics live in its `help` output /

@@ -25,14 +25,20 @@ const DEFAULT_SCALE = {
     domain: [-0.01, 0.01],
     range: ['rgba(244, 67, 54, 0.95)', 'rgba(120, 120, 125, 0.5)', 'rgba(76, 175, 80, 0.95)'],
 };
-// Light from the upper-right, matching the SVG bevel (gradient runs
-// white@upper-right → black@lower-left, feDistantLight azimuth 315).
-// EDGE = directional rim; DOME = specular "pillow" highlight (radial), the
-// pure-CSS approximation of the SVG feSpecularLighting bulge.
-const EDGE = 'linear-gradient(225deg, rgba(255,255,255,0.55), rgba(0,0,0,0.25))';
-const DOME =
-    'radial-gradient(ellipse 78% 72% at 70% 24%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 56%)';
-const cellBackground = (fill) => `${DOME}, linear-gradient(${fill}, ${fill}), ${EDGE}`;
+// Pure-CSS "liquid glass" cell, lit from the upper-right (matching the SVG
+// reference: feDistantLight azimuth 315). Layered front→back for a convex glass
+// look the flat SVG bevel can't match:
+//   SPECULAR — tight hot-spot (the bright glint where the light reflects)
+//   SHEEN    — broad soft dome highlight (the rounded surface catching light)
+//   <fill>   — the data colour
+//   EDGE     — directional rim (bright upper-right → dark lower-left)
+const SPECULAR =
+    'radial-gradient(circle at 74% 18%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 15%)';
+const SHEEN =
+    'radial-gradient(ellipse 92% 78% at 64% 14%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 60%)';
+const EDGE = 'linear-gradient(225deg, rgba(255,255,255,0.6), rgba(0,0,0,0.32))';
+const cellBackground = (fill) =>
+    `${SPECULAR}, ${SHEEN}, linear-gradient(${fill}, ${fill}), ${EDGE}`;
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const toMonthIndex = (date) => date.getFullYear() * 12 + date.getMonth();
@@ -101,17 +107,33 @@ function ensureStyles(sub) {
     grid-auto-flow: column; grid-auto-columns: ${sub.width}px; gap: ${sub.gutter}px;
 }
 #cal-heatmap .domcal-cell {
-    border-radius: ${sub.radius}px; border: 1.5px solid transparent;
-    background-origin: border-box; background-clip: padding-box, padding-box, border-box;
+    border-radius: ${Math.max(sub.radius, 5)}px; border: 1px solid transparent;
+    background-origin: border-box;
+    background-clip: padding-box, padding-box, padding-box, border-box;
+    /* convex-lens depth: bright top/right rims (fresnel), dark bottom/left wells,
+       plus an outer drop for float and a hairline edge for crispness */
     box-shadow:
-        inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.32),
-        inset -1px 0 1px rgba(255,255,255,0.2), inset 1px 0 1px rgba(0,0,0,0.2);
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45));
+        inset 0 1.5px 0.5px rgba(255,255,255,0.7),
+        inset -1.5px 0 1px rgba(255,255,255,0.28),
+        inset 0 -2px 3px rgba(0,0,0,0.42),
+        inset 2px 0 3px rgba(0,0,0,0.2),
+        inset 0 0 6px rgba(255,255,255,0.06),
+        0 1px 2px rgba(0,0,0,0.5),
+        0 0 0 0.5px rgba(0,0,0,0.22);
+    /* real refraction: frost/saturate the photo seen through the translucent cell */
+    backdrop-filter: blur(1.5px) saturate(1.3);
+    -webkit-backdrop-filter: blur(1.5px) saturate(1.3);
 }
 #cal-heatmap .domcal-cell--today {
+    /* full glass depth + a bright outer ring/glow to mark today */
     box-shadow:
-        inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.4),
-        0 0 0 1px rgba(255,255,255,0.5);
+        inset 0 1.5px 0.5px rgba(255,255,255,0.85),
+        inset -1.5px 0 1px rgba(255,255,255,0.35),
+        inset 0 -2px 3px rgba(0,0,0,0.42),
+        inset 2px 0 3px rgba(0,0,0,0.2),
+        0 0 0 1.5px rgba(255,255,255,0.6),
+        0 0 8px rgba(255,255,255,0.35),
+        0 1px 2px rgba(0,0,0,0.5);
 }
 #cal-heatmap .domcal-cell--labeled {
     display: flex; flex-direction: column; align-items: center; justify-content: center;

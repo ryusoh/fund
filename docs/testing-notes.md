@@ -52,7 +52,17 @@ Corollary: a guarded `if (handler) { ...assertions... }` that silently skips whe
 setup half-failed is a **vacuous pass** — prefer asserting the precondition
 (`expect(handler).toBeDefined()`) so a broken setup fails loudly.
 
-## Visual changes aren't testable here — observe the page
+## Prettier won't converge on over-indented Markdown list paragraphs
+
+`make fmt-check` runs Prettier. A continuation paragraph under a list item must be
+indented to **the same column as the marker's text** — 6 spaces for a `- [x]`
+task item, 2 for a plain dash bullet. Indent it deeper (8+) and Prettier reads it as an indented **code
+block**, can't reformat it cleanly, and `--write`/`--check` flip back and forth
+(non-idempotent) — the failure looks mysterious. This has bitten the calendar
+migration doc 3×. Fix: dedent the stray paragraph to the marker's text column
+(don't add blank-line-separated deep-indented prose inside a bullet).
+
+## Visual changes aren't testable here — observe the page (it rendered ≠ it looks good)
 
 Unit tests can't see colour/layout/glass. Use `make screenshot URL=/<page>/` and
 read the PNG. `scripts/screenshot.mjs` prints page console errors/exceptions to

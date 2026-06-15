@@ -12,6 +12,18 @@ These effects are **terminal-page only**. They are wired up in
 `.terminal`, `.chart-card`, `.table-responsive-container`. Do not let them leak
 to other pages.
 
+## What CSS alone can and can't do (read before "just do it in CSS")
+
+CSS `box-shadow` + gradients can fake a **static** rim/top-light (the bottom row
+of the table below) — fine for a flat bevel. They **cannot** reproduce **specular
+lighting**: there is no surface-normal/light model in CSS, so a "glass pillow"
+built from stacked gradients reads as cheap/tacky next to the real thing. Real
+specular/refraction needs an actual model — **SVG filter** (`feSpecularLighting`,
+`feDisplacementMap`), **WebGL**, or **Canvas**. If the goal is convincing glass,
+reach for those layers below, not more gradient layers. (Cautionary tale: the
+calendar DOM-renderer tried to match the SVG glass in pure CSS and failed the
+eye test — see `docs/calendar-renderer-migration.md`.)
+
 ## The three layers
 
 | Layer                                                                                                | File                                                 | Tech                                                                | Browser support                                            |
