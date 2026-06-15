@@ -20,7 +20,8 @@ ES modules via an import map.
 
 Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
 targets so you match CI. Use scoped `npx jest <file>` only for the tight
-edit→verify loop.
+edit→verify loop. Jest runs **silent** (`console.log` prints nothing) — before
+debugging an odd/flaky JS test, read `docs/testing-notes.md`.
 
 ## Layout
 

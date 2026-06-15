@@ -15,6 +15,11 @@
  *   # chart -> `plot balance`, both -> `reset`), then shoot:
  *   make screenshot URL=/terminal/ ARGS='--type transaction'
  *
+ * Pages with an entrance fade-in (e.g. /calendar/) can out-race the default
+ * 1200ms wait and shoot blank — pass a longer wait, e.g. `--wait 2500`. Any page
+ * console errors / uncaught exceptions are printed to stderr to disambiguate a
+ * genuinely-broken page from one that just needs more wait.
+ *
  * Side effects: spawns `scripts/dev_server.py` on --port, writes a PNG under
  * screenshots/ (gitignored). Exits non-zero on navigation/render failure.
  */
@@ -110,6 +115,18 @@ async function main() {
         const page = await browser.newPage({
             viewport: { width: opts.width, height: opts.height },
             deviceScaleFactor: 2,
+        });
+        // Surface runtime failures so a blank/broken screenshot self-diagnoses
+        // instead of looking like an empty page (a silent error reads identically
+        // to "nothing rendered yet"). Printed to stderr; the PNG path stays the
+        // only thing on stdout.
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') {
+                console.error(`[page console.error] ${msg.text()}`);
+            }
+        });
+        page.on('pageerror', (err) => {
+            console.error(`[page error] ${err.message}`);
         });
         const response = await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
         if (response && response.status() >= 400) {
