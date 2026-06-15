@@ -43,6 +43,9 @@ edit→verify loop.
   that will save you a debugging round-trip.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
+- **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
+  Moving the calendar off Cal-Heatmap (D3/SVG) to a DOM/CSS renderer behind a flag.
+  Read before touching `js/pages/calendar/` or `js/ui/cal-heatmap-src/`.
 
 ## Working rules
 
