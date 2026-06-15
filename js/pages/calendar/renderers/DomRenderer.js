@@ -1,4 +1,6 @@
 import { CalendarRenderer } from './CalendarRenderer.js';
+import { getValueFieldForCurrency } from '@pages/calendar/colorUtils.js';
+import { ensureEntryDisplay } from '@pages/calendar/displayCache.js';
 
 /**
  * DomRenderer — a CSS-grid / DOM implementation of {@link CalendarRenderer}.
@@ -24,6 +26,7 @@ const DEFAULT_SCALE = {
     range: ['rgba(244, 67, 54, 0.95)', 'rgba(120, 120, 125, 0.5)', 'rgba(76, 175, 80, 0.95)'],
 };
 const GRAD = 'linear-gradient(135deg, rgba(255,255,255,0.55), rgba(0,0,0,0.25))';
+const cellBackground = (fill) => `linear-gradient(${fill}, ${fill}), ${GRAD}`;
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const toMonthIndex = (date) => date.getFullYear() * 12 + date.getMonth();
@@ -104,6 +107,13 @@ function ensureStyles(sub) {
         inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.4),
         0 0 0 1px rgba(255,255,255,0.5);
 }
+#cal-heatmap .domcal-cell--labeled {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.9); line-height: 1.1; overflow: hidden;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+}
+#cal-heatmap .domcal-line0 { font-size: 11px; font-weight: 600; }
+#cal-heatmap .domcal-line1, #cal-heatmap .domcal-line2 { font-size: 8px; opacity: 0.9; }
 `;
     document.head.appendChild(style);
 }
@@ -203,8 +213,7 @@ export class DomRenderer extends CalendarRenderer {
                 cell.className =
                     'domcal-cell' + (dateStr === todayStr ? ' domcal-cell--today' : '');
                 cell.dataset.date = dateStr;
-                const fill = colorOf(value);
-                cell.style.backgroundImage = `linear-gradient(${fill}, ${fill}), ${GRAD}`;
+                cell.style.backgroundImage = cellBackground(colorOf(value));
                 grid.appendChild(cell);
             }
             monthEl.appendChild(grid);
@@ -285,6 +294,56 @@ export class DomRenderer extends CalendarRenderer {
         }
         this.#fireDomainCallbacks();
         return Promise.resolve();
+    }
+
+    /**
+     * Recolour cells for the active currency and render/clear per-cell labels.
+     * The DOM backend needs no staggering, so `isInitialLoad` is ignored.
+     */
+    renderState({ byDate, state, currencySymbols }) {
+        const root = this.#root();
+        if (!root || !state) {
+            return;
+        }
+        const colorOf = makeColorScale(this.config?.scale?.color);
+        const field = getValueFieldForCurrency(state.selectedCurrency);
+        const lookup = byDate instanceof Map ? byDate : this.#valueMap();
+
+        root.querySelectorAll('.domcal-cell').forEach((cell) => {
+            const entry = lookup.get(cell.dataset.date);
+            const value = entry && entry[field] != null ? entry[field] : 0;
+            cell.style.backgroundImage = cellBackground(colorOf(value));
+            this.#renderCellLabel(cell, entry, state, currencySymbols);
+        });
+    }
+
+    #renderCellLabel(cell, entry, state, currencySymbols) {
+        if (!state.labelsVisible) {
+            if (cell.childElementCount > 0) {
+                cell.replaceChildren();
+                cell.classList.remove('domcal-cell--labeled');
+            }
+            return;
+        }
+        const day = Number(cell.dataset.date.slice(8, 10));
+        const display = entry
+            ? ensureEntryDisplay(entry, state.selectedCurrency, state.rates, currencySymbols)
+            : { showDetails: false };
+
+        const lines = [{ cls: 'domcal-line0', text: String(day) }];
+        if (display.showDetails) {
+            lines.push({ cls: 'domcal-line1', text: display.changeText });
+            lines.push({ cls: 'domcal-line2', text: display.totalText });
+        }
+        cell.replaceChildren(
+            ...lines.map(({ cls, text }) => {
+                const span = document.createElement('span');
+                span.className = `domcal-line ${cls}`;
+                span.textContent = text;
+                return span;
+            })
+        );
+        cell.classList.add('domcal-cell--labeled');
     }
 
     destroy() {

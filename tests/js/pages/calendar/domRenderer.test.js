@@ -101,6 +101,55 @@ describe('DomRenderer', () => {
         expect(payload.domain.start.getMonth()).toBe(11); // December
     });
 
+    it('recolours cells for the active currency on renderState (no repaint)', async () => {
+        const config = makeConfig({
+            data: {
+                source: [{ date: '2025-01-15', valueUSD: 0.02, valueCNY: -0.02 }],
+                x: 'date',
+                y: 'valueUSD',
+            },
+        });
+        const r = new DomRenderer();
+        await r.paint(config);
+        const cell = document.querySelector('[data-date="2025-01-15"]');
+        expect(cell.style.backgroundImage).toContain(GREEN); // USD positive
+
+        const byDate = new Map([
+            ['2025-01-15', { date: '2025-01-15', valueUSD: 0.02, valueCNY: -0.02 }],
+        ]);
+        r.renderState({ byDate, state: { selectedCurrency: 'CNY' }, currencySymbols: {} });
+        expect(cell.style.backgroundImage).toContain(RED); // CNY negative
+    });
+
+    it('renders and clears per-cell labels via renderState', async () => {
+        const r = new DomRenderer();
+        await r.paint(makeConfig());
+        const byDate = new Map([
+            [
+                '2025-01-15',
+                {
+                    date: '2025-01-15',
+                    valueUSD: 0.02,
+                    dailyChange: 5,
+                    total: 1000,
+                    dailyChangeUSD: 5,
+                    totalUSD: 1000,
+                },
+            ],
+        ]);
+        const state = { selectedCurrency: 'USD', labelsVisible: true, rates: { USD: 1 } };
+        r.renderState({ byDate, state, currencySymbols: { USD: '$' } });
+
+        const cell = document.querySelector('[data-date="2025-01-15"]');
+        expect(cell.classList.contains('domcal-cell--labeled')).toBe(true);
+        expect(cell.querySelector('.domcal-line0').textContent).toBe('15');
+
+        // Toggling labels off clears the cell content
+        r.renderState({ byDate, state: { ...state, labelsVisible: false }, currencySymbols: {} });
+        expect(cell.classList.contains('domcal-cell--labeled')).toBe(false);
+        expect(cell.childElementCount).toBe(0);
+    });
+
     it('jumpTo scrolls an out-of-view month into the window', async () => {
         const config = makeConfig({
             range: 1,

@@ -64,6 +64,25 @@ export class CalendarRenderer {
     }
 
     /**
+     * Render data-derived visual state onto the already-painted calendar:
+     * per-currency cell colours, the bevel/glass, and (when toggled) per-cell
+     * labels. Called by the page after each paint/fill and on currency change,
+     * so the page never touches a specific backend's DOM directly.
+     *
+     * @param {object} _context
+     * @param {Map<string, object>} _context.byDate  Data keyed by `YYYY-MM-DD`.
+     * @param {object} _context.state                App state (`selectedCurrency`,
+     *   `labelsVisible`, `rates`, `monthlyPnl`, …).
+     * @param {object} _context.currencySymbols
+     * @param {boolean} _context.isInitialLoad        First paint — backends may
+     *   stagger work to reduce jank.
+     * @returns {void}
+     */
+    renderState(_context) {
+        throw new Error('CalendarRenderer.renderState() not implemented');
+    }
+
+    /**
      * Tear down the calendar and release resources.
      * @returns {Promise<unknown> | void}
      */

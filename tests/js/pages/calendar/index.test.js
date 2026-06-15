@@ -1,6 +1,7 @@
 import 'd3';
 import { getCalendarData } from '@services/dataService.js';
-import { initCalendar, renderLabels, autoInitCalendar } from '@pages/calendar/index.js';
+import { initCalendar, autoInitCalendar } from '@pages/calendar/index.js';
+import { renderLabels } from '@pages/calendar/renderers/svgLabels.js';
 import * as dateUtils from '@utils/date.js';
 
 jest.mock('@services/dataService.js', () => ({
@@ -594,9 +595,9 @@ describe('calendar page', () => {
         global.__mockCalendarDatums = Array.from(byDate.keys());
         const state = { labelsVisible: false, selectedCurrency: 'USD', rates: { USD: 1 } };
         const symbols = { USD: '$' };
-        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        renderLabels(byDate, state, symbols);
         state.labelsVisible = true;
-        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        renderLabels(byDate, state, symbols);
         const textNodes = global.__d3TextNodes || [];
         expect(textNodes.length).toBeGreaterThan(0);
         const first = textNodes[0];
@@ -628,11 +629,11 @@ describe('calendar page', () => {
         const state = { labelsVisible: true, selectedCurrency: 'USD', rates: { USD: 1 } };
         const symbols = { USD: '$' };
 
-        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        renderLabels(byDate, state, symbols);
         const before = (global.__d3TextNodes || []).map((node) => node.children.length);
 
         // Re-render with identical data; children should remain
-        renderLabels(mockCalHeatmapInstance, byDate, state, symbols);
+        renderLabels(byDate, state, symbols);
         const after = (global.__d3TextNodes || []).map((node) => node.children.length);
 
         expect(after).toEqual(before);

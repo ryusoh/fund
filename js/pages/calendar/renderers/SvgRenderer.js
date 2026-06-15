@@ -1,4 +1,14 @@
 import { CalendarRenderer } from './CalendarRenderer.js';
+import { applyCurrencyColors } from '@pages/calendar/colorUtils.js';
+import { applyBevelGlass } from '@pages/calendar/bevelGlassPlugin.js';
+import { renderLabels } from './svgLabels.js';
+
+function nextFrame(cb) {
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        return window.requestAnimationFrame(cb);
+    }
+    return setTimeout(cb, 0);
+}
 
 /**
  * SvgRenderer — thin adapter that puts the vendored Cal-Heatmap (D3/SVG) engine
@@ -35,6 +45,25 @@ export class SvgRenderer extends CalendarRenderer {
 
     on(name, fn) {
         return this.engine.on(name, fn);
+    }
+
+    /**
+     * Colour the cells, inject the bevel, and render labels. On first paint the
+     * three passes are staggered across animation frames to reduce jank; on
+     * subsequent updates they run together to avoid flicker.
+     */
+    renderState({ byDate, state, currencySymbols, isInitialLoad }) {
+        if (isInitialLoad) {
+            applyCurrencyColors(d3, state, byDate);
+            nextFrame(() => {
+                applyBevelGlass(d3);
+                nextFrame(() => renderLabels(byDate, state, currencySymbols));
+            });
+        } else {
+            applyCurrencyColors(d3, state, byDate);
+            applyBevelGlass(d3);
+            renderLabels(byDate, state, currencySymbols);
+        }
     }
 
     destroy() {

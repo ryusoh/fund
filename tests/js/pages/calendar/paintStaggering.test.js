@@ -1,6 +1,7 @@
-import { __testables } from '@pages/calendar/index.js';
+import { SvgRenderer } from '@pages/calendar/renderers/SvgRenderer.js';
 import * as colorUtils from '@pages/calendar/colorUtils.js';
 import * as bevelGlassPlugin from '@pages/calendar/bevelGlassPlugin.js';
+import * as svgLabels from '@pages/calendar/renderers/svgLabels.js';
 
 jest.mock('@pages/calendar/colorUtils.js', () => ({
     applyCurrencyColors: jest.fn(),
@@ -11,88 +12,66 @@ jest.mock('@pages/calendar/bevelGlassPlugin.js', () => ({
     applyBevelGlass: jest.fn(),
 }));
 
-const createSelection = () => ({
-    attr: jest.fn(() => createSelection()),
-    style: jest.fn(() => createSelection()),
-    text: jest.fn(() => createSelection()),
-    each: jest.fn(),
-    selectAll: jest.fn(() => createSelection()),
-    select: jest.fn(() => createSelection()),
-});
+jest.mock('@pages/calendar/renderers/svgLabels.js', () => ({
+    renderLabels: jest.fn(),
+}));
 
-const mockD3 = {
-    select: jest.fn(() => createSelection()),
-    selectAll: jest.fn(() => createSelection()),
-};
-global.d3 = mockD3;
-global.window = Object.create(window);
+global.CalHeatmap = jest.fn(() => ({ on: jest.fn(), paint: jest.fn() }));
+global.d3 = { select: jest.fn(), selectAll: jest.fn() };
 
-describe('queuePostPaintFrame staggering', () => {
-    let originalRequestAnimationFrame;
-    let rAFCallbacks = [];
+// The post-paint passes (colour → bevel → labels) now live in SvgRenderer.renderState.
+// On first paint they stagger across animation frames; afterwards they run together.
+describe('SvgRenderer.renderState staggering', () => {
+    let originalRAF;
+    let rAFCallbacks;
+    const ctx = { byDate: new Map(), state: {}, currencySymbols: {} };
 
     beforeEach(() => {
-        originalRequestAnimationFrame = window.requestAnimationFrame;
+        rAFCallbacks = [];
+        originalRAF = window.requestAnimationFrame;
         window.requestAnimationFrame = jest.fn((cb) => {
             rAFCallbacks.push(cb);
-            return 1;
+            return rAFCallbacks.length;
         });
-        rAFCallbacks = [];
-        __testables.resetInitialLoadState();
         colorUtils.applyCurrencyColors.mockClear();
         bevelGlassPlugin.applyBevelGlass.mockClear();
+        svgLabels.renderLabels.mockClear();
     });
 
     afterEach(() => {
-        window.requestAnimationFrame = originalRequestAnimationFrame;
+        window.requestAnimationFrame = originalRAF;
         jest.clearAllMocks();
     });
 
     it('staggers updates across frames on initial load', () => {
-        expect(__testables.isInitialLoad).toBe(true);
+        const renderer = new SvgRenderer();
+        renderer.renderState({ ...ctx, isInitialLoad: true });
 
-        __testables.schedulePostPaintUpdates({}, {}, {}, {});
-
-        // queuePostPaintFrame schedules the first frame.
-        expect(rAFCallbacks.length).toBe(1);
-
-        // Execute frame 0 (the main queuePostPaintFrame body)
-        rAFCallbacks[0]();
-        rAFCallbacks.shift();
-
-        // Frame 1 logic runs:
+        // Frame 1: colours run synchronously; bevel/labels deferred
         expect(colorUtils.applyCurrencyColors).toHaveBeenCalledTimes(1);
         expect(bevelGlassPlugin.applyBevelGlass).toHaveBeenCalledTimes(0);
-
-        // Frame 2 scheduled:
+        expect(svgLabels.renderLabels).toHaveBeenCalledTimes(0);
         expect(rAFCallbacks.length).toBe(1);
-        rAFCallbacks[0]();
-        rAFCallbacks.shift();
 
-        // Frame 2 logic runs:
+        // Frame 2: bevel
+        rAFCallbacks.shift()();
         expect(bevelGlassPlugin.applyBevelGlass).toHaveBeenCalledTimes(1);
-
-        // Frame 3 scheduled (renderLabels):
+        expect(svgLabels.renderLabels).toHaveBeenCalledTimes(0);
         expect(rAFCallbacks.length).toBe(1);
+
+        // Frame 3: labels
+        rAFCallbacks.shift()();
+        expect(svgLabels.renderLabels).toHaveBeenCalledTimes(1);
+        expect(rAFCallbacks.length).toBe(0);
     });
 
-    it('executes synchronously in one frame on subsequent loads to prevent flicker', () => {
-        __testables.isInitialLoad = false;
+    it('runs all passes in one frame on subsequent loads to prevent flicker', () => {
+        const renderer = new SvgRenderer();
+        renderer.renderState({ ...ctx, isInitialLoad: false });
 
-        __testables.schedulePostPaintUpdates({}, {}, {}, {});
-
-        // queuePostPaintFrame schedules one frame to run the batch.
-        expect(rAFCallbacks.length).toBe(1);
-
-        // Execute the scheduled frame
-        rAFCallbacks[0]();
-        rAFCallbacks.shift();
-
-        // All functions should run immediately in the same frame
         expect(colorUtils.applyCurrencyColors).toHaveBeenCalledTimes(1);
         expect(bevelGlassPlugin.applyBevelGlass).toHaveBeenCalledTimes(1);
-
-        // No more frames should be scheduled
+        expect(svgLabels.renderLabels).toHaveBeenCalledTimes(1);
         expect(rAFCallbacks.length).toBe(0);
     });
 });

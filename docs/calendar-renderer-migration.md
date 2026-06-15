@@ -1,6 +1,6 @@
 # Calendar renderer migration (SVG/D3 → DOM/CSS)
 
-**Status: in progress. Step 2 of 6 done.** This is a living handoff doc — if work
+**Status: in progress. Step 3 of 6 done.** This is a living handoff doc — if work
 stops mid-stream (token/rate limits, new session, different agent), read this
 first, then continue from "Remaining steps". Update the status line and the
 checklist as you go.
@@ -52,11 +52,16 @@ rolling back) is a one-line change in the factory + the query flag.**
   **`'date-change'`** (on navigation, with `{ domain: { start, end } }`); the page
   drives data refetch + post-paint off these. See `setupEventListeners` and
   `attachDateChangeHandler` in `index.js`.
-- The page's **post-paint pipeline** (`applyCurrencyColors`, `applyBevelGlass`,
-  `renderLabels` via `schedulePostPaintUpdates`) is **still SVG/d3-specific and
-  still lives in `index.js`**. It is NOT behind the interface yet — that's Step 3.
-  DomRenderer will need its own coloring/label/bevel path; do not assume the
-  existing pipeline works against DOM cells.
+- `renderState({ byDate, state, currencySymbols, isInitialLoad })` — **(added Step 3)**
+  paints data-derived visual state: per-currency cell colours, bevel/glass, and
+  (when `state.labelsVisible`) per-cell labels. The page calls this after each
+  paint/fill and on currency change via `schedulePostPaintUpdates`; it no longer
+  touches d3/SVG itself. Each backend implements it for its own DOM:
+    - `SvgRenderer.renderState` runs `applyCurrencyColors` + `applyBevelGlass` +
+      `renderLabels` (the SVG label code now lives in `renderers/svgLabels.js`), and
+      **owns the first-paint stagger** (colour → frame → bevel → frame → labels).
+    - `DomRenderer.renderState` recolours `<div>` cells for the active currency and
+      renders/clears per-cell label spans (no stagger needed).
 
 ## Done so far
 
@@ -72,15 +77,20 @@ rolling back) is a one-line change in the factory + the query flag.**
       `?renderer=dom` screenshot (close parity with SVG). Unit test:
       `tests/js/pages/calendar/domRenderer.test.js`. `make verify` green (2465 JS + 363 Py).
 
-    **Known gaps deferred to Step 3 (DO NOT assume these work in DOM mode yet):**
-    - **Currency-toggle recolour without repaint.** The page recolours on
-      `currencyChangedGlobal` via `applyCurrencyColors` (a no-op in DOM mode because it
-      selects SVG `rect`s). DOM cells only recolour on a full `paint()`. Step 3 must route
-      recolour through the renderer.
-    - **Per-cell P/L labels.** `renderLabels` (SVG `tspan`s) is a no-op in DOM mode, so the
-      today-button label toggle shows nothing. DOM cells render colour only (matches the
-      default labels-hidden state).
-    - **Glass "pillow"** is the flatter CSS approximation (Step 4 decision).
+- [x] **Step 3 — post-paint pipeline moved behind the interface.** `index.js` no longer
+      imports/calls `d3`, `applyCurrencyColors`, `applyBevelGlass`, `updateMonthLabels`,
+      `ensureEntryDisplay`, or defines `renderLabels` (verified: only stale comments
+      mention d3). `queuePostPaintFrame` now calls `cal.renderState(ctx)`. Added
+      `renderState` to the interface; `renderLabels` relocated to
+      `renderers/svgLabels.js`; first-paint stagger moved into `SvgRenderer.renderState`.
+      **The two Step-2 gaps are now closed in DOM mode:** currency-toggle recolour and
+      per-cell P/L labels both work via `DomRenderer.renderState`. Tests:
+      `paintStaggering.test.js` rewritten against `SvgRenderer`; `renderLabels` tests
+      re-pointed to `svgLabels.js`; DOM recolour/label tests added to `domRenderer.test.js`.
+      Both renderers verified by screenshot. `make verify` green (2468 JS + 363 Py).
+      **Remaining known gap:** the glass "pillow" is still the flatter CSS approximation
+      (Step 4 decision). Also note: the default `make screenshot` 1200ms wait can race the
+      entrance fade-in — use `--wait 2500` for the calendar.
 
 ### Step 1 also fixed a pre-existing test-isolation bug (don't reintroduce it)
 
@@ -107,10 +117,6 @@ Fixes applied (keep them):
 
 ## Remaining steps
 
-- [ ] **Step 3 — move the post-paint pipeline behind the interface.** Give each
-      renderer a way to render coloring/labels/bevel for its own backend so
-      `index.js` no longer calls `d3`/`applyBevelGlass` directly. This is what
-      lets the page be truly backend-agnostic.
 - [ ] **Step 4 — visual parity pass.** `make screenshot URL=/calendar/` for both
       renderers and compare. Must be checked in **Chrome** (glass is visual). See
       Gotchas for the bevel.
