@@ -411,6 +411,12 @@ export const getCalendarRange = () => {
     return Math.min(3, maxMonths); // Large desktop - max 3 months
 };
 
+// Which calendar renderer to use: 'svg' = legacy Cal-Heatmap (D3/SVG, polished
+// specular glass) | 'dom' = hand-rolled DOM/CSS grid (no D3/SVG). A `?renderer=`
+// query param overrides this at runtime (handy for A/B comparison). See
+// docs/calendar-renderer-migration.md.
+export const CALENDAR_RENDERER = 'svg';
+
 export const CALENDAR_CONFIG = {
     vertical: false,
     itemSelector: CALENDAR_SELECTORS.heatmap,

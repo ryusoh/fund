@@ -1,6 +1,6 @@
 # Calendar renderer migration (SVG/D3 → DOM/CSS)
 
-**Status: in progress. Step 4 of 6 done.** This is a living handoff doc — if work
+**Status: in progress. Step 5 of 6 done.** This is a living handoff doc — if work
 stops mid-stream (token/rate limits, new session, different agent), read this
 first, then continue from "Remaining steps". Update the status line and the
 checklist as you go.
@@ -32,11 +32,11 @@ has earned it.
 The page now talks only to a backend-agnostic interface, never to a concrete
 engine. Files under `js/pages/calendar/renderers/`:
 
-| File                  | Role                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| `CalendarRenderer.js` | The contract (abstract base): `paint`, `next`, `previous`, `jumpTo`, `on`, `destroy`. |
-| `SvgRenderer.js`      | Thin adapter wrapping the vendored Cal-Heatmap; forwards every call unchanged.        |
-| `index.js` (factory)  | `createCalendarRenderer()` — picks impl. **Default `svg`; `?renderer=dom` opt-in.**   |
+| File                  | Role                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `CalendarRenderer.js` | The contract (abstract base): `paint`, `next`, `previous`, `jumpTo`, `on`, `destroy`.              |
+| `SvgRenderer.js`      | Thin adapter wrapping the vendored Cal-Heatmap; forwards every call unchanged.                     |
+| `index.js` (factory)  | `createCalendarRenderer()` — picks impl from `CALENDAR_RENDERER` (config); `?renderer=` overrides. |
 
 `js/pages/calendar/index.js` constructs the calendar via
 `createCalendarRenderer()` (not `new CalHeatmap()`). **Flipping the renderer (and
@@ -97,6 +97,16 @@ rolling back) is a one-line change in the factory + the query flag.**
       (SVG vs DOM) now show negligible difference — raised-glass dome present, same colours
       and layout. Stayed 100% DOM/CSS (chosen over the inline-SVG-filter option).
       `make verify` green (2468 JS + 363 Py).
+- [x] **Step 5 — config knob added; default = `svg`.** Added **`CALENDAR_RENDERER`** in
+      `js/config.js` (`'svg' | 'dom'`) as the single source of truth;
+      `resolveRendererName()` reads it, and a `?renderer=dom|svg` query param overrides at
+      runtime for A/B comparison. **Default is `svg`** — the DOM glass bevel was judged not
+      yet at parity (the specular "pillow" gap reads as larger in the live page than in
+      static crops), so users keep the polished SVG glass while DOM stays one word away.
+      Verified by Playwright probe: default → 91 SVG / 0 DOM; `?renderer=dom` → 91 DOM / 0
+      SVG. `index.test.js` also pins `?renderer=svg` in `beforeEach` (robust safeguard) so
+      its Cal-Heatmap-mock integration tests stay valid. `make verify` green (2468 JS + 363 Py).
+      **To switch the site to DOM:** set `CALENDAR_RENDERER = 'dom'` in `js/config.js`.
 
 ### Step 1 also fixed a pre-existing test-isolation bug (don't reintroduce it)
 
@@ -123,11 +133,15 @@ Fixes applied (keep them):
 
 ## Remaining steps
 
-- [ ] **Step 5 — flip default to `dom`**, soak, confirm.
-- [ ] **Step 6 — delete the SVG path:** `js/ui/cal-heatmap-src/`, the `d3` +
-      `cal-heatmap` `<script>` tags in `calendar/index.html`, `bevelGlassPlugin.js`
-      (if fully replaced), `SvgRenderer.js`, and the **SVG-specific tests only**
-      (see test split below). Keep renderer-agnostic tests.
+- [ ] **Step 5b — close the glass-bevel gap so `dom` is shippable.** Improve
+      `DomRenderer`'s glass until it matches the SVG on the _live page_ (see Gotcha 1 for
+      options: richer pure-CSS bevel, or an inline `<svg><filter>`). Done when flipping
+      `CALENDAR_RENDERER='dom'` looks as good as `svg` in Chrome.
+- [ ] **Step 6 — flip the knob, then delete the SVG path** (only after 5b): set
+      `CALENDAR_RENDERER='dom'`, then remove `js/ui/cal-heatmap-src/`, the `d3` +
+      `cal-heatmap` `<script>` tags in `calendar/index.html`, `bevelGlassPlugin.js`,
+      `SvgRenderer.js`/`svgLabels.js`, and the **SVG-specific tests only** (see test
+      split). Keep renderer-agnostic tests. **Irreversible — do on a branch.**
 
 ## Test strategy (per the agreed plan)
 
@@ -144,16 +158,18 @@ Fixes applied (keep them):
 
 ## Gotchas
 
-1. **The specular glass "pillow" — RESOLVED in Step 4 (pure CSS).** The SVG bevel
-   (`js/pages/calendar/bevelGlassPlugin.js`) uses `feSpecularLighting` +
-   `feDistantLight` (azimuth 315 = upper-right) + an `objectBoundingBox` gradient
-   stroke on each `<rect>`. `DomRenderer` matches it with three stacked background
-   layers — `DOME` (radial highlight = the pillow), the colour fill, and `EDGE`
-   (directional rim) — plus directional inset box-shadows, **all lit upper-right**.
-   Parity confirmed by side-by-side zoom. The light direction matters: the SVG is
-   upper-right; an earlier spike was mistakenly upper-left. (The inline-`<svg><filter>`
-   route — `filter: url(#…)` on DOM cells — remains a fallback if exact parity is ever
-   needed, but was not used.)
+1. **The specular glass "pillow" — partially closed, NOT yet at full parity.** The SVG
+   bevel (`js/pages/calendar/bevelGlassPlugin.js`) uses `feSpecularLighting` +
+   `feDistantLight` (azimuth 315 = upper-right) + an `objectBoundingBox` gradient stroke
+   on each `<rect>`. `DomRenderer` approximates it with three stacked background layers —
+   `DOME` (radial highlight), the colour fill, and `EDGE` (directional rim) — plus
+   directional inset box-shadows, all lit upper-right (the light direction matters; an
+   earlier spike was mistakenly upper-left). Static zoom crops look close, **but on the
+   live page the gap reads as significant** — so the default knob stays `svg`. **Open
+   work to flip to `dom`:** either push the pure-CSS bevel further (layered radial
+   highlights / a soft top-edge gloss / per-cell `::before` sheen) or adopt the
+   inline-`<svg><filter>` route (`filter: url(#domcal-bevel)` on DOM cells, reusing
+   `feSpecularLighting`) for pixel parity with ~30 lines of SVG defs and no D3.
 2. **Glass is visual — verify in Chrome, not tests.** Unit tests cannot see a
    bevel. Per `CLAUDE.md` / `docs/ai_native_repo_structure.md` §17C, a visual
    change is verified by looking at the rendered page (`make screenshot`).

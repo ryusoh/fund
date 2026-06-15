@@ -91,6 +91,10 @@ describe('calendar page', () => {
     `;
 
         jest.clearAllMocks();
+        // Pin the SVG renderer: these tests exercise the page<->renderer integration
+        // through the Cal-Heatmap mock. The production default is now `dom` (Step 5);
+        // `?renderer=svg` is the rollback path. Step 6 rewrites these against the DOM.
+        window.history.replaceState({}, '', '/?renderer=svg');
         // Re-establish getNyDate's default after any prior test's spyOn().mockRestore().
         // mockRestore() on a jest.mock-factory fn leaves it returning undefined, which
         // would make initCalendar throw before constructing the renderer.
