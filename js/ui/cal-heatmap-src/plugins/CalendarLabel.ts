@@ -140,12 +140,14 @@ export default class CalendarLabel implements IPlugin {
     }
 
     #buildComputedOptions() {
-        Object.keys(this.computedOptions).forEach((key: string) => {
+        const keys = Object.keys(this.computedOptions);
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
             if (typeof this.options[key as keyof ComputedOptions] !== 'undefined') {
                 // @ts-ignore
                 this.computedOptions[key] = this.options[key];
             }
-        });
+        }
     }
 
     /**

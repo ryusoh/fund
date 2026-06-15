@@ -33,7 +33,8 @@ export default class PluginManager {
     }
 
     add(plugins: PluginDefinition[]): void {
-        plugins.forEach(([PluginClass, pluginOptions]) => {
+        for (let i = 0; i < plugins.length; i++) {
+            const [PluginClass, pluginOptions] = plugins[i];
             const name = extractPluginName(PluginClass, pluginOptions);
 
             const existingPlugin = this.plugins.get(name);
@@ -43,7 +44,7 @@ export default class PluginManager {
                 this.settings.get(name) &&
                 isEqual(this.settings.get(name)!.options, pluginOptions)
             ) {
-                return;
+                continue;
             }
 
             this.settings.set(name, {
@@ -56,11 +57,11 @@ export default class PluginManager {
             }
 
             this.pendingPaint.add(this.plugins.get(name)!);
-        });
+        }
     }
 
     setupAll(): void {
-        this.plugins.forEach((pluginInstance, name) => {
+        for (const [name, pluginInstance] of this.plugins.entries()) {
             const settings = this.settings.get(name);
 
             if (typeof settings !== 'undefined') {
@@ -71,7 +72,7 @@ export default class PluginManager {
                     this.settings.set(name, settings);
                 }
             }
-        });
+        }
     }
 
     paintAll(): Promise<unknown>[] {

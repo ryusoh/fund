@@ -32,7 +32,8 @@ class PluginPainter {
         const promises: Promise<unknown>[] = [];
 
         let topOffset = 0;
-        top.forEach((plugin) => {
+        for (let i = 0; i < top.length; i++) {
+            const plugin = top[i];
             promises.push(
                 plugin.root
                     .transition()
@@ -43,10 +44,11 @@ class PluginPainter {
                     .end()
             );
             topOffset += plugin.options.dimensions!.height;
-        });
+        }
 
         let leftOffset = 0;
-        left.forEach((plugin) => {
+        for (let i = 0; i < left.length; i++) {
+            const plugin = left[i];
             promises.push(
                 plugin.root
                     .transition()
@@ -57,9 +59,10 @@ class PluginPainter {
                     .end()
             );
             leftOffset += plugin.options.dimensions!.width;
-        });
+        }
 
-        bottom.forEach((plugin) => {
+        for (let i = 0; i < bottom.length; i++) {
+            const plugin = bottom[i];
             promises.push(
                 plugin.root
                     .transition()
@@ -69,11 +72,12 @@ class PluginPainter {
                     .attr('y', topHeight + domainsContainerPainter.height())
                     .end()
             );
-        });
+        }
 
         leftOffset += domainsContainerPainter.width();
 
-        right.forEach((plugin) => {
+        for (let i = 0; i < right.length; i++) {
+            const plugin = right[i];
             promises.push(
                 plugin.root
                     .transition()
@@ -84,7 +88,7 @@ class PluginPainter {
                     .end()
             );
             leftOffset += plugin.options.dimensions!.width;
-        });
+        }
 
         return promises;
     }

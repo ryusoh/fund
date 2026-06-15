@@ -79,11 +79,21 @@ export default class DomainCollection {
 
     clamp(minDate?: Timestamp, maxDate?: Timestamp): DomainCollection {
         if (minDate && this.min! < minDate) {
-            this.keys.filter((key) => key < minDate).forEach((d) => this.collection.delete(d));
+            for (let i = 0; i < this.keys.length; i++) {
+                const key = this.keys[i];
+                if (key < minDate) {
+                    this.collection.delete(key);
+                }
+            }
         }
 
         if (maxDate && this.max! > maxDate) {
-            this.keys.filter((key) => key > maxDate).forEach((d) => this.collection.delete(d));
+            for (let i = 0; i < this.keys.length; i++) {
+                const key = this.keys[i];
+                if (key > maxDate) {
+                    this.collection.delete(key);
+                }
+            }
         }
 
         this.#refreshKeys();
@@ -94,9 +104,10 @@ export default class DomainCollection {
     merge(newCollection: DomainCollection, limit: number, createValueCallback: Function): void {
         this.yankedDomains = [];
 
-        newCollection.keys.forEach((domainKey, index) => {
+        for (let index = 0; index < newCollection.keys.length; index++) {
+            const domainKey = newCollection.keys[index];
             if (this.has(domainKey)) {
-                return;
+                continue;
             }
 
             if (this.collection.size >= limit) {
@@ -112,7 +123,7 @@ export default class DomainCollection {
             }
             this.collection.set(domainKey, createValueCallback(domainKey, index));
             this.#refreshKeys();
-        });
+        }
         this.yankedDomains = this.yankedDomains.sort((a, b) => a - b);
     }
 
@@ -122,9 +133,9 @@ export default class DomainCollection {
                 ? this.keys.slice(0, -limit)
                 : this.keys.slice(limit);
 
-            keysToDelete.forEach((key) => {
-                this.collection.delete(key);
-            });
+            for (let i = 0; i < keysToDelete.length; i++) {
+                this.collection.delete(keysToDelete[i]);
+            }
 
             this.#refreshKeys();
         }

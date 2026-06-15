@@ -45,11 +45,12 @@ export function applyScaleStyle(
     scaleOptions: OptionsType['scale'],
     keyname?: string
 ) {
-    Object.entries(scaleStyle(_scale, scaleOptions)).forEach(([prop, val]) =>
-        // eslint-disable-next-line implicit-arrow-linebreak
+    const entries = Object.entries(scaleStyle(_scale, scaleOptions));
+    for (let i = 0; i < entries.length; i++) {
+        const [prop, val] = entries[i];
         elem.style(prop, (d: SubDomain | string) =>
             // eslint-disable-next-line implicit-arrow-linebreak
-            val(keyname ? (d as SubDomain)[keyname as keyof SubDomain] : d)
-        )
-    );
+            (val as Function)(keyname ? (d as SubDomain)[keyname as keyof SubDomain] : d)
+        );
+    }
 }
