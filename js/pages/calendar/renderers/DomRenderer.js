@@ -25,8 +25,14 @@ const DEFAULT_SCALE = {
     domain: [-0.01, 0.01],
     range: ['rgba(244, 67, 54, 0.95)', 'rgba(120, 120, 125, 0.5)', 'rgba(76, 175, 80, 0.95)'],
 };
-const GRAD = 'linear-gradient(135deg, rgba(255,255,255,0.55), rgba(0,0,0,0.25))';
-const cellBackground = (fill) => `linear-gradient(${fill}, ${fill}), ${GRAD}`;
+// Light from the upper-right, matching the SVG bevel (gradient runs
+// white@upper-right → black@lower-left, feDistantLight azimuth 315).
+// EDGE = directional rim; DOME = specular "pillow" highlight (radial), the
+// pure-CSS approximation of the SVG feSpecularLighting bulge.
+const EDGE = 'linear-gradient(225deg, rgba(255,255,255,0.55), rgba(0,0,0,0.25))';
+const DOME =
+    'radial-gradient(ellipse 78% 72% at 70% 24%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 56%)';
+const cellBackground = (fill) => `${DOME}, linear-gradient(${fill}, ${fill}), ${EDGE}`;
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const toMonthIndex = (date) => date.getFullYear() * 12 + date.getMonth();
@@ -96,10 +102,10 @@ function ensureStyles(sub) {
 }
 #cal-heatmap .domcal-cell {
     border-radius: ${sub.radius}px; border: 1.5px solid transparent;
-    background-origin: border-box; background-clip: padding-box, border-box;
+    background-origin: border-box; background-clip: padding-box, padding-box, border-box;
     box-shadow:
-        inset 0 1px 1px rgba(255,255,255,0.45), inset 0 -1px 2px rgba(0,0,0,0.3),
-        inset 1px 0 1px rgba(255,255,255,0.18), inset -1px 0 1px rgba(0,0,0,0.18);
+        inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.32),
+        inset -1px 0 1px rgba(255,255,255,0.2), inset 1px 0 1px rgba(0,0,0,0.2);
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45));
 }
 #cal-heatmap .domcal-cell--today {

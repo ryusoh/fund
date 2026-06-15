@@ -1,6 +1,6 @@
 # Calendar renderer migration (SVG/D3 → DOM/CSS)
 
-**Status: in progress. Step 3 of 6 done.** This is a living handoff doc — if work
+**Status: in progress. Step 4 of 6 done.** This is a living handoff doc — if work
 stops mid-stream (token/rate limits, new session, different agent), read this
 first, then continue from "Remaining steps". Update the status line and the
 checklist as you go.
@@ -88,9 +88,15 @@ rolling back) is a one-line change in the factory + the query flag.**
       `paintStaggering.test.js` rewritten against `SvgRenderer`; `renderLabels` tests
       re-pointed to `svgLabels.js`; DOM recolour/label tests added to `domRenderer.test.js`.
       Both renderers verified by screenshot. `make verify` green (2468 JS + 363 Py).
-      **Remaining known gap:** the glass "pillow" is still the flatter CSS approximation
-      (Step 4 decision). Also note: the default `make screenshot` 1200ms wait can race the
-      entrance fade-in — use `--wait 2500` for the calendar.
+      Note: the default `make screenshot` 1200ms wait can race the entrance fade-in —
+      use `--wait 2500` for the calendar.
+- [x] **Step 4 — visual parity pass (pure CSS, no SVG).** Closed the glass-"pillow" gap in
+      `DomRenderer` by adding a radial-gradient `DOME` highlight layer and **fixing the
+      light direction** (the spike was lit upper-left; SVG is upper-right — flipped `EDGE`
+      to `225deg` and the inset shadows to match). Side-by-side zoomed screenshots
+      (SVG vs DOM) now show negligible difference — raised-glass dome present, same colours
+      and layout. Stayed 100% DOM/CSS (chosen over the inline-SVG-filter option).
+      `make verify` green (2468 JS + 363 Py).
 
 ### Step 1 also fixed a pre-existing test-isolation bug (don't reintroduce it)
 
@@ -117,9 +123,6 @@ Fixes applied (keep them):
 
 ## Remaining steps
 
-- [ ] **Step 4 — visual parity pass.** `make screenshot URL=/calendar/` for both
-      renderers and compare. Must be checked in **Chrome** (glass is visual). See
-      Gotchas for the bevel.
 - [ ] **Step 5 — flip default to `dom`**, soak, confirm.
 - [ ] **Step 6 — delete the SVG path:** `js/ui/cal-heatmap-src/`, the `d3` +
       `cal-heatmap` `<script>` tags in `calendar/index.html`, `bevelGlassPlugin.js`
@@ -141,13 +144,16 @@ Fixes applied (keep them):
 
 ## Gotchas
 
-1. **The specular glass "pillow" is the only real parity risk.** The SVG bevel
+1. **The specular glass "pillow" — RESOLVED in Step 4 (pure CSS).** The SVG bevel
    (`js/pages/calendar/bevelGlassPlugin.js`) uses `feSpecularLighting` +
-   `feDistantLight` + an `objectBoundingBox` gradient stroke on each `<rect>`.
-   Pure CSS (`inset` box-shadows + a 135° gradient border) gets ~90% — visibly
-   flatter on close inspection. Two acceptable resolutions: (a) accept the flatter
-   CSS bevel, or (b) keep a **tiny inline `<svg><filter>`** and apply it to DOM
-   cells via CSS `filter: url(#…)` — 100% parity, ~30 lines, still no D3.
+   `feDistantLight` (azimuth 315 = upper-right) + an `objectBoundingBox` gradient
+   stroke on each `<rect>`. `DomRenderer` matches it with three stacked background
+   layers — `DOME` (radial highlight = the pillow), the colour fill, and `EDGE`
+   (directional rim) — plus directional inset box-shadows, **all lit upper-right**.
+   Parity confirmed by side-by-side zoom. The light direction matters: the SVG is
+   upper-right; an earlier spike was mistakenly upper-left. (The inline-`<svg><filter>`
+   route — `filter: url(#…)` on DOM cells — remains a fallback if exact parity is ever
+   needed, but was not used.)
 2. **Glass is visual — verify in Chrome, not tests.** Unit tests cannot see a
    bevel. Per `CLAUDE.md` / `docs/ai_native_repo_structure.md` §17C, a visual
    change is verified by looking at the rendered page (`make screenshot`).
