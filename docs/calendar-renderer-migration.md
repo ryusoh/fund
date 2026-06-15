@@ -1,6 +1,6 @@
 # Calendar renderer migration (SVG/D3 → DOM/CSS)
 
-**Status: in progress. Step 1 of 6 done.** This is a living handoff doc — if work
+**Status: in progress. Step 2 of 6 done.** This is a living handoff doc — if work
 stops mid-stream (token/rate limits, new session, different agent), read this
 first, then continue from "Remaining steps". Update the status line and the
 checklist as you go.
@@ -62,6 +62,25 @@ rolling back) is a one-line change in the factory + the query flag.**
 
 - [x] **Step 1 — seam + SvgRenderer, proven no-op.** `make verify` green (2459 JS +
       363 Py). Behaviour identical; nothing user-visible changed.
+- [x] **Step 2 — `DomRenderer` built + wired.** `js/pages/calendar/renderers/DomRenderer.js`
+      implements the interface with a CSS grid of `<div>` cells (no D3/SVG): per-month
+      grid (rows=weekday, `grid-auto-flow: column`, leading blanks), diverging colour
+      scale read from `config.scale.color` over `config.data.y`, today highlight,
+      min/max-bounded `next`/`previous`/`jumpTo` calling `onMin/MaxDomainReached`, and
+      `'fill'`/`'date-change'` events. Factory's `dom` branch returns it; styles are
+      self-injected (one `<style id="domcal-styles">`). Verified visually via
+      `?renderer=dom` screenshot (close parity with SVG). Unit test:
+      `tests/js/pages/calendar/domRenderer.test.js`. `make verify` green (2465 JS + 363 Py).
+
+    **Known gaps deferred to Step 3 (DO NOT assume these work in DOM mode yet):**
+    - **Currency-toggle recolour without repaint.** The page recolours on
+      `currencyChangedGlobal` via `applyCurrencyColors` (a no-op in DOM mode because it
+      selects SVG `rect`s). DOM cells only recolour on a full `paint()`. Step 3 must route
+      recolour through the renderer.
+    - **Per-cell P/L labels.** `renderLabels` (SVG `tspan`s) is a no-op in DOM mode, so the
+      today-button label toggle shows nothing. DOM cells render colour only (matches the
+      default labels-hidden state).
+    - **Glass "pillow"** is the flatter CSS approximation (Step 4 decision).
 
 ### Step 1 also fixed a pre-existing test-isolation bug (don't reintroduce it)
 
@@ -88,12 +107,6 @@ Fixes applied (keep them):
 
 ## Remaining steps
 
-- [ ] **Step 2 — build `DomRenderer`.** Implement `CalendarRenderer` with a CSS
-      grid of `<div>` cells. Productionize the spike (see below): real
-      `processedData`, month layout (rows=weekday, `grid-auto-flow: column`),
-      diverging color scale (red↔grey↔green from `CALENDAR_CONFIG.scale`),
-      today/min/max, `next/previous/jumpTo`, and `'fill'`/`'date-change'` events.
-      Wire it into the factory's `dom` branch so `?renderer=dom` renders it.
 - [ ] **Step 3 — move the post-paint pipeline behind the interface.** Give each
       renderer a way to render coloring/labels/bevel for its own backend so
       `index.js` no longer calls `d3`/`applyBevelGlass` directly. This is what

@@ -1,5 +1,5 @@
-import { logger } from '@utils/logger.js';
 import { SvgRenderer } from './SvgRenderer.js';
+import { DomRenderer } from './DomRenderer.js';
 
 export const RENDERER_SVG = 'svg';
 export const RENDERER_DOM = 'dom';
@@ -28,10 +28,7 @@ function resolveRendererName() {
 export function createCalendarRenderer(name = resolveRendererName()) {
     switch (name) {
         case RENDERER_DOM:
-            // DomRenderer is not built yet — fall back to SVG so the override is
-            // harmless until the parallel implementation lands.
-            logger.warn('[calendar] DOM renderer not available yet; using SVG renderer');
-            return new SvgRenderer();
+            return new DomRenderer();
         case RENDERER_SVG:
         default:
             return new SvgRenderer();
