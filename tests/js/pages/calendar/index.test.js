@@ -90,6 +90,10 @@ describe('calendar page', () => {
     `;
 
         jest.clearAllMocks();
+        // Re-establish getNyDate's default after any prior test's spyOn().mockRestore().
+        // mockRestore() on a jest.mock-factory fn leaves it returning undefined, which
+        // would make initCalendar throw before constructing the renderer.
+        dateUtils.getNyDate.mockImplementation(() => new Date('2025-01-15T12:00:00Z'));
         global.__d3HeatmapRoot = null;
         global.__d3TextNodes = [];
 
@@ -108,6 +112,7 @@ describe('calendar page', () => {
         };
         todayBtnRef = {
             addEventListener: jest.fn().mockReturnValue(undefined),
+            dispatchEvent: jest.fn(),
             click: jest.fn(),
         };
         containerRef = {
@@ -119,6 +124,8 @@ describe('calendar page', () => {
         };
 
         const mockElement = {
+            // Post-paint bevel pass calls heatmapEl.querySelector('svg'); null short-circuits it.
+            querySelector: jest.fn(() => null),
             addEventListener: jest.fn().mockImplementation((event, callback) => {
                 eventListeners[event] = callback;
             }),
@@ -403,8 +410,8 @@ describe('calendar page', () => {
 
         // Only proceed if event handlers were registered
         if (prevClick && nextClick) {
-            const e1 = { preventDefault: jest.fn() };
-            const e2 = { preventDefault: jest.fn() };
+            const e1 = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
+            const e2 = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
             prevClick(e1);
             nextClick(e2);
             expect(e1.preventDefault).toHaveBeenCalled();
@@ -418,7 +425,7 @@ describe('calendar page', () => {
             (c) => c[0] === 'click'
         )?.[1];
         if (todayClick) {
-            const e3 = { preventDefault: jest.fn() };
+            const e3 = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
             todayClick(e3);
             jest.advanceTimersByTime(300);
             expect(mockCalHeatmapInstance.jumpTo).toHaveBeenCalled();
@@ -553,7 +560,7 @@ describe('calendar page', () => {
             expect(true).toBe(true); // Skip if event handler not registered
             return;
         }
-        const e = { preventDefault: jest.fn() };
+        const e = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
         todayClick(e); // schedules the delayed jumpTo
 
         // Press ArrowUp quickly to emulate a double-click: should cancel pending timer
@@ -653,7 +660,9 @@ describe('calendar page', () => {
         );
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
-        const handler = mockCalHeatmapInstance.__dateChangeHandler;
+        const handler = mockCalHeatmapInstance.on.mock.calls.find(
+            (c) => c[0] === 'date-change'
+        )?.[1];
         expect(handler).toBeDefined();
         getCalendarData.mockClear();
         await handler({
@@ -684,7 +693,9 @@ describe('calendar page', () => {
         );
         getCalendarData.mockResolvedValue(mockData);
         await initCalendar();
-        const handler = mockCalHeatmapInstance.__dateChangeHandler;
+        const handler = mockCalHeatmapInstance.on.mock.calls.find(
+            (c) => c[0] === 'date-change'
+        )?.[1];
         expect(handler).toBeDefined();
         getCalendarData.mockClear();
         const refreshedData = createCalendarData(
@@ -807,7 +818,7 @@ describe('calendar page', () => {
 
         if (prevClickCall) {
             const prevHandler = prevClickCall[1];
-            const mockEvent = { preventDefault: jest.fn() };
+            const mockEvent = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
             prevHandler(mockEvent);
             expect(mockEvent.preventDefault).toHaveBeenCalled();
             expect(mockCalHeatmapInstance.previous).toHaveBeenCalled();
@@ -815,7 +826,7 @@ describe('calendar page', () => {
 
         if (nextClickCall) {
             const nextHandler = nextClickCall[1];
-            const mockEvent = { preventDefault: jest.fn() };
+            const mockEvent = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
             nextHandler(mockEvent);
             expect(mockEvent.preventDefault).toHaveBeenCalled();
             expect(mockCalHeatmapInstance.next).toHaveBeenCalled();
@@ -823,7 +834,7 @@ describe('calendar page', () => {
 
         if (todayClickCall) {
             const todayHandler = todayClickCall[1];
-            const mockEvent = { preventDefault: jest.fn() };
+            const mockEvent = { preventDefault: jest.fn(), target: { blur: jest.fn() } };
 
             // Test timer functionality (lines 129-138)
             jest.useFakeTimers();

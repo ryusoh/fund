@@ -25,6 +25,7 @@ import { updateMonthLabels } from '@ui/calendarMonthLabelManager.js';
 import { getValueFieldForCurrency, applyCurrencyColors } from '@pages/calendar/colorUtils.js';
 import { ensureEntryDisplay, precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
 import { applyBevelGlass } from '@pages/calendar/bevelGlassPlugin.js';
+import { createCalendarRenderer } from '@pages/calendar/renderers/index.js';
 import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 
 // --- STATE ---
@@ -295,7 +296,6 @@ function attachDateChangeHandler(cal) {
         logger.log('Encountered domain outside cached range, refreshing calendar data');
         await refreshCalendarData(start);
     };
-    cal.__dateChangeHandler = dateChangeHandler;
     cal.on('date-change', dateChangeHandler);
 }
 
@@ -1022,7 +1022,7 @@ export async function initCalendar() {
         /* istanbul ignore next: calendar range configuration calculation */
         const calendarStartDate = indexToMonthDate(startIndex);
 
-        const cal = new CalHeatmap();
+        const cal = createCalendarRenderer();
         calendarInstance = cal; // Store for resize handling
 
         setupEventListeners(cal, byDate, appState, CURRENCY_SYMBOLS);
