@@ -117,75 +117,82 @@ export async function drawBetaChart(ctx, chartManager, timestamp) {
 
     // 2. Calculate rolling 6-month Beta (126 trading days)
     const windowSize = 126;
-    const allPossibleSeries = orderedKeys
-        .map((key) => {
-            const assetReturns = returnsMap[key];
-            if (!assetReturns) {
-                return null;
+    const allPossibleSeries = [];
+    for (let k = 0; k < orderedKeys.length; k++) {
+        const key = orderedKeys[k];
+        const assetReturns = returnsMap[key];
+        if (!assetReturns) {
+            continue;
+        }
+
+        const assetReturnMap = new Map();
+        for (let i = 0; i < assetReturns.length; i++) {
+            const r = assetReturns[i];
+            assetReturnMap.set(r.date, r.val);
+        }
+
+        const betaData = [];
+
+        // Master timeline from market returns
+        for (let i = windowSize - 1; i < marketReturns.length; i++) {
+            if (key === MARKET_REF) {
+                betaData.push({ date: marketReturns[i].date, value: 1.0 });
+                continue;
             }
 
-            const assetReturnMap = new Map(assetReturns.map((r) => [r.date, r.val]));
-            const betaData = [];
+            // Bolt: Optimize O(N * W) slice/array allocations by iterating indices directly over marketReturns array
+            const startIdx = i - windowSize + 1;
+            let n = 0;
+            let mSum = 0;
+            let aSum = 0;
 
-            // Master timeline from market returns
-            for (let i = windowSize - 1; i < marketReturns.length; i++) {
-                if (key === MARKET_REF) {
-                    betaData.push({ date: marketReturns[i].date, value: 1.0 });
-                    continue;
+            // First pass to compute sum and valid counts directly
+            for (let j = startIdx; j <= i; j++) {
+                const mR = marketReturns[j];
+                const aVal = assetReturnMap.get(mR.date);
+                if (aVal !== undefined) {
+                    n++;
+                    mSum += mR.val;
+                    aSum += aVal;
                 }
-
-                // Bolt: Optimize O(N * W) slice/array allocations by iterating indices directly over marketReturns array
-                const startIdx = i - windowSize + 1;
-                let n = 0;
-                let mSum = 0;
-                let aSum = 0;
-
-                // First pass to compute sum and valid counts directly
-                for (let j = startIdx; j <= i; j++) {
-                    const mR = marketReturns[j];
-                    const aVal = assetReturnMap.get(mR.date);
-                    if (aVal !== undefined) {
-                        n++;
-                        mSum += mR.val;
-                        aSum += aVal;
-                    }
-                }
-
-                if (n < windowSize * 0.8) {
-                    continue;
-                }
-
-                const mMean = mSum / n;
-                const aMean = aSum / n;
-
-                let cov = 0;
-                let mVar = 0;
-
-                // Second pass to compute variance and covariance
-                for (let j = startIdx; j <= i; j++) {
-                    const mR = marketReturns[j];
-                    const aVal = assetReturnMap.get(mR.date);
-                    if (aVal !== undefined) {
-                        const mDiff = mR.val - mMean;
-                        cov += (aVal - aMean) * mDiff;
-                        mVar += mDiff * mDiff;
-                    }
-                }
-
-                const beta = mVar < 1e-12 ? 0 : cov / mVar;
-                betaData.push({
-                    date: marketReturns[i].date,
-                    value: beta,
-                });
             }
 
-            return {
+            if (n < windowSize * 0.8) {
+                continue;
+            }
+
+            const mMean = mSum / n;
+            const aMean = aSum / n;
+
+            let cov = 0;
+            let mVar = 0;
+
+            // Second pass to compute variance and covariance
+            for (let j = startIdx; j <= i; j++) {
+                const mR = marketReturns[j];
+                const aVal = assetReturnMap.get(mR.date);
+                if (aVal !== undefined) {
+                    const mDiff = mR.val - mMean;
+                    cov += (aVal - aMean) * mDiff;
+                    mVar += mDiff * mDiff;
+                }
+            }
+
+            const beta = mVar < 1e-12 ? 0 : cov / mVar;
+            betaData.push({
+                date: marketReturns[i].date,
+                value: beta,
+            });
+        }
+
+        if (betaData.length > 0) {
+            allPossibleSeries.push({
                 key,
                 name: key,
                 data: betaData,
-            };
-        })
-        .filter((s) => s && s.data.length > 0);
+            });
+        }
+    }
 
     const visibility = chartVisibility || {};
     const seriesToDraw = allPossibleSeries.filter((s) => visibility[s.key] !== false);
