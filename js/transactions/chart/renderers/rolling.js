@@ -64,17 +64,25 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
     }
 
     // Transform cumulative TWRR into rolling 1Y returns
-    const allPossibleSeries = orderedKeys.map((key) => {
+    const allPossibleSeries = new Array(orderedKeys.length);
+    for (let sIdx = 0; sIdx < orderedKeys.length; sIdx++) {
+        const key = orderedKeys[sIdx];
         const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
         // Pre-parse dates to avoid repeated Date object creation
-        const points = rawPoints
-            .map((p) => ({
-                ...p,
-                parsedDate: parseLocalDate(p.date),
-            }))
-            .filter((p) => p.parsedDate !== null);
+        // Bolt: Replaced chained .map().filter() with a single inline loop
+        const points = [];
+        for (let i = 0; i < rawPoints.length; i++) {
+            const p = rawPoints[i];
+            const parsedDate = parseLocalDate(p.date);
+            if (parsedDate !== null) {
+                points.push({
+                    ...p,
+                    parsedDate,
+                });
+            }
+        }
 
         const rollingData = [];
 
@@ -116,12 +124,12 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             }
         }
 
-        return {
+        allPossibleSeries[sIdx] = {
             key,
             name: key,
             data: rollingData,
         };
-    });
+    }
 
     const visibility = chartVisibility || {};
     const seriesToDraw = allPossibleSeries.filter((s) => visibility[s.key] !== false);
@@ -337,6 +345,11 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
+        const renderedPoints = new Array(coords.length);
+        for (let j = 0; j < coords.length; j++) {
+            renderedPoints[j] = { time: coords[j].time, value: coords[j].value };
+        }
+
         renderedSeries.push({
             key: series.key,
             name: series.name,
@@ -345,7 +358,7 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             y: coords[coords.length - 1].y,
             value: points[points.length - 1].value,
             coords,
-            points: coords.map((c) => ({ time: c.time, value: c.value })),
+            points: renderedPoints,
         });
 
         if (isAnimationEnabled('performance')) {
@@ -411,24 +424,35 @@ export async function drawRollingChart(ctx, chartManager, timestamp) {
             const ratio = (clampedX - padding.left) / plotWidth;
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
-        series: renderedSeries.map((s) => ({
-            key: s.key,
-            label: s.name,
-            color: s.color,
-            getValueAtTime: createTimeInterpolator(s.points),
-            formatValue: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
-            formatDelta: (delta, percent) => formatPercentInline(percent ?? delta),
-        })),
+        series: (() => {
+            const layoutSeries = new Array(renderedSeries.length);
+            for (let i = 0; i < renderedSeries.length; i++) {
+                const s = renderedSeries[i];
+                layoutSeries[i] = {
+                    key: s.key,
+                    label: s.name,
+                    color: s.color,
+                    getValueAtTime: createTimeInterpolator(s.points),
+                    formatValue: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
+                    formatDelta: (delta, percent) => formatPercentInline(percent ?? delta),
+                };
+            }
+            return layoutSeries;
+        })(),
     };
 
     drawCrosshairOverlay(ctx, chartLayouts.rolling);
 
     if (legendState.performanceDirty) {
-        const legendSeries = allPossibleSeries.map((s) => ({
-            key: s.key,
-            name: s.name,
-            color: colorMap[s.key] || colors.contribution,
-        }));
+        const legendSeries = new Array(allPossibleSeries.length);
+        for (let i = 0; i < allPossibleSeries.length; i++) {
+            const s = allPossibleSeries[i];
+            legendSeries[i] = {
+                key: s.key,
+                name: s.name,
+                color: colorMap[s.key] || colors.contribution,
+            };
+        }
         updateLegend(legendSeries, chartManager);
         legendState.performanceDirty = false;
     }

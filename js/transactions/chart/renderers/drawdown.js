@@ -117,28 +117,34 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
         }
     }
 
-    const allExpectedSeries = orderedKeys.map((key) => {
+    const allExpectedSeries = new Array(orderedKeys.length);
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
         const points = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
         const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
 
-        const convertedPoints = points.map((point) => ({
-            date: point.date,
-            value: convertBetweenCurrencies(
-                Number(point.value),
-                sourceCurrency,
-                point.date,
-                selectedCurrency
-            ),
-        }));
+        const convertedPoints = new Array(points.length);
+        for (let j = 0; j < points.length; j++) {
+            const point = points[j];
+            convertedPoints[j] = {
+                date: point.date,
+                value: convertBetweenCurrencies(
+                    Number(point.value),
+                    sourceCurrency,
+                    point.date,
+                    selectedCurrency
+                ),
+            };
+        }
 
         const drawdownPoints = buildDrawdownSeries(convertedPoints);
 
-        return {
+        allExpectedSeries[i] = {
             key,
             name: key,
             data: drawdownPoints,
         };
-    });
+    }
 
     seriesToDraw = allExpectedSeries.filter((s) => chartVisibility[s.key] !== false);
 
@@ -312,11 +318,16 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
         ctx.lineWidth = lineThickness;
         ctx.stroke();
 
+        const renderedPoints = new Array(coords.length);
+        for (let j = 0; j < coords.length; j++) {
+            renderedPoints[j] = { time: coords[j].time, value: coords[j].value };
+        }
+
         renderedSeries.push({
             key: series.key,
             name: series.name,
             color: resolvedColor,
-            points: coords.map((c) => ({ time: c.time, value: c.value })),
+            points: renderedPoints,
         });
 
         if (performanceAnimationEnabled) {
@@ -383,7 +394,6 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
     // Store layout for crosshair
     const layoutKey = 'drawdown';
     const valueFormatter = (value) => `${value.toFixed(2)}%`;
-    const deltaFormatter = (delta) => `${delta > 0 ? '+' : ''}${delta.toFixed(2)}%`;
 
     chartLayouts[layoutKey] = {
         key: layoutKey,
@@ -405,22 +415,33 @@ export async function drawDrawdownChart(ctx, chartManager, timestamp) {
             const ratio = (clampedX - padding.left) / plotWidth;
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
-        series: renderedSeries.map((series) => ({
-            key: series.key,
-            name: series.name,
-            color: series.color,
-            getValueAtTime: createTimeInterpolator(series.points || []),
-            formatValue: valueFormatter,
-            formatDelta: (delta) => deltaFormatter(delta),
-        })),
+        series: (() => {
+            const layoutSeries = new Array(renderedSeries.length);
+            for (let i = 0; i < renderedSeries.length; i++) {
+                const s = renderedSeries[i];
+                layoutSeries[i] = {
+                    key: s.key,
+                    name: s.name,
+                    color: s.color,
+                    getValueAtTime: createTimeInterpolator(s.points || []),
+                    formatValue: valueFormatter,
+                    formatDelta: (d) => `${d > 0 ? '+' : ''}${d.toFixed(2)}%`,
+                };
+            }
+            return layoutSeries;
+        })(),
     };
 
     drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
 
-    const legendEntries = orderedKeys.map((key) => ({
-        key,
-        name: key,
-        color: colorMap[key] || colors.contribution,
-    }));
+    const legendEntries = new Array(orderedKeys.length);
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
+        legendEntries[i] = {
+            key,
+            name: key,
+            color: colorMap[key] || colors.contribution,
+        };
+    }
     updateLegend(legendEntries, chartManager);
 }

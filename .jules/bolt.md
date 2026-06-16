@@ -282,3 +282,7 @@
 
 **Learning:** Using `.forEach()` with internal iterations or map setups (e.g., iterating through plugin arrays in `PluginManager.ts` and collections in `DomainCollection.ts`) creates implicit closure allocations on every call, increasing garbage collection (GC) pressure during calendar heatmap rendering and high-frequency UI updates.
 **Action:** Replaced nested array methods and `.forEach` with standard explicit `for` loops in `js/ui/cal-heatmap-src/*` codes to completely eliminate intermediate array allocations and closure creations.
+
+## 2026-06-25 - Replaced higher-order map and filter functions with pre-allocated explicit for loops
+**Learning:** Chained `.map().filter()` or single `.map()` functions without pre-allocation in high-frequency rendering functions across multiple chart renderers (`yield.js`, `drawdown.js`, `rolling.js`, `beta.js`) allocate intermediary arrays and closure functions on every call, increasing garbage collection pressure.
+**Action:** Replaced these higher-order array methods with standard explicit `for` loops using pre-allocated arrays where size is known (e.g. `new Array(length)`) to completely eliminate implicit closure allocations and intermediate array creation, heavily dropping GC overhead in rendering loops.

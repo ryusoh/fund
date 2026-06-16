@@ -14,7 +14,7 @@ describe('Beta Chart Allocation Regression', () => {
         // Ensure no .slice(startIdx, endIdx) or similar is used inside the rolling loop
         // We look for the part between the window timeline loop
         const rollingLoopMatch = content.match(
-            /for \(let i = windowSize - 1; i < marketReturns\.length; i\+\+\) \{([\s\S]*?)\}\n\n\s+return \{/
+            /for \(let i = windowSize - 1; i < marketReturns\.length; i\+\+\) \{([\s\S]*?)\}\n\n\s+if \(betaData\.length > 0\)/
         );
         expect(rollingLoopMatch).toBeTruthy();
 

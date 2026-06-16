@@ -90,10 +90,15 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filteredData = yieldDataCache.filter((d) => {
+    // Bolt: Replaced Array .filter() and .map() with a single inline loop
+    const filteredData = [];
+    for (let i = 0; i < yieldDataCache.length; i++) {
+        const d = yieldDataCache[i];
         const date = parseLocalDate(d.date);
-        return (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo);
-    });
+        if ((!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
+            filteredData.push(d);
+        }
+    }
 
     if (filteredData.length === 0) {
         stopYieldAnimation();
@@ -104,7 +109,10 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
-    const times = filteredData.map((d) => parseLocalDate(d.date).getTime());
+    const times = new Array(filteredData.length);
+    for (let i = 0; i < filteredData.length; i++) {
+        times[i] = parseLocalDate(filteredData[i].date).getTime();
+    }
     let minTime = times[0];
     const maxTime = times[times.length - 1];
 
@@ -254,15 +262,17 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     const gradientStops = BENCHMARK_GRADIENTS['^LZ'] || [yieldColor, yieldColor];
 
     // Map data to coordinates
-    const yieldCoords = filteredData.map((d) => {
+    const yieldCoords = new Array(filteredData.length);
+    for (let i = 0; i < filteredData.length; i++) {
+        const d = filteredData[i];
         const t = parseLocalDate(d.date).getTime();
-        return {
+        yieldCoords[i] = {
             x: xScale(t),
             y: yScale(d.forward_yield),
             time: t,
             value: d.forward_yield,
         };
-    });
+    }
 
     const chartBounds = {
         top: margin.top,
@@ -300,10 +310,14 @@ export async function drawYieldChart(ctx, chartManager, timestamp) {
     }
     ctx.stroke();
 
-    const incomePoints = filteredData.map((d, i) => ({
-        time: parseLocalDate(d.date).getTime(),
-        value: incomes[i],
-    }));
+    const incomePoints = new Array(filteredData.length);
+    for (let i = 0; i < filteredData.length; i++) {
+        const d = filteredData[i];
+        incomePoints[i] = {
+            time: parseLocalDate(d.date).getTime(),
+            value: incomes[i],
+        };
+    }
 
     // Series for interaction and legend
     const yieldSeries = {
