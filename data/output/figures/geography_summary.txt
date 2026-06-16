@@ -4,8 +4,8 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              72.13%  ████████████████████████████████████
-  Asia                       22.40%  ███████████
+  North America              72.45%  ████████████████████████████████████
+  Asia                       22.08%  ███████████
   Europe                      4.22%  ██
   Oceania                     0.49%  
   Other                       0.45%  
@@ -14,8 +14,8 @@ CONTINENT BREAKDOWN (Ranked)
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           72.05%  ████████████████████████████████████
-  East Asia                  21.42%  ██████████
+  Northern America           72.37%  ████████████████████████████████████
+  East Asia                  21.10%  ██████████
   Western Europe              3.22%  █
   South Asia                  0.58%  
   Northern Europe             0.49%  
@@ -29,8 +29,8 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            71.17%  ███████████████████████████████████
-   2. China                    18.97%  █████████
+   1. United States            71.49%  ███████████████████████████████████
+   2. China                    18.65%  █████████
    3. Japan                     1.65%  
    4. United Kingdom            0.95%  
    5. Canada                    0.89%  
