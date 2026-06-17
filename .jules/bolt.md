@@ -287,3 +287,8 @@
 
 **Learning:** Chained `.map().filter()` or single `.map()` functions without pre-allocation in high-frequency rendering functions across multiple chart renderers (`yield.js`, `drawdown.js`, `rolling.js`, `beta.js`) allocate intermediary arrays and closure functions on every call, increasing garbage collection pressure.
 **Action:** Replaced these higher-order array methods with standard explicit `for` loops using pre-allocated arrays where size is known (e.g. `new Array(length)`) to completely eliminate implicit closure allocations and intermediate array creation, heavily dropping GC overhead in rendering loops.
+
+## 2024-06-18 - Eliminate .forEach closures in glass3dPlugin
+
+**Learning:** Using `.forEach()` inside rendering loops or animation frame handlers like those in `js/plugins/glass3dPlugin.js` creates implicit closures. In 3D rendering environments with many particles, gradients, or complex geometries, this drastically increases short-lived memory allocations, causing garbage collection (GC) micro-stutters during high-frequency visual updates.
+**Action:** Replace all `.forEach()` calls within plugins (e.g. `meta.data.forEach` or `state.energyParticles.forEach`) with standard, index-based explicit `for` loops to entirely eliminate closure creation overhead and reduce GC pressure.
