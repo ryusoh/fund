@@ -455,15 +455,17 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
 
     const entries = [];
 
-    layout.series.forEach((series) => {
+    // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
+    for (let i = 0; i < layout.series.length; i++) {
+        const series = layout.series[i];
         if (series && series.includeInRangeSummary === false) {
-            return;
+            continue;
         }
         if (series && series.key === 'appreciation') {
-            return;
+            continue;
         }
         if (typeof series.getValueAtTime !== 'function') {
-            return;
+            continue;
         }
         const startValue = series.getValueAtTime(start);
         const endValue = series.getValueAtTime(end);
@@ -473,7 +475,7 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
             endValue === null ||
             endValue === undefined
         ) {
-            return;
+            continue;
         }
         const delta = endValue - startValue;
         let percent = null;
@@ -496,7 +498,7 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
               ? formatPercentInline(delta)
               : formatCurrencyInline(delta);
         if (formattedDelta === null || formattedDelta === undefined) {
-            return;
+            continue;
         }
         let formattedPercent =
             percent !== null && Number.isFinite(percent) ? formatPercentInline(percent) : null;
@@ -513,7 +515,7 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
             deltaFormatted: formattedDelta,
             percentFormatted: formattedPercent,
         });
-    });
+    }
 
     if (entries.length === 0) {
         return null;
@@ -648,7 +650,9 @@ export function updateLegend(series, chartManager) {
         legendContainer.textContent = ''; // Clear existing legend
     }
 
-    series.forEach((s) => {
+    // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead
+    for (let i = 0; i < series.length; i++) {
+        const s = series[i];
         const item = document.createElement('div');
         item.className = 'legend-item';
         item.dataset.series = s.key;
@@ -695,7 +699,9 @@ export function updateLegend(series, chartManager) {
                         const isVisible = !isDisabled;
 
                         // Hide other benchmarks for a "radio button" style interaction
-                        benchmarks.forEach((benchmark) => {
+                        // Bolt: Use index-based loop instead of .forEach()
+                        for (let j = 0; j < benchmarks.length; j++) {
+                            const benchmark = benchmarks[j];
                             if (benchmark !== s.key) {
                                 transactionState.chartVisibility[benchmark] = false;
                                 const otherItem = legendContainer.querySelector(
@@ -705,7 +711,7 @@ export function updateLegend(series, chartManager) {
                                     otherItem.classList.add('legend-disabled');
                                 }
                             }
-                        });
+                        }
 
                         transactionState.chartVisibility[s.key] = isVisible;
                         legendState.performanceDirty = true; // Mark legend as needing update
@@ -730,7 +736,7 @@ export function updateLegend(series, chartManager) {
         }
 
         legendContainer.appendChild(item);
-    });
+    }
 }
 
 // --- Crosshair Event Handling ---
