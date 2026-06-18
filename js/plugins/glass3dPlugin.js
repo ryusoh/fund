@@ -67,14 +67,19 @@ const DEFAULT_OPTIONS = {
 
 function deepMerge(target, source) {
     const output = { ...target };
-    Object.keys(source || {}).forEach((key) => {
+    if (!source) {
+        return output;
+    }
+    const keys = Object.keys(source);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
         const value = source[key];
         if (value && typeof value === 'object' && !Array.isArray(value)) {
             output[key] = deepMerge(output[key] || {}, value);
         } else if (value !== undefined) {
             output[key] = value;
         }
-    });
+    }
     return output;
 }
 
@@ -392,7 +397,8 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
 
     const bandWidth = width * 50;
 
-    channels.forEach(({ color, offset, opacityScale }) => {
+    for (let i = 0; i < channels.length; i++) {
+        const { color, offset, opacityScale } = channels[i];
         const outerR = outerRadius + offset;
         const gradient = ctx.createRadialGradient(
             centerX + px,
@@ -423,7 +429,7 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
             true
         );
         ctx.fill('evenodd');
-    });
+    }
 
     ctx.restore();
 }
@@ -440,7 +446,8 @@ function drawFresnelHighlight(ctx, meta, options, pointer) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
-    meta.data.forEach((arc) => {
+    for (let i = 0; i < meta.data.length; i++) {
+        const arc = meta.data[i];
         const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arc.getProps(
             ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
             true
@@ -476,7 +483,7 @@ function drawFresnelHighlight(ctx, meta, options, pointer) {
         ctx.beginPath();
         ctx.ellipse(cx, cy, bandRadius, bandRadius * squash, 0, startAngle, endAngle);
         ctx.stroke();
-    });
+    }
 
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -567,9 +574,9 @@ function drawReflection(ctx, centerX, centerY, outerRadius, innerRadius, options
 }
 
 function drawSideWalls(ctx, meta, depth, options, lightVec, pointer) {
-    meta.data.forEach((arc) => {
-        drawSideWall(ctx, arc, depth, options, lightVec, pointer);
-    });
+    for (let i = 0; i < meta.data.length; i++) {
+        drawSideWall(ctx, meta.data[i], depth, options, lightVec, pointer);
+    }
 }
 
 function getOverlayColors(options) {
@@ -626,13 +633,14 @@ function updateEnergyParticles(state, delta, options) {
     }
     const baseSpeed =
         (options.reflection?.speed ?? 0.05) * (options.electric?.particleSpeedMultiplier ?? 1);
-    state.energyParticles.forEach((particle, idx) => {
-        const variance = 0.8 + (idx % 5) * 0.12;
+    for (let i = 0; i < state.energyParticles.length; i++) {
+        const particle = state.energyParticles[i];
+        const variance = 0.8 + (i % 5) * 0.12;
         particle.angle =
             (particle.angle + delta * baseSpeed * 6 * particle.speed * variance) % (Math.PI * 2);
         particle.radiusFactor =
             0.75 + Math.sin(state.phase * Math.PI * 2 + particle.flickerOffset) * 0.05;
-    });
+    }
 }
 
 function drawElectricTrail(
@@ -854,13 +862,14 @@ function drawEnergyParticles(
     ctx.globalCompositeOperation = 'lighter';
     const bandThickness = outerRadius - innerRadius;
     const baseRadius = innerRadius + bandThickness * 0.65;
-    state.energyParticles.forEach((particle, idx) => {
+    for (let i = 0; i < state.energyParticles.length; i++) {
+        const particle = state.energyParticles[i];
         const angle = particle.angle;
         const radius = baseRadius * particle.radiusFactor;
         const x = centerX + Math.cos(angle) * radius + pointer.x * 0.15;
         const y = centerY + Math.sin(angle) * radius * squash + pointer.y * 0.15;
         const flicker = 0.5 + 0.5 * Math.sin(state.phase * Math.PI * 4 + particle.flickerOffset);
-        const color = colors[idx % colors.length] || 'rgba(0,255,255,0.6)';
+        const color = colors[i % colors.length] || 'rgba(0,255,255,0.6)';
         const pSize = particle.size + flicker * 1.5;
         // Glow halo: larger, dimmer ellipse (replaces expensive shadowBlur)
         ctx.fillStyle = color;
@@ -874,7 +883,7 @@ function drawEnergyParticles(
         ctx.beginPath();
         ctx.ellipse(x, y, pSize, (particle.size + flicker) * 0.6, angle, 0, Math.PI * 2);
         ctx.fill();
-    });
+    }
     ctx.restore();
 }
 
@@ -885,7 +894,8 @@ function drawBeerLambertOverlay(ctx, meta, options) {
     const shadowOpacity = 0.14;
 
     ctx.save();
-    meta.data.forEach((arc) => {
+    for (let i = 0; i < meta.data.length; i++) {
+        const arc = meta.data[i];
         const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arc.getProps(
             ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
             true
@@ -917,7 +927,7 @@ function drawBeerLambertOverlay(ctx, meta, options) {
         ctx.fillStyle = gradient;
         ctx.fillRect(x - outerRadius, y - outerRadius, outerRadius * 2, outerRadius * 2);
         ctx.restore();
-    });
+    }
     ctx.restore();
 }
 
