@@ -19,21 +19,23 @@ export function drawContributionMarkers(ctx, rawContributionData, options = {}) 
 
     const markerGroups = new Map();
 
-    rawContributionData.forEach((item) => {
+    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
+    for (let i = 0; i < rawContributionData.length; i += 1) {
+        const item = rawContributionData[i];
         if (typeof item.orderType !== 'string') {
-            return;
+            continue;
         }
         const type = item.orderType.toLowerCase();
         if (!((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
-            return;
+            continue;
         }
         const timestamp = item.date.getTime();
         if (!Number.isFinite(timestamp)) {
-            return;
+            continue;
         }
 
         if (timestamp < minTime || timestamp > maxTime) {
-            return;
+            continue;
         }
 
         if (!markerGroups.has(timestamp)) {
@@ -48,28 +50,31 @@ export function drawContributionMarkers(ctx, rawContributionData, options = {}) 
         } else {
             group.sells.push({ radius, amount, netAmount });
         }
-    });
+    }
 
     if (markerGroups.size > 0) {
-        markerGroups.forEach((group, timestamp) => {
+        // Bolt: Use explicit loop over Map entries
+        for (const [timestamp, group] of markerGroups.entries()) {
             const x = xScale(timestamp);
 
             const sortedBuys = [...group.buys].sort((a, b) => b.radius - a.radius);
             let buyOffset = 8;
-            sortedBuys.forEach((marker) => {
+            for (let j = 0; j < sortedBuys.length; j += 1) {
+                const marker = sortedBuys[j];
                 const y = yScale(marker.amount) - buyOffset - marker.radius;
                 drawMarker(ctx, x, y, marker.radius, true, colors, bounds);
                 buyOffset += marker.radius * 2 + 4;
-            });
+            }
 
             const sortedSells = [...group.sells].sort((a, b) => b.radius - a.radius);
             let sellOffset = 8;
-            sortedSells.forEach((marker) => {
+            for (let j = 0; j < sortedSells.length; j += 1) {
+                const marker = sortedSells[j];
                 const y = yScale(marker.amount) + sellOffset + marker.radius;
                 drawMarker(ctx, x, y, marker.radius, false, colors, bounds);
                 sellOffset += marker.radius * 2 + 4;
-            });
-        });
+            }
+        }
     }
 }
 
@@ -94,9 +99,11 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
     let maxVolume = 0;
     const volumeGroups = new Map();
 
-    rawContributionData.forEach((item) => {
+    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations
+    for (let i = 0; i < rawContributionData.length; i += 1) {
+        const item = rawContributionData[i];
         if (typeof item.orderType !== 'string') {
-            return;
+            continue;
         }
         const type = item.orderType.toLowerCase();
 
@@ -104,21 +111,21 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
         const hasExplicitVolume = Number(item.buyVolume) > 0 || Number(item.sellVolume) > 0;
 
         if (!hasExplicitVolume && !((type === 'buy' && showBuy) || (type === 'sell' && showSell))) {
-            return;
+            continue;
         }
         const normalizedDate = new Date(item.date.getTime());
         normalizedDate.setHours(0, 0, 0, 0);
         const timestamp = normalizedDate.getTime();
         if (!Number.isFinite(timestamp)) {
-            return;
+            continue;
         }
         // Ensure volume bars are strictly within the visible chart range
         if (timestamp < minTime || timestamp > maxTime) {
-            return;
+            continue;
         }
         const netAmount = Math.abs(Number(item.netAmount) || 0);
         if (!hasExplicitVolume && netAmount <= 0) {
-            return;
+            continue;
         }
 
         if (!volumeGroups.has(timestamp)) {
@@ -140,14 +147,14 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
         } else {
             totals.totalSell += netAmount;
         }
-    });
+    }
 
-    volumeGroups.forEach((totals, timestamp) => {
+    for (const [timestamp, totals] of volumeGroups.entries()) {
         const { totalBuy, totalSell } = totals;
         const totalBuyVolume = totalBuy;
         const totalSellVolume = totalSell;
         if (totalBuyVolume === 0 && totalSellVolume === 0) {
-            return;
+            continue;
         }
 
         maxVolume = Math.max(maxVolume, totalBuyVolume, totalSellVolume);
@@ -156,16 +163,17 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
             totalBuyVolume,
             totalSellVolume,
         });
-    });
+    }
 
-    volumeEntries.forEach(({ timestamp, totalBuyVolume, totalSellVolume }) => {
+    for (let i = 0; i < volumeEntries.length; i += 1) {
+        const { timestamp, totalBuyVolume, totalSellVolume } = volumeEntries[i];
         if (totalBuyVolume > 0) {
             buyVolumeMap.set(timestamp, totalBuyVolume);
         }
         if (totalSellVolume > 0) {
             sellVolumeMap.set(timestamp, totalSellVolume);
         }
-    });
+    }
 
     const volumePadding = {
         top: volumeTop,
@@ -207,7 +215,8 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
 
         const allVolumeRects = [];
 
-        volumeEntries.forEach((entry) => {
+        for (let i = 0; i < volumeEntries.length; i += 1) {
+            const entry = volumeEntries[i];
             const { timestamp, totalBuyVolume, totalSellVolume } = entry;
             const x = xScale(timestamp);
 
@@ -229,12 +238,13 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
                 });
             }
             if (bars.length === 0) {
-                return;
+                continue;
             }
 
             const dayMaxVolume = Math.max(totalBuyVolume, totalSellVolume);
 
-            bars.forEach((bar) => {
+            for (let j = 0; j < bars.length; j += 1) {
+                const bar = bars[j];
                 const topY = volumeYScale(bar.volume);
                 const height = baselineY - topY;
 
@@ -263,31 +273,32 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
                         order: actualWidth < barWidth ? 1 : 0,
                     });
                 }
-            });
-        });
+            }
+        }
 
         const originalFill = ctx.fillStyle;
         const originalStroke = ctx.strokeStyle;
         const originalLineWidth = ctx.lineWidth;
 
-        allVolumeRects
-            .sort((a, b) => {
-                if (a.height !== b.height) {
-                    return b.height - a.height;
-                }
-                if (a.timestamp !== b.timestamp) {
-                    return a.timestamp - b.timestamp;
-                }
-                return a.order - b.order;
-            })
-            .forEach((rect) => {
-                ctx.fillStyle = rect.fill;
-                ctx.fillRect(rect.x, rect.topY, rect.width, rect.height);
+        allVolumeRects.sort((a, b) => {
+            if (a.height !== b.height) {
+                return b.height - a.height;
+            }
+            if (a.timestamp !== b.timestamp) {
+                return a.timestamp - b.timestamp;
+            }
+            return a.order - b.order;
+        });
 
-                ctx.strokeStyle = rect.stroke;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(rect.x, rect.topY, rect.width, rect.height);
-            });
+        for (let i = 0; i < allVolumeRects.length; i += 1) {
+            const rect = allVolumeRects[i];
+            ctx.fillStyle = rect.fill;
+            ctx.fillRect(rect.x, rect.topY, rect.width, rect.height);
+
+            ctx.strokeStyle = rect.stroke;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(rect.x, rect.topY, rect.width, rect.height);
+        }
 
         ctx.fillStyle = originalFill;
         ctx.strokeStyle = originalStroke;

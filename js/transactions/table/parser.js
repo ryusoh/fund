@@ -71,25 +71,27 @@ export function parseCommandPalette(value) {
         tickers: [],
     };
 
-    tokens.forEach((token) => {
+    // Bolt: Replaced .forEach with an explicit for loop to reduce closure allocation overhead
+    for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
         const [key, ...valParts] = token.split(':');
         const val = valParts.join(':');
         if (!val) {
             const normalizedKey = key.toLowerCase();
             if (normalizedKey === 'etf' || normalizedKey === 'stock') {
                 commands.assetClass = normalizedKey;
-                return;
+                continue;
             }
             const normalizedTicker = normalizeTickerToken(key);
             if (normalizedTicker) {
                 commands.tickers.push(normalizedTicker);
-                return;
+                continue;
             }
             textTokens.push(key);
-            return;
+            continue;
         }
         processKeyValToken(key, val, commands, textTokens, token);
-    });
+    }
 
     return { text: textTokens.join(' '), commands };
 }
@@ -108,7 +110,11 @@ export function deriveCompositionTickerFilters(textPart, commands) {
         addTicker(commands.security);
     }
     if (typeof textPart === 'string' && textPart.trim()) {
-        textPart.split(/\s+/).filter(Boolean).forEach(addTicker);
+        const parts = textPart.split(/\s+/).filter(Boolean);
+        // Bolt: Replaced .forEach with an explicit for loop to reduce closure allocation overhead
+        for (let i = 0; i < parts.length; i += 1) {
+            addTicker(parts[i]);
+        }
     }
     return results;
 }
