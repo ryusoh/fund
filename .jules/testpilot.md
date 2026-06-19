@@ -108,3 +108,7 @@ To test highly internal functions isolated in a module closure safely, we inject
 
 - Coverage correctly generated and tracked when testing WebGL implementation by mocking HTMLCanvasElement's getContext to handle experimental-webgl/webgl logic manually. Tests need to verify gracefully degrading components early exits (handling webGL compilation failure or not finding `gl` cleanly).
   **Action:** Implemented test logic to provide 100% test coverage for `tableGlassWebGL.js`, and `parser.js`.
+
+## 2025-02-14 - Test Analysis Snapshot
+
+**Learning:** For rendering complex ascii tables with combinations of open vs closed positions, ensure you use accurate map references in Jest to properly track function calls. When utilizing mocked imported functions inside Jest unit tests covering pure text rendering (such as `getDurationStatsText` or `getLifespanStatsText`), mock local formatting utils appropriately to simulate exact string combinations.
