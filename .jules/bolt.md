@@ -297,3 +297,8 @@
 
 **Learning:** Using `.forEach()` within frequently invoked interactive functions, such as `getRangeSelectionSummary` during crosshair drag events and `updateLegend`, inherently allocates closures for each callback. These repetitive allocations during high-frequency events dramatically elevate garbage collection (GC) pressure, which can result in noticeable UI stuttering.
 **Action:** Substituted `.forEach()` with explicit, index-based `for` loops in `js/transactions/chart/interaction.js` to bypass closure creation and improve overall interactive responsiveness.
+
+## 2026-06-25 - Replace .forEach closures in table parser and chart components
+
+**Learning:** Using `.forEach()` in table parsing routines (like `parseCommandPalette`) and high-frequency chart drawing components (like `drawContributionMarkers` and `drawVolumeChart`) creates implicit closure allocations for each element iterated. These allocations generate significant garbage collection (GC) pressure that leads to micro-stutters during interactions, filtering, and chart renderings.
+**Action:** Replaced `.forEach()` in `js/transactions/chart/renderers/contributionComponents.js` and `js/transactions/table/parser.js` with explicit, index-based `for` loops and `for...of` loops for Maps to completely eliminate intermediate closure creations and dramatically reduce GC overhead.
