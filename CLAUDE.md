@@ -42,6 +42,10 @@ debugging an odd/flaky JS test, read `docs/testing-notes.md`.
   and visual** — unit tests can't see a transparent edge or misaligned rim, so
   **verify in Chrome** (`make serve`, open `/terminal/`). Has a gotcha checklist
   that will save you a debugging round-trip.
+- **Transaction chart crosshair** (stacked composition/sectors/geography/marketcap) →
+  `docs/chart-crosshair-layout.md`. One consumer (`interaction.js`) reads layout fields
+  by name; a renderer that omits one (e.g. `dates`) silently renders **0%**, not an
+  error. Read before adding/editing a stacked chart.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
