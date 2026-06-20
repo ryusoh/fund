@@ -112,3 +112,8 @@ To test highly internal functions isolated in a module closure safely, we inject
 ## 2025-02-14 - Test Analysis Snapshot
 
 **Learning:** For rendering complex ascii tables with combinations of open vs closed positions, ensure you use accurate map references in Jest to properly track function calls. When utilizing mocked imported functions inside Jest unit tests covering pure text rendering (such as `getDurationStatsText` or `getLifespanStatsText`), mock local formatting utils appropriately to simulate exact string combinations.
+
+## 2024-06-25 - DOM Event Handlers Mocking
+
+**Learning:** When unit testing scripts that expect specific DOM elements to attach event listeners to during initialization (like lab.js attaching to btnRunMonteCarlo), ensure all expected elements are present in document.body.innerHTML before require()-ing the module. Failing to do so causes TypeError: Cannot read properties of null (reading addEventListener).
+**Action:** Added tests for MonteCarlo and Bayes DOM event handlers.
