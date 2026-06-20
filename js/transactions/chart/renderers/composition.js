@@ -506,6 +506,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             return clampTime(minTime + ratio * (maxTime - minTime), minTime, maxTime);
         },
         series: sortedSeriesForCrosshair,
+        dates,
         percentSeriesMap,
         percentOthersSeries,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
