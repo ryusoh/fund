@@ -302,3 +302,7 @@
 
 **Learning:** Using `.forEach()` in table parsing routines (like `parseCommandPalette`) and high-frequency chart drawing components (like `drawContributionMarkers` and `drawVolumeChart`) creates implicit closure allocations for each element iterated. These allocations generate significant garbage collection (GC) pressure that leads to micro-stutters during interactions, filtering, and chart renderings.
 **Action:** Replaced `.forEach()` in `js/transactions/chart/renderers/contributionComponents.js` and `js/transactions/table/parser.js` with explicit, index-based `for` loops and `for...of` loops for Maps to completely eliminate intermediate closure creations and dramatically reduce GC overhead.
+## 2026-06-25 - Replace chained .map().reduce() with explicit for loops
+
+**Learning:** Using `.map().reduce()` chains inside classes or modules to accumulate properties from an array of objects (like calculating total width/height of plugins) generates intermediate arrays and closure functions on every execution, increasing garbage collection (GC) pressure.
+**Action:** Replace these higher-order array chains with an explicit `for` loop that iterates over the original array and accumulates the value directly (e.g., `let total = 0; for (let i = 0; i < arr.length; i++) { total += arr[i].val; }`).
