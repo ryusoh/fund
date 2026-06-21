@@ -92,15 +92,21 @@ export default class PluginManager {
     }
 
     getHeightFromPosition(position: PluginOptions['position']): number {
-        return this.getFromPosition(position)
-            .map((d) => d.options.dimensions!.height)
-            .reduce((a, b) => a + b, 0);
+        const plugins = this.getFromPosition(position);
+        let height = 0;
+        for (let i = 0; i < plugins.length; i++) {
+            height += plugins[i].options.dimensions!.height;
+        }
+        return height;
     }
 
     getWidthFromPosition(position: PluginOptions['position']): number {
-        return this.getFromPosition(position)
-            .map((d) => d.options.dimensions!.width)
-            .reduce((a, b) => a + b, 0);
+        const plugins = this.getFromPosition(position);
+        let width = 0;
+        for (let i = 0; i < plugins.length; i++) {
+            width += plugins[i].options.dimensions!.width;
+        }
+        return width;
     }
 
     allPlugins(): IPlugin[] {
