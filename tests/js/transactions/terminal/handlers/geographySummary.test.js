@@ -7,12 +7,11 @@ jest.mock('../../../../../js/utils/logger.js', () => ({
     },
 }));
 
-describe('geographySummary handler', () => {
+describe('getGeographySummaryText', () => {
     let originalFetch;
 
     beforeEach(() => {
         originalFetch = global.fetch;
-        global.fetch = jest.fn();
         jest.clearAllMocks();
     });
 
@@ -20,41 +19,37 @@ describe('geographySummary handler', () => {
         global.fetch = originalFetch;
     });
 
-    it('returns text when fetch is successful', async () => {
-        global.fetch.mockResolvedValueOnce({
+    it('returns text on successful fetch', async () => {
+        global.fetch = jest.fn().mockResolvedValue({
             ok: true,
-            text: jest.fn().mockResolvedValue('Mocked Geography Summary'),
+            text: jest.fn().mockResolvedValue('Geography summary content'),
         });
 
         const result = await getGeographySummaryText();
-
+        expect(result).toBe('Geography summary content');
         expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
-        expect(result).toBe('Mocked Geography Summary');
     });
 
-    it('throws error and returns error message when fetch is not ok', async () => {
-        global.fetch.mockResolvedValueOnce({
+    it('returns error message and logs warning on non-ok response', async () => {
+        global.fetch = jest.fn().mockResolvedValue({
             ok: false,
             status: 404,
         });
 
         const result = await getGeographySummaryText();
-
-        expect(global.fetch).toHaveBeenCalledWith('/data/output/figures/geography_summary.txt');
+        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
         expect(logger.warn).toHaveBeenCalledWith(
             'Geography summary processing failed:',
             expect.any(Error)
         );
-        expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
     });
 
-    it('throws error and returns error message when fetch throws an exception', async () => {
-        const error = new Error('Network error');
-        global.fetch.mockRejectedValueOnce(error);
+    it('returns error message and logs warning on fetch error', async () => {
+        const error = new Error('Network timeout');
+        global.fetch = jest.fn().mockRejectedValue(error);
 
         const result = await getGeographySummaryText();
-
-        expect(logger.warn).toHaveBeenCalledWith('Geography summary processing failed:', error);
         expect(result).toBe('Error: Unable to load geography summary. Run data generation first.');
+        expect(logger.warn).toHaveBeenCalledWith('Geography summary processing failed:', error);
     });
 });
