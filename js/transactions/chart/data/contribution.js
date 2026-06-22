@@ -61,7 +61,8 @@ export function buildContributionSeriesFromTransactions(
 
     // Consolidate transactions by date
     const dailyMap = new Map();
-    sortedTransactions.forEach((t) => {
+    for (let i = 0; i < sortedTransactions.length; i++) {
+        const t = sortedTransactions[i];
         const dateStr = t.tradeDate;
         if (!dailyMap.has(dateStr)) {
             dailyMap.set(dateStr, {
@@ -82,7 +83,7 @@ export function buildContributionSeriesFromTransactions(
         } else if (type === 'sell') {
             entry.sellVolume += Math.abs(amount);
         }
-    });
+    }
 
     // Bolt: Replaced Array.from(dailyMap.keys()).sort() with explicit pre-allocated array and manual iteration to reduce GC overhead
     const uniqueDates = new Array(dailyMap.size);
@@ -95,7 +96,8 @@ export function buildContributionSeriesFromTransactions(
     const series = [];
     let cumulativeAmount = 0;
 
-    uniqueDates.forEach((dateStr, index) => {
+    for (let index = 0; index < uniqueDates.length; index++) {
+        const dateStr = uniqueDates[index];
         const entry = dailyMap.get(dateStr);
         const netDelta = entry.netAmount;
 
@@ -155,7 +157,7 @@ export function buildContributionSeriesFromTransactions(
             buyVolume: entry.buyVolume,
             sellVolume: entry.sellVolume,
         });
-    });
+    }
 
     const lastPoint = series[series.length - 1];
     if (lastPoint) {
@@ -298,9 +300,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     const lastDate = today > lastTransactionDate ? today : lastTransactionDate;
 
     const splitsByDate = new Map();
-    (Array.isArray(splitHistory) ? splitHistory : []).forEach((split) => {
+    const splitArr = Array.isArray(splitHistory) ? splitHistory : [];
+    for (let i = 0; i < splitArr.length; i++) {
+        const split = splitArr[i];
         if (!split || !split.splitDate || !split.symbol) {
-            return;
+            continue;
         }
         const dateKey = new Date(split.splitDate).toISOString().split('T')[0];
         const multiplier = Number(split.splitMultiplier) || Number(split.split_multiplier) || 1;
@@ -309,16 +313,17 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
             splitsByDate.set(dateKey, []);
         }
         splitsByDate.get(dateKey).push({ symbol: symbolKey, multiplier });
-    });
+    }
 
     const transactionsByDate = new Map();
-    sortedTransactions.forEach((txn) => {
+    for (let i = 0; i < sortedTransactions.length; i++) {
+        const txn = sortedTransactions[i];
         const dateStr = new Date(txn.tradeDate).toISOString().split('T')[0];
         if (!transactionsByDate.has(dateStr)) {
             transactionsByDate.set(dateStr, []);
         }
         transactionsByDate.get(dateStr).push(txn);
-    });
+    }
 
     const holdings = new Map();
     const lastKnownPrices = new Map(); // Track last known price from transactions
@@ -333,9 +338,10 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
         const splitsToday = splitsByDate.get(dateStr);
         if (splitsToday) {
-            splitsToday.forEach(({ symbol, multiplier }) => {
+            for (let i = 0; i < splitsToday.length; i++) {
+                const { symbol, multiplier } = splitsToday[i];
                 if (!Number.isFinite(multiplier) || multiplier <= 0) {
-                    return;
+                    continue;
                 }
                 const currentQty = holdings.get(symbol);
                 if (currentQty !== undefined) {
@@ -346,16 +352,17 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
                 if (lastPrice !== undefined && multiplier > 0) {
                     lastKnownPrices.set(symbol, lastPrice / multiplier);
                 }
-            });
+            }
         }
 
         const todaysTransactions = transactionsByDate.get(dateStr) || [];
-        todaysTransactions.forEach((txn) => {
+        for (let i = 0; i < todaysTransactions.length; i++) {
+            const txn = todaysTransactions[i];
             const normalizedSymbol = normalizeSymbolForPricing(txn.security);
             const quantity = parseFloat(txn.quantity) || 0;
             const txnPrice = parseFloat(txn.price);
             if (!Number.isFinite(quantity) || quantity === 0) {
-                return;
+                continue;
             }
             // Update last known price from this transaction
             if (Number.isFinite(txnPrice) && txnPrice > 0) {
@@ -369,12 +376,12 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
             } else {
                 holdings.set(normalizedSymbol, updatedQty);
             }
-        });
+        }
 
         let totalValue = 0;
-        holdings.forEach((qty, symbol) => {
+        for (const [symbol, qty] of holdings.entries()) {
             if (!Number.isFinite(qty) || Math.abs(qty) < 1e-8) {
-                return;
+                continue;
             }
             let price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
             // Fallback to last known transaction price if historical price unavailable
@@ -382,11 +389,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
                 price = lastKnownPrices.get(symbol) ?? null;
             }
             if (price === null) {
-                return;
+                continue;
             }
             const adjustment = getSplitAdjustment(splitHistory, symbol, dateStr);
             totalValue += qty * price * adjustment;
-        });
+        }
 
         series.push({ date: dateStr, value: totalValue });
         iterDate.setDate(iterDate.getDate() + 1);
