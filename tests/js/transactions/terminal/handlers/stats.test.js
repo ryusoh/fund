@@ -1,6 +1,6 @@
 import { handleStatsCommand } from '../../../../../js/transactions/terminal/handlers/stats.js';
 import { transactionState } from '../../../../../js/transactions/state.js';
-import { STATS_SUBCOMMANDS } from '../../../../../js/transactions/terminal/constants.js';
+
 import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
 import * as geographySummary from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
 
@@ -38,7 +38,9 @@ describe('handleStatsCommand', () => {
 
     it('shows help when no args provided', async () => {
         await handleStatsCommand([], mockContext);
-        expect(mockContext.appendMessage).toHaveBeenCalledWith(expect.stringContaining('Stats commands:'));
+        expect(mockContext.appendMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Stats commands:')
+        );
     });
 
     it('handles transactions subcommand', async () => {
