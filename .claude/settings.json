@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)",
+      "Bash(find:*)", "Bash(grep:*)",
+      "Bash(git status:*)", "Bash(git ls-files:*)", "Bash(git log:*)",
+      "Bash(git shortlog:*)", "Bash(git diff:*)",
+      "Bash(make verify:*)", "Bash(make type:*)", "Bash(make test:*)",
+      "Bash(make lint:*)", "Bash(make fix:*)", "Bash(make lint-fix:*)",
+      "Bash(make fmt:*)", "Bash(make serve:*)", "Bash(make screenshot:*)",
+      "Bash(npm test:*)", "Bash(npx jest:*)",
+      "Bash(npx tsc:*)", "Bash(npm run typecheck:js:*)",
+      "Bash(npm run lint:*)", "Bash(npx eslint:*)", "Bash(npx stylelint:*)",
+      "Bash(npx prettier:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.js|*.css|*.md|*.json) [ -f \"$f\" ] && npx prettier --write \"$f\" >/dev/null 2>&1 ;; esac; exit 0",
+            "statusMessage": "Formatting with prettier"
+          }
+        ]
+      }
+    ]
+  }
+}

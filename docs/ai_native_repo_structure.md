@@ -272,6 +272,14 @@ Workflows are **structured, file-based task sheets** and verification pipelines 
     4. Run `npm test` and `pytest`.
 - **Pre-commit Verifications**: Git hooks that enforce that the agent runs linting and formatting scripts before asking for commit confirmation. This prevents "lazy commits" with syntax errors.
 
+### E. Harness Config: Committed vs Local (`.claude/`)
+
+Harness settings split by **durability**, enforced in `.gitignore` (the `.claude/*` allow-list block):
+
+- **Committed (`.claude/settings.json`)** — durable, portable, repo-relevant config that should survive a fresh clone and apply on every machine: the **prettier-on-edit hook** (`PostToolUse` → `prettier --write`, honoring `.prettierignore`) and a **curated allow-list of safe commands** (read-only shell/git + the `make`/`npx tsc`/lint targets). Also committed: `.claude/commands/`, `agents/`, `skills/`.
+- **Local (`.claude/settings.local.json`, gitignored)** — personal/machine-specific or state-mutating grants that must **not** be auto-approved for anyone who clones: `git push`/`commit`, arbitrary interpreters (`node`/`python`), data writes (`npm run fund:*`), absolute paths, one-off `curl`s.
+- **Why the split is load-bearing**: a committed allow-list is auto-approved for every cloner, so only non-destructive rules belong there. Note the agent **cannot** widen its own Bash allow-list (the harness blocks self-granting permissions) — a human edits `settings.json`/`settings.local.json` or uses `/permissions`. Hooks accumulate across both files, so keep a given hook in **one** place to avoid double-execution.
+
 ---
 
 ## 8. Hermetic Agent Sandboxing (Nix & Devcontainers)
