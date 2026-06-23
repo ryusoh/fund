@@ -139,9 +139,10 @@ export async function loadPortfolioSeries() {
             result = { USD: normalizeSeries(payload) };
         } else if (payload && typeof payload === 'object') {
             result = {};
-            Object.entries(payload).forEach(([currency, entries]) => {
+            // Bolt: Replaced Object.entries().forEach with standard for...of loop
+            for (const [currency, entries] of Object.entries(payload)) {
                 result[currency] = normalizeSeries(entries);
-            });
+            }
         }
 
         // Merge real-time data
@@ -168,15 +169,16 @@ export async function loadPortfolioSeries() {
 
             // Update other currencies
             if (realtime.fxRates) {
-                Object.entries(realtime.fxRates).forEach(([code, rate]) => {
+                // Bolt: Replaced Object.entries().forEach with standard for...of loop
+                for (const [code, rate] of Object.entries(realtime.fxRates)) {
                     if (code === 'USD') {
-                        return;
+                        continue;
                     }
                     if (!result[code]) {
                         result[code] = [];
                     }
                     mergePoint(result[code], usdBalance * rate);
-                });
+                }
             }
         }
 
@@ -216,9 +218,10 @@ export async function loadContributionSeries() {
         }
         if (payload && typeof payload === 'object') {
             const result = {};
-            Object.entries(payload).forEach(([currency, entries]) => {
+            // Bolt: Replaced Object.entries().forEach with standard for...of loop
+            for (const [currency, entries] of Object.entries(payload)) {
                 result[currency] = normalizeSeries(entries);
-            });
+            }
             return result;
         }
         return { USD: [] };
@@ -249,25 +252,31 @@ export async function loadPerformanceSeries() {
         }
 
         const seriesMap = {};
-        Object.entries(payload).forEach(([rawKey, points]) => {
+        // Bolt: Replaced Object.entries().forEach with standard for...of loop
+        for (const [rawKey, points] of Object.entries(payload)) {
             if (!Array.isArray(points) || points.length === 0) {
-                return;
+                continue;
             }
 
-            const normalizedPoints = points
-                .map((point) => ({
-                    date: typeof point.date === 'string' ? point.date : null,
-                    value: Number(point.value),
-                }))
-                .filter((point) => typeof point.date === 'string' && Number.isFinite(point.value));
+            // Bolt: Pre-allocate array and use for loop instead of chained .map().filter()
+            const normalizedPoints = [];
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                if (typeof point.date === 'string' && Number.isFinite(Number(point.value))) {
+                    normalizedPoints.push({
+                        date: point.date,
+                        value: Number(point.value),
+                    });
+                }
+            }
 
             if (normalizedPoints.length === 0) {
-                return;
+                continue;
             }
 
             const key = normalizeSeriesKey(rawKey, rawKey);
             seriesMap[key] = normalizedPoints;
-        });
+        }
 
         // Estimate real-time performance for LZ fund
         // Logic: (TodayBalance / LastBalance) - 1 + LastTWRR?
