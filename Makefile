@@ -141,6 +141,8 @@ fmt-check:
 
 type:
 	$(PY) -m mypy
+	@echo "JS type check (tsc --checkJs on whitelist; non-blocking — see docs/js-typing-strategy.md):"
+	@npx tsc -p jsconfig.json || echo "⚠️  JS type check found issues (non-blocking for now)"
 
 sec:
 	bandit -r scripts -lll

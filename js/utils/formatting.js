@@ -33,14 +33,14 @@ export function getNumberFormatter(
 
 /**
  * Formats a numeric value as a currency string in the target currency.
- * @param {number} valueInUSD - The value in USD.
+ * @param {number|string} valueInUSD - The value in USD.
  * @param {string} targetCurrency - The target currency code (e.g., 'USD', 'CNY', 'JPY').
  * @param {Object} exchangeRates - An object with currency codes as keys and rates against USD as values.
  * @param {Object} currencySymbols - An object mapping currency codes to their symbols.
  * @returns {string} The formatted currency string.
  */
 export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, currencySymbols) {
-    const numValueInUSD = parseFloat(valueInUSD);
+    const numValueInUSD = parseFloat(String(valueInUSD));
     if (isNaN(numValueInUSD)) {
         return typeof valueInUSD === 'string'
             ? valueInUSD
@@ -145,16 +145,14 @@ export function getHistoricalCurrencyValue(entry, currency, valueType = 'total')
 }
 
 /**
- * Formats a number into a compact representation (e.g., 1.2m, 500k).
- * For historical data, uses actual historical currency values when available.
- * @param {number} num The number to format.
- * @param {object} currencySymbols The currency symbols object.
- * @param {boolean} withSign Whether to include a sign (+/-).
- * @param {string} currency The currency to use for formatting.
- * @param {object} rates The exchange rates (used only for non-historical data).
- * @param {object} entry Optional: historical data entry to extract currency values from.
- * @param {string} valueType Either 'total' or 'dailyChange' (used with entry).
- * @returns {string} The formatted number string.
+ * Resolves the numeric value to use: the historical currency value when an
+ * entry is provided, otherwise the number converted at the current rate.
+ * @param {number} num The number to convert.
+ * @param {string} currency The currency to convert to.
+ * @param {object} rates The exchange rates (used for non-historical data).
+ * @param {object} [entry] Optional: historical data entry to extract currency values from.
+ * @param {string} [valueType] Either 'total' or 'dailyChange' (used with entry).
+ * @returns {number} The converted numeric value.
  */
 function getConvertedNum(num, currency, rates, entry, valueType) {
     if (entry && (valueType === 'total' || valueType === 'dailyChange')) {
@@ -374,7 +372,12 @@ export function formatSummaryDateSuffix(actualDate, targetDateStr) {
     return ` (${actual})`;
 }
 
-export function formatSummaryBlock(label, summary, dateRange, { formatValue } = {}) {
+export function formatSummaryBlock(
+    label,
+    summary,
+    dateRange,
+    { formatValue } = /** @type {{ formatValue?: (value: any) => string }} */ ({})
+) {
     if (!summary || !summary.hasData) {
         return `  ${label}\n    (no data for selected range)`;
     }
@@ -407,7 +410,11 @@ export function formatSummaryBlock(label, summary, dateRange, { formatValue } = 
     ].join('\n');
 }
 
-export function formatAppreciationBlock(balanceSummary, contributionSummary, { formatValue } = {}) {
+export function formatAppreciationBlock(
+    balanceSummary,
+    contributionSummary,
+    { formatValue } = /** @type {{ formatValue?: (value: any) => string }} */ ({})
+) {
     if (!balanceSummary?.hasData || !contributionSummary?.hasData) {
         return '';
     }

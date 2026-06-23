@@ -100,7 +100,6 @@ export const ASSET_CLASS_OVERRIDES = {
     FSGGX: 'etf',
     FSKAX: 'etf',
     VFIAX: 'etf',
-    VTSAX: 'etf',
     VBTLX: 'etf',
     VTIAX: 'etf',
     VFFSX: 'etf',

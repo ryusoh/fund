@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "allowJs": true,
+        "noEmit": true,
+        "target": "ES2020",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "types": [],
+        "strict": false,
+        "paths": {
+            "@js/*": ["./js/*"],
+            "@pages/*": ["./js/pages/*"],
+            "@services/*": ["./js/services/*"],
+            "@charts/*": ["./js/charts/*"],
+            "@plugins/*": ["./js/plugins/*"],
+            "@ui/*": ["./js/ui/*"],
+            "@utils/*": ["./js/utils/*"]
+        }
+    },
+    "include": ["js/types/*.d.ts", "js/config.js", "js/config/**/*.js", "js/utils/**/*.js"],
+    "exclude": ["node_modules"]
+}
