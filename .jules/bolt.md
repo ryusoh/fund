@@ -306,3 +306,8 @@
 
 **Learning:** Using `.map().reduce()` chains inside classes or modules to accumulate properties from an array of objects (like calculating total width/height of plugins) generates intermediate arrays and closure functions on every execution, increasing garbage collection (GC) pressure.
 **Action:** Replace these higher-order array chains with an explicit `for` loop that iterates over the original array and accumulates the value directly (e.g., `let total = 0; for (let i = 0; i < arr.length; i++) { total += arr[i].val; }`).
+
+## 2026-06-25 - Replace .forEach closures in contribution data processing loops
+
+**Learning:** Using `.forEach()` with callbacks inside high-frequency data construction paths, such as accumulating transaction metrics, resolving stock splits, and computing filtered balance series in `js/transactions/chart/data/contribution.js`, forces implicit closure allocations and callback overhead per iteration. For portfolios containing thousands of transaction records or numerous unique dates, this creates measurable garbage collection (GC) pressure that can drop frames when charts render dynamically.
+**Action:** Replace `.forEach()` iterations with standard explicitly-indexed `for` loops (e.g. `for (let i = 0; i < sortedTransactions.length; i++)`) and `for...of` iteration on Map instances (e.g. `for (const [symbol, qty] of holdings.entries())`) to entirely eliminate closures and array-method overhead during chart data preparation.
