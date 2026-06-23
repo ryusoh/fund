@@ -100,64 +100,62 @@ describe('lab.js specific coverage', () => {
     });
 });
 
-    describe('aggregateScenarios additional branch coverage', () => {
-        it('handles missing or zero holding weight', () => {
-            const configs = [
-                {
-                    weight: 0,
-                    metrics: {
-                        outcomes: [
-                            { id: 'base', name: 'Base', multiple: 1.4, prob: 0.4, earningsCagr: 0.1 },
-                        ],
-                    },
+describe('aggregateScenarios additional branch coverage', () => {
+    it('handles missing or zero holding weight', () => {
+        const configs = [
+            {
+                weight: 0,
+                metrics: {
+                    outcomes: [
+                        { id: 'base', name: 'Base', multiple: 1.4, prob: 0.4, earningsCagr: 0.1 },
+                    ],
                 },
-                {
-                    weight: 1,
-                    metrics: {
-                        outcomes: [
-                            { id: 'base', name: 'Base', multiple: 2.0, prob: 0.3, earningsCagr: 0.25 },
-                        ],
-                    },
-                }
-            ];
-            const scenarios = __analysisLabTesting.aggregateScenarios(configs, 4);
-            const baseScenario = scenarios.find((scenario) => scenario.id === 'base');
+            },
+            {
+                weight: 1,
+                metrics: {
+                    outcomes: [
+                        { id: 'base', name: 'Base', multiple: 2.0, prob: 0.3, earningsCagr: 0.25 },
+                    ],
+                },
+            },
+        ];
+        const scenarios = __analysisLabTesting.aggregateScenarios(configs, 4);
+        const baseScenario = scenarios.find((scenario) => scenario.id === 'base');
 
-            // Only the second config should be counted
-            expect(baseScenario.precomputedMultiple).toBeCloseTo(2.0);
-        });
-
-        it('handles missing outcome IDs and computes price CAGR appropriately', () => {
-            const configs = [
-                {
-                    weight: 1,
-                    metrics: {
-                        outcomes: [
-                            { name: 'Unknown', multiple: 1.5, prob: 1.0 }, // No id, No earningsCagr
-                        ],
-                    },
-                }
-            ];
-
-            const scenarios = __analysisLabTesting.aggregateScenarios(configs, 2);
-            expect(scenarios[0].id).toBe('Unknown');
-            expect(scenarios[0].precomputedEarningsCagr).toBeNull();
-            expect(scenarios[0].precomputedCagr).toBeCloseTo(Math.pow(1.5, 0.5) - 1);
-        });
-
-        it('handles zero horizon', () => {
-            const configs = [
-                {
-                    weight: 1,
-                    metrics: {
-                        outcomes: [
-                            { id: 'base', name: 'Base', multiple: 1.5, prob: 1.0 },
-                        ],
-                    },
-                }
-            ];
-
-            const scenarios = __analysisLabTesting.aggregateScenarios(configs, 0);
-            expect(scenarios[0].precomputedCagr).toBe(0);
-        });
+        // Only the second config should be counted
+        expect(baseScenario.precomputedMultiple).toBeCloseTo(2.0);
     });
+
+    it('handles missing outcome IDs and computes price CAGR appropriately', () => {
+        const configs = [
+            {
+                weight: 1,
+                metrics: {
+                    outcomes: [
+                        { name: 'Unknown', multiple: 1.5, prob: 1.0 }, // No id, No earningsCagr
+                    ],
+                },
+            },
+        ];
+
+        const scenarios = __analysisLabTesting.aggregateScenarios(configs, 2);
+        expect(scenarios[0].id).toBe('Unknown');
+        expect(scenarios[0].precomputedEarningsCagr).toBeNull();
+        expect(scenarios[0].precomputedCagr).toBeCloseTo(Math.pow(1.5, 0.5) - 1);
+    });
+
+    it('handles zero horizon', () => {
+        const configs = [
+            {
+                weight: 1,
+                metrics: {
+                    outcomes: [{ id: 'base', name: 'Base', multiple: 1.5, prob: 1.0 }],
+                },
+            },
+        ];
+
+        const scenarios = __analysisLabTesting.aggregateScenarios(configs, 0);
+        expect(scenarios[0].precomputedCagr).toBe(0);
+    });
+});
