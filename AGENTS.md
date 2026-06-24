@@ -155,15 +155,14 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 
 ## Lanes (keep PRs disjoint to avoid collisions)
 
-| Routine   | Owns                                                                         | Must NOT touch                                            |
-| --------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Typist    | JS strict-type annotations (JSDoc), no logic change                          | runtime behaviour                                         |
-| Testpilot | test-only additions/coverage, no prod-code change                            | `js/`, `scripts/` prod files                              |
-| Architect | cyclomatic-complexity refactors (behaviour-preserving)                       | error-handling, tests, features                           |
-| Sentinel  | security + error-handling (empty catches, leaks, resource leaks)             | complexity refactors                                      |
-| Janitor   | dead code, stale deps, real TODOs only                                       | complexity, error-handling (Architect/Sentinel own those) |
-| Palette   | accessibility + CSS — objective only (aria, contrast, focus); visual → draft | runtime JS logic                                          |
-| Bolt      | features / performance                                                       | anything another lane owns in the same PR                 |
+| Routine   | Owns                                                             | Must NOT touch                                            |
+| --------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
+| Typist    | JS strict-type annotations (JSDoc), no logic change              | runtime behaviour                                         |
+| Testpilot | test-only additions/coverage, no prod-code change                | `js/`, `scripts/` prod files                              |
+| Architect | cyclomatic-complexity refactors (behaviour-preserving)           | error-handling, tests, features                           |
+| Sentinel  | security + error-handling (empty catches, leaks, resource leaks) | complexity refactors                                      |
+| Janitor   | dead code, stale deps, real TODOs only                           | complexity, error-handling (Architect/Sentinel own those) |
+| Bolt      | features / performance                                           | anything another lane owns in the same PR                 |
 
 If your finding belongs to another lane, **skip it** — that lane will get it.
 

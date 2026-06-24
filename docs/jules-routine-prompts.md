@@ -20,8 +20,8 @@ friction disappears.
 > to another lane, skip it.
 
 That's the whole prompt for every routine — `architect`, `bolt`, `janitor`,
-`palette`, `sentinel`, `testpilot`, `typist`. Lane, constraints, verification gate,
-and known pitfalls all come from the persona file.
+`sentinel`, `testpilot`, `typist`. Lane, constraints, verification gate, and known
+pitfalls all come from the persona file. (`palette` is deprecated and retired.)
 
 ## Operational settings (this is what actually cuts human interaction)
 
