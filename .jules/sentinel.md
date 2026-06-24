@@ -76,8 +76,8 @@ ignore_errors=True)`); prefer `TemporaryDirectory` when scope allows.
 
 ## Commit and pull request
 
-Follow the Conventional Commits standard in `AGENTS.md`. The PR title is the
-squash-commit subject, so it must be a valid Conventional Commit.
+Conventional Commits per `AGENTS.md`. The PR title is the squash-commit subject, so
+it must be a valid Conventional Commit.
 
 - Title / commit subject: `fix(<scope>): <summary>` for a real defect (scope e.g.
   `worker`, `security`, the affected module); use `refactor`/`chore` only when no
