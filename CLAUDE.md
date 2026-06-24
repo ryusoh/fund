@@ -7,21 +7,28 @@ ES modules via an import map.
 
 ## Command interface — prefer `make`
 
-| Need                                    | Command                          |
-| --------------------------------------- | -------------------------------- |
-| All checks (lint + types + sec + tests) | `make verify`                    |
-| Lint (JS + CSS + Python)                | `make lint`                      |
-| Auto-fix lint + format                  | `make fix`                       |
-| Full test suite (JS + Python, coverage) | `make test`                      |
-| **Scoped JS test (fast, no coverage)**  | `npx jest <path/to/test>`        |
-| One CSS file lint                       | `npx stylelint <path.css>`       |
-| Dev server (serves repo root at :8000)  | `make serve`                     |
-| **Headless screenshot (visual verify)** | `make screenshot URL=/terminal/` |
+| Need                                    | Command                                             |
+| --------------------------------------- | --------------------------------------------------- |
+| All checks (lint + types + sec + tests) | `make verify`                                       |
+| Lint (JS + CSS + Python)                | `make lint`                                         |
+| Auto-fix lint + format                  | `make fix`                                          |
+| Full test suite (JS + Python, coverage) | `make test`                                         |
+| **Scoped JS test (fast, no coverage)**  | `npx jest <path/to/test>`                           |
+| **Scoped Python check (fast)**          | `venv/bin/ruff check <path>` (also `black`, `mypy`) |
+| One CSS file lint                       | `npx stylelint <path.css>`                          |
+| Dev server (serves repo root at :8000)  | `make serve`                                        |
+| **Headless screenshot (visual verify)** | `make screenshot URL=/terminal/`                    |
 
 Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
 targets so you match CI. Use scoped `npx jest <file>` only for the tight
 edit→verify loop. Jest runs **silent** (`console.log` prints nothing) — before
 debugging an odd/flaky JS test, read `docs/testing-notes.md`.
+
+Python dev tools (`ruff`/`black`/`mypy`/`pytest`/`diff-cover`) live in
+**`venv/bin/`** (that's the interpreter `make` itself uses) — call them directly for
+scoped single-file loops; whole-repo via `make`. The **CI gate is `make
+precommit-fix`** (the `web-ci` job: format + lint + JS/Python tests); `make verify`
+is the stricter local superset (adds `mypy` + `bandit`).
 
 ## Layout
 
