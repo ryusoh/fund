@@ -490,7 +490,9 @@ export class WebGLCaustics {
         // Find calendar cells relative to the element
         const rect = this.element.getBoundingClientRect();
         const cells = this.element.querySelectorAll('.ch-day, rect, .cal-nav-btn');
-        cells.forEach((cell) => {
+        // Bolt: Use explicit index-based loop instead of .forEach() to prevent closure allocation overhead
+        for (let i = 0; i < cells.length; i++) {
+            const cell = cells[i];
             const cRect = cell.getBoundingClientRect();
             // Calculate relative position
             const x = cRect.left - rect.left;
@@ -498,21 +500,23 @@ export class WebGLCaustics {
 
             // Draw slightly larger to ensure good boundary
             this.obstacleCtx.fillRect(x - 2, y - 2, cRect.width + 4, cRect.height + 4);
-        });
+        }
 
         this.obstacleTexture.needsUpdate = true;
 
         // Update all materials to use the fresh texture
-        [
+        const materials = [
             this.advectionMat,
             this.divergenceMat,
             this.jacobiMat,
             this.gradientMat,
             this.splatMat,
             this.displayMat,
-        ].forEach((mat) => {
-            mat.uniforms.u_obstacles.value = this.obstacleTexture;
-        });
+        ];
+        // Bolt: Use explicit index-based loop instead of .forEach() to prevent closure allocation overhead
+        for (let i = 0; i < materials.length; i++) {
+            materials[i].uniforms.u_obstacles.value = this.obstacleTexture;
+        }
     }
 
     resize() {
