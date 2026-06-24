@@ -43,9 +43,11 @@ and known pitfalls all come from the persona file.
 ## Guardrails (enforce the rules so you don't have to)
 
 - **CODEOWNERS** (`.github/CODEOWNERS`) requires your review for `AGENTS.md`,
-  `.jules/`, `scripts/agents/`, and `.github/`. Routines can't merge changes to
-  their own governance. Enable "Require review from Code Owners" in branch
-  protection for this to bite.
+  `.jules/`, `scripts/agents/`, `.github/CODEOWNERS`, and `commit-lint.yml` — the
+  agent-governance surface. Scoped deliberately **not** to all of
+  `.github/workflows/`, so dependabot's github-actions bumps to other workflows
+  aren't gated. Enable "Require review from Code Owners" in branch protection for
+  this to bite.
 - **Commit lint** (`.github/workflows/commit-lint.yml`) rejects emoji,
   routine-name prefixes, and non-Conventional PR titles via
   `scripts/agents/check_commit_message.py`.

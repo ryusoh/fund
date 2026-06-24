@@ -7,6 +7,8 @@ on:
 jobs:
     pr-title:
         runs-on: ubuntu-latest
+        # Dependabot titles are normalized by the auto-merge workflow; don't gate them.
+        if: github.actor != 'dependabot[bot]'
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7

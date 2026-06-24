@@ -3,5 +3,8 @@
     "css.lint.validProperties": [],
     "files.exclude": {},
     "css.lint.unknownAtRules": "ignore",
-    "css.lint.vendorPrefix": "ignore"
+    "css.lint.vendorPrefix": "ignore",
+    "markdownlint.lintWorkspaceExcludeGlobs": [
+        ".github/CODEOWNERS"
+    ]
 }

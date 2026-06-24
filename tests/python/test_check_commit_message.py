@@ -31,3 +31,10 @@ def test_length_is_warning_not_error() -> None:
     long_subject = "fix(scope): " + ("x " * 40).strip()
     assert validate(long_subject) == []
     assert warnings(long_subject)
+
+
+def test_dependabot_arrow_title_is_valid() -> None:
+    # The auto-merge workflow normalizes dependabot titles to this form; the
+    # "→" must not be treated as emoji or it would block auto-merge.
+    assert validate("build(deps): polygon を 1.0 → 2.0 に更新") == []
+    assert validate("build(deps): bump actions/checkout from 6 to 7") == []

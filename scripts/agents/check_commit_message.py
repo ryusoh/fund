@@ -40,15 +40,11 @@ ROUTINE_PREFIX = re.compile(
     r"^(sentinel|typist|architect|bolt|janitor|palette|testpilot)\b",
     re.IGNORECASE,
 )
+# Pictographic emoji ranges only. Arrows (U+2190-21FF, U+2B00-2BFF) are
+# deliberately excluded: characters like "→" are legitimate typography used in
+# this repo's commit subjects (e.g. dependabot "1.0 → 2.0" titles).
 EMOJI = re.compile(
-    "["
-    "\U0001f300-\U0001faff"
-    "\U00002600-\U000027bf"
-    "\U00002190-\U000021ff"
-    "\U00002b00-\U00002bff"
-    "\U0001f000-\U0001f0ff"
-    "️"
-    "]"
+    "[" "\U0001f000-\U0001f0ff" "\U0001f300-\U0001faff" "\U00002600-\U000027bf" "️" "]"
 )
 
 
