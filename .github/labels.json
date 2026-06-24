@@ -83,5 +83,10 @@
         "name": "close:flaky",
         "color": "cfd3d7",
         "description": "Routine PR closed: introduced flaky or unreliable tests"
+    },
+    {
+        "name": "coverage-exempt",
+        "color": "fbca04",
+        "description": "Skip the diff-coverage gate for a justified hard-to-test change"
     }
 ]

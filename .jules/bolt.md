@@ -57,6 +57,9 @@ pipeline in `scripts/`; the Cloudflare worker.
 - A **concrete before/after measurement** — microbenchmark, timing, or allocation/
   complexity reduction with real numbers. A vague estimate ("~50% faster") is not
   acceptable.
+- If the change alters any observable behaviour, add a test covering the changed
+  lines (CI enforces diff coverage). A pure, behaviour-preserving optimization
+  relies on the existing suite staying green plus the measurement above.
 
 ## Commit and pull request
 

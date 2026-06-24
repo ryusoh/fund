@@ -31,8 +31,10 @@ and known pitfalls all come from the persona file.
   ~10-second approve/close. (Typist and Testpilot are the safest lanes if you ever
   want to switch them to auto-merge on green.)
 - **Required status checks** on the default branch: `web-ci` (runs
-  `make precommit-fix`) and `Commit lint` (PR-title convention). A red PR can't
-  merge, so you never manually catch broken ones.
+  `make precommit-fix`), `Commit lint` (PR-title convention), and `Diff coverage`
+  (changed executable lines must be covered, threshold 90%). A red PR can't merge,
+  so you never manually catch broken ones. The `coverage-exempt` label skips the
+  diff-coverage gate for a justified hard-to-test change.
 - **Stagger schedules** so routines that share file regions don't run at once
   (fewer conflicting PRs to close).
 - **Label closed PRs** with a reason (`close:dup`, `close:wrong-lane`,

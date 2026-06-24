@@ -1,6 +1,7 @@
 pytest
 pytest-mock
 pytest-cov
+diff-cover
 
 # Linters and security
 ruff

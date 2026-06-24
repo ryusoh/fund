@@ -56,6 +56,22 @@ Make the approve decision take ten seconds. Every PR description must include:
 
 A PR with no pasted verification output reads as unverified and will be closed.
 
+## Changed lines must be covered (diff coverage)
+
+CI runs a **diff-coverage** gate: executable lines you add or modify must be
+covered by tests (threshold 90% on the diff). This is not "add a test to every
+PR" — it self-exempts changes that add no executable lines (Typist's JSDoc, CSS,
+deletions) and bites only where you introduce new untested behaviour. So:
+
+- If your change adds or alters runtime behaviour (a bug fix, a security fix, a
+  behavioural change), **ship a test that fails before and passes after**, covering
+  the changed lines.
+- Behaviour-preserving changes (refactors, dead-code removal, pure typing) need no
+  new test — keep the existing suite green; the gate passes because no new
+  executable lines are uncovered.
+- For a genuinely hard-to-test change, a human may add the `coverage-exempt` label
+  to skip the gate. You cannot self-exempt.
+
 ## Commit and PR-title conventions
 
 Commits follow **Conventional Commits**, matching this repo's existing history.

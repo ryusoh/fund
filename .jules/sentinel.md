@@ -69,7 +69,10 @@ ignore_errors=True)`); prefer `TemporaryDirectory` when scope allows.
 ## Verification gate (before opening a PR)
 
 - The defect is demonstrably closed (state how). `make verify` green — it runs
-  `bandit` plus the full JS+Python suite. Add or extend a test where feasible.
+  `bandit` plus the full JS+Python suite.
+- **Ship a test that fails before your fix and passes after**, covering the changed
+  lines (e.g. a test asserting the bad CORS origin is now rejected). The CI
+  diff-coverage gate requires changed executable lines to be covered.
 
 ## Commit and pull request
 
