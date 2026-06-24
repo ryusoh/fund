@@ -52,6 +52,30 @@ Make the approve decision take ten seconds. Every PR description must include:
 
 A PR with no pasted verification output reads as unverified and will be closed.
 
+## Commit and PR-title conventions
+
+Commits follow **Conventional Commits**, matching this repo's existing history.
+The squash-merge uses the PR title as the commit subject, so the **PR title must
+also be a valid Conventional Commit subject**.
+
+- Format: `type(scope): summary`
+    - **type** ∈ `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`,
+      `build`, `ci`.
+    - **scope** — optional, lower-case, the affected area (`worker`, `security`,
+      `calendar`, `terminal`, `deps`, …).
+    - **summary** — imperative mood, lower-case, no trailing period, ≤ 72 chars.
+- **No emoji, and no routine-name prefix in the subject** (no `Bolt:`, `Typist:`,
+  `Sentinel:`, no `⚡`). Routine attribution already rides on the
+  `Co-authored-by: google-labs-jules[bot]` trailer — keep the subject clean.
+- **Body** (when the change isn't self-evident): wrap at ~72 cols, explain _what
+  and why_, not how. State severity, metrics, or measurements here — not in the
+  subject.
+- One logical change per commit.
+
+Examples: `fix(worker): enforce https and exact-hostname CORS validation` ·
+`refactor(dataService): extract helpers to cut computeMonthlyPnl complexity` ·
+`test(calendar): cover displayCache empty-state branches`.
+
 ## Command interface — prefer `make` (matches CI)
 
 | Need                                                | Command                    |
