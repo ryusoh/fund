@@ -25,10 +25,11 @@ table. Instead:
 
 1. Generate a machine-readable summary:
    `npx jest --coverage --coverageReporters=json-summary --coverageReporters=text`
-2. Parse `coverage/coverage-summary.json` and rank **every** file by line/statement
-   coverage ascending.
-3. Pick up to 5 lowest-coverage files not already covered by an open PR. Never touch
-   a file already at 100%.
+2. Rank every file ascending with the shared helper:
+   `python3 -m scripts.agents.coverage_rank --limit 5`
+   (it parses `coverage/coverage-summary.json` and skips files already at 100%).
+3. Take those lowest-coverage files as targets, minus any already covered by an open
+   PR. Never touch a file already at 100%.
 
 ## Write real tests (no coverage theater)
 

@@ -1,0 +1,26 @@
+name: Commit lint
+
+on:
+    pull_request:
+        branches: [main]
+
+jobs:
+    pr-title:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: '3.12'
+
+            # The squash-merge uses the PR title as the commit subject, so the
+            # PR title is the authoritative thing to lint. Enforces Conventional
+            # Commits and bans emoji / routine-name prefixes (see AGENTS.md).
+            - name: Validate PR title
+              env:
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+              run: |
+                  printf '%s\n' "$PR_TITLE" | python3 -m scripts.agents.check_commit_message --stdin

@@ -25,6 +25,7 @@ ES modules via an import map. Human-facing detail lives in `CLAUDE.md` and `docs
 7. **Don't write a command/example you haven't actually run this session.** Verify
    behaviour; don't infer it from a name or a `case` label.
 8. **Check open and recently-closed PRs before you start, and don't repeat them.**
+   Run `python3 -m scripts.agents.prior_prs` (lists number, state, labels, title).
    A closed PR was closed for a reason; an open one already claims that work.
    Resubmitting similar work wastes the run and gets closed. Pick something new.
 

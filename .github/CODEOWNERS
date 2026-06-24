@@ -1,0 +1,10 @@
+# Governance files for the autonomous Jules routines.
+# Routines may read these but must never merge changes to them: require an
+# explicit human review. Enforced only when branch protection has
+# "Require review from Code Owners" enabled for the default branch.
+
+/AGENTS.md              @ryusoh
+/.jules/                @ryusoh
+/scripts/agents/        @ryusoh
+/.github/CODEOWNERS     @ryusoh
+/.github/workflows/     @ryusoh
