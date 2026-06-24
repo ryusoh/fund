@@ -24,6 +24,9 @@ ES modules via an import map. Human-facing detail lives in `CLAUDE.md` and `docs
    effects must not alter `position/` or `calendar/`).
 7. **Don't write a command/example you haven't actually run this session.** Verify
    behaviour; don't infer it from a name or a `case` label.
+8. **Check open and recently-closed PRs before you start, and don't repeat them.**
+   A closed PR was closed for a reason; an open one already claims that work.
+   Resubmitting similar work wastes the run and gets closed. Pick something new.
 
 ## You cannot see the rendered page
 
