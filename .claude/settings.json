@@ -11,7 +11,13 @@
       "Bash(npm test:*)", "Bash(npx jest:*)",
       "Bash(npx tsc:*)", "Bash(npm run typecheck:js:*)",
       "Bash(npm run lint:*)", "Bash(npx eslint:*)", "Bash(npx stylelint:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(npx markdownlint:*)",
+      "Bash(venv/bin/ruff:*)",
+      "Bash(venv/bin/black:*)",
+      "Bash(venv/bin/mypy:*)",
+      "Bash(venv/bin/diff-cover:*)",
+      "Bash(venv/bin/python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

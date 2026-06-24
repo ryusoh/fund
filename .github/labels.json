@@ -53,5 +53,40 @@
         "name": "documentation",
         "color": "0075ca",
         "description": "Improvements or additions to documentation"
+    },
+    {
+        "name": "close:dup",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: duplicate of existing or prior work"
+    },
+    {
+        "name": "close:wrong-lane",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: work belongs to another routine's lane"
+    },
+    {
+        "name": "close:not-worth-it",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: change not worth the churn"
+    },
+    {
+        "name": "close:broke-it",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: regressed behaviour or failed review"
+    },
+    {
+        "name": "close:ugly",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: visual/aesthetic quality not acceptable"
+    },
+    {
+        "name": "close:flaky",
+        "color": "cfd3d7",
+        "description": "Routine PR closed: introduced flaky or unreliable tests"
+    },
+    {
+        "name": "coverage-exempt",
+        "color": "fbca04",
+        "description": "Skip the diff-coverage gate for a justified hard-to-test change"
     }
 ]

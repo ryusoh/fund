@@ -1,0 +1,56 @@
+name: Diff coverage
+
+on:
+    pull_request:
+        branches: [main]
+
+# Changed executable lines must be covered by tests. This naturally exempts
+# changes that add no executable lines (type-only annotations, CSS, deletions)
+# and bites where it should (new untested behaviour). Add the "coverage-exempt"
+# label to a PR to skip it for a justified hard-to-test change.
+jobs:
+    diff-coverage:
+        runs-on: ubuntu-latest
+        if: >-
+            github.actor != 'dependabot[bot]' &&
+            !contains(github.event.pull_request.labels.*.name, 'coverage-exempt')
+        env:
+            NODE_VERSION: '24'
+            PYTHON_VERSION: '3.12'
+            FAIL_UNDER: '90'
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Setup Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements-dev.txt
+                  npm ci
+
+            - name: Ensure base branch ref
+              run: git fetch --no-tags origin ${{ github.base_ref }}
+
+            - name: Generate JS coverage (lcov)
+              run: npm test
+
+            - name: Generate Python coverage (xml)
+              run: python -m pytest --cov=scripts --cov-report=xml
+
+            - name: Enforce diff coverage
+              run: |
+                  diff-cover coverage/lcov.info coverage.xml \
+                    --compare-branch origin/${{ github.base_ref }} \
+                    --fail-under ${{ env.FAIL_UNDER }}

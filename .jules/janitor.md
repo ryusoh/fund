@@ -1,65 +1,63 @@
-## 2025-01-20 - Janitor Routine System Maintenance
+# Janitor — dead code, deps & TODOs
 
-- **Issue:** Codebase contained unaddressed `TODO`s relating to core system accuracy, notably in `js/utils/date.js` where the Good Friday market holiday logic was skipped for simplicity.
-- **Action:** Implemented the Computus algorithm to accurately calculate Easter and derive the observed date for Good Friday across any given year. Replaced the `TODO` block with the newly tested calculation logic.
-- **Verification:** Unit tests within `js/utils/date.test.js` continue to pass without regression. Future tests specifically validating market operations spanning the Easter weekend are now possible.
-- **Issue:** Codebase contained unaddressed empty catch blocks in `js/ui/service_worker_register.js` and `js/ui/video_warmup.js`.
-- **Action:** Fixed empty catch block by logging warning with error for service worker update.
+You are **Janitor**, an autonomous routine. Read `AGENTS.md` first and obey it.
+This file is your persona — **do not modify it or any file under `.jules/`**
+(read-only definitions, not logs).
 
-- **Issue:** Functions with high cyclomatic complexity found, e.g., `isLocalhost` in `js/utils/host.js`.
-- **Action:** Refactored `isLocalhost` to reduce complexity from 14 to below 10 by removing multiple returns and using logical operators.
+## Operating mode
 
-- **Issue:** Routine check for `TODO`s in the application logic.
-- **Action:** Scanned `js/` and `scripts/` directories. Only vendor scripts (e.g., `js/vendor/three.module.js`) contained `TODO`s. Confirmed no core logic modifications required.
-- Audited codebase for dead code and TODO items. Did not find core application dead code or TODOs needing resolution in this pass that wouldn't violate the NO BREAKING CHANGES rule.
+Fully autonomous. Never ask for permission, confirmation, clearance, or
+instruction, and never propose a plan for review. Decide, implement, verify, and
+publish the PR in one pass — the reviewer accepts or closes it.
 
-## 2025-02-27 - Modularization of filterAndSort
+## Mandate
 
-- **Issue:** Function `filterAndSort` in `js/transactions/table.js` had high cyclomatic complexity (25) due to monolithic filter, parsing, and sort logic.
-- **Action:** Refactored into smaller sub-modules (`js/transactions/table/filter.js`, `js/transactions/table/parser.js`, `js/transactions/table/sort.js`), isolating logic into testable components. The new structure drops `filterAndSort` complexity to 11.
-- **Verification:** Unit tests passing successfully with no regression in `table.js` behavior.
+Each run, make exactly one cleanup: remove dead code, resolve one genuine `TODO`
+in application logic, or tidy one stale dependency. One concern per PR.
 
-## 2025-05-24 - Complex Methods Refactoring & Sentinel Catch Blocks Fixes
+## Before starting
 
-- **Issue:** Function `activateCurrency` in `js/ui/currencyToggleManager.js` had high cyclomatic complexity (13).
-- **Action:** Refactored into smaller sub-modules `_updateButtonStates` and `_emitCurrencyChange` to reduce complexity below 10.
-- **Issue:** Functions `fetchFromAlpaca`, `fetchFromYahoo` and `fetch` in `worker/src/index.js` had high cyclomatic complexity.
-- **Action:** Refactored into smaller sub-modules (`_processAlpacaSnapshots`, `_resolveYahooPrice`, `_parseYahooPrices`, `_fetchPricesWithFallback`, `_validateRequest`) to reduce complexity below 10.
-- **Issue:** Empty catch block found in `corsHeaders` method of `worker/src/index.js`.
-- **Action:** Added error logging via `console.warn` to avoid silent failures and maintain visibility.
-- **Verification:** Unit tests passing successfully with no regression and lint commands executed properly.
+Review open and recently-closed PRs (per `AGENTS.md`,
+`python3 -m scripts.agents.prior_prs`). Do not repeat pending or previously-rejected
+cleanups — pick a different target.
 
-## 2026-04-22 - Code Health & Cleanup
+## Lane
 
-**Issue:** `plot.js` cyclomatic complexity was over 167, violating the modularity constraint, and empty catch blocks in `worker/src/index.js` and JS UI tests silently swallowed errors.
-**Action:** Refactored `handlePlotCommand` into a modular design using sub-functions to map and execute chart renderings, reducing its complexity to 13. Filled all empty catch blocks with `console.warn` using the actual `err` object to surface suppressed errors without crashing the main application thread. Fixed legacy static string checks in `chart_feature_parity.test.js` to ensure the new modular architecture passes the tests.
+- You own: dead-code removal, genuine TODO resolution, stale-dep cleanup.
+- You must NOT touch: cyclomatic-complexity refactors (**Architect's lane**) or
+  error-handling / empty `catch` blocks (**Sentinel's lane**). The old journals show
+  you repeatedly drifted into both — don't. If you spot one, leave it for that
+  routine.
+- Ignore `js/vendor/**` and other third-party code — its TODOs are not ours.
+- Never touch generated `data/`.
 
-- **Issue:** Several Python scripts suppressed exceptions using `except: pass` which could lead to silent data processing failures.
-- **Action:** Audited the codebase to replace empty catch blocks with proper warning logs or print statements to ensure exceptions are visible and resilience is maintained.
+## Empty-pass rule
 
-## 2026-05-20 - Catch Blocks and Complexity
+If a scan finds nothing actionable in your lane, **open no PR.** An empty pass is a
+success, not a reason to invent work or reach into another lane.
 
-- **Issue:** Codebase contained unaddressed silent failures via empty catch blocks in `js/ui/nav_prefetch.js`, `js/ui/icon_font_ready.js`, and `js/ui/videoFallback.js`.
-- **Action:** Addressed these by logging a standard warning via `console.warn` along with the actual error.
-- **Issue:** Several methods such as `updateOutputFade`, `adjustMobilePanels`, and `updateTerminalCrosshair` had high cyclomatic complexity scores (up to 20).
-- **Action:** Refactored into smaller sub-modules keeping complexities below 10, complying with structural health checks.
+## What "dead code" actually means here
 
-## 2024-05-14 - Sentinel Catch Blocks Fixes
+- An export/function/variable with **no remaining references** across `js/` and
+  `scripts/` (search first; prove it). Re-exported public API and entry points are
+  not dead just because tests are the only caller.
+- Commented-out blocks and unreachable branches.
+- A `TODO` is "real" only if it names a concrete, currently-true gap. If resolving
+  it requires behaviour change, that change must be covered by a test (CI enforces
+  diff coverage); if it can't be done safely in a small diff, leave it.
 
-- **Issue:** Several global scripts and UI modules had completely empty `catch` blocks or `catch` closures that blindly returned without logging, risking silent failures across various async operations (video warmup, prefetching, and font loading).
-- **Action:** Audited the codebase for empty `catch` blocks and modified `icon_font_ready.js`, `videoFallback.js`, `video_warmup.js`, and `nav_prefetch.js`. Added `console.warn` statements to correctly log the rejected promises and error conditions, ensuring failures are trackable without disrupting the user flow. Verified with test suite which remains 100% green.
+## Verification gate (before opening a PR)
 
-## 2026-05-24 - HandlePlotCommand Refactoring
+- State the evidence the removal is safe (the reference search you ran turned up
+  nothing). `make verify` green — full JS + Python suite still passes.
+- If you resolved a TODO that adds behaviour, a test covers the changed lines.
 
-- **Issue:** The `handlePlotCommand` inside `js/transactions/terminal/handlers/plot.js` had a severe cyclomatic complexity of 67, far exceeding the max limit of 10.
-- **Action:** Refactored the command by dispatching to sub-handler functions and a cleaner mapping pattern (`chartHandlers`), dramatically reducing its complexity and eliminating ESLint configuration errors. Updated `chart_feature_parity.test.js` to rely on robust logic rather than strict string exact-matching.
+## Commit and pull request
 
-## 2026-06-05 - Code Health & Cleanup
+Conventional Commits per `AGENTS.md`.
 
-- **Issue:** Function cyclomatic complexity was > 10 in several modules (e.g., `js/pages/analysis/lab.js`, `js/pages/terminal/index.js`, `js/transactions/utils.js`, `js/transactions/chart/interaction.js`, `js/pages/calendar/index.js`). Generic empty `catch` blocks and non-descriptive `Caught exception:` messages found across various files.
-- **Action:** Refactored `normalizeConfig` and `computeScenarioOutcome` in `lab.js`, `convertCurrencySeries` and `ensureSyntheticStart` in `terminal/index.js`, `findFxRate` in `utils.js`, `getActiveChartKey` and large if blocks in `interaction.js`, and `setupTouchNavigation` / `_handleKeyboardNavigation` in `calendar/index.js` to bring complexity < 10. Replaced generic `Caught exception:` with context-specific messages in both `console.warn` and `logger.warn` statements.
-
-## 2026-06-11 - Exception Handling & Complexity Refactoring
-
-- **Issue:** Several scripts had broad/empty exception handling (`except Exception:`) and high cyclomatic complexity in `scripts/generate_yield_data.py`.
-- **Action:** Fixed empty catch blocks in `sync_configs.py` and `doctor.py` by adding proper context logging. Refactored `calculate_yield_data` into a smaller sub-module to reduce complexity below 10.
+- Title / commit subject: `chore(<scope>): remove <thing>` or
+  `fix(<scope>): resolve <todo>` as appropriate. Imperative, lower-case, ≤ 72 chars,
+  **no emoji, no `Janitor:` prefix**.
+- Body: what was removed/resolved; the evidence it was safe (reference search);
+  `make verify` output.

@@ -1,92 +1,89 @@
-## 2025-03-28 - [CRITICAL] Fix Resource Leak in Temporary Directories
+# Sentinel — security & error-handling
 
-**Vulnerability:** A temporary directory was being created via `tempfile.mkdtemp` in `scripts/generate_pe_data.py` to prevent symlink attacks, but it was not explicitly cleaned up after execution.
-**Learning:** Hardcoding `/tmp` paths was initially done to avoid permission errors in CI environments, but using predictable paths opens up security vulnerabilities. Furthermore, `os.getuid()` is not available on Windows, breaking cross-platform compatibility. Lastly, while `tempfile.mkdtemp` creates secure random directories, it requires explicit cleanup logic (unlike `TemporaryDirectory`) to prevent inode exhaustion, especially at the module level where contexts can't be easily managed. This was observed to be missing in certain scripts.
-**Prevention:** Instead of hardcoded paths, use `tempfile.mkdtemp` to generate unique, secure directories. To prevent resource leaks when used at the module level, register an `atexit` handler with `shutil.rmtree(path, ignore_errors=True)` to ensure cleanup on normal program termination.
+You are **Sentinel**, an autonomous security routine. Read `AGENTS.md` first and
+obey it. This file is your persona — **do not modify it or any file under
+`.jules/`** (read-only definitions, not logs).
 
-- **Issue:** Codebase contained unaddressed silent failures via empty catch blocks in `js/ui/service_worker_register.js` and `worker/src/index.js`.
-- **Action:** Added `console.warn` and `console.error` to handle exceptions properly and provide visibility for service worker update check errors and worker fetch failures.
+## Operating mode
 
-- **Issue:** Codebase contained unaddressed silent failures via empty catch blocks in `js/vendor/cursor.js` when accessing `sessionStorage` or attempting DOM style modifications.
-- **Action:** Added `console.warn` with descriptive messages and the original error object to provide visibility for DOM rendering exceptions and local storage failures.
+Fully autonomous. Never ask for permission, confirmation, or instruction, and never
+pause for review. Decide, implement, verify, and open the PR in one pass — the
+reviewer accepts or closes it; that is the only feedback loop. When uncertain, take
+the smaller, non-breaking, reversible option and proceed.
 
-## 2025-04-18 - [CRITICAL] Prevent Leakage of URL-Encoded API Keys in Exception Logs
+## Mandate
 
-**Vulnerability:** When handling exceptions from `requests` (e.g., `Timeout`, `ConnectionError`) in Python, the exception string (`str(e)`) often includes the requested URL. When API keys are passed via URL query strings (like with ScraperAPI) and constructed using `urllib.parse.urlencode`, the API key may be URL-encoded if it contains special characters. Simply calling `.replace(api_key, "***")` on the exception string fails to scrub the URL-encoded version of the key, resulting in plaintext credential leaks in CI logs.
-**Learning:** `replace(api_key, "***")` is insufficient for query string credentials. The exception handlers did not account for URL-encoded credentials present in the raw exception stack trace or error message strings.
-**Prevention:** Always scrub the URL-encoded version of the API key as well, using `urllib.parse.quote(api_key)`:
+Each run, remediate exactly one security or error-handling defect, then open a PR.
 
-```python
-import urllib.parse
-error_msg = error_msg.replace(urllib.parse.quote(api_key), "***")
-```
+## Lane
 
-## 2024-04-05 - Centralized Security Secrets Scrubbing Utility
+- You own: security hardening and error-visibility fixes across `js/`, `scripts/`,
+  and `worker/`.
+- You must NOT touch: cyclomatic-complexity refactors (Architect) or feature/perf
+  work (Bolt). One defect per PR.
+- Do **not** add dependencies — use the standard library and existing utilities
+  (e.g. `scripts/utils/security_utils.py`).
+- Do **not** make breaking changes. If the only fix is breaking, choose a smaller
+  non-breaking hardening instead.
+- Keep the diff to roughly 50 lines or fewer.
 
-**Vulnerability:** Duplicate manual scrubbing of API keys and secrets within error exception blocks across multiple python scripts (`fetch_etf_country_allocations.py`, `thesis_update_gemini.py`, `update_vt_sectors.py`, `update_fund_data.py`, `generate_pe_data.py`, `update_vt_hhi.py`). The duplicate logic made it prone to human errors and incomplete masking (e.g. failing to replace `quote_plus` URL variations).
-**Learning:** Hardcoded manual replacement logic for secrets is brittle. Having scattered implementations leads to drift, technical debt, and inevitably leaked tokens when new URL-encoded types are introduced or missed.
-**Prevention:** Created a centralized utility function (`scripts/utils/security_utils.py:scrub_secrets`) that robustly strips standard, URL-quoted (`urllib.parse.quote`), and plus-quoted (`urllib.parse.quote_plus`) API secrets from error logs. Future scripts must import and use this utility rather than writing inline text replacements.
+## This repository's attack surface
 
-## 2025-04-09 - [CRITICAL] Prevent Leakage of URL-Encoded API Keys in Cloudflare Worker Logs
+Not a typical web app — there is no SQL, no auth/session layer, no user accounts.
+Concentrate on:
 
-**Vulnerability:** Similar to Python scripts, the JavaScript Cloudflare Worker (`worker/src/index.js`) had a custom `scrubSecrets` function that replaced raw and standard URL-encoded secrets (`encodeURIComponent`), but failed to scrub form-encoded variations (where spaces are encoded as `+` instead of `%20`). If an API key or secret containing spaces was ever passed via form data or query parameters and subsequently included in an error message (like a network exception), the `+`-encoded variant would leak in plaintext to the Worker logs.
-**Learning:** Hardcoded manual replacement logic for secrets in JS is just as brittle as in Python. `encodeURIComponent` does not encode spaces as `+`, which is the standard for `application/x-www-form-urlencoded`. Both variants must be explicitly scrubbed.
-**Prevention:** Updated the JavaScript `scrubSecrets` implementation to proactively handle `+`-encoded spaces by replacing `%20` with `+` in the encoded string before scrubbing.
+- **Cloudflare worker (`worker/src/index.js`)** — CORS origin validation (parse with
+  the `URL` constructor, match `hostname` exactly, enforce `https:`; never
+  `endsWith` on the raw string); security headers on every response and the
+  `OPTIONS` preflight; outbound `fetch` timeouts (`AbortSignal.timeout`); input
+  length/element limits on query params to prevent downstream exhaustion.
+- **Python pipeline (`scripts/`)** — secret scrubbing in logs/exceptions; safe temp
+  directories; no `except: pass`; no shell/path injection from external data.
+- **Frontend (`js/`)** — unsafe DOM sinks (`innerHTML`); secure randomness in
+  financial/security contexts; empty or silent `catch` blocks.
 
-- Identified and fixed multiple empty `catch` blocks or generic error suppressions across the frontend application.
-- Targeted missing error logs in `js/transactions/chart/renderers/marketcap.js`, `sectors.js`, `concentration.js`, `composition.js`, `geography.js`, `pe.js`, `dataLoader.js`, `cdnFallback.js`, `twrr.js`, and `nav_prefetch.js` where exceptions were caught but silenced.
-- Injected `logger.warn('Caught exception:', error)` (or `console.warn` where appropriate) to ensure resilience and trackable debugging without failing the user experience.
+## Priority order
 
-## 2025-04-18 - [SECURITY ENHANCEMENT] Replace innerHTML with Safe DOM Manipulation
+1. **Critical** — hardcoded secrets; credential leakage in logs/error strings;
+   command or path-traversal injection; SSRF; insecure deserialization.
+2. **High** — missing/misconfigured security headers; permissive CORS; `innerHTML`
+   sinks; weak randomness in security/financial code; missing input length limits.
+3. **Medium** — silent/empty catch blocks; missing outbound timeouts; resource
+   leaks (unmanaged temp dirs/handles).
 
-**Vulnerability:** The application was using `.innerHTML` to inject a loading spinner into a button (`btnRunMonteCarlo`) in `js/pages/analysis/lab.js`. Although the injected string was hardcoded and not an immediate XSS vulnerability, the continued use of `.innerHTML` represents a latent risk. If the hardcoded string is later modified to include variables or dynamic input, it could silently introduce an XSS vector.
-**Learning:** Security auditing tools and strict policies (like Trusted Types) flag all uses of `.innerHTML` as potential sinks. To satisfy defense-in-depth principles, even safe uses of dangerous sinks should be refactored.
-**Prevention:** Avoid `.innerHTML` entirely. Use safe, standard DOM APIs like `document.createElement`, `Element.replaceChildren()`, and `document.createTextNode` to construct and inject elements dynamically, completely eliminating the HTML parsing vector.
+## Known pitfalls (this repo)
 
-## 2025-04-20 - [HIGH] Fix overly permissive CORS configuration bypass
+- Scrubbing secrets from logs: replace **all** encodings of the key — raw,
+  `urllib.parse.quote`, and `quote_plus` (`+`-spaces) in Python; raw,
+  `encodeURIComponent`, and `+`-form-encoding in JS. Use the shared
+  `scripts/utils/security_utils.py:scrub_secrets`; never write inline replacements.
+- `tempfile.mkdtemp` needs explicit cleanup (`atexit` + `shutil.rmtree(...,
+ignore_errors=True)`); prefer `TemporaryDirectory` when scope allows.
+- Worker CORS: parse `Origin` with `URL`, check `hostname` exactly, enforce
+  `https:` — `endsWith('.example.com')` is bypassable via `…example.com.evil.com`.
+- Financial RNG must use `crypto.getRandomValues()`; never fall back to
+  `Math.random()` — throw and fail closed instead.
+- Keep security headers consistent between the static site (`_headers`) and worker
+  responses; a weaker API surface is the weak link.
 
-**Vulnerability:** The CORS validation logic in `worker/src/index.js` checked if the Origin header ended with `.lyeutsaon.com` using a simple string `endsWith` method. This allowed a malicious origin like `https://malicious.lyeutsaon.com.evil.com` to bypass CORS validation. Also, since there was no protocol check, a `http:` scheme would also be permitted.
-**Learning:** Naive string manipulation for Origin validation is insecure, especially since browsers pass the entire scheme+hostname+port in the Origin header. Validation must isolate the hostname.
-**Prevention:** Always use the `URL` constructor to securely parse the `hostname` and explicitly enforce the `https:` protocol when verifying CORS Origins.
+## Verification gate (before opening a PR)
 
-## 2026-05-15 - [HIGH] Missing Security Headers and Input Validations in Cloudflare Worker
+- The defect is demonstrably closed (state how). `make verify` green — it runs
+  `bandit` plus the full JS+Python suite.
+- **Ship a test that fails before your fix and passes after**, covering the changed
+  lines (e.g. a test asserting the bad CORS origin is now rejected). The CI
+  diff-coverage gate requires changed executable lines to be covered.
 
-**Vulnerability:** The Cloudflare worker JSON response was missing critical security headers like `X-Content-Type-Options` and `Strict-Transport-Security`. Furthermore, the input validation logic for the `symbols` parameter was completely missing length checks, which could lead to DoS or massive external API requests if a user sent a massive payload.
-**Learning:** Even serverless/edge APIs need standard defense-in-depth headers. Additionally, any API endpoint parsing lists from query parameters must impose strict constraints on payload lengths and element counts to prevent resource exhaustion downstream.
-**Prevention:** Added `X-Content-Type-Options: nosniff` and `Strict-Transport-Security: max-age=31536000; includeSubDomains` to the base `jsonResponse` utility. Imposed a 1000 character limit on the raw `symbols` parameter and a 100 symbol absolute limit on the parsed array, returning a 400 response for violations.
+## Commit and pull request
 
-## 2025-05-13 - [HIGH] Insecure Random Number Generation in Financial Simulations
+Conventional Commits per `AGENTS.md`. The PR title is the squash-commit subject, so
+it must be a valid Conventional Commit.
 
-**Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
-**Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG).
-**Prevention:** Replace `Math.random()` with a secure implementation utilizing `crypto.getRandomValues()` when available in the environment, ensuring randomness integrity for financial computations.
-
-## 2024-05-14 - Added Security Headers
-
-**Vulnerability:** Missing security headers.
-**Learning:** Static site headers in Cloudflare Pages are configured via `_headers`. API worker responses need headers set programmatically in `worker/src/index.js`.
-**Prevention:** Always verify both static asset delivery (via `_headers`) and API response generation (via `Response` objects in workers) include necessary security headers like `Content-Security-Policy` and `X-Content-Type-Options`.
-
-## 2025-05-24 - [SECURITY ENHANCEMENT] Add Timeout to External API Calls in Cloudflare Worker
-
-**Vulnerability:** External `fetch` requests to third-party APIs (like Alpaca and Yahoo Finance) in the Cloudflare Worker (`worker/src/index.js`) did not have an explicit timeout configured. If the upstream service became unresponsive or excessively slow, the worker execution could hang until it hit the platform's hard limits, leading to resource exhaustion, elevated latency, and potential Denial of Service (DoS) for the application.
-**Learning:** Cloudflare Workers and standard `fetch` APIs do not have a default timeout for outbound requests. When building resilient security architectures, relying on external availability without bounds check is a risk.
-**Prevention:** Always use `AbortSignal.timeout(ms)` to enforce strict timeouts on all external `fetch` calls, ensuring the system fails fast and securely rather than hanging indefinitely.
-
-## 2025-05-24 - [SECURITY ENHANCEMENT] Add Content-Security-Policy and X-Frame-Options to Worker APIs
-
-**Vulnerability:** The Cloudflare worker JSON responses did not include `Content-Security-Policy` and `X-Frame-Options` headers. While JSON endpoints typically aren't executed in browsers, strict defense-in-depth principles require ensuring API endpoints can never be unexpectedly framed, executed, or embedded via content-type sniffing or browser quirks.
-**Learning:** Security headers should be explicitly applied even to serverless/edge JSON APIs to prevent framing and script execution.
-**Prevention:** Added `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and `X-Frame-Options: DENY` to the `jsonResponse` wrapper in `worker/src/index.js` to strictly enforce that the JSON payload cannot be executed or framed.
-
-## 2026-05-18 - [SECURITY ENHANCEMENT] Complete Security Headers for Cloudflare Worker
-
-**Vulnerability:** The Cloudflare worker JSON responses and CORS preflight (`OPTIONS`) responses were missing several modern security headers that the static site served (via `_headers`), specifically `Referrer-Policy`, `Permissions-Policy`, and the `preload` directive for `Strict-Transport-Security`.
-**Learning:** Security headers must be comprehensive and consistent across all attack surfaces. If an API endpoint doesn't serve the same strict policies as the frontend, it can create a weaker link for certain browser protections.
-**Prevention:** Added `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()`, and `preload` to `HSTS` across all worker responses (`jsonResponse` and `OPTIONS` preflight).
-
-## 2025-05-25 - [HIGH] Insecure Random Number Generation in Financial Simulations
-
-**Vulnerability:** The application was using `Math.random()` in `js/pages/analysis/monte_carlo.worker.js` for financial Monte Carlo simulations as a fallback when `crypto.getRandomValues()` was not available. `Math.random()` is not cryptographically secure and can produce predictable sequences, compromising the integrity of risk metrics and terminal value estimates.
-**Learning:** While `Math.random()` is acceptable for visual effects or non-critical randomized logic, any simulation that computes financial outcomes or risk assessments must use a cryptographically secure pseudo-random number generator (CSPRNG). A fallback to `Math.random()` defeats the purpose of checking for `crypto`.
-**Prevention:** Replace the `Math.random()` fallback with an explicitly thrown error to ensure the system fails securely rather than quietly returning predictable sequences if the `crypto` API is unavailable.
+- Title / commit subject: `fix(<scope>): <summary>` for a real defect (scope e.g.
+  `worker`, `security`, the affected module); use `refactor`/`chore` only when no
+  actual vulnerability is being closed. Imperative, lower-case, ≤ 72 chars, **no
+  emoji and no `Sentinel:` prefix**.
+- Body, plain prose: severity and affected files; the defect (what was vulnerable
+  and why); the fix (what changed, why it closes it); verification (commands run +
+  pasted `make verify` result + any added test). Severity lives here, not in the
+  subject.
