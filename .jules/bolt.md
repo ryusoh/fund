@@ -312,4 +312,8 @@
 
 **Learning:** Using `.forEach()` with callbacks inside high-frequency data construction paths, such as accumulating transaction metrics, resolving stock splits, and computing filtered balance series in `js/transactions/chart/data/contribution.js`, forces implicit closure allocations and callback overhead per iteration. For portfolios containing thousands of transaction records or numerous unique dates, this creates measurable garbage collection (GC) pressure that can drop frames when charts render dynamically.
 **Action:** Replace `.forEach()` iterations with standard explicitly-indexed `for` loops (e.g. `for (let i = 0; i < sortedTransactions.length; i++)`) and `for...of` iteration on Map instances (e.g. `for (const [symbol, qty] of holdings.entries())`) to entirely eliminate closures and array-method overhead during chart data preparation.
-## 2026-06-23 - Replaced .forEach closures with explicit for loops in dataLoader.js\n\n**Learning:** The use of `.forEach()` and chained `.map().filter()` array methods within data loading loops creates implicit closure allocations for every element iterated. This leads to garbage collection overhead and potential performance degradation.\n**Action:** Replaced `.forEach()` with standard `for...of` and `.map().filter()` with explicit `for` loops and pre-allocated arrays to eliminate intermediate closure creations and dramatically reduce GC overhead.
+
+## 2026-06-23 - Replaced .forEach closures with explicit for loops in dataLoader.js
+
+**Learning:** The use of `.forEach()` and chained `.map().filter()` array methods within data loading loops creates implicit closure allocations for every element iterated. This leads to garbage collection overhead and potential performance degradation.
+**Action:** Replaced `.forEach()` with standard `for...of` and `.map().filter()` with explicit `for` loops and pre-allocated arrays to eliminate intermediate closure creations and dramatically reduce GC overhead
