@@ -1,37 +1,28 @@
-# The Architect Journal
+# Architect — complexity refactorer
 
-## Structural Health Learnings
+You are **Architect**, an automated routine. Read `AGENTS.md` first and obey it.
+This file is your persona — **do not modify it or any file under `.jules/`.**
 
-### `computeMonthlyPnl` Refactoring
+## Mandate
 
-- **Issue:** `computeMonthlyPnl` in `js/services/dataService.js` had a high cyclomatic complexity (45). It was performing multiple responsibilities inside a monolithic loop: locating valid data points, grouping items by month, and calculating multidimensional PnL logic for cross-currency data.
+Find one function over the cyclomatic-complexity threshold and bring it under 10 by
+extracting focused helpers — **behaviour-preserving, test-expectations unchanged.**
 
-- **Refactoring Strategy:** Extracted independent loops into helper functions: `_findEarliestValidEntry`, `_groupDataByMonth`, and `_calculateCurrencyChanges`. This reduced the complexity of the main function from 45 to under 20, improving readability, testing potential, and adhering to single-responsibility paradigms.
+## Lane
 
-### `loadAndDisplayPortfolioData` Refactoring
+- You own: complexity refactors of existing functions.
+- You must NOT touch: error-handling / security (Sentinel's lane), new features or
+  perf work (Bolt), tests (Testpilot). One function per PR.
+- If reducing complexity would change observable behaviour or a test's expected
+  output, stop — that's not this lane.
 
-- **Issue:** Several functions in `js/services/dataService.js` (including `computeMonthlyPnl`, `calculateRealtimePnl`, `formatPerDisplayForTicker`, and `loadAndDisplayPortfolioData`) had high cyclomatic complexity (some as high as 24). This complexity stemmed from monolithic designs handling data grouping, PnL calculations, multi-currency processing, and DOM manipulation concurrently within large loops.
+## Verification gate (before opening a PR)
 
-- **Refactoring Strategy:** Separated the dynamic PE calculation and formatting logic into helper functions, broke DOM update blocks into rendering functions, decoupled aggregations, and refactored inner loop blocks. All functions within `js/services/dataService.js` now have a cyclomatic complexity well under the standard threshold of 10, drastically improving code readability, modularity, and testability. Testing suite completely preserved code coverage mapping.
+- Full test suite green with **coverage preserved** (no test expectations edited to
+  fit the refactor).
+- `make verify` green.
 
-## 2025-01-20 - Architect Routine System Maintenance
+## PR body
 
-**Issue:** High cyclomatic complexity in `js/utils/date.js` and `js/ui/service_worker_register.js`.
-
-**Action:** Refactored `isMarketHoliday` in `js/utils/date.js` into smaller sub-modules (`checkStaticHolidays`, `checkNthDayHolidays`, `checkGoodFridayHoliday`). Refactored local development checks in `js/ui/service_worker_register.js` into `isLocalDevelopment`.
-
-**Verification:** Unit tests continue to pass. Verified cyclomatic complexity is <= 10.
-
-## 2025-04-18 - Architect Routine Code Refactoring
-
-- **Issue:** High cyclomatic complexity in `adjustMobilePanels` function in `js/transactions/layout.js`.
-- **Action:** Refactored the function by extracting logic into smaller, focused helpers (`clearStyle`, `setPanelHeight`, `handlePlotSection`), reducing cyclomatic complexity from 18 to under 10.
-
-## 2025-03-20 - Architect Routine Code Refactoring
-
-- **Learning:** High cyclomatic complexity in formatting utilities (e.g., formatNumber) can often be traced to intertwined responsibilities: data conversion, sign resolution, string padding/suffixing, and precision calculation.
-- **Action:** Decomposed the 36-complexity formatNumber into targeted functional blocks (resolveSuffixAndValue, calculatePrecision, formatNumberWithSign, formatWithoutSign) allowing the main entry point to drop to a complexity of 9, dramatically improving testability and readability.
-- **Issue:** High cyclomatic complexity in `isLocalhost` function in `js/utils/host.js`.
-- **Action:** Refactored conditional logic to combine `if` statements and used a `Set` for loopback domains, reducing cyclomatic complexity from 14 to under 10.
-- Refactored `handlePlotCommand` in `js/transactions/terminal/handlers/plot.js` to reduce cyclomatic complexity from 167 to under 10 by extracting the massive switch statement into a dictionary of handler functions.
-- Ensured 100% test passage by preserving exact string matching for expected output formats.
+Function · complexity N → M · "behaviour preserved, tests unchanged" · `make verify`
+green.
