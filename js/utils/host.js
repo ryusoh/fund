@@ -1,5 +1,9 @@
 const LOCALHOST_DOMAINS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
 
+/**
+ * @param {string} hostname
+ * @returns {boolean}
+ */
 const isPrivateIPv4 = (hostname) => {
     const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
     if (!ipv4) {
@@ -10,6 +14,10 @@ const isPrivateIPv4 = (hostname) => {
     return a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
 };
 
+/**
+ * @param {string} hostname
+ * @returns {boolean}
+ */
 export const isLocalhost = (hostname) => {
     if (!hostname) {
         return false;
