@@ -62,7 +62,10 @@ is the stricter local superset (adds `mypy` + `bandit`).
 ## Working rules
 
 - Work directly on `main`. **Commit/push only when explicitly asked** (then branch
-  off `main` first).
+  off `main` first). **Don't route a trivial config/doc change through a Jules PR** —
+  make a direct commit. The async PR flow squash-merges and diverges local `main`;
+  if a `git pull --rebase` then cascades into per-commit conflicts, the fix is
+  `git reset --hard origin/main` (never keep rebasing) — see `docs/git-sync-notes.md`.
 - Changes scoped to one page must not leak to others (e.g. terminal glass effects).
 - Verifying a **visual** change means looking at the rendered page, not just green
   tests (§17C of `docs/ai_native_repo_structure.md`). Use
