@@ -210,32 +210,9 @@ export function formatCurrencyInline(value) {
     return `${sign}${symbol}${absolute.toFixed(2)}`;
 }
 
-export function formatCurrencyCompact(value, { currency } = {}) {
-    const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
-    const absolute = Math.abs(amount);
-    const sign = amount < 0 ? '-' : '';
-    const selectedCurrency = (currency || getSelectedCurrency() || 'USD').toUpperCase();
-    const symbol = getSymbolForCurrency(selectedCurrency);
-    const isCJKCurrency =
-        selectedCurrency === 'CNY' || selectedCurrency === 'JPY' || selectedCurrency === 'KRW';
-
-    if (absolute >= 1_000_000_000_000) {
-        const trillions = absolute / 1_000_000_000_000;
-        if (isCJKCurrency) {
-            if (trillions >= 100) {
-                return `${sign}${symbol}${trillions.toFixed(0)}T`;
-            }
-            if (trillions >= 10) {
-                return `${sign}${symbol}${trillions.toFixed(1)}T`;
-            }
-            return `${sign}${symbol}${trillions.toFixed(2)}T`;
-        }
-
-        const rounded = Math.round(trillions);
-        if (Math.abs(trillions - rounded) < 0.1) {
-            return `${sign}${symbol}${rounded}T`;
-        }
-
+function _formatCompactTrillions(absolute, sign, symbol, isCJKCurrency) {
+    const trillions = absolute / 1_000_000_000_000;
+    if (isCJKCurrency) {
         if (trillions >= 100) {
             return `${sign}${symbol}${trillions.toFixed(0)}T`;
         }
@@ -245,24 +222,23 @@ export function formatCurrencyCompact(value, { currency } = {}) {
         return `${sign}${symbol}${trillions.toFixed(2)}T`;
     }
 
-    if (absolute >= 1_000_000_000) {
-        const billions = absolute / 1_000_000_000;
-        if (isCJKCurrency) {
-            if (billions >= 100) {
-                return `${sign}${symbol}${billions.toFixed(0)}B`;
-            }
-            if (billions >= 10) {
-                return `${sign}${symbol}${billions.toFixed(1)}B`;
-            }
-            return `${sign}${symbol}${billions.toFixed(2)}B`;
-        }
+    const rounded = Math.round(trillions);
+    if (Math.abs(trillions - rounded) < 0.1) {
+        return `${sign}${symbol}${rounded}T`;
+    }
 
-        // Non-CJK: check if it's effectively an integer
-        const rounded = Math.round(billions);
-        if (Math.abs(billions - rounded) < 0.1) {
-            return `${sign}${symbol}${rounded}B`;
-        }
+    if (trillions >= 100) {
+        return `${sign}${symbol}${trillions.toFixed(0)}T`;
+    }
+    if (trillions >= 10) {
+        return `${sign}${symbol}${trillions.toFixed(1)}T`;
+    }
+    return `${sign}${symbol}${trillions.toFixed(2)}T`;
+}
 
+function _formatCompactBillions(absolute, sign, symbol, isCJKCurrency) {
+    const billions = absolute / 1_000_000_000;
+    if (isCJKCurrency) {
         if (billions >= 100) {
             return `${sign}${symbol}${billions.toFixed(0)}B`;
         }
@@ -272,57 +248,73 @@ export function formatCurrencyCompact(value, { currency } = {}) {
         return `${sign}${symbol}${billions.toFixed(2)}B`;
     }
 
-    if (absolute >= 1_000_000) {
-        const millions = absolute / 1_000_000;
-        const rounded = Math.round(millions);
+    // Non-CJK: check if it's effectively an integer
+    const rounded = Math.round(billions);
+    if (Math.abs(billions - rounded) < 0.1) {
+        return `${sign}${symbol}${rounded}B`;
+    }
 
-        if (isCJKCurrency) {
-            if (Math.abs(millions - rounded) > 0.1) {
-                return `${sign}${symbol}${millions.toFixed(1)}M`;
-            }
-            return `${sign}${symbol}${rounded}M`;
-        }
+    if (billions >= 100) {
+        return `${sign}${symbol}${billions.toFixed(0)}B`;
+    }
+    if (billions >= 10) {
+        return `${sign}${symbol}${billions.toFixed(1)}B`;
+    }
+    return `${sign}${symbol}${billions.toFixed(2)}B`;
+}
 
-        // Non-CJK: check if it's effectively an integer
-        if (Math.abs(millions - rounded) < 0.1) {
-            return `${sign}${symbol}${rounded}M`;
-        }
+function _formatCompactMillions(absolute, sign, symbol, isCJKCurrency) {
+    const millions = absolute / 1_000_000;
+    const rounded = Math.round(millions);
 
-        if (millions >= 100) {
-            return `${sign}${symbol}${millions.toFixed(0)}M`;
-        }
-        if (millions >= 10) {
+    if (isCJKCurrency) {
+        if (Math.abs(millions - rounded) > 0.1) {
             return `${sign}${symbol}${millions.toFixed(1)}M`;
         }
-        return `${sign}${symbol}${millions.toFixed(2)}M`;
+        return `${sign}${symbol}${rounded}M`;
     }
 
-    if (absolute >= 1_000) {
-        const thousands = absolute / 1_000;
-        const rounded = Math.round(thousands);
+    // Non-CJK: check if it's effectively an integer
+    if (Math.abs(millions - rounded) < 0.1) {
+        return `${sign}${symbol}${rounded}M`;
+    }
 
-        if (isCJKCurrency) {
-            if (Math.abs(thousands - rounded) > 0.1) {
-                return `${sign}${symbol}${thousands.toFixed(1)}k`;
-            }
-            return `${sign}${symbol}${Math.max(1, rounded)}k`;
-        }
+    if (millions >= 100) {
+        return `${sign}${symbol}${millions.toFixed(0)}M`;
+    }
+    if (millions >= 10) {
+        return `${sign}${symbol}${millions.toFixed(1)}M`;
+    }
+    return `${sign}${symbol}${millions.toFixed(2)}M`;
+}
 
-        // Non-CJK: check if it's effectively an integer
-        if (Math.abs(thousands - rounded) < 0.05) {
-            // tighter tolerance for k
-            return `${sign}${symbol}${rounded}k`;
-        }
+function _formatCompactThousands(absolute, sign, symbol, isCJKCurrency) {
+    const thousands = absolute / 1_000;
+    const rounded = Math.round(thousands);
 
-        if (thousands >= 100) {
-            return `${sign}${symbol}${thousands.toFixed(0)}k`;
-        }
-        if (thousands >= 10) {
+    if (isCJKCurrency) {
+        if (Math.abs(thousands - rounded) > 0.1) {
             return `${sign}${symbol}${thousands.toFixed(1)}k`;
         }
-        return `${sign}${symbol}${thousands.toFixed(1)}k`;
+        return `${sign}${symbol}${Math.max(1, rounded)}k`;
     }
 
+    // Non-CJK: check if it's effectively an integer
+    if (Math.abs(thousands - rounded) < 0.05) {
+        // tighter tolerance for k
+        return `${sign}${symbol}${rounded}k`;
+    }
+
+    if (thousands >= 100) {
+        return `${sign}${symbol}${thousands.toFixed(0)}k`;
+    }
+    if (thousands >= 10) {
+        return `${sign}${symbol}${thousands.toFixed(1)}k`;
+    }
+    return `${sign}${symbol}${thousands.toFixed(2)}k`;
+}
+
+function _formatCompactSmallUnits(absolute, sign, symbol, isCJKCurrency) {
     if (absolute >= 1) {
         if (isCJKCurrency) {
             return `${sign}${symbol}${Math.round(absolute)}`;
@@ -343,6 +335,57 @@ export function formatCurrencyCompact(value, { currency } = {}) {
     }
 
     return `${sign}${symbol}${absolute.toFixed(2)}`;
+}
+
+function _getResolvedCurrencyInfo(currencyParam) {
+    const defaultCurrency = 'USD';
+    let resolved = defaultCurrency;
+
+    if (currencyParam) {
+        resolved = currencyParam;
+    } else {
+        const selected = getSelectedCurrency();
+        if (selected) {
+            resolved = selected;
+        }
+    }
+
+    resolved = resolved.toUpperCase();
+    const isCJK = resolved === 'CNY' || resolved === 'JPY' || resolved === 'KRW';
+
+    return {
+        currency: resolved,
+        symbol: getSymbolForCurrency(resolved),
+        isCJK: isCJK
+    };
+}
+
+export function formatCurrencyCompact(value, { currency } = {}) {
+    const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+    const absolute = Math.abs(amount);
+    const sign = amount < 0 ? '-' : '';
+
+    const info = _getResolvedCurrencyInfo(currency);
+    const symbol = info.symbol;
+    const isCJKCurrency = info.isCJK;
+
+    if (absolute >= 1_000_000_000_000) {
+        return _formatCompactTrillions(absolute, sign, symbol, isCJKCurrency);
+    }
+
+    if (absolute >= 1_000_000_000) {
+        return _formatCompactBillions(absolute, sign, symbol, isCJKCurrency);
+    }
+
+    if (absolute >= 1_000_000) {
+        return _formatCompactMillions(absolute, sign, symbol, isCJKCurrency);
+    }
+
+    if (absolute >= 1_000) {
+        return _formatCompactThousands(absolute, sign, symbol, isCJKCurrency);
+    }
+
+    return _formatCompactSmallUnits(absolute, sign, symbol, isCJKCurrency);
 }
 
 export function parseCSVLine(line) {
