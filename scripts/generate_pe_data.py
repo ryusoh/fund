@@ -24,7 +24,7 @@ import shutil
 import sys
 import tempfile
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -1118,12 +1118,14 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
         "ticker_forward_pe": ticker_fwd_pe,
     }
 
-    # Store MSCI PE ratio for frontend daily derivation
+    # Store MSCI PE ratio for frontend daily derivation. Stamp last_updated so a
+    # carried-forward (stale) ratio from a broken scrape can be detected later.
     if msci_data and "ratio" in msci_data:
         result["msci_pe_ratio"] = {
             "trailing_pe": float(msci_data["trailing_pe"]),
             "forward_pe": float(msci_data["forward_pe"]),
             "ratio": float(msci_data["ratio"]),
+            "last_updated": datetime.now().strftime("%Y-%m-%d"),
         }
         print(
             f"  MSCI PE Ratio: trailing={msci_data['trailing_pe']}, "
@@ -1131,6 +1133,47 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
         )
 
     return result
+
+
+# How many days a carried-forward MSCI ratio may age before it's flagged as stale.
+MSCI_RATIO_STALE_DAYS = 7
+
+
+def msci_ratio_age_days(msci_ratio: Any, today: Optional[date] = None) -> Optional[int]:
+    """Days since ``msci_pe_ratio`` was last freshly scraped.
+
+    Returns ``None`` when the age is unknown (no/invalid ``last_updated`` stamp,
+    or a non-dict input) so callers never crash on legacy data.
+    """
+    if not isinstance(msci_ratio, dict):
+        return None
+    stamp = msci_ratio.get("last_updated")
+    try:
+        last = datetime.strptime(str(stamp), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+    return ((today or datetime.now().date()) - last).days
+
+
+def warn_if_msci_ratio_stale(
+    forward_pe: Optional[Dict[str, Any]], today: Optional[date] = None
+) -> None:
+    """Surface a prolonged MSCI outage instead of silently aging the ratio.
+
+    The fail-open carry-forward keeps VT's forward P/E on screen, but if the
+    scrape stays broken the value drifts further from reality with no signal.
+    Log a warning once it crosses ``MSCI_RATIO_STALE_DAYS``.
+    """
+    if not isinstance(forward_pe, dict):
+        return
+    msci_ratio = forward_pe.get("msci_pe_ratio")
+    age = msci_ratio_age_days(msci_ratio, today=today)
+    if isinstance(msci_ratio, dict) and age is not None and age >= MSCI_RATIO_STALE_DAYS:
+        print(
+            f"  WARNING: msci_pe_ratio is stale — {age} days since last fresh scrape "
+            f"(last_updated {msci_ratio.get('last_updated')}). The MSCI scrape may be "
+            "broken; VT's forward P/E is increasingly out of date."
+        )
 
 
 def carry_forward_msci_pe_ratio(
@@ -1343,17 +1386,17 @@ def main():
     result_ticker_pe = {t: [] for t in all_tickers}
     result_ticker_weights = {t: [] for t in all_tickers}
     valid_ticker_mask = {}
-    for date in dates:
+    for dt in dates:
         mv_map, pe_map = {}, {}
         total_mv = 0.0
         for t in all_tickers:
-            shares = holdings_df.loc[date, t]
+            shares = holdings_df.loc[dt, t]
             if shares <= 1e-6:
                 continue
             price = None
             t_clean = t.strip().upper().replace("-", "")
             if t_clean in prices_df.columns:
-                price_val = prices_df.loc[date, t_clean]
+                price_val = prices_df.loc[dt, t_clean]
                 if pd.notna(price_val) and price_val > 0:
                     price = float(price_val)
             if not price:
@@ -1363,13 +1406,13 @@ def main():
                 continue
             mv_map[t], total_mv = mv, total_mv + mv
             if t in etf_pe_daily.columns:
-                pe_map[t] = etf_pe_daily.loc[date, t]
+                pe_map[t] = etf_pe_daily.loc[dt, t]
             elif t in stock_eps_daily.columns:
-                eps = stock_eps_daily.loc[date, t]
+                eps = stock_eps_daily.loc[dt, t]
                 if eps > 0:
                     pe_map[t] = price / eps
         portfolio_pe = calculate_harmonic_pe(mv_map, pe_map)
-        result_dates.append(date.strftime("%Y-%m-%d"))
+        result_dates.append(dt.strftime("%Y-%m-%d"))
         result_portfolio_pe.append(round(portfolio_pe, 2) if portfolio_pe else None)
         for t in all_tickers:
             val = pe_map.get(t)
@@ -1395,6 +1438,7 @@ def main():
         # Fail-open: keep the last good msci_pe_ratio if this run's MSCI scrape
         # failed, so VT's frontend-derived forward P/E doesn't disappear.
         forward_pe = carry_forward_msci_pe_ratio(forward_pe, existing_pe_data)
+        warn_if_msci_ratio_stale(forward_pe)
         final_output["forward_pe"] = forward_pe
         print(
             f"  Portfolio Forward PE: {forward_pe['portfolio_forward_pe']}x "

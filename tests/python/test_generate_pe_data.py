@@ -515,6 +515,43 @@ class TestGeneratePEData(unittest.TestCase):
                     self.assertIsNotNone(res)
                     self.assertEqual(res["ticker_forward_pe"]["VT"], 15.0)
 
+    def test_msci_ratio_age_days(self):
+        from datetime import date
+
+        from scripts.generate_pe_data import msci_ratio_age_days
+
+        today = date(2026, 6, 25)
+        self.assertEqual(msci_ratio_age_days({"last_updated": "2026-06-18"}, today=today), 7)
+        self.assertEqual(msci_ratio_age_days({"last_updated": "2026-06-25"}, today=today), 0)
+        # Missing/invalid stamp or non-dict → unknown age (None), never a crash.
+        self.assertIsNone(msci_ratio_age_days({"ratio": 1.2}, today=today))
+        self.assertIsNone(msci_ratio_age_days({"last_updated": "garbage"}, today=today))
+        self.assertIsNone(msci_ratio_age_days(None, today=today))
+
+    def test_warn_if_msci_ratio_stale(self):
+        from datetime import date
+
+        from scripts.generate_pe_data import warn_if_msci_ratio_stale
+
+        today = date(2026, 6, 25)
+        # Fresh enough → no warning.
+        with patch("builtins.print") as mock_print:
+            warn_if_msci_ratio_stale(
+                {"msci_pe_ratio": {"ratio": 1.2, "last_updated": "2026-06-23"}}, today=today
+            )
+        self.assertFalse(any("stale" in str(c).lower() for c in mock_print.call_args_list))
+        # Past the staleness threshold → a warning is surfaced.
+        with patch("builtins.print") as mock_print:
+            warn_if_msci_ratio_stale(
+                {"msci_pe_ratio": {"ratio": 1.2, "last_updated": "2026-06-01"}}, today=today
+            )
+        self.assertTrue(any("stale" in str(c).lower() for c in mock_print.call_args_list))
+        # No stamp / no block → silent, no crash.
+        with patch("builtins.print") as mock_print:
+            warn_if_msci_ratio_stale({"msci_pe_ratio": {"ratio": 1.2}}, today=today)
+            warn_if_msci_ratio_stale(None, today=today)
+        self.assertFalse(any("stale" in str(c).lower() for c in mock_print.call_args_list))
+
     def test_carry_forward_msci_pe_ratio_reuses_last_good(self):
         # Regression: VT's forward P/E is derived on the frontend from
         # msci_pe_ratio.ratio. When the flaky MSCI scrape fails, the fresh
