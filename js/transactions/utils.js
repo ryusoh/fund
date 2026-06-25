@@ -356,7 +356,7 @@ function _getResolvedCurrencyInfo(currencyParam) {
     return {
         currency: resolved,
         symbol: getSymbolForCurrency(resolved),
-        isCJK: isCJK
+        isCJK: isCJK,
     };
 }
 
