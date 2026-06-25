@@ -49,8 +49,14 @@ jobs:
             - name: Generate Python coverage (xml)
               run: python -m pytest --cov=scripts --cov-report=xml
 
-            - name: Enforce diff coverage
+            - name: Enforce diff coverage (JS)
               run: |
-                  diff-cover coverage/lcov.info coverage.xml \
+                  diff-cover coverage/lcov.info \
+                    --compare-branch origin/${{ github.base_ref }} \
+                    --fail-under ${{ env.FAIL_UNDER }}
+
+            - name: Enforce diff coverage (Python)
+              run: |
+                  diff-cover coverage.xml \
                     --compare-branch origin/${{ github.base_ref }} \
                     --fail-under ${{ env.FAIL_UNDER }}
