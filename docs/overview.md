@@ -66,3 +66,6 @@ Run hooks manually anytime with `pre-commit run --all-files`.
 - [polyrepo-sharing-strategy.md](polyrepo-sharing-strategy.md) — forward-looking
   research (not implemented) on keeping multiple personal repos in sync: shared
   components / visual language, CI, lint configs, workflows, and agent commands.
+  Canonical doc now lives in the foundation repo
+  ([ryusoh/ryusoh](https://github.com/ryusoh/ryusoh/blob/main/docs/polyrepo-sharing-strategy.md));
+  the local file is a pointer.
