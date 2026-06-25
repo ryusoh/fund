@@ -9,6 +9,14 @@ own GitHub Pages deploy, `CNAME`, data pipeline, release cadence), built
 vanilla-JS / no-build-step / import-map style. The recommendations below
 deliberately preserve that minimalism.
 
+> **Where this doc should live.** Its canonical home is the **foundation repo
+> (`ryusoh/ryusoh`)** — it describes the foundation system, and keeping one copy
+> is this doc's own thesis (don't duplicate across repos). It currently lives in
+> `fund` only because that's where it was drafted. **Implementation step 1:
+> relocate this file to `ryusoh/docs/polyrepo-sharing-strategy.md` and leave a
+> pointer (not a copy) in `fund` and other consumers.** Do this when you start
+> building the foundation — until then, `fund` holds the single working copy.
+
 ## The repos in this system
 
 | Repo                                           | Role                                                                     | Consumes                             |
