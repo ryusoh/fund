@@ -9,11 +9,116 @@ own GitHub Pages deploy, `CNAME`, data pipeline, release cadence), built
 vanilla-JS / no-build-step / import-map style. The recommendations below
 deliberately preserve that minimalism.
 
+## The repos in this system
+
+| Repo                                           | Role                                                                     | Consumes                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------ |
+| `~/dev/fund`                                   | Portfolio dashboard (this repo)                                          | brand + configs + CI + agents        |
+| `~/dev/ryusoh.github.io`                       | Personal site (note: on `master`, not `main`)                            | brand + configs + CI + agents        |
+| `~/dev/networking`                             | Networking tools (JS + Python)                                           | configs + CI + agents (+ some brand) |
+| `~/Library/Application Support/Anki2/addons21` | **Anki addons — a full frontend twin of `fund`**                         | brand + configs + CI + agents        |
+| `~/dev/ryusoh`                                 | **GitHub profile repo** (`username/username`) — **chosen as foundation** | source of truth (not a consumer)     |
+
+All five repos are **public**, which removes the only constraint that would have
+forced a separate foundation repo (see below).
+
+`addons21` is **not** a fringe/partial consumer. Despite living outside `~/dev`
+and rendering in Anki's Qt WebEngine webview, it duplicates `fund`'s frontend
+near-identically: `terminal/index.html` + `js/terminal.js` + `css/terminal/`,
+`animated_glass_background/web/glass_effect.js` + `css/ambient/`,
+`css/container.css`, `css/table.css`, `js/ui/*`, plus the same toolchain
+(`eslint.config.cjs`, `.stylelintrc.cjs`, `Makefile`, `pyproject.toml`,
+`.claude`, `.gemini`, `.jules`). The glass effect, terminal, and nav container
+are **already copy-duplicated** between `fund` and `addons21` — this is among the
+strongest motivations for a shared-brand package, not an edge case.
+
+Constraint this imposes: shared components must be **rendering-host-agnostic** —
+the same ESM/CSS has to work in a normal browser _and_ in the Chromium version
+Anki's Qt WebEngine ships. Avoid browser-only APIs and check CSS feature support
+against that bundled engine.
+
+## Foundation repo: reuse `~/dev/ryusoh` (the profile repo)
+
+**Decision: the `ryusoh/ryusoh` profile repo is the foundation.** Rationale is
+minimalism — zero new repos. `ryusoh/ryusoh` is the GitHub profile repo (a repo
+whose name equals the username), but **only its `README.md` renders on the public
+profile** — any other folders (`.github/workflows/`, a `foundation/` subdir, an
+ESM package) are invisible there and behave like a normal repo. So it can host
+foundation content without disfiguring the profile.
+
+The one constraint that would have forced a separate repo — _can't hold anything
+private_ — **does not apply**: all five repos are already public, so nothing of
+value would ever need a private home.
+
+**Disciplines that keep it tidy** (these neutralize the remaining cons —
+tag/history mixing, surprise factor):
+
+1. **Namespace foundation content in a subdir** (`foundation/`, plus the natural
+   `.github/workflows/` for CI). Keep the repo root and `README.md` pristine so
+   the profile stays clean.
+2. **Decide the tag strategy up front.** Versioning the brand via git tags
+   (`@v1`) puts those tags on the profile repo's release namespace — accept that,
+   or prefix/path-scope tags so they read clearly.
+3. **Hard rule: nothing private here** (the repo is permanently public).
+
+Consumers reference it as e.g.
+`uses: ryusoh/ryusoh/.github/workflows/ci.yml@v1`, vendor brand assets from it,
+or pin a jsDelivr CDN URL against it (works because it's public).
+
+- Native bonus available later: a repo literally named `ryusoh/.github` supplies
+  **default community-health files** (issue templates, `FUNDING.yml`, profile
+  defaults) to any repo lacking its own. It's a separate repo (+1), so skip it
+  for now under the minimalist constraint — revisit only if community-health
+  defaults become worth one extra repo.
+- Before wiring reusable workflows: **normalize `ryusoh.github.io` from `master`
+  to `main`** so `@tag`/branch refs stay uniform across consumers.
+
+### Decision record: why the profile repo, not a dedicated one
+
+**Context.** ~5 public repos (`fund`, `ryusoh.github.io`, `networking`, Anki
+`addons21`, profile `ryusoh`) share a brand/visual language, configs, CI, and
+agent commands by copy. A single source of truth is wanted. The owner's
+overriding value is **minimalism — as few repos as possible.**
+
+**Options considered:**
+
+1. **Monorepo** — rejected. Independent deploys (`fund` and `ryusoh.github.io`
+   each ship to GitHub Pages with their own `CNAME`) and cadences make it cost
+   more than it returns; couples deploys, loses per-repo simplicity.
+2. **Dedicated `ryusoh/foundation` repo** — viable and cleanest in isolation
+   (self-documenting, separate tag/release namespace), but **+1 repo**, which
+   loses on the minimalism criterion.
+3. **`ryusoh/.github` repo** — gives native community-health defaults for free,
+   but still **+1 repo**.
+4. **Reuse the `ryusoh/ryusoh` profile repo** — **chosen.** Net **zero new
+   repos**.
+
+**Why option 4 won:** the two objections that originally argued against it both
+collapsed on inspection — (a) "it disfigures the public profile" is false, since
+_only `README.md` renders_ and other folders are invisible; (b) "it can't hold
+private content" is moot, since _all five repos are already public_. What remains
+(tag/history mixing, mild surprise factor) is cosmetic and fully handled by the
+three disciplines above.
+
+**Consequences accepted:** foundation commits/tags share the profile repo's
+history and release namespace; the repo is permanently public (no private
+content ever); anyone reading the profile's "Code" tab sees tooling beside the
+README. These were judged acceptable in exchange for keeping the system at five
+repos instead of six.
+
+**Revisit if:** something needs to go private, the brand package's release
+namespace starts conflicting with profile-site versioning, or community-health
+defaults become worth a `.github` repo — any of which would justify promoting
+foundation into its own dedicated repo (option 2).
+
 ## TL;DR
 
 - **Don't monorepo.** Independent deploys + cadences make a monorepo cost more
   than it returns. Stay polyrepo.
-- Create **one `foundation` repo** as the single source of truth.
+- Use the existing **`ryusoh/ryusoh` profile repo as the foundation** (single
+  source of truth) — zero new repos. Viable because only its `README.md` renders
+  on the profile and all five repos are public. Keep foundation content in a
+  subdir.
 - **Match the distribution mechanism to the artifact type** — this is the whole
   game. Reference what can be referenced; sync what must physically exist;
   version the brand so rollout is controlled.
