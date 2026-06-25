@@ -53,6 +53,11 @@ is the stricter local superset (adds `mypy` + `bandit`).
   `docs/chart-crosshair-layout.md`. One consumer (`interaction.js`) reads layout fields
   by name; a renderer that omits one (e.g. `dates`) silently renders **0%**, not an
   error. Read before adding/editing a stacked chart.
+- **Forward P/E & the PER column** → `docs/pe-forward-pe-pipeline.md`. The Python
+  scrape writes `forward_pe.msci_pe_ratio` into `pe_ratio.json`; the frontend
+  derives VT's forward P/E from it. A null ratio renders the cell **trailing-only,
+  not an error** — verify in the rendered table. Read before editing forward-PE in
+  `generate_pe_data.py` or `dataService.js`.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
