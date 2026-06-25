@@ -60,3 +60,9 @@ Run hooks manually anytime with `pre-commit run --all-files`.
 - Workflows update data via scripts under `scripts/data/` and `scripts/pnl/`.
   If you move or add scripts that are used by workflows, update
   `.github/workflows/*.yml` accordingly.
+
+## See also
+
+- [polyrepo-sharing-strategy.md](polyrepo-sharing-strategy.md) — forward-looking
+  research (not implemented) on keeping multiple personal repos in sync: shared
+  components / visual language, CI, lint configs, workflows, and agent commands.
