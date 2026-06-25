@@ -548,6 +548,46 @@ class TestGeneratePEData(unittest.TestCase):
         result = carry_forward_msci_pe_ratio(fresh, {})
         self.assertNotIn("msci_pe_ratio", result)
 
+    def test_apply_fail_open_backstop_restores_omitted_key(self):
+        # General fail-open: if a run fails to produce a top-level block that the
+        # previous file had (e.g. benchmark_pe when every benchmark fetch fails),
+        # restore the old value instead of writing the dashboard blank.
+        from scripts.generate_pe_data import apply_fail_open_backstop
+
+        fresh = {"dates": ["2026-06-25"], "portfolio_pe": [21.0]}
+        existing = {"benchmark_pe": {"^GSPC": [25.0]}, "portfolio_pe": [99.0]}
+        result = apply_fail_open_backstop(fresh, existing)
+        self.assertEqual(result["benchmark_pe"], {"^GSPC": [25.0]})
+
+    def test_apply_fail_open_backstop_keeps_fresh_data(self):
+        from scripts.generate_pe_data import apply_fail_open_backstop
+
+        fresh = {"portfolio_pe": [21.0], "benchmark_pe": {"^GSPC": [26.0]}}
+        existing = {"portfolio_pe": [99.0], "benchmark_pe": {"^GSPC": [25.0]}}
+        result = apply_fail_open_backstop(fresh, existing)
+        # Real fresh data must never be overwritten by stale fallback.
+        self.assertEqual(result["portfolio_pe"], [21.0])
+        self.assertEqual(result["benchmark_pe"], {"^GSPC": [26.0]})
+
+    def test_apply_fail_open_backstop_restores_empty_container(self):
+        from scripts.generate_pe_data import apply_fail_open_backstop
+
+        # An empty {} produced this run is treated as "nothing fetched".
+        fresh = {"benchmark_pe": {}}
+        existing = {"benchmark_pe": {"^GSPC": [25.0]}}
+        result = apply_fail_open_backstop(fresh, existing)
+        self.assertEqual(result["benchmark_pe"], {"^GSPC": [25.0]})
+
+    def test_apply_fail_open_backstop_ignores_empty_existing(self):
+        from scripts.generate_pe_data import apply_fail_open_backstop
+
+        fresh = {"portfolio_pe": [21.0]}
+        # Nothing useful to fall back to; no spurious keys added.
+        self.assertEqual(
+            apply_fail_open_backstop(fresh, {"benchmark_pe": {}}), {"portfolio_pe": [21.0]}
+        )
+        self.assertEqual(apply_fail_open_backstop(fresh, None), {"portfolio_pe": [21.0]})
+
     @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
     def test_fetch_forward_pe_exception(self, mock_path):
         from scripts.generate_pe_data import fetch_forward_pe

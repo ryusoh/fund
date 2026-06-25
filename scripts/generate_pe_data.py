@@ -1154,6 +1154,32 @@ def carry_forward_msci_pe_ratio(
     return forward_pe
 
 
+def apply_fail_open_backstop(
+    final_output: Dict[str, Any], existing_pe_data: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Final fail-open net before writing pe_ratio.json.
+
+    Per-field fallbacks above handle the known-fragile fetches, but any top-level
+    block a run fails to produce (missing key, or an empty ``{}``/``[]``) would
+    otherwise overwrite good history with nothing and blank that part of the
+    dashboard. For every key the previous file had, restore the old value when
+    this run produced nothing for it. Keys with fresh data are never touched.
+    """
+    if not isinstance(existing_pe_data, dict):
+        return final_output
+
+    def is_empty(value: Any) -> bool:
+        return value is None or value == {} or value == []
+
+    for key, prev in existing_pe_data.items():
+        if is_empty(prev):
+            continue
+        if is_empty(final_output.get(key)):
+            final_output[key] = prev
+            print(f"  Fail-open: restored '{key}' from previous pe_ratio.json (no fresh data).")
+    return final_output
+
+
 def scrape_msci_pe_data() -> Optional[Dict[str, float]]:
     """Scrape both trailing P/E and forward P/E from MSCI World Index page.
 
@@ -1466,6 +1492,10 @@ def main():
             target_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
             final_output["forward_pe"] = {"target_date": target_date}
         final_output["forward_pe"]["benchmark_forward_pe"] = benchmark_fwd_pe
+
+    # Final safety net: never blank a block the previous file had just because
+    # this run's fetch for it failed (e.g. benchmark_pe on a total scrape outage).
+    final_output = apply_fail_open_backstop(final_output, existing_pe_data)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:
