@@ -1,6 +1,7 @@
 import {
     loadAndDisplayPortfolioData,
     getCalendarData,
+    _calculateDynamicPeValues,
     __testables,
 } from '@services/dataService.js';
 import * as chartManager from '@charts/allocationChartManager.js';
@@ -1639,6 +1640,31 @@ describe('dataService', () => {
             expect(marchInfo).toBeTruthy();
             expect(marchInfo.absoluteChangeUSD).toBeCloseTo(500);
         });
+    });
+});
+
+describe('_calculateDynamicPeValues — VT forward P/E derivation', () => {
+    // VT has no native forward estimate (forwardPe/forwardEps null), so its
+    // forward P/E is derived from the daily trailing P/E and the MSCI ratio.
+    // Regression: a null msci_pe_ratio in pe_ratio.json made this vanish.
+    const vtSnapshot = () => ({
+        pe: 22.0335,
+        forwardPe: null,
+        eps: 6.22,
+        forwardEps: null,
+        msciPeRatio: 1.2622,
+    });
+
+    it('derives VT forward P/E from trailing / msci ratio when the ratio is present', () => {
+        const { trailingValue, forwardValue } = _calculateDynamicPeValues(vtSnapshot(), 154.33);
+        expect(trailingValue).toBeCloseTo(154.33 / 6.22, 2);
+        expect(forwardValue).toBeCloseTo(154.33 / 6.22 / 1.2622, 2);
+    });
+
+    it('leaves forward P/E blank when the msci ratio is missing (broken-data case)', () => {
+        const snap = { ...vtSnapshot(), msciPeRatio: undefined };
+        const { forwardValue } = _calculateDynamicPeValues(snap, 154.33);
+        expect(Number.isFinite(forwardValue)).toBe(false);
     });
 });
 

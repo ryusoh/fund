@@ -1133,6 +1133,27 @@ def fetch_forward_pe() -> Optional[Dict[str, Any]]:
     return result
 
 
+def carry_forward_msci_pe_ratio(
+    forward_pe: Optional[Dict[str, Any]], existing_pe_data: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Fail-open for the MSCI P/E ratio (flaky HTML scrape).
+
+    VT (and other index ETFs without a yfinance forward estimate) get their
+    forward P/E derived on the frontend as ``trailing_PE / msci_pe_ratio.ratio``.
+    When ``scrape_msci_pe_data`` fails, a fresh ``forward_pe`` block is still
+    produced for the other tickers but simply omits ``msci_pe_ratio`` — which
+    would overwrite the last good value with nothing and make VT's forward P/E
+    vanish from the table. Reuse the previous ratio in that case.
+    """
+    if not isinstance(forward_pe, dict) or forward_pe.get("msci_pe_ratio"):
+        return forward_pe
+    prev_ratio = (existing_pe_data or {}).get("forward_pe", {}).get("msci_pe_ratio")
+    if prev_ratio:
+        forward_pe["msci_pe_ratio"] = prev_ratio
+        print("  MSCI scrape missing; carried forward last known msci_pe_ratio.")
+    return forward_pe
+
+
 def scrape_msci_pe_data() -> Optional[Dict[str, float]]:
     """Scrape both trailing P/E and forward P/E from MSCI World Index page.
 
@@ -1345,6 +1366,9 @@ def main():
     print("Fetching Forward PE...")
     forward_pe = fetch_forward_pe()
     if forward_pe:
+        # Fail-open: keep the last good msci_pe_ratio if this run's MSCI scrape
+        # failed, so VT's frontend-derived forward P/E doesn't disappear.
+        forward_pe = carry_forward_msci_pe_ratio(forward_pe, existing_pe_data)
         final_output["forward_pe"] = forward_pe
         print(
             f"  Portfolio Forward PE: {forward_pe['portfolio_forward_pe']}x "

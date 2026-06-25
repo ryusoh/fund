@@ -515,6 +515,39 @@ class TestGeneratePEData(unittest.TestCase):
                     self.assertIsNotNone(res)
                     self.assertEqual(res["ticker_forward_pe"]["VT"], 15.0)
 
+    def test_carry_forward_msci_pe_ratio_reuses_last_good(self):
+        # Regression: VT's forward P/E is derived on the frontend from
+        # msci_pe_ratio.ratio. When the flaky MSCI scrape fails, the fresh
+        # forward_pe block omits msci_pe_ratio; without fail-open the table's
+        # VT forward P/E silently vanishes. Carry the last good ratio forward.
+        from scripts.generate_pe_data import carry_forward_msci_pe_ratio
+
+        fresh = {"portfolio_forward_pe": 21.0, "ticker_forward_pe": {"ANET": 30.0}}
+        existing = {
+            "forward_pe": {
+                "msci_pe_ratio": {"trailing_pe": 24.74, "forward_pe": 19.6, "ratio": 1.2622},
+            }
+        }
+        result = carry_forward_msci_pe_ratio(fresh, existing)
+        self.assertEqual(result["msci_pe_ratio"]["ratio"], 1.2622)
+
+    def test_carry_forward_msci_pe_ratio_keeps_fresh(self):
+        from scripts.generate_pe_data import carry_forward_msci_pe_ratio
+
+        fresh = {"msci_pe_ratio": {"ratio": 1.30}}
+        existing = {"forward_pe": {"msci_pe_ratio": {"ratio": 1.2622}}}
+        result = carry_forward_msci_pe_ratio(fresh, existing)
+        self.assertEqual(result["msci_pe_ratio"]["ratio"], 1.30)
+
+    def test_carry_forward_msci_pe_ratio_noop_when_none(self):
+        from scripts.generate_pe_data import carry_forward_msci_pe_ratio
+
+        self.assertIsNone(carry_forward_msci_pe_ratio(None, {}))
+        fresh = {"portfolio_forward_pe": 21.0}
+        # Nothing to carry forward; leave the block untouched.
+        result = carry_forward_msci_pe_ratio(fresh, {})
+        self.assertNotIn("msci_pe_ratio", result)
+
     @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
     def test_fetch_forward_pe_exception(self, mock_path):
         from scripts.generate_pe_data import fetch_forward_pe
