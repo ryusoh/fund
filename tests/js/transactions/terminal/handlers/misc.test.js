@@ -1,6 +1,7 @@
 import {
     handleClearCommand,
     handleLabelCommand,
+    handleAllCommand,
     handleAllTimeCommand,
     handleAllStockCommand,
     handleResetCommand,
@@ -57,9 +58,6 @@ describe('Misc Command Handlers', () => {
             const resetSortState = jest.fn();
             const filterAndSort = jest.fn();
             const chartManager = { update: jest.fn() };
-
-            const { handleAllCommand } =
-                await import('../../../../../js/transactions/terminal/handlers/misc.js');
 
             // Act
             await handleAllCommand([], {
@@ -638,6 +636,290 @@ describe('handleLabelCommand', () => {
 
             expect(context.appendMessage).toHaveBeenCalled();
             expect(typeof context.appendMessage.mock.calls[0][0]).toBe('string');
+        });
+    });
+});
+
+describe('misc handlers coverage', () => {
+    let appendMessage;
+    let chartManager;
+    let getGeographySnapshotLine;
+    let getMarketcapSnapshotLine;
+
+    beforeEach(async () => {
+        appendMessage = jest.fn();
+        chartManager = { update: jest.fn() };
+        document.body.innerHTML = '<div id="runningAmountSection"></div>';
+        transactionState.activeChart = 'composition';
+        jest.clearAllMocks();
+
+        const snapshots = require('../../../../../js/transactions/terminal/snapshots.js');
+        getGeographySnapshotLine = snapshots.getGeographySnapshotLine;
+        getMarketcapSnapshotLine = snapshots.getMarketcapSnapshotLine;
+
+        if (getGeographySnapshotLine) {
+            getGeographySnapshotLine.mockResolvedValue('Geography data');
+        }
+        if (getMarketcapSnapshotLine) {
+            getMarketcapSnapshotLine.mockResolvedValue('Marketcap data');
+        }
+    });
+
+    test('handleGeographyCommand switches from composition to geography', async () => {
+
+        await handleGeographyCommand([], { appendMessage, chartManager });
+        expect(setActiveChart).toHaveBeenCalledWith('geography');
+        expect(chartManager.update).toHaveBeenCalled();
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart.'));
+        if (getGeographySnapshotLine) {
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Geography data'));
+        }
+    });
+
+    test('handleMarketcapCommand switches from composition to marketcap', async () => {
+
+        await handleMarketcapCommand([], { appendMessage, chartManager });
+        expect(setActiveChart).toHaveBeenCalledWith('marketcap');
+        expect(chartManager.update).toHaveBeenCalled();
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart.'));
+        if (getMarketcapSnapshotLine) {
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Marketcap data'));
+        }
+    });
+
+    describe('handleGeographyCommand conditions', () => {
+        beforeEach(() => {
+            if (getGeographySnapshotLine) {getGeographySnapshotLine.mockResolvedValue('Geography data');}
+            document.getElementById('runningAmountSection').classList.remove('is-hidden');
+        });
+
+        test('switches from geography to geography (already active) when visible', async () => {
+
+            transactionState.activeChart = 'geography';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Geography chart is already active.');
+        });
+
+        test('shows geography when hidden', async () => {
+
+            transactionState.activeChart = 'geography';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geography');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Showing geography chart.'));
+        });
+
+        test('switches from compositionAbs to geographyAbs', async () => {
+
+            transactionState.activeChart = 'compositionAbs';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geographyAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart (absolute view).'));
+        });
+
+        test('switches from sectors to geography', async () => {
+
+            transactionState.activeChart = 'sectors';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geography');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart.'));
+        });
+
+        test('switches from sectorsAbs to geographyAbs', async () => {
+
+            transactionState.activeChart = 'sectorsAbs';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geographyAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart (absolute view).'));
+        });
+
+        test('switches from marketcap to geography', async () => {
+
+            transactionState.activeChart = 'marketcap';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geography');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart.'));
+        });
+
+        test('switches from marketcapAbs to geographyAbs', async () => {
+
+            transactionState.activeChart = 'marketcapAbs';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('geographyAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to geography chart (absolute view).'));
+        });
+
+        test('fallback else case', async () => {
+
+            transactionState.activeChart = 'unknown_chart';
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Composition, Sectors, Geography, or Market Cap chart must be active.'));
+        });
+
+        test('hidden state for activeChart = composition', async () => {
+
+            transactionState.activeChart = 'composition';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Composition chart must be visible. Use `plot composition` first.');
+        });
+
+        test('hidden state for activeChart = compositionAbs', async () => {
+
+            transactionState.activeChart = 'compositionAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Composition chart must be visible. Use `plot composition abs` first.');
+        });
+
+        test('hidden state for activeChart = sectors', async () => {
+
+            transactionState.activeChart = 'sectors';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Sector allocation chart must be visible. Use `plot sectors` first.');
+        });
+
+        test('hidden state for activeChart = sectorsAbs', async () => {
+
+            transactionState.activeChart = 'sectorsAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Sector allocation chart must be visible. Use `plot sectors abs` first.');
+        });
+
+        test('hidden state for activeChart = marketcap', async () => {
+
+            transactionState.activeChart = 'marketcap';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Market cap chart must be visible. Use `plot marketcap` first.');
+        });
+
+        test('hidden state for activeChart = marketcapAbs', async () => {
+
+            transactionState.activeChart = 'marketcapAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleGeographyCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Market cap chart must be visible. Use `plot marketcap abs` first.');
+        });
+    });
+
+    describe('handleMarketcapCommand conditions', () => {
+        beforeEach(() => {
+            if (getMarketcapSnapshotLine) {getMarketcapSnapshotLine.mockResolvedValue('Marketcap data');}
+            document.getElementById('runningAmountSection').classList.remove('is-hidden');
+        });
+
+        test('switches from marketcap to marketcap (already active) when visible', async () => {
+
+            transactionState.activeChart = 'marketcap';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Market cap chart is already active.');
+        });
+
+        test('shows marketcap when hidden', async () => {
+
+            transactionState.activeChart = 'marketcap';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcap');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Showing market cap chart.'));
+        });
+
+        test('switches from compositionAbs to marketcapAbs', async () => {
+
+            transactionState.activeChart = 'compositionAbs';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcapAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart (absolute view).'));
+        });
+
+        test('switches from sectors to marketcap', async () => {
+
+            transactionState.activeChart = 'sectors';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcap');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart.'));
+        });
+
+        test('switches from sectorsAbs to marketcapAbs', async () => {
+
+            transactionState.activeChart = 'sectorsAbs';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcapAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart (absolute view).'));
+        });
+
+        test('switches from geography to marketcap', async () => {
+
+            transactionState.activeChart = 'geography';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcap');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart.'));
+        });
+
+        test('switches from geographyAbs to marketcapAbs', async () => {
+
+            transactionState.activeChart = 'geographyAbs';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(setActiveChart).toHaveBeenCalledWith('marketcapAbs');
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Switched to market cap chart (absolute view).'));
+        });
+
+        test('fallback else case', async () => {
+
+            transactionState.activeChart = 'unknown_chart';
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Composition, Sectors, Geography, or Market Cap chart must be active.'));
+        });
+
+        test('hidden state for activeChart = composition', async () => {
+
+            transactionState.activeChart = 'composition';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Composition chart must be visible. Use `plot composition` first.');
+        });
+
+        test('hidden state for activeChart = compositionAbs', async () => {
+
+            transactionState.activeChart = 'compositionAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Composition chart must be visible. Use `plot composition abs` first.');
+        });
+
+        test('hidden state for activeChart = sectors', async () => {
+
+            transactionState.activeChart = 'sectors';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Sector allocation chart must be visible. Use `plot sectors` first.');
+        });
+
+        test('hidden state for activeChart = sectorsAbs', async () => {
+
+            transactionState.activeChart = 'sectorsAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Sector allocation chart must be visible. Use `plot sectors abs` first.');
+        });
+
+        test('hidden state for activeChart = geography', async () => {
+
+            transactionState.activeChart = 'geography';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Geography chart must be visible. Use `plot geography` first.');
+        });
+
+        test('hidden state for activeChart = geographyAbs', async () => {
+
+            transactionState.activeChart = 'geographyAbs';
+            document.getElementById('runningAmountSection').classList.add('is-hidden');
+            await handleMarketcapCommand([], { appendMessage, chartManager });
+            expect(appendMessage).toHaveBeenCalledWith('Geography chart must be visible. Use `plot geography abs` first.');
         });
     });
 });
