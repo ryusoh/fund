@@ -107,9 +107,6 @@
             "^\\.\\.\\/\\.\\.\\/vendor/perlin-plane\\.js$": "<rootDir>/tests/js/__mocks__/vendor/perlin-plane.js"
         }
     },
-    "dependencies": {
-        "canvas": "^3.2.3"
-    },
     "overrides": {
         "js-yaml": "^4.1.1",
         "minimatch": "^3.1.2"
