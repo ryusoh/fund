@@ -4,9 +4,9 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              73.03%  ████████████████████████████████████
-  Asia                       21.38%  ██████████
-  Europe                      4.32%  ██
+  North America              71.95%  ███████████████████████████████████
+  Asia                       22.40%  ███████████
+  Europe                      4.36%  ██
   Oceania                     0.50%  
   Other                       0.46%  
   South America               0.20%  
@@ -14,9 +14,9 @@ CONTINENT BREAKDOWN (Ranked)
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           72.95%  ████████████████████████████████████
-  East Asia                  20.38%  ██████████
-  Western Europe              3.29%  █
+  Northern America           71.88%  ███████████████████████████████████
+  East Asia                  21.39%  ██████████
+  Western Europe              3.31%  █
   South Asia                  0.60%  
   Northern Europe             0.50%  
   Australasia                 0.50%  
@@ -29,10 +29,10 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            72.05%  ████████████████████████████████████
-   2. China                    17.88%  ████████
-   3. Japan                     1.69%  
-   4. United Kingdom            0.97%  
+   1. United States            70.96%  ███████████████████████████████████
+   2. China                    18.87%  █████████
+   3. Japan                     1.70%  
+   4. United Kingdom            0.98%  
    5. Canada                    0.91%  
    6. Taiwan                    0.69%  
    7. Switzerland               0.66%  
@@ -44,7 +44,7 @@ ALL COUNTRIES (Ranked)
   13. Netherlands               0.35%  
   14. Sweden                    0.26%  
   15. Spain                     0.24%  
-  16. Italy                     0.21%  
+  16. Italy                     0.22%  
   17. Brazil                    0.18%  
   18. Denmark                   0.13%  
   19. Singapore                 0.13%  
@@ -53,8 +53,8 @@ ALL COUNTRIES (Ranked)
 
 SUMMARY STATISTICS
 ----------------------------------------------------------------------
-  Total countries tracked: 38
-  Countries mapped to regions: 37
+  Total countries tracked: 39
+  Countries mapped to regions: 38
   Unmapped countries (Other): 1
   Total allocation: 100.00%
 ======================================================================
