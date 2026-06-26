@@ -13,7 +13,8 @@ export const customArcBordersPlugin = {
         const arcBorderWidth = pluginOptions.width !== undefined ? pluginOptions.width : 2.5; // Default to 2px
         const arcBorderColor = pluginOptions.color || 'rgba(20, 20, 20, 0.6)'; // Default color
 
-        meta.data.forEach((arcElement) => {
+        for (let i = 0; i < meta.data.length; i++) {
+            const arcElement = meta.data[i];
             // Get the resolved properties of the arc segment
             const { x, y, startAngle, endAngle, outerRadius, innerRadius } = arcElement.getProps(
                 ['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'],
@@ -35,6 +36,6 @@ export const customArcBordersPlugin = {
             ctx.stroke();
 
             ctx.restore();
-        });
+        }
     },
 };

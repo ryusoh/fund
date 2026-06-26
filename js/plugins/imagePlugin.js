@@ -77,7 +77,8 @@ export const imagePlugin = {
         const MAGNETIC_RADIUS = 80;
         const MAGNETIC_STRENGTH = 0.35;
 
-        meta.data.forEach((arc, index) => {
+        for (let index = 0; index < meta.data.length; index++) {
+            const arc = meta.data[index];
             if (showLogos || index === hoveredSliceIndex) {
                 const logoInfo = images[index];
                 if (logoInfo && logoInfo.src) {
@@ -121,6 +122,6 @@ export const imagePlugin = {
                     }
                 }
             }
-        });
+        }
     },
 };
