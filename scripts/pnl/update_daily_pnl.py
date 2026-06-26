@@ -87,7 +87,8 @@ def calculate_daily_values_with_date(
             if pd.isna(market_price):
                 try:
                     reg_price = ticker_obj.info.get("regularMarketPrice")
-                except Exception:
+                except Exception as e:
+                    print(f"Warning: Failed to fetch regularMarketPrice for {ticker}: {e}")
                     reg_price = None
                 if reg_price is not None and pd.notna(reg_price):
                     print(
