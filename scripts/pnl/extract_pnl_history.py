@@ -103,7 +103,8 @@ def calculate_daily_values(holdings: Dict, fund_data: Dict, forex: Dict) -> Dict
             currency = info.get("currency", "USD")
             fx_to_usd = fx_rates.get(currency, 1.0)
             total_value_usd += (shares * market_price) / fx_to_usd
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Failed to process PnL history for {ticker}: {e}")
             continue
 
     daily_values = {}
