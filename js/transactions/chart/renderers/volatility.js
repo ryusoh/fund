@@ -56,11 +56,12 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         return a.localeCompare(b);
     });
 
-    orderedKeys.forEach((key) => {
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
         if (transactionState.chartVisibility[key] === undefined) {
             transactionState.chartVisibility[key] = key === '^LZ' || key === '^GSPC';
         }
-    });
+    }
 
     // Transform cumulative TWRR into 90-day annualized rolling volatility
     const allPossibleSeries = orderedKeys.map((key) => {
@@ -265,9 +266,10 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
         return 0;
     });
 
-    seriesForDrawing.forEach((series) => {
+    for (let i = 0; i < seriesForDrawing.length; i++) {
+        const series = seriesForDrawing[i];
         if (series.data.length === 0) {
-            return;
+            continue;
         }
 
         const rawPoints = series.data;
@@ -345,7 +347,7 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
             );
             glowIndex += 1;
         }
-    });
+    }
 
     if (isAnimationEnabled('performance') && glowIndex > 0) {
         schedulePerformanceAnimation(chartManager);
@@ -356,7 +358,8 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {
-        renderedSeries.forEach((s) => {
+        for (let i = 0; i < renderedSeries.length; i++) {
+            const s = renderedSeries[i];
             const bounds = drawEndValue(
                 ctx,
                 s.x,
@@ -374,7 +377,7 @@ export async function drawVolatilityChart(ctx, chartManager, timestamp) {
             if (bounds) {
                 labelBounds.push(bounds);
             }
-        });
+        }
     }
 
     chartLayouts.volatility = {
