@@ -32,17 +32,22 @@ export function buildFxChartSeries(baseCurrency) {
     const baseEntry = fxRates[normalizedBase];
     const seriesList = [];
 
-    FX_CURRENCY_ORDER.filter((currency) => currency !== normalizedBase).forEach((currency) => {
+    for (let j = 0; j < FX_CURRENCY_ORDER.length; j++) {
+        const currency = FX_CURRENCY_ORDER[j];
+        if (currency === normalizedBase) {
+            continue;
+        }
+
         const targetEntry = fxRates[currency];
         if (!targetEntry && currency !== 'USD') {
-            return;
+            continue;
         }
         const dateSource =
             (currency === 'USD'
                 ? baseEntry?.sorted
                 : targetEntry?.sorted || baseEntry?.sorted || []) || [];
         if (dateSource.length === 0) {
-            return;
+            continue;
         }
         const points = [];
         for (let i = 0; i < dateSource.length; i++) {
@@ -56,7 +61,7 @@ export function buildFxChartSeries(baseCurrency) {
             }
         }
         if (!points.length) {
-            return;
+            continue;
         }
         const key = `FX_${normalizedBase}_${currency}`;
         if (transactionState.chartVisibility[key] === undefined) {
@@ -71,7 +76,7 @@ export function buildFxChartSeries(baseCurrency) {
             color,
             data: points,
         });
-    });
+    }
 
     return seriesList;
 }

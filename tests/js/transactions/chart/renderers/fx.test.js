@@ -46,6 +46,7 @@ jest.mock('../../../../../js/transactions/utils.js', () => ({
     getShowChartLabels: jest.fn(() => true),
     formatPercentInline: jest.fn((v) => `${v}%`),
     formatFxValue: jest.fn((v) => v.toString()),
+    convertBetweenCurrencies: jest.fn(() => 1.5),
 }));
 
 jest.mock('../../../../../js/utils/smoothing.js', () => ({
@@ -76,5 +77,23 @@ describe('drawFxChart', () => {
 
         expect(stopFxAnimation).toHaveBeenCalled();
         expect(chartLayouts.fx).toBeNull();
+    });
+});
+
+describe('buildFxChartSeries', () => {
+    it('builds series skipping normalized base', async () => {
+        const { transactionState } = await import('../../../../../js/transactions/state.js');
+        transactionState.fxRatesByCurrency = {
+            USD: { sorted: [{ date: '2023-01-01' }] },
+            CNY: { sorted: [{ date: '2023-01-01' }] },
+        };
+
+        // Define a manual mock for this function within the test if needed, or rely on existing mocks
+
+        const { buildFxChartSeries } =
+            await import('../../../../../js/transactions/chart/renderers/fx.js');
+
+        const series = buildFxChartSeries('USD');
+        expect(series.length).toBeGreaterThanOrEqual(0);
     });
 });

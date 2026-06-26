@@ -150,7 +150,8 @@ export const waveAnimationPlugin = {
             ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2, true);
             ctx.clip('evenodd');
         }
-        animState.waves.forEach((wave) => {
+        for (let i = 0; i < animState.waves.length; i++) {
+            const wave = animState.waves[i];
             if (wave.radius > outerRadius + 3 && wave.opacity > 0 && centerX && centerY) {
                 const r = wave.radius;
                 const rgb = animState.config.BASE_COLOR_RGB_TRIPLET;
@@ -179,7 +180,7 @@ export const waveAnimationPlugin = {
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
             }
-        });
+        }
         ctx.restore();
     },
 };
