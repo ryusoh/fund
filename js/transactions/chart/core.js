@@ -210,7 +210,8 @@ export function generateYearBasedTicks(minTime, maxTime) {
             { month: 9, label: 'Oct', isYearStart: false },
         ];
 
-        quarters.forEach((q) => {
+        for (let i = 0; i < quarters.length; i++) {
+            const q = quarters[i];
             const quarterDate = new Date(year, q.month, 1).getTime();
             // Always include quarterly ticks for the year, even if slightly outside the range
             if (
@@ -223,7 +224,7 @@ export function generateYearBasedTicks(minTime, maxTime) {
                     isYearStart: q.isYearStart,
                 });
             }
-        });
+        }
 
         // If data spans into a new year and primary year is the start year,
         // add a tick at Jan 1 of the new year so the year label appears at the year boundary
@@ -347,7 +348,8 @@ export function drawAxes(
     if (drawYAxis) {
         const fontSize = isMobile ? 9 : 11;
         const halfTextHeight = fontSize / 2;
-        ticks.forEach((value) => {
+        for (let i = 0; i < ticks.length; i++) {
+            const value = ticks[i];
             const y = yScale(value);
             ctx.beginPath();
             ctx.moveTo(padding.left, y);
@@ -361,7 +363,7 @@ export function drawAxes(
             const wouldClipTop = y - halfTextHeight < 2;
             ctx.textBaseline = wouldClipTop ? 'top' : 'middle';
             ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
-        });
+        }
     }
 
     // X-axis line
@@ -383,7 +385,8 @@ export function drawAxes(
         ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
     }
 
-    yearTicks.forEach((tick, index) => {
+    for (let index = 0; index < yearTicks.length; index++) {
+        const tick = yearTicks[index];
         const x = xScale(tick.time);
 
         // Check for label collision (Desktop & Mobile)
@@ -452,7 +455,7 @@ export function drawAxes(
                 ctx.setLineDash([]); // Reset to solid line
             }
         }
-    });
+    }
 }
 
 export function drawMountainFill(ctx, coords, baselineY, options) {
@@ -521,10 +524,11 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     if (Array.isArray(colorStops) && colorStops.length > 0) {
         horizontalGradient = offCtx.createLinearGradient(0, 0, width, 0);
         const stopCount = colorStops.length;
-        colorStops.forEach((stopColor, index) => {
+        for (let index = 0; index < stopCount; index++) {
+            const stopColor = colorStops[index];
             const offset = stopCount === 1 ? 0 : index / (stopCount - 1);
             horizontalGradient.addColorStop(offset, colorWithAlpha(stopColor, 1));
-        });
+        }
     }
 
     if (horizontalGradient) {
