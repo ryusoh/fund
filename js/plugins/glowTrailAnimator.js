@@ -125,13 +125,14 @@ function drawGlow(ctx, series, options, settings) {
             ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${settings.shadowOpacity})`;
             ctx.shadowBlur = isMobile ? settings.mobileShadowBlur : settings.desktopShadowBlur;
             ctx.beginPath();
-            tailPoints.forEach((point, index) => {
-                if (index === 0) {
+            for (let i = 0; i < tailPoints.length; i++) {
+                const point = tailPoints[i];
+                if (i === 0) {
                     ctx.moveTo(point.x, point.y);
                 } else {
                     ctx.lineTo(point.x, point.y);
                 }
-            });
+            }
             ctx.stroke();
             ctx.restore();
         }
@@ -239,7 +240,9 @@ export function createGlowTrailAnimator(options = {}) {
     }
 
     function stopAll() {
-        states.forEach((_, key) => stop(key));
+        for (const key of states.keys()) {
+            stop(key);
+        }
     }
 
     function schedule(key, chartManager, { isActive } = {}) {

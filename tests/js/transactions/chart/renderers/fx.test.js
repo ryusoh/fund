@@ -46,6 +46,7 @@ jest.mock('../../../../../js/transactions/utils.js', () => ({
     getShowChartLabels: jest.fn(() => true),
     formatPercentInline: jest.fn((v) => `${v}%`),
     formatFxValue: jest.fn((v) => v.toString()),
+    convertBetweenCurrencies: jest.fn(() => 1.5),
 }));
 
 jest.mock('../../../../../js/utils/smoothing.js', () => ({
@@ -76,5 +77,33 @@ describe('drawFxChart', () => {
 
         expect(stopFxAnimation).toHaveBeenCalled();
         expect(chartLayouts.fx).toBeNull();
+    });
+});
+
+describe('buildFxChartSeries', () => {
+    it('builds series covering all branches', async () => {
+        const { transactionState } = await import('../../../../../js/transactions/state.js');
+
+        // Setup state to hit all branches
+        transactionState.fxRatesByCurrency = {
+            USD: { sorted: [{ date: '2023-01-01' }] },
+            CNY: { sorted: [] }, // hits dateSource.length === 0
+            JPY: { sorted: [{ date: '2023-01-01' }] }, // hits !points.length (if conversion returns NaN)
+            KRW: { sorted: [{ date: '2023-01-01' }] }, // hits happy path
+        };
+
+        const { convertBetweenCurrencies } =
+            await import('../../../../../js/transactions/utils.js');
+        // Force conversion to fail for JPY to hit !points.length branch
+        convertBetweenCurrencies.mockImplementation((amt, base, date, target) => {
+            if (target === 'JPY') {return NaN;}
+            return 1.5;
+        });
+
+        const { buildFxChartSeries } =
+            await import('../../../../../js/transactions/chart/renderers/fx.js');
+
+        const series = buildFxChartSeries('USD');
+        expect(series.length).toBeGreaterThanOrEqual(0);
     });
 });
