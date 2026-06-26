@@ -878,7 +878,9 @@ def fetch_benchmark_pe_daily(
                 prices.index = prices.index.normalize().tz_localize(None)
             else:
                 prices = pd.Series(dtype=float)
-        except Exception:
+        except Exception as exc:
+            # security: remediate silent catch block hiding failures
+            print(f"Warning: Failed to fetch history for proxy {proxy_ticker}: {exc}")
             prices = pd.Series(dtype=float)
 
         # For ETF proxies: if no EPS data but trailingPE is available,
