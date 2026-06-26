@@ -1,5 +1,9 @@
 import { COLOR_PALETTES } from '@js/config.js';
 
+/**
+ * @param {number} index
+ * @returns {string}
+ */
 export function getBlueColorForSlice(index) {
     // Larger slices (lower index) will get darker blues.
     const palette = COLOR_PALETTES.PIE_CHART_SLICE_COLORS;
@@ -8,6 +12,11 @@ export function getBlueColorForSlice(index) {
     return palette[index % palette.length];
 }
 
+/**
+ * @param {string} hex
+ * @param {number} alpha
+ * @returns {string}
+ */
 export function hexToRgba(hex, alpha) {
     let r = 0,
         g = 0,
