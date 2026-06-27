@@ -1,6 +1,7 @@
 import {
     buildRangeSummary,
     sortCrosshairSnapshot,
+    crosshairState,
 } from '../../../../js/transactions/chart/interaction.js';
 import { formatCurrencyInline } from '../../../../js/transactions/utils.js';
 
@@ -92,6 +93,151 @@ describe('Interaction logic', () => {
             expect(snapshot[1].key).toBe('seriesA'); // abs: 500
             expect(snapshot[2].key).toBe('seriesB'); // abs: 300
             expect(snapshot[3].key).toBe('seriesC'); // abs: 100
+        });
+    });
+
+    describe('attachCrosshairEvents', () => {
+        let canvas;
+        let chartManager;
+        let container;
+
+        beforeEach(() => {
+            jest.resetModules();
+
+            // Setup DOM elements
+            container = document.createElement('div');
+            container.className = 'chart-container';
+
+            canvas = document.createElement('canvas');
+            canvas.getBoundingClientRect = jest.fn(() => ({
+                left: 10,
+                top: 10,
+                width: 500,
+                height: 300,
+                right: 510,
+                bottom: 310,
+            }));
+
+            container.appendChild(canvas);
+            document.body.appendChild(container);
+
+            chartManager = {
+                redraw: jest.fn(),
+            };
+
+            crosshairState.dragging = false;
+            crosshairState.active = false;
+            crosshairState.hoverTime = null;
+        });
+
+        afterEach(() => {
+            document.body.innerHTML = '';
+            jest.clearAllMocks();
+        });
+
+        it('should bind pointer events and handle a simple lifecycle', async () => {
+            jest.mock('../../../../js/transactions/state.js', () => ({
+                transactionState: {
+                    activeChart: 'contribution',
+                },
+            }));
+            jest.mock('../../../../js/transactions/chart/state.js', () => ({
+                chartLayouts: {
+                    contribution: {
+                        key: 'contribution',
+                        chartBounds: { left: 0, right: 500, top: 0, bottom: 300 },
+                        invertX: jest.fn(() => 1000),
+                    },
+                },
+            }));
+
+            // Dynamic import to get the mocked state
+            const interactionMod = await import('../../../../js/transactions/chart/interaction.js');
+
+            interactionMod.attachCrosshairEvents(canvas, chartManager);
+
+            // Pointer down
+            const pointerDownEvent = document.createEvent('Event');
+            pointerDownEvent.initEvent('pointerdown', true, true);
+            pointerDownEvent.clientX = 50;
+            pointerDownEvent.clientY = 50;
+            pointerDownEvent.pointerId = 1;
+            canvas.dispatchEvent(pointerDownEvent);
+
+            expect(interactionMod.crosshairState.active).toBe(true);
+            expect(interactionMod.crosshairState.dragging).toBe(true);
+            expect(chartManager.redraw).toHaveBeenCalled();
+
+            // Pointer move
+            const pointerMoveEvent = document.createEvent('Event');
+            pointerMoveEvent.initEvent('pointermove', true, true);
+            pointerMoveEvent.clientX = 100;
+            pointerMoveEvent.clientY = 50;
+            canvas.dispatchEvent(pointerMoveEvent);
+
+            expect(interactionMod.crosshairState.rangeEnd).toBe(1000);
+
+            // Pointer up
+            const pointerUpEvent = document.createEvent('Event');
+            pointerUpEvent.initEvent('pointerup', true, true);
+            pointerUpEvent.clientX = 100;
+            pointerUpEvent.clientY = 50;
+            pointerUpEvent.pointerId = 1;
+            canvas.dispatchEvent(pointerUpEvent);
+
+            expect(interactionMod.crosshairState.dragging).toBe(false);
+
+            // Pointer leave
+            const pointerLeaveEvent = document.createEvent('Event');
+            pointerLeaveEvent.initEvent('pointerleave', true, true);
+            canvas.dispatchEvent(pointerLeaveEvent);
+        });
+
+        it('should handle interaction with no range functionality on layout', async () => {
+            jest.mock('../../../../js/transactions/state.js', () => ({
+                transactionState: {
+                    activeChart: 'composition',
+                },
+            }));
+            jest.mock('../../../../js/transactions/chart/state.js', () => ({
+                chartLayouts: {
+                    composition: {
+                        key: 'composition',
+                        chartBounds: { left: 0, right: 500, top: 0, bottom: 300 },
+                        invertX: jest.fn(() => 1000),
+                    },
+                },
+            }));
+
+            // Dynamic import to get the mocked state
+            const interactionMod = await import('../../../../js/transactions/chart/interaction.js');
+
+            interactionMod.attachCrosshairEvents(canvas, chartManager);
+
+            // Pointer down
+            const pointerDownEvent = document.createEvent('Event');
+            pointerDownEvent.initEvent('pointerdown', true, true);
+            pointerDownEvent.clientX = 50;
+            pointerDownEvent.clientY = 50;
+            pointerDownEvent.pointerId = 1;
+            canvas.dispatchEvent(pointerDownEvent);
+
+            expect(interactionMod.crosshairState.rangeStart).toBe(null);
+
+            // Pointer move
+            const pointerMoveEvent = document.createEvent('Event');
+            pointerMoveEvent.initEvent('pointermove', true, true);
+            pointerMoveEvent.clientX = 100;
+            pointerMoveEvent.clientY = 50;
+            canvas.dispatchEvent(pointerMoveEvent);
+
+            expect(interactionMod.crosshairState.rangeEnd).toBe(null);
+
+            // Double click
+            const dblClickEvent = document.createEvent('Event');
+            dblClickEvent.initEvent('dblclick', true, true);
+            canvas.dispatchEvent(dblClickEvent);
+            expect(interactionMod.crosshairState.active).toBe(false);
         });
     });
 });
