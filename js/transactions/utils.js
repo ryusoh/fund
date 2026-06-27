@@ -28,41 +28,17 @@ function getFxEntry(currency) {
 // Cache for FX rates to avoid repeated binary searches
 const fxRateCache = new Map(); // currency -> Map<dateString, rate>
 
-function findFxRate(dateString, currency) {
-    if (!currency || currency === 'USD') {
-        return 1;
+function _setCachedFxRate(currency, dateString, rate) {
+    let currencyCache = fxRateCache.get(currency);
+    if (!currencyCache) {
+        currencyCache = new Map();
+        fxRateCache.set(currency, currencyCache);
     }
+    currencyCache.set(dateString, rate);
+    return rate;
+}
 
-    // Check cache first
-    const currencyCache = fxRateCache.get(currency);
-    if (currencyCache?.has(dateString)) {
-        return currencyCache.get(dateString);
-    }
-
-    const fxEntry = getFxEntry(currency);
-    if (!fxEntry || !fxEntry.map || !fxEntry.sorted?.length) {
-        return 1;
-    }
-    if (fxEntry.map.has(dateString)) {
-        const rate = fxEntry.map.get(dateString) || 1;
-        // Cache the result
-        if (!currencyCache) {
-            fxRateCache.set(currency, new Map());
-        }
-        fxRateCache.get(currency).set(dateString, rate);
-        return rate;
-    }
-    const timestamp = Date.parse(dateString);
-    if (!Number.isFinite(timestamp)) {
-        const firstKey = fxEntry.sorted[0]?.date;
-        const rate = (firstKey && fxEntry.map.get(firstKey)) || 1;
-        // Cache the result
-        if (!currencyCache) {
-            fxRateCache.set(currency, new Map());
-        }
-        fxRateCache.get(currency).set(dateString, rate);
-        return rate;
-    }
+function _findClosestDateRate(fxEntry, timestamp) {
     let left = 0;
     let right = fxEntry.sorted.length - 1;
     let candidateIndex = 0;
@@ -81,15 +57,39 @@ function findFxRate(dateString, currency) {
         }
     }
     const candidateDate = fxEntry.sorted[candidateIndex]?.date;
-    const rate = (candidateDate && fxEntry.map.get(candidateDate)) || 1;
+    return (candidateDate && fxEntry.map.get(candidateDate)) || 1;
+}
 
-    // Cache the result
-    if (!currencyCache) {
-        fxRateCache.set(currency, new Map());
+function _computeFxRate(fxEntry, dateString) {
+    if (fxEntry.map.has(dateString)) {
+        return fxEntry.map.get(dateString) || 1;
     }
-    fxRateCache.get(currency).set(dateString, rate);
+    const timestamp = Date.parse(dateString);
+    if (!Number.isFinite(timestamp)) {
+        const firstKey = fxEntry.sorted[0]?.date;
+        return (firstKey && fxEntry.map.get(firstKey)) || 1;
+    }
+    return _findClosestDateRate(fxEntry, timestamp);
+}
 
-    return rate;
+function findFxRate(dateString, currency) {
+    if (!currency || currency === 'USD') {
+        return 1;
+    }
+
+    // Check cache first
+    const currencyCache = fxRateCache.get(currency);
+    if (currencyCache?.has(dateString)) {
+        return currencyCache.get(dateString);
+    }
+
+    const fxEntry = getFxEntry(currency);
+    if (!fxEntry || !fxEntry.map || !fxEntry.sorted?.length) {
+        return 1;
+    }
+
+    const rate = _computeFxRate(fxEntry, dateString);
+    return _setCachedFxRate(currency, dateString, rate);
 }
 
 export function clearFxRateCache() {
