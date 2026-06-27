@@ -73,20 +73,3 @@ Conventional Commits per `AGENTS.md`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Testpilot:` prefix**.
 - Body: each target file before → after coverage; any file skipped and why; "no
   production code changed"; pasted `make verify` output.
-
-## 2026-06-26 - Mocking Three.js WebGLRenderer in JSDOM
-
-**Learning:** When writing tests that instantiate classes relying on `three.module.js` `WebGLRenderer` (like `webglCaustics`), mocking the canvas `getContext` method is not enough to pass Three.js's internal context validation. Three.js attempts to check `instanceof WebGLRenderingContext`.
-**Prevention:** In JSDOM test suites that invoke Three.js WebGL contexts, globally mock the rendering context classes before test execution (and clean them up after):
-
-```javascript
-const origWebGL = window.WebGLRenderingContext;
-const origWebGL2 = window.WebGL2RenderingContext;
-window.WebGLRenderingContext = function () {};
-window.WebGL2RenderingContext = function () {};
-// ... run tests
-window.WebGLRenderingContext = origWebGL;
-window.WebGL2RenderingContext = origWebGL2;
-```
-
-Additionally, `WebGLRenderer` validates that the DOM element passed to it is a true `Node` by appending it to internal containers. The mocked `domElement` must either be a real document node (`document.createElement('canvas')`) or specifically duck-typed to pass JSDOM's `isNode` check (`{ nodeType: 1 }`).
