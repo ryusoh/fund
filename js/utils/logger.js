@@ -25,18 +25,27 @@ export const isDevelopment = () => {
 };
 
 export const logger = {
+    /**
+     * @param {...unknown} args
+     */
     log: (...args) => {
         if (isDevelopment()) {
             // eslint-disable-next-line no-console
             console.log(...args);
         }
     },
+    /**
+     * @param {...unknown} args
+     */
     warn: (...args) => {
         if (isDevelopment()) {
             // eslint-disable-next-line no-console
             console.warn(...args);
         }
     },
+    /**
+     * @param {...unknown} args
+     */
     error: (...args) => {
         if (isDevelopment()) {
             // eslint-disable-next-line no-console
