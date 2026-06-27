@@ -93,8 +93,8 @@ describe('Performance Caching Regression Tests', () => {
 
         test('should cache FX rate results after lookup', () => {
             // Must store results after finding rate
-            expect(utilsContent).toMatch(/fxRateCache\.set\(currency,\s*new Map\(\)\)/);
-            expect(utilsContent).toMatch(/fxRateCache\.get\(currency\)\.set\(dateString,\s*rate\)/);
+            expect(utilsContent).toMatch(/fxRateCache\.set\(currency,\s*currencyCache\)/);
+            expect(utilsContent).toMatch(/currencyCache\.set\(dateString,\s*rate\)/);
         });
 
         test('should export clearFxRateCache function', () => {
@@ -108,17 +108,21 @@ describe('Performance Caching Regression Tests', () => {
             // 2. First key fallback
             // 3. Binary search result
 
-            const findFxRateFunction = utilsContent.match(/function findFxRate\([\s\S]*?^}/m);
-            expect(findFxRateFunction).toBeTruthy();
+            const setCachedFxRateFunction = utilsContent.match(/function _setCachedFxRate\([\s\S]*?^}/m);
+            expect(setCachedFxRateFunction).toBeTruthy();
 
-            const functionContent = findFxRateFunction[0];
+            const functionContent = setCachedFxRateFunction[0];
 
-            // Count cache sets - should have at least 3 (one for each code path)
+            // The single setter function is called for all code paths and sets the cache once
             const cacheSetMatches = functionContent.match(
-                /fxRateCache\.get\(currency\)\.set\(dateString,\s*rate\)/g
+                /currencyCache\.set\(dateString,\s*rate\)/g
             );
             expect(cacheSetMatches).toBeTruthy();
-            expect(cacheSetMatches.length).toBeGreaterThanOrEqual(3);
+            expect(cacheSetMatches.length).toBeGreaterThanOrEqual(1);
+
+            const findFxRateFunction = utilsContent.match(/function findFxRate\([\s\S]*?^}/m);
+            expect(findFxRateFunction).toBeTruthy();
+            expect(findFxRateFunction[0]).toMatch(/_setCachedFxRate\(/);
         });
     });
 
