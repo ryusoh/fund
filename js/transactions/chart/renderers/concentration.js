@@ -130,20 +130,24 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
         }
 
         // Gather positive weights for this day
+        // Use explicit arrays and standard loops instead of .forEach + Object lookups
+        // to avoid allocating closures and O(N^2) inner search loops
         let totalWeight = 0;
-        const weights = [];
-        const tickerWeights = {};
-        tickers.forEach((ticker) => {
+        const activeWeights = [];
+        const activeTickers = [];
+
+        for (let j = 0; j < tickers.length; j += 1) {
+            const ticker = tickers[j];
             const values = compositionSeries[ticker];
             const pct = Number(Array.isArray(values) ? (values[i] ?? 0) : 0);
             if (Number.isFinite(pct) && pct > 0) {
-                weights.push(pct);
+                activeWeights.push(pct);
+                activeTickers.push(ticker);
                 totalWeight += pct;
-                tickerWeights[ticker] = pct;
             }
-        });
+        }
 
-        if (totalWeight <= 0 || weights.length === 0) {
+        if (totalWeight <= 0 || activeWeights.length === 0) {
             continue;
         }
 
@@ -151,16 +155,12 @@ export function buildConcentrationSeries(dates, compositionSeries, filterFrom, f
         // For ETFs: HHI = Σ(wᵢ² × ETF_HHI/10000)
         // For stocks: HHI = Σ(wᵢ²)
         let hhi = 0;
-        weights.forEach((w) => {
+        for (let j = 0; j < activeWeights.length; j += 1) {
+            const w = activeWeights[j];
+            const ticker = activeTickers[j];
             const normalized = w / totalWeight;
-            // Find the ticker for this weight
-            const ticker = Object.keys(tickerWeights).find((t) => tickerWeights[t] === w);
-            if (ticker) {
-                hhi += calculateAdjustedHhiContribution(ticker, normalized);
-            } else {
-                hhi += normalized * normalized;
-            }
-        });
+            hhi += calculateAdjustedHhiContribution(ticker, normalized);
+        }
 
         const effectiveHoldings = hhi > 0 ? 1 / hhi : 0;
 
@@ -380,13 +380,15 @@ export async function drawConcentrationChart(ctx, chartManager, timestamp) {
     }
     ctx.beginPath();
     ctx.lineWidth = lineThickness;
-    coords.forEach((coord, index) => {
+    // Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
+    for (let index = 0; index < coords.length; index += 1) {
+        const coord = coords[index];
         if (index === 0) {
             ctx.moveTo(coord.x, coord.y);
         } else {
             ctx.lineTo(coord.x, coord.y);
         }
-    });
+    }
     ctx.stroke();
 
     // End value label
