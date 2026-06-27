@@ -20,15 +20,21 @@ describe('CalendarRenderer', () => {
     });
 
     test('jumpTo throws not implemented error', () => {
-        expect(() => renderer.jumpTo(new Date(), true)).toThrow('CalendarRenderer.jumpTo() not implemented');
+        expect(() => renderer.jumpTo(new Date(), true)).toThrow(
+            'CalendarRenderer.jumpTo() not implemented'
+        );
     });
 
     test('on throws not implemented error', () => {
-        expect(() => renderer.on('event', () => {})).toThrow('CalendarRenderer.on() not implemented');
+        expect(() => renderer.on('event', () => {})).toThrow(
+            'CalendarRenderer.on() not implemented'
+        );
     });
 
     test('renderState throws not implemented error', () => {
-        expect(() => renderer.renderState({})).toThrow('CalendarRenderer.renderState() not implemented');
+        expect(() => renderer.renderState({})).toThrow(
+            'CalendarRenderer.renderState() not implemented'
+        );
     });
 
     test('destroy throws not implemented error', () => {

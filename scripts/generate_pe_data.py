@@ -1478,7 +1478,9 @@ def main():
                         manual_anchors = manual_anchors.copy()
                     manual_anchors.update(history[bmk_ticker])
             except Exception as e:
-                print(f"Warning: Failed to merge manual anchors from BENCHMARK_HISTORY_PATH for {bmk_ticker}: {e}")
+                print(
+                    f"Warning: Failed to merge manual anchors from BENCHMARK_HISTORY_PATH for {bmk_ticker}: {e}"
+                )
 
         pe_series = fetch_benchmark_pe_daily(proxy_etf, dates, manual_anchors=manual_anchors)
         if pe_series is None:

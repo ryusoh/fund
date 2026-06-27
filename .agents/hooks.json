@@ -1,0 +1,10 @@
+{
+    "sync-commands": {
+        "PreInvocation": [
+            {
+                "type": "command",
+                "command": "python3 scripts/sync_commands.py"
+            }
+        ]
+    }
+}
