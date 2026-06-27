@@ -825,6 +825,25 @@ class TestFetchBenchmarkPEDaily(unittest.TestCase):
         result = fetch_benchmark_pe_daily("SPY", dates)
         self.assertIsNone(result)
 
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    def test_fetch_stock_history_exception(self, mock_ticker) -> None:
+        """Tests that fetching stock history suppresses the exception properly."""
+        from scripts.generate_pe_data import fetch_benchmark_pe_daily
+        dates = pd.date_range("2024-01-01", "2024-01-05")
+
+        mock_stock = MagicMock()
+        mock_stock.history.side_effect = Exception("Network error history")
+        mock_stock.info = {"trailingPE": 25.0, "trailingEps": None}
+        mock_stock.income_stmt = pd.DataFrame()
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        mock_stock.splits = pd.Series(dtype=float)
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame()
+        mock_ticker.return_value = mock_stock
+
+        manual = {"2024-01-01": 24.0, "2024-01-05": 25.0}
+        result = fetch_benchmark_pe_daily("SPY", dates, manual_anchors=manual)
+        self.assertIsNotNone(result)
+
 
 class TestComputeBenchmarkPEFromProxy(unittest.TestCase):
     """Tests for compute_benchmark_pe_from_proxy — derives daily benchmark PE
