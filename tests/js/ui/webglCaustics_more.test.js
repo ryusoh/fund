@@ -13,43 +13,59 @@ jest.mock('../../../js/vendor/three.module.js', () => {
                 dispose: jest.fn(),
                 domElement: { width: 100, height: 100, style: {} },
                 capabilities: {
-                    isWebGL2: false
+                    isWebGL2: false,
                 },
-                extensions: { get: jest.fn().mockReturnValue(true) }
+                extensions: { get: jest.fn().mockReturnValue(true) },
             };
         }),
         WebGLRenderTarget: jest.fn().mockImplementation(() => ({
             texture: {},
-            dispose: jest.fn()
+            dispose: jest.fn(),
         })),
         Scene: jest.fn().mockImplementation(() => ({
-            add: jest.fn()
+            add: jest.fn(),
         })),
         Camera: jest.fn(),
         OrthographicCamera: jest.fn(),
         PlaneGeometry: jest.fn().mockImplementation(() => ({
-            dispose: jest.fn()
+            dispose: jest.fn(),
         })),
         ShaderMaterial: jest.fn().mockImplementation(() => ({
-            uniforms: { u_obstacles: { value: null }, texelSize: { value: null }, uTarget: { value: null }, aspectRatio: { value: 1 }, point: { value: null }, color: { value: null }, radius: { value: 0 }, uDye: { value: null }, uVelocity: { value: null }, u_time: { value: 0 }, uSource: { value: null }, dt: { value: 0 }, dissipation: { value: 0 }, uDivergence: { value: null }, uPressure: { value: null } },
-            dispose: jest.fn()
+            uniforms: {
+                u_obstacles: { value: null },
+                texelSize: { value: null },
+                uTarget: { value: null },
+                aspectRatio: { value: 1 },
+                point: { value: null },
+                color: { value: null },
+                radius: { value: 0 },
+                uDye: { value: null },
+                uVelocity: { value: null },
+                u_time: { value: 0 },
+                uSource: { value: null },
+                dt: { value: 0 },
+                dissipation: { value: 0 },
+                uDivergence: { value: null },
+                uPressure: { value: null },
+            },
+            dispose: jest.fn(),
         })),
         Mesh: jest.fn().mockImplementation(() => ({
-            material: null
+            material: null,
         })),
         Vector2: jest.fn(),
         CanvasTexture: jest.fn().mockImplementation(() => ({
-            needsUpdate: false
+            needsUpdate: false,
         })),
         Clock: jest.fn().mockImplementation(() => ({
             start: jest.fn(),
             getDelta: jest.fn().mockReturnValue(0.016),
-            elapsedTime: 1
+            elapsedTime: 1,
         })),
         HalfFloatType: 1013,
         FloatType: 1014,
         RGBAFormat: 1023,
-        NearestFilter: 1003
+        NearestFilter: 1003,
     };
 });
 
@@ -102,15 +118,15 @@ describe('WebGLCaustics execution', () => {
             dispose: jest.fn(),
             domElement: document.createElement('canvas'),
             capabilities: {
-                isWebGL2: false
+                isWebGL2: false,
             },
-            extensions: { get: jest.fn().mockReturnValue(true) }
+            extensions: { get: jest.fn().mockReturnValue(true) },
         }));
 
         window.ResizeObserver = jest.fn().mockImplementation(() => ({
             observe: jest.fn(),
             unobserve: jest.fn(),
-            disconnect: jest.fn()
+            disconnect: jest.fn(),
         }));
     });
 
