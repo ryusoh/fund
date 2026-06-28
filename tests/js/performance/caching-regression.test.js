@@ -108,7 +108,9 @@ describe('Performance Caching Regression Tests', () => {
             // 2. First key fallback
             // 3. Binary search result
 
-            const setCachedFxRateFunction = utilsContent.match(/function _setCachedFxRate\([\s\S]*?^}/m);
+            const setCachedFxRateFunction = utilsContent.match(
+                /function _setCachedFxRate\([\s\S]*?^}/m
+            );
             expect(setCachedFxRateFunction).toBeTruthy();
 
             const functionContent = setCachedFxRateFunction[0];
