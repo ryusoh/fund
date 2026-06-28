@@ -3,6 +3,9 @@ import { ASSET_CLASS_OVERRIDES, isLikelyFundTicker } from './config/assetClasses
 
 const FUND_BASE_PATH = '/fund';
 
+/**
+ * @param {string|unknown} pathname
+ */
 const isServedFromFundDirectory = (pathname) => {
     if (typeof pathname !== 'string' || pathname.length === 0) {
         return false;
@@ -12,6 +15,9 @@ const isServedFromFundDirectory = (pathname) => {
     return firstSegment === FUND_BASE_PATH.slice(1);
 };
 
+/**
+ * @param {Location | { hostname?: string, pathname?: string } | undefined | null} location
+ */
 export const getBaseUrl = (location) => {
     if (!location) {
         return '';
@@ -174,6 +180,9 @@ export const CURRENCY_SYMBOLS = {
     KRW: '₩',
 };
 
+/**
+ * @param {string|unknown} ticker
+ */
 export function getHoldingAssetClass(ticker) {
     if (typeof ticker !== 'string') {
         return 'stock';
