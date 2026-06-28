@@ -26,7 +26,7 @@ function toggleCenterPersistence(chart) {
             contentBlock.classList.remove('hidden');
         }
         tableElement.classList.remove('hidden');
-        allDataRows.forEach((row) => row.classList.remove('hidden'));
+        for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.remove('hidden'); }
         if (footerWrapperElement) {
             footerWrapperElement.classList.remove('hidden');
         }
@@ -35,7 +35,7 @@ function toggleCenterPersistence(chart) {
             contentBlock.classList.add('hidden');
         }
         tableElement.classList.add('hidden');
-        allDataRows.forEach((row) => row.classList.add('hidden'));
+        for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.add('hidden'); }
         if (footerWrapperElement) {
             footerWrapperElement.classList.add('hidden');
         }
@@ -232,7 +232,7 @@ export function updatePieChart(data) {
                         if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
                             // Only show all rows on hover on desktop
                             tableShouldBeVisible = true;
-                            allDataRows.forEach((row) => row.classList.remove('hidden'));
+                            for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.remove('hidden'); }
                         }
                     } else if (activeElements.length > 0 && chart.data.labels?.length > 0) {
                         const activeSegment = activeElements[0];
@@ -245,9 +245,9 @@ export function updatePieChart(data) {
                             );
                             if (specificRowToShow) {
                                 tableShouldBeVisible = true;
-                                allDataRows.forEach((row) =>
-                                    row.classList.toggle('hidden', row !== specificRowToShow)
-                                );
+                                for (let i = 0; i < allDataRows.length; i++) {
+                                    allDataRows[i].classList.toggle('hidden', allDataRows[i] !== specificRowToShow);
+                                }
                             }
                         }
                     }
@@ -267,7 +267,7 @@ export function updatePieChart(data) {
                             contentBlock.classList.add('hidden');
                         }
                         tableElement.classList.add('hidden');
-                        allDataRows.forEach((row) => row.classList.add('hidden'));
+                        for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.add('hidden'); }
                         if (footerWrapperElement) {
                             footerWrapperElement.classList.add('hidden');
                         }
@@ -309,7 +309,7 @@ export function updatePieChart(data) {
                     if (tableElement) {
                         tableElement.classList.add('hidden');
                     }
-                    allDataRows.forEach((row) => row.classList.add('hidden'));
+                    for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.add('hidden'); }
                     if (footerWrapperElement) {
                         footerWrapperElement.classList.add('hidden');
                     }
@@ -364,7 +364,7 @@ export function updatePieChart(data) {
                 if (tableElement) {
                     tableElement.classList.add('hidden');
                 }
-                allDataRows.forEach((row) => row.classList.add('hidden'));
+                for (let i = 0; i < allDataRows.length; i++) { allDataRows[i].classList.add('hidden'); }
                 if (footerWrapperElement) {
                     footerWrapperElement.classList.add('hidden');
                 }
