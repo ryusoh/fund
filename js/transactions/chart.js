@@ -184,4 +184,5 @@ export const __chartTestables = {
     computePercentTickInfo,
     buildFilteredBalanceSeries,
     generateYearBasedTicks,
+    rendererCache,
 };
