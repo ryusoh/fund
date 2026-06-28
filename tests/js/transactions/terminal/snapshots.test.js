@@ -330,7 +330,8 @@ describe('getDrawdownSnapshotLine absolute mode', () => {
     let getDrawdownSnapshotLine, transactionState;
 
     beforeEach(() => {
-        getDrawdownSnapshotLine = require('../../../../js/transactions/terminal/snapshots.js').getDrawdownSnapshotLine;
+        getDrawdownSnapshotLine =
+            require('../../../../js/transactions/terminal/snapshots.js').getDrawdownSnapshotLine;
         transactionState = require('../../../../js/transactions/state.js').transactionState;
         transactionState.activeChart = 'drawdownAbs';
         transactionState.selectedCurrency = 'USD';
@@ -352,13 +353,15 @@ describe('getDrawdownSnapshotLine absolute mode', () => {
         // it might crash. So we mock it using jest.mock at the top level,
         // but we already have a mock for `../../../../js/transactions/chart/data/contribution.js`
         // so we just return dummy data from it.
-        const { getContributionSeriesForTransactions } = require('../../../../js/transactions/chart/data/contribution.js');
+        const {
+            getContributionSeriesForTransactions,
+        } = require('../../../../js/transactions/chart/data/contribution.js');
 
         getContributionSeriesForTransactions.mockReturnValue([
-             { date: new Date('2025-01-01'), value: 100 },
-             { date: new Date('2025-01-02'), value: 100 },
-             { date: new Date('2025-01-03'), value: 100 },
-             { date: new Date('2025-01-04'), value: 100 },
+            { date: new Date('2025-01-01'), value: 100 },
+            { date: new Date('2025-01-02'), value: 100 },
+            { date: new Date('2025-01-03'), value: 100 },
+            { date: new Date('2025-01-04'), value: 100 },
         ]);
 
         const snapshot = getDrawdownSnapshotLine({ isAbsolute: true });
@@ -372,20 +375,23 @@ describe('getDrawdownSnapshotLine absolute mode', () => {
     });
 
     it('returns absolute drawdown correctly with filter active', () => {
-        const { getContributionSeriesForTransactions, buildFilteredBalanceSeries } = require('../../../../js/transactions/chart/data/contribution.js');
+        const {
+            getContributionSeriesForTransactions,
+            buildFilteredBalanceSeries,
+        } = require('../../../../js/transactions/chart/data/contribution.js');
         const { hasActiveTransactionFilters } = require('../../../../js/transactions/state.js');
 
         hasActiveTransactionFilters.mockReturnValue(true);
         transactionState.activeFilterTerm = 'test';
 
         buildFilteredBalanceSeries.mockReturnValue([
-             { date: new Date('2025-01-01'), value: 100 },
-             { date: new Date('2025-01-02'), value: 80 },
+            { date: new Date('2025-01-01'), value: 100 },
+            { date: new Date('2025-01-02'), value: 80 },
         ]);
 
         getContributionSeriesForTransactions.mockReturnValue([
-             { date: new Date('2025-01-01'), value: 100 },
-             { date: new Date('2025-01-02'), value: 100 },
+            { date: new Date('2025-01-01'), value: 100 },
+            { date: new Date('2025-01-02'), value: 100 },
         ]);
 
         const snapshot = getDrawdownSnapshotLine({ isAbsolute: true });

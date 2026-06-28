@@ -35,3 +35,8 @@ worker/.wrangler/
 !.claude/settings.json
 !.claude/launch.json
 # (still ignored by .claude/*: settings.local.json — personal; worktrees/ — transient)
+
+# Transient agent artifacts / PR details
+pr_body.txt
+pr_title.txt
+commit_message.txt
