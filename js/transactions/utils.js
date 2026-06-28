@@ -112,6 +112,34 @@ export function convertValueToCurrency(value, dateString, currency = getSelected
     return amount * rate;
 }
 
+function _normalizeCurrency(currency) {
+    return typeof currency === 'string' && currency.trim()
+        ? currency.trim().toUpperCase()
+        : 'USD';
+}
+
+function _convertToUSD(amount, normalizedDate, source) {
+    if (source === 'USD') {
+        return amount;
+    }
+    const fromRate = findFxRate(normalizedDate, source);
+    if (!Number.isFinite(fromRate) || fromRate === 0) {
+        return null;
+    }
+    return amount / fromRate;
+}
+
+function _convertFromUSD(usdAmount, normalizedDate, target) {
+    if (target === 'USD') {
+        return usdAmount;
+    }
+    const targetRate = findFxRate(normalizedDate, target);
+    if (!Number.isFinite(targetRate) || targetRate === 0) {
+        return usdAmount;
+    }
+    return usdAmount * targetRate;
+}
+
 export function convertBetweenCurrencies(
     value,
     fromCurrency,
@@ -124,33 +152,20 @@ export function convertBetweenCurrencies(
     }
     const normalizedDate =
         dateString instanceof Date ? dateString.toISOString().split('T')[0] : dateString;
-    const source =
-        typeof fromCurrency === 'string' && fromCurrency.trim()
-            ? fromCurrency.trim().toUpperCase()
-            : 'USD';
-    const target =
-        typeof toCurrency === 'string' && toCurrency.trim()
-            ? toCurrency.trim().toUpperCase()
-            : 'USD';
+
+    const source = _normalizeCurrency(fromCurrency);
+    const target = _normalizeCurrency(toCurrency);
+
     if (source === target) {
         return amount;
     }
-    let usdAmount = amount;
-    if (source !== 'USD') {
-        const fromRate = findFxRate(normalizedDate, source);
-        if (!Number.isFinite(fromRate) || fromRate === 0) {
-            return amount;
-        }
-        usdAmount = amount / fromRate;
+
+    const usdAmount = _convertToUSD(amount, normalizedDate, source);
+    if (usdAmount === null) {
+        return amount;
     }
-    if (target === 'USD') {
-        return usdAmount;
-    }
-    const targetRate = findFxRate(normalizedDate, target);
-    if (!Number.isFinite(targetRate) || targetRate === 0) {
-        return usdAmount;
-    }
-    return usdAmount * targetRate;
+
+    return _convertFromUSD(usdAmount, normalizedDate, target);
 }
 
 // Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
