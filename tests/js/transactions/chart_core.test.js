@@ -289,7 +289,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -345,7 +345,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -401,7 +401,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -457,7 +457,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -513,7 +513,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -569,7 +569,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -625,7 +625,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -681,7 +681,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -737,7 +737,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -793,7 +793,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -849,7 +849,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
@@ -905,7 +905,7 @@ describe('createChartManager', () => {
         // Wrap the awaited call in a try/catch to silence expected errors (as previously tried, but this time we also assert the state)
         try {
             await rafCallback(1000);
-        } catch (e) {
+        } catch {
             // Expected
         }
 
