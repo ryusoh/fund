@@ -97,12 +97,15 @@ def test_update_json_file_not_found(mock_exists):
 
 @patch('scripts.update_vt_sectors.fetch_vt_sectors')
 @patch('scripts.update_vt_sectors.update_json')
-def test_main_success(mock_update, mock_fetch):
+@patch('scripts.update_vt_sectors.subprocess.run')
+def test_main_success(mock_run, mock_update, mock_fetch):
     mock_fetch.return_value = {"Technology": 25.5}
+    mock_update.return_value = True
 
     uvs.main()
 
     mock_update.assert_called_once_with({"Technology": 25.5})
+    mock_run.assert_called_once()
 
 
 @patch('scripts.update_vt_sectors.fetch_vt_sectors')
@@ -122,7 +125,9 @@ def test_main_block_actual():
         import re
 
         code = re.sub(
-            r"if __name__ == '__main__':\s+main\(\)", "if __name__ == '__main__': pass", code
+            r"if __name__ == ['\"]__main__['\"]:\s+main\(\)",
+            "if __name__ == '__main__': pass",
+            code,
         )
         exec(code, {'__name__': '__main__', '__file__': 'scripts/update_vt_sectors.py'})
 
