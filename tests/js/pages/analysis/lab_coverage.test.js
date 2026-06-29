@@ -97,6 +97,34 @@ describe('lab.js specific coverage', () => {
             // It should fallback to 0.5 for missing kellyScale
             expect(portfolio.model.preferences.kellyScale).toBeCloseTo(0.5);
         });
+
+        it('calculates total volatility properly for multiple configs', () => {
+            const cfg1 = {
+                marketValue: 1000,
+                weight: 0.6,
+                scenarios: [],
+                model: { preferences: { benchmark: { value: 100 } } },
+                risk: { volatility: 0.2 },
+                market: { price: 100 },
+                position: { shares: 10 },
+                metrics: { outcomes: [] },
+            };
+            const cfg2 = {
+                marketValue: 1000,
+                weight: 0.4,
+                scenarios: [],
+                model: { preferences: { benchmark: { value: 100 } } },
+                risk: { volatility: 0.4 },
+                market: { price: 100 },
+                position: { shares: 10 },
+                metrics: { outcomes: [] },
+            };
+
+            const portfolio = __analysisLabTesting.buildPortfolioConfig([cfg1, cfg2]);
+            // volSum = (0.6^2 * 0.2^2) + (0.4^2 * 0.4^2) = (0.36 * 0.04) + (0.16 * 0.16) = 0.0144 + 0.0256 = 0.04
+            // sqrt(0.04) = 0.2
+            expect(portfolio.risk.volatility).toBeCloseTo(0.2);
+        });
     });
 });
 

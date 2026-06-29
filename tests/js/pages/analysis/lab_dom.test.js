@@ -19,7 +19,16 @@ document.body.innerHTML = `
     <button id="btnBayesBear"></button>
     <button id="btnBayesReset"></button>
     <button id="btnRunMonteCarlo"></button>
+    <div id="riskMetrics"></div>
+    <canvas id="monteCarloCanvas"></canvas>
 `;
+
+const mockCtx = {
+    clearRect: jest.fn(),
+    fillRect: jest.fn(),
+};
+
+HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx);
 
 const { __analysisLabTesting } = require('../../../../js/pages/analysis/lab.js');
 
@@ -91,5 +100,37 @@ describe('lab.js DOM event coverage', () => {
                 type: 'RUN_SIMULATION',
             })
         );
+    });
+
+    it('monteCarloWorker onmessage renders monte carlo results', () => {
+        // Prepare DOM state
+        const riskMetricsEl = document.getElementById('riskMetrics');
+        const btnRunMonteCarlo = document.getElementById('btnRunMonteCarlo');
+        btnRunMonteCarlo.disabled = true;
+
+        // Trigger worker onmessage
+        const mockResult = {
+            mean: 120,
+            VaR_95: 10,
+            CVaR_95: 15,
+            histogram: { counts: [5, 15, 30] },
+        };
+        __analysisLabTesting.state.monteCarloWorker.onmessage({
+            data: { type: 'SIMULATION_COMPLETE', result: mockResult },
+        });
+
+        // Assert button resets
+        expect(btnRunMonteCarlo.disabled).toBe(false);
+        expect(btnRunMonteCarlo.textContent).toContain('Run 10k Paths');
+
+        // Assert DOM renders formatted strings
+        const textContent = riskMetricsEl.textContent;
+        expect(textContent).toContain('Mean Terminal Price$120.00');
+        expect(textContent).toContain('VaR (95%)$10.00');
+        expect(textContent).toContain('CVaR (95%)$15.00');
+
+        // Assert canvas interactions
+        expect(mockCtx.clearRect).toHaveBeenCalled();
+        expect(mockCtx.fillRect).toHaveBeenCalledTimes(3); // one for each count
     });
 });
