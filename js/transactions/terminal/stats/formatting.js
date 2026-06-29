@@ -1,5 +1,71 @@
 import { formatCurrency, formatCurrencyCompact } from '../../utils.js';
 
+function makeBorder(widths, char = '-') {
+    return '+' + widths.map((width) => char.repeat(width + 2)).join('+') + '+';
+}
+
+function formatRow(cells, widths, normalizedAlignments) {
+    const formatted = cells.map((cell, index) => {
+        const text = String(cell ?? '');
+        const width = widths[index];
+        const alignment = normalizedAlignments[index];
+        if (alignment === 'right') {
+            return ` ${text.padStart(width)} `;
+        }
+        if (alignment === 'center') {
+            const leftPadding = Math.floor((width - text.length) / 2);
+            const rightPadding = width - text.length - leftPadding;
+            return ` ${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)} `;
+        }
+        return ` ${text.padEnd(width)} `;
+    });
+    return `|${formatted.join('|')}|`;
+}
+
+function calculateWidths(headers, rows, columnCount) {
+    const widths = new Array(columnCount).fill(0);
+    headers.forEach((header, index) => {
+        widths[index] = Math.max(widths[index], String(header).length);
+    });
+    rows.forEach((row) => {
+        row.forEach((cell, index) => {
+            widths[index] = Math.max(widths[index], String(cell ?? '').length);
+        });
+    });
+    return widths;
+}
+
+function renderTitle(title, totalWidth, widths, lines) {
+    const text = String(title);
+    const padding = Math.max(totalWidth - 2 - text.length, 0);
+    const leftPadding = Math.floor(padding / 2);
+    const rightPadding = padding - leftPadding;
+    const titleLine = `|${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)}|`;
+    lines.push(titleLine);
+    lines.push(makeBorder(widths, '-'));
+}
+
+function buildTableLines(title, headers, rows, widths, totalWidth, normalizedAlignments) {
+    const lines = [];
+    lines.push(makeBorder(widths, '-'));
+
+    if (title) {
+        renderTitle(title, totalWidth, widths, lines);
+    }
+
+    if (headers.length) {
+        lines.push(formatRow(headers, widths, normalizedAlignments));
+        lines.push(makeBorder(widths, '='));
+    }
+
+    rows.forEach((row) => {
+        lines.push(formatRow(row, widths, normalizedAlignments));
+    });
+
+    lines.push(makeBorder(widths, '-'));
+    return lines;
+}
+
 export function renderAsciiTable({ title = null, headers = [], rows = [], alignments = [] }) {
     const columnCount = headers.length || (rows[0]?.length ?? 0);
     if (columnCount === 0) {
@@ -10,63 +76,10 @@ export function renderAsciiTable({ title = null, headers = [], rows = [], alignm
         return alignments[index] || 'left';
     });
 
-    const widths = new Array(columnCount).fill(0);
-    headers.forEach((header, index) => {
-        widths[index] = Math.max(widths[index], String(header).length);
-    });
-    rows.forEach((row) => {
-        row.forEach((cell, index) => {
-            widths[index] = Math.max(widths[index], String(cell ?? '').length);
-        });
-    });
-
+    const widths = calculateWidths(headers, rows, columnCount);
     const totalWidth = widths.reduce((sum, width) => sum + width + 2, 0) + columnCount + 1;
 
-    const makeBorder = (char = '-') =>
-        '+' + widths.map((width) => char.repeat(width + 2)).join('+') + '+';
-
-    const formatRow = (cells) => {
-        const formatted = cells.map((cell, index) => {
-            const text = String(cell ?? '');
-            const width = widths[index];
-            const alignment = normalizedAlignments[index];
-            if (alignment === 'right') {
-                return ` ${text.padStart(width)} `;
-            }
-            if (alignment === 'center') {
-                const leftPadding = Math.floor((width - text.length) / 2);
-                const rightPadding = width - text.length - leftPadding;
-                return ` ${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)} `;
-            }
-            return ` ${text.padEnd(width)} `;
-        });
-        return `|${formatted.join('|')}|`;
-    };
-
-    const lines = [];
-    lines.push(makeBorder('-'));
-
-    if (title) {
-        const text = String(title);
-        const padding = Math.max(totalWidth - 2 - text.length, 0);
-        const leftPadding = Math.floor(padding / 2);
-        const rightPadding = padding - leftPadding;
-        const titleLine = `|${' '.repeat(leftPadding)}${text}${' '.repeat(rightPadding)}|`;
-        lines.push(titleLine);
-        lines.push(makeBorder('-'));
-    }
-
-    if (headers.length) {
-        lines.push(formatRow(headers));
-        lines.push(makeBorder('='));
-    }
-
-    rows.forEach((row) => {
-        lines.push(formatRow(row));
-    });
-
-    lines.push(makeBorder('-'));
-
+    const lines = buildTableLines(title, headers, rows, widths, totalWidth, normalizedAlignments);
     return lines.join('\n');
 }
 
