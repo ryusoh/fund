@@ -113,9 +113,7 @@ export function convertValueToCurrency(value, dateString, currency = getSelected
 }
 
 function _normalizeCurrency(currency) {
-    return typeof currency === 'string' && currency.trim()
-        ? currency.trim().toUpperCase()
-        : 'USD';
+    return typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
 }
 
 function _convertToUSD(amount, normalizedDate, source) {
