@@ -7,8 +7,8 @@
 | Total Transactions |         2,699 |
 | Buy Orders         |         2,036 |
 | Sell Orders        |           663 |
-| Total Buy Amount   | $1,946,898.37 |
+| Total Buy Amount   | $1,946,851.10 |
 | Total Sell Amount  | $1,093,717.36 |
-| Net Contributions  |   $853,181.02 |
+| Net Contributions  |   $853,133.75 |
 | Realized Gain      |   $104,370.97 |
 +--------------------+---------------+
