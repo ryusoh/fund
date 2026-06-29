@@ -3,6 +3,7 @@
  * @returns {Date} The current date in New York.
  */
 export const getNyDate = (() => {
+    /** @type {Intl.DateTimeFormat | null} */
     let formatter = null;
     return () => {
         if (!formatter) {
@@ -45,11 +46,22 @@ export const getNyDate = (() => {
  * @returns {boolean} True if it is a holiday.
  */
 // Helper: nth day of week in month (e.g., 3rd Monday)
+/**
+ * @param {Date} date
+ * @param {number} n
+ * @param {number} targetDayOfWeek
+ * @returns {boolean}
+ */
 function isNthDayOfWeek(date, n, targetDayOfWeek) {
     return date.getDay() === targetDayOfWeek && Math.ceil(date.getDate() / 7) === n;
 }
 
 // Helper: Last day of week in month
+/**
+ * @param {Date} date
+ * @param {number} targetDayOfWeek
+ * @returns {boolean}
+ */
 function isLastDayOfWeek(date, targetDayOfWeek) {
     const d = new Date(date.getTime());
     d.setDate(d.getDate() + 7);
@@ -57,6 +69,12 @@ function isLastDayOfWeek(date, targetDayOfWeek) {
 }
 
 // Static dates (or observed on nearest weekday)
+/**
+ * @param {Date} date
+ * @param {number} targetMonth
+ * @param {number} targetDay
+ * @returns {boolean}
+ */
 function checkStaticHoliday(date, targetMonth, targetDay) {
     const month = date.getMonth();
     const day = date.getDate();
@@ -78,6 +96,10 @@ function checkStaticHoliday(date, targetMonth, targetDay) {
     return false;
 }
 
+/**
+ * @param {number} year
+ * @returns {Date}
+ */
 function getGoodFriday(year) {
     const a = year % 19;
     const b = Math.floor(year / 100);
@@ -97,6 +119,11 @@ function getGoodFriday(year) {
     return new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 2);
 }
 
+/**
+ * @param {number} month
+ * @param {Date} date
+ * @returns {boolean}
+ */
 function isNthDayHoliday(month, date) {
     if (month === 0 && isNthDayOfWeek(date, 3, 1)) {
         return true;
@@ -113,6 +140,10 @@ function isNthDayHoliday(month, date) {
     return false;
 }
 
+/**
+ * @param {Date} date
+ * @returns {boolean}
+ */
 function isDynamicHoliday(date) {
     const month = date.getMonth();
     if (isNthDayHoliday(month, date)) {
@@ -179,7 +210,7 @@ export function isTradingDay(date) {
 
 /**
  * Gets the current NY date only if it's a trading day, otherwise returns null.
- * @param {Date} [dateOverride] - Optional date to check instead of current NY date
+ * @param {Date|null} [dateOverride] - Optional date to check instead of current NY date
  * @returns {Date|null} The current date in New York if it's a trading day, null otherwise.
  */
 export function getTradingDayDate(dateOverride = null) {
@@ -187,6 +218,10 @@ export function getTradingDayDate(dateOverride = null) {
     return isTradingDay(nyDate) ? nyDate : null;
 }
 
+/**
+ * @param {unknown} date
+ * @returns {string}
+ */
 export function toIsoDate(date) {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
         return '';
@@ -194,6 +229,10 @@ export function toIsoDate(date) {
     return date.toISOString().split('T')[0];
 }
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 export function parseYearFromDate(value) {
     if (!value || (typeof value !== 'string' && !(value instanceof Date))) {
         return null;
@@ -209,6 +248,11 @@ export function parseYearFromDate(value) {
     return Number.isFinite(year) ? year : null;
 }
 
+/**
+ * @param {unknown} token
+ * @param {number} fallbackYear
+ * @returns {{year: number, quarter: number} | null}
+ */
 export function parseQuarterToken(token, fallbackYear) {
     if (typeof token !== 'string') {
         return null;
@@ -230,6 +274,12 @@ export function parseQuarterToken(token, fallbackYear) {
     return null;
 }
 
+/**
+ * @param {number} year
+ * @param {number} quarter
+ * @param {string} [mode]
+ * @returns {{from: string | null, to: string | null}}
+ */
 export function resolveQuarterRange(year, quarter, mode = 'full') {
     if (!Number.isFinite(year) || !Number.isFinite(quarter)) {
         return { from: null, to: null };
@@ -250,6 +300,10 @@ export function resolveQuarterRange(year, quarter, mode = 'full') {
     return { from, to };
 }
 
+/**
+ * @param {string | number | Date | null | undefined} input
+ * @returns {Date | null}
+ */
 export function normalizeDateOnly(input) {
     if (!input) {
         return null;
