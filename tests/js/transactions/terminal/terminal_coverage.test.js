@@ -1,5 +1,4 @@
 const { initTerminal, updateTerminalCrosshair } = require('../../../../js/transactions/terminal.js');
-const { transactionState, setHistoryIndex } = require('../../../../js/transactions/state.js');
 
 jest.mock('../../../../js/transactions/state.js', () => ({
     transactionState: {
@@ -209,6 +208,7 @@ describe('initTerminal command processing and events', () => {
         // Mock to return false for foobar to trigger 'Command not found'
         commands.executeCommand.mockResolvedValueOnce(false);
         await terminalObj.processCommand('foobar');
+        expect(outputContainer.innerHTML).toContain('foobar');
     });
 
     it('handles keyboard navigation (ArrowUp, ArrowDown)', () => {
