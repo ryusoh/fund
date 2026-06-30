@@ -6,12 +6,26 @@
  */
 
 /**
+ * @typedef {Object} Point
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
+ * @typedef {Object} SmoothingConfig
+ * @property {string} method
+ * @property {Record<string, number>} params
+ * @property {number} passes
+ * @property {string} [description]
+ */
+
+/**
  * Simple Moving Average (SMA)
  * Averages the last N data points for each position
- * @param {Array} data - Array of {x, y} points
+ * @param {Point[]} data - Array of {x, y} points
  * @param {number} window - Window size for averaging
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function simpleMovingAverage(data, window = 3, preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -54,10 +68,10 @@ export function simpleMovingAverage(data, window = 3, preserveEnd = true) {
 /**
  * Exponential Moving Average (EMA)
  * Industry standard for financial charts - more responsive to recent changes
- * @param {Array} data - Array of {x, y} points
+ * @param {Point[]} data - Array of {x, y} points
  * @param {number} alpha - Smoothing factor (0-1), higher = more responsive
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function exponentialMovingAverage(data, alpha = 0.3, preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -93,11 +107,11 @@ export function exponentialMovingAverage(data, alpha = 0.3, preserveEnd = true) 
 /**
  * Savitzky-Golay Filter
  * Preserves peaks and valleys better than simple moving averages
- * @param {Array} data - Array of {x, y} points
+ * @param {Point[]} data - Array of {x, y} points
  * @param {number} window - Window size (must be odd)
  * @param {number} order - Polynomial order (typically 2 or 3)
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function savitzkyGolay(data, window = 5, order = 2, preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -148,10 +162,10 @@ export function savitzkyGolay(data, window = 5, order = 2, preserveEnd = true) {
 /**
  * LOWESS (Locally Weighted Scatterplot Smoothing)
  * Non-parametric smoothing that adapts to local patterns
- * @param {Array} data - Array of {x, y} points
+ * @param {Point[]} data - Array of {x, y} points
  * @param {number} bandwidth - Bandwidth parameter (0-1)
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function lowess(data, bandwidth = 0.3, preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -184,9 +198,9 @@ export function lowess(data, bandwidth = 0.3, preserveEnd = true) {
 /**
  * Adaptive Smoothing
  * Automatically chooses the best smoothing method based on data characteristics
- * @param {Array} data - Array of {x, y} points
+ * @param {Point[]} data - Array of {x, y} points
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function adaptiveSmoothing(data, preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -221,6 +235,12 @@ export function adaptiveSmoothing(data, preserveEnd = true) {
 
 /**
  * Helper function for polynomial fitting in Savitzky-Golay
+ * @param {Point[]} data
+ * @param {number} start
+ * @param {number} end
+ * @param {number} order
+ * @param {number} targetIndex
+ * @returns {number}
  */
 function polynomialFit(data, start, end, order, targetIndex) {
     const n = end - start;
@@ -254,6 +274,10 @@ function polynomialFit(data, start, end, order, targetIndex) {
 
 /**
  * Helper function for weighted local regression in LOWESS
+ * @param {Point[]} data
+ * @param {number} index
+ * @param {number} bandwidth
+ * @returns {number}
  */
 function weightedLocalRegression(data, index, bandwidth) {
     const n = data.length;
@@ -297,6 +321,7 @@ function weightedLocalRegression(data, index, bandwidth) {
 
 /**
  * Default smoothing configuration for financial charts
+ * @type {Record<string, SmoothingConfig>}
  */
 export const SMOOTHING_CONFIGS = {
     // Conservative smoothing - minimal impact
@@ -334,10 +359,10 @@ export const SMOOTHING_CONFIGS = {
 
 /**
  * Apply smoothing to financial chart data
- * @param {Array} data - Array of {x, y} points
- * @param {string|Object} config - Smoothing configuration name or custom config
+ * @param {Point[]} data - Array of {x, y} points
+ * @param {string|SmoothingConfig} config - Smoothing configuration name or custom config
  * @param {boolean} preserveEnd - Whether to preserve the last point unchanged
- * @returns {Array} Smoothed data points
+ * @returns {Point[]} Smoothed data points
  */
 export function smoothFinancialData(data, config = 'balanced', preserveEnd = true) {
     if (!Array.isArray(data) || data.length === 0) {
