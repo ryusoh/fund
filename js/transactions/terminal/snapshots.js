@@ -36,6 +36,62 @@ import { loadYieldData } from '../chart/renderers/yield.js';
 import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
 import { logger } from '../../utils/logger.js';
 
+function _isPEDataValid(data) {
+    return (
+        data &&
+        typeof data === 'object' &&
+        Array.isArray(data.dates) &&
+        data.dates.length > 0
+    );
+}
+
+function _calculatePERange(series) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < series.length; i++) {
+        const v = series[i].pe;
+        if (v < min) {
+            min = v;
+        }
+        if (v > max) {
+            max = v;
+        }
+    }
+    return { min, max };
+}
+
+function _formatPEBreakdown(lastPoint, tickerFwdPE, msciPeRatio) {
+    if (!lastPoint.tickerPEs) {
+        return '';
+    }
+    const entries = Object.entries(lastPoint.tickerPEs)
+        .filter(([, pe]) => pe !== null && Number.isFinite(pe))
+        .sort((a, b) => {
+            const wA = lastPoint.tickerWeights ? lastPoint.tickerWeights[a[0]] : 0;
+            const wB = lastPoint.tickerWeights ? lastPoint.tickerWeights[b[0]] : 0;
+            return (wB || 0) - (wA || 0);
+        })
+        .slice(0, 8);
+    if (entries.length === 0) {
+        return '';
+    }
+    const breakdown = entries
+        .map(([t, pe]) => {
+            let fwd = tickerFwdPE[t];
+            // For VT: derive forward PE from trailing PE using MSCI ratio
+            if (t === 'VT' && msciPeRatio?.ratio > 0 && Number.isFinite(pe) && pe > 0) {
+                fwd = pe / msciPeRatio.ratio;
+            }
+            const trailingStr = pe.toFixed(0);
+            if (fwd !== null && fwd !== undefined && Number.isFinite(fwd)) {
+                return `${t}:${trailingStr}/${fwd.toFixed(0)}`;
+            }
+            return `${t}:${trailingStr}`;
+        })
+        .join(' ');
+    return `\nComponents: ${breakdown}`;
+}
+
 function formatWithSelectedCurrency(value) {
     return formatValueWithCurrency(value, { currency: transactionState.selectedCurrency || 'USD' });
 }
@@ -1255,12 +1311,7 @@ export async function getConcentrationSnapshotText() {
 }
 export async function getPESnapshotLine() {
     const data = await loadPEData();
-    if (
-        !data ||
-        typeof data !== 'object' ||
-        !Array.isArray(data.dates) ||
-        data.dates.length === 0
-    ) {
+    if (!_isPEDataValid(data)) {
         return null;
     }
 
@@ -1283,18 +1334,7 @@ export async function getPESnapshotLine() {
 
     const lastPoint = series[series.length - 1];
     const current = lastPoint.pe;
-
-    let min = Infinity;
-    let max = -Infinity;
-    for (let i = 0; i < series.length; i++) {
-        const v = series[i].pe;
-        if (v < min) {
-            min = v;
-        }
-        if (v > max) {
-            max = v;
-        }
-    }
+    const { min, max } = _calculatePERange(series);
 
     let text = `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))`;
 
@@ -1302,33 +1342,7 @@ export async function getPESnapshotLine() {
     const tickerFwdPE = fwdPEData.ticker_forward_pe || {};
     const msciPeRatio = fwdPEData.msci_pe_ratio || null;
 
-    if (lastPoint.tickerPEs) {
-        const entries = Object.entries(lastPoint.tickerPEs)
-            .filter(([, pe]) => pe !== null && Number.isFinite(pe))
-            .sort((a, b) => {
-                const wA = lastPoint.tickerWeights ? lastPoint.tickerWeights[a[0]] : 0;
-                const wB = lastPoint.tickerWeights ? lastPoint.tickerWeights[b[0]] : 0;
-                return (wB || 0) - (wA || 0);
-            })
-            .slice(0, 8);
-        if (entries.length > 0) {
-            const breakdown = entries
-                .map(([t, pe]) => {
-                    let fwd = tickerFwdPE[t];
-                    // For VT: derive forward PE from trailing PE using MSCI ratio
-                    if (t === 'VT' && msciPeRatio?.ratio > 0 && Number.isFinite(pe) && pe > 0) {
-                        fwd = pe / msciPeRatio.ratio;
-                    }
-                    const trailingStr = pe.toFixed(0);
-                    if (fwd !== null && fwd !== undefined && Number.isFinite(fwd)) {
-                        return `${t}:${trailingStr}/${fwd.toFixed(0)}`;
-                    }
-                    return `${t}:${trailingStr}`;
-                })
-                .join(' ');
-            text += `\nComponents: ${breakdown}`;
-        }
-    }
+    text += _formatPEBreakdown(lastPoint, tickerFwdPE, msciPeRatio);
 
     return text;
 }
