@@ -95,3 +95,53 @@ Unit tests can't see colour/layout/glass. Use `make screenshot URL=/<page>/` and
 read the PNG. `scripts/screenshot.mjs` prints page console errors/exceptions to
 stderr; pages with an entrance fade-in (e.g. `/calendar/`) need `--wait 2500` or
 they shoot blank. (`timeout` is not on macOS — don't wrap commands in it.)
+
+## Timezone: Jest runs in UTC — and why `.toISOString()` is a footgun
+
+`package.json` sets **`TZ=UTC`** in the `test` script so all Jest tests run in
+UTC regardless of the developer's local timezone. This eliminates a class of
+flaky off-by-one failures that surface only in timezones east or west of UTC.
+
+### The `.toISOString().split('T')[0]` landmine
+
+**Never use `.toISOString().split('T')[0]` on a local `Date` to extract a
+YYYY-MM-DD string.** `.toISOString()` outputs in UTC; if the `Date` was
+constructed with local getters (e.g. via `parseLocalDate`), a timezone offset
+shifts the UTC representation to the previous or next day:
+
+```js
+// BAD — drifts in non-UTC timezones:
+const d = new Date(2024, 11, 31); // Dec 31 local midnight
+d.toISOString().split('T')[0]; // "2024-12-30" in UTC+8!
+
+// GOOD — always correct:
+`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// Or use toIsoDate() from js/utils/date.js (but note it also uses toISOString internally)
+```
+
+### Safe test Date construction
+
+Don't use `new Date(isoStr).toLocaleString('en-US', { timeZone })` to create
+"NY-aligned" dates for `isTradingDay` / `isMarketHoliday` tests. The
+`toLocaleString` output is locale-dependent and the re-parse uses the system
+timezone, producing wrong day-of-week in UTC+8.
+
+Instead, construct dates directly with the local components you want to test:
+
+```js
+// BAD — double-parse, locale-dependent:
+const july4 = new Date(
+    new Date('2024-07-04T12:00:00-04:00').toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+    })
+);
+
+// GOOD — explicit components, no ambiguity:
+const july4 = new Date('2024-07-04T12:00:00');
+```
+
+### Scratch files go in the artifact dir, not the repo root
+
+When debugging, don't create `scratch.js` / `fix_*.js` in the repo root — ESLint
+will flag them and they'll leak into git. Use the session artifact scratch
+directory or a temp file outside the repo.
