@@ -17,6 +17,76 @@ async function fetchJSON(url) {
 }
 
 /**
+ * Calculates portfolio PE
+ * @param {number} weightSum
+ * @param {number} yieldSum
+ * @returns {number | null}
+ */
+function _calculatePortfolioPE(weightSum, yieldSum) {
+    return weightSum > 0 && yieldSum > 0 ? weightSum / yieldSum : null;
+}
+
+/**
+ * Processes holdings to compute metrics
+ * @param {string[]} tickers
+ * @param {Object} holdings
+ * @param {Object} prices
+ * @param {Map} marketRatiosByTicker
+ * @returns {Object}
+ */
+function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
+    let weightSum = 0;
+    let weightedYieldSum = 0;
+    let weightedFwdYieldSum = 0;
+    let balanceDelta = 0;
+    const newCompositionItems = [];
+    const tickerPEs = {};
+    const tickerWeights = {};
+
+    tickers.forEach((ticker) => {
+        const details = holdings[ticker];
+        const shares = parseFloat(details.shares) || 0;
+        const price = parseFloat(prices[ticker]) || 0;
+        if (shares > 0 && price > 0) {
+            const value = shares * price;
+            balanceDelta += value;
+            newCompositionItems.push({
+                ticker,
+                value,
+            });
+
+            const ratioSnapshot = marketRatiosByTicker.get(ticker);
+            if (ratioSnapshot) {
+                const { trailingValue, forwardValue } = _calculateDynamicPeValues(
+                    ratioSnapshot,
+                    price
+                );
+
+                if (Number.isFinite(trailingValue) && trailingValue > 0) {
+                    tickerPEs[ticker] = trailingValue;
+                    weightedYieldSum += value / trailingValue;
+                }
+                if (Number.isFinite(forwardValue) && forwardValue > 0) {
+                    weightedFwdYieldSum += value / forwardValue;
+                }
+            }
+            tickerWeights[ticker] = value;
+            weightSum += value;
+        }
+    });
+
+    return {
+        weightSum,
+        weightedYieldSum,
+        weightedFwdYieldSum,
+        tickerPEs,
+        tickerWeights,
+        balanceDelta,
+        newCompositionItems,
+    };
+}
+
+/**
  * Fetches real-time data and calculates the current portfolio state.
  * @returns {Promise<{
  *   date: string,
@@ -57,50 +127,21 @@ export async function fetchRealTimeData() {
 
         const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickers);
 
-        let weightSum = 0;
-        let weightedYieldSum = 0;
-        let weightedFwdYieldSum = 0;
-        const tickerPEs = {};
-        const tickerWeights = {};
+        const {
+            weightSum,
+            weightedYieldSum,
+            weightedFwdYieldSum,
+            tickerPEs,
+            tickerWeights,
+            balanceDelta,
+            newCompositionItems,
+        } = _processHoldings(tickers, holdings, prices, marketRatiosByTicker);
 
-        // 1. Calculate Balance and Composition
-        tickers.forEach((ticker) => {
-            const details = holdings[ticker];
-            const shares = parseFloat(details.shares) || 0;
-            const price = parseFloat(prices[ticker]) || 0;
-            if (shares > 0 && price > 0) {
-                const value = shares * price;
-                totalBalanceUSD += value;
-                composition.push({
-                    ticker,
-                    value,
-                    // percent calculated later
-                });
+        totalBalanceUSD += balanceDelta;
+        composition.push(...newCompositionItems);
 
-                const ratioSnapshot = marketRatiosByTicker.get(ticker);
-                if (ratioSnapshot) {
-                    const { trailingValue, forwardValue } = _calculateDynamicPeValues(
-                        ratioSnapshot,
-                        price
-                    );
-
-                    if (Number.isFinite(trailingValue) && trailingValue > 0) {
-                        tickerPEs[ticker] = trailingValue;
-                        weightedYieldSum += value / trailingValue;
-                    }
-                    if (Number.isFinite(forwardValue) && forwardValue > 0) {
-                        weightedFwdYieldSum += value / forwardValue;
-                    }
-                }
-                tickerWeights[ticker] = value;
-                weightSum += value;
-            }
-        });
-
-        const portfolioPE =
-            weightSum > 0 && weightedYieldSum > 0 ? weightSum / weightedYieldSum : null;
-        const portfolioFwdPE =
-            weightSum > 0 && weightedFwdYieldSum > 0 ? weightSum / weightedFwdYieldSum : null;
+        const portfolioPE = _calculatePortfolioPE(weightSum, weightedYieldSum);
+        const portfolioFwdPE = _calculatePortfolioPE(weightSum, weightedFwdYieldSum);
 
         // 2. Add Composition Percentages
         if (totalBalanceUSD > 0) {
