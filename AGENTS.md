@@ -96,6 +96,21 @@ Examples: `fix(worker): enforce https and exact-hostname CORS validation` ·
 `refactor(dataService): extract helpers to cut computeMonthlyPnl complexity` ·
 `test(calendar): cover displayCache empty-state branches`.
 
+### Workflow-authored commits
+
+Commits created by GitHub Actions workflows (data pipelines, dependency updates,
+etc.) must use the `github-actions[bot]` identity for **both** author and
+committer:
+
+    Name:  github-actions[bot]
+    Email: 41898282+github-actions[bot]@users.noreply.github.com
+
+- Manual `git commit`: pass `--author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"`
+- `stefanzweifel/git-auto-commit-action`: set `commit_author:` input to the same value.
+
+This keeps the repo owner's contribution graph clean and makes bot commits
+instantly identifiable.
+
 ## Command interface — prefer `make` (matches CI)
 
 | Need                                                | Command                    |
@@ -119,9 +134,7 @@ Examples: `fix(worker): enforce https and exact-hostname CORS validation` ·
 
 ## Environment setup (run once in the VM before working)
 
-```sh
-make install-dev   # pip upgrade + requirements-dev.txt + npm ci
-```
+    make install-dev   # pip upgrade + requirements-dev.txt + npm ci
 
 If the Python side isn't installed, `make test` silently runs only the JS half and
 your "verified" claim is false. Confirm both jest **and** pytest run.
