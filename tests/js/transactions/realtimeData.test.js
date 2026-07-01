@@ -160,7 +160,10 @@ describe('realtimeData', () => {
         });
 
         it('should process dynamic PE values and calculate portfolio PE', async () => {
-            const { fetchMarketRatiosForTickers, _calculateDynamicPeValues } = require('@services/dataService.js');
+            const {
+                fetchMarketRatiosForTickers,
+                _calculateDynamicPeValues,
+            } = require('@services/dataService.js');
             const mockMap = new Map();
             mockMap.set('VT', { trailingValue: 10, forwardValue: 12 });
             mockMap.set('GOOG', { trailingValue: 15, forwardValue: 18 });

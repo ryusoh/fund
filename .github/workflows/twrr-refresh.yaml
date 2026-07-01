@@ -57,7 +57,7 @@ jobs:
                   if git diff --cached --quiet; then
                     echo 'No changes to commit.'
                   else
-                    git commit -m "chore(data): TWRRとファンドデータを自動更新 [skip ci]"
+                    git commit --author="github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>" -m "chore(data): TWRRとファンドデータを自動更新 [skip ci]"
                     # Retry push with rebase in case another workflow pushed in the meantime
                     for i in 1 2 3; do
                       git push && break
