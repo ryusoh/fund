@@ -159,6 +159,37 @@ describe('realtimeData', () => {
             expect(result.balance).toBe(0);
         });
 
+
+        it('should process dynamic PE values and calculate portfolio PE', async () => {
+            const { fetchMarketRatiosForTickers, _calculateDynamicPeValues } = require('@services/dataService.js');
+            const mockMap = new Map();
+            mockMap.set('VT', { trailingValue: 10, forwardValue: 12 });
+            mockMap.set('GOOG', { trailingValue: 15, forwardValue: 18 });
+            fetchMarketRatiosForTickers.mockResolvedValueOnce(mockMap);
+
+            _calculateDynamicPeValues.mockImplementation((snapshot, price) => {
+                if (snapshot.trailingValue === 10) return { trailingValue: 10, forwardValue: 12 };
+                if (snapshot.trailingValue === 15) return { trailingValue: 15, forwardValue: 18 };
+                return { trailingValue: null, forwardValue: null };
+            });
+
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: {
+                    VT: { shares: '100', average_price: '100' },
+                    GOOG: { shares: '10', average_price: '150' },
+                },
+                prices: { VT: 110, GOOG: 180 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            const result = await fetchRealTimeData();
+
+            expect(result).not.toBeNull();
+            expect(result.pe).not.toBeNull();
+            expect(result.forwardPe).not.toBeNull();
+        });
+
         it('should return null if holdings data is missing', async () => {
             mockFetchPortfolioData.mockResolvedValueOnce({
                 holdingsDetails: null,
