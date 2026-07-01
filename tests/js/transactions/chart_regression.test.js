@@ -464,11 +464,13 @@ describe('Chart Debug: Date Range Extension', () => {
             // 1. Padding point should be preserved
             expect(rawContributionData.length).toBeGreaterThan(0);
             const lastPoint = rawContributionData[rawContributionData.length - 1];
-            const lastPointDateStr = lastPoint.date.toISOString().split('T')[0];
+            const pad2 = (n) => String(n).padStart(2, '0');
+            const lastPointDateStr = `${lastPoint.date.getFullYear()}-${pad2(lastPoint.date.getMonth() + 1)}-${pad2(lastPoint.date.getDate())}`;
             expect(lastPointDateStr).toBe(paddingDateStr);
 
             // 2. MaxTime should match expected
-            const maxTimeStr = new Date(maxTime).toISOString().split('T')[0];
+            const maxTimeDate = new Date(maxTime);
+            const maxTimeStr = `${maxTimeDate.getFullYear()}-${pad2(maxTimeDate.getMonth() + 1)}-${pad2(maxTimeDate.getDate())}`;
             expect(maxTimeStr).toBe(expectedMaxTimeStr);
         });
     };

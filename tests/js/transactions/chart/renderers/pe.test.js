@@ -96,7 +96,7 @@ describe('buildPESeries', () => {
     it('filters data outside the date range', () => {
         const dates = ['2023-01-01', '2023-01-02', '2023-01-03'];
         const pe = [15, 16, 17];
-        const filterFrom = new Date('2023-01-02');
+        const filterFrom = new Date(2023, 0, 2);
         const result = buildPESeries(dates, pe, null, null, filterFrom, null);
         expect(result).toHaveLength(2);
         expect(result[0].pe).toBe(16);

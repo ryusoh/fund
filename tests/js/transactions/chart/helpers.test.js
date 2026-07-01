@@ -43,9 +43,9 @@ describe('Chart Helpers', () => {
         it('should parse YYYY-MM-DD string to timestamp', () => {
             const timestamp = parseLocalDate('2023-10-25');
             const date = new Date(timestamp);
-            expect(date.getUTCFullYear()).toBe(2023);
-            expect(date.getUTCMonth()).toBe(9); // 0-indexed
-            expect(date.getUTCDate()).toBe(25);
+            expect(date.getFullYear()).toBe(2023);
+            expect(date.getMonth()).toBe(9); // 0-indexed
+            expect(date.getDate()).toBe(25);
         });
 
         it('should fallback to JS Date parse for other formats', () => {

@@ -49,7 +49,7 @@ export function buildContributionSeriesFromTransactions(
 
     const normalizedTransactions = transactions.map((t) => {
         const d = parseLocalDate(t.tradeDate);
-        const isoDate = d ? d.toISOString().split('T')[0] : (t.tradeDate || '').trim();
+        const isoDate = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : (t.tradeDate || '').trim();
         return { ...t, tradeDate: isoDate };
     });
 

@@ -15,6 +15,7 @@ import {
     CALENDAR_SELECTORS,
     CALENDAR_CONFIG,
     INITIAL_CHART_DATE_RANGE,
+    getCalendarRange,
 } from '../../js/config.js';
 import { isLocalhost } from '@utils/host';
 
@@ -117,6 +118,53 @@ describe('Configuration', () => {
                 const { CALENDAR_CONFIG } = require('../../js/config.js');
                 expect(CALENDAR_CONFIG.range).toBe(3);
             });
+        });
+    });
+
+    describe('getCalendarRange', () => {
+        let originalWidth;
+
+        beforeEach(() => {
+            originalWidth = window.innerWidth;
+        });
+
+        afterEach(() => {
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: originalWidth,
+            });
+        });
+
+        it('returns 1 for narrow phones (≤480px)', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 390,
+            });
+            expect(getCalendarRange()).toBe(1);
+        });
+
+        it('returns 1 at the UI_BREAKPOINTS.MOBILE boundary (768px)', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 768,
+            });
+            expect(getCalendarRange()).toBe(1);
+        });
+
+        it('returns 1 for tablet-width viewports in the 481-768 band', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 600,
+            });
+            expect(getCalendarRange()).toBe(1);
+        });
+
+        it('returns ≥2 for desktop widths above MOBILE breakpoint', () => {
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 1024,
+            });
+            expect(getCalendarRange()).toBeGreaterThanOrEqual(2);
         });
     });
 

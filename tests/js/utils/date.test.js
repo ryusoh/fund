@@ -48,46 +48,18 @@ describe('Date Utils', () => {
 
     describe('isTradingDay', () => {
         it('should return false for weekends', () => {
-            const saturday = new Date(
-                new Date('2024-12-01T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
-            const sunday = new Date(
-                new Date('2024-12-08T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const saturday = new Date('2024-12-01T12:00:00');
+            const sunday = new Date('2024-12-08T12:00:00');
             expect(isTradingDay(saturday)).toBe(false);
             expect(isTradingDay(sunday)).toBe(false);
         });
 
         it('should return true for weekdays', () => {
-            const monday = new Date(
-                new Date('2024-12-02T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
-            const tuesday = new Date(
-                new Date('2024-12-03T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
-            const wednesday = new Date(
-                new Date('2024-12-04T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
-            const thursday = new Date(
-                new Date('2024-12-05T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
-            const friday = new Date(
-                new Date('2024-12-06T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const monday = new Date('2024-12-02T12:00:00');
+            const tuesday = new Date('2024-12-03T12:00:00');
+            const wednesday = new Date('2024-12-04T12:00:00');
+            const thursday = new Date('2024-12-05T12:00:00');
+            const friday = new Date('2024-12-06T12:00:00');
             expect(isTradingDay(monday)).toBe(true);
             expect(isTradingDay(tuesday)).toBe(true);
             expect(isTradingDay(wednesday)).toBe(true);
@@ -99,104 +71,104 @@ describe('Date Utils', () => {
             // Test static holidays and their observation rules
             it('should return false for New Years Day', () => {
                 // January 1st
-                const nyDay = new Date('2024-01-01T12:00:00-05:00');
+                const nyDay = new Date('2024-01-01T12:00:00');
                 expect(isTradingDay(nyDay)).toBe(false);
 
                 // Observed on Monday when Jan 1 is Sunday
-                const nyObservedMon = new Date('2023-01-02T12:00:00-05:00');
+                const nyObservedMon = new Date('2023-01-02T12:00:00');
                 expect(isTradingDay(nyObservedMon)).toBe(false);
 
                 // Observed on Friday when Dec 31 is Friday (Jan 1 is Saturday)
-                const nyObservedFri = new Date('2021-12-31T12:00:00-05:00');
+                const nyObservedFri = new Date('2021-12-31T12:00:00');
                 expect(isTradingDay(nyObservedFri)).toBe(false);
             });
 
             it('should return false for Juneteenth', () => {
                 // June 19th
-                const juneteenth = new Date('2024-06-19T12:00:00-04:00');
+                const juneteenth = new Date('2024-06-19T12:00:00');
                 expect(isTradingDay(juneteenth)).toBe(false);
 
                 // Observed on Monday
-                const juneteenthObservedMon = new Date('2022-06-20T12:00:00-04:00');
+                const juneteenthObservedMon = new Date('2022-06-20T12:00:00');
                 expect(isTradingDay(juneteenthObservedMon)).toBe(false);
 
                 // Observed on Friday
-                const juneteenthObservedFri = new Date('2021-06-18T12:00:00-04:00');
+                const juneteenthObservedFri = new Date('2021-06-18T12:00:00');
                 expect(isTradingDay(juneteenthObservedFri)).toBe(false);
             });
 
             it('should return false for Independence Day', () => {
                 // July 4th
-                const july4 = new Date('2024-07-04T12:00:00-04:00');
+                const july4 = new Date('2024-07-04T12:00:00');
                 expect(isTradingDay(july4)).toBe(false);
 
                 // Observed on Monday
-                const july4ObservedMon = new Date('2021-07-05T12:00:00-04:00');
+                const july4ObservedMon = new Date('2021-07-05T12:00:00');
                 expect(isTradingDay(july4ObservedMon)).toBe(false);
 
                 // Observed on Friday
-                const july4ObservedFri = new Date('2020-07-03T12:00:00-04:00');
+                const july4ObservedFri = new Date('2020-07-03T12:00:00');
                 expect(isTradingDay(july4ObservedFri)).toBe(false);
             });
 
             it('should return false for Christmas', () => {
                 // December 25th
-                const christmas = new Date('2024-12-25T12:00:00-05:00');
+                const christmas = new Date('2024-12-25T12:00:00');
                 expect(isTradingDay(christmas)).toBe(false);
 
                 // Observed on Monday
-                const christmasObservedMon = new Date('2022-12-26T12:00:00-05:00');
+                const christmasObservedMon = new Date('2022-12-26T12:00:00');
                 expect(isTradingDay(christmasObservedMon)).toBe(false);
 
                 // Observed on Friday
-                const christmasObservedFri = new Date('2021-12-24T12:00:00-05:00');
+                const christmasObservedFri = new Date('2021-12-24T12:00:00');
                 expect(isTradingDay(christmasObservedFri)).toBe(false);
             });
 
             // Test dynamic holidays
             it('should return false for MLK Day', () => {
                 // 3rd Monday in January
-                const mlkDay = new Date('2024-01-15T12:00:00-05:00');
+                const mlkDay = new Date('2024-01-15T12:00:00');
                 expect(isTradingDay(mlkDay)).toBe(false);
             });
 
             it('should return false for Presidents Day', () => {
                 // 3rd Monday in February
-                const presidentsDay = new Date('2024-02-19T12:00:00-05:00');
+                const presidentsDay = new Date('2024-02-19T12:00:00');
                 expect(isTradingDay(presidentsDay)).toBe(false);
             });
 
             it('should return false for Memorial Day', () => {
                 // Last Monday in May
-                const memorialDay = new Date('2024-05-27T12:00:00-04:00');
+                const memorialDay = new Date('2024-05-27T12:00:00');
                 expect(isTradingDay(memorialDay)).toBe(false);
 
                 // Last Monday when May 31 is Monday
-                const memorialDay31 = new Date('2021-05-31T12:00:00-04:00');
+                const memorialDay31 = new Date('2021-05-31T12:00:00');
                 expect(isTradingDay(memorialDay31)).toBe(false);
             });
 
             it('should return false for Labor Day', () => {
                 // 1st Monday in September
-                const laborDay = new Date('2024-09-02T12:00:00-04:00');
+                const laborDay = new Date('2024-09-02T12:00:00');
                 expect(isTradingDay(laborDay)).toBe(false);
             });
 
             it('should return false for Thanksgiving', () => {
                 // 4th Thursday in November
-                const thanksgiving = new Date('2024-11-28T12:00:00-05:00');
+                const thanksgiving = new Date('2024-11-28T12:00:00');
                 expect(isTradingDay(thanksgiving)).toBe(false);
             });
 
             it('should return false for Good Friday', () => {
                 // Good Friday calculation based on Easter
-                const goodFriday2024 = new Date('2024-03-29T12:00:00-04:00');
+                const goodFriday2024 = new Date('2024-03-29T12:00:00');
                 expect(isTradingDay(goodFriday2024)).toBe(false);
 
-                const goodFriday2023 = new Date('2023-04-07T12:00:00-04:00');
+                const goodFriday2023 = new Date('2023-04-07T12:00:00');
                 expect(isTradingDay(goodFriday2023)).toBe(false);
 
-                const goodFriday2025 = new Date('2025-04-18T12:00:00-04:00');
+                const goodFriday2025 = new Date('2025-04-18T12:00:00');
                 expect(isTradingDay(goodFriday2025)).toBe(false);
             });
         });
@@ -220,37 +192,21 @@ describe('Date Utils', () => {
         });
 
         it('should return date when passed a trading day explicitly', () => {
-            const monday = new Date(
-                new Date('2024-12-02T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const monday = new Date('2024-12-02T12:00:00');
             const result = getTradingDayDate(monday);
             expect(result).toBe(monday);
         });
 
         it('should return null when passed a weekend day explicitly', () => {
-            const saturday = new Date(
-                new Date('2024-12-01T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const saturday = new Date('2024-12-01T12:00:00');
             const result = getTradingDayDate(saturday);
             expect(result).toBe(null);
         });
 
         it('should cover both branches with explicit dates', () => {
-            const weekday = new Date(
-                new Date('2024-12-02T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const weekday = new Date('2024-12-02T12:00:00');
             expect(getTradingDayDate(weekday)).toBe(weekday);
-            const weekend = new Date(
-                new Date('2024-12-01T12:00:00').toLocaleString('en-US', {
-                    timeZone: 'America/New_York',
-                })
-            );
+            const weekend = new Date('2024-12-01T12:00:00');
             expect(getTradingDayDate(weekend)).toBe(null);
         });
     });

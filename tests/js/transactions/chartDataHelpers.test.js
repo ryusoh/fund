@@ -385,7 +385,7 @@ describe('Chart data helpers', () => {
         test('filter date comparison works correctly with data dates', () => {
             // This simulates the chart filtering logic
             const filterFrom = parseLocalDate('2024-01-01');
-            const dataPointDate = new Date('2023-12-31T23:00:00Z'); // Dec 31, 2023 in UTC
+            const dataPointDate = new Date('2023-12-31T09:00:00Z'); // Dec 31, 2023 in UTC (safe globally)
 
             // The filter should correctly identify this as being BEFORE Jan 1, 2024 local time
             // This test ensures the filter logic works correctly with local dates

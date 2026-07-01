@@ -28,9 +28,9 @@ function makeConfig(overrides = {}) {
         },
         // Jan 2025 visible window of 2 months: Jan..Feb; bounds Dec 2024..Feb 2025
         date: {
-            start: new Date(2025, 0, 1),
-            min: new Date(2024, 11, 1),
-            max: new Date(2025, 1, 1),
+            start: new Date(Date.UTC(2025, 0, 1)),
+            min: new Date(Date.UTC(2024, 11, 1)),
+            max: new Date(Date.UTC(2025, 1, 1)),
             highlight: [new Date(Date.UTC(2025, 0, 15))],
         },
         onMinDomainReached: jest.fn(),
@@ -154,9 +154,9 @@ describe('DomRenderer', () => {
         const config = makeConfig({
             range: 1,
             date: {
-                start: new Date(2025, 0, 1),
-                min: new Date(2024, 0, 1),
-                max: new Date(2025, 5, 1),
+                start: new Date(Date.UTC(2025, 0, 1)),
+                min: new Date(Date.UTC(2024, 0, 1)),
+                max: new Date(Date.UTC(2025, 5, 1)),
                 highlight: [new Date(Date.UTC(2025, 0, 15))],
             },
         });
@@ -164,7 +164,7 @@ describe('DomRenderer', () => {
         await r.paint(config);
         expect(document.querySelector('.domcal-month-label').textContent).toBe('Jan 2025');
 
-        await r.jumpTo(new Date(2025, 3, 10)); // April
+        await r.jumpTo(new Date(Date.UTC(2025, 3, 10))); // April
         expect(document.querySelector('.domcal-month-label').textContent).toBe('Apr 2025');
     });
 });

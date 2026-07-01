@@ -807,7 +807,7 @@ export async function initCalendar() {
                 const year = Number(yearStr);
                 const monthIndex = Number(monthStr) - 1;
                 if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
-                    firstMonthWithLabels = new Date(year, monthIndex, 1);
+                    firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
                 }
                 break;
             }
@@ -817,9 +817,7 @@ export async function initCalendar() {
         if (!firstMonthWithLabels) {
             /* istanbul ignore next: fallback for missing month labels edge case */
             firstMonthWithLabels = new Date(
-                firstDataDate.getFullYear(),
-                firstDataDate.getMonth(),
-                1
+                Date.UTC(firstDataDate.getFullYear(), firstDataDate.getMonth(), 1)
             );
         }
 
@@ -841,7 +839,8 @@ export async function initCalendar() {
         /* istanbul ignore next: mathematical utility function for date calculations */
         const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
         /* istanbul ignore next: mathematical utility function for date calculations */
-        const indexToMonthDate = (index) => new Date(Math.floor(index / 12), index % 12, 1);
+        const indexToMonthDate = (index) =>
+            new Date(Date.UTC(Math.floor(index / 12), index % 12, 1));
 
         /* istanbul ignore next: calendar range configuration calculation */
         const configuredRange = Math.max(1, getCalendarRange() || 1);
@@ -918,18 +917,26 @@ export async function initCalendar() {
                 max: (function () {
                     /* istanbul ignore next: mathematical calculation for max date in calendar config */
                     const endOfCurrentMonth = new Date(
-                        todayNy.getFullYear(),
-                        todayNy.getMonth() + 1,
-                        0
+                        Date.UTC(todayNy.getFullYear(), todayNy.getMonth() + 1, 0)
                     );
                     /* istanbul ignore next: mathematical calculation for max date in calendar config */
-                    return new Date(Math.max(endOfCurrentMonth.getTime(), lastDataDate.getTime()));
+                    return new Date(
+                        Math.max(
+                            endOfCurrentMonth.getTime(),
+                            Date.UTC(
+                                lastDataDate.getFullYear(),
+                                lastDataDate.getMonth(),
+                                lastDataDate.getDate()
+                            )
+                        )
+                    );
                 })(),
                 highlight: [
                     new Date(
                         Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), todayNy.getDate())
                     ),
                 ],
+                timezone: 'utc',
             },
             tooltip,
             /* istanbul ignore next: calendar domain navigation callback in test environment */

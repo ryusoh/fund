@@ -41,7 +41,7 @@ const cellBackground = (fill) =>
     `${SPECULAR}, ${SHEEN}, linear-gradient(${fill}, ${fill}), ${EDGE}`;
 
 const pad2 = (n) => String(n).padStart(2, '0');
-const toMonthIndex = (date) => date.getFullYear() * 12 + date.getMonth();
+const toMonthIndex = (date) => date.getUTCFullYear() * 12 + date.getUTCMonth();
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 function parseRgba(str) {

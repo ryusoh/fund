@@ -1,11 +1,16 @@
-const { initTerminal, updateTerminalCrosshair } = require('../../../../js/transactions/terminal.js');
+const {
+    initTerminal,
+    updateTerminalCrosshair,
+} = require('../../../../js/transactions/terminal.js');
 
 jest.mock('../../../../js/transactions/state.js', () => ({
     transactionState: {
         subscribe: jest.fn(),
-        get: jest.fn().mockReturnValue({ chartSort: 'size', chartLimit: 15, chartCombineSmall: true }),
+        get: jest
+            .fn()
+            .mockReturnValue({ chartSort: 'size', chartLimit: 15, chartCombineSmall: true }),
         commandHistory: ['help', 'clear', 'foobar'],
-        historyIndex: 1
+        historyIndex: 1,
     },
     pushCommandHistory: jest.fn(),
     resetHistoryIndex: jest.fn(),
@@ -14,23 +19,23 @@ jest.mock('../../../../js/transactions/state.js', () => ({
         state.historyIndex = val;
     }),
     getCommandHistory: jest.fn().mockReturnValue(['help', 'clear', 'foobar']),
-    getHistoryIndex: jest.fn().mockReturnValue(1)
+    getHistoryIndex: jest.fn().mockReturnValue(1),
 }));
 
 jest.mock('../../../../js/ui/currencyToggleManager.js', () => ({
-    cycleCurrency: jest.fn()
+    cycleCurrency: jest.fn(),
 }));
 
 const commands = require('../../../../js/transactions/terminal/commands.js');
 jest.mock('../../../../js/transactions/terminal/commands.js', () => ({
     executeCommand: jest.fn().mockImplementation(async () => {
         return true;
-    })
+    }),
 }));
 
 jest.mock('../../../../js/transactions/terminal/autocomplete.js', () => ({
     autocompleteCommand: jest.fn(),
-    resetAutocompleteState: jest.fn()
+    resetAutocompleteState: jest.fn(),
 }));
 
 describe('updateTerminalCrosshair and helpers', () => {
@@ -55,12 +60,14 @@ describe('updateTerminalCrosshair and helpers', () => {
                 start: 1704067200000,
                 end: 1704153600000,
                 durationDays: 1,
-                entries: [{
-                    color: 'red',
-                    label: 'Test Label',
-                    deltaFormatted: '+10',
-                    percentFormatted: '10%'
-                }]
+                entries: [
+                    {
+                        color: 'red',
+                        label: 'Test Label',
+                        deltaFormatted: '+10',
+                        percentFormatted: '10%',
+                    },
+                ],
             }
         );
 
@@ -74,9 +81,7 @@ describe('updateTerminalCrosshair and helpers', () => {
     });
 
     it('hides overlay when snapshot is null', () => {
-        updateTerminalCrosshair(
-            { header: 'Test Header', dateLabel: '2024-01-01' }, null
-        );
+        updateTerminalCrosshair({ header: 'Test Header', dateLabel: '2024-01-01' }, null);
         const overlay = document.querySelector('.terminal-crosshair-overlay');
         expect(overlay).toBeTruthy();
 
@@ -95,7 +100,7 @@ describe('updateTerminalCrosshair and helpers', () => {
                 end: 1704070800000,
                 durationDays: 0,
                 durationMs: 3600000,
-                entries: []
+                entries: [],
             }
         );
         const overlay = document.querySelector('.terminal-crosshair-overlay');
@@ -113,7 +118,7 @@ describe('updateTerminalCrosshair and helpers', () => {
                 end: 1704070800000,
                 durationDays: 0,
                 durationMs: 3600000,
-                entries: []
+                entries: [],
             }
         );
 
@@ -127,8 +132,12 @@ describe('updateTerminalCrosshair and helpers', () => {
         const list = document.getElementById('terminalCrosshairList');
         const range = document.getElementById('terminalCrosshairRange');
 
-        if (list) {delete list.replaceChildren;}
-        if (range) {delete range.replaceChildren;}
+        if (list) {
+            delete list.replaceChildren;
+        }
+        if (range) {
+            delete range.replaceChildren;
+        }
 
         updateTerminalCrosshair(
             { header: 'Test Header' },
@@ -136,12 +145,14 @@ describe('updateTerminalCrosshair and helpers', () => {
                 start: Infinity,
                 end: NaN,
                 durationDays: 1,
-                entries: [{
-                    color: 'blue',
-                    label: 'No Percent',
-                    deltaFormatted: '+5',
-                    percentFormatted: ''
-                }]
+                entries: [
+                    {
+                        color: 'blue',
+                        label: 'No Percent',
+                        deltaFormatted: '+5',
+                        percentFormatted: '',
+                    },
+                ],
             }
         );
         const overlay = document.querySelector('.terminal-crosshair-overlay');
@@ -187,7 +198,7 @@ describe('initTerminal command processing and events', () => {
             terminal: terminalContainer,
             searchInput,
             matchCount,
-            searchArrows
+            searchArrows,
         });
     });
 
@@ -232,12 +243,16 @@ describe('initTerminal command processing and events', () => {
         // Tab
         const tabEvent = new KeyboardEvent('keydown', { key: 'Tab' });
         inputElement.dispatchEvent(tabEvent);
-        expect(require('../../../../js/transactions/terminal/autocomplete.js').autocompleteCommand).toHaveBeenCalled();
+        expect(
+            require('../../../../js/transactions/terminal/autocomplete.js').autocompleteCommand
+        ).toHaveBeenCalled();
 
         // Default
         const aEvent = new KeyboardEvent('keydown', { key: 'a' });
         inputElement.dispatchEvent(aEvent);
-        expect(require('../../../../js/transactions/terminal/autocomplete.js').resetAutocompleteState).toHaveBeenCalled();
+        expect(
+            require('../../../../js/transactions/terminal/autocomplete.js').resetAutocompleteState
+        ).toHaveBeenCalled();
 
         // Enter
         inputElement.value = 'test command';
@@ -249,16 +264,28 @@ describe('initTerminal command processing and events', () => {
         inputElement.value = '';
         const arrowLeftEvent = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
         inputElement.dispatchEvent(arrowLeftEvent);
-        expect(require('../../../../js/ui/currencyToggleManager.js').cycleCurrency).toHaveBeenCalledWith(-1);
+        expect(
+            require('../../../../js/ui/currencyToggleManager.js').cycleCurrency
+        ).toHaveBeenCalledWith(-1);
 
         inputElement.value = 'hello';
-        const arrowRightEventCtrl = new KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true });
+        const arrowRightEventCtrl = new KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            ctrlKey: true,
+        });
         inputElement.dispatchEvent(arrowRightEventCtrl);
-        expect(require('../../../../js/ui/currencyToggleManager.js').cycleCurrency).toHaveBeenCalledWith(1);
+        expect(
+            require('../../../../js/ui/currencyToggleManager.js').cycleCurrency
+        ).toHaveBeenCalledWith(1);
 
-        const arrowRightEventMeta = new KeyboardEvent('keydown', { key: 'ArrowRight', metaKey: true });
+        const arrowRightEventMeta = new KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            metaKey: true,
+        });
         inputElement.dispatchEvent(arrowRightEventMeta);
-        expect(require('../../../../js/ui/currencyToggleManager.js').cycleCurrency).toHaveBeenCalled();
+        expect(
+            require('../../../../js/ui/currencyToggleManager.js').cycleCurrency
+        ).toHaveBeenCalled();
 
         const arrowRightEventNormal = new KeyboardEvent('keydown', { key: 'ArrowRight' });
         inputElement.dispatchEvent(arrowRightEventNormal);
@@ -276,7 +303,7 @@ describe('initTerminal command processing and events', () => {
 
     it('handles transactionFilterResult event with count 0', () => {
         const event = new CustomEvent('transactionFilterResult', {
-            detail: { count: 0, searchTerm: 'foo' }
+            detail: { count: 0, searchTerm: 'foo' },
         });
         document.dispatchEvent(event);
 
@@ -284,21 +311,23 @@ describe('initTerminal command processing and events', () => {
 
         // trigger again with same term
         document.dispatchEvent(event);
-        const textCount = (outputContainer.textContent.match(/No transactions match/g) || []).length;
+        const textCount = (outputContainer.textContent.match(/No transactions match/g) || [])
+            .length;
         expect(textCount).toBe(1);
 
         // trigger with different term
         const event2 = new CustomEvent('transactionFilterResult', {
-            detail: { count: 0, searchTerm: 'bar' }
+            detail: { count: 0, searchTerm: 'bar' },
         });
         document.dispatchEvent(event2);
-        const textCount2 = (outputContainer.textContent.match(/No transactions match/g) || []).length;
+        const textCount2 = (outputContainer.textContent.match(/No transactions match/g) || [])
+            .length;
         expect(textCount2).toBe(2);
     });
 
     it('handles transactionFilterResult event with count > 0', () => {
         const event = new CustomEvent('transactionFilterResult', {
-            detail: { count: 5, searchTerm: 'foo' }
+            detail: { count: 5, searchTerm: 'foo' },
         });
         document.dispatchEvent(event);
     });
@@ -322,7 +351,7 @@ describe('initTerminal edge cases', () => {
         initTerminal({});
 
         const event = new CustomEvent('transactionFilterResult', {
-            detail: { count: 0, searchTerm: 'foo' }
+            detail: { count: 0, searchTerm: 'foo' },
         });
         document.dispatchEvent(event);
         expect(document.querySelector('pre')).toBeNull();

@@ -7,14 +7,7 @@ import type DateHelper from './helpers/DateHelper';
 declare namespace CalHeatmap {
     export type Timestamp = number;
     export type DomainType =
-        | 'year'
-        | 'month'
-        | 'week'
-        | 'xDay'
-        | 'ghDay'
-        | 'day'
-        | 'hour'
-        | 'minute';
+        'year' | 'month' | 'week' | 'xDay' | 'ghDay' | 'day' | 'hour' | 'minute';
 
     export type DeepPartial<T> = T extends object
         ? {

@@ -408,11 +408,10 @@ export const getCalendarRange = () => {
     const maxMonths = Math.floor(availableWidth / monthWidth);
 
     // Responsive breakpoints with zoom awareness
-    if (viewportWidth <= 480 || (isZoomed && viewportWidth <= 768)) {
-        return 1; // Mobile or zoomed on small screens
-    }
-    if (viewportWidth <= 768 || (isZoomed && viewportWidth <= 1024)) {
-        return Math.min(2, maxMonths); // Tablet or zoomed on medium screens
+    // Use the same MOBILE breakpoint (768px) as CSS to ensure the calendar
+    // shows only the current month on mobile layouts.
+    if (viewportWidth <= UI_BREAKPOINTS.MOBILE || (isZoomed && viewportWidth <= 1024)) {
+        return 1; // Mobile or zoomed on medium screens
     }
     if (viewportWidth <= 1200 || (isZoomed && viewportWidth <= 1600)) {
         return Math.min(3, maxMonths); // Desktop or zoomed on large screens

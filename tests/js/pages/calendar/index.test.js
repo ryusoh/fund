@@ -3,6 +3,7 @@ import { getCalendarData } from '@services/dataService.js';
 import { initCalendar, autoInitCalendar } from '@pages/calendar/index.js';
 import { renderLabels } from '@pages/calendar/renderers/svgLabels.js';
 import * as dateUtils from '@utils/date.js';
+import { getCalendarRange } from '../../../../js/config.js';
 
 jest.mock('@services/dataService.js', () => ({
     getCalendarData: jest.fn(),
@@ -392,6 +393,58 @@ describe('calendar page', () => {
         expect(paintArg.range).toBe(3);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        nyDateSpy.mockRestore();
+    });
+
+    it('on mobile viewport (≤768px), calendar start month equals current NY month', async () => {
+        const originalWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 768 });
+        // Mock getCalendarRange to return 1 for mobile
+        getCalendarRange.mockReturnValue(1);
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date('2026-06-30T12:00:00'));
+
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2026-05-15',
+                    value: 0.005,
+                    valueUSD: 0.005,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 5,
+                    dailyChangeUSD: 5,
+                },
+                {
+                    date: '2026-06-26',
+                    value: 0.01,
+                    valueUSD: 0.01,
+                    total: 1050,
+                    totalUSD: 1050,
+                    dailyChange: 10,
+                    dailyChangeUSD: 10,
+                },
+            ],
+            {
+                monthlyPnl: new Map([
+                    ['2026-05', { absoluteChangeUSD: 5, percentChange: 0.005 }],
+                    ['2026-06', { absoluteChangeUSD: 10, percentChange: 0.01 }],
+                ]),
+            }
+        );
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        // The calendar should start at June (month index 5), not May
+        expect(paintArg.date.start.getMonth()).toBe(5); // June (0-based)
+        expect(paintArg.date.start.getFullYear()).toBe(2026);
+        expect(paintArg.range).toBe(1);
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        getCalendarRange.mockReturnValue(3);
         nyDateSpy.mockRestore();
     });
 

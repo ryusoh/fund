@@ -37,12 +37,7 @@ import { parseLocalDate, formatCrosshairDateLabel } from '../chart/helpers.js';
 import { logger } from '../../utils/logger.js';
 
 function _isPEDataValid(data) {
-    return (
-        data &&
-        typeof data === 'object' &&
-        Array.isArray(data.dates) &&
-        data.dates.length > 0
-    );
+    return data && typeof data === 'object' && Array.isArray(data.dates) && data.dates.length > 0;
 }
 
 function _calculatePERange(series) {
