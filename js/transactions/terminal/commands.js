@@ -33,14 +33,6 @@ import { setFadePreserveSecondLast } from '../fade.js';
 // Re-export constants for backward compatibility (if needed)
 export { COMMAND_ALIASES, STATS_SUBCOMMANDS, PLOT_SUBCOMMANDS, HELP_SUBCOMMANDS };
 
-// Autocomplete logic was moved to autocomplete.js.
-// We export this placeholder if something still imports it, but autocomplete.js should be used instead.
-export function autocompleteCommand() {
-    // No-op or throw warning?
-    // Given the previous refactoring phase, this might be dead code, but keeping it empty is safe.
-    // Ideally, consumers should use autocomplete.js.
-}
-
 export async function executeCommand(command, context) {
     const { onCommandExecuted } = context;
 
