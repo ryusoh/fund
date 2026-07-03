@@ -296,22 +296,8 @@ export function buildLotSnapshots() {
     };
 }
 
-export async function getDurationStatsText() {
-    const snapshot = await getLatestCompositionSnapshot();
-    if (!snapshot) {
-        return 'Composition snapshot unavailable. Run `plot composition` first to generate this data.';
-    }
-
-    const { lotsByTicker, closedSales } = buildLotSnapshots();
-    const hasOpenData = lotsByTicker instanceof Map;
-    const hasClosedData = Array.isArray(closedSales) && closedSales.length > 0;
-    if (!hasOpenData && !hasClosedData) {
-        return 'Transaction history not loaded yet, unable to compute holding durations.';
-    }
-
-    const normalizedLots = hasOpenData ? lotsByTicker : new Map();
-    const baselineDate = parseDateStrict(snapshot.dateLabel) || new Date();
-    const entries = snapshot.holdings
+function buildOpenDurationEntries(snapshot, normalizedLots, baselineDate) {
+    return snapshot.holdings
         .map((holding) => {
             const normalizedTicker = normalizeTickerKey(holding.ticker);
             const lots = normalizedLots.get(normalizedTicker);
@@ -340,7 +326,26 @@ export async function getDurationStatsText() {
             };
         })
         .filter(Boolean);
+}
 
+function calculateClosedDurationStats(closedSales, hasClosedData) {
+    let totalClosedQty = 0;
+    if (hasClosedData) {
+        for (let i = 0; i < closedSales.length; i++) {
+            totalClosedQty += Number(closedSales[i].qty) || 0;
+        }
+    }
+    let closedDaysSum = 0;
+    if (totalClosedQty > 0) {
+        for (let i = 0; i < closedSales.length; i++) {
+            closedDaysSum += (Number(closedSales[i].qty) || 0) * (Number(closedSales[i].days) || 0);
+        }
+    }
+    const weightedClosedAvgDays = totalClosedQty > 0 ? closedDaysSum / totalClosedQty : null;
+    return { totalClosedQty, weightedClosedAvgDays };
+}
+
+function calculateWeightedAvgDays(entries) {
     let totalWeight = 0;
     for (let i = 0; i < entries.length; i++) {
         totalWeight += entries[i].weight;
@@ -349,14 +354,34 @@ export async function getDurationStatsText() {
     for (let i = 0; i < entries.length; i++) {
         weightedAvgDaysSum += entries[i].weight * entries[i].avgAgeDays;
     }
-    const weightedAvgDays = totalWeight > 0 ? weightedAvgDaysSum / totalWeight : null;
+    return totalWeight > 0 ? weightedAvgDaysSum / totalWeight : null;
+}
+
+function calculateWeightedAvgAll(entries, totalClosedQty, weightedClosedAvgDays) {
+    let totalOpenShareWeight = 0;
+    for (let i = 0; i < entries.length; i++) {
+        totalOpenShareWeight += entries[i].openShares;
+    }
+    let openShareWeightedSum = 0;
+    for (let i = 0; i < entries.length; i++) {
+        openShareWeightedSum += entries[i].openShares * entries[i].avgAgeDays;
+    }
+    const allDenominator = totalOpenShareWeight + totalClosedQty;
+    return allDenominator > 0
+        ? (openShareWeightedSum + (weightedClosedAvgDays || 0) * totalClosedQty) /
+          allDenominator
+        : null;
+}
+
+function buildDurationSummaryRows(snapshotDateLabel, entries, hasClosedData, closedStats) {
+    const weightedAvgDays = calculateWeightedAvgDays(entries);
     const medianDays = computeWeightedMedian(
         entries,
         (entry) => entry.weight,
         (entry) => entry.avgAgeDays
     );
 
-    const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
+    const summaryRows = [['Snapshot Date', snapshotDateLabel || 'Latest']];
     if (entries.length) {
         summaryRows.push([
             'Weighted Avg Age (Open)',
@@ -372,19 +397,7 @@ export async function getDurationStatsText() {
         ]);
     }
 
-    let totalClosedQty = 0;
-    if (hasClosedData) {
-        for (let i = 0; i < closedSales.length; i++) {
-            totalClosedQty += Number(closedSales[i].qty) || 0;
-        }
-    }
-    let closedDaysSum = 0;
-    if (totalClosedQty > 0) {
-        for (let i = 0; i < closedSales.length; i++) {
-            closedDaysSum += (Number(closedSales[i].qty) || 0) * (Number(closedSales[i].days) || 0);
-        }
-    }
-    const weightedClosedAvgDays = totalClosedQty > 0 ? closedDaysSum / totalClosedQty : null;
+    const { totalClosedQty, weightedClosedAvgDays } = closedStats;
     if (Number.isFinite(weightedClosedAvgDays)) {
         summaryRows.push([
             'Weighted Avg Age (Closed)',
@@ -394,20 +407,7 @@ export async function getDurationStatsText() {
         ]);
     }
 
-    let totalOpenShareWeight = 0;
-    for (let i = 0; i < entries.length; i++) {
-        totalOpenShareWeight += entries[i].openShares;
-    }
-    let openShareWeightedSum = 0;
-    for (let i = 0; i < entries.length; i++) {
-        openShareWeightedSum += entries[i].openShares * entries[i].avgAgeDays;
-    }
-    const allDenominator = totalOpenShareWeight + totalClosedQty;
-    const weightedAvgAll =
-        allDenominator > 0
-            ? (openShareWeightedSum + (weightedClosedAvgDays || 0) * totalClosedQty) /
-              allDenominator
-            : null;
+    const weightedAvgAll = calculateWeightedAvgAll(entries, totalClosedQty, weightedClosedAvgDays);
     if (Number.isFinite(weightedAvgAll)) {
         summaryRows.push([
             'Weighted Avg Age (All)',
@@ -416,6 +416,29 @@ export async function getDurationStatsText() {
             )})`,
         ]);
     }
+
+    return summaryRows;
+}
+
+export async function getDurationStatsText() {
+    const snapshot = await getLatestCompositionSnapshot();
+    if (!snapshot) {
+        return 'Composition snapshot unavailable. Run `plot composition` first to generate this data.';
+    }
+
+    const { lotsByTicker, closedSales } = buildLotSnapshots();
+    const hasOpenData = lotsByTicker instanceof Map;
+    const hasClosedData = Array.isArray(closedSales) && closedSales.length > 0;
+    if (!hasOpenData && !hasClosedData) {
+        return 'Transaction history not loaded yet, unable to compute holding durations.';
+    }
+
+    const normalizedLots = hasOpenData ? lotsByTicker : new Map();
+    const baselineDate = parseDateStrict(snapshot.dateLabel) || new Date();
+
+    const entries = buildOpenDurationEntries(snapshot, normalizedLots, baselineDate);
+    const closedStats = calculateClosedDurationStats(closedSales, hasClosedData);
+    const summaryRows = buildDurationSummaryRows(snapshot.dateLabel, entries, hasClosedData, closedStats);
 
     const summaryTable = renderAsciiTable({
         title: 'HOLDING DURATION',
@@ -447,19 +470,18 @@ export async function getDurationStatsText() {
     const note =
         'Method: FIFO lot ages (split-adjusted) derived from the transaction ledger, weighted by the latest portfolio composition.';
 
-    return detailTable
-        ? `
-${summaryTable}
+    let result = `
+${summaryTable}`;
+    if (detailTable) {
+        result += `
 
-${detailTable}
-
-${note}`
-        : `
-${summaryTable}
+${detailTable}`;
+    }
+    result += `
 
 ${note}`;
+    return result;
 }
-
 export async function getLifespanStatsText() {
     const snapshot = await getLatestCompositionSnapshot();
     if (!snapshot) {
