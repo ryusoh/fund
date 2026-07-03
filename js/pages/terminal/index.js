@@ -177,13 +177,24 @@ function buildFxRateMaps(fxPayload) {
         return {};
     }
     const fxRates = {};
-    Object.entries(fxPayload.rates).forEach(([date, rateMap]) => {
+    // Use explicit index-based loops to prevent closure allocation and object creation overhead
+    const dateKeys = Object.keys(fxPayload.rates);
+    const numDates = dateKeys.length;
+    for (let i = 0; i < numDates; i++) {
+        const date = dateKeys[i];
+        const rateMap = fxPayload.rates[date];
         const timestamp = Date.parse(date);
-        Object.entries(rateMap || {}).forEach(([currency, rateValue]) => {
+
+        if (!rateMap) {continue;}
+        const currencyKeys = Object.keys(rateMap);
+        const numCurrencies = currencyKeys.length;
+        for (let j = 0; j < numCurrencies; j++) {
+            const currency = currencyKeys[j];
+            const rateValue = rateMap[currency];
             const normalizedCurrency = currency.toUpperCase();
             const rateNumber = Number(rateValue);
             if (!Number.isFinite(rateNumber)) {
-                return;
+                continue;
             }
             const entry = fxRates[normalizedCurrency] || { map: new Map(), sorted: [] };
             if (!entry.map.has(date)) {
@@ -194,11 +205,13 @@ function buildFxRateMaps(fxPayload) {
             }
             entry.map.set(date, rateNumber);
             fxRates[normalizedCurrency] = entry;
-        });
-    });
-    Object.values(fxRates).forEach((entry) => {
-        entry.sorted.sort((a, b) => a.ts - b.ts);
-    });
+        }
+    }
+    const fxRatesValues = Object.values(fxRates);
+    const numRates = fxRatesValues.length;
+    for (let k = 0; k < numRates; k++) {
+        fxRatesValues[k].sorted.sort((a, b) => a.ts - b.ts);
+    }
     if (!fxRates.USD) {
         fxRates.USD = { map: new Map(), sorted: [] };
     }
