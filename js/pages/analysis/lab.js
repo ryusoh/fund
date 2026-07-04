@@ -211,14 +211,13 @@ function getEffectiveVolatility(config) {
     return resolveNumeric(overrides.volatility, risk.volatility ?? market.volatility, 0.35, true);
 }
 
-function getSharesOutstanding(config) {
-    const market = config.market || {};
-    const direct = Number(
+function extractDirectShares(market) {
+    return Number(
         market.sharesOutstanding ?? market.shares ?? market.basicShares ?? market.floatShares
     );
-    if (Number.isFinite(direct) && direct > 0) {
-        return direct;
-    }
+}
+
+function deriveSharesFromMarketCap(market) {
     const price = Number(market.price);
     const marketCap = Number(market.marketCap);
     if (Number.isFinite(price) && price > 0 && Number.isFinite(marketCap) && marketCap > 0) {
@@ -228,6 +227,15 @@ function getSharesOutstanding(config) {
         }
     }
     return null;
+}
+
+function getSharesOutstanding(config) {
+    const market = config.market || {};
+    const direct = extractDirectShares(market);
+    if (Number.isFinite(direct) && direct > 0) {
+        return direct;
+    }
+    return deriveSharesFromMarketCap(market);
 }
 
 function getAsOfYear(config) {
