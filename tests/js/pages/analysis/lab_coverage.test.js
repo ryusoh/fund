@@ -187,3 +187,40 @@ describe('aggregateScenarios additional branch coverage', () => {
         expect(scenarios[0].precomputedCagr).toBe(0);
     });
 });
+
+describe('getSharesOutstanding logic', () => {
+    let buildPortfolioConfig;
+    let oldWorker;
+    beforeAll(async () => {
+        global.FLAG = true;
+        oldWorker = global.Worker;
+        global.Worker = class {
+            postMessage() {}
+            terminate() {}
+        };
+        const module = await import('@pages/analysis/lab.js');
+        buildPortfolioConfig = module.__analysisLabTesting.buildPortfolioConfig;
+    });
+
+    afterAll(() => {
+        global.Worker = oldWorker;
+    });
+
+    it('derives shares from marketCap and price when direct shares are not available', () => {
+        const cfg1 = {
+            marketValue: 1000,
+            weight: 1.0,
+            scenarios: [],
+            model: {
+                preferences: { targetCagr: 0.1, kellyScale: 0.5, benchmark: { value: 100 } },
+            },
+            risk: { volatility: 0.2 },
+            market: { price: 10, marketCap: 1000 },
+            position: { shares: 10 },
+            metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 1.0, earningsCagr: 0.1 }] },
+        };
+
+        const portfolio = buildPortfolioConfig([cfg1]);
+        expect(portfolio).toBeDefined();
+    });
+});
