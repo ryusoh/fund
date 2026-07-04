@@ -1090,4 +1090,5 @@ export const __analysisLabTesting = {
     normalizeConfig,
     buildPortfolioConfig,
     fetchText,
+    getSharesOutstanding,
 };

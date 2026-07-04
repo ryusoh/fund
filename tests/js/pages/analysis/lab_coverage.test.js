@@ -188,39 +188,21 @@ describe('aggregateScenarios additional branch coverage', () => {
     });
 });
 
-describe('getSharesOutstanding logic', () => {
-    let buildPortfolioConfig;
-    let oldWorker;
+describe('getSharesOutstanding additional coverage', () => {
+    let getSharesOutstanding;
     beforeAll(async () => {
         global.FLAG = true;
-        oldWorker = global.Worker;
-        global.Worker = class {
-            postMessage() {}
-            terminate() {}
-        };
         const module = await import('@pages/analysis/lab.js');
-        buildPortfolioConfig = module.__analysisLabTesting.buildPortfolioConfig;
+        getSharesOutstanding = module.__analysisLabTesting.getSharesOutstanding;
     });
 
-    afterAll(() => {
-        global.Worker = oldWorker;
+    it('returns direct shares if provided', () => {
+        const config = { market: { sharesOutstanding: 500 } };
+        expect(getSharesOutstanding(config)).toBe(500);
     });
 
-    it('derives shares from marketCap and price when direct shares are not available', () => {
-        const cfg1 = {
-            marketValue: 1000,
-            weight: 1.0,
-            scenarios: [],
-            model: {
-                preferences: { targetCagr: 0.1, kellyScale: 0.5, benchmark: { value: 100 } },
-            },
-            risk: { volatility: 0.2 },
-            market: { price: 10, marketCap: 1000 },
-            position: { shares: 10 },
-            metrics: { outcomes: [{ id: 'base', name: 'Base', prob: 1.0, earningsCagr: 0.1 }] },
-        };
-
-        const portfolio = buildPortfolioConfig([cfg1]);
-        expect(portfolio).toBeDefined();
+    it('derives from market cap if direct not provided', () => {
+        const config = { market: { marketCap: 1000, price: 10 } };
+        expect(getSharesOutstanding(config)).toBe(100);
     });
 });
