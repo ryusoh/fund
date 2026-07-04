@@ -187,3 +187,22 @@ describe('aggregateScenarios additional branch coverage', () => {
         expect(scenarios[0].precomputedCagr).toBe(0);
     });
 });
+
+describe('getSharesOutstanding additional coverage', () => {
+    let getSharesOutstanding;
+    beforeAll(async () => {
+        global.FLAG = true;
+        const module = await import('@pages/analysis/lab.js');
+        getSharesOutstanding = module.__analysisLabTesting.getSharesOutstanding;
+    });
+
+    it('returns direct shares if provided', () => {
+        const config = { market: { sharesOutstanding: 500 } };
+        expect(getSharesOutstanding(config)).toBe(500);
+    });
+
+    it('derives from market cap if direct not provided', () => {
+        const config = { market: { marketCap: 1000, price: 10 } };
+        expect(getSharesOutstanding(config)).toBe(100);
+    });
+});
