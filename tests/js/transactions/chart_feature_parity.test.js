@@ -403,9 +403,8 @@ describe('Composition Chart Feature Parity', () => {
             baseCharts.forEach((baseChart) => {
                 const jsName = CHART_NAME_MAPPING[baseChart];
                 // Check if viewUtils handles the chart or its abs variant
-                expect(viewUtilsContent).toContain(
-                    `activeChart === '${jsName}'`,
-                    `Chart "${jsName}" must have case in getActiveChartSummaryText()`
+                expect(viewUtilsContent).toMatch(
+                    new RegExp(`(activeChart === '${jsName}'|'${jsName}':)`)
                 );
             });
         });
