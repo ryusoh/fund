@@ -21,7 +21,7 @@ jobs:
             FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         environment:
             name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
+            url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
         steps:
             - name: Checkout
               uses: actions/checkout@v7
@@ -41,4 +41,12 @@ jobs:
 
             - name: Deploy to GitHub Pages
               id: deployment
+              uses: actions/deploy-pages@v5
+              continue-on-error: true
+
+            # The Pages backend intermittently rejects deployments with
+            # "Deployment failed, try again later." — a fresh attempt clears it.
+            - name: Retry deploy once
+              id: deployment-retry
+              if: steps.deployment.outcome == 'failure'
               uses: actions/deploy-pages@v5

@@ -42,7 +42,10 @@ data stale until the next human push.
 named "github-pages"` — every attempt uploads another artifact into the
   same run. Re-run _all_ jobs, or just push again.
 - "Deployment failed, try again later." (annotation on the deploy job) is a
-  generic GitHub-backend rejection, not a repo problem — re-dispatch before
+  generic GitHub-backend rejection, not a repo problem — it hit both the
+  legacy and Actions pipelines repeatedly in early July 2026 with a 33 MB
+  artifact and all systems green on githubstatus. `pages.yml` now retries the
+  deploy step once automatically; if both attempts fail, re-dispatch before
   digging.
 
 ## Debugging Actions without `gh` auth
