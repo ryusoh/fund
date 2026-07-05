@@ -106,7 +106,9 @@ export function computeRunningTotals(transactions, splitHistory) {
         (a, b) => getTs(a) - getTs(b) || a.transactionId - b.transactionId
     );
 
-    chronologicalTransactions.forEach((transaction) => {
+    // Use explicit index-based for loop instead of .forEach() to prevent closure allocation and reduce GC overhead
+    for (let i = 0; i < chronologicalTransactions.length; i += 1) {
+        const transaction = chronologicalTransactions[i];
         const security = transaction.security;
         const currentState = securityStates.get(security) || { lots: [], totalRealizedGain: 0 };
 
@@ -123,8 +125,8 @@ export function computeRunningTotals(transactions, splitHistory) {
         securityStates.set(security, newState);
 
         let totalShares = 0;
-        for (let i = 0; i < newState.lots.length; i += 1) {
-            totalShares += newState.lots[i].qty;
+        for (let j = 0; j < newState.lots.length; j += 1) {
+            totalShares += newState.lots[j].qty;
         }
         const netAmount = Number.parseFloat(transaction.netAmount);
         const normalizedNetAmount = Number.isFinite(netAmount) ? netAmount : 0;
@@ -135,9 +137,9 @@ export function computeRunningTotals(transactions, splitHistory) {
             amount: cumulativeNetAmount,
             portfolio: cumulativeNetAmount,
         });
-    });
+    }
 
-    // Bolt: Use direct for...of loop over Map.values() instead of Array.from().reduce()
+    // Use direct for...of loop over Map.values() instead of Array.from().reduce()
     // to avoid intermediate array allocation and reduce garbage collection overhead
     let totalRealizedGain = 0;
     for (const s of securityStates.values()) {
