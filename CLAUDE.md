@@ -58,6 +58,10 @@ is the stricter local superset (adds `mypy` + `bandit`).
   derives VT's forward P/E from it. A null ratio renders the cell **trailing-only,
   not an error** — verify in the rendered table. Read before editing forward-PE in
   `generate_pe_data.py` or `dataService.js`.
+- **Pages deploy & bot data workflows** → `docs/pages-deploy.md`. Bot commits
+  reach the live site only via an explicit `workflow_dispatch` of `pages.yml`;
+  a skip-ci marker anywhere in a commit message (even quoted in the body) kills
+  all push workflows including the deploy. Read before touching `.github/workflows/`.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.

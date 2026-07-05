@@ -368,8 +368,7 @@ function calculateWeightedAvgAll(entries, totalClosedQty, weightedClosedAvgDays)
     }
     const allDenominator = totalOpenShareWeight + totalClosedQty;
     return allDenominator > 0
-        ? (openShareWeightedSum + (weightedClosedAvgDays || 0) * totalClosedQty) /
-          allDenominator
+        ? (openShareWeightedSum + (weightedClosedAvgDays || 0) * totalClosedQty) / allDenominator
         : null;
 }
 
@@ -438,7 +437,12 @@ export async function getDurationStatsText() {
 
     const entries = buildOpenDurationEntries(snapshot, normalizedLots, baselineDate);
     const closedStats = calculateClosedDurationStats(closedSales, hasClosedData);
-    const summaryRows = buildDurationSummaryRows(snapshot.dateLabel, entries, hasClosedData, closedStats);
+    const summaryRows = buildDurationSummaryRows(
+        snapshot.dateLabel,
+        entries,
+        hasClosedData,
+        closedStats
+    );
 
     const summaryTable = renderAsciiTable({
         title: 'HOLDING DURATION',

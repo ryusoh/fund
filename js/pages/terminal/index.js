@@ -185,7 +185,9 @@ function buildFxRateMaps(fxPayload) {
         const rateMap = fxPayload.rates[date];
         const timestamp = Date.parse(date);
 
-        if (!rateMap) {continue;}
+        if (!rateMap) {
+            continue;
+        }
         const currencyKeys = Object.keys(rateMap);
         const numCurrencies = currencyKeys.length;
         for (let j = 0; j < numCurrencies; j++) {

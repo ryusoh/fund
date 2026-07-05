@@ -1,0 +1,22 @@
+#!/bin/sh
+# Block CI-skip markers in local commit messages. GitHub matches them anywhere
+# in the head commit message (body included, even quoted in prose) and then
+# silently skips ALL push workflows — including the Pages deploy. See
+# docs/pages-deploy.md. Bot workflows commit on runners without husky, so
+# their intentional markers are unaffected.
+#
+# Escape hatch when skipping CI is actually intended:
+#   ALLOW_SKIP_CI=1 git commit ...
+
+[ "$ALLOW_SKIP_CI" = "1" ] && exit 0
+
+msg_file="$1"
+if grep -qiE '\[(skip ci|ci skip|no ci|skip actions|actions skip)\]|skip-checks: *true' "$msg_file"; then
+  echo "ERROR: commit message contains a CI-skip marker." >&2
+  echo "       GitHub honors it anywhere in the message and skips all push" >&2
+  echo "       workflows, including the Pages deploy. Reword it (e.g. say" >&2
+  echo "       'skip-ci marker'), or rerun with ALLOW_SKIP_CI=1 if intended." >&2
+  exit 1
+fi
+
+exit 0
