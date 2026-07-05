@@ -5,34 +5,37 @@ import tempfile
 from unittest.mock import patch
 
 import yfinance as yf
+from yfinance import cache as yf_cache
 
 
 def test_yfinance_cache_config_logic():
     """
     Verify the logic used in scripts to configure yfinance cache.
-    We simulate the setup and check if yfinance accepts the new location.
+    Exercises the tz cache offline — no network, so no rate-limit flakiness.
     """
     # Create a temp dir like the scripts do
     _yf_cache_dir = tempfile.mkdtemp(prefix="yf-cache-unittest-")
     try:
-        # Set the location
         yf.set_tz_cache_location(_yf_cache_dir)
+        # The cache wrapper is a module-level singleton; drop it so it
+        # re-initialises at our location even if another test opened it first.
+        yf_cache._TzCacheManager._tz_cache = None
 
-        # Verify it's actually set by looking at yfinance internal state if possible
-        # or by checking if files are created when we fetch something
-        aapl = yf.Ticker("AAPL")
-        # period="1d" is fast
-        _ = aapl.history(period="1d")
+        assert yf_cache._TzDBManager.get_location() == _yf_cache_dir
 
-        # Check if files exist in our temp dir
-        files = os.listdir(_yf_cache_dir)
-        # Note: Depending on network/yfinance internals, it might not ALWAYS create files
-        # but if it DOES, they should be here.
-        # Given our verify script succeeded, we expect some files.
-        assert len(files) >= 0
+        # A store/lookup forces the sqlite DB to be created at the
+        # configured location — proves the redirect actually took effect.
+        tz_cache = yf_cache.get_tz_cache()
+        tz_cache.store("AAPL", "America/New_York")
+        assert tz_cache.lookup("AAPL") == "America/New_York"
+        assert os.path.isfile(os.path.join(_yf_cache_dir, "tkr-tz.db"))
 
     finally:
-        # Cleanup
+        # Close and reset the singletons so later tests don't hold a DB
+        # handle into the deleted temp dir.
+        yf_cache._TzDBManager.close_db()
+        yf_cache._TzDBManager._db = None
+        yf_cache._TzCacheManager._tz_cache = None
         shutil.rmtree(_yf_cache_dir, ignore_errors=True)
 
 
