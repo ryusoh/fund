@@ -66,62 +66,30 @@ export function isActiveChartVisible() {
 
 export async function getActiveChartSummaryText() {
     const activeChart = transactionState.activeChart;
-    if (activeChart === 'composition') {
-        return await getCompositionSnapshotLine();
-    }
-    if (activeChart === 'compositionAbs') {
-        return await getCompositionSnapshotLine({ labelPrefix: 'Composition Abs' });
-    }
-    if (activeChart === 'sectors') {
-        return await getSectorsSnapshotLine();
-    }
-    if (activeChart === 'sectorsAbs') {
-        return await getSectorsSnapshotLine({ labelPrefix: 'Sectors Abs' });
-    }
-    if (activeChart === 'performance') {
-        return getPerformanceSnapshotLine({ includeHidden: true });
-    }
-    if (activeChart === 'fx') {
-        return getFxSnapshotLine();
-    }
-    if (activeChart === 'contribution') {
-        return await getContributionSummaryText(transactionState.chartDateRange);
-    }
-    if (activeChart === 'drawdown') {
-        return getDrawdownSnapshotLine({ includeHidden: true });
-    }
-    if (activeChart === 'drawdownAbs') {
-        return getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true });
-    }
-    if (activeChart === 'concentration') {
-        return getConcentrationSnapshotText();
-    }
-    if (activeChart === 'pe') {
-        return await getPESnapshotLine();
-    }
-    if (activeChart === 'rolling') {
-        return getRollingSnapshotLine({ includeHidden: true });
-    }
-    if (activeChart === 'volatility') {
-        return getVolatilitySnapshotLine({ includeHidden: true });
-    }
-    if (activeChart === 'yield') {
-        return await getYieldSnapshotLine();
-    }
-    if (activeChart === 'beta') {
-        return await getBetaSnapshotLine();
-    }
-    if (activeChart === 'geography') {
-        return await getGeographySnapshotLine();
-    }
-    if (activeChart === 'geographyAbs') {
-        return await getGeographySnapshotLine({ labelPrefix: 'Geography Abs' });
-    }
-    if (activeChart === 'marketcap') {
-        return await getMarketcapSnapshotLine();
-    }
-    if (activeChart === 'marketcapAbs') {
-        return await getMarketcapSnapshotLine({ labelPrefix: 'Market Cap Abs' });
+    const summaryMap = {
+        'composition': () => getCompositionSnapshotLine(),
+        'compositionAbs': () => getCompositionSnapshotLine({ labelPrefix: 'Composition Abs' }),
+        'sectors': () => getSectorsSnapshotLine(),
+        'sectorsAbs': () => getSectorsSnapshotLine({ labelPrefix: 'Sectors Abs' }),
+        'performance': () => getPerformanceSnapshotLine({ includeHidden: true }),
+        'fx': () => getFxSnapshotLine(),
+        'contribution': () => getContributionSummaryText(transactionState.chartDateRange),
+        'drawdown': () => getDrawdownSnapshotLine({ includeHidden: true }),
+        'drawdownAbs': () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true }),
+        'concentration': () => getConcentrationSnapshotText(),
+        'pe': () => getPESnapshotLine(),
+        'rolling': () => getRollingSnapshotLine({ includeHidden: true }),
+        'volatility': () => getVolatilitySnapshotLine({ includeHidden: true }),
+        'yield': () => getYieldSnapshotLine(),
+        'beta': () => getBetaSnapshotLine(),
+        'geography': () => getGeographySnapshotLine(),
+        'geographyAbs': () => getGeographySnapshotLine({ labelPrefix: 'Geography Abs' }),
+        'marketcap': () => getMarketcapSnapshotLine(),
+        'marketcapAbs': () => getMarketcapSnapshotLine({ labelPrefix: 'Market Cap Abs' }),
+    };
+
+    if (summaryMap[activeChart]) {
+        return await summaryMap[activeChart]();
     }
     return null;
 }
