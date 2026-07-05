@@ -9,6 +9,10 @@ concurrency:
     group: ${{ github.workflow }}
     cancel-in-progress: true
 
+permissions:
+    contents: write # Required to commit changes back to the repository
+    actions: write # Required to dispatch the Pages deploy workflow
+
 jobs:
     sync:
         runs-on: ubuntu-latest
@@ -29,7 +33,16 @@ jobs:
               run: |
                   python scripts/analysis/sync_configs.py
             - name: Commit changes
+              id: autocommit
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): 分析構成を自動更新 [skip ci]'
                   commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+
+            # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
+            # push-based Pages deploy — dispatch it explicitly.
+            - name: Trigger Pages deploy
+              if: steps.autocommit.outputs.changes_detected == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh workflow run pages.yml --ref main

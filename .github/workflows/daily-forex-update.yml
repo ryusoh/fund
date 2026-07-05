@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
     contents: write # Required to commit changes back to the repository
+    actions: write # Required to dispatch the Pages deploy workflow
 
 jobs:
     fetch-and-commit-forex:
@@ -36,8 +37,17 @@ jobs:
               run: python scripts/data/fetch_forex.py
 
             - name: Commit and push changes
+              id: autocommit
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): 為替レートを自動更新 [skip ci]'
                   commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
                   file_pattern: 'data/fx_data.json data/fx_daily_rates.csv' # Only commit if these files change
+
+            # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
+            # push-based Pages deploy — dispatch it explicitly.
+            - name: Trigger Pages deploy
+              if: steps.autocommit.outputs.changes_detected == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh workflow run pages.yml --ref main

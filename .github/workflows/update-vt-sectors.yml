@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
     contents: write
+    actions: write # Required to dispatch the Pages deploy workflow
 
 jobs:
     update-vt-data:
@@ -66,8 +67,17 @@ jobs:
               continue-on-error: true # Fail-open: keeps existing pe_ratio.json if fetch fails
 
             - name: Commit and push changes
+              id: autocommit
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: 'chore(data): VT のセクター配分・国別構成・時価総額・HHI・PE を自動更新 [skip ci]'
                   commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
                   file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json data/output/figures/pe_ratio.json'
+
+            # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
+            # push-based Pages deploy — dispatch it explicitly.
+            - name: Trigger Pages deploy
+              if: steps.autocommit.outputs.changes_detected == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh workflow run pages.yml --ref main
