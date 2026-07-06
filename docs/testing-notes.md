@@ -102,6 +102,32 @@ they shoot blank. (`timeout` is not on macOS — don't wrap commands in it.)
 UTC regardless of the developer's local timezone. This eliminates a class of
 flaky off-by-one failures that surface only in timezones east or west of UTC.
 
+**The flip side: `make test`/CI are blind to timezone bugs.** Production
+browsers here run **Asia/Shanghai (UTC+8)**. If a chart/data value is wrong in
+the browser but every test is green, suspect the landmine below before
+theorizing about the math. Worked example: the filtered-ticker appreciation
+line spiked by the buy amount at every buy because `buildFilteredBalanceSeries`
+keyed days via `toISOString()` (previous calendar day in UTC+8) while the
+contribution series used local parsing — 2,644 UTC tests never saw it.
+
+**You cannot switch timezones inside a Jest test.** Jest sandboxes
+`process.env`, so `process.env.TZ = 'Asia/Shanghai'` in a test does **not**
+change `Date` behavior (verified empirically — the assignment succeeds and does
+nothing). The TZ is fixed when the worker process starts. So:
+
+- To exercise a timezone bug, run the whole process in the target zone:
+  `TZ=Asia/Shanghai npx jest <file>` (plain `npx jest` inherits your shell's
+  UTC+8; `make test`/CI always run UTC).
+- Regression tests for TZ bugs pass trivially under CI's UTC — say so in a
+  comment so nobody "simplifies" them away
+  (see "date alignment in UTC+ timezones" in `tests/js/transactions/chart_core.test.js`).
+
+**Related dead ends:** `js/` modules can't be run with `node` directly — the
+`@js/` import aliases only resolve via Jest's `moduleNameMapper` or the pages'
+import maps, so write a scratch Jest test instead of `node --input-type=module`.
+And `npx jest -t <pattern>` is a **regex** — a name containing `+` (e.g.
+"UTC+ timezones") silently matches nothing unless escaped.
+
 ### The `.toISOString().split('T')[0]` landmine
 
 **Never use `.toISOString().split('T')[0]` on a local `Date` to extract a

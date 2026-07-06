@@ -22,7 +22,9 @@ ES modules via an import map.
 Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
 targets so you match CI. Use scoped `npx jest <file>` only for the tight
 edit→verify loop. Jest runs **silent** (`console.log` prints nothing) — before
-debugging an odd/flaky JS test, read `docs/testing-notes.md`.
+debugging an odd/flaky JS test **or any date-off-by-one that's wrong in the
+browser but green under tests** (suite is TZ=UTC; browsers here are UTC+8),
+read `docs/testing-notes.md`.
 
 Python dev tools (`ruff`/`black`/`mypy`/`pytest`/`diff-cover`) live in
 **`venv/bin/`** (that's the interpreter `make` itself uses) — call them directly for
