@@ -241,12 +241,18 @@ describe('calendar page', () => {
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
     });
 
+    // NOTE for all domain tests: paintConfig declares timezone:'utc', so
+    // Cal-Heatmap reads date.min/start with UTC getters — assert getUTC*,
+    // never local getters (asserting the wrong domain is how a month-off
+    // regression shipped despite green tests). getNyDate mocks use local
+    // construction because the real getNyDate returns NY wall time in the
+    // Date's LOCAL components (see docs/testing-notes.md § Timezone).
     it('skips months without label data when determining calendar domain', async () => {
         const originalWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
         const nyDateSpy = jest
             .spyOn(dateUtils, 'getNyDate')
-            .mockReturnValue(new Date('2025-07-15T00:00:00Z'));
+            .mockReturnValue(new Date(2025, 6, 15, 0, 0, 0));
 
         const mockData = createCalendarData(
             [
@@ -281,10 +287,10 @@ describe('calendar page', () => {
         await initCalendar();
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
-        expect(paintArg.date.min.getFullYear()).toBe(2025);
-        expect(paintArg.date.min.getMonth()).toBe(5); // June (0-based)
-        expect(paintArg.date.start.getFullYear()).toBe(2025);
-        expect(paintArg.date.start.getMonth()).toBe(5);
+        expect(paintArg.date.min.getUTCFullYear()).toBe(2025);
+        expect(paintArg.date.min.getUTCMonth()).toBe(5); // June (0-based)
+        expect(paintArg.date.start.getUTCFullYear()).toBe(2025);
+        expect(paintArg.date.start.getUTCMonth()).toBe(5);
         expect(paintArg.range).toBe(2);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
@@ -296,7 +302,7 @@ describe('calendar page', () => {
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
         const nyDateSpy = jest
             .spyOn(dateUtils, 'getNyDate')
-            .mockReturnValue(new Date('2025-07-10T00:00:00Z'));
+            .mockReturnValue(new Date(2025, 6, 10, 0, 0, 0));
 
         const mockData = createCalendarData(
             [
@@ -341,8 +347,8 @@ describe('calendar page', () => {
         await initCalendar();
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
-        expect(paintArg.date.min.getMonth()).toBe(3); // April
-        expect(paintArg.date.start.getMonth()).toBe(4); // May becomes the starting month
+        expect(paintArg.date.min.getUTCMonth()).toBe(3); // April
+        expect(paintArg.date.start.getUTCMonth()).toBe(4); // May becomes the starting month
         expect(paintArg.range).toBe(3);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
@@ -354,7 +360,7 @@ describe('calendar page', () => {
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
         const nyDateSpy = jest
             .spyOn(dateUtils, 'getNyDate')
-            .mockReturnValue(new Date('2025-06-20T00:00:00Z'));
+            .mockReturnValue(new Date(2025, 5, 20, 0, 0, 0));
 
         const mockData = createCalendarData(
             [
@@ -387,9 +393,9 @@ describe('calendar page', () => {
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
         const expectedMonth = parseInt(mockData.processedData[0].date.slice(5, 7), 10) - 1;
-        expect(paintArg.date.min.getFullYear()).toBe(2025);
-        expect(paintArg.date.min.getMonth()).toBe(expectedMonth);
-        expect(paintArg.date.start.getMonth()).toBe(expectedMonth);
+        expect(paintArg.date.min.getUTCFullYear()).toBe(2025);
+        expect(paintArg.date.min.getUTCMonth()).toBe(expectedMonth);
+        expect(paintArg.date.start.getUTCMonth()).toBe(expectedMonth);
         expect(paintArg.range).toBe(3);
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
@@ -439,9 +445,65 @@ describe('calendar page', () => {
 
         const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
         // The calendar should start at June (month index 5), not May
-        expect(paintArg.date.start.getMonth()).toBe(5); // June (0-based)
-        expect(paintArg.date.start.getFullYear()).toBe(2026);
+        expect(paintArg.date.start.getUTCMonth()).toBe(5); // June (0-based)
+        expect(paintArg.date.start.getUTCFullYear()).toBe(2026);
         expect(paintArg.range).toBe(1);
+
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+        getCalendarRange.mockReturnValue(3);
+        nyDateSpy.mockRestore();
+    });
+
+    // Regression: on 2026-07-06 (UTC+8 browser) the page rendered "Jun 2026"
+    // as the rightmost month. calendarStartDate was local-constructed
+    // (July 1 00:00 +08:00 = June 30 16:00Z) while paintConfig declares
+    // timezone:'utc', so Cal-Heatmap read it as June. The rightmost rendered
+    // month (start + range − 1) must be the current NY month in the UTC domain.
+    it('renders the current NY month as the rightmost month (UTC domain)', async () => {
+        const originalWidth = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 768 });
+        getCalendarRange.mockReturnValue(1);
+        const nyDateSpy = jest
+            .spyOn(dateUtils, 'getNyDate')
+            .mockReturnValue(new Date(2026, 6, 6, 9, 30, 0)); // July 6, 2026 NY wall time
+
+        const mockData = createCalendarData(
+            [
+                {
+                    date: '2026-06-30',
+                    value: 0.005,
+                    valueUSD: 0.005,
+                    total: 1000,
+                    totalUSD: 1000,
+                    dailyChange: 5,
+                    dailyChangeUSD: 5,
+                },
+                {
+                    date: '2026-07-03',
+                    value: 0.01,
+                    valueUSD: 0.01,
+                    total: 1050,
+                    totalUSD: 1050,
+                    dailyChange: 10,
+                    dailyChangeUSD: 10,
+                },
+            ],
+            {
+                monthlyPnl: new Map([
+                    ['2026-06', { absoluteChangeUSD: 5, percentChange: 0.005 }],
+                    ['2026-07', { absoluteChangeUSD: 10, percentChange: 0.01 }],
+                ]),
+            }
+        );
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const paintArg = mockCalHeatmapInstance.paint.mock.calls[0][0];
+        // range 1 → the start month IS the rightmost month: July, in UTC
+        expect(paintArg.range).toBe(1);
+        expect(paintArg.date.start.getUTCFullYear()).toBe(2026);
+        expect(paintArg.date.start.getUTCMonth()).toBe(6); // July (0-based)
 
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
         getCalendarRange.mockReturnValue(3);

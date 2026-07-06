@@ -800,6 +800,12 @@ export async function initCalendar() {
             }
         }
 
+        // Domain convention: paintConfig declares timezone:'utc', and
+        // formatMonthKey/dateToMonthIndex read UTC getters — so every month
+        // Date below is UTC-constructed, bridging from local-domain sources
+        // (getNyDate wall time, parseDataDate) via their LOCAL components.
+        // Mixing the domains shifts a month at either side of UTC
+        // (see docs/testing-notes.md § Timezone).
         let firstMonthWithLabels = null;
         for (const [key, hasLabel] of monthHasLabels.entries()) {
             if (hasLabel) {
@@ -807,11 +813,7 @@ export async function initCalendar() {
                 const year = Number(yearStr);
                 const monthIndex = Number(monthStr) - 1;
                 if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
-                    // Local construction: monthToIndex below reads local
-                    // getters, and getNyDate()'s result is local-domain too.
-                    // Date.UTC here would land on the previous month in UTC−
-                    // timezones (see docs/testing-notes.md § Timezone).
-                    firstMonthWithLabels = new Date(year, monthIndex, 1);
+                    firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
                 }
                 break;
             }
@@ -821,31 +823,30 @@ export async function initCalendar() {
         if (!firstMonthWithLabels) {
             /* istanbul ignore next: fallback for missing month labels edge case */
             firstMonthWithLabels = new Date(
-                firstDataDate.getFullYear(),
-                firstDataDate.getMonth(),
-                1
+                Date.UTC(firstDataDate.getFullYear(), firstDataDate.getMonth(), 1)
             );
         }
 
         // Determine the range of months to display so the right-most month is always the latest available.
         const todayNy = getNyDate();
-        const currentMonthStart = new Date(todayNy.getFullYear(), todayNy.getMonth(), 1);
-        const lastDataMonthStart = new Date(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1);
+        const currentMonthStart = new Date(Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), 1));
+        const lastDataMonthStart = new Date(
+            Date.UTC(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1)
+        );
         const lastVisibleMonth = new Date(
             Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
         );
         if (typeof latestMonthlyKey === 'string') {
             appState.highlightMonthKey = latestMonthlyKey;
         } else {
-            appState.highlightMonthKey = `${lastVisibleMonth.getFullYear()}-${String(
-                lastVisibleMonth.getMonth() + 1
-            ).padStart(2, '0')}`;
+            appState.highlightMonthKey = formatMonthKey(lastVisibleMonth);
         }
 
         /* istanbul ignore next: mathematical utility function for date calculations */
-        const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
+        const monthToIndex = dateToMonthIndex;
         /* istanbul ignore next: mathematical utility function for date calculations */
-        const indexToMonthDate = (index) => new Date(Math.floor(index / 12), index % 12, 1);
+        const indexToMonthDate = (index) =>
+            new Date(Date.UTC(Math.floor(index / 12), index % 12, 1));
 
         /* istanbul ignore next: calendar range configuration calculation */
         const configuredRange = Math.max(1, getCalendarRange() || 1);
