@@ -405,7 +405,7 @@ const SMOOTHING_METHODS = {
     savitzky: (data, p, keep) => savitzkyGolay(data, p.window || 5, p.order || 2, keep),
     lowess: (data, p, keep) => lowess(data, p.bandwidth || 0.3, keep),
     adaptive: (data, p, keep) => adaptiveSmoothing(data, keep),
-    default: (data, p, keep) => exponentialMovingAverage(data, 0.3, keep)
+    default: (data, p, keep) => exponentialMovingAverage(data, 0.3, keep),
 };
 
 function applySmoothingPass(data, method, params, preserveEnd) {

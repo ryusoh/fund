@@ -111,10 +111,13 @@ export function buildContributionSeriesFromTransactions(
         const netDelta = entry.netAmount;
 
         if (index > 0) {
+            // UTC-domain: uniqueDates are normalized YYYY-MM-DD strings, so
+            // new Date() parses them as UTC midnight and toISOString() round-trips.
             const prevDateStr = uniqueDates[index - 1];
             const prevDate = new Date(prevDateStr);
             const currentDate = new Date(dateStr);
 
+            // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
             if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
                 const intermediateDate = new Date(currentDate);
                 intermediateDate.setDate(intermediateDate.getDate() - 1);
@@ -125,6 +128,7 @@ export function buildContributionSeriesFromTransactions(
 
                 if (intermediateDate > prevDate) {
                     series.push({
+                        // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
                         tradeDate: intermediateDate.toISOString().split('T')[0],
                         amount: cumulativeAmount,
                         value: cumulativeAmount,
@@ -199,6 +203,7 @@ export function buildContributionSeriesFromTransactions(
         if (!Number.isNaN(firstDate.getTime()) && Math.abs(firstValue) > epsilon) {
             const syntheticDate = new Date(firstDate);
             syntheticDate.setDate(syntheticDate.getDate() - 1);
+            // eslint-disable-next-line no-restricted-syntax -- UTC-domain: tradeDate is a normalized YYYY-MM-DD string, parsed as UTC midnight
             const syntheticDateStr = syntheticDate.toISOString().split('T')[0];
             const existing = series.find((point) => point.tradeDate === syntheticDateStr);
             if (!existing) {
@@ -268,6 +273,7 @@ function getPriceFromHistoricalData(historicalPrices, symbol, dateStr) {
     }
     for (let i = 0; i < 10; i += 1) {
         fallbackDate.setDate(fallbackDate.getDate() - 1);
+        // eslint-disable-next-line no-restricted-syntax -- UTC-domain: dateStr is a YYYY-MM-DD string, parsed as UTC midnight
         const priorStr = fallbackDate.toISOString().split('T')[0];
         if (priceSeries[priorStr] !== undefined) {
             return priceSeries[priorStr];

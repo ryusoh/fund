@@ -219,6 +219,11 @@ export function getTradingDayDate(dateOverride = null) {
 }
 
 /**
+ * UTC-domain only: extracts the UTC calendar day. Correct for dates built
+ * with `Date.UTC(...)` / parsed from bare ISO strings. For dates carrying
+ * LOCAL calendar semantics (e.g. from `normalizeDateOnly`/`parseLocalDate`),
+ * use {@link toLocalIsoDate} — this one lands on the previous day in UTC+
+ * timezones (see docs/testing-notes.md § Timezone).
  * @param {unknown} date
  * @returns {string}
  */
@@ -226,7 +231,22 @@ export function toIsoDate(date) {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
         return '';
     }
+    // eslint-disable-next-line no-restricted-syntax -- UTC-domain by contract (see JSDoc)
     return date.toISOString().split('T')[0];
+}
+
+/**
+ * Formats a Date as YYYY-MM-DD using its LOCAL calendar components.
+ * Use this (never `toISOString()`) for day keys / display of dates that were
+ * normalized to local midnight.
+ * @param {unknown} date
+ * @returns {string}
+ */
+export function toLocalIsoDate(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '';
+    }
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 /**

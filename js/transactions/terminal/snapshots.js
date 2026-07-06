@@ -193,6 +193,7 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
                 if (Number.isNaN(d.getTime())) {
                     continue;
                 }
+                // eslint-disable-next-line no-restricted-syntax -- UTC-domain: series dates are YYYY-MM-DD strings, parsed as UTC midnight
                 const dayStr = d.toISOString().split('T')[0];
                 dailyMap.set(dayStr, item);
             }

@@ -502,6 +502,41 @@ describe('formatSummaryBlock internals', () => {
         const actualDate = new Date('2024-01-05T00:00:00Z');
         expect(formatting.formatSummaryDateSuffix(actualDate, '')).toBe('');
     });
+
+    // Regression: summary dates come from normalizeDateOnly, which returns
+    // LOCAL midnight. Rendering them via toISOString() showed the previous
+    // calendar day in UTC+ timezones (terminal summary said "(2026-07-05)" on
+    // 2026-07-06). NOTE: jest can't switch TZ in-test — these discriminate
+    // only when run in a UTC+ shell (`npx jest`); CI's TZ=UTC passes trivially.
+    // See docs/testing-notes.md § Timezone.
+    it('renders a local-midnight date as its own calendar day (UTC+ regression)', () => {
+        const localMidnight = new Date(2026, 6, 6); // 2026-07-06 local
+        expect(formatting.formatSummaryDateSuffix(localMidnight, '2026-01-01')).toBe(
+            ' (2026-07-06)'
+        );
+    });
+
+    it('suppresses the suffix when the local-midnight date matches the target', () => {
+        const localMidnight = new Date(2024, 0, 1); // 2024-01-01 local
+        expect(formatting.formatSummaryDateSuffix(localMidnight, '2024-01-01')).toBe('');
+    });
+
+    it('formatSummaryBlock renders end date from a local-midnight Date correctly', () => {
+        const summary = {
+            hasData: true,
+            startValue: 100,
+            endValue: 150,
+            netChange: 50,
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2026, 6, 6),
+        };
+        const block = formatting.formatSummaryBlock('Balance', summary, {
+            from: '2024-01-01',
+            to: null,
+        });
+        expect(block).toContain('(2026-07-06)');
+        expect(block).not.toContain('(2026-07-05)');
+    });
 });
 
 describe('formatWithSign - additional', () => {

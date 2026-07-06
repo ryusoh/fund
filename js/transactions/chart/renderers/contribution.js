@@ -52,6 +52,7 @@ import {
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
 import { logger } from '../../../utils/logger.js';
+import { toLocalIsoDate } from '../../../utils/date.js';
 
 export async function drawContributionChart(ctx, chartManager, timestamp, options = {}) {
     const { drawdownMode = false } = options;
@@ -212,10 +213,13 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
                 return false;
             }
 
-            // Normalize dates to date-only strings for comparison (YYYY-MM-DD)
-            const itemDateStr = itemDate.toISOString().split('T')[0];
-            const filterFromStr = filterFrom ? filterFrom.toISOString().split('T')[0] : null;
-            const filterToStr = filterTo ? filterTo.toISOString().split('T')[0] : null;
+            // Normalize dates to date-only strings for comparison (YYYY-MM-DD).
+            // All three are parseLocalDate results (local midnight), so format
+            // with local components — toISOString() shifts them all to the
+            // previous day in UTC+ timezones.
+            const itemDateStr = toLocalIsoDate(itemDate);
+            const filterFromStr = filterFrom ? toLocalIsoDate(filterFrom) : null;
+            const filterToStr = filterTo ? toLocalIsoDate(filterTo) : null;
 
             // Check if item is within the filter range
             const withinStart = !filterFromStr || itemDateStr >= filterFromStr;

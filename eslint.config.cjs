@@ -81,6 +81,26 @@ module.exports = [
         },
     },
     {
+        // Timezone landmine (docs/testing-notes.md § Timezone): extracting a
+        // day key via toISOString() from a locally-parsed Date lands on the
+        // previous calendar day in UTC+ zones (prod browsers run UTC+8, the
+        // test suite runs UTC and can't catch it). Use toLocalIsoDate() from
+        // js/utils/date.js, or eslint-disable with a comment proving the Date
+        // is UTC-domain (built via Date.UTC / parsed from a bare ISO string).
+        files: ['js/**/*.js'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector:
+                        "CallExpression[callee.property.name='split'][callee.object.callee.property.name='toISOString']",
+                    message:
+                        'toISOString() day keys shift a day in UTC+ timezones. Use toLocalIsoDate() from js/utils/date.js for local-calendar dates, or eslint-disable this line with a comment proving the Date is UTC-domain.',
+                },
+            ],
+        },
+    },
+    {
         files: ['sw.js'],
         languageOptions: {
             globals: {

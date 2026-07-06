@@ -1,4 +1,5 @@
 import { logger } from './logger.js';
+import { toLocalIsoDate } from './date.js';
 
 // Bolt: Cache Intl.NumberFormat instances to prevent expensive recreation and speed up formatCurrency
 const numberFormatCache = new Map();
@@ -365,7 +366,9 @@ export function formatSummaryDateSuffix(actualDate, targetDateStr) {
     if (!(actualDate instanceof Date)) {
         return '';
     }
-    const actual = actualDate.toISOString().split('T')[0];
+    // Summary dates are local-midnight (normalizeDateOnly); toISOString()
+    // would display the previous day in UTC+ timezones.
+    const actual = toLocalIsoDate(actualDate);
     if (!targetDateStr || actual === targetDateStr) {
         return '';
     }
@@ -391,7 +394,7 @@ export function formatSummaryBlock(
     // Always show end date for consistency with start date
     let endDateText = '';
     if (summary.endDate instanceof Date) {
-        endDateText = ` (${summary.endDate.toISOString().split('T')[0]})`;
+        endDateText = ` (${toLocalIsoDate(summary.endDate)})`;
     }
 
     // Calculate change percentage relative to start value

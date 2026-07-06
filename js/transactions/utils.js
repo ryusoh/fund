@@ -1,5 +1,6 @@
 import { transactionState, getSelectedCurrency } from './state.js';
 import { CURRENCY_SYMBOLS } from '@js/config.js';
+import { toLocalIsoDate } from '@utils/date.js';
 
 export function formatDate(dateString) {
     const date = new Date(dateString);
@@ -103,7 +104,10 @@ export function convertValueToCurrency(value, dateString, currency = getSelected
     }
     let normalizedDate = dateString;
     if (normalizedDate instanceof Date) {
-        normalizedDate = normalizedDate.toISOString().split('T')[0];
+        // Date args carry local calendar semantics (chart timestamps anchored
+        // at local midnight); toISOString() would pick the previous day's FX
+        // rate in UTC+ timezones.
+        normalizedDate = toLocalIsoDate(normalizedDate);
     }
     if (!currency || currency === 'USD') {
         return amount;
@@ -148,8 +152,7 @@ export function convertBetweenCurrencies(
     if (!Number.isFinite(amount)) {
         return 0;
     }
-    const normalizedDate =
-        dateString instanceof Date ? dateString.toISOString().split('T')[0] : dateString;
+    const normalizedDate = dateString instanceof Date ? toLocalIsoDate(dateString) : dateString;
 
     const source = _normalizeCurrency(fromCurrency);
     const target = _normalizeCurrency(toCurrency);

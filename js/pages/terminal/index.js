@@ -166,6 +166,7 @@ function ensureSyntheticStart(series, { dateKey, valueKey, zeroProps = {} }) {
     const syntheticDate = new Date(firstDate);
     syntheticDate.setUTCDate(syntheticDate.getUTCDate() - 1);
     const formattedDate =
+        // eslint-disable-next-line no-restricted-syntax -- UTC-domain: string branch parses with explicit 'T00:00:00Z' above
         rawDate instanceof Date ? syntheticDate : syntheticDate.toISOString().split('T')[0];
 
     const syntheticPoint = clonePoint(first, formattedDate);
