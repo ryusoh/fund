@@ -122,6 +122,15 @@ nothing). The TZ is fixed when the worker process starts. So:
   comment so nobody "simplifies" them away
   (see "date alignment in UTC+ timezones" in `tests/js/transactions/chart_core.test.js`).
 
+**The mirror-image landmine (bites UTC− zones: NYC/California):** constructing
+with `Date.UTC(...)`/`new Date('YYYY-MM-DD')` and then reading **local** getters
+(`getMonth()`, `setHours(0,0,0,0)`) lands on the previous day/month west of
+UTC. The calendar page's month domain and `normalizeDateOnly` both had this.
+Rule of thumb: pick ONE domain per value and stay in it — local-construct +
+local-read (`parseLocalDate`/`toLocalIsoDate`), or UTC-construct + UTC-read.
+For date-handling changes, run the suite under all four zones:
+`for tz in UTC Asia/Shanghai America/New_York America/Los_Angeles; do TZ=$tz npx jest <file>; done`
+
 **Related dead ends:** `js/` modules can't be run with `node` directly — the
 `@js/` import aliases only resolve via Jest's `moduleNameMapper` or the pages'
 import maps, so write a scratch Jest test instead of `node --input-type=module`.

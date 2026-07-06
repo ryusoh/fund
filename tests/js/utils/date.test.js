@@ -473,5 +473,20 @@ describe('Date Utils', () => {
             expect(normalized.getHours()).toBe(0);
             expect(normalized.getMinutes()).toBe(0);
         });
+
+        // Regression: bare YYYY-MM-DD strings are calendar dates and must keep
+        // their calendar day in EVERY timezone. new Date('YYYY-MM-DD') parses
+        // as UTC midnight; flooring that to local midnight lands on the
+        // PREVIOUS day in UTC− zones (California/NYC), so terminal summary
+        // dates displayed a day early there. Discriminates only when jest runs
+        // in a UTC− shell — see docs/testing-notes.md § Timezone.
+        it('keeps the calendar day of a bare YYYY-MM-DD string in any timezone', () => {
+            const normalized = normalizeDateOnly('2024-01-01');
+
+            expect(normalized.getFullYear()).toBe(2024);
+            expect(normalized.getMonth()).toBe(0);
+            expect(normalized.getDate()).toBe(1);
+            expect(normalized.getHours()).toBe(0);
+        });
     });
 });

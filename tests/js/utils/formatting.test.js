@@ -245,8 +245,8 @@ describe('formatCurrencyChange', () => {
             startValue: NaN,
             endValue: Infinity,
             netChange: 10,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock('Test', summary, { from: '2024-01-01' });
 
@@ -448,8 +448,8 @@ describe('formatSummaryBlock internals', () => {
             startValue: NaN,
             endValue: NaN,
             netChange: 10,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock('Test', summary);
         expect(result).toContain('Start: $0.00');
@@ -463,8 +463,8 @@ describe('formatSummaryBlock', () => {
             startValue: 100,
             endValue: 150,
             netChange: 50,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock('Test', summary);
         expect(result).toContain('Change: +$50.00 (+50.00%)');
@@ -499,7 +499,7 @@ describe('formatNumber - suffix empty formatting branches', () => {
 
 describe('formatSummaryBlock internals', () => {
     it('returns empty string from formatSummaryDateSuffix when targetDateStr is empty', () => {
-        const actualDate = new Date('2024-01-05T00:00:00Z');
+        const actualDate = new Date(2024, 0, 5);
         expect(formatting.formatSummaryDateSuffix(actualDate, '')).toBe('');
     });
 
@@ -686,16 +686,16 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
         startValue: 100,
         endValue: 175,
         netChange: 75,
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-12-31'),
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 11, 31),
     };
     const otherSummary = {
         hasData: true,
         startValue: 100,
         endValue: 150,
         netChange: 50,
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-12-31'),
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 11, 31),
     };
     const formatter = (value) => `¥${Number(value).toFixed(2)}`;
 
@@ -727,16 +727,16 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 500000,
             endValue: 1200000,
             netChange: 700000,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const contributionSummary = {
             hasData: true,
             startValue: 400000,
             endValue: 800000,
             netChange: 400000,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
             formatValue: formatter,
@@ -752,16 +752,16 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 100,
             endValue: 120,
             netChange: 20,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const contributionSummary = {
             hasData: true,
             startValue: 100,
             endValue: 150,
             netChange: 50,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
             formatValue: formatter,
@@ -777,16 +777,16 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 0,
             endValue: 100,
             netChange: 100,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const contributionSummary = {
             hasData: true,
             startValue: 0,
             endValue: 0,
             netChange: 0,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatAppreciationBlock(balanceSummary, contributionSummary, {
             formatValue: formatter,
@@ -810,8 +810,8 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 500000,
             endValue: 600000,
             netChange: 100000,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock(
             'Balance',
@@ -829,8 +829,8 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 1000,
             endValue: 800,
             netChange: -200,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock(
             'Balance',
@@ -848,8 +848,8 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 0,
             endValue: 1000,
             netChange: 1000,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-12-31'),
+            startDate: new Date(2024, 0, 1),
+            endDate: new Date(2024, 11, 31),
         };
         const result = formatting.formatSummaryBlock(
             'Balance',
@@ -868,7 +868,7 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
     });
 
     it('returns correct suffix when actualDate differs from targetDateStr', () => {
-        const actualDate = new Date('2024-01-05T00:00:00Z');
+        const actualDate = new Date(2024, 0, 5);
         expect(formatting.formatSummaryDateSuffix(actualDate, '2024-01-01')).toBe(' (2024-01-05)');
     });
 
@@ -894,7 +894,7 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
             startValue: 1000,
             endValue: 2000,
             netChange: 1000,
-            startDate: new Date('2024-01-01'),
+            startDate: new Date(2024, 0, 1),
             // Missing endDate
         };
         const result = formatting.formatSummaryBlock(

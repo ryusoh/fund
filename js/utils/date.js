@@ -328,7 +328,17 @@ export function normalizeDateOnly(input) {
     if (!input) {
         return null;
     }
-    const date = input instanceof Date ? new Date(input) : new Date(input);
+    if (typeof input === 'string') {
+        // Bare YYYY-MM-DD strings are calendar dates: construct at LOCAL
+        // midnight. new Date('YYYY-MM-DD') parses as UTC midnight, which
+        // flooring to local midnight shifts to the PREVIOUS day in UTC−
+        // timezones (see docs/testing-notes.md § Timezone).
+        const match = input.match(/^\s*(\d{4})-(\d{2})-(\d{2})\s*$/);
+        if (match) {
+            return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        }
+    }
+    const date = new Date(input);
     if (Number.isNaN(date.getTime())) {
         return null;
     }

@@ -807,7 +807,11 @@ export async function initCalendar() {
                 const year = Number(yearStr);
                 const monthIndex = Number(monthStr) - 1;
                 if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
-                    firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
+                    // Local construction: monthToIndex below reads local
+                    // getters, and getNyDate()'s result is local-domain too.
+                    // Date.UTC here would land on the previous month in UTC−
+                    // timezones (see docs/testing-notes.md § Timezone).
+                    firstMonthWithLabels = new Date(year, monthIndex, 1);
                 }
                 break;
             }
@@ -817,7 +821,9 @@ export async function initCalendar() {
         if (!firstMonthWithLabels) {
             /* istanbul ignore next: fallback for missing month labels edge case */
             firstMonthWithLabels = new Date(
-                Date.UTC(firstDataDate.getFullYear(), firstDataDate.getMonth(), 1)
+                firstDataDate.getFullYear(),
+                firstDataDate.getMonth(),
+                1
             );
         }
 
@@ -839,8 +845,7 @@ export async function initCalendar() {
         /* istanbul ignore next: mathematical utility function for date calculations */
         const monthToIndex = (date) => date.getFullYear() * 12 + date.getMonth();
         /* istanbul ignore next: mathematical utility function for date calculations */
-        const indexToMonthDate = (index) =>
-            new Date(Date.UTC(Math.floor(index / 12), index % 12, 1));
+        const indexToMonthDate = (index) => new Date(Math.floor(index / 12), index % 12, 1);
 
         /* istanbul ignore next: calendar range configuration calculation */
         const configuredRange = Math.max(1, getCalendarRange() || 1);

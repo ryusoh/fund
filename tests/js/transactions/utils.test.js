@@ -178,7 +178,7 @@ describe('convertValueToCurrency', () => {
     });
 
     test('handles Date objects for date parameter', () => {
-        expect(convertValueToCurrency(100, new Date('2024-01-02'), 'EUR')).toBe(85);
+        expect(convertValueToCurrency(100, new Date(2024, 0, 2), 'EUR')).toBe(85);
     });
 });
 
@@ -369,7 +369,7 @@ describe('convertValueToCurrency', () => {
     });
 
     test('handles Date objects for date parameter', () => {
-        expect(convertValueToCurrency(100, new Date('2024-01-02'), 'EUR')).toBe(85);
+        expect(convertValueToCurrency(100, new Date(2024, 0, 2), 'EUR')).toBe(85);
     });
 });
 
@@ -560,7 +560,7 @@ describe('convertValueToCurrency', () => {
     });
 
     test('handles Date objects for date parameter', () => {
-        expect(convertValueToCurrency(100, new Date('2024-01-02'), 'EUR')).toBe(85);
+        expect(convertValueToCurrency(100, new Date(2024, 0, 2), 'EUR')).toBe(85);
     });
 });
 
@@ -751,7 +751,7 @@ describe('convertValueToCurrency', () => {
     });
 
     test('handles Date objects for date parameter', () => {
-        expect(convertValueToCurrency(100, new Date('2024-01-02'), 'EUR')).toBe(85);
+        expect(convertValueToCurrency(100, new Date(2024, 0, 2), 'EUR')).toBe(85);
     });
 });
 
