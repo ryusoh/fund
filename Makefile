@@ -8,7 +8,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js verify js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -40,6 +40,7 @@ help:
 	@echo "  sec           Run bandit security checks"
 	@echo "  test          Run Python and JS tests"
 	@echo "  test-js       Scoped fast JS test, no coverage (FILE=path/to.test.js)"
+	@echo "  test-tz       JS suite under UTC− and UTC+ zones (fires TZ regression tests)"
 	@echo "  verify        Lint, type, sec, and tests"
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
@@ -84,6 +85,8 @@ precommit-fix:
 	@# (autonomous agents edit it; the shipped bundle is otherwise only mocked).
 	@$(MAKE) verify-calendar-build
 	@$(MAKE) -j2 js-test _pytest
+	@# Timezone pass: UTC-only jest can't fire the TZ regression tests
+	@$(MAKE) test-tz
 	@# Phase 4: Final verification
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
@@ -119,7 +122,7 @@ perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all
 
 lint: js-lint
-	ruff check scripts tests
+	$(PY) -m ruff check scripts tests
 	npx --yes stylelint "**/*.css"
 	npx --yes markdownlint "**/*.md" --ignore-path .gitignore
 
@@ -166,6 +169,13 @@ js-test:
 #   make test-js FILE=tests/js/ui/liquidGlassRefraction.test.js
 test-js:
 	npx --yes jest $(FILE)
+
+# JS suite under a UTC− and a UTC+ zone (no coverage). The default suite runs
+# TZ=UTC, where timezone regression tests pass trivially; these two runs are
+# what actually fire them (docs/testing-notes.md § Timezone).
+test-tz:
+	TZ=America/New_York npx --yes jest
+	TZ=Asia/Shanghai npx --yes jest
 
 test: js-test
 	$(PY) -m pytest --cov=scripts --cov-report=term-missing

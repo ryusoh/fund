@@ -128,8 +128,10 @@ with `Date.UTC(...)`/`new Date('YYYY-MM-DD')` and then reading **local** getters
 UTC. The calendar page's month domain and `normalizeDateOnly` both had this.
 Rule of thumb: pick ONE domain per value and stay in it — local-construct +
 local-read (`parseLocalDate`/`toLocalIsoDate`), or UTC-construct + UTC-read.
-For date-handling changes, run the suite under all four zones:
-`for tz in UTC Asia/Shanghai America/New_York America/Los_Angeles; do TZ=$tz npx jest <file>; done`
+For date-handling changes, run `make test-tz` (full suite under
+America/New_York and Asia/Shanghai; also part of `make precommit-fix`, so CI
+fires the timezone regression tests too). For a scoped loop:
+`TZ=America/New_York npx jest <file>`.
 
 **Related dead ends:** `js/` modules can't be run with `node` directly — the
 `@js/` import aliases only resolve via Jest's `moduleNameMapper` or the pages'
