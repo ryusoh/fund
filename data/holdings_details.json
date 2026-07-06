@@ -4,15 +4,15 @@
         "average_price": "95.650000"
     },
     "ANET": {
-        "shares": "2419.5504",
-        "average_price": "62.507369"
+        "shares": "2418.3604",
+        "average_price": "62.50"
     },
     "GOOG": {
-        "shares": "931.044",
-        "average_price": "196.229599"
+        "shares": "930.727",
+        "average_price": "196.22"
     },
     "PDD": {
-        "shares": "3097.8038",
-        "average_price": "106.782666"
+        "shares": "3097.5578",
+        "average_price": "106.79"
     }
 }
