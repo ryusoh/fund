@@ -1702,3 +1702,112 @@ describe('computeAppreciationSeries', () => {
         expect(Math.abs(result[2].value) >= 0.01).toBe(true);
     });
 });
+
+describe('filtered balance/contribution date alignment in UTC+ timezones', () => {
+    // Regression: in timezones ahead of UTC (e.g. Asia/Shanghai),
+    // new Date('MM/DD/YYYY') parses to local midnight, and .toISOString()
+    // then lands on the PREVIOUS calendar day. buildFilteredBalanceSeries used
+    // that to key its daily series, so every transaction hit the balance one
+    // day before it hit the contribution series (which uses local-date
+    // parsing). Appreciation = balance − contribution then spiked up by the
+    // buy amount for one day at every buy.
+    //
+    // NOTE: jest sandboxes process.env, so the timezone cannot be switched
+    // in-test. Under CI (TZ=UTC) these assertions hold trivially; run this
+    // file via `npx jest` on a UTC+ machine to exercise the regression.
+    let buildFilteredBalanceSeries;
+    let buildContributionSeriesFromTransactions;
+    let computeAppreciationSeries;
+    let parseLocalDate;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            ({
+                buildFilteredBalanceSeries,
+                buildContributionSeriesFromTransactions,
+                computeAppreciationSeries,
+            } = require('../../../js/transactions/chart/data/contribution.js'));
+            ({ parseLocalDate } = require('../../../js/transactions/chart/helpers.js'));
+        });
+    });
+
+    const flatPrices = (symbol, from, to, price) => {
+        const map = {};
+        const d = new Date(`${from}T00:00:00Z`);
+        const end = new Date(`${to}T00:00:00Z`);
+        while (d <= end) {
+            map[d.toISOString().split('T')[0]] = price;
+            d.setUTCDate(d.getUTCDate() + 1);
+        }
+        return { [symbol]: map };
+    };
+
+    test('balance series applies a MM/DD/YYYY buy on the trade date itself', () => {
+        const transactions = [
+            {
+                tradeDate: '11/27/2024',
+                orderType: 'buy',
+                security: 'PDD',
+                quantity: 10,
+                price: 100,
+                netAmount: '1000',
+                transactionId: 1,
+            },
+        ];
+        const historicalPrices = flatPrices('PDD', '2024-11-20', '2024-12-10', 100);
+
+        const series = buildFilteredBalanceSeries(transactions, historicalPrices, []);
+
+        const firstNonZero = series.find((p) => p.value > 0);
+        expect(firstNonZero).toBeDefined();
+        expect(firstNonZero.date).toBe('2024-11-27');
+    });
+
+    test('appreciation stays flat across buys when prices do not move (ticker filter path)', () => {
+        // Mirrors the filtered-ticker path of drawContributionChart: balance
+        // from buildFilteredBalanceSeries, contribution from the transactions,
+        // both parsed with parseLocalDate, then diffed at aligned timestamps.
+        const transactions = [
+            {
+                tradeDate: '11/27/2024',
+                orderType: 'buy',
+                security: 'PDD',
+                quantity: 10,
+                price: 100,
+                netAmount: '1000',
+                transactionId: 1,
+            },
+            {
+                tradeDate: '12/05/2024',
+                orderType: 'buy',
+                security: 'PDD',
+                quantity: 5,
+                price: 100,
+                netAmount: '500',
+                transactionId: 2,
+            },
+        ];
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const historicalPrices = flatPrices('PDD', '2024-11-20', todayStr, 100);
+
+        const balance = buildFilteredBalanceSeries(transactions, historicalPrices, []).map((p) => ({
+            date: parseLocalDate(p.date),
+            value: p.value,
+        }));
+        const contribution = buildContributionSeriesFromTransactions(transactions, {
+            includeSyntheticStart: true,
+            currency: 'USD',
+        }).map((p) => ({ date: parseLocalDate(p.tradeDate), amount: p.amount }));
+
+        const appreciation = computeAppreciationSeries(balance, contribution);
+        expect(appreciation.length).toBeGreaterThan(0);
+
+        // With flat prices, buys add exactly their cost to the balance, so
+        // appreciation must be 0 everywhere — a buy must not bump the line.
+        for (const point of appreciation) {
+            expect(Math.abs(point.value)).toBeLessThan(1e-6);
+        }
+    });
+});

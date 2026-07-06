@@ -5,6 +5,15 @@ import { parseLocalDate } from '../helpers.js';
 
 const contributionSeriesCache = new WeakMap();
 
+// Format a Date as YYYY-MM-DD using LOCAL calendar components. Never use
+// toISOString() for day keys derived from local-midnight dates: in UTC+
+// timezones it lands on the previous calendar day, which misaligns the
+// balance series against the contribution series (appreciation then spikes
+// by the buy amount at every transaction).
+function toLocalISODate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function getContributionSeriesForTransactions(
     transactions,
     { includeSyntheticStart = false, padToDate = null, currency = null } = {}
@@ -49,7 +58,7 @@ export function buildContributionSeriesFromTransactions(
 
     const normalizedTransactions = transactions.map((t) => {
         const d = parseLocalDate(t.tradeDate);
-        const isoDate = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : (t.tradeDate || '').trim();
+        const isoDate = d ? toLocalISODate(d) : (t.tradeDate || '').trim();
         return { ...t, tradeDate: isoDate };
     });
 
@@ -167,11 +176,11 @@ export function buildContributionSeriesFromTransactions(
         const targetDate = Number.isNaN(targetDateRaw.getTime()) ? today : targetDateRaw;
         targetDate.setHours(0, 0, 0, 0);
         const clampedTarget = targetDate > today ? today : targetDate;
-        const lastTransactionDate = new Date(lastPoint.tradeDate);
+        const lastTransactionDate = parseLocalDate(lastPoint.tradeDate);
 
-        if (clampedTarget > lastTransactionDate) {
+        if (lastTransactionDate && clampedTarget > lastTransactionDate) {
             series.push({
-                tradeDate: clampedTarget.toISOString().split('T')[0],
+                tradeDate: toLocalISODate(clampedTarget),
                 amount: lastPoint.amount,
                 value: lastPoint.amount,
                 orderType: 'padding',
@@ -276,7 +285,7 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     const getTs = (t) => {
         let ts = tsCache.get(t);
         if (ts === undefined) {
-            ts = new Date(t.tradeDate).getTime();
+            ts = parseLocalDate(t.tradeDate)?.getTime() ?? NaN;
             tsCache.set(t, ts);
         }
         return ts;
@@ -285,16 +294,14 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         (a, b) => getTs(a) - getTs(b) || (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
 
-    const firstDate = new Date(sortedTransactions[0].tradeDate);
-    const lastTransactionDate = new Date(
+    const firstDate = parseLocalDate(sortedTransactions[0].tradeDate);
+    const lastTransactionDate = parseLocalDate(
         sortedTransactions[sortedTransactions.length - 1].tradeDate
     );
-    if (Number.isNaN(firstDate.getTime()) || Number.isNaN(lastTransactionDate.getTime())) {
+    if (!firstDate || !lastTransactionDate) {
         return [];
     }
 
-    firstDate.setHours(0, 0, 0, 0);
-    lastTransactionDate.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lastDate = today > lastTransactionDate ? today : lastTransactionDate;
@@ -306,7 +313,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         if (!split || !split.splitDate || !split.symbol) {
             continue;
         }
-        const dateKey = new Date(split.splitDate).toISOString().split('T')[0];
+        const splitDate = parseLocalDate(split.splitDate);
+        if (!splitDate) {
+            continue;
+        }
+        const dateKey = toLocalISODate(splitDate);
         const multiplier = Number(split.splitMultiplier) || Number(split.split_multiplier) || 1;
         const symbolKey = normalizeSymbolForPricing(split.symbol);
         if (!splitsByDate.has(dateKey)) {
@@ -318,7 +329,11 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     const transactionsByDate = new Map();
     for (let i = 0; i < sortedTransactions.length; i++) {
         const txn = sortedTransactions[i];
-        const dateStr = new Date(txn.tradeDate).toISOString().split('T')[0];
+        const txnDate = parseLocalDate(txn.tradeDate);
+        if (!txnDate) {
+            continue;
+        }
+        const dateStr = toLocalISODate(txnDate);
         if (!transactionsByDate.has(dateStr)) {
             transactionsByDate.set(dateStr, []);
         }
@@ -334,7 +349,7 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     const iterDate = new Date(iterationStart);
 
     while (iterDate <= lastDate) {
-        const dateStr = iterDate.toISOString().split('T')[0];
+        const dateStr = toLocalISODate(iterDate);
 
         const splitsToday = splitsByDate.get(dateStr);
         if (splitsToday) {
