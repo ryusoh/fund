@@ -381,41 +381,34 @@ export function smoothFinancialData(data, config = 'balanced', preserveEnd = tru
         : 1;
 
     let result = data;
+    const method = smoothingConfig.method;
+    const params = smoothingConfig.params || {};
+
     for (let i = 0; i < passes; i += 1) {
-        switch (smoothingConfig.method) {
-            case 'simple':
-                result = simpleMovingAverage(
-                    result,
-                    smoothingConfig.params.window || 3,
-                    preserveEnd
-                );
-                break;
-            case 'exponential':
-                result = exponentialMovingAverage(
-                    result,
-                    smoothingConfig.params.alpha || 0.3,
-                    preserveEnd
-                );
-                break;
-            case 'savitzky':
-                result = savitzkyGolay(
-                    result,
-                    smoothingConfig.params.window || 5,
-                    smoothingConfig.params.order || 2,
-                    preserveEnd
-                );
-                break;
-            case 'lowess':
-                result = lowess(result, smoothingConfig.params.bandwidth || 0.3, preserveEnd);
-                break;
-            case 'adaptive':
-                result = adaptiveSmoothing(result, preserveEnd);
-                break;
-            default:
-                result = exponentialMovingAverage(result, 0.3, preserveEnd);
-                break;
-        }
+        result = applySmoothingPass(result, method, params, preserveEnd);
     }
 
     return result;
+}
+
+/**
+ * Applies a single smoothing pass based on the provided method and parameters
+ * @param {Point[]} data - Data to smooth
+ * @param {string} method - Smoothing method
+ * @param {Object} params - Method parameters
+ * @param {boolean} preserveEnd - Whether to preserve the last point
+ * @returns {Point[]} Smoothed data
+ */
+const SMOOTHING_METHODS = {
+    simple: (data, p, keep) => simpleMovingAverage(data, p.window || 3, keep),
+    exponential: (data, p, keep) => exponentialMovingAverage(data, p.alpha || 0.3, keep),
+    savitzky: (data, p, keep) => savitzkyGolay(data, p.window || 5, p.order || 2, keep),
+    lowess: (data, p, keep) => lowess(data, p.bandwidth || 0.3, keep),
+    adaptive: (data, p, keep) => adaptiveSmoothing(data, keep),
+    default: (data, p, keep) => exponentialMovingAverage(data, 0.3, keep)
+};
+
+function applySmoothingPass(data, method, params, preserveEnd) {
+    const handler = SMOOTHING_METHODS[method] || SMOOTHING_METHODS.default;
+    return handler(data, params, preserveEnd);
 }
