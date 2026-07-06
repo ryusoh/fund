@@ -391,14 +391,7 @@ export function smoothFinancialData(data, config = 'balanced', preserveEnd = tru
     return result;
 }
 
-/**
- * Applies a single smoothing pass based on the provided method and parameters
- * @param {Point[]} data - Data to smooth
- * @param {string} method - Smoothing method
- * @param {Object} params - Method parameters
- * @param {boolean} preserveEnd - Whether to preserve the last point
- * @returns {Point[]} Smoothed data
- */
+/** @type {Record<string, (data: Point[], p: Record<string, number>, keep: boolean) => Point[]>} */
 const SMOOTHING_METHODS = {
     simple: (data, p, keep) => simpleMovingAverage(data, p.window || 3, keep),
     exponential: (data, p, keep) => exponentialMovingAverage(data, p.alpha || 0.3, keep),
@@ -408,6 +401,14 @@ const SMOOTHING_METHODS = {
     default: (data, p, keep) => exponentialMovingAverage(data, 0.3, keep),
 };
 
+/**
+ * Applies a single smoothing pass based on the provided method and parameters
+ * @param {Point[]} data - Data to smooth
+ * @param {string} method - Smoothing method
+ * @param {Record<string, number>} params - Method parameters
+ * @param {boolean} preserveEnd - Whether to preserve the last point
+ * @returns {Point[]} Smoothed data
+ */
 function applySmoothingPass(data, method, params, preserveEnd) {
     const handler = SMOOTHING_METHODS[method] || SMOOTHING_METHODS.default;
     return handler(data, params, preserveEnd);
