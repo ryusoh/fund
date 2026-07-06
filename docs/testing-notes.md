@@ -128,6 +128,22 @@ with `Date.UTC(...)`/`new Date('YYYY-MM-DD')` and then reading **local** getters
 UTC. The calendar page's month domain and `normalizeDateOnly` both had this.
 Rule of thumb: pick ONE domain per value and stay in it — local-construct +
 local-read (`parseLocalDate`/`toLocalIsoDate`), or UTC-construct + UTC-read.
+
+**Fixing a domain mismatch: pick the direction from the CONSUMERS, not the
+nearest line.** A mismatch has two valid fixes (flip the constructor or flip
+the reader) and only one is right. Before changing either side, grep the module
+for what the dates feed into — an explicit declaration like Cal-Heatmap's
+`timezone: 'utc'` in the paint config, or sibling helpers' getters — and fix
+the minority side toward that convention. Flipping the constructors on the
+calendar page (whose consumer is UTC-declared) repaired UTC− browsers and
+shifted the whole calendar a month back for UTC+ ones; the one-line correct fix
+was the reader. Corollary for tests: **assert in the consumer's domain** —
+those calendar tests asserted `getMonth()` (local) on dates consumed under
+`timezone: 'utc'`, so they stayed green while the page regressed. And when
+verifying a date UI in the browser, compare the rendered value to a computed
+expectation ("rightmost month === current NY month"), not just "it rendered
+without errors" — the regression was visible in a screenshot and got
+rationalized away as no-change.
 For date-handling changes, run `make test-tz` (full suite under
 America/New_York and Asia/Shanghai; also part of `make precommit-fix`, so CI
 fires the timezone regression tests too). For a scoped loop:

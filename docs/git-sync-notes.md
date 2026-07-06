@@ -38,3 +38,25 @@ A one-line config or doc change does **not** need a Jules PR. The PR squash-merg
 and diverges local `main` for no benefit — that is exactly what triggered the
 cascade above. Make a **direct commit on `main`** for small chores; reserve the
 PR-and-approve flow for the autonomous routines doing real code work.
+
+## `git stash` / `stash pop` is a foot-gun here — the stash list is never empty
+
+This repo accumulates **lint-staged automatic backup** stashes (husky creates
+one per commit) plus occasional bot WIP stashes. If you `git stash` on a clean
+tree, git prints "No local changes to save" and stashes **nothing** — a
+subsequent `git stash pop` then pops (and permanently drops) **someone else's
+stash entry** from the top of that list. This happened once while checking
+whether a test failure pre-existed; the popped entry happened to be a stale
+backup already contained in HEAD, so nothing broke — by luck.
+
+Rules:
+
+- Never pair `stash` / `pop` blindly. Check `git stash` actually saved
+  something ("Saved working directory..." vs "No local changes to save")
+  before ever popping.
+- For "how did this behave before my changes?" comparisons, don't stash at
+  all — use a throwaway worktree, which can't disturb the working tree or the
+  stash list: `git worktree add <scratch-dir> <commit>` … `git worktree remove
+<scratch-dir> --force`.
+- A dropped stash's commit survives until GC: recover via
+  `git fsck --unreachable | grep commit` if it mattered.

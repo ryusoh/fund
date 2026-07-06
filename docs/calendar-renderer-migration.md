@@ -47,6 +47,13 @@ rolling back) is a one-line change in the factory + the query flag.**
 - `paint(config)` takes the existing Cal-Heatmap-shaped config object (see
   `paintConfig` built in `index.js`'s `initCalendar`, and `CALENDAR_CONFIG` in
   `js/config.js`). Returns a Promise that settles when painting is done.
+- **Date domain: every `Date` in the config (`date.start/min/max/highlight`)
+  is UTC-constructed and the config declares `timezone: 'utc'` — read them
+  with `getUTC*` getters only.** Local getters shift the domain a month in
+  non-UTC browsers (this exact mix-up shipped a rightmost-month-is-June
+  regression in July 2026; see `docs/testing-notes.md` § Timezone). Domain
+  tests must assert with `getUTC*` too. Quick browser check after any domain
+  change: rightmost rendered month label === current NY month.
 - `next(n)/previous(n)/jumpTo(date, reset)` — defaults `n=1`, `reset=false`.
 - `on(name, fn)` — must emit at least **`'fill'`** (after each paint/fill) and
   **`'date-change'`** (on navigation, with `{ domain: { start, end } }`); the page
