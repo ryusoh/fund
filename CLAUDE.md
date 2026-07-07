@@ -28,7 +28,9 @@ read `docs/testing-notes.md`.
 
 Python dev tools (`ruff`/`black`/`mypy`/`pytest`/`diff-cover`) live in
 **`venv/bin/`** (that's the interpreter `make` itself uses) — call them directly for
-scoped single-file loops; whole-repo via `make`. The **CI gate is `make
+scoped single-file loops; whole-repo via `make`. In a linked git worktree there is
+no local `venv/`: `make` auto-resolves the main checkout's venv, and for direct
+calls use `$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')/venv/bin/<tool>`. The **CI gate is `make
 precommit-fix`** (the `web-ci` job: format + lint + JS/Python tests); `make verify`
 is the stricter local superset (adds `mypy` + `bandit`).
 

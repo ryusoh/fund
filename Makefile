@@ -1,5 +1,14 @@
 VENV_PYTHON := venv/bin/python
 
+# Linked git worktrees have no local venv/ — resolve the main checkout's venv
+# via the repo's common .git dir.
+ifeq ($(wildcard $(VENV_PYTHON)),)
+GIT_COMMON_DIR := $(shell git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+ifneq ($(GIT_COMMON_DIR),)
+VENV_PYTHON := $(patsubst %/.git,%,$(GIT_COMMON_DIR))/venv/bin/python
+endif
+endif
+
 # If a venv exists, use it; otherwise, fall back to system python3
 ifeq ($(wildcard $(VENV_PYTHON)),)
 	PY := python3

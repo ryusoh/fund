@@ -1,6 +1,6 @@
-# Python virtual environment
-venv/
-.venv/
+# Python virtual environment (no trailing slash: also matches a venv symlink)
+venv
+.venv
 **/__pycache__/
 __pycache__/
 *.pyc
