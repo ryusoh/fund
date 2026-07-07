@@ -3,6 +3,7 @@
 import os
 import re
 import shutil
+import subprocess
 from typing import Dict, Tuple
 
 # Constants
@@ -116,7 +117,31 @@ def main() -> None:
                     f.write(body)
                     f.write("\n")
 
+    format_generated_skills()
+
     print("Successfully synchronized Claude and Gemini commands to Antigravity skills.")
+
+
+def format_generated_skills() -> None:
+    """Format generated skills with prettier so output matches the pre-commit hook.
+
+    Without this, the lint-staged prettier pass reformats the generated Markdown
+    after it lands, so a fresh sync always shows phantom drift against the
+    committed files. Mirror the hook's exact invocation to keep sync idempotent.
+    Degrade gracefully if prettier/npx is unavailable (script stays stdlib-only).
+    """
+    try:
+        subprocess.run(
+            ["npx", "prettier", "--write", "--ignore-path", ".prettierignore", SKILLS_DIR],
+            cwd=WORKSPACE_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        print("Warning: npx not found; skipping prettier formatting of generated skills.")
+    except subprocess.CalledProcessError as exc:
+        print(f"Warning: prettier failed on generated skills:\n{exc.stderr}")
 
 
 if __name__ == "__main__":
