@@ -71,6 +71,12 @@ is the stricter local superset (adds `mypy` + `bandit`).
   that reads `transactionState` series without awaiting `whenTransactionDataReady()`
   renders a silent **"(no data)"**, not an error. Read before adding/editing a
   terminal command that prints portfolio numbers.
+- **Command / skill sync** → `docs/command-skill-sync.md`. Skills are authored in
+  `.claude/commands/*.md` (canonical) and **generated** into `.agents/skills/` by
+  `scripts/sync_commands.py` (the `/sync-commands` skill), which `rmtree`s and
+  regenerates that dir — **never hand-edit `.agents/skills/`** (edits are silently
+  lost) and don't add `.gemini/*.toml` (frozen; Gemini CLI is deprecated). Read
+  before adding/editing a slash-command.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
