@@ -293,12 +293,19 @@ void main() {
     float dRefl = angle - reflMid;
     dRefl = mod(dRefl + PI, TWO_PI) - PI;
 
+    float reflHalf = max(u_reflSpan * 0.5, 0.0001);
     // 1.0 at center of reflection band, 0.0 at edges
-    float reflIntensity = smoothstep(u_reflSpan * 0.5, 0.0, abs(dRefl));
+    // (edge0 >= edge1 is undefined in WebGL, hence the 1.0 - smoothstep form)
+    float reflIntensity = 1.0 - smoothstep(0.0, reflHalf, abs(dRefl));
 
-    // Warp the noise domain to simulate optical refraction through thick curved glass
+    // Warp the noise domain to simulate optical refraction through thick curved glass.
+    // A lens deviates rays continuously: zero at the optical center, peaking
+    // mid-band, zero again at the edges — reflNorm * reflIntensity is that
+    // smooth odd profile (peak ~0.26, matching the previous 0.25 amplitude).
+    float reflNorm = clamp(dRefl / reflHalf, -1.0, 1.0);
+    float lensShift = reflNorm * reflIntensity;
     float glassRefraction = reflIntensity * 0.25;
-    tangential += glassRefraction * sign(dRefl);
+    tangential += lensShift;
     radial += glassRefraction * (1.0 - abs(r_norm - 0.5) * 2.0); // Bends outward radially
 
     vec2 noisePos = vec2(tangential, radial);

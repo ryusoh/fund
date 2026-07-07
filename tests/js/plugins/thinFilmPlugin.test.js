@@ -336,6 +336,117 @@ describe('thinFilmPlugin', () => {
         expect(shaderCode).toMatch(/smoothstep/); // Should have a leading fade
     });
 
+    describe('glass pane refraction (reflection band)', () => {
+        const getFragmentShader = () => {
+            chart.hoveredSliceIndex = 0;
+            thinFilmPlugin.afterDatasetsDraw(chart);
+            const call = mockGL.shaderSource.mock.calls.find((c) => c[1].includes('u_reflStart'));
+            expect(call).toBeTruthy();
+            return call[1];
+        };
+
+        // Transpile the shader's optical-refraction block to JS so the test
+        // evaluates the REAL shader math, not a hand-written mirror of it.
+        // GLSL built-ins are implemented per spec (smoothstep uses the spec
+        // formula, so reversed-edge UB does not show up here — that case is
+        // covered by the structural test below).
+        const makeReflEvaluator = (shaderCode) => {
+            const start = shaderCode.indexOf('float reflMid');
+            const end = shaderCode.indexOf('vec2 noisePos');
+            expect(start).toBeGreaterThan(-1);
+            expect(end).toBeGreaterThan(start);
+            const block = shaderCode
+                .slice(start, end)
+                .replace(/\/\/[^\n]*/g, '')
+                .replace(/\bfloat\s+/g, 'let ');
+            return new Function(
+                'u_reflStart',
+                'u_reflSpan',
+                'angle',
+                'r_norm',
+                'tangential',
+                'radial',
+                `
+                const PI = Math.PI, TWO_PI = Math.PI * 2;
+                const abs = Math.abs, max = Math.max, min = Math.min, sign = Math.sign;
+                const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+                const mod = (x, y) => x - y * Math.floor(x / y);
+                const smoothstep = (e0, e1, x) => {
+                    const t = clamp((x - e0) / (e1 - e0), 0, 1);
+                    return t * t * (3 - 2 * t);
+                };
+                ${block}
+                return { tangential, radial };
+                `
+            );
+        };
+
+        const REFL_SPAN = 0.2 * Math.PI * 2; // default reflection width
+        const REFL_START = 1.0;
+
+        it('lens displacement is continuous across the pane center (no full-width tear)', () => {
+            // A lens deviates light continuously: zero at the optical center,
+            // peaking mid-band. sign(dRefl) instead flips -1 -> +1 at the
+            // center where the refraction is strongest, tearing the film
+            // pattern across the full radial width of the band.
+            const evalRefl = makeReflEvaluator(getFragmentShader());
+            const mid = REFL_START + REFL_SPAN * 0.5;
+            const eps = 1e-3;
+            const before = evalRefl(REFL_START, REFL_SPAN, mid - eps, 0.5, 0, 0);
+            const after = evalRefl(REFL_START, REFL_SPAN, mid + eps, 0.5, 0, 0);
+            expect(Math.abs(after.tangential - before.tangential)).toBeLessThan(0.02);
+        });
+
+        it('lens displacement has no jump anywhere across the sweep', () => {
+            const evalRefl = makeReflEvaluator(getFragmentShader());
+            const steps = 2000;
+            const from = REFL_START - REFL_SPAN;
+            const to = REFL_START + REFL_SPAN * 2;
+            let prev = null;
+            let maxJump = 0;
+            for (let s = 0; s <= steps; s++) {
+                const angle = from + ((to - from) * s) / steps;
+                const out = evalRefl(REFL_START, REFL_SPAN, angle, 0.5, 0, 0);
+                if (prev !== null) {
+                    maxJump = Math.max(maxJump, Math.abs(out.tangential - prev));
+                }
+                prev = out.tangential;
+            }
+            expect(maxJump).toBeLessThan(0.02);
+        });
+
+        it('lens displacement is odd around the pane center and still visibly strong', () => {
+            const evalRefl = makeReflEvaluator(getFragmentShader());
+            const mid = REFL_START + REFL_SPAN * 0.5;
+            // Zero deviation for the chief ray through the lens center
+            const center = evalRefl(REFL_START, REFL_SPAN, mid, 0.5, 0, 0);
+            expect(Math.abs(center.tangential)).toBeLessThan(1e-6);
+
+            let maxAbs = 0;
+            for (let s = 0; s <= 200; s++) {
+                const d = (REFL_SPAN * 0.5 * s) / 200;
+                const plus = evalRefl(REFL_START, REFL_SPAN, mid + d, 0.5, 0, 0);
+                const minus = evalRefl(REFL_START, REFL_SPAN, mid - d, 0.5, 0, 0);
+                // Odd symmetry: same magnitude, opposite direction
+                expect(plus.tangential).toBeCloseTo(-minus.tangential, 6);
+                maxAbs = Math.max(maxAbs, Math.abs(plus.tangential));
+            }
+            // The fix must not silently kill the refraction effect
+            expect(maxAbs).toBeGreaterThan(0.15);
+        });
+
+        it('reflection falloff must not use reversed smoothstep edges (UB on Apple GPUs)', () => {
+            // smoothstep(u_reflSpan * 0.5, 0.0, x) has edge0 >= edge1, which is
+            // undefined per the GLSL spec. Apple GPUs can degrade it to a hard
+            // binary step, snapping the film pattern across the entire band
+            // width as the pane sweeps through. The literal-args test above
+            // cannot catch this because the edges are expressions.
+            const shaderCode = getFragmentShader();
+            expect(shaderCode).not.toMatch(/smoothstep\s*\(\s*u_reflSpan[^,]*,\s*0\.0\s*,/);
+            expect(shaderCode).toMatch(/reflIntensity\s*=\s*1\.0\s*-\s*smoothstep\s*\(\s*0\.0\s*,/);
+        });
+    });
+
     it('shader should pass turbulence into filmNoise for duck-on-water effect', () => {
         chart.hoveredSliceIndex = 0;
         thinFilmPlugin.afterDatasetsDraw(chart);
