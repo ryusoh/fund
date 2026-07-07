@@ -40,9 +40,11 @@ load"` in `tests/js/transactions/terminal_plot.test.js` — pattern: register a
 controlled promise, submit the command, assert the loading notice and the
 _absence_ of the empty-state text, then resolve and assert the real summary.
 
-**Known remaining offender:** the `stats` command
-(`js/transactions/terminal/handlers/stats.js` / `js/transactions/terminalStats.js`)
-reads the same state without the gate.
+The `stats` command handler is gated the same way (unit-level regression:
+`"waits for a pending initial data load"` in
+`tests/js/transactions/terminal/handlers/stats.test.js`, which stubs the
+readiness helpers in the mocked `state.js`). No known remaining offenders —
+apply the gate when adding any new handler whose output reads state series.
 
 ## Verifying the race in a live browser
 
