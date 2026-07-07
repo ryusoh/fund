@@ -71,7 +71,10 @@ def main() -> None:
                 f.write(f"name: {skill_name}\n")
                 f.write(f"description: {description}\n")
                 if arg_hint:
-                    f.write(f"argument-hint: {arg_hint}\n")
+                    # Quote as a YAML string: values often start with `[`/`<`,
+                    # which a bare scalar would parse as an array/tag, not a string.
+                    safe_hint = arg_hint.replace("\\", "\\\\").replace('"', '\\"')
+                    f.write(f'argument-hint: "{safe_hint}"\n')
                 f.write("---\n\n")
                 f.write(body)
                 f.write("\n")

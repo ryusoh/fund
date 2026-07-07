@@ -1,7 +1,7 @@
 ---
 name: jules-persona
 description: Improve a Jules routine's scheduled prompt + enhance its .jules/<name>.md persona to the repo's house conventions
-argument-hint: <routine> [— paste the current Jules scheduled prompt]
+argument-hint: '<routine> [— paste the current Jules scheduled prompt]'
 ---
 
 You are tuning one of this repo's autonomous **Jules routines**. The live routines

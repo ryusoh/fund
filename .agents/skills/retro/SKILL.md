@@ -1,7 +1,7 @@
 ---
 name: retro
 description: Retrospective — turn this session's friction into durable repo improvements (the compounding loop)
-argument-hint: [optional focus area, e.g. 'visual verification']
+argument-hint: "[optional focus area, e.g. 'visual verification']"
 ---
 
 You just finished a task. Run a **compounding-loop retrospective** so the next task
