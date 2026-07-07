@@ -447,6 +447,164 @@ describe('thinFilmPlugin', () => {
         });
     });
 
+    describe('noise domain continuity (atan2 branch cut at 9 o’clock)', () => {
+        const getFragmentShader = () => {
+            chart.hoveredSliceIndex = 0;
+            thinFilmPlugin.afterDatasetsDraw(chart);
+            const call = mockGL.shaderSource.mock.calls.find((c) => c[1].includes('u_reflStart'));
+            expect(call).toBeTruthy();
+            return call[1];
+        };
+
+        // Transpile the shader block that builds the film-noise coordinates
+        // (flowProfile through the glass-lens warp) so the test evaluates the
+        // REAL shader math. `angle` is the raw atan2 output in (-PI, PI];
+        // `a` is the wrap-safe arc-relative angle main() computes earlier.
+        const makeNoiseDomainEvaluator = (shaderCode) => {
+            const start = shaderCode.indexOf('float flowProfile');
+            const end = shaderCode.indexOf('vec2 noisePos');
+            expect(start).toBeGreaterThan(-1);
+            expect(end).toBeGreaterThan(start);
+            const block = shaderCode
+                .slice(start, end)
+                .replace(/\/\/[^\n]*/g, '')
+                .replace(/\bfloat\s+/g, 'let ');
+            return new Function(
+                'angle',
+                'a',
+                'arcSpan',
+                'r_norm',
+                'u_outerRadius',
+                'u_fluidAngle',
+                'u_suctionVelocity',
+                'u_reflStart',
+                'u_reflSpan',
+                `
+                const PI = Math.PI, TWO_PI = Math.PI * 2;
+                const abs = Math.abs, max = Math.max, min = Math.min,
+                      sign = Math.sign, pow = Math.pow, sin = Math.sin;
+                const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+                const mod = (x, y) => x - y * Math.floor(x / y);
+                const smoothstep = (e0, e1, x) => {
+                    const t = clamp((x - e0) / (e1 - e0), 0, 1);
+                    return t * t * (3 - 2 * t);
+                };
+                ${block}
+                return { tangential, radial };
+                `
+            );
+        };
+
+        // Mirror of the shader's wrap-safe arc containment math
+        const TWO_PI = Math.PI * 2;
+        const wrapA = (angle, startAngle) => {
+            const x = angle - startAngle;
+            return x - Math.floor(x / TWO_PI) * TWO_PI;
+        };
+        // atan2 representative of a physical direction theta: (-PI, PI]
+        const atan2Angle = (theta) => {
+            const x = (((theta + Math.PI) % TWO_PI) + TWO_PI) % TWO_PI;
+            return x - Math.PI;
+        };
+
+        // A hovered slice spanning the 9 o'clock direction (PI ~ 3.14 in [2.6, 4.0])
+        const SLICE_START = 2.6;
+        const SLICE_SPAN = 1.4;
+        const SLICE_MID = SLICE_START + SLICE_SPAN / 2;
+        const OUTER_RADIUS = 300;
+        const REFL_START = 0.5; // pane parked away from 9 o'clock
+        const REFL_SPAN = 0.2 * TWO_PI;
+
+        const evalAtDirection = (evalNoise, theta, suction = 0) => {
+            const angle = atan2Angle(theta);
+            const a = wrapA(angle, SLICE_START);
+            return evalNoise(
+                angle,
+                a,
+                SLICE_SPAN,
+                0.5,
+                OUTER_RADIUS,
+                SLICE_MID,
+                suction,
+                REFL_START,
+                REFL_SPAN
+            );
+        };
+
+        it('film coordinates are continuous across the 9 o’clock direction', () => {
+            // atan2 flips +PI -> -PI at the negative x axis. Feeding that raw
+            // angle into the noise domain shifts tangential by a full
+            // outerRadius * 0.06 (~18 noise units) in one pixel: a hard,
+            // full-band-width seam fixed at 9 o'clock on any slice that spans it.
+            const evalNoise = makeNoiseDomainEvaluator(getFragmentShader());
+            const eps = 1e-3;
+            for (const suction of [0, 2.5]) {
+                const above = evalAtDirection(evalNoise, Math.PI - eps, suction);
+                const below = evalAtDirection(evalNoise, Math.PI + eps, suction);
+                expect(Math.abs(above.tangential - below.tangential)).toBeLessThan(0.05);
+                expect(Math.abs(above.radial - below.radial)).toBeLessThan(0.05);
+            }
+        });
+
+        it('film coordinates have no jump anywhere inside the slice', () => {
+            const evalNoise = makeNoiseDomainEvaluator(getFragmentShader());
+            const steps = 2000;
+            let prev = null;
+            let maxJump = 0;
+            // Sample strictly inside the arc: pixels exactly on the edges are
+            // discarded by the shader's containment test before this block runs.
+            for (let s = 0; s <= steps; s++) {
+                const theta = SLICE_START + (SLICE_SPAN * (s + 0.5)) / (steps + 1);
+                const out = evalAtDirection(evalNoise, theta);
+                if (prev !== null) {
+                    maxJump = Math.max(maxJump, Math.abs(out.tangential - prev.tangential));
+                }
+                prev = out;
+            }
+            // Natural tangential gradient is ~outerRadius*0.06/2PI per radian
+            // (~0.002 per step here); anything near a noise-unit is a seam.
+            expect(maxJump).toBeLessThan(0.05);
+        });
+
+        it('film pattern still rigidly tracks the slice as it rotates', () => {
+            // Rotating the slice, the pane, and the query direction together
+            // must reproduce the same coordinates: the oil must not slide
+            // under the light (the original u_fluidAngle anchoring contract).
+            const evalNoise = makeNoiseDomainEvaluator(getFragmentShader());
+            const delta = 0.3;
+            // Strictly interior samples: edge pixels are discarded by the shader
+            for (let s = 0; s <= 20; s++) {
+                const theta = SLICE_START + (SLICE_SPAN * (s + 0.5)) / 21;
+                const angle0 = atan2Angle(theta);
+                const base = evalNoise(
+                    angle0,
+                    wrapA(angle0, SLICE_START),
+                    SLICE_SPAN,
+                    0.5,
+                    OUTER_RADIUS,
+                    SLICE_MID,
+                    0,
+                    REFL_START,
+                    REFL_SPAN
+                );
+                const angle1 = atan2Angle(theta + delta);
+                const rotated = evalNoise(
+                    angle1,
+                    wrapA(angle1, SLICE_START + delta),
+                    SLICE_SPAN,
+                    0.5,
+                    OUTER_RADIUS,
+                    SLICE_MID + delta,
+                    0,
+                    REFL_START + delta,
+                    REFL_SPAN
+                );
+                expect(rotated.tangential).toBeCloseTo(base.tangential, 4);
+                expect(rotated.radial).toBeCloseTo(base.radial, 4);
+            }
+        });
+    });
+
     it('shader should pass turbulence into filmNoise for duck-on-water effect', () => {
         chart.hoveredSliceIndex = 0;
         thinFilmPlugin.afterDatasetsDraw(chart);

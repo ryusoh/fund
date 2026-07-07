@@ -50,7 +50,6 @@ uniform vec3 u_trailAngles;   // head angle of each trail arc (radians)
 uniform float u_trailWidth;   // angular width of each trail arc (radians)
 
 // Fluid dynamics during slice transitions
-uniform float u_fluidAngle;      // tracking angle of the moving slice
 uniform float u_suctionVelocity; // angular velocity of the slice transition (rad/s)
 
 // Reflection band (glass panel) for optical refraction
@@ -275,8 +274,11 @@ void main() {
     // Parabolic flow profile: center of the band (0.5) moves fastest, edges stick to glass
     float flowProfile = 1.0 - pow(abs(r_norm - 0.5) * 2.0, 2.0);
 
-    // Rigidly track the slice position so the oil pattern doesn't slide under the light
-    float baseAngle = angle - u_fluidAngle;
+    // Rigidly track the slice position so the oil pattern doesn't slide under
+    // the light. Anchor to the arc midpoint via the wrap-safe relative angle
+    // "a" -- raw atan2 "angle" has its branch cut at 9 o'clock (+PI -> -PI),
+    // which would tear the noise domain with a full-band-width seam there.
+    float baseAngle = a - arcSpan * 0.5;
 
     // Dynamic shear: only stretches WHILE moving (suction effect). Relaxes to natural blobs when stopped.
     float shear = u_suctionVelocity * 0.15 * flowProfile;
@@ -462,7 +464,6 @@ function initGL(canvas) {
         'u_beamIntensity',
         'u_trailAngles',
         'u_trailWidth',
-        'u_fluidAngle',
         'u_suctionVelocity',
         'u_reflStart',
         'u_reflSpan',
@@ -686,7 +687,6 @@ export const thinFilmPlugin = {
         }
         gl.uniform3f(uniforms.u_trailAngles, trailAngles[0], trailAngles[1], trailAngles[2]);
         gl.uniform1f(uniforms.u_trailWidth, trailWidth);
-        gl.uniform1f(uniforms.u_fluidAngle, state.currentMid);
         gl.uniform1f(uniforms.u_suctionVelocity, state.smoothedVelocity || 0.0);
 
         // Reflection band from glass3dPlugin state
