@@ -14,6 +14,7 @@ import {
     setFxRatesByCurrency,
     getActiveFilterTerm,
     setChartDateRange,
+    trackTransactionDataLoad,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
 import {
@@ -397,7 +398,7 @@ function initialize() {
         setChartDateRange(INITIAL_CHART_DATE_RANGE);
     }
 
-    loadTransactions();
+    trackTransactionDataLoad(loadTransactions());
     adjustMobilePanels();
 }
 

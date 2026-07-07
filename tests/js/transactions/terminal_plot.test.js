@@ -298,6 +298,64 @@ describe('plot command date range handling', () => {
         expect(getLastTerminalMessage()).toContain('Showing composition chart for all time.');
     }, 30000);
 
+    test('waits for a pending initial data load instead of reporting "(no data)"', async () => {
+        const session = initTerminalSession({
+            setupState: (state) => {
+                // Simulate the page before loadTransactions() has populated anything
+                state.runningAmountSeries = [];
+                state.portfolioSeries = [];
+                state.allTransactions = [];
+                state.filteredTransactions = [];
+            },
+        });
+        const stateModule = require('../../../js/transactions/state.js');
+        const localState = stateModule.transactionState;
+
+        let finishLoad;
+        stateModule.trackTransactionDataLoad(
+            new Promise((resolve) => {
+                finishLoad = resolve;
+            })
+        );
+
+        await session.submitCommand('plot balance');
+
+        // While the load is pending: feedback, but no summary built from empty state
+        const outputWhilePending = document.getElementById('terminalOutput').textContent;
+        expect(outputWhilePending).toContain('Loading portfolio data');
+        expect(outputWhilePending).not.toContain('(no data for selected range)');
+        expect(outputWhilePending).not.toContain('Contribution & Balance Summary');
+
+        // Simulate loadTransactions() finishing
+        localState.allTransactions = [
+            { tradeDate: '2024-01-05', netAmount: 1000, orderType: 'buy', security: 'AAPL' },
+        ];
+        localState.filteredTransactions = localState.allTransactions;
+        localState.portfolioSeries = [
+            { date: '2024-01-05', value: 1000 },
+            { date: '2024-02-01', value: 1200 },
+        ];
+        finishLoad();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const finalMessage = getLastTerminalMessage();
+        expect(finalMessage).toContain('Showing contribution chart');
+        expect(finalMessage).toContain('Contribution & Balance Summary');
+        expect(finalMessage).not.toContain('(no data for selected range)');
+
+        stateModule.trackTransactionDataLoad(null);
+    });
+
+    test('prints no loading notice when data is already loaded', async () => {
+        const session = initTerminalSession();
+
+        await session.submitCommand('plot balance');
+
+        const output = document.getElementById('terminalOutput').textContent;
+        expect(output).not.toContain('Loading portfolio data');
+        expect(getLastTerminalMessage()).toContain('Showing contribution chart');
+    });
+
     test('ignores unrecognized date tokens and keeps existing range', async () => {
         const session = initTerminalSession();
         const localState = require('../../../js/transactions/state.js').transactionState;

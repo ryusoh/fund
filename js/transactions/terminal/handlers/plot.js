@@ -1,4 +1,10 @@
-import { transactionState, setActiveChart, setChartDateRange } from '../../state.js';
+import {
+    transactionState,
+    setActiveChart,
+    setChartDateRange,
+    isTransactionDataReady,
+    whenTransactionDataReady,
+} from '../../state.js';
 import {
     updateContextYearFromRange,
     parseDateRange,
@@ -79,6 +85,13 @@ export async function handlePlotCommand(args, { appendMessage, chartManager }) {
             '  yield         [year|quarter|qN] | [from <...>] | [<...> to <...>]';
         appendMessage(result);
         return;
+    }
+
+    // Summaries read transactionState directly; if the initial page load is
+    // still in flight they would render "(no data for selected range)".
+    if (!isTransactionDataReady()) {
+        appendMessage('Loading portfolio data...');
+        await whenTransactionDataReady();
     }
 
     if (getZoomState()) {

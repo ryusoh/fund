@@ -300,3 +300,68 @@ describe('state.js', () => {
         expect(hasActiveTransactionFilters()).toBe(false);
     });
 });
+
+describe('transaction data readiness', () => {
+    let trackTransactionDataLoad;
+    let isTransactionDataReady;
+    let whenTransactionDataReady;
+
+    beforeEach(() => {
+        const stateModule = require('../../../js/transactions/state.js');
+        trackTransactionDataLoad = stateModule.trackTransactionDataLoad;
+        isTransactionDataReady = stateModule.isTransactionDataReady;
+        whenTransactionDataReady = stateModule.whenTransactionDataReady;
+    });
+
+    afterEach(() => {
+        // Reset readiness so other tests see the default "ready" state
+        trackTransactionDataLoad(null);
+    });
+
+    test('is ready by default when no load has been registered', async () => {
+        expect(isTransactionDataReady()).toBe(true);
+        await expect(whenTransactionDataReady()).resolves.toBeUndefined();
+    });
+
+    test('reports not ready while a tracked load is pending, ready once it resolves', async () => {
+        let finishLoad;
+        trackTransactionDataLoad(
+            new Promise((resolve) => {
+                finishLoad = resolve;
+            })
+        );
+
+        expect(isTransactionDataReady()).toBe(false);
+
+        const waiter = whenTransactionDataReady();
+        finishLoad();
+        await waiter;
+
+        expect(isTransactionDataReady()).toBe(true);
+    });
+
+    test('becomes ready even when the tracked load rejects', async () => {
+        let failLoad;
+        trackTransactionDataLoad(
+            new Promise((resolve, reject) => {
+                failLoad = reject;
+            })
+        );
+
+        expect(isTransactionDataReady()).toBe(false);
+
+        const waiter = whenTransactionDataReady();
+        failLoad(new Error('network down'));
+        await expect(waiter).resolves.toBeUndefined();
+
+        expect(isTransactionDataReady()).toBe(true);
+    });
+
+    test('tracking a non-promise resets to the ready state', () => {
+        trackTransactionDataLoad(new Promise(() => {}));
+        expect(isTransactionDataReady()).toBe(false);
+
+        trackTransactionDataLoad(null);
+        expect(isTransactionDataReady()).toBe(true);
+    });
+});

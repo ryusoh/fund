@@ -41,6 +41,7 @@ describe('perlin-plane lazy loading', () => {
             setChartDateRange: jest.fn(),
             getActiveFilterTerm: jest.fn(() => ''),
             resetSortState: jest.fn(),
+            trackTransactionDataLoad: jest.fn(),
             transactionState: {
                 runningAmountSeriesByCurrency: {},
                 portfolioSeriesByCurrency: {},
@@ -107,6 +108,7 @@ describe('Terminal index page', () => {
             setPerformanceSeries: jest.fn(),
             setChartDateRange: jest.fn(),
             cycleCurrency: jest.fn(),
+            trackTransactionDataLoad: jest.fn(),
             transactionState: {
                 runningAmountSeriesByCurrency: {},
                 portfolioSeriesByCurrency: {},
@@ -130,6 +132,15 @@ describe('Terminal index page', () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
+    });
+
+    describe('initial data load registration', () => {
+        it('registers the in-flight data load so terminal commands can await it', () => {
+            const stateModule = require('../../../../js/transactions/state.js');
+            expect(stateModule.trackTransactionDataLoad).toHaveBeenCalledTimes(1);
+            const registered = stateModule.trackTransactionDataLoad.mock.calls[0][0];
+            expect(typeof registered.then).toBe('function');
+        });
     });
 
     describe('buildFxRateMaps', () => {

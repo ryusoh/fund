@@ -189,6 +189,31 @@ export function isZoomed() {
     return transactionState.isZoomed === true;
 }
 
+let transactionDataLoadPromise = null;
+let transactionDataReady = true;
+
+export function trackTransactionDataLoad(loadPromise) {
+    if (!loadPromise || typeof loadPromise.then !== 'function') {
+        transactionDataLoadPromise = null;
+        transactionDataReady = true;
+        return;
+    }
+    transactionDataReady = false;
+    transactionDataLoadPromise = Promise.resolve(loadPromise)
+        .catch(() => {})
+        .then(() => {
+            transactionDataReady = true;
+        });
+}
+
+export function isTransactionDataReady() {
+    return transactionDataReady;
+}
+
+export function whenTransactionDataReady() {
+    return transactionDataLoadPromise || Promise.resolve();
+}
+
 export function hasActiveTransactionFilters() {
     const allTransactions = transactionState.allTransactions || [];
     const filteredTransactions = transactionState.filteredTransactions || [];
