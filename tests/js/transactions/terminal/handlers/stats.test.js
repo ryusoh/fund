@@ -1,5 +1,9 @@
 import { handleStatsCommand } from '../../../../../js/transactions/terminal/handlers/stats.js';
-import { transactionState } from '../../../../../js/transactions/state.js';
+import {
+    transactionState,
+    isTransactionDataReady,
+    whenTransactionDataReady,
+} from '../../../../../js/transactions/state.js';
 import * as terminalStats from '../../../../../js/transactions/terminalStats.js';
 import { getGeographySummaryText } from '../../../../../js/transactions/terminal/handlers/geographySummary.js';
 
@@ -7,6 +11,8 @@ jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
         selectedCurrency: 'USD',
     },
+    isTransactionDataReady: jest.fn(() => true),
+    whenTransactionDataReady: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('../../../../../js/transactions/terminalStats.js', () => ({
@@ -49,6 +55,8 @@ describe('handleStatsCommand', () => {
     beforeEach(() => {
         appendMessage = jest.fn();
         jest.clearAllMocks();
+        isTransactionDataReady.mockReturnValue(true);
+        whenTransactionDataReady.mockResolvedValue(undefined);
     });
 
     it('displays help when no arguments are provided', async () => {
@@ -187,5 +195,48 @@ describe('handleStatsCommand', () => {
         await handleStatsCommand(['transactions'], { appendMessage });
 
         expect(appendMessage).not.toHaveBeenCalled();
+    });
+
+    it('waits for a pending initial data load before computing stats', async () => {
+        // Simulate the page before loadTransactions() has resolved
+        isTransactionDataReady.mockReturnValue(false);
+        let finishLoad;
+        whenTransactionDataReady.mockReturnValue(
+            new Promise((resolve) => {
+                finishLoad = resolve;
+            })
+        );
+        terminalStats.getStatsText.mockResolvedValue('Mocked Transactions Stats');
+
+        const pending = handleStatsCommand(['transactions'], { appendMessage });
+        await Promise.resolve();
+
+        // While the load is pending: feedback, but no stats built from empty state
+        expect(appendMessage).toHaveBeenCalledWith('Loading portfolio data...');
+        expect(terminalStats.getStatsText).not.toHaveBeenCalled();
+
+        finishLoad();
+        await pending;
+
+        expect(terminalStats.getStatsText).toHaveBeenCalledWith('USD');
+        expect(appendMessage).toHaveBeenLastCalledWith('Mocked Transactions Stats');
+    });
+
+    it('prints no loading notice when data is already loaded', async () => {
+        terminalStats.getStatsText.mockResolvedValue('Mocked Transactions Stats');
+        await handleStatsCommand(['transactions'], { appendMessage });
+
+        expect(appendMessage).not.toHaveBeenCalledWith('Loading portfolio data...');
+        expect(appendMessage).toHaveBeenCalledWith('Mocked Transactions Stats');
+    });
+
+    it('does not wait for data when showing help', async () => {
+        isTransactionDataReady.mockReturnValue(false);
+        whenTransactionDataReady.mockReturnValue(new Promise(() => {}));
+
+        await handleStatsCommand([], { appendMessage });
+
+        expect(appendMessage).toHaveBeenCalledWith(expect.stringContaining('Stats commands:\n'));
+        expect(whenTransactionDataReady).not.toHaveBeenCalled();
     });
 });

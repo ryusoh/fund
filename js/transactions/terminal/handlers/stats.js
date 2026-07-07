@@ -1,4 +1,4 @@
-import { transactionState } from '../../state.js';
+import { transactionState, isTransactionDataReady, whenTransactionDataReady } from '../../state.js';
 import {
     getStatsText,
     getHoldingsText,
@@ -34,6 +34,13 @@ export async function handleStatsCommand(args, { appendMessage }) {
             '\nUsage: stats <subcommand> or s <subcommand>';
         appendMessage(result);
         return;
+    }
+
+    // Stats builders read transactionState directly; if the initial page load
+    // is still in flight they would compute from empty state.
+    if (!isTransactionDataReady()) {
+        appendMessage('Loading portfolio data...');
+        await whenTransactionDataReady();
     }
 
     const subcommand = args[0].toLowerCase();
