@@ -64,6 +64,11 @@ is the stricter local superset (adds `mypy` + `bandit`).
   reach the live site only via an explicit `workflow_dispatch` of `pages.yml`;
   a skip-ci marker anywhere in a commit message (even quoted in the body) kills
   all push workflows including the deploy. Read before touching `.github/workflows/`.
+- **Terminal command output vs. initial data load** → `docs/terminal-data-readiness.md`.
+  The terminal accepts commands before `loadTransactions()` settles; printed text
+  that reads `transactionState` series without awaiting `whenTransactionDataReady()`
+  renders a silent **"(no data)"**, not an error. Read before adding/editing a
+  terminal command that prints portfolio numbers.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
