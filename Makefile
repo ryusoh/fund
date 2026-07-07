@@ -153,8 +153,8 @@ fmt-check:
 
 type:
 	$(PY) -m mypy
-	@echo "JS type check (tsc --checkJs on whitelist; non-blocking — see docs/js-typing-strategy.md):"
-	@npx tsc -p jsconfig.json || echo "⚠️  JS type check found issues (non-blocking for now)"
+	@echo "JS type check (tsc --checkJs on whitelist; blocking — see docs/js-typing-strategy.md):"
+	@npx tsc -p jsconfig.json
 
 sec:
 	bandit -r scripts -lll

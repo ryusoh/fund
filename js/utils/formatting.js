@@ -36,8 +36,8 @@ export function getNumberFormatter(
  * Formats a numeric value as a currency string in the target currency.
  * @param {number|string} valueInUSD - The value in USD.
  * @param {string} targetCurrency - The target currency code (e.g., 'USD', 'CNY', 'JPY').
- * @param {Object} exchangeRates - An object with currency codes as keys and rates against USD as values.
- * @param {Object} currencySymbols - An object mapping currency codes to their symbols.
+ * @param {Record<string, number>} exchangeRates - An object with currency codes as keys and rates against USD as values.
+ * @param {Record<string, string>} currencySymbols - An object mapping currency codes to their symbols.
  * @returns {string} The formatted currency string.
  */
 export function formatCurrency(valueInUSD, targetCurrency, exchangeRates, currencySymbols) {
@@ -119,7 +119,7 @@ export function formatPercentage(value) {
 
 /**
  * Gets the historical currency value from a data entry based on the selected currency.
- * @param {object} entry The data entry containing currency values.
+ * @param {Record<string, unknown>} entry The data entry containing currency values.
  * @param {string} currency The target currency ('USD', 'CNY', 'JPY', 'KRW').
  * @param {string} valueType Either 'total' or 'dailyChange'.
  * @returns {number} The value in the specified currency.
@@ -135,13 +135,13 @@ export function getHistoricalCurrencyValue(entry, currency, valueType = 'total')
     if (
         entry[currencyKey] !== undefined &&
         entry[currencyKey] !== null &&
-        !isNaN(entry[currencyKey])
+        !isNaN(Number(entry[currencyKey]))
     ) {
-        return entry[currencyKey];
+        return Number(entry[currencyKey]);
     }
 
     // Fallback to default field with rate conversion (backwards compatibility)
-    const baseValue = entry[valueType] || 0;
+    const baseValue = Number(entry[valueType]) || 0;
     return baseValue; // Return as-is since this is already in base currency
 }
 
@@ -150,8 +150,8 @@ export function getHistoricalCurrencyValue(entry, currency, valueType = 'total')
  * entry is provided, otherwise the number converted at the current rate.
  * @param {number} num The number to convert.
  * @param {string} currency The currency to convert to.
- * @param {object} rates The exchange rates (used for non-historical data).
- * @param {object} [entry] Optional: historical data entry to extract currency values from.
+ * @param {Record<string, number>} rates The exchange rates (used for non-historical data).
+ * @param {Record<string, any> | null} [entry] Optional: historical data entry to extract currency values from.
  * @param {string} [valueType] Either 'total' or 'dailyChange' (used with entry).
  * @returns {number} The converted numeric value.
  */
@@ -162,6 +162,14 @@ function getConvertedNum(num, currency, rates, entry, valueType) {
     return num * (rates[currency] || 1);
 }
 
+/**
+ * @param {number} num
+ * @returns {string}
+ */
+/**
+ * @param {number} num
+ * @returns {string}
+ */
 function getNumberSign(num) {
     if (num > 0) {
         return '+';
@@ -172,10 +180,38 @@ function getNumberSign(num) {
     return '';
 }
 
+/**
+ * @param {unknown} num
+ * @returns {boolean}
+ */
+/**
+ * @param {unknown} num
+ * @returns {boolean}
+ */
 function isValidNumber(num) {
     return num !== null && num !== undefined && !Number.isNaN(Number(num));
 }
 
+/**
+ * @param {unknown} num
+ * @param {Record<string, string>} currencySymbols
+ * @param {boolean} [withSign]
+ * @param {string} [currency]
+ * @param {Record<string, number>} [rates]
+ * @param {Record<string, unknown> | null} [entry]
+ * @param {string} [valueType]
+ * @returns {string}
+ */
+/**
+ * @param {unknown} num
+ * @param {Record<string, string>} currencySymbols
+ * @param {boolean} [withSign]
+ * @param {string} [currency]
+ * @param {Record<string, number>} [rates]
+ * @param {Record<string, any> | null} [entry]
+ * @param {string} [valueType]
+ * @returns {string}
+ */
 export function formatNumber(
     num,
     currencySymbols,
@@ -189,7 +225,7 @@ export function formatNumber(
         return '';
     }
 
-    const convertedNum = getConvertedNum(num, currency, rates, entry, valueType);
+    const convertedNum = getConvertedNum(Number(num), currency, rates, entry, valueType);
     const sign = getNumberSign(convertedNum);
     const absNum = Math.abs(convertedNum);
     const symbol = currencySymbols[currency] || '';
@@ -200,6 +236,14 @@ export function formatNumber(
     return formatNumberWithoutSign(absNum, currency, symbol);
 }
 
+/**
+ * @param {number} absNum
+ * @returns {{ val: number, suffix: string }}
+ */
+/**
+ * @param {number} absNum
+ * @returns {{ val: number, suffix: string }}
+ */
 function getMagnitude(absNum) {
     if (absNum >= 1e9) {
         return { val: absNum / 1e9, suffix: 'b' };
@@ -213,6 +257,16 @@ function getMagnitude(absNum) {
     return { val: absNum, suffix: '' };
 }
 
+/**
+ * @param {number} absNum
+ * @param {string} symbol
+ * @returns {string}
+ */
+/**
+ * @param {number} absNum
+ * @param {string} symbol
+ * @returns {string}
+ */
 function formatNumberWithSign(absNum, symbol) {
     const { val, suffix } = getMagnitude(absNum);
     let formattedVal;
@@ -230,6 +284,16 @@ function formatNumberWithSign(absNum, symbol) {
     return symbol + formattedVal + suffix;
 }
 
+/**
+ * @param {number} val
+ * @param {string} suffix
+ * @returns {number}
+ */
+/**
+ * @param {number} val
+ * @param {string} suffix
+ * @returns {number}
+ */
 function calculatePrecision(val, suffix) {
     let precision = 0;
     if (val > 0) {
@@ -251,6 +315,18 @@ function calculatePrecision(val, suffix) {
     return precision;
 }
 
+/**
+ * @param {number} absNum
+ * @param {string} currency
+ * @param {string} symbol
+ * @returns {string}
+ */
+/**
+ * @param {number} absNum
+ * @param {string} currency
+ * @param {string} symbol
+ * @returns {string}
+ */
 function formatNumberWithoutSign(absNum, currency, symbol) {
     if (currency === 'KRW' && absNum >= 1e6 && absNum < 1e9) {
         const val = absNum / 1e6;
@@ -285,7 +361,7 @@ export function toFixed(num, decimalPlaces) {
  * @returns {string} The formatted currency string.
  */
 export function formatAsCurrency(amount, currency) {
-    const formatter = getNumberFormatter('en-US', 2, 2, currency);
+    const formatter = getNumberFormatter(undefined, 2, 2, currency);
     return formatter.format(amount);
 }
 
@@ -338,17 +414,26 @@ export function formatToTwoDecimals(num) {
     return num.toFixed(2);
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function defaultCurrencyFormatter(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) {
         return '$0.00';
     }
     const sign = numeric < 0 ? '-' : '';
-    const formatter = getNumberFormatter('en-US');
+    const formatter = getNumberFormatter();
     const formatted = formatter.format(Math.abs(numeric));
     return `${sign}$${formatted}`;
 }
 
+/**
+ * @param {unknown} value
+ * @param {(value: any) => string} [formatter]
+ * @returns {string}
+ */
 export function formatCurrencyChange(value, formatter = defaultCurrencyFormatter) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) {
@@ -362,6 +447,11 @@ export function formatCurrencyChange(value, formatter = defaultCurrencyFormatter
     return formatted;
 }
 
+/**
+ * @param {Date | null} actualDate
+ * @param {string} [targetDateStr]
+ * @returns {string}
+ */
 export function formatSummaryDateSuffix(actualDate, targetDateStr) {
     if (!(actualDate instanceof Date)) {
         return '';
@@ -375,6 +465,13 @@ export function formatSummaryDateSuffix(actualDate, targetDateStr) {
     return ` (${actual})`;
 }
 
+/**
+ * @param {string} label
+ * @param {any} summary
+ * @param {any} dateRange
+ * @param {any} [options]
+ * @returns {string}
+ */
 export function formatSummaryBlock(
     label,
     summary,
@@ -413,6 +510,12 @@ export function formatSummaryBlock(
     ].join('\n');
 }
 
+/**
+ * @param {any} balanceSummary
+ * @param {any} contributionSummary
+ * @param {any} [options]
+ * @returns {string}
+ */
 export function formatAppreciationBlock(
     balanceSummary,
     contributionSummary,
@@ -440,6 +543,11 @@ export function formatAppreciationBlock(
     ].join('\n');
 }
 
+/**
+ * @param {number} valueAdded
+ * @param {number} endValue
+ * @returns {string}
+ */
 function calculateAppreciationPercentage(valueAdded, endValue) {
     if (Number.isFinite(endValue) && endValue !== 0) {
         const percentage = (valueAdded / endValue) * 100;
