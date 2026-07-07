@@ -841,106 +841,65 @@ export async function handleGeographyCommand(args, { appendMessage, chartManager
     appendMessage(result);
 }
 
+const MARKETCAP_TRANSITIONS = {
+    'marketcap': { action: 'show', target: 'marketcap', label: 'Market Cap' },
+    'marketcapAbs': { action: 'show', target: 'marketcapAbs', label: 'Market Cap Abs' },
+    'composition': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Composition chart must be visible. Use `plot composition` first.' },
+    'compositionAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Composition chart must be visible. Use `plot composition abs` first.' },
+    'sectors': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Sector allocation chart must be visible. Use `plot sectors` first.' },
+    'sectorsAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Sector allocation chart must be visible. Use `plot sectors abs` first.' },
+    'geography': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Geography chart must be visible. Use `plot geography` first.' },
+    'geographyAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Geography chart must be visible. Use `plot geography abs` first.' }
+};
+
+function checkMarketcapVisibility(transition, isChartVisible) {
+    if (!transition) {
+        return {
+            result: 'Composition, Sectors, Geography, or Market Cap chart must be active. Use `plot composition`, `plot sectors`, `plot geography`, or `plot marketcap` first.',
+            labelPrefix: null,
+            success: false,
+            needsUpdate: false
+        };
+    }
+    if (transition.action === 'show') {
+        if (!isChartVisible) {
+            return { result: 'Showing market cap chart.', labelPrefix: transition.label, success: true, needsUpdate: true, target: transition.target };
+        }
+        return { result: 'Market cap chart is already active.', labelPrefix: null, success: false, needsUpdate: false };
+    }
+    if (!isChartVisible) {
+        return { result: transition.req, labelPrefix: null, success: false, needsUpdate: false };
+    }
+    const suffix = transition.target === 'marketcapAbs' ? ' (absolute view)' : '';
+    return { result: `Switched to market cap chart${suffix}.`, labelPrefix: transition.label, success: true, needsUpdate: true, target: transition.target };
+}
+
 export async function handleMarketcapCommand(args, { appendMessage, chartManager }) {
-    let result = '';
     const chartSection = document.getElementById('runningAmountSection');
     const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
     const activeChart = transactionState.activeChart;
 
-    if (activeChart === 'marketcap' || activeChart === 'marketcapAbs') {
-        if (!isChartVisible) {
-            setActiveChart(activeChart);
-            if (chartSection) {
-                chartSection.classList.remove('is-hidden');
-            }
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Showing market cap chart.';
-        } else {
-            result = 'Market cap chart is already active.';
+    const transition = MARKETCAP_TRANSITIONS[activeChart];
+    const state = checkMarketcapVisibility(transition, isChartVisible);
+
+    if (state.needsUpdate) {
+        setActiveChart(state.target);
+        if (chartSection) {
+            chartSection.classList.remove('is-hidden');
         }
-    } else if (activeChart === 'composition') {
-        if (!isChartVisible) {
-            result = 'Composition chart must be visible. Use `plot composition` first.';
-        } else {
-            setActiveChart('marketcap');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart.';
+        if (chartManager && typeof chartManager.update === 'function') {
+            chartManager.update();
         }
-    } else if (activeChart === 'compositionAbs') {
-        if (!isChartVisible) {
-            result = 'Composition chart must be visible. Use `plot composition abs` first.';
-        } else {
-            setActiveChart('marketcapAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart (absolute view).';
-        }
-    } else if (activeChart === 'sectors') {
-        if (!isChartVisible) {
-            result = 'Sector allocation chart must be visible. Use `plot sectors` first.';
-        } else {
-            setActiveChart('marketcap');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart.';
-        }
-    } else if (activeChart === 'sectorsAbs') {
-        if (!isChartVisible) {
-            result = 'Sector allocation chart must be visible. Use `plot sectors abs` first.';
-        } else {
-            setActiveChart('marketcapAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart (absolute view).';
-        }
-    } else if (activeChart === 'geography') {
-        if (!isChartVisible) {
-            result = 'Geography chart must be visible. Use `plot geography` first.';
-        } else {
-            setActiveChart('marketcap');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart.';
-        }
-    } else if (activeChart === 'geographyAbs') {
-        if (!isChartVisible) {
-            result = 'Geography chart must be visible. Use `plot geography abs` first.';
-        } else {
-            setActiveChart('marketcapAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched to market cap chart (absolute view).';
-        }
-    } else {
-        result =
-            'Composition, Sectors, Geography, or Market Cap chart must be active. Use `plot composition`, `plot sectors`, `plot geography`, or `plot marketcap` first.';
     }
 
-    if (result.includes('Showing') || result.includes('Switched')) {
+    let finalResult = state.result;
+    if (state.success && state.labelPrefix) {
         const { getMarketcapSnapshotLine } = await import('../snapshots.js');
-        const labelPrefix =
-            activeChart === 'compositionAbs' ||
-            activeChart === 'sectorsAbs' ||
-            activeChart === 'geographyAbs' ||
-            activeChart === 'marketcapAbs'
-                ? 'Market Cap Abs'
-                : 'Market Cap';
-        const summary = await getMarketcapSnapshotLine({
-            labelPrefix,
-        });
+        const summary = await getMarketcapSnapshotLine({ labelPrefix: state.labelPrefix });
         if (summary) {
-            result += `\n${summary}`;
+            finalResult += `\n${summary}`;
         }
     }
 
-    appendMessage(result);
+    appendMessage(finalResult);
 }
