@@ -132,6 +132,58 @@ describe('TableGlassEffect', () => {
         expect(effect.canvas.style.top).toBe('123px'); // Doesn't change
     });
 
+    describe('syncResize (per-frame sync while paused, e.g. terminal zoom)', () => {
+        test('resizes canvas even while resizePaused is true', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.pauseResize();
+
+            // Pane grows mid-animation (what the zoom tween does each frame)
+            Object.defineProperty(container, 'clientHeight', {
+                value: 600,
+                configurable: true,
+            });
+
+            effect.syncResize();
+
+            expect(effect.height).toBe(600);
+            expect(effect.canvas.style.height).toBe('600px');
+            effect.dispose();
+        });
+
+        test('leaves resizePaused true so observer-driven resizes stay blocked', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.pauseResize();
+            effect.syncResize();
+            expect(effect.resizePaused).toBe(true);
+
+            // Observer path must still be a no-op after a sync
+            effect.canvas.style.top = '123px';
+            effect.resize();
+            expect(effect.canvas.style.top).toBe('123px');
+            effect.dispose();
+        });
+
+        test('still honors the hidden content-block guard (no zero-dim clobber)', () => {
+            const contentBlock = document.createElement('div');
+            contentBlock.className = 'content-block hidden';
+            container.parentNode.insertBefore(contentBlock, container);
+            contentBlock.appendChild(container);
+
+            let effect;
+            try {
+                effect = new TableGlassEffect('.table-responsive-container');
+                effect.syncResize();
+
+                expect(effect._needsResize).toBe(true);
+                expect(effect.width).toBeUndefined();
+            } finally {
+                document.body.appendChild(container);
+                contentBlock.remove();
+                effect?.dispose();
+            }
+        });
+    });
+
     it('should initialize and append canvas', () => {
         const effect = new TableGlassEffect('.table-responsive-container');
         const canvas = container.querySelector('canvas');

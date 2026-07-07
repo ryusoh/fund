@@ -78,10 +78,15 @@ function animateZoomIn(terminal, chart, terminalOutput) {
         // Store original height for restoration
         terminalOutput.dataset.originalHeight = terminalOutput.getBoundingClientRect().height;
 
-        // Pause glass effect resize to prevent glitching/thrashing during animation
+        // Pause observer-driven glass resizes (they fire async and thrash), but
+        // sync the canvas to the growing pane on every tween frame — otherwise
+        // the expanded area has no glass until the animation completes.
         terminal.glassEffect?.pauseResize();
 
         const timeline = gsap.timeline({
+            onUpdate: () => {
+                terminal.glassEffect?.syncResize();
+            },
             onComplete: () => {
                 terminal.glassEffect?.resumeResize();
                 terminal.classList.add('terminal-zoomed');
@@ -146,10 +151,14 @@ function animateZoomOut(terminal, chart, terminalOutput) {
     return new Promise((resolve) => {
         const originalHeight = parseFloat(terminalOutput.dataset.originalHeight) || 270;
 
-        // Pause glass effect resize during animation
+        // Pause observer-driven glass resizes but track the shrinking pane
+        // per frame, mirroring the zoom-in path.
         terminal.glassEffect?.pauseResize();
 
         const timeline = gsap.timeline({
+            onUpdate: () => {
+                terminal.glassEffect?.syncResize();
+            },
             onComplete: () => {
                 terminal.glassEffect?.resumeResize();
                 terminal.classList.remove('terminal-zoomed');

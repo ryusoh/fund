@@ -277,6 +277,93 @@ describe('toggleZoom function', () => {
     });
 });
 
+describe('glass effect sync during zoom animation', () => {
+    let toggleZoom;
+    let stateModule;
+    let glassEffect;
+    let capturedOpts;
+
+    beforeEach(async () => {
+        jest.resetModules();
+        setupDom();
+
+        // Mock the TableGlassEffect instance that tableGlassEffect.js exposes
+        // on its container element (container.glassEffect = this)
+        glassEffect = {
+            pauseResize: jest.fn(),
+            resumeResize: jest.fn(),
+            syncResize: jest.fn(),
+        };
+        document.getElementById('terminal').glassEffect = glassEffect;
+
+        capturedOpts = null;
+        global.gsap = {
+            timeline: jest.fn((opts) => {
+                capturedOpts = opts;
+                return { to: jest.fn().mockReturnThis() };
+            }),
+            to: jest.fn(),
+            set: jest.fn(),
+        };
+
+        stateModule = await import('../../../js/transactions/state.js');
+        stateModule.transactionState.isZoomed = false;
+
+        const zoomModule = await import('../../../js/transactions/zoom.js');
+        toggleZoom = zoomModule.toggleZoom;
+    });
+
+    test('zoom-in resizes the glass canvas on every animation tick, not just at the end', async () => {
+        const promise = toggleZoom();
+
+        expect(glassEffect.pauseResize).toHaveBeenCalledTimes(1);
+        expect(typeof capturedOpts.onUpdate).toBe('function');
+
+        // Simulate three GSAP frames while the pane is still growing
+        capturedOpts.onUpdate();
+        capturedOpts.onUpdate();
+        capturedOpts.onUpdate();
+
+        expect(glassEffect.syncResize).toHaveBeenCalledTimes(3);
+        // The canvas must track the pane *before* the animation completes
+        expect(glassEffect.resumeResize).not.toHaveBeenCalled();
+
+        capturedOpts.onComplete();
+        await promise;
+        expect(glassEffect.resumeResize).toHaveBeenCalledTimes(1);
+    });
+
+    test('zoom-out resizes the glass canvas on every animation tick', async () => {
+        stateModule.setZoomed(true);
+
+        const promise = toggleZoom();
+
+        expect(glassEffect.pauseResize).toHaveBeenCalledTimes(1);
+        expect(typeof capturedOpts.onUpdate).toBe('function');
+
+        capturedOpts.onUpdate();
+        capturedOpts.onUpdate();
+
+        expect(glassEffect.syncResize).toHaveBeenCalledTimes(2);
+        expect(glassEffect.resumeResize).not.toHaveBeenCalled();
+
+        capturedOpts.onComplete();
+        await promise;
+        expect(glassEffect.resumeResize).toHaveBeenCalledTimes(1);
+    });
+
+    test('zoom still works when no glass effect is attached', async () => {
+        document.getElementById('terminal').glassEffect = null;
+
+        const promise = toggleZoom();
+        capturedOpts.onUpdate?.();
+        capturedOpts.onComplete();
+        const result = await promise;
+
+        expect(result.zoomed).toBe(true);
+    });
+});
+
 describe('zoom CSS classes', () => {
     let toggleZoom;
     let stateModule;

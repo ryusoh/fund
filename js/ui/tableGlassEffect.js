@@ -291,7 +291,18 @@ export class TableGlassEffect {
         if (this.resizePaused) {
             return;
         }
+        this._performResize();
+    }
 
+    // Forced resize that bypasses the pauseResize() gate, for callers that
+    // animate the pane's size and need the glass canvas to track it per frame
+    // (e.g. the terminal zoom tween's onUpdate). Observer-driven resize() calls
+    // stay blocked while paused, so this cannot reintroduce resize thrashing.
+    syncResize() {
+        this._performResize();
+    }
+
+    _performResize() {
         // Skip resize when container is hidden (display:none via .hidden class).
         // Writing zero dimensions to the canvas would clobber it for the next re-show.
         const contentBlock = this.container.closest('.content-block');
