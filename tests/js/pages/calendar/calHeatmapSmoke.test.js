@@ -23,7 +23,13 @@ const globalEval = eval;
 describe('cal-heatmap shipped bundle smoke test', () => {
     beforeAll(() => {
         globalEval(read('js/vendor/d3.v7.min.js'));
-        globalEval(read('js/vendor/cal-heatmap.js'));
+        // d3's UMD explicitly assigns globalThis.d3, but the cal-heatmap IIFE
+        // relies on its top-level `var CalHeatmap` leaking onto the global —
+        // guaranteed in a browser <script>, NOT in jest's vm-backed jsdom
+        // global (Node/V8-dependent; flaked on CI with CalHeatmap undefined).
+        // The bundle's last statement (`CalHeatmap = CalHeatmap.default ||
+        // CalHeatmap`) is the eval completion value, so pin it explicitly.
+        globalThis.CalHeatmap = globalEval(read('js/vendor/cal-heatmap.js'));
     });
 
     it('exposes d3 and CalHeatmap globals from the vendored bundles', () => {
