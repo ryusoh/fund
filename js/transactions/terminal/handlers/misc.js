@@ -842,14 +842,44 @@ export async function handleGeographyCommand(args, { appendMessage, chartManager
 }
 
 const MARKETCAP_TRANSITIONS = {
-    'marketcap': { action: 'show', target: 'marketcap', label: 'Market Cap' },
-    'marketcapAbs': { action: 'show', target: 'marketcapAbs', label: 'Market Cap Abs' },
-    'composition': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Composition chart must be visible. Use `plot composition` first.' },
-    'compositionAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Composition chart must be visible. Use `plot composition abs` first.' },
-    'sectors': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Sector allocation chart must be visible. Use `plot sectors` first.' },
-    'sectorsAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Sector allocation chart must be visible. Use `plot sectors abs` first.' },
-    'geography': { action: 'switch', target: 'marketcap', label: 'Market Cap', req: 'Geography chart must be visible. Use `plot geography` first.' },
-    'geographyAbs': { action: 'switch', target: 'marketcapAbs', label: 'Market Cap Abs', req: 'Geography chart must be visible. Use `plot geography abs` first.' }
+    marketcap: { action: 'show', target: 'marketcap', label: 'Market Cap' },
+    marketcapAbs: { action: 'show', target: 'marketcapAbs', label: 'Market Cap Abs' },
+    composition: {
+        action: 'switch',
+        target: 'marketcap',
+        label: 'Market Cap',
+        req: 'Composition chart must be visible. Use `plot composition` first.',
+    },
+    compositionAbs: {
+        action: 'switch',
+        target: 'marketcapAbs',
+        label: 'Market Cap Abs',
+        req: 'Composition chart must be visible. Use `plot composition abs` first.',
+    },
+    sectors: {
+        action: 'switch',
+        target: 'marketcap',
+        label: 'Market Cap',
+        req: 'Sector allocation chart must be visible. Use `plot sectors` first.',
+    },
+    sectorsAbs: {
+        action: 'switch',
+        target: 'marketcapAbs',
+        label: 'Market Cap Abs',
+        req: 'Sector allocation chart must be visible. Use `plot sectors abs` first.',
+    },
+    geography: {
+        action: 'switch',
+        target: 'marketcap',
+        label: 'Market Cap',
+        req: 'Geography chart must be visible. Use `plot geography` first.',
+    },
+    geographyAbs: {
+        action: 'switch',
+        target: 'marketcapAbs',
+        label: 'Market Cap Abs',
+        req: 'Geography chart must be visible. Use `plot geography abs` first.',
+    },
 };
 
 function checkMarketcapVisibility(transition, isChartVisible) {
@@ -858,20 +888,37 @@ function checkMarketcapVisibility(transition, isChartVisible) {
             result: 'Composition, Sectors, Geography, or Market Cap chart must be active. Use `plot composition`, `plot sectors`, `plot geography`, or `plot marketcap` first.',
             labelPrefix: null,
             success: false,
-            needsUpdate: false
+            needsUpdate: false,
         };
     }
     if (transition.action === 'show') {
         if (!isChartVisible) {
-            return { result: 'Showing market cap chart.', labelPrefix: transition.label, success: true, needsUpdate: true, target: transition.target };
+            return {
+                result: 'Showing market cap chart.',
+                labelPrefix: transition.label,
+                success: true,
+                needsUpdate: true,
+                target: transition.target,
+            };
         }
-        return { result: 'Market cap chart is already active.', labelPrefix: null, success: false, needsUpdate: false };
+        return {
+            result: 'Market cap chart is already active.',
+            labelPrefix: null,
+            success: false,
+            needsUpdate: false,
+        };
     }
     if (!isChartVisible) {
         return { result: transition.req, labelPrefix: null, success: false, needsUpdate: false };
     }
     const suffix = transition.target === 'marketcapAbs' ? ' (absolute view)' : '';
-    return { result: `Switched to market cap chart${suffix}.`, labelPrefix: transition.label, success: true, needsUpdate: true, target: transition.target };
+    return {
+        result: `Switched to market cap chart${suffix}.`,
+        labelPrefix: transition.label,
+        success: true,
+        needsUpdate: true,
+        target: transition.target,
+    };
 }
 
 export async function handleMarketcapCommand(args, { appendMessage, chartManager }) {
