@@ -79,7 +79,7 @@ describe('mergeDividendsIntoContribution', () => {
         expect(jan5.amount).toBe(1950);
     });
 
-    it('adds sellVolume to output points with dividends', () => {
+    test('records dividends as part of sellVolume', () => {
         const series = [
             makePoint('2020-01-01', 1000, 'buy', 1000),
             makePoint('2020-01-05', 2000, 'buy', 1000),
@@ -90,6 +90,8 @@ describe('mergeDividendsIntoContribution', () => {
 
         const result = mergeDividendsIntoContribution(series, yieldData, 'USD');
         const jan3 = result.find((p) => p.tradeDate === '2020-01-03');
+        expect(jan3.dividendVolume).toBeUndefined();
+        // Dividends are now combined into sellVolume for visualization
         expect(jan3.sellVolume).toBe(50);
     });
 
@@ -107,9 +109,28 @@ describe('mergeDividendsIntoContribution', () => {
         const point = result[0];
         // cum = 1000 (buy) - 25 (dividend) = 975
         expect(point.amount).toBe(975);
+        expect(point.dividendVolume).toBeUndefined();
         expect(point.sellVolume).toBe(25);
         // orderType stays 'buy' since the original transaction was a buy
         expect(point.orderType).toBe('buy');
+    });
+
+    it('keeps a real sell and a same-day dividend in separate volume fields', () => {
+        const series = [
+            makePoint('2020-01-01', 1000, 'buy', 1000),
+            makePoint('2020-01-05', 600, 'sell', -400),
+        ];
+        const yieldData = [
+            { date: '2020-01-05', daily_dividend: 30 },
+        ];
+
+        const result = mergeDividendsIntoContribution(series, yieldData, 'USD');
+        const jan5 = result.find((p) => p.tradeDate === '2020-01-05');
+        // 400 original sell + 30 dividend
+        expect(jan5.sellVolume).toBe(430);
+        expect(jan5.dividendVolume).toBeUndefined();
+        // cum = 1000 - 400 - 30
+        expect(jan5.amount).toBe(570);
     });
 
     it('marks dividend-only points with orderType sell', () => {
@@ -143,11 +164,13 @@ describe('mergeDividendsIntoContribution', () => {
         // Filter for AAPL only -> should only subtract 30
         const resultAapl = mergeDividendsIntoContribution(series, yieldData, 'USD', ['AAPL']);
         const pointAapl = resultAapl.find((p) => p.tradeDate === '2020-01-03');
+        expect(pointAapl.dividendVolume).toBeUndefined();
         expect(pointAapl.sellVolume).toBe(30);
 
         // Filter for TSLA only -> should only subtract 20
         const resultTsla = mergeDividendsIntoContribution(series, yieldData, 'USD', ['TSLA']);
         const pointTsla = resultTsla.find((p) => p.tradeDate === '2020-01-03');
+        expect(pointTsla.dividendVolume).toBeUndefined();
         expect(pointTsla.sellVolume).toBe(20);
 
         // Filter for PDD -> should not merge any dividends since PDD has 0

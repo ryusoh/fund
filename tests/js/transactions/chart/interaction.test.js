@@ -1,6 +1,7 @@
 import {
     buildRangeSummary,
     sortCrosshairSnapshot,
+    isVolumeBarKey,
     crosshairState,
 } from '../../../../js/transactions/chart/interaction.js';
 import { formatCurrencyInline } from '../../../../js/transactions/utils.js';
@@ -79,6 +80,18 @@ describe('Interaction logic', () => {
             expect(snapshot[4].key).toBe('sellVolume');
         });
 
+        it('orders volume keys after line-series keys in fixed order', () => {
+            const snapshot = [
+                { key: 'sellVolume', value: 1000, isBuySellBar: true },
+                { key: 'buyVolume', value: 10, isBuySellBar: true },
+                { key: 'contribution', value: 200, isBuySellBar: false },
+            ];
+
+            sortCrosshairSnapshot(snapshot);
+
+            expect(snapshot.map((s) => s.key)).toEqual(['contribution', 'buyVolume', 'sellVolume']);
+        });
+
         it('sorts regular unknown series by absolute value descending after fixed keys', () => {
             const snapshot = [
                 { key: 'seriesB', value: -300, isBuySellBar: false },
@@ -93,6 +106,19 @@ describe('Interaction logic', () => {
             expect(snapshot[1].key).toBe('seriesA'); // abs: 500
             expect(snapshot[2].key).toBe('seriesB'); // abs: 300
             expect(snapshot[3].key).toBe('seriesC'); // abs: 100
+        });
+    });
+
+    describe('isVolumeBarKey', () => {
+        it('classifies buy and sell volume-bar series keys', () => {
+            expect(isVolumeBarKey('buyVolume')).toBe(true);
+            expect(isVolumeBarKey('sellVolume')).toBe(true);
+        });
+
+        it('rejects non-volume series keys', () => {
+            expect(isVolumeBarKey('contribution')).toBe(false);
+            expect(isVolumeBarKey('balance')).toBe(false);
+            expect(isVolumeBarKey('dividendVolume')).toBe(false);
         });
     });
 

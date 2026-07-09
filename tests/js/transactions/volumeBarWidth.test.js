@@ -57,67 +57,35 @@ describe('Volume bar width and centering', () => {
         };
     }
 
-    test('single buy bar should be 4px wide', () => {
+    test('single buy bar should be 1px wide based on 365 day density', () => {
         const opts = makeOptions();
         const data = [makeEntry('2024-06-15', 'buy', 1000)];
 
         drawVolumeChart(mockCtx, data, opts);
 
         expect(fillRectCalls.length).toBe(1);
-        expect(fillRectCalls[0].w).toBe(4);
+        expect(fillRectCalls[0].w).toBe(1);
     });
 
-    test('single sell bar should be 4px wide', () => {
+    test('single sell bar should be 1px wide based on 365 day density', () => {
         const opts = makeOptions();
         const data = [makeEntry('2024-06-15', 'sell', 500)];
 
         drawVolumeChart(mockCtx, data, opts);
 
         expect(fillRectCalls.length).toBe(1);
-        expect(fillRectCalls[0].w).toBe(4);
+        expect(fillRectCalls[0].w).toBe(1);
     });
 
-    test('two bars same day: dominant bar is 8px, smaller bar is 4px', () => {
+    test('two bars same day: both are 1px wide because they diverge from baseline', () => {
         const opts = makeOptions();
         const data = [makeEntry('2024-06-15', 'buy', 1000), makeEntry('2024-06-15', 'sell', 400)];
 
         drawVolumeChart(mockCtx, data, opts);
 
         expect(fillRectCalls.length).toBe(2);
-        const widths = fillRectCalls.map((c) => c.w).sort((a, b) => b - a);
-        expect(widths).toEqual([8, 4]);
-    });
-
-    test('two bars same day with equal volume: buy is 8px, sell is 4px', () => {
-        const opts = makeOptions();
-        const data = [makeEntry('2024-06-15', 'buy', 500), makeEntry('2024-06-15', 'sell', 500)];
-
-        drawVolumeChart(mockCtx, data, opts);
-
-        expect(fillRectCalls.length).toBe(2);
-        const widths = fillRectCalls.map((c) => c.w).sort((a, b) => b - a);
-        expect(widths).toEqual([8, 4]);
-    });
-
-    test('smaller bar is horizontally centered within the dominant bar', () => {
-        const opts = makeOptions();
-        const data = [makeEntry('2024-06-15', 'buy', 1000), makeEntry('2024-06-15', 'sell', 400)];
-
-        drawVolumeChart(mockCtx, data, opts);
-
-        expect(fillRectCalls.length).toBe(2);
-
-        // Sort by width descending: dominant first
-        const sorted = [...fillRectCalls].sort((a, b) => b.w - a.w);
-        const dominant = sorted[0];
-        const smaller = sorted[1];
-
-        // Both bars should share the same center x
-        const dominantCenter = dominant.x + dominant.w / 2;
-        const smallerCenter = smaller.x + smaller.w / 2;
-
-        // Allow 1px tolerance due to Math.round
-        expect(Math.abs(dominantCenter - smallerCenter)).toBeLessThanOrEqual(1);
+        const widths = fillRectCalls.map((c) => c.w);
+        expect(widths).toEqual([1, 1]);
     });
 
     test('bar x positions are rounded to whole pixels', () => {

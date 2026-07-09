@@ -157,7 +157,7 @@ type:
 	@npx tsc -p jsconfig.json
 
 sec:
-	bandit -r scripts -lll
+	$(PY) -m bandit -r scripts -lll
 	@echo "Note: For Python dependency security scanning, run: pip install pip-audit && pip-audit"
 
 js-lint:

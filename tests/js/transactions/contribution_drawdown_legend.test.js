@@ -114,8 +114,12 @@ jest.mock('../../../js/transactions/chart/data/contribution.js', () => ({
 
 // mock contributionComponents.js
 jest.mock('../../../js/transactions/chart/renderers/contributionComponents.js', () => ({
-    drawVolumeChart: jest.fn(() => ({ buyVolumeMap: new Map(), sellVolumeMap: new Map() })),
+    drawVolumeChart: jest.fn(() => ({
+        buyVolumeMap: new Map(),
+        sellVolumeMap: new Map(),
+    })),
     drawContributionMarkers: jest.fn(),
+    createVolumeGetter: jest.fn(() => () => null),
 }));
 
 describe('drawContributionChart Legend Logic', () => {

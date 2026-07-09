@@ -377,6 +377,8 @@ export function getChartColors(rootStyles) {
         sell: 'rgba(255, 69, 58, 0.8)',
         buyFill: 'rgba(48, 209, 88, 0.45)',
         sellFill: 'rgba(255, 69, 58, 0.45)',
+        buyBarFill: 'rgba(48, 209, 88, 0.75)',
+        sellBarFill: 'rgba(255, 69, 58, 0.75)',
     };
 }
 

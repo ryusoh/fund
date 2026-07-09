@@ -31,7 +31,11 @@ import {
     computeAppreciationSeries,
     mergeDividendsIntoContribution,
 } from '../data/contribution.js';
-import { drawVolumeChart, drawContributionMarkers } from './contributionComponents.js';
+import {
+    drawVolumeChart,
+    drawContributionMarkers,
+    createVolumeGetter,
+} from './contributionComponents.js';
 import { loadYieldData, getCachedYieldData } from './yield.js';
 import {
     parseLocalDate,
@@ -1058,12 +1062,6 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         legendState.contributionDirty = false;
     }
 
-    const normalizeToDay = (time) => {
-        const day = new Date(time);
-        day.setHours(0, 0, 0, 0);
-        return day.getTime();
-    };
-
     const seriesDisplayLabels = {
         balance: 'Balance',
         contribution: 'Contribution',
@@ -1095,16 +1093,12 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     });
 
     const volumeSeries = [];
-    const makeVolumeGetter = (map) => (time) => {
-        const value = map.get(normalizeToDay(time));
-        return Number.isFinite(value) ? value : 0;
-    };
 
     volumeSeries.push({
         key: 'buyVolume',
         label: 'Buy',
         color: colors.buy,
-        getValueAtTime: makeVolumeGetter(buyVolumeMap),
+        getValueAtTime: createVolumeGetter(buyVolumeMap),
         formatValue: formatCurrencyInline,
         includeInRangeSummary: false,
         drawMarker: false,
@@ -1114,7 +1108,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         key: 'sellVolume',
         label: 'Sell',
         color: colors.sell,
-        getValueAtTime: makeVolumeGetter(sellVolumeMap),
+        getValueAtTime: createVolumeGetter(sellVolumeMap),
         formatValue: formatCurrencyInline,
         includeInRangeSummary: false,
         drawMarker: false,

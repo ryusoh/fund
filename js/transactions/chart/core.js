@@ -83,7 +83,7 @@ export function computePercentTickInfo(yMin, yMax) {
     };
 }
 
-export function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
+export function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency, options = {}) {
     if (isPerformanceChart) {
         const percentTickInfo = computePercentTickInfo(yMin, yMax);
         const margin = percentTickInfo.tickSpacing * 0.25;
@@ -92,7 +92,10 @@ export function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
         );
     }
 
-    const desiredTicks = 6;
+    // maxTicks: compact panes (e.g. the volume subpane) ask for fewer, larger
+    // steps instead of the default dense grid
+    const maxTicks = Number.isFinite(options?.maxTicks) ? Math.max(1, options.maxTicks) : null;
+    const desiredTicks = maxTicks || 6;
     let range = yMax - yMin;
 
     // Handle flat-line constant value case
@@ -107,20 +110,19 @@ export function generateConcreteTicks(yMin, yMax, isPerformanceChart) {
         range = yMax - yMin;
     }
 
-    const niceRange = niceNumber(range, false);
-    const targetSegments = Math.max(1, desiredTicks - 1);
-    let tickSpacing = Math.abs(niceNumber(niceRange / targetSegments, true));
+    const targetSegments = Math.max(1, desiredTicks - 1) * (maxTicks ? 2 : 1);
+    let tickSpacing = Math.abs(niceNumber(range / targetSegments, true));
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
-        tickSpacing = Math.abs(niceNumber(range / targetSegments, true));
+        tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
     }
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
         tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
     }
     tickSpacing = Math.max(tickSpacing, 1e-6); // Avoid zero spacing
 
-    // Retry loop to ensure at least 4 ticks
+    // Retry loop to ensure enough ticks are generated
     let finalTicks = [];
-    const minRequiredTicks = 5;
+    const minRequiredTicks = maxTicks ? Math.floor(maxTicks * 0.5) : 5;
     const maxRetries = 6;
 
     for (let retry = 0; retry < maxRetries; retry++) {
@@ -339,18 +341,64 @@ export function drawAxes(
 ) {
     const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const monoFont = getMonoFontFamily();
-    const { drawXAxis = true, drawYAxis = true } = axisOptions;
+    const { drawXAxis = true, drawYAxis = true, maxTicks = null } = axisOptions;
 
     // Generate concrete tick values
-    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency);
+    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency, {
+        maxTicks,
+    });
 
     // Y-axis grid lines and labels
     if (drawYAxis) {
         const fontSize = isMobile ? 9 : 11;
         const halfTextHeight = fontSize / 2;
-        for (let i = 0; i < ticks.length; i++) {
-            const value = ticks[i];
-            const y = yScale(value);
+        // Prevent physical overlap: labels must be separated by exactly their fontSize (1em)
+        const minSpacingPixels = Math.floor(fontSize);
+
+        // Map ticks to objects with y coordinate
+        const tickObjects = ticks.map((value) => ({ value, y: yScale(value) }));
+
+        // Sort by absolute value DESCENDING so we start packing from the outer edges (max values) inwards.
+        // This guarantees we keep the outer boundaries and pack as many non-overlapping ticks as mathematically possible.
+        tickObjects.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+        // Filter labels using priority assignment
+        const filteredTicks = tickObjects.map((obj) => {
+            let priority = 2; // Default lowest priority
+            if (Math.abs(obj.value) < 1e-9) {
+                priority = 0; // Highest priority for zero line
+            } else if (
+                obj.value === yMax ||
+                obj.value === yMin ||
+                obj.value === Math.max(...ticks) ||
+                obj.value === Math.min(...ticks)
+            ) {
+                priority = 1; // High priority for outer bounds
+            }
+            return { ...obj, priority };
+        });
+
+        // Resolve collisions by keeping highest priority items
+        const selectedTicks = [];
+        for (let p = 0; p <= 2; p++) {
+            for (const tick of filteredTicks) {
+                if (tick.priority === p) {
+                    let collides = false;
+                    for (const selected of selectedTicks) {
+                        if (Math.abs(tick.y - selected.y) < minSpacingPixels) {
+                            collides = true;
+                            break;
+                        }
+                    }
+                    if (!collides) {
+                        selectedTicks.push(tick);
+                    }
+                }
+            }
+        }
+
+        for (let i = 0; i < selectedTicks.length; i++) {
+            const { value, y } = selectedTicks[i];
             ctx.beginPath();
             ctx.moveTo(padding.left, y);
             ctx.lineTo(padding.left + plotWidth, y);

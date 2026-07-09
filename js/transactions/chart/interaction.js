@@ -21,6 +21,10 @@ export const crosshairState = {
     pointerId: null,
 };
 
+export function isVolumeBarKey(key) {
+    return key === 'buyVolume' || key === 'sellVolume';
+}
+
 let crosshairElementsCache = null;
 let crosshairExternalUpdate = null;
 

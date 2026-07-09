@@ -130,6 +130,7 @@ jest.mock('../../../../../js/transactions/chart/renderers/contributionComponents
         sellVolumeMap: new Map(),
     })),
     drawContributionMarkers: jest.fn(),
+    createVolumeGetter: jest.fn(() => () => null),
 }));
 
 jest.mock('../../../../../js/transactions/chart/helpers.js', () => {
