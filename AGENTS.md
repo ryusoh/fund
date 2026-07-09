@@ -163,6 +163,9 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **Calendar renderer migration (in progress)** → `docs/calendar-renderer-migration.md`.
   Cal-Heatmap (D3/SVG) → DOM/CSS renderer behind a flag. Read before touching
   `js/pages/calendar/` or `js/ui/cal-heatmap-src/`.
+- **Y-axis tick algorithm** (volume pane labels) → `docs/y-axis-tick-algorithm.md`.
+  Two-phase generate→collide pipeline with strict no-overlap invariant. Read before
+  touching `generateConcreteTicks` or the `drawAxes` collision filter in `core.js`.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 

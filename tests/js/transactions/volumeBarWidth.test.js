@@ -97,4 +97,33 @@ describe('Volume bar width and centering', () => {
         expect(fillRectCalls.length).toBe(1);
         expect(Number.isInteger(fillRectCalls[0].x)).toBe(true);
     });
+
+    test('diverging geometry: buy bars extend above baseline, sell bars extend below', () => {
+        // Regression guard — a previous edit silently reverted the diverging geometry
+        // (zero baseline at midpoint, buys up, sells down). See docs/y-axis-tick-algorithm.md
+        const opts = makeOptions();
+        const data = [makeEntry('2024-03-15', 'buy', 5000), makeEntry('2024-09-15', 'sell', 3000)];
+
+        drawVolumeChart(mockCtx, data, opts);
+
+        expect(fillRectCalls.length).toBe(2);
+
+        // In canvas, y increases downward. Buy bars should have y < baseline (extend upward)
+        // and sell bars should have y >= baseline (extend downward).
+        // The baseline is approximately at volumeTop + volumeHeight/2 for a diverging pane.
+        const baseline = opts.volumeTop + opts.volumeHeight / 2;
+
+        const buyCall = fillRectCalls[0]; // buy renders first
+        const sellCall = fillRectCalls[1]; // sell renders second
+
+        // Buy bar's top edge (y) must be above the baseline
+        expect(buyCall.y).toBeLessThan(baseline);
+        // Buy bar height must be positive (extends upward from near the baseline)
+        expect(buyCall.h).toBeGreaterThan(0);
+
+        // Sell bar's top edge starts at or near the baseline (within 10px tolerance for sqrt)
+        expect(sellCall.y).toBeGreaterThanOrEqual(baseline - 10);
+        // Sell bar extends downward
+        expect(sellCall.h).toBeGreaterThan(0);
+    });
 });
