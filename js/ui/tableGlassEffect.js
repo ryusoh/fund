@@ -2,28 +2,37 @@ import { PIE_CHART_GLASS_EFFECT, UI_BREAKPOINTS } from '@js/config.js';
 import { TableGlassWebGL } from './tableGlassWebGL.js';
 import { LiquidGlassRefraction } from './liquidGlassRefraction.js';
 
-function isDataRow(row) {
-    if (!row) {
-        return false;
-    }
-    // Exclude header rows
+function isExcludedByStructure(row) {
     if (row.closest('thead') || row.querySelector('th')) {
-        return false;
+        return true;
     }
-    // Exclude footer rows
     if (row.closest('tfoot')) {
-        return false;
+        return true;
     }
+    return false;
+}
+
+function hasExcludedIdentifier(row) {
     const className = row.className ? row.className.toLowerCase() : '';
     const id = row.id ? row.id.toLowerCase() : '';
-    if (
+    return (
         className.includes('footer') ||
         className.includes('total') ||
         className.includes('summary') ||
         id.includes('footer') ||
         id.includes('total') ||
         id.includes('summary')
-    ) {
+    );
+}
+
+function isDataRow(row) {
+    if (!row) {
+        return false;
+    }
+    if (isExcludedByStructure(row)) {
+        return false;
+    }
+    if (hasExcludedIdentifier(row)) {
         return false;
     }
     return true;
