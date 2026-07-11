@@ -1,0 +1,35 @@
+Target function: `getHoldingsText` in `js/transactions/terminal/stats/holdings.js`.
+
+Complexity reduction: 13 -> 5
+
+Extracted helpers `fetchAndCacheHoldingsData` and `formatHoldingsData` to separate the fetching/caching logic from the display formatting logic. Also created `fetchLegacyHoldingsData` for fallback.
+This aligns the code with the single responsibility principle and reduces cyclomatic complexity.
+
+behavior preserved, test expectations unchanged.
+
+`make verify` output:
+```
+python3 -m pytest --cov=scripts --cov-report=term-missing
+....................................................................... [ 15%]
+........................................................................ [ 31%]
+........................................................................ [ 47%]
+........................................................................ [ 63%]
+........................................................................ [ 79%]
+........................................................................ [ 95%]
+....................                                                     [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.13-final-0 _______________
+
+TOTAL                                             4992   1777    64%
+451 passed, 1 subtests passed in 10.43s
+ [main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.12.13
+
+Test Suites: 172 passed, 172 total
+Tests:       2672 passed, 2672 total
+Snapshots:   0 total
+Time:        19.947 s, estimated 27 s
+```
