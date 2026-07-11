@@ -52,9 +52,10 @@ function corsHeaders(origin) {
     try {
         if (origin) {
             const url = new URL(origin);
+            // Sentinel: Prevent permissive CORS subdomain bypass
             isSubdomain =
                 url.protocol === 'https:' &&
-                (url.hostname === 'lyeutsaon.com' || url.hostname.endsWith('.lyeutsaon.com'));
+                (url.hostname === 'lyeutsaon.com' || url.hostname === 'fund.lyeutsaon.com');
         }
     } catch (err) {
         // eslint-disable-next-line no-console

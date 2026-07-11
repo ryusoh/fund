@@ -77,6 +77,33 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
+// CORS validation
+// ---------------------------------------------------------------------------
+
+describe('CORS validation', () => {
+    it('allows allowed exact subdomains', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+        const req = makeReq('VT', 'https://fund.lyeutsaon.com');
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://fund.lyeutsaon.com');
+    });
+
+    it('rejects suffix matches that are not exact subdomains', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+        const req = makeReq('VT', 'https://evil-lyeutsaon.com');
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://fund.lyeutsaon.com');
+    });
+
+    it('rejects subdomains that are not explicitly allowed', async () => {
+        mockFetch.mockResolvedValueOnce(alpacaOk({ VT: 139.49 }));
+        const req = makeReq('VT', 'https://evil.lyeutsaon.com');
+        const res = await worker.fetch(req, makeEnv(), makeCtx());
+        expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://fund.lyeutsaon.com');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Yahoo Finance — extended-hours price selection
 // ---------------------------------------------------------------------------
 
