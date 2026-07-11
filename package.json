@@ -32,7 +32,6 @@
     "devDependencies": {
         "@babel/core": "^7.29.7",
         "@babel/preset-env": "^7.29.7",
-        "@observablehq/plot": "^0.6.17",
         "@popperjs/core": "^2.11.8",
         "@stylistic/stylelint-plugin": "^5.2.1",
         "@testing-library/jest-dom": "^6.9.1",
