@@ -21,6 +21,19 @@ const d3GlobalsPlugin = {
     },
 };
 
+const ignoreObservableHqPlugin = {
+    name: 'ignore-observablehq',
+    setup(build) {
+        build.onResolve({ filter: /^@observablehq\/plot$/ }, (args) => ({
+            path: args.path,
+            namespace: 'ignore-observablehq',
+        }));
+        build.onLoad({ filter: /.*/, namespace: 'ignore-observablehq' }, () => ({
+            contents: 'module.exports = { legend: () => {}, scale: () => {} };',
+        }));
+    },
+};
+
 const ignoreSCSSPlugin = {
     name: 'ignore-scss',
     setup(build) {
@@ -41,7 +54,7 @@ esbuild
         outfile: OUTFILE,
         format: 'iife',
         globalName: 'CalHeatmap',
-        plugins: [d3GlobalsPlugin, ignoreSCSSPlugin],
+        plugins: [d3GlobalsPlugin, ignoreSCSSPlugin, ignoreObservableHqPlugin],
         target: ['es2022'],
         minify: true, // we can keep it minified, but it's ours now!
     })
