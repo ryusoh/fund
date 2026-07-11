@@ -11,44 +11,59 @@ import { logger } from '../../../utils/logger.js';
 
 let holdingsDataCache = null;
 
+async function fetchAndCacheHoldingsData() {
+    if (!holdingsDataCache) {
+        const response = await fetch('../data/output/holdings.json');
+        if (response.ok) {
+            holdingsDataCache = await response.json();
+        }
+    }
+    return holdingsDataCache;
+}
+
+function formatHoldingsData(currencyData, normalizedCurrency) {
+    if (!Array.isArray(currencyData) || currencyData.length === 0) {
+        return 'No current holdings.';
+    }
+    const rows = currencyData.map((item) => {
+        const shares = getNumberFormatter(undefined, 2, 2).format(Number(item.shares || 0));
+        const avgPrice =
+            item.average_price !== null && item.average_price !== undefined
+                ? formatCurrency(item.average_price, { currency: normalizedCurrency })
+                : 'N/A';
+        const totalCost =
+            item.total_cost !== null && item.total_cost !== undefined
+                ? formatCurrency(item.total_cost, { currency: normalizedCurrency })
+                : 'N/A';
+        return [item.security, shares, avgPrice, totalCost];
+    });
+    const table = renderAsciiTable({
+        title: 'HOLDINGS',
+        headers: ['Security', 'Shares', 'Avg Price', 'Total Cost'],
+        rows,
+        alignments: ['left', 'right', 'right', 'right'],
+    });
+    return `\n${table}\n`;
+}
+
+async function fetchLegacyHoldingsData() {
+    const response = await fetch('../data/output/holdings.txt');
+    if (!response.ok) {
+        return 'Error loading holdings data.';
+    }
+    return await response.text();
+}
+
 export async function getHoldingsText(currency = 'USD') {
     const normalizedCurrency =
         typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
     try {
-        if (!holdingsDataCache) {
-            const response = await fetch('../data/output/holdings.json');
-            if (response.ok) {
-                holdingsDataCache = await response.json();
-            }
-        }
-        if (holdingsDataCache) {
-            const currencyData = holdingsDataCache[normalizedCurrency]
-                ? holdingsDataCache[normalizedCurrency]
-                : holdingsDataCache.USD;
-            if (!Array.isArray(currencyData) || currencyData.length === 0) {
-                return 'No current holdings.';
-            }
-            const rows = currencyData.map((item) => {
-                const shares = getNumberFormatter(undefined, 2, 2).format(Number(item.shares || 0));
-                const avgPrice =
-                    item.average_price !== null && item.average_price !== undefined
-                        ? formatCurrency(item.average_price, { currency: normalizedCurrency })
-                        : 'N/A';
-                const totalCost =
-                    item.total_cost !== null && item.total_cost !== undefined
-                        ? formatCurrency(item.total_cost, { currency: normalizedCurrency })
-                        : 'N/A';
-                return [item.security, shares, avgPrice, totalCost];
-            });
-            const table = renderAsciiTable({
-                title: 'HOLDINGS',
-                headers: ['Security', 'Shares', 'Avg Price', 'Total Cost'],
-                rows,
-                alignments: ['left', 'right', 'right', 'right'],
-            });
-            return `
-${table}
-`;
+        const cache = await fetchAndCacheHoldingsData();
+        if (cache) {
+            const currencyData = cache[normalizedCurrency]
+                ? cache[normalizedCurrency]
+                : cache.USD;
+            return formatHoldingsData(currencyData, normalizedCurrency);
         }
     } catch (error) {
         logger.warn('Holdings stats processing failed:', error);
@@ -56,11 +71,7 @@ ${table}
     }
 
     try {
-        const response = await fetch('../data/output/holdings.txt');
-        if (!response.ok) {
-            return 'Error loading holdings data.';
-        }
-        return await response.text();
+        return await fetchLegacyHoldingsData();
     } catch (error) {
         logger.warn('Holdings stats processing failed:', error);
         return 'Error loading holdings data.';
@@ -116,8 +127,5 @@ export async function getHoldingsDebugText() {
     const note =
         'Computed directly from data/transactions.csv with split adjustments. Residual = raw shares − rounded(2 decimals).';
 
-    return `
-${table}
-
-${note}`;
+    return `\n${table}\n\n${note}`;
 }
