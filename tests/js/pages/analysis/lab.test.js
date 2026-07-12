@@ -320,4 +320,64 @@ describe('analysis lab data loading', () => {
             expect(portfolio.model.preferences.kellyScale).toBeCloseTo(0.75);
         });
     });
+
+    describe('applyThesisScenarioTitles and config logic', () => {
+        it('tests getSharesOutstanding branches', async () => {
+            const module = await import('@pages/analysis/lab.js');
+            const { getSharesOutstanding } = module.__analysisLabTesting;
+
+            expect(getSharesOutstanding({ market: { basicShares: 100 } })).toBe(100);
+            expect(getSharesOutstanding({ market: { marketCap: 1000, price: 10 } })).toBe(100);
+            expect(getSharesOutstanding({ market: { marketCap: -1000, price: 10 } })).toBeNull();
+            expect(getSharesOutstanding({})).toBeNull();
+        });
+
+        it('handles window initialization with error', async () => {
+            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
+            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
+            const originalAlert = global.alert;
+            global.alert = jest.fn();
+
+            document.body.innerHTML =
+                '<div id="summaryStats"></div><button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockRejectedValue(new Error('Network failure'));
+
+            const summaryStatsEl = document.getElementById('summaryStats');
+            summaryStatsEl.replaceChildren = undefined;
+
+            jest.isolateModules(() => {
+                require('../../../../js/pages/analysis/lab.js');
+            });
+
+            // Allow promises to resolve
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(global.alert).toHaveBeenCalled();
+            expect(summaryStatsEl.textContent).toContain('Network failure');
+
+            global.fetch = originalFetch;
+            global.alert = originalAlert;
+            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
+        });
+
+        it('handles window initialization with empty summaryStats', async () => {
+            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
+            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
+
+            document.body.innerHTML =
+                '<button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+
+            jest.isolateModules(() => {
+                require('../../../../js/pages/analysis/lab.js');
+            });
+
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            global.fetch = originalFetch;
+            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
+        });
+    });
 });

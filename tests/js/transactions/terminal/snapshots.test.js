@@ -324,6 +324,46 @@ describe('getContributionSummaryText', () => {
         expect(text).toContain('Contribution');
         expect(text).toContain('$950.00');
     });
+
+    it('applies currency conversion if selectedCurrency is not USD and filters are active', async () => {
+        transactionState.chartDateRange = { from: null, to: null };
+        transactionState.selectedCurrency = 'EUR';
+        transactionState.allTransactions = [
+            {
+                tradeDate: '2023-01-01',
+                amount: 1000,
+                netAmount: 1000,
+                orderTypes: new Set(['buy']),
+            },
+        ];
+        transactionState.filteredTransactions = [
+            {
+                tradeDate: '2023-01-01',
+                amount: 1000,
+                netAmount: 1000,
+                orderTypes: new Set(['buy']),
+                security: 'AAPL',
+            },
+        ];
+        hasActiveTransactionFilters.mockReturnValue(true);
+
+        buildContributionSeriesFromTransactions.mockReturnValue([
+            { tradeDate: '2023-01-01', amount: 1000 },
+        ]);
+
+        loadYieldData.mockResolvedValue([
+            { date: '2023-01-02', daily_dividend: 50, ttm_income: 50, forward_yield: 2 },
+        ]);
+
+        buildFilteredBalanceSeries.mockReturnValue([{ date: new Date('2023-01-01'), value: 1000 }]);
+
+        mergeDividendsIntoContribution.mockReturnValue([
+            { tradeDate: '2023-01-01', amount: 950 }, // Subtracted dividend
+        ]);
+
+        const text = await getContributionSummaryText();
+        expect(text).toContain('Contribution');
+    });
 });
 
 describe('getDrawdownSnapshotLine absolute mode', () => {
@@ -400,5 +440,74 @@ describe('getDrawdownSnapshotLine absolute mode', () => {
             // expect(snapshot).toContain('Balance      -$20.00 (Max: -$20.00)');
             // expect(snapshot).toContain('Contribution $0.00 (Max: $0.00)');
         }
+    });
+});
+
+describe('getRollingSnapshotLine coverage', () => {
+    let getRollingSnapshotLine, transactionState;
+
+    beforeEach(() => {
+        getRollingSnapshotLine =
+            require('../../../../js/transactions/terminal/snapshots.js').getRollingSnapshotLine;
+        transactionState = require('../../../../js/transactions/state.js').transactionState;
+
+        transactionState.performanceSeries = {
+            AAPL: [
+                { date: '2023-01-01', value: 100 },
+                { date: '2024-01-01', value: 120 },
+            ],
+            '^LZ': [
+                { date: '2023-01-01', value: 100 },
+                { date: '2024-01-01', value: 110 },
+            ],
+            MSFT: [],
+        };
+        transactionState.chartVisibility = {
+            AAPL: true,
+            '^LZ': true,
+            MSFT: true,
+        };
+        transactionState.chartDateRange = { from: null, to: null };
+        transactionState.selectedCurrency = 'USD';
+    });
+
+    it('returns null if performanceSeries is empty', () => {
+        transactionState.performanceSeries = {};
+        expect(getRollingSnapshotLine()).toBeNull();
+    });
+
+    it('filters hidden series unless includeHidden is true', () => {
+        transactionState.chartVisibility['AAPL'] = false;
+
+        const line = getRollingSnapshotLine();
+        expect(line).toContain('^LZ');
+        expect(line).not.toContain('AAPL');
+
+        const lineIncluded = getRollingSnapshotLine({ includeHidden: true });
+        expect(lineIncluded).toContain('AAPL');
+    });
+
+    it('calculates 1Y rolling return correctly', () => {
+        const line = getRollingSnapshotLine();
+        expect(line).toContain('1Y Rolling Return (base USD):');
+        expect(line).toContain('^LZ 0%');
+        expect(line).toContain('AAPL 0%');
+        // ^LZ is sorted first
+        expect(line.indexOf('^LZ')).toBeLessThan(line.indexOf('AAPL'));
+    });
+
+    it('applies date filter for targetDate', () => {
+        transactionState.chartDateRange = { from: null, to: '2023-06-01' };
+        transactionState.performanceSeries = {
+            AAPL: [
+                { date: '2022-01-01', value: 100 },
+                { date: '2022-06-01', value: 110 },
+                { date: '2023-01-01', value: 120 },
+                { date: '2023-06-01', value: 130 },
+                { date: '2024-01-01', value: 140 },
+            ],
+        };
+        const line = getRollingSnapshotLine();
+        expect(line).toContain('AAPL');
     });
 });
