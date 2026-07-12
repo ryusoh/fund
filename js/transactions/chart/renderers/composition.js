@@ -25,10 +25,8 @@ import {
     convertValueToCurrency,
 } from '../../utils.js';
 import { COLOR_PALETTES, getHoldingAssetClass } from '../../../config.js';
-
 let compositionDataCache = null;
 let compositionDataLoading = false;
-
 function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
         return null;
@@ -47,7 +45,6 @@ function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     }
     return aggregated;
 }
-
 function buildCompositionDisplayOrder(
     baseOrder,
     chartData,
@@ -74,7 +71,6 @@ function buildCompositionDisplayOrder(
     if (selectedOrder.length === 0) {
         return { order: [...baseOrder], filteredOthers: null };
     }
-
     const remainder = baseOrder.filter((ticker) => !filterSet.has(ticker.toUpperCase()));
     const includeFilteredOthers = remainder.length > 0 && !filterSet.has('OTHERS');
     const filteredOthers = includeFilteredOthers
@@ -87,11 +83,9 @@ function buildCompositionDisplayOrder(
     const order = filteredOthers ? [...selectedOrder, 'Others'] : selectedOrder;
     return { order, filteredOthers, filteredReference };
 }
-
 function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     // 1. Validate Data
     const valueMode = options.valueMode === 'absolute' ? 'absolute' : 'percent';
-
     if (
         !data ||
         typeof data !== 'object' ||
@@ -107,21 +101,17 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     const emptyState = document.getElementById('runningAmountEmpty');
     if (emptyState) {
         emptyState.style.display = 'none';
     }
-
     // 2. Prepare Basic Data (Indices, Dates)
     const rawDates = data.dates.slice();
     const rawSeries = data.composition || data.series || {};
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
     const { chartDateRange } = transactionState;
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
-
     // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
     const filteredIndices = [];
     for (let i = 0; i < rawDates.length; i += 1) {
@@ -137,10 +127,8 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         }
         filteredIndices.push(i);
     }
-
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
-
     if (dates.length === 0) {
         if (valueMode === 'absolute') {
             chartLayouts.compositionAbs = null;
@@ -153,7 +141,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     // 3. Prepare Values (Total Values, Conversion, Percent Mapping)
     const rawTotalValues = Array.isArray(data.total_values) ? data.total_values : [];
     const mappedTotalValues =
@@ -168,21 +155,32 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         const converted = convertValueToCurrency(value, dates[idx], selectedCurrency);
         return Number.isFinite(converted) ? converted : 0;
     });
-
     const percentSeriesMap = {};
     const chartData = {};
-    Object.entries(rawSeries).forEach(([ticker, values]) => {
-        const mappedValues =
-            filterFrom || filterTo
-                ? filteredIndices.map((index) => values[index] ?? 0)
-                : values.map((value) => value ?? 0);
-        const percentValues =
-            mappedValues.length === dates.length
-                ? mappedValues
-                : dates.map((_, idx) => Number(mappedValues[idx] ?? 0));
+    for (const ticker in rawSeries) {
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, ticker)) {continue;}
+        const values = rawSeries[ticker];
+        let mappedValues;
+        if (filterFrom || filterTo) {
+            mappedValues = new Array(filteredIndices.length);
+            for (let i = 0; i < filteredIndices.length; i += 1) {
+                mappedValues[i] = values[filteredIndices[i]] ?? 0;
+            }
+        } else {
+            mappedValues = new Array(values.length);
+            for (let i = 0; i < values.length; i += 1) {
+                mappedValues[i] = values[i] ?? 0;
+            }
+        }
+        let percentValues = mappedValues;
+        if (mappedValues.length !== dates.length) {
+            percentValues = new Array(dates.length);
+            for (let i = 0; i < dates.length; i += 1) {
+                percentValues[i] = Number(mappedValues[i] ?? 0);
+            }
+        }
         percentSeriesMap[ticker] = percentValues;
         if (valueMode === 'absolute') {
-            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
             const absoluteValues = new Array(percentValues.length);
             for (let i = 0; i < percentValues.length; i += 1) {
                 absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * percentValues[i]) / 100;
@@ -191,8 +189,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         } else {
             chartData[ticker] = percentValues;
         }
-    });
-
+    }
     // 4. Determine Active Tickers and Sort Order
     const baseTickerOrder = Object.keys(chartData).sort((a, b) => {
         const arrA = chartData[a] || [];
@@ -201,7 +198,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         const lastB = arrB[arrB.length - 1] ?? 0;
         return lastB - lastA;
     });
-
     const explicitTickerFilters = getCompositionFilterTickers();
     const assetClassFilter = getCompositionAssetClassFilter();
     let derivedTickerFilters = explicitTickerFilters;
@@ -222,7 +218,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             derivedTickerFilters = classMatchedTickers;
         }
     }
-
     const {
         order: filteredOrder,
         filteredOthers,
@@ -237,7 +232,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const percentOthersSeries = valueMode === 'absolute' ? filteredReference : filteredOthers;
     const activeTickerOrder = filteredOrder.length > 0 ? filteredOrder : baseTickerOrder;
     const usingFilteredOthers = Boolean(filteredOthers);
-
     // 5. Setup Canvas and Scales
     const canvas = ctx.canvas;
     const canvasWidth = canvas.offsetWidth;
@@ -257,7 +251,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         updateCrosshairUI(null, null);
         return;
     }
-
     const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
     // Local resolveTickerColor logic to match original chart.js exactly
     const resolveTickerColor = (ticker) => {
@@ -270,7 +263,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return colors[colorIndex % colors.length];
     };
-
     const dateTimes = new Array(dates.length);
     let minTime = Infinity;
     let maxTime = -Infinity;
@@ -284,19 +276,16 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             maxTime = time;
         }
     }
-
     // Ensure minTime aligns with filter start for correct x-axis labels
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
     const xScale = (time) =>
         padding.left +
         (maxTime === minTime
             ? plotWidth / 2
             : ((time - minTime) / (maxTime - minTime)) * plotWidth);
-
     const yMin = 0;
     let maxTotalValue = 0;
     for (let i = 0; i < totalValuesConverted.length; i++) {
@@ -307,7 +296,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const yMax = valueMode === 'absolute' ? Math.max(maxTotalValue, 1) : 100;
     const yScale = (value) =>
         padding.top + plotHeight - ((value - yMin) / (yMax - yMin || 1)) * plotHeight;
-
     // 6. Draw Axes
     const axisFormatter =
         valueMode === 'absolute'
@@ -319,7 +307,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         left: padding.left,
         right: padding.left + plotWidth,
     };
-
     drawAxes(
         ctx,
         padding,
@@ -334,10 +321,8 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         axisFormatter,
         valueMode !== 'absolute'
     );
-
     // 7. Render Stacked Areas
     const cumulativeValues = new Array(dates.length).fill(0);
-
     // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
     for (let tickerIndex = 0; tickerIndex < activeTickerOrder.length; tickerIndex += 1) {
         const ticker = activeTickerOrder[tickerIndex];
@@ -351,7 +336,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fillStyle = `${color}80`;
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
-
         // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
         for (let index = 0; index < dates.length; index += 1) {
             const dateStr = dates[index];
@@ -363,7 +347,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                 ctx.lineTo(x, y);
             }
         }
-
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
             const y = yScale(cumulativeValues[i]);
@@ -372,13 +355,11 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-
         // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
     }
-
     // 8. Prepare Legend and Crosshair Data
     const latestIndex = dates.length - 1;
     const percentSeriesForTicker = (ticker) => {
@@ -391,7 +372,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const othersPercentage =
         othersPercentSeries.length > 0 ? (othersPercentSeries[latestIndex] ?? 0) : 0;
     const shouldIncludeOthers = othersPercentage > 50 || usingFilteredOthers;
-
     const buildHoldingInfo = (ticker) => {
         const percentSeries = percentSeriesForTicker(ticker);
         const percent = percentSeries[latestIndex] ?? 0;
@@ -408,14 +388,12 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             absolute: absoluteValue,
         };
     };
-
     const latestHoldings = activeTickerOrder
         .filter((ticker) => shouldIncludeOthers || ticker !== 'Others')
         .map(buildHoldingInfo)
         .filter((holding) => holding.percent > 0.1)
         .sort((a, b) => b.percent - a.percent)
         .slice(0, 6);
-
     const holdingsForLegend =
         latestHoldings.length > 0
             ? latestHoldings
@@ -424,7 +402,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                   .map(buildHoldingInfo)
                   .sort((a, b) => b.percent - a.percent)
                   .slice(0, 6);
-
     const legendSeries = holdingsForLegend.map((holding) => {
         const displayName = holding.ticker === 'BRKB' ? 'BRK-B' : holding.ticker;
         return {
@@ -433,7 +410,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             color: resolveTickerColor(holding.ticker),
         };
     });
-
     const seriesForCrosshair = [];
     for (let i = 0; i < activeTickerOrder.length; i += 1) {
         const ticker = activeTickerOrder[i];
@@ -464,18 +440,15 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             originalIndex: i,
         });
     }
-
     const sortedSeriesForCrosshair = seriesForCrosshair.sort((a, b) => {
         const indexA = activeTickerOrder.indexOf(a.key);
         const indexB = activeTickerOrder.indexOf(b.key);
         return indexA - indexB;
     });
-
     const totalValuePoints = dateTimes.map((time, idx) => ({
         time,
         value: Number(totalValuesConverted[idx] ?? 0),
     }));
-
     const layoutKey = valueMode === 'absolute' ? 'compositionAbs' : 'composition';
     if (valueMode === 'absolute') {
         chartLayouts.composition = null;
@@ -511,30 +484,24 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         percentOthersSeries,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
-
     drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
-
     updateLegend(legendSeries, chartManager);
 }
-
 function drawCompositionChartLoader(ctx, chartManager, valueMode) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
     const emptyState = document.getElementById('runningAmountEmpty');
-
     if (!compositionDataCache && compositionDataLoading) {
         if (emptyState) {
             emptyState.style.display = 'block';
         }
         return;
     }
-
     if (compositionDataCache) {
         renderCompositionChartWithMode(ctx, chartManager, compositionDataCache, { valueMode });
         return;
     }
-
     compositionDataLoading = true;
     loadCompositionSnapshotData()
         .then((data) => {
@@ -560,15 +527,12 @@ function drawCompositionChartLoader(ctx, chartManager, valueMode) {
             compositionDataLoading = false;
         });
 }
-
 function drawCompositionChart(ctx, chartManager) {
     drawCompositionChartLoader(ctx, chartManager, 'percent');
 }
-
 function drawCompositionAbsoluteChart(ctx, chartManager) {
     drawCompositionChartLoader(ctx, chartManager, 'absolute');
 }
-
 export {
     drawCompositionChart,
     drawCompositionAbsoluteChart,
