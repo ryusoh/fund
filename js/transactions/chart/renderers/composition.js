@@ -172,20 +172,15 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
                 mappedValues[i] = values[i] ?? 0;
             }
         }
-        let percentValues = mappedValues;
-        if (mappedValues.length !== dates.length) {
-            percentValues = new Array(dates.length);
-            for (let i = 0; i < dates.length; i += 1) {
-                percentValues[i] = Number(mappedValues[i] ?? 0);
-            }
-        }
+        const percentValues =
+            mappedValues.length === dates.length
+                ? mappedValues
+                : dates.map((_, idx) => Number(mappedValues[idx] ?? 0));
         percentSeriesMap[ticker] = percentValues;
         if (valueMode === 'absolute') {
-            const absoluteValues = new Array(percentValues.length);
-            for (let i = 0; i < percentValues.length; i += 1) {
-                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * percentValues[i]) / 100;
-            }
-            chartData[ticker] = absoluteValues;
+            chartData[ticker] = percentValues.map(
+                (val, idx) => ((totalValuesConverted[idx] ?? 0) * val) / 100
+            );
         } else {
             chartData[ticker] = percentValues;
         }

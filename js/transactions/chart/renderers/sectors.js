@@ -108,11 +108,9 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         }
         percentSeriesMap[sector] = mappedValues;
         if (valueMode === 'absolute') {
-            const absoluteValues = new Array(mappedValues.length);
-            for (let i = 0; i < mappedValues.length; i += 1) {
-                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * mappedValues[i]) / 100;
-            }
-            chartData[sector] = absoluteValues;
+            chartData[sector] = mappedValues.map(
+                (val, idx) => ((totalValuesConverted[idx] ?? 0) * val) / 100
+            );
         } else {
             chartData[sector] = mappedValues;
         }

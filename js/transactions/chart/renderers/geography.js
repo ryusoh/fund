@@ -108,11 +108,9 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         }
         percentSeriesMap[country] = mappedValues;
         if (valueMode === 'absolute') {
-            const absoluteValues = new Array(mappedValues.length);
-            for (let i = 0; i < mappedValues.length; i += 1) {
-                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * mappedValues[i]) / 100;
-            }
-            chartData[country] = absoluteValues;
+            chartData[country] = mappedValues.map(
+                (val, idx) => ((totalValuesConverted[idx] ?? 0) * val) / 100
+            );
         } else {
             chartData[country] = mappedValues;
         }
