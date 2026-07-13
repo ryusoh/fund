@@ -133,7 +133,7 @@ perms:
 lint: js-lint
 	$(PY) -m ruff check scripts tests
 	npx --yes stylelint "**/*.css"
-	npx --yes markdownlint "**/*.md" --ignore-path .gitignore
+	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
 fmt:
 	$(PY) -m black .
