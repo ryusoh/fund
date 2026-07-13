@@ -400,6 +400,9 @@ describe('updateTerminalCrosshair displays dateLabel correctly', () => {
         // Now hide it
         updateTerminalCrosshair(null, null);
 
+        // Let any timers execute or sync logic run
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         expect(overlay.classList.contains('terminal-crosshair-active')).toBe(false);
     });
 });

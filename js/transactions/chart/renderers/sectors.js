@@ -21,13 +21,10 @@ import {
     convertValueToCurrency,
 } from '../../utils.js';
 import { COLOR_PALETTES } from '../../../config.js';
-
 let sectorsDataCache = null;
 let sectorsDataLoading = false;
-
 function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
     const valueMode = options.valueMode === 'absolute' ? 'absolute' : 'percent';
-
     if (
         !data ||
         typeof data !== 'object' ||
@@ -43,20 +40,16 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     const emptyState = document.getElementById('runningAmountEmpty');
     if (emptyState) {
         emptyState.style.display = 'none';
     }
-
     const rawDates = data.dates.slice();
     const rawSeries = data.series || {};
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
     const { chartDateRange } = transactionState;
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
-
     // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
     const filteredIndices = [];
     for (let i = 0; i < rawDates.length; i += 1) {
@@ -72,10 +65,8 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         }
         filteredIndices.push(i);
     }
-
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
-
     if (dates.length === 0) {
         if (valueMode === 'absolute') {
             chartLayouts.sectorsAbs = null;
@@ -88,40 +79,42 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     const rawTotalValues = Array.isArray(data.total_values) ? data.total_values : [];
     const mappedTotalValues =
         filterFrom || filterTo
             ? filteredIndices.map((index) => Number(rawTotalValues[index] ?? 0))
             : rawTotalValues.map((value) => Number(value ?? 0));
-
     const totalValuesUsd = mappedTotalValues;
     const totalValuesConverted = totalValuesUsd.map((value, idx) => {
         const converted = convertValueToCurrency(value, dates[idx], selectedCurrency);
         return Number.isFinite(converted) ? converted : 0;
     });
-
     const percentSeriesMap = {};
     const chartData = {};
-    Object.entries(rawSeries).forEach(([sector, values]) => {
-        const mappedValues =
-            filterFrom || filterTo
-                ? filteredIndices.map((index) => values[index] ?? 0)
-                : values.map((value) => value ?? 0);
-
+    for (const sector in rawSeries) {
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, sector)) {continue;}
+        const values = rawSeries[sector];
+        let mappedValues;
+        if (filterFrom || filterTo) {
+            mappedValues = new Array(filteredIndices.length);
+            for (let i = 0; i < filteredIndices.length; i += 1) {
+                mappedValues[i] = values[filteredIndices[i]] ?? 0;
+            }
+        } else {
+            mappedValues = new Array(values.length);
+            for (let i = 0; i < values.length; i += 1) {
+                mappedValues[i] = values[i] ?? 0;
+            }
+        }
         percentSeriesMap[sector] = mappedValues;
         if (valueMode === 'absolute') {
-            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
-            const absoluteValues = new Array(mappedValues.length);
-            for (let i = 0; i < mappedValues.length; i += 1) {
-                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * mappedValues[i]) / 100;
-            }
-            chartData[sector] = absoluteValues;
+            chartData[sector] = mappedValues.map(
+                (val, idx) => ((totalValuesConverted[idx] ?? 0) * val) / 100
+            );
         } else {
             chartData[sector] = mappedValues;
         }
-    });
-
+    }
     const baseSectorOrder = Object.keys(chartData).sort((a, b) => {
         const arrA = chartData[a] || [];
         const arrB = chartData[b] || [];
@@ -129,7 +122,6 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         const lastB = arrB[arrB.length - 1] ?? 0;
         return lastB - lastA;
     });
-
     const canvas = ctx.canvas;
     const canvasWidth = canvas.offsetWidth;
     const canvasHeight = canvas.offsetHeight;
@@ -139,17 +131,14 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         : { top: 22, right: 26, bottom: 48, left: 68 };
     const plotWidth = canvasWidth - padding.left - padding.right;
     const plotHeight = canvasHeight - padding.top - padding.bottom;
-
     if (plotWidth <= 0 || plotHeight <= 0) {
         return;
     }
-
     const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
     const resolveSectorColor = (sector) => {
         const index = baseSectorOrder.indexOf(sector);
         return colors[index % colors.length];
     };
-
     const dateTimes = new Array(dates.length);
     let minTime = Infinity;
     let maxTime = -Infinity;
@@ -163,18 +152,15 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
             maxTime = time;
         }
     }
-
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
     const xScale = (time) =>
         padding.left +
         (maxTime === minTime
             ? plotWidth / 2
             : ((time - minTime) / (maxTime - minTime)) * plotWidth);
-
     const yMin = 0;
     let maxTotalValue = 0;
     for (let i = 0; i < totalValuesConverted.length; i++) {
@@ -185,12 +171,10 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
     const yMax = valueMode === 'absolute' ? Math.max(maxTotalValue, 1) : 100;
     const yScale = (value) =>
         padding.top + plotHeight - ((value - yMin) / (yMax - yMin || 1)) * plotHeight;
-
     const axisFormatter =
         valueMode === 'absolute'
             ? (val) => formatCurrencyCompact(val, { currency: selectedCurrency })
             : (val) => `${val}%`;
-
     drawAxes(
         ctx,
         padding,
@@ -205,7 +189,6 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         axisFormatter,
         valueMode !== 'absolute'
     );
-
     const cumulativeValues = new Array(dates.length).fill(0);
     // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
     for (let sIdx = 0; sIdx < baseSectorOrder.length; sIdx += 1) {
@@ -216,7 +199,6 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fillStyle = `${color}80`;
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
-
         // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
         for (let index = 0; index < dates.length; index += 1) {
             const dateStr = dates[index];
@@ -228,7 +210,6 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
                 ctx.lineTo(x, y);
             }
         }
-
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
             const y = yScale(cumulativeValues[i]);
@@ -237,13 +218,11 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-
         // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
     }
-
     const latestIndex = dates.length - 1;
     const legendSeries = baseSectorOrder
         .map((sector) => ({
@@ -258,7 +237,6 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
             name: s.sector,
             color: resolveSectorColor(s.sector),
         }));
-
     const seriesForCrosshair = baseSectorOrder.map((sector) => {
         const values = chartData[sector];
         const points = dateTimes.map((time, idx) => ({
@@ -280,12 +258,10 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
                     : formatPercentInline(delta),
         };
     });
-
     const totalValuePoints = dateTimes.map((time, idx) => ({
         time,
         value: Number(totalValuesConverted[idx] ?? 0),
     }));
-
     const layoutKey = valueMode === 'absolute' ? 'sectorsAbs' : 'sectors';
     chartLayouts[layoutKey] = {
         key: layoutKey,
@@ -317,29 +293,24 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
         dates,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
-
     drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
     updateLegend(legendSeries, chartManager);
 }
-
 function drawSectorsChartLoader(ctx, chartManager, valueMode) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
     const emptyState = document.getElementById('runningAmountEmpty');
-
     if (!sectorsDataCache && sectorsDataLoading) {
         if (emptyState) {
             emptyState.style.display = 'block';
         }
         return;
     }
-
     if (sectorsDataCache) {
         renderSectorsChartWithMode(ctx, chartManager, sectorsDataCache, { valueMode });
         return;
     }
-
     sectorsDataLoading = true;
     loadSectorsSnapshotData()
         .then((data) => {
@@ -360,11 +331,9 @@ function drawSectorsChartLoader(ctx, chartManager, valueMode) {
             sectorsDataLoading = false;
         });
 }
-
 export function drawSectorsChart(ctx, chartManager) {
     drawSectorsChartLoader(ctx, chartManager, 'percent');
 }
-
 export function drawSectorsAbsoluteChart(ctx, chartManager) {
     drawSectorsChartLoader(ctx, chartManager, 'absolute');
 }

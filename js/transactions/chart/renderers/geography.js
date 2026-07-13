@@ -21,13 +21,10 @@ import {
     convertValueToCurrency,
 } from '../../utils.js';
 import { COLOR_PALETTES } from '../../../config.js';
-
 let geographyDataCache = null;
 let geographyDataLoading = false;
-
 function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
     const valueMode = options.valueMode === 'absolute' ? 'absolute' : 'percent';
-
     if (
         !data ||
         typeof data !== 'object' ||
@@ -43,20 +40,16 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     const emptyState = document.getElementById('runningAmountEmpty');
     if (emptyState) {
         emptyState.style.display = 'none';
     }
-
     const rawDates = data.dates.slice();
     const rawSeries = data.series || {};
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
     const { chartDateRange } = transactionState;
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
-
     // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
     const filteredIndices = [];
     for (let i = 0; i < rawDates.length; i += 1) {
@@ -72,10 +65,8 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         }
         filteredIndices.push(i);
     }
-
     const dates =
         filterFrom || filterTo ? filteredIndices.map((i) => rawDates[i]) : rawDates.slice();
-
     if (dates.length === 0) {
         if (valueMode === 'absolute') {
             chartLayouts.geographyAbs = null;
@@ -88,40 +79,42 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         }
         return;
     }
-
     const rawTotalValues = Array.isArray(data.total_values) ? data.total_values : [];
     const mappedTotalValues =
         filterFrom || filterTo
             ? filteredIndices.map((index) => Number(rawTotalValues[index] ?? 0))
             : rawTotalValues.map((value) => Number(value ?? 0));
-
     const totalValuesUsd = mappedTotalValues;
     const totalValuesConverted = totalValuesUsd.map((value, idx) => {
         const converted = convertValueToCurrency(value, dates[idx], selectedCurrency);
         return Number.isFinite(converted) ? converted : 0;
     });
-
     const percentSeriesMap = {};
     const chartData = {};
-    Object.entries(rawSeries).forEach(([country, values]) => {
-        const mappedValues =
-            filterFrom || filterTo
-                ? filteredIndices.map((index) => values[index] ?? 0)
-                : values.map((value) => value ?? 0);
-
+    for (const country in rawSeries) {
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, country)) {continue;}
+        const values = rawSeries[country];
+        let mappedValues;
+        if (filterFrom || filterTo) {
+            mappedValues = new Array(filteredIndices.length);
+            for (let i = 0; i < filteredIndices.length; i += 1) {
+                mappedValues[i] = values[filteredIndices[i]] ?? 0;
+            }
+        } else {
+            mappedValues = new Array(values.length);
+            for (let i = 0; i < values.length; i += 1) {
+                mappedValues[i] = values[i] ?? 0;
+            }
+        }
         percentSeriesMap[country] = mappedValues;
         if (valueMode === 'absolute') {
-            // Bolt: Optimize absolute value mapping by pre-allocating an array and using a for loop
-            const absoluteValues = new Array(mappedValues.length);
-            for (let i = 0; i < mappedValues.length; i += 1) {
-                absoluteValues[i] = ((totalValuesConverted[i] ?? 0) * mappedValues[i]) / 100;
-            }
-            chartData[country] = absoluteValues;
+            chartData[country] = mappedValues.map(
+                (val, idx) => ((totalValuesConverted[idx] ?? 0) * val) / 100
+            );
         } else {
             chartData[country] = mappedValues;
         }
-    });
-
+    }
     const baseCountryOrder = Object.keys(chartData).sort((a, b) => {
         const arrA = chartData[a] || [];
         const arrB = chartData[b] || [];
@@ -129,7 +122,6 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         const lastB = arrB[arrB.length - 1] ?? 0;
         return lastB - lastA;
     });
-
     const canvas = ctx.canvas;
     const canvasWidth = canvas.offsetWidth;
     const canvasHeight = canvas.offsetHeight;
@@ -139,17 +131,14 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         : { top: 22, right: 26, bottom: 48, left: 68 };
     const plotWidth = canvasWidth - padding.left - padding.right;
     const plotHeight = canvasHeight - padding.top - padding.bottom;
-
     if (plotWidth <= 0 || plotHeight <= 0) {
         return;
     }
-
     const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
     const resolveCountryColor = (country) => {
         const index = baseCountryOrder.indexOf(country);
         return colors[index % colors.length];
     };
-
     const dateTimes = new Array(dates.length);
     let minTime = Infinity;
     let maxTime = -Infinity;
@@ -163,18 +152,15 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
             maxTime = time;
         }
     }
-
     const filterFromTime = filterFrom ? filterFrom.getTime() : null;
     if (Number.isFinite(filterFromTime)) {
         minTime = Math.max(minTime, filterFromTime);
     }
-
     const xScale = (time) =>
         padding.left +
         (maxTime === minTime
             ? plotWidth / 2
             : ((time - minTime) / (maxTime - minTime)) * plotWidth);
-
     const yMin = 0;
     let maxTotalValue = 0;
     for (let i = 0; i < totalValuesConverted.length; i++) {
@@ -185,12 +171,10 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
     const yMax = valueMode === 'absolute' ? Math.max(maxTotalValue, 1) : 100;
     const yScale = (value) =>
         padding.top + plotHeight - ((value - yMin) / (yMax - yMin || 1)) * plotHeight;
-
     const axisFormatter =
         valueMode === 'absolute'
             ? (val) => formatCurrencyCompact(val, { currency: selectedCurrency })
             : (val) => `${val}%`;
-
     drawAxes(
         ctx,
         padding,
@@ -205,7 +189,6 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         axisFormatter,
         valueMode !== 'absolute'
     );
-
     const cumulativeValues = new Array(dates.length).fill(0);
     // Bolt: Use standard for loop instead of .forEach to avoid closure allocation inside rendering loop
     for (let cIdx = 0; cIdx < baseCountryOrder.length; cIdx += 1) {
@@ -216,7 +199,6 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.fillStyle = `${color}80`;
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.lineWidth = 1;
-
         // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
         for (let index = 0; index < dates.length; index += 1) {
             const dateStr = dates[index];
@@ -228,7 +210,6 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
                 ctx.lineTo(x, y);
             }
         }
-
         for (let i = dates.length - 1; i >= 0; i -= 1) {
             const x = xScale(parseLocalDate(dates[i]).getTime());
             const y = yScale(cumulativeValues[i]);
@@ -237,15 +218,12 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-
         // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
     }
-
     const latestIndex = dates.length - 1;
-
     // Build legend series - show top countries by percentage
     const legendSeries = baseCountryOrder
         .map((country) => ({
@@ -260,7 +238,6 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
             name: c.country,
             color: resolveCountryColor(c.country),
         }));
-
     // Build series for crosshair with proper formatting
     const seriesForCrosshair = baseCountryOrder.map((country) => {
         const values = chartData[country];
@@ -284,28 +261,23 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
             originalIndex: baseCountryOrder.indexOf(country),
         };
     });
-
     // Sort series by original index for consistent ordering
     const sortedSeriesForCrosshair = seriesForCrosshair.sort((a, b) => {
         const indexA = baseCountryOrder.indexOf(a.key);
         const indexB = baseCountryOrder.indexOf(b.key);
         return indexA - indexB;
     });
-
     const totalValuePoints = dateTimes.map((time, idx) => ({
         time,
         value: Number(totalValuesConverted[idx] ?? 0),
     }));
-
     const layoutKey = valueMode === 'absolute' ? 'geographyAbs' : 'geography';
-
     // Clear the other mode's layout
     if (valueMode === 'absolute') {
         chartLayouts.geography = null;
     } else {
         chartLayouts.geographyAbs = null;
     }
-
     chartLayouts[layoutKey] = {
         key: layoutKey,
         minTime,
@@ -339,29 +311,24 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
         dates,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
-
     drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
     updateLegend(legendSeries, chartManager);
 }
-
 function drawGeographyChartLoader(ctx, chartManager, valueMode) {
     stopPerformanceAnimation();
     stopContributionAnimation();
     stopFxAnimation();
     const emptyState = document.getElementById('runningAmountEmpty');
-
     if (!geographyDataCache && geographyDataLoading) {
         if (emptyState) {
             emptyState.style.display = 'block';
         }
         return;
     }
-
     if (geographyDataCache) {
         renderGeographyChartWithMode(ctx, chartManager, geographyDataCache, { valueMode });
         return;
     }
-
     geographyDataLoading = true;
     loadGeographySnapshotData()
         .then((data) => {
@@ -382,11 +349,9 @@ function drawGeographyChartLoader(ctx, chartManager, valueMode) {
             geographyDataLoading = false;
         });
 }
-
 export function drawGeographyChart(ctx, chartManager) {
     drawGeographyChartLoader(ctx, chartManager, 'percent');
 }
-
 export function drawGeographyAbsoluteChart(ctx, chartManager) {
     drawGeographyChartLoader(ctx, chartManager, 'absolute');
 }
