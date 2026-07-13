@@ -1224,13 +1224,9 @@ async function ensureHistoricalPricesAvailable(filtersActive) {
     return historicalPrices;
 }
 
-async function buildContributionChartSummary(dateRange = transactionState.chartDateRange) {
-    const filtersActive = hasActiveTransactionFilters();
-    let contributionSource = [];
-    let activeTickers = null;
-
+function _getContributionSource(filtersActive) {
     if (filtersActive) {
-        contributionSource = buildContributionSeriesFromTransactions(
+        const source = buildContributionSeriesFromTransactions(
             transactionState.filteredTransactions || [],
             { includeSyntheticStart: true }
         );
@@ -1240,13 +1236,45 @@ async function buildContributionChartSummary(dateRange = transactionState.chartD
                 tickerSet.add(t.security);
             }
         });
-        activeTickers = Array.from(tickerSet);
-    } else {
-        contributionSource = buildContributionSeriesFromTransactions(
+        return { contributionSource: source, activeTickers: Array.from(tickerSet) };
+    }
+
+    return {
+        contributionSource: buildContributionSeriesFromTransactions(
             transactionState.allTransactions || [],
             { includeSyntheticStart: true }
+        ),
+        activeTickers: null
+    };
+}
+
+function _getBalanceSource(filtersActive, historicalPrices) {
+    if (filtersActive) {
+        let source = buildFilteredBalanceSeries(
+            transactionState.filteredTransactions || [],
+            historicalPrices,
+            transactionState.splitHistory || []
         );
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
+        if (selectedCurrency !== 'USD' && Array.isArray(source)) {
+            source = source.map((entry) => ({
+                ...entry,
+                value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+            }));
+        }
+        return source;
     }
+
+    if (Array.isArray(transactionState.portfolioSeries)) {
+        return transactionState.portfolioSeries;
+    }
+
+    return [];
+}
+
+async function buildContributionChartSummary(dateRange = transactionState.chartDateRange) {
+    const filtersActive = hasActiveTransactionFilters();
+    let { contributionSource, activeTickers } = _getContributionSource(filtersActive);
 
     const yieldData = await loadYieldData();
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
@@ -1261,24 +1289,7 @@ async function buildContributionChartSummary(dateRange = transactionState.chartD
     }
 
     const historicalPrices = await ensureHistoricalPricesAvailable(filtersActive);
-    let balanceSource = [];
-    if (filtersActive) {
-        balanceSource = buildFilteredBalanceSeries(
-            transactionState.filteredTransactions || [],
-            historicalPrices,
-            transactionState.splitHistory || []
-        );
-        // Apply currency conversion if not USD
-        const selectedCurrency = transactionState.selectedCurrency || 'USD';
-        if (selectedCurrency !== 'USD' && Array.isArray(balanceSource)) {
-            balanceSource = balanceSource.map((entry) => ({
-                ...entry,
-                value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
-            }));
-        }
-    } else if (Array.isArray(transactionState.portfolioSeries)) {
-        balanceSource = transactionState.portfolioSeries;
-    }
+    const balanceSource = _getBalanceSource(filtersActive, historicalPrices);
 
     const contributionSummary = computeSeriesSummary(
         contributionSource,
