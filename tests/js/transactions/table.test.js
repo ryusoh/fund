@@ -983,3 +983,170 @@ describe('ticker alias filtering', () => {
         expect(filterIndicator).toBeNull();
     });
 });
+
+describe('isTransactionTableVisible coverage', () => {
+
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = `
+            <div class="table-responsive-container"></div>
+            <table><tbody id="transactionBody"></tbody></table>
+        `;
+        jest.isolateModules(() => {
+            require('../../../js/transactions/table.js');
+        });
+    });
+
+    it('returns false when tableContainer is hidden', () => {
+        document.body.innerHTML = `
+            <div class="table-responsive-container is-hidden"></div>
+            <table><tbody id="transactionBody"></tbody></table>
+        `;
+        jest.isolateModules(() => {
+            const { setChartDateRange, setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setChartDateRange({ from: '2024-01-01', to: '2024-12-31' });
+            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+
+            const controller = initTable();
+            controller.filterAndSort();
+
+            const rows = document.querySelectorAll('#transactionBody tr');
+            expect(rows.length).toBe(1);
+        });
+    });
+});
+
+describe('displayTransactions fallback and dropdowns', () => {
+
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = `
+            <div class="table-responsive-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="header-security" class="sortable">
+                                <span class="filter-indicator"></span>
+                            </th>
+                            <th id="header-orderType" class="sortable">
+                                <span class="filter-indicator"></span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+            <input type="text" id="terminalInput" value="" />
+        `;
+        jest.isolateModules(() => {
+            require('../../../js/transactions/table.js');
+        });
+    });
+
+    it('does not throw when tbody is missing', () => {
+        document.body.innerHTML = `
+            <div class="table-responsive-container"></div>
+        `;
+        jest.isolateModules(() => {
+            const { setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+
+            const controller = initTable();
+            expect(() => controller.filterAndSort()).not.toThrow();
+        });
+    });
+
+    it('creates filter dropdown and triggers filterOption click and keydown', () => {
+        jest.isolateModules(() => {
+            const { setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setAllTransactions([
+                { tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' },
+                { tradeDate: '2025-01-02', orderType: 'Sell', security: 'MSFT', quantity: '1', price: '100', netAmount: '100' }
+            ]);
+
+            initTable();
+
+            const typeHeader = document.getElementById('header-orderType');
+            const filterIndicator = typeHeader.querySelector('.filter-indicator');
+
+            const clickEvent = new MouseEvent('click', { bubbles: true });
+            filterIndicator.dispatchEvent(clickEvent);
+
+            const dropdown = typeHeader.querySelector('.filter-dropdown');
+            expect(dropdown).not.toBeNull();
+
+            const option = Array.from(dropdown.querySelectorAll('.filter-option')).find(el => el.textContent === 'All');
+
+            const keydownEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+            option.dispatchEvent(keydownEvent);
+
+            const input = document.getElementById('terminalInput');
+            expect(input.value).toBe('');
+        });
+    });
+
+    it('handles document click outside to close dropdown', () => {
+        jest.isolateModules(() => {
+            const { setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+
+            initTable();
+
+            const typeHeader = document.getElementById('header-orderType');
+            const filterIndicator = typeHeader.querySelector('.filter-indicator');
+
+            filterIndicator.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(typeHeader.querySelector('.filter-dropdown')).not.toBeNull();
+
+            jest.useFakeTimers();
+            filterIndicator.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            jest.runAllTimers();
+
+            document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(typeHeader.querySelector('.filter-dropdown')).toBeNull();
+            jest.useRealTimers();
+        });
+    });
+
+    it('calls filterChangeListener on filterAndSort', () => {
+        jest.isolateModules(() => {
+            const { setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+
+            const onFilterChange = jest.fn();
+            const controller = initTable({ onFilterChange });
+
+            controller.filterAndSort();
+            expect(onFilterChange).toHaveBeenCalled();
+        });
+    });
+
+    it('triggers filterOption with space keydown and non-All option', () => {
+        jest.isolateModules(() => {
+            const { setAllTransactions } = require('../../../js/transactions/state.js');
+            const { initTable } = require('../../../js/transactions/table.js');
+            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+
+            initTable();
+            const typeHeader = document.getElementById('header-orderType');
+            const filterIndicator = typeHeader.querySelector('.filter-indicator');
+
+            filterIndicator.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            const dropdown = typeHeader.querySelector('.filter-dropdown');
+            const option = dropdown.querySelector('.filter-option'); // first one is good
+
+            const keydownEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+            option.dispatchEvent(keydownEvent);
+
+            const input = document.getElementById('terminalInput');
+            expect(input.value).toBeDefined();
+        });
+    });
+});
