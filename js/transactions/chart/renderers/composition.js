@@ -158,7 +158,9 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const percentSeriesMap = {};
     const chartData = {};
     for (const ticker in rawSeries) {
-        if (!Object.prototype.hasOwnProperty.call(rawSeries, ticker)) {continue;}
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, ticker)) {
+            continue;
+        }
         const values = rawSeries[ticker];
         let mappedValues;
         if (filterFrom || filterTo) {

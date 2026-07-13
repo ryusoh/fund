@@ -92,7 +92,9 @@ function renderSectorsChartWithMode(ctx, chartManager, data, options = {}) {
     const percentSeriesMap = {};
     const chartData = {};
     for (const sector in rawSeries) {
-        if (!Object.prototype.hasOwnProperty.call(rawSeries, sector)) {continue;}
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, sector)) {
+            continue;
+        }
         const values = rawSeries[sector];
         let mappedValues;
         if (filterFrom || filterTo) {

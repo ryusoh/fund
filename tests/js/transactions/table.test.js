@@ -985,7 +985,6 @@ describe('ticker alias filtering', () => {
 });
 
 describe('isTransactionTableVisible coverage', () => {
-
     beforeEach(() => {
         jest.resetModules();
         document.body.innerHTML = `
@@ -1003,10 +1002,22 @@ describe('isTransactionTableVisible coverage', () => {
             <table><tbody id="transactionBody"></tbody></table>
         `;
         jest.isolateModules(() => {
-            const { setChartDateRange, setAllTransactions } = require('../../../js/transactions/state.js');
+            const {
+                setChartDateRange,
+                setAllTransactions,
+            } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
             setChartDateRange({ from: '2024-01-01', to: '2024-12-31' });
-            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+            setAllTransactions([
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+            ]);
 
             const controller = initTable();
             controller.filterAndSort();
@@ -1018,7 +1029,6 @@ describe('isTransactionTableVisible coverage', () => {
 });
 
 describe('displayTransactions fallback and dropdowns', () => {
-
     beforeEach(() => {
         jest.resetModules();
         document.body.innerHTML = `
@@ -1051,7 +1061,16 @@ describe('displayTransactions fallback and dropdowns', () => {
         jest.isolateModules(() => {
             const { setAllTransactions } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
-            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+            setAllTransactions([
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+            ]);
 
             const controller = initTable();
             expect(() => controller.filterAndSort()).not.toThrow();
@@ -1063,8 +1082,22 @@ describe('displayTransactions fallback and dropdowns', () => {
             const { setAllTransactions } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
             setAllTransactions([
-                { tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' },
-                { tradeDate: '2025-01-02', orderType: 'Sell', security: 'MSFT', quantity: '1', price: '100', netAmount: '100' }
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+                {
+                    tradeDate: '2025-01-02',
+                    orderType: 'Sell',
+                    security: 'MSFT',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
             ]);
 
             initTable();
@@ -1078,7 +1111,9 @@ describe('displayTransactions fallback and dropdowns', () => {
             const dropdown = typeHeader.querySelector('.filter-dropdown');
             expect(dropdown).not.toBeNull();
 
-            const option = Array.from(dropdown.querySelectorAll('.filter-option')).find(el => el.textContent === 'All');
+            const option = Array.from(dropdown.querySelectorAll('.filter-option')).find(
+                (el) => el.textContent === 'All'
+            );
 
             const keydownEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
             option.dispatchEvent(keydownEvent);
@@ -1092,7 +1127,16 @@ describe('displayTransactions fallback and dropdowns', () => {
         jest.isolateModules(() => {
             const { setAllTransactions } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
-            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+            setAllTransactions([
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+            ]);
 
             initTable();
 
@@ -1118,7 +1162,16 @@ describe('displayTransactions fallback and dropdowns', () => {
         jest.isolateModules(() => {
             const { setAllTransactions } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
-            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+            setAllTransactions([
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+            ]);
 
             const onFilterChange = jest.fn();
             const controller = initTable({ onFilterChange });
@@ -1132,7 +1185,16 @@ describe('displayTransactions fallback and dropdowns', () => {
         jest.isolateModules(() => {
             const { setAllTransactions } = require('../../../js/transactions/state.js');
             const { initTable } = require('../../../js/transactions/table.js');
-            setAllTransactions([{ tradeDate: '2025-01-01', orderType: 'Buy', security: 'AAPL', quantity: '1', price: '100', netAmount: '100' }]);
+            setAllTransactions([
+                {
+                    tradeDate: '2025-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '1',
+                    price: '100',
+                    netAmount: '100',
+                },
+            ]);
 
             initTable();
             const typeHeader = document.getElementById('header-orderType');

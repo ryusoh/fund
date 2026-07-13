@@ -92,7 +92,9 @@ function renderGeographyChartWithMode(ctx, chartManager, data, options = {}) {
     const percentSeriesMap = {};
     const chartData = {};
     for (const country in rawSeries) {
-        if (!Object.prototype.hasOwnProperty.call(rawSeries, country)) {continue;}
+        if (!Object.prototype.hasOwnProperty.call(rawSeries, country)) {
+            continue;
+        }
         const values = rawSeries[country];
         let mappedValues;
         if (filterFrom || filterTo) {

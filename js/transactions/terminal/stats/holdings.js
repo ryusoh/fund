@@ -60,9 +60,7 @@ export async function getHoldingsText(currency = 'USD') {
     try {
         const cache = await fetchAndCacheHoldingsData();
         if (cache) {
-            const currencyData = cache[normalizedCurrency]
-                ? cache[normalizedCurrency]
-                : cache.USD;
+            const currencyData = cache[normalizedCurrency] ? cache[normalizedCurrency] : cache.USD;
             return formatHoldingsData(currencyData, normalizedCurrency);
         }
     } catch (error) {
