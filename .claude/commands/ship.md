@@ -1,42 +1,68 @@
 ---
-description: Ship a branch — fix quality failures, merge to main, and delete the branch
-argument-hint: "<branch_name>"
+description: Ship work — verify, commit, push to main; merges branches/worktrees and cleans them up
+argument-hint: "[branch_name]"
 ---
 
-You are tasked with shipping the branch: **$ARGUMENTS**.
+You are tasked with shipping: **$ARGUMENTS**
 
-Follow these steps precisely:
+## Pick the mode first
 
-1. **Checkout and Sync:**
-   - Fetch all branches: `git fetch origin`
-   - Checkout the branch: `git checkout $ARGUMENTS`
-   - Ensure it's up to date: `git pull origin $ARGUMENTS`
+Inspect where you are before touching anything:
 
-2. **Fix Quality and CI Failures:**
-   - Run the Python quality gate: `make quality-py`.
-   - If it fails due to formatting, fix it: `make fmt-py`.
-   - Run all tests: `make check`.
-   - Verify everything is clean: `make precommit SKIP=1`.
-   - If changes were made, commit them: `git commit -am "style: fix quality gate failures"`.
+```bash
+git branch --show-current
+git worktree list        # first entry is the primary checkout
+git status --short
+```
 
-3. **Merge into Main:**
-   - Switch to main: `git checkout main`
-   - Pull latest: `git pull origin main`
-   - Merge the branch: `git merge $ARGUMENTS`
-   - **Conflict Resolution:** If conflicts occur:
-     - List conflicted files: `git status`.
-     - Read and resolve each conflict manually or using tools.
-     - Add resolved files: `git add <file>`.
-     - Complete the merge: `git commit`.
+- **Branch-name argument** → Mode B for that branch. If the argument is empty
+  or clearly not a branch name (e.g. injected `<system-reminder>` text or a
+  sentence), treat it as no argument — never `git checkout` a garbage string.
+- **No argument, on `main` in the primary checkout** → Mode A: ship the
+  working tree as-is.
+- **No argument, on a non-main branch or inside a linked worktree** (common
+  for spawned background-task sessions) → Mode B for the current branch,
+  plus worktree cleanup.
 
-4. **Final Verification:**
-   - Run `make precommit SKIP=1` on the merged `main` branch to ensure no regressions.
+## Mode A — ship the working tree on main
 
-5. **Cleanup:**
-   - **Ask for acknowledgement before pushing changes.**
-   - Push main: `git push origin main`.
-   - Delete the local branch: `git branch -d $ARGUMENTS`.
-   - Delete the remote branch: `git push origin --delete $ARGUMENTS`.
+1. **Verify:** `make precommit && make verify`. If it fails only on
+   formatting/lint, run `make fix` and re-verify.
+2. **Commit:** stage and commit all pending work with a real
+   conventional-commit message describing the change (never "WIP" or
+   "fix quality gate"). Include fix-up changes from step 1 in the same commit.
+3. **Push:** `git pull --rebase origin main && git push origin main`.
 
-6. **Report:**
-   - Summarize the actions taken, including any conflicts resolved.
+## Mode B — ship a branch (and its worktree, if any)
+
+1. **Sync:** `git fetch origin`. Work in the branch's own worktree if it has
+   one (see `git worktree list`); otherwise `git checkout <branch>`. If the
+   branch has an upstream, `git pull origin <branch>`.
+2. **Commit pending work on the branch:** uncommitted changes in a worktree
+   are part of the deliverable — commit them with a descriptive message
+   before merging.
+3. **Fix quality and CI failures on the branch:**
+   - `make verify` (lint + type + sec + tests); if it fails on
+     formatting/lint, `make fix`.
+   - `make precommit` until clean.
+   - Commit any fixes.
+4. **Merge into main from the primary checkout** (the first path in
+   `git worktree list` — you cannot check out `main` inside a linked
+   worktree):
+   - `git checkout main && git pull origin main`
+   - `git merge <branch>`
+   - On conflicts: `git status`, resolve each file, `git add`, `git commit`.
+5. **Final verification on merged main:** `make precommit && make verify`.
+6. **Push:** `git push origin main`.
+7. **Cleanup:**
+   - Remove the worktree if the branch lived in one (run from the primary
+     checkout): `git worktree remove <path>` (`--force` only if you are sure
+     nothing unshipped remains).
+   - `git branch -d <branch>`
+   - Delete the remote branch only if it exists:
+     `git ls-remote --exit-code origin <branch> && git push origin --delete <branch>`
+
+## Report
+
+Summarize what shipped: mode used, commits created, gate results, conflicts
+resolved, and what was cleaned up.
