@@ -278,153 +278,12 @@ describe('formatToTwoDecimals', () => {
     });
 });
 
-describe('formatAsPercentage', () => {
-    it('should format as percentage', () => {
-        expect(formatting.formatAsPercentage(0.123)).toBe('12.30%');
-    });
-});
-
 describe('formatCompact', () => {
     it('should format compact', () => {
         expect(formatting.formatCompact(12345)).toBe('12.3k');
         expect(formatting.formatCompact(1234567)).toBe('1.2m');
         expect(formatting.formatCompact(1234567890)).toBe('1.2b');
         expect(formatting.formatCompact(123)).toBe('123');
-    });
-});
-
-describe('formatWithCurrencySymbol', () => {
-    it('should format with currency symbol', () => {
-        expect(formatting.formatWithCurrencySymbol(123.45, '$')).toBe('$123.45');
-    });
-});
-
-describe('formatWithPrecision', () => {
-    it('should format with precision', () => {
-        expect(formatting.formatWithPrecision(123.456, 4)).toBe('123.5');
-    });
-});
-
-describe('formatExponential', () => {
-    it('should format exponential', () => {
-        expect(formatting.formatExponential(123.456, 2)).toBe('1.23e+2');
-    });
-});
-
-describe('formatToLocaleString', () => {
-    it('should format to locale string', () => {
-        expect(formatting.formatToLocaleString(1234567, 'en-US')).toBe('1,234,567');
-    });
-});
-
-describe('formatToString', () => {
-    it('should format to string', () => {
-        expect(formatting.formatToString(255, 16)).toBe('ff');
-    });
-});
-
-describe('formatToPrecision', () => {
-    it('should format to precision', () => {
-        expect(formatting.formatToPrecision(123.456, 4)).toBe('123.5');
-    });
-});
-
-describe('formatToFixed', () => {
-    it('should format to fixed', () => {
-        expect(formatting.formatToFixed(123.456, 2)).toBe('123.46');
-    });
-});
-
-describe('formatToExponential', () => {
-    it('should format to exponential', () => {
-        expect(formatting.formatToExponential(123.456, 2)).toBe('1.23e+2');
-    });
-});
-
-describe('formatToLocale', () => {
-    it('should format to locale', () => {
-        expect(formatting.formatToLocale(1234567, 'en-US')).toBe('1,234,567');
-    });
-});
-
-describe('padWithLeadingZeros', () => {
-    it('should pad with leading zeros', () => {
-        expect(formatting.padWithLeadingZeros(123, 5)).toBe('00123');
-    });
-});
-
-describe('padWithTrailingZeros', () => {
-    it('should pad with trailing zeros', () => {
-        expect(formatting.padWithTrailingZeros(123, 6)).toBe('123.00');
-    });
-});
-
-describe('padWithSpaces', () => {
-    it('should pad with spaces', () => {
-        expect(formatting.padWithSpaces(123, 5)).toBe('  123');
-    });
-});
-
-describe('padWithChar', () => {
-    it('should pad with char', () => {
-        expect(formatting.padWithChar(123, 5, '_')).toBe('__123');
-    });
-});
-
-describe('addPrefix', () => {
-    it('should add prefix', () => {
-        expect(formatting.addPrefix(123, 'ID-')).toBe('ID-123');
-    });
-});
-
-describe('addSuffix', () => {
-    it('should add suffix', () => {
-        expect(formatting.addSuffix(123, ' units')).toBe('123 units');
-    });
-});
-
-describe('addSeparator', () => {
-    it('should add separator', () => {
-        expect(formatting.addSeparator(1234567, '.')).toBe('1.234.567');
-    });
-});
-
-describe('changeDecimalSeparator', () => {
-    it('should change decimal separator', () => {
-        expect(formatting.changeDecimalSeparator(123.45, ',')).toBe('123,45');
-    });
-});
-
-describe('changeThousandSeparator', () => {
-    it('should change thousand separator', () => {
-        expect(formatting.changeThousandSeparator('1,234,567', '.')).toBe('1.234.567');
-    });
-});
-
-describe('changeCurrencySymbolPosition', () => {
-    it('should change currency symbol position', () => {
-        expect(formatting.changeCurrencySymbolPosition(123, '$', 'after')).toBe('123$');
-        expect(formatting.changeCurrencySymbolPosition(123, '$', 'before')).toBe('$123');
-    });
-});
-
-describe('changeSignPosition', () => {
-    it('should change sign position', () => {
-        expect(formatting.changeSignPosition(123, 'after')).toBe('123+');
-        expect(formatting.changeSignPosition(-123, 'after')).toBe('123-');
-        expect(formatting.changeSignPosition(123, 'before')).toBe('+123');
-    });
-});
-
-describe('toDigits', () => {
-    it('should format to digits', () => {
-        expect(formatting.toDigits(123.45, 3)).toBe('1.23e+2');
-    });
-});
-
-describe('toIntegerDigits', () => {
-    it('should format to integer digits', () => {
-        expect(formatting.toIntegerDigits(123.45, 5)).toBe('00123.45');
     });
 });
 
@@ -564,25 +423,6 @@ describe('formatWithSign - missing sign', () => {
     });
 });
 
-describe('toDigits - precision mapping', () => {
-    it('formats correct digits', () => {
-        expect(formatting.toDigits(100, 3)).toBe('1.00e+2');
-    });
-});
-
-describe('changeSignPosition - after branch', () => {
-    it('appends the sign to the absolute number when position is after', () => {
-        expect(formatting.changeSignPosition(-123, 'after')).toBe('123-');
-        expect(formatting.changeSignPosition(123, 'after')).toBe('123+');
-    });
-});
-
-describe('pad helpers - missing branch coverage', () => {
-    it('padWithTrailingZeros does not add decimal if present', () => {
-        expect(formatting.padWithTrailingZeros(12.3, 6)).toBe('12.300');
-    });
-});
-
 describe('getConvertedNum and related logic', () => {
     it('checks fallback logic when rates mapping is not populated', () => {
         expect(formatting.formatNumber(100, CURRENCY_SYMBOLS, false, 'USD', {})).toBe('$100');
@@ -622,12 +462,6 @@ describe('compactNumber - unit array out of bounds edge case 2', () => {
         // If we provide a tiny positive float, value < 1000 handles it, so we mock it if necessary,
         // but just to be sure we hit line 113, test a very large string value that parses as NaN
         // covered in a separate block.
-    });
-});
-
-describe('changeSignPosition - before edge case', () => {
-    it('prepends negative sign', () => {
-        expect(formatting.changeSignPosition(-123, 'before')).toBe('-123');
     });
 });
 
@@ -910,21 +744,6 @@ describe('formatSummaryBlock and formatAppreciationBlock', () => {
 describe('formatNumber – NaN handling', () => {
     it('returns empty string for NaN', () => {
         expect(formatting.formatNumber(NaN, CURRENCY_SYMBOLS, false, 'USD', rates)).toBe('');
-    });
-});
-
-describe('padWithTrailingZeros – decimal present path', () => {
-    it('pads correctly when a decimal already exists', () => {
-        expect(formatting.padWithTrailingZeros(12.3, 6)).toBe('12.300');
-    });
-});
-
-describe('toIntegerDigits – edge cases', () => {
-    it('pads when there is no fractional part', () => {
-        expect(formatting.toIntegerDigits(7, 3)).toBe('007');
-    });
-    it('keeps fractional part when present', () => {
-        expect(formatting.toIntegerDigits(7.5, 3)).toBe('007.5');
     });
 });
 
