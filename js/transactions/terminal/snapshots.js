@@ -1244,7 +1244,7 @@ function _getContributionSource(filtersActive) {
             transactionState.allTransactions || [],
             { includeSyntheticStart: true }
         ),
-        activeTickers: null
+        activeTickers: null,
     };
 }
 

@@ -234,23 +234,17 @@ function updateCrosshairRangeDetails(rangeContainer, rangeSummary) {
     rangeContainer.hidden = false;
 }
 
-export function updateTerminalCrosshair(snapshot, rangeSummary) {
-    const { overlay, details } = ensureCrosshairOverlay();
-    if (!overlay || !details) {
-        return;
+function hideCrosshairOverlay(overlay) {
+    overlay.classList.remove('terminal-crosshair-active');
+    if (crosshairTimeout) {
+        clearTimeout(crosshairTimeout);
     }
+    crosshairTimeout = setTimeout(() => {
+        overlay.style.visibility = 'hidden';
+    }, 160);
+}
 
-    if (!snapshot) {
-        overlay.classList.remove('terminal-crosshair-active');
-        if (crosshairTimeout) {
-            clearTimeout(crosshairTimeout);
-        }
-        crosshairTimeout = setTimeout(() => {
-            overlay.style.visibility = 'hidden';
-        }, 160);
-        return;
-    }
-
+function showCrosshairOverlay(overlay) {
     if (crosshairTimeout) {
         clearTimeout(crosshairTimeout);
         crosshairTimeout = null;
@@ -258,7 +252,9 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
 
     overlay.style.visibility = 'visible';
     requestAnimationFrame(() => overlay.classList.add('terminal-crosshair-active'));
+}
 
+function updateCrosshairDetails(details, snapshot, rangeSummary) {
     if (details.date) {
         details.date.textContent = snapshot.dateLabel || '';
     }
@@ -270,6 +266,21 @@ export function updateTerminalCrosshair(snapshot, rangeSummary) {
     if (details.range) {
         updateCrosshairRangeDetails(details.range, rangeSummary);
     }
+}
+
+export function updateTerminalCrosshair(snapshot, rangeSummary) {
+    const { overlay, details } = ensureCrosshairOverlay();
+    if (!overlay || !details) {
+        return;
+    }
+
+    if (!snapshot) {
+        hideCrosshairOverlay(overlay);
+        return;
+    }
+
+    showCrosshairOverlay(overlay);
+    updateCrosshairDetails(details, snapshot, rangeSummary);
 }
 
 export function initTerminal({
