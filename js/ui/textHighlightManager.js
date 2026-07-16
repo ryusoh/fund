@@ -167,13 +167,84 @@ function mergeThinkingOptions(options) {
     return { ...DEFAULT_THINKING_CONFIG, ...options };
 }
 
+function createThinkingEntry(node, baseText, options) {
+    const baseFillAttr = node.getAttribute('fill');
+    const baseStyleFill = node.style ? node.style.fill : undefined;
+    const baseStyleColor = node.style ? node.style.color : undefined;
+    const baseColor = baseFillAttr || baseStyleFill || baseStyleColor || options.baseColor;
+
+    const charNodes = createCharacterNodes(node, baseText, baseColor);
+    if (!charNodes.length) {
+        return null;
+    }
+
+    node.setAttribute('data-thinking-active', 'true');
+    return {
+        nodeState: { node, baseText, baseFillAttr, baseStyleFill, baseStyleColor },
+        charNodes
+    };
+}
+
+function applyThinkingWave(entry) {
+    const { charNodes, options: opts } = entry;
+    const { dimColor, waveSize: size } = opts;
+    const total = charNodes.length;
+    for (let i = 0; i < total; i += 1) {
+        const distance = (i - entry.currentIndex + total) % total;
+        const isSvg = charNodes[i].getAttribute('data-thinking-base-fill') !== null;
+        const baseColor = isSvg
+            ? charNodes[i].getAttribute('data-thinking-base-fill') || opts.baseColor
+            : charNodes[i].getAttribute('data-thinking-base-color') || opts.baseColor;
+        const targetColor = distance < size ? dimColor : baseColor;
+        if (isSvg) {
+            charNodes[i].setAttribute('fill', targetColor);
+        } else {
+            charNodes[i].style.color = targetColor;
+        }
+    }
+    entry.currentIndex = (entry.currentIndex + 1) % total;
+}
+
+function scheduleThinkingFrame(entry) {
+    function frame(timestamp) {
+        if (entry.destroyed) {
+            return;
+        }
+
+        let isConnected = true;
+        if (entry.isGroup) {
+            const primary = entry.nodes[0]?.node;
+            isConnected = primary && primary.isConnected;
+        } else {
+            isConnected = entry.node.isConnected;
+        }
+
+        if (!isConnected) {
+            if (entry.isGroup) {
+                entry.nodes.forEach((n) => stopThinking(n.node));
+            } else {
+                stopThinking(entry.node);
+            }
+            return;
+        }
+
+        if (!entry.lastTimestamp) {
+            entry.lastTimestamp = timestamp;
+        }
+        if (timestamp - entry.lastTimestamp >= entry.options.intervalMs) {
+            entry.lastTimestamp = timestamp;
+            applyThinkingWave(entry);
+        }
+        entry.frameId = scheduleFrame(frame);
+    }
+    entry.frameId = scheduleFrame(frame);
+}
+
 function startThinking(node, options) {
     if (!node || node.nodeType !== 1) {
         return;
     }
-
-    const existing = THINKING_REGISTRY.get(node);
-    if (existing) {
+    if (THINKING_REGISTRY.get(node)) {
         stopThinking(node);
     }
 
@@ -183,22 +254,17 @@ function startThinking(node, options) {
         return;
     }
 
-    const charNodes = createCharacterNodes(node, baseText, mergedOptions.baseColor);
-    if (!charNodes.length) {
+    const result = createThinkingEntry(node, baseText, mergedOptions);
+    if (!result) {
         return;
     }
 
-    const waveSize = Math.max(1, Math.min(mergedOptions.waveSize || 1, charNodes.length));
-    mergedOptions.waveSize = waveSize;
+    mergedOptions.waveSize = Math.max(1, Math.min(mergedOptions.waveSize || 1, result.charNodes.length));
 
     const entry = {
-        node,
-        baseText,
-        baseFillAttr: node.getAttribute('fill'),
-        baseStyleFill: node.style ? node.style.fill : undefined,
-        baseStyleColor: node.style ? node.style.color : undefined,
+        ...result.nodeState,
         options: mergedOptions,
-        charNodes,
+        charNodes: result.charNodes,
         frameId: null,
         currentIndex: 0,
         lastTimestamp: 0,
@@ -206,55 +272,12 @@ function startThinking(node, options) {
         nodes: null,
     };
 
-    node.setAttribute('data-thinking-active', 'true');
-
-    const applyWave = () => {
-        const { charNodes: nodes, options: opts } = entry;
-        const { dimColor, waveSize: size } = opts;
-        const total = nodes.length;
-        for (let i = 0; i < total; i += 1) {
-            const distance = (i - entry.currentIndex + total) % total;
-            const isSvg = nodes[i].getAttribute('data-thinking-base-fill') !== null;
-            const baseColor = isSvg
-                ? nodes[i].getAttribute('data-thinking-base-fill') || opts.baseColor
-                : nodes[i].getAttribute('data-thinking-base-color') || opts.baseColor;
-            const targetColor = distance < size ? dimColor : baseColor;
-            if (isSvg) {
-                nodes[i].setAttribute('fill', targetColor);
-            } else {
-                nodes[i].style.color = targetColor;
-            }
-        }
-        entry.currentIndex = (entry.currentIndex + 1) % total;
-    };
-
-    const disableAnimation = Boolean(mergedOptions.disableAnimation || prefersReducedMotion());
-    applyWave();
+    applyThinkingWave(entry);
     THINKING_REGISTRY.set(node, entry);
 
-    if (disableAnimation) {
-        return;
+    if (!(mergedOptions.disableAnimation || prefersReducedMotion())) {
+        scheduleThinkingFrame(entry);
     }
-
-    function frame(timestamp) {
-        if (entry.destroyed) {
-            return;
-        }
-        if (!node.isConnected) {
-            stopThinking(node);
-            return;
-        }
-        if (!entry.lastTimestamp) {
-            entry.lastTimestamp = timestamp;
-        }
-        if (timestamp - entry.lastTimestamp >= entry.options.intervalMs) {
-            entry.lastTimestamp = timestamp;
-            applyWave();
-        }
-        entry.frameId = scheduleFrame(frame);
-    }
-
-    entry.frameId = scheduleFrame(frame);
 }
 
 function startThinkingGroup(nodes, options) {
@@ -264,47 +287,31 @@ function startThinkingGroup(nodes, options) {
         return;
     }
 
-    const nodeStates = [];
-    const charNodes = [];
-
     validNodes.forEach((node) => {
-        const existing = THINKING_REGISTRY.get(node);
-        if (existing) {
+        if (THINKING_REGISTRY.get(node)) {
             stopThinking(node);
         }
     });
+
+    const nodeStates = [];
+    const charNodes = [];
 
     validNodes.forEach((node) => {
         const baseText = node.textContent || '';
         if (!baseText) {
             return;
         }
-        const baseFillAttr = node.getAttribute('fill');
-        const baseStyleFill = node.style ? node.style.fill : undefined;
-        const baseStyleColor = node.style ? node.style.color : undefined;
-        const baseColor =
-            baseFillAttr || baseStyleFill || baseStyleColor || mergedOptions.baseColor;
-        const created = createCharacterNodes(node, baseText, baseColor);
-        if (!created.length) {
-            return;
+        const result = createThinkingEntry(node, baseText, mergedOptions);
+        if (result) {
+            nodeStates.push(result.nodeState);
+            charNodes.push(...result.charNodes);
         }
-        node.setAttribute('data-thinking-active', 'true');
-        nodeStates.push({
-            node,
-            baseText,
-            baseFillAttr,
-            baseStyleFill,
-            baseStyleColor,
-        });
-        charNodes.push(...created);
     });
 
     if (!charNodes.length) {
         return;
     }
-
-    const waveSize = Math.max(1, Math.min(mergedOptions.waveSize || 1, charNodes.length));
-    mergedOptions.waveSize = waveSize;
+    mergedOptions.waveSize = Math.max(1, Math.min(mergedOptions.waveSize || 1, charNodes.length));
 
     const entry = {
         nodes: nodeStates,
@@ -318,54 +325,11 @@ function startThinkingGroup(nodes, options) {
     };
 
     nodeStates.forEach((state) => THINKING_REGISTRY.set(state.node, entry));
+    applyThinkingWave(entry);
 
-    const applyWave = () => {
-        const { charNodes: chars, options: opts } = entry;
-        const { dimColor, waveSize: size } = opts;
-        const total = chars.length;
-        for (let i = 0; i < total; i += 1) {
-            const distance = (i - entry.currentIndex + total) % total;
-            const isSvg = chars[i].getAttribute('data-thinking-base-fill') !== null;
-            const baseColor = isSvg
-                ? chars[i].getAttribute('data-thinking-base-fill') || opts.baseColor
-                : chars[i].getAttribute('data-thinking-base-color') || opts.baseColor;
-            const targetColor = distance < size ? dimColor : baseColor;
-            if (isSvg) {
-                chars[i].setAttribute('fill', targetColor);
-            } else {
-                chars[i].style.color = targetColor;
-            }
-        }
-        entry.currentIndex = (entry.currentIndex + 1) % total;
-    };
-
-    const disableAnimation = Boolean(mergedOptions.disableAnimation || prefersReducedMotion());
-    applyWave();
-
-    if (disableAnimation) {
-        return;
+    if (!(mergedOptions.disableAnimation || prefersReducedMotion())) {
+        scheduleThinkingFrame(entry);
     }
-
-    function frame(timestamp) {
-        if (entry.destroyed) {
-            return;
-        }
-        const primary = entry.nodes[0]?.node;
-        if (!primary || !primary.isConnected) {
-            entry.nodes.forEach((state) => stopThinking(state.node));
-            return;
-        }
-        if (!entry.lastTimestamp) {
-            entry.lastTimestamp = timestamp;
-        }
-        if (timestamp - entry.lastTimestamp >= entry.options.intervalMs) {
-            entry.lastTimestamp = timestamp;
-            applyWave();
-        }
-        entry.frameId = scheduleFrame(frame);
-    }
-
-    entry.frameId = scheduleFrame(frame);
 }
 
 function stopThinking(node) {
