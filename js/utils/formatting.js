@@ -536,4 +536,3 @@ export function formatCompact(num) {
     }
     return num.toString();
 }
-
