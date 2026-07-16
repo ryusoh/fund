@@ -355,33 +355,46 @@ export function drawAxes(
         // Prevent physical overlap: labels must be separated by exactly their fontSize (1em)
         const minSpacingPixels = Math.floor(fontSize);
 
-        // Map ticks to objects with y coordinate
-        const tickObjects = ticks.map((value) => ({ value, y: yScale(value) }));
+        // Map ticks to objects with y coordinate, compute priority inline
+        let ticksMax = -Infinity;
+        let ticksMin = Infinity;
+        for (let i = 0; i < ticks.length; i++) {
+            const v = ticks[i];
+            if (v > ticksMax) {
+                ticksMax = v;
+            }
+            if (v < ticksMin) {
+                ticksMin = v;
+            }
+        }
 
-        // Sort by absolute value DESCENDING so we start packing from the outer edges (max values) inwards.
-        // This guarantees we keep the outer boundaries and pack as many non-overlapping ticks as mathematically possible.
-        tickObjects.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-
-        // Filter labels using priority assignment
-        const filteredTicks = tickObjects.map((obj) => {
+        const filteredTicks = new Array(ticks.length);
+        for (let i = 0; i < ticks.length; i++) {
+            const value = ticks[i];
             let priority = 2; // Default lowest priority
-            if (Math.abs(obj.value) < 1e-9) {
+            const absVal = Math.abs(value);
+            if (absVal < 1e-9) {
                 priority = 0; // Highest priority for zero line
             } else if (
-                obj.value === yMax ||
-                obj.value === yMin ||
-                obj.value === Math.max(...ticks) ||
-                obj.value === Math.min(...ticks)
+                value === yMax ||
+                value === yMin ||
+                value === ticksMax ||
+                value === ticksMin
             ) {
                 priority = 1; // High priority for outer bounds
             }
-            return { ...obj, priority };
-        });
+            filteredTicks[i] = { value, y: yScale(value), priority, abs: absVal };
+        }
+
+        // Sort by absolute value DESCENDING so we start packing from the outer edges (max values) inwards.
+        // This guarantees we keep the outer boundaries and pack as many non-overlapping ticks as mathematically possible.
+        filteredTicks.sort((a, b) => b.abs - a.abs);
 
         // Resolve collisions by keeping highest priority items
         const selectedTicks = [];
         for (let p = 0; p <= 2; p++) {
-            for (const tick of filteredTicks) {
+            for (let i = 0; i < filteredTicks.length; i++) {
+                const tick = filteredTicks[i];
                 if (tick.priority === p) {
                     let collides = false;
                     for (const selected of selectedTicks) {

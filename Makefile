@@ -152,7 +152,7 @@ fmt-check:
 	fi
 
 type:
-	$(PY) -m mypy
+	$(PY) -m mypy --python-version 3.12
 	@echo "JS type check (tsc --checkJs on whitelist; blocking — see docs/js-typing-strategy.md):"
 	@npx tsc -p jsconfig.json
 
