@@ -181,7 +181,7 @@ function createThinkingEntry(node, baseText, options) {
     node.setAttribute('data-thinking-active', 'true');
     return {
         nodeState: { node, baseText, baseFillAttr, baseStyleFill, baseStyleColor },
-        charNodes
+        charNodes,
     };
 }
 
@@ -259,7 +259,10 @@ function startThinking(node, options) {
         return;
     }
 
-    mergedOptions.waveSize = Math.max(1, Math.min(mergedOptions.waveSize || 1, result.charNodes.length));
+    mergedOptions.waveSize = Math.max(
+        1,
+        Math.min(mergedOptions.waveSize || 1, result.charNodes.length)
+    );
 
     const entry = {
         ...result.nodeState,
