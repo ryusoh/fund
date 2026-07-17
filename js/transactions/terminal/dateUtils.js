@@ -71,119 +71,114 @@ export function resolveQuarterRange(year, quarter, mode = 'full') {
     return computeQuarterRange(year, quarter, mode);
 }
 
+function parseSingleArgDateRange(arg, defaultYear, currentYear) {
+    const quarterToken = parseQuarterToken(arg, defaultYear);
+    if (quarterToken) {
+        const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'full');
+        debugContext('parseDateRange:single-quarter', { arg, defaultYear, resolved });
+        return resolved;
+    }
+
+    const year = parseInt(arg, 10);
+    if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+        lastContextYear = year;
+        debugContext('parseDateRange:single-year', { arg, year });
+        return { from: `${year}-01-01`, to: `${year}-12-31` };
+    }
+
+    return { from: null, to: null };
+}
+
+function parseFromArgDateRange(arg, defaultYear, currentYear) {
+    const quarterToken = parseQuarterToken(arg, defaultYear);
+    if (quarterToken) {
+        const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'start');
+        debugContext('parseDateRange:from-quarter', { arg, defaultYear, resolved });
+        return resolved;
+    }
+
+    const year = parseInt(arg, 10);
+    if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
+        lastContextYear = year;
+        debugContext('parseDateRange:from-year', { arg, year });
+        return { from: `${year}-01-01`, to: null };
+    }
+
+    return { from: null, to: null };
+}
+
+function parseRangeStart(arg1, defaultYear, currentYear) {
+    const quarterTokenStart = parseQuarterToken(arg1, defaultYear);
+    if (quarterTokenStart) {
+        const resolvedStart = resolveQuarterRange(
+            quarterTokenStart.year,
+            quarterTokenStart.quarter,
+            'full'
+        );
+        lastContextYear = quarterTokenStart.year;
+        debugContext('parseDateRange:range-start-quarter', { arg1, defaultYear, resolvedStart });
+        return resolvedStart.from;
+    }
+    const year1 = parseInt(arg1, 10);
+    if (!isNaN(year1) && year1 >= 1900 && year1 <= currentYear + 5) {
+        lastContextYear = year1;
+        debugContext('parseDateRange:range-start-year', { arg1, year1 });
+        return `${year1}-01-01`;
+    }
+    return null;
+}
+
+function parseRangeEnd(arg2, defaultYear, currentYear) {
+    const quarterTokenEnd = parseQuarterToken(arg2, defaultYear);
+    if (quarterTokenEnd) {
+        const resolvedEnd = resolveQuarterRange(
+            quarterTokenEnd.year,
+            quarterTokenEnd.quarter,
+            'full'
+        );
+        debugContext('parseDateRange:range-end-quarter', { arg2, defaultYear, resolvedEnd });
+        return resolvedEnd.to;
+    }
+    const year2 = parseInt(arg2, 10);
+    if (!isNaN(year2) && year2 >= 1900 && year2 <= currentYear + 5) {
+        if (!Number.isFinite(lastContextYear)) {
+            lastContextYear = year2;
+        }
+        debugContext('parseDateRange:range-end-year', { arg2, year2 });
+        return `${year2}-12-31`;
+    }
+    return null;
+}
+
+function parseRangeArgsDateRange(arg1, arg2, defaultYear, currentYear) {
+    const fromDate = parseRangeStart(arg1, defaultYear, currentYear);
+    const toDate = parseRangeEnd(arg2, defaultYear, currentYear);
+
+    if (fromDate && toDate) {
+        const date1 = new Date(fromDate);
+        const date2 = new Date(toDate);
+        if (date1 <= date2) {
+            return { from: fromDate, to: toDate };
+        }
+    }
+    return { from: null, to: null };
+}
+
 export function parseDateRange(args) {
     const currentYear = new Date().getFullYear();
     const defaultYear = getDefaultYear();
-    let from = null;
-    let to = null;
 
     if (args.length === 1) {
-        const arg = args[0];
-
-        // Check for quarter format (e.g., 2023q1, 2024q2)
-        const quarterToken = parseQuarterToken(arg, defaultYear);
-        if (quarterToken) {
-            const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'full');
-            debugContext('parseDateRange:single-quarter', { arg, defaultYear, resolved });
-            return resolved;
-        }
-
-        // Check for year format
-        const year = parseInt(arg, 10);
-        if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
-            lastContextYear = year;
-            from = `${year}-01-01`;
-            to = `${year}-12-31`;
-            debugContext('parseDateRange:single-year', { arg, year });
-        }
-    } else if (args.length === 2 && args[0].toLowerCase() === 'from') {
-        const arg = args[1];
-
-        // Check for quarter format (e.g., from 2023q1)
-        const quarterToken = parseQuarterToken(arg, defaultYear);
-        if (quarterToken) {
-            const resolved = resolveQuarterRange(quarterToken.year, quarterToken.quarter, 'start');
-            debugContext('parseDateRange:from-quarter', { arg, defaultYear, resolved });
-            return resolved;
-        }
-
-        // Check for year format
-        const year = parseInt(arg, 10);
-        if (!isNaN(year) && year >= 1900 && year <= currentYear + 5) {
-            lastContextYear = year;
-            from = `${year}-01-01`;
-            to = null; // To current date
-            debugContext('parseDateRange:from-year', { arg, year });
-        }
-    } else if (args.length === 3 && args[1].toLowerCase() === 'to') {
-        const arg1 = args[0];
-        const arg2 = args[2];
-
-        // Parse first argument (could be year or quarter)
-        let year1, year2;
-        let fromDate, toDate;
-
-        // Parse first date
-        const quarterTokenStart = parseQuarterToken(arg1, defaultYear);
-        if (quarterTokenStart) {
-            const resolvedStart = resolveQuarterRange(
-                quarterTokenStart.year,
-                quarterTokenStart.quarter,
-                'full'
-            );
-            fromDate = resolvedStart.from;
-            lastContextYear = quarterTokenStart.year;
-            debugContext('parseDateRange:range-start-quarter', {
-                arg1,
-                defaultYear,
-                resolvedStart,
-            });
-        } else {
-            year1 = parseInt(arg1, 10);
-            if (!isNaN(year1) && year1 >= 1900 && year1 <= currentYear + 5) {
-                fromDate = `${year1}-01-01`;
-                lastContextYear = year1;
-                debugContext('parseDateRange:range-start-year', { arg1, year1 });
-            }
-        }
-
-        // Parse second date
-        const quarterTokenEnd = parseQuarterToken(arg2, defaultYear);
-        if (quarterTokenEnd) {
-            const resolvedEnd = resolveQuarterRange(
-                quarterTokenEnd.year,
-                quarterTokenEnd.quarter,
-                'full'
-            );
-            toDate = resolvedEnd.to;
-            debugContext('parseDateRange:range-end-quarter', {
-                arg2,
-                defaultYear,
-                resolvedEnd,
-            });
-        } else {
-            year2 = parseInt(arg2, 10);
-            if (!isNaN(year2) && year2 >= 1900 && year2 <= currentYear + 5) {
-                toDate = `${year2}-12-31`;
-                if (!Number.isFinite(lastContextYear)) {
-                    lastContextYear = year2;
-                }
-                debugContext('parseDateRange:range-end-year', { arg2, year2 });
-            }
-        }
-
-        // Validate and set dates
-        if (fromDate && toDate) {
-            const date1 = new Date(fromDate);
-            const date2 = new Date(toDate);
-            if (date1 <= date2) {
-                from = fromDate;
-                to = toDate;
-            }
-        }
+        return parseSingleArgDateRange(args[0], defaultYear, currentYear);
+    }
+    if (args.length === 2 && args[0].toLowerCase() === 'from') {
+        return parseFromArgDateRange(args[1], defaultYear, currentYear);
+    }
+    if (args.length === 3 && args[1].toLowerCase() === 'to') {
+        return parseRangeArgsDateRange(args[0], args[2], defaultYear, currentYear);
     }
 
-    return { from, to };
+    return { from: null, to: null };
 }
 
 export function formatDateRange(range) {
