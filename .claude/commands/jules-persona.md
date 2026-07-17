@@ -57,6 +57,6 @@ file under `.jules/`."
 
 - Lint what you wrote: `npx markdownlint <file>` and let the prettier PostToolUse
   hook format it (or `npx prettier --check`). Keep green.
-- **Do not edit `AGENTS.md`** unless a genuinely new *shared* rule is needed — it
+- **Do not edit `AGENTS.md`** unless a genuinely new _shared_ rule is needed — it
   busts the prompt cache for every routine. If one is, call it out explicitly.
 - Work on `main`; don't commit unless asked.

@@ -1,14 +1,27 @@
 # AGENTS.md
 
-Shared operating contract for **automated agents** (Jules scheduled routines) on
-this repo. You run unattended and open PRs. A human only does a binary
-approve/close on the result — they will **not** leave review comments or iterate
-with you. So every PR must be self-evidently correct and approvable at a glance.
-Optimize for **approve rate**, not for volume.
+Single source of truth for agent guidance on this repo — **edit this file, not
+`CLAUDE.md`** (that is a stub that imports this one). Deeper how-tos live in
+`docs/`; slash-command workflows live in `.agents/skills/` (canonical — the open
+Agent Skills format; `.claude/commands/` is generated from it by
+`scripts/sync_commands.py`, and the gate drift-checks it via `make sync-check`).
+
+Two audiences:
+
+- **Unattended Jules routines** (`.jules/` personas): you run unattended and open
+  PRs. A human only does a binary approve/close on the result — they will **not**
+  leave review comments or iterate with you. So every PR must be self-evidently
+  correct and approvable at a glance. Optimize for **approve rate**, not for
+  volume. The sections from "Non-negotiables" through "Lanes" are binding on you.
+- **Interactive agents** (Claude Code, Kimi, Antigravity, …): the repo guide
+  (commands, gotchas, working rules) applies to you. The PR/lane contract applies
+  when you open PRs unattended; per-rule carve-outs are marked inline. When
+  options are close, pick the best one and proceed — the human wants a
+  recommendation, not a menu of questions.
 
 This repo is a static vanilla-JS/CSS financial dashboard + a Python data pipeline
 that generates the JSON/CSV the frontend reads. No frontend build step; pages load
-ES modules via an import map. Human-facing detail lives in `CLAUDE.md` and `docs/`.
+ES modules via an import map.
 
 ## Non-negotiables (a PR that violates any of these will be closed)
 
@@ -113,24 +126,39 @@ instantly identifiable.
 
 ## Command interface — prefer `make` (matches CI)
 
-| Need                                                | Command                    |
-| --------------------------------------------------- | -------------------------- |
-| All checks (lint + types + sec + tests)             | `make verify`              |
-| Lint (JS + CSS + Python + Markdown)                 | `make lint`                |
-| Auto-fix lint + format                              | `make fix`                 |
-| Full test suite (JS jest + Python pytest, coverage) | `make test`                |
-| Scoped JS test (fast, no coverage)                  | `npx jest <path/to/test>`  |
-| JS strict type check                                | `npx tsc -p jsconfig.json` |
-| One CSS file lint                                   | `npx stylelint <path.css>` |
-| Dev server (serves repo root at :8000)              | `make serve`               |
+| Need                                    | Command                                             |
+| --------------------------------------- | --------------------------------------------------- |
+| All checks (lint + types + sec + tests) | `make verify`                                       |
+| Lint (JS + CSS + Python + Markdown)     | `make lint`                                         |
+| Auto-fix lint + format                  | `make fix`                                          |
+| Full test suite (JS + Python, coverage) | `make test`                                         |
+| Scoped JS test (fast, no coverage)      | `npx jest <path/to/test>`                           |
+| Scoped Python check (fast)              | `venv/bin/ruff check <path>` (also `black`, `mypy`) |
+| JS strict type check                    | `npx tsc -p jsconfig.json`                          |
+| One CSS file lint                       | `npx stylelint <path.css>`                          |
+| Generated-commands freshness check      | `make sync-check`                                   |
+| Dev server (serves repo root at :8000)  | `make serve`                                        |
+| Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                    |
 
-- Use scoped `npx jest <file>` for the tight edit→verify loop; use `make verify`
-  before opening the PR.
-- **Jest runs silent** — `console.log` prints nothing. Before debugging an odd or
-  flaky JS test, read `docs/testing-notes.md`.
+- Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
+  targets so you match CI. Use scoped `npx jest <file>` only for the tight
+  edit→verify loop; use `make verify` before opening the PR.
+- **Jest runs silent** — `console.log` prints nothing. The suite is TZ=UTC while
+  browsers here are UTC+8, so a date-off-by-one can be wrong in the browser but
+  green under tests. Before debugging an odd or flaky JS test, read
+  `docs/testing-notes.md`.
 - `make type` runs Python mypy (blocking) and JS `tsc` (currently **non-blocking**
   in CI — see `docs/js-typing-strategy.md`). Reducing JS strict errors is the
   Typist lane; don't regress the count.
+- Python dev tools (`ruff`/`black`/`mypy`/`pytest`/`diff-cover`) live in
+  **`venv/bin/`** (that's the interpreter `make` itself uses) — call them directly
+  for scoped single-file loops; whole-repo via `make`. In a linked git worktree
+  there is no local `venv/`: `make` auto-resolves the main checkout's venv, and
+  for direct calls use
+  `$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')/venv/bin/<tool>`.
+- The **CI gate is `make precommit-fix`** (the `web-ci` job: format + lint +
+  JS/Python tests); `make verify` is the stricter local superset (adds `mypy` +
+  `bandit` + `sync-check`).
 
 ## Environment setup (run once in the VM before working)
 
@@ -146,7 +174,8 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   (see the import map in each `*/index.html` and jest `moduleNameMapper`).
 - `css/` — stylesheets grouped by page under `css/<page>/`.
 - `<page>/index.html` — static page entries (`terminal/`, `position/`, `calendar/`).
-- `scripts/` — Python data pipeline + tooling (governed by `pyproject.toml`).
+- `scripts/` — Python data pipeline + tooling (governed by `pyproject.toml`),
+  including `scripts/sync_commands.py` (skill/command sync).
 - `data/` — generated JSON/CSV consumed by the frontend (**don't hand-edit**).
 - `tests/` — `tests/js/**` (jest) and `tests/python/**` (pytest).
 - `docs/` — architecture & subsystem knowledge. **Read the relevant doc before
@@ -156,7 +185,8 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 
 - **Liquid-glass effects** (terminal panes) → `docs/liquid-glass.md`. Layered
   Canvas/WebGL/SVG; Chromium-only and visual. Unit tests can't see it — visual,
-  human-reviewed only.
+  human-reviewed only. Interactive agents: verify in Chrome (`make serve`, open
+  `/terminal/`); the doc has a gotcha checklist that saves a debugging round-trip.
 - **Transaction chart crosshair** (stacked composition/sectors/geography/marketcap)
   → `docs/chart-crosshair-layout.md`. `interaction.js` reads layout fields by name;
   a renderer that omits one (e.g. `dates`) silently renders **0%**, not an error.
@@ -166,6 +196,26 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **Y-axis tick algorithm** (volume pane labels) → `docs/y-axis-tick-algorithm.md`.
   Two-phase generate→collide pipeline with strict no-overlap invariant. Read before
   touching `generateConcreteTicks` or the `drawAxes` collision filter in `core.js`.
+- **Forward P/E & the PER column** → `docs/pe-forward-pe-pipeline.md`. The Python
+  scrape writes `forward_pe.msci_pe_ratio` into `pe_ratio.json`; the frontend
+  derives VT's forward P/E from it. A null ratio renders the cell **trailing-only,
+  not an error** — verify in the rendered table. Read before editing forward-PE in
+  `generate_pe_data.py` or `dataService.js`.
+- **Pages deploy & bot data workflows** → `docs/pages-deploy.md`. Bot commits
+  reach the live site only via an explicit `workflow_dispatch` of `pages.yml`;
+  a skip-ci marker anywhere in a commit message (even quoted in the body) kills
+  all push workflows including the deploy. Read before touching `.github/workflows/`.
+- **Terminal command output vs. initial data load** → `docs/terminal-data-readiness.md`.
+  The terminal accepts commands before `loadTransactions()` settles; printed text
+  that reads `transactionState` series without awaiting `whenTransactionDataReady()`
+  renders a silent **"(no data)"**, not an error. Read before adding/editing a
+  terminal command that prints portfolio numbers.
+- **Command / skill sync** → `docs/command-skill-sync.md`. Skills are authored in
+  `.agents/skills/<name>/SKILL.md` (canonical) and **generated** into
+  `.claude/commands/` by `scripts/sync_commands.py` (the `/sync-commands` skill),
+  which `rmtree`s and regenerates that dir — **never hand-edit `.claude/commands/`**
+  (edits are silently lost). `make sync-check` fails the gate when the generated
+  copy is stale. Read before adding/editing a slash-command.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
@@ -189,3 +239,24 @@ and constraints, which you read in at the start of a run. They are **not logs**.
 **Never append to, modify, or create files under `.jules/`.** A PR that changes a
 `.jules/` file is out of scope and will be closed — those files are edited by a
 human, not by routines.
+
+## Working rules (interactive agents)
+
+- Work directly on `main`. **Commit/push only when explicitly asked** (then branch
+  off `main` first). **Don't route a trivial config/doc change through a Jules PR** —
+  make a direct commit. The async PR flow squash-merges and diverges local `main`;
+  if a `git pull --rebase` then cascades into per-commit conflicts, the fix is
+  `git reset --hard origin/main` (never keep rebasing) — see `docs/git-sync-notes.md`.
+- Verifying a **visual** change means looking at the rendered page, not just green
+  tests (§17C of `docs/ai_native_repo_structure.md`). Use
+  `make screenshot URL=/<page>/` and read the PNG it prints. But a screenshot only
+  proves it _rendered_ — **not that it looks good**. Don't claim visual parity or
+  "matches/exceeds" a reference from screenshots (cropped/zoomed ones especially);
+  aesthetic quality is the user's call. For fidelity-sensitive effects (glass,
+  lighting), have the user view the live page before you change a default.
+- **Don't write a command or example into docs/code that you haven't actually run
+  this session.** Verify it first — don't infer behaviour from a name or a `case`
+  label. (E.g. the terminal's real command semantics live in its `help` output /
+  `js/transactions/terminal/handlers/help.js`: `transaction` toggles the table,
+  `plot` needs a subcommand, `all` only clears filters.) Guessing here has twice
+  cost a correction round-trip.

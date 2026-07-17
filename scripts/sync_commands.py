@@ -1,9 +1,10 @@
-"""Sync commands from .claude/commands to .agents/skills.
+"""Sync commands from .agents/skills to .claude/commands.
 
-`.claude/commands/*.md` is the canonical source; `.agents/skills/` is generated
-for the Antigravity CLI. `.gemini/commands/` is legacy Gemini CLI config (that
-CLI is deprecated in favour of Antigravity) — this script no longer reads or
-writes it, so those files are frozen and edited by hand if ever needed.
+`.agents/skills/<name>/SKILL.md` is the canonical source — the open Agent
+Skills format, read natively by Antigravity, Kimi, and Codex.
+`.claude/commands/*.md` is generated from it for Claude Code. Edit the
+SKILL.md files, never the generated commands; `make sync-check` fails the
+gate if the generated copy is stale.
 """
 
 import os
@@ -13,12 +14,12 @@ from typing import Dict, Tuple
 
 # Constants
 WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLAUDE_DIR = os.path.join(WORKSPACE_ROOT, ".claude", "commands")
 SKILLS_DIR = os.path.join(WORKSPACE_ROOT, ".agents", "skills")
+CLAUDE_DIR = os.path.join(WORKSPACE_ROOT, ".claude", "commands")
 
 
 def parse_markdown(content: str) -> Tuple[Dict[str, str], str]:
-    """Parse Claude markdown command frontmatter and body."""
+    """Parse SKILL.md frontmatter and body."""
     yaml_data: Dict[str, str] = {}
     body = ""
 
@@ -38,37 +39,32 @@ def parse_markdown(content: str) -> Tuple[Dict[str, str], str]:
 
 
 def main() -> None:
-    """Regenerate .agents/skills from the canonical .claude/commands sources."""
+    """Regenerate .claude/commands from the canonical .agents/skills sources."""
     # Ensure target directory exists and is clean
-    if os.path.exists(SKILLS_DIR):
-        shutil.rmtree(SKILLS_DIR)
-    os.makedirs(SKILLS_DIR, exist_ok=True)
-
     if os.path.exists(CLAUDE_DIR):
-        for entry in sorted(os.listdir(CLAUDE_DIR)):
-            if not entry.endswith(".md"):
+        shutil.rmtree(CLAUDE_DIR)
+    os.makedirs(CLAUDE_DIR, exist_ok=True)
+
+    if os.path.exists(SKILLS_DIR):
+        for entry in sorted(os.listdir(SKILLS_DIR)):
+            skill_dir = os.path.join(SKILLS_DIR, entry)
+            skill_md_path = os.path.join(skill_dir, "SKILL.md")
+            if not os.path.isdir(skill_dir) or not os.path.exists(skill_md_path):
                 continue
 
-            file_path = os.path.join(CLAUDE_DIR, entry)
-            skill_name = entry[:-3]
-
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(skill_md_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             yaml_data, body = parse_markdown(content)
             description = yaml_data.get("description", "")
             arg_hint = yaml_data.get("argument-hint", "")
 
-            # Antigravity skills use {{args}} placeholders; Claude uses $ARGUMENTS.
-            body = body.replace("$ARGUMENTS", "{{args}}")
+            # Agent Skills use {{args}} placeholders; Claude uses $ARGUMENTS.
+            body = body.replace("{{args}}", "$ARGUMENTS")
 
-            skill_dir = os.path.join(SKILLS_DIR, skill_name)
-            os.makedirs(skill_dir, exist_ok=True)
-
-            skill_md_path = os.path.join(skill_dir, "SKILL.md")
-            with open(skill_md_path, "w", encoding="utf-8") as f:
+            command_path = os.path.join(CLAUDE_DIR, f"{entry}.md")
+            with open(command_path, "w", encoding="utf-8") as f:
                 f.write("---\n")
-                f.write(f"name: {skill_name}\n")
                 f.write(f"description: {description}\n")
                 if arg_hint:
                     # Quote as a YAML string: values often start with `[`/`<`,
@@ -79,13 +75,13 @@ def main() -> None:
                 f.write(body)
                 f.write("\n")
 
-    format_generated_skills()
+    format_generated_commands()
 
-    print("Successfully synchronized Claude commands to Antigravity skills.")
+    print("Successfully synchronized Agent Skills to Claude commands.")
 
 
-def format_generated_skills() -> None:
-    """Format generated skills with prettier so output matches the pre-commit hook.
+def format_generated_commands() -> None:
+    """Format generated commands with prettier so output matches the pre-commit hook.
 
     Without this, the lint-staged prettier pass reformats the generated Markdown
     after it lands, so a fresh sync always shows phantom drift against the
@@ -94,16 +90,16 @@ def format_generated_skills() -> None:
     """
     try:
         subprocess.run(
-            ["npx", "prettier", "--write", "--ignore-path", ".prettierignore", SKILLS_DIR],
+            ["npx", "prettier", "--write", "--ignore-path", ".prettierignore", CLAUDE_DIR],
             cwd=WORKSPACE_ROOT,
             check=True,
             capture_output=True,
             text=True,
         )
     except FileNotFoundError:
-        print("Warning: npx not found; skipping prettier formatting of generated skills.")
+        print("Warning: npx not found; skipping prettier formatting of generated commands.")
     except subprocess.CalledProcessError as exc:
-        print(f"Warning: prettier failed on generated skills:\n{exc.stderr}")
+        print(f"Warning: prettier failed on generated commands:\n{exc.stderr}")
 
 
 if __name__ == "__main__":

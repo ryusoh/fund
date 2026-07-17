@@ -42,25 +42,25 @@ git status --short
    are part of the deliverable — commit them with a descriptive message
    before merging.
 3. **Fix quality and CI failures on the branch:**
-   - `make verify` (lint + type + sec + tests); if it fails on
-     formatting/lint, `make fix`.
-   - `make precommit` until clean.
-   - Commit any fixes.
+    - `make verify` (lint + type + sec + tests); if it fails on
+      formatting/lint, `make fix`.
+    - `make precommit` until clean.
+    - Commit any fixes.
 4. **Merge into main from the primary checkout** (the first path in
    `git worktree list` — you cannot check out `main` inside a linked
    worktree):
-   - `git checkout main && git pull origin main`
-   - `git merge <branch>`
-   - On conflicts: `git status`, resolve each file, `git add`, `git commit`.
+    - `git checkout main && git pull origin main`
+    - `git merge <branch>`
+    - On conflicts: `git status`, resolve each file, `git add`, `git commit`.
 5. **Final verification on merged main:** `make precommit && make verify`.
 6. **Push:** `git push origin main`.
 7. **Cleanup:**
-   - Remove the worktree if the branch lived in one (run from the primary
-     checkout): `git worktree remove <path>` (`--force` only if you are sure
-     nothing unshipped remains).
-   - `git branch -d <branch>`
-   - Delete the remote branch only if it exists:
-     `git ls-remote --exit-code origin <branch> && git push origin --delete <branch>`
+    - Remove the worktree if the branch lived in one (run from the primary
+      checkout): `git worktree remove <path>` (`--force` only if you are sure
+      nothing unshipped remains).
+    - `git branch -d <branch>`
+    - Delete the remote branch only if it exists:
+      `git ls-remote --exit-code origin <branch> && git push origin --delete <branch>`
 
 ## Report
 

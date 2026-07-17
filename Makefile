@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -189,7 +189,21 @@ test-tz:
 test: js-test
 	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
-verify: lint type sec test
+verify: lint type sec test sync-check
+
+# .claude/commands/ is generated from .agents/skills/ (the canonical source) by
+# scripts/sync_commands.py. Fail if regeneration is not a no-op (content hash of
+# the tree before vs after), so the generated copy can never silently go stale.
+sync-check:
+	@before=$$(find .claude/commands -type f | LC_ALL=C sort | xargs shasum | shasum | cut -d' ' -f1); \
+	$(PY) scripts/sync_commands.py >/dev/null; \
+	after=$$(find .claude/commands -type f | LC_ALL=C sort | xargs shasum | shasum | cut -d' ' -f1); \
+	if [ "$$before" = "$$after" ]; then \
+		echo "sync-check: .claude/commands is up to date"; \
+	else \
+		echo "sync-check FAIL: .claude/commands was stale and has been regenerated — commit the updated files (python3 scripts/sync_commands.py)."; \
+		exit 1; \
+	fi
 
 check: fmt-check lint
 
