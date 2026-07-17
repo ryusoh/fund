@@ -32,7 +32,7 @@ export function setCrosshairExternalUpdate(fn) {
     crosshairExternalUpdate = fn;
 }
 
-export function getCrosshairElements() {
+function getCrosshairElements() {
     if (crosshairElementsCache) {
         return crosshairElementsCache;
     }
@@ -542,7 +542,7 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
     };
 }
 
-export function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, holding) {
+function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, holding) {
     if (!holding) {
         return;
     }
@@ -641,11 +641,6 @@ export const legendState = {
     performanceDirty: true,
     contributionDirty: true,
 };
-
-export function setDependentChartVisibility() {
-    // Logic to update visibility state, assuming transactionState works
-    // This function is needed if we move updateLegend here.
-}
 
 export function updateLegend(series, chartManager) {
     const legendContainer = document.querySelector('.chart-legend');
