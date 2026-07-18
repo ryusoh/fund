@@ -19,7 +19,7 @@ export function updateContextYearFromRange(range) {
     }
 }
 
-export function getActiveRangeYear() {
+function getActiveRangeYear() {
     const { chartDateRange } = transactionState;
     if (!chartDateRange) {
         return null;

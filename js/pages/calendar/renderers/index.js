@@ -2,8 +2,8 @@ import { CALENDAR_RENDERER } from '@js/config.js';
 import { SvgRenderer } from './SvgRenderer.js';
 import { DomRenderer } from './DomRenderer.js';
 
-export const RENDERER_SVG = 'svg';
-export const RENDERER_DOM = 'dom';
+const RENDERER_SVG = 'svg';
+const RENDERER_DOM = 'dom';
 
 /**
  * Resolve which renderer to build. The `CALENDAR_RENDERER` knob in `js/config.js`
