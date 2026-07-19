@@ -438,8 +438,13 @@ export class TableGlassEffect {
 
         // Determine hovered row by finding actual element under cursor
         if (this.options.rowHoverEffect?.enabled) {
-            // Find the actual row element under the mouse cursor
-            const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+            // Prefer e.target for mouse/pointer events to avoid forcing layout recalculations
+            // via document.elementFromPoint during high-frequency move events. Touch objects and
+            // synthetic scroll events lack e.type, cleanly falling back to elementFromPoint.
+            const elementUnderMouse =
+                e.type && e.target && e.target.nodeType === 1
+                    ? e.target
+                    : document.elementFromPoint(e.clientX, e.clientY);
             if (elementUnderMouse) {
                 // Find the closest table row
                 const rowElement = elementUnderMouse.closest('tr');
