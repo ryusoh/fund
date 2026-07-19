@@ -179,4 +179,53 @@ describe('getFinancialStatsText', () => {
 
         expect(snapshot).toBe('Error loading financial analysis data.');
     });
+
+    test('handles corrupt detail fetch with empty market payload', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    { symbol: 'BAD', path: '../data/analysis/BAD.json' },
+                ],
+            },
+            '../data/analysis/BAD.json': {
+                symbol: 'BAD',
+                market: null, // trigger condition: !detail || !detail.market
+            },
+        };
+
+        global.fetch = jest.fn((url) => {
+            const normalized = url.split('?')[0];
+            return mockFetchResponse(fixtures[normalized] || {});
+        });
+
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
+
+        expect(snapshot).toBe('No financial data available for holdings.');
+    });
+
+    test('handles corrupted market objects in details returning no financial rows', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    { symbol: 'ERR', path: '../data/analysis/ERR.json' },
+                ],
+            },
+        };
+        // Intentionally throw inside loadAnalysisDetails handling to hit the catch block and return null
+        global.fetch = jest.fn((url) => {
+            if (url.includes('ERR.json')) {
+                return Promise.reject(new Error('Network failure'));
+            }
+            const normalized = url.split('?')[0];
+            return mockFetchResponse(fixtures[normalized] || {});
+        });
+
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
+
+        expect(snapshot).toBe('No financial data available for holdings.');
+    });
 });
