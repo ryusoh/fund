@@ -70,4 +70,21 @@ describe('buildDrawdownSeries', () => {
         const result = buildDrawdownSeries(series);
         expect(result[1].value).toBeCloseTo(-100);
     });
+
+    test('handles initial peak being zero or negative (safePeak logic)', () => {
+        // High water mark <= 0 should use safePeak=1 to prevent division by zero or sign inversion
+        const series = [
+            { date: '2023-01-01', value: 0 },
+            { date: '2023-01-02', value: -10 },
+            { date: '2023-01-03', value: -20 },
+        ];
+        const result = buildDrawdownSeries(series);
+
+        // At day 1: HWM=0, safePeak=1. Drawdown: (0 - 0) / 1 * 100 = 0%
+        expect(result[0].value).toBe(0);
+        // At day 2: HWM=0 (from day 1), safePeak=1. Drawdown: (-10 - 0) / 1 * 100 = -1000%
+        expect(result[1].value).toBeCloseTo(-1000);
+        // At day 3: HWM=0, safePeak=1. Drawdown: (-20 - 0) / 1 * 100 = -2000%
+        expect(result[2].value).toBeCloseTo(-2000);
+    });
 });

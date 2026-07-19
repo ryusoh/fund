@@ -329,6 +329,56 @@ describe('Chart Helpers', () => {
         });
     });
 
+    describe('constrainSeriesToRange', () => {
+        const { constrainSeriesToRange } = require('../../../../js/transactions/chart/helpers.js');
+        const series = [
+            { date: new Date('2023-01-01'), value: 100 },
+            { date: new Date('2023-01-05'), value: 110 },
+            { date: new Date('2023-01-10'), value: 120 },
+        ];
+
+        it('returns original series if not an array', () => {
+            expect(constrainSeriesToRange(null, new Date('2023-01-01'), new Date())).toBeNull();
+        });
+
+        it('returns original series if both dates are null', () => {
+            expect(constrainSeriesToRange(series, null, null)).toBe(series);
+        });
+
+        it('filters out dates before rangeStart', () => {
+            const start = new Date('2023-01-04');
+            const result = constrainSeriesToRange(series, start, null);
+            expect(result).toHaveLength(2);
+            expect(result[0].value).toBe(110);
+        });
+
+        it('filters out dates after rangeEnd', () => {
+            const end = new Date('2023-01-06');
+            const result = constrainSeriesToRange(series, null, end);
+            expect(result).toHaveLength(2);
+            expect(result[1].value).toBe(110);
+        });
+
+        it('filters within specific range', () => {
+            const start = new Date('2023-01-04');
+            const end = new Date('2023-01-06');
+            const result = constrainSeriesToRange(series, start, end);
+            expect(result).toHaveLength(1);
+            expect(result[0].value).toBe(110);
+        });
+
+        it('handles invalid date types gracefully', () => {
+            const badSeries = [
+                { date: 'invalid', value: 100 },
+                ...series,
+            ];
+            const start = new Date('2023-01-01');
+            const result = constrainSeriesToRange(badSeries, start, null);
+            // The bad date point should be filtered out
+            expect(result).toHaveLength(3);
+        });
+    });
+
     describe('injectCarryForwardStartPoint', () => {
         const fullSeries = [
             { date: new Date('2023-01-01'), value: 100 },
