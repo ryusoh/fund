@@ -23,6 +23,23 @@ function withCacheBust(url) {
         : `${url}?t=${ANALYSIS_FETCH_BUSTER}`;
 }
 
+function resolveCurrency(market) {
+    return typeof market.currency === 'string' && market.currency.trim()
+        ? market.currency.trim().toUpperCase()
+        : 'USD';
+}
+
+function resolveForwardPe(market, symbol, globalForwardPeMap, getFallbackValue) {
+    let forwardPe = Number(market.forwardPe);
+    if (!Number.isFinite(forwardPe)) {
+        const fallback = getFallbackValue(globalForwardPeMap[symbol]);
+        if (fallback !== null) {
+            forwardPe = fallback;
+        }
+    }
+    return forwardPe;
+}
+
 function resolveEvToEbitda(market = {}) {
     const directValue = Number(market.evToEbitda);
     if (Number.isFinite(directValue)) {
@@ -117,20 +134,13 @@ export async function getFinancialStatsText() {
                     }
                     const market = detail.market;
 
-                    let forwardPe = Number(market.forwardPe);
-                    if (!Number.isFinite(forwardPe)) {
-                        const fallback = getFallbackValue(
-                            globalForwardPeMap[detail.symbol || entrySymbol]
-                        );
-                        if (fallback !== null) {
-                            forwardPe = fallback;
-                        }
-                    }
-
-                    const currency =
-                        typeof market.currency === 'string' && market.currency.trim()
-                            ? market.currency.trim().toUpperCase()
-                            : 'USD';
+                    const forwardPe = resolveForwardPe(
+                        market,
+                        detail.symbol || entrySymbol,
+                        globalForwardPeMap,
+                        getFallbackValue
+                    );
+                    const currency = resolveCurrency(market);
 
                     return [
                         detail.symbol || entrySymbol || '—',
@@ -208,10 +218,7 @@ export async function getTechnicalStatsText() {
                         return null;
                     }
                     const market = detail.market;
-                    const currency =
-                        typeof market.currency === 'string' && market.currency.trim()
-                            ? market.currency.trim().toUpperCase()
-                            : 'USD';
+                    const currency = resolveCurrency(market);
 
                     return [
                         detail.symbol || entrySymbol || '—',
