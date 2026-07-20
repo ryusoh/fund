@@ -32,6 +32,34 @@ function resolveColorScale(d3Instance, scaleConfig = CALENDAR_CONFIG.scale?.colo
         .clamp(true);
 }
 
+function extractDateFromDatum(dataPoint) {
+    const timestamp =
+        dataPoint && typeof dataPoint === 'object' && dataPoint !== null ? dataPoint.t : null;
+    const dateValue =
+        timestamp !== null && timestamp !== undefined
+            ? new Date(timestamp)
+            : dataPoint instanceof Date
+              ? dataPoint
+              : null;
+    if (!dateValue || !Number.isFinite(dateValue.getTime())) {
+        return null;
+    }
+    return dateValue;
+}
+
+function getCellValue(entry, valueField) {
+    if (!entry) {
+        return 0;
+    }
+    if (valueField && entry[valueField] !== undefined) {
+        return entry[valueField];
+    }
+    if (entry.value !== undefined) {
+        return entry.value;
+    }
+    return 0;
+}
+
 export function applyCurrencyColors(
     d3Instance,
     state,
@@ -55,29 +83,15 @@ export function applyCurrencyColors(
         const cell = d3Instance.select(this);
         const dataPoint = cell && typeof cell.datum === 'function' ? cell.datum() : datum;
 
-        const timestamp =
-            dataPoint && typeof dataPoint === 'object' && dataPoint !== null ? dataPoint.t : null;
-        const dateValue =
-            timestamp !== null && timestamp !== undefined
-                ? new Date(timestamp)
-                : dataPoint instanceof Date
-                  ? dataPoint
-                  : null;
-
-        if (!dateValue || !Number.isFinite(dateValue.getTime())) {
+        const dateValue = extractDateFromDatum(dataPoint);
+        if (!dateValue) {
             return;
         }
 
         const dateStr = `${dateValue.getUTCFullYear()}-${String(dateValue.getUTCMonth() + 1).padStart(2, '0')}-${String(dateValue.getUTCDate()).padStart(2, '0')}`;
         const entry = byDate.get(dateStr);
 
-        const value =
-            entry && valueField && entry[valueField] !== undefined
-                ? entry[valueField]
-                : entry && entry.value !== undefined
-                  ? entry.value
-                  : 0;
-
+        const value = getCellValue(entry, valueField);
         const numericValue = Number.isFinite(value) ? value : 0;
         const color = colorScale ? colorScale(numericValue) : undefined;
 
