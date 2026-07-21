@@ -120,7 +120,7 @@ function stripWrappingQuotes(value) {
     return hasPair ? trimmed.slice(1, -1).trim() : trimmed;
 }
 
-export function extractScenarioTitles(markdown) {
+function extractScenarioTitles(markdown) {
     if (typeof markdown !== 'string' || !markdown.length) {
         return null;
     }
