@@ -30,7 +30,6 @@
         "fund:update-all": "python3 -m scripts.cli update-all"
     },
     "devDependencies": {
-        "@babel/core": "^7.29.7",
         "@babel/preset-env": "^7.29.7",
         "@popperjs/core": "^2.11.8",
         "@stylistic/stylelint-plugin": "^5.2.1",
