@@ -183,9 +183,7 @@ describe('getFinancialStatsText', () => {
     test('handles corrupt detail fetch with empty market payload', async () => {
         const fixtures = {
             '../data/analysis/index.json': {
-                tickers: [
-                    { symbol: 'BAD', path: '../data/analysis/BAD.json' },
-                ],
+                tickers: [{ symbol: 'BAD', path: '../data/analysis/BAD.json' }],
             },
             '../data/analysis/BAD.json': {
                 symbol: 'BAD',
@@ -208,9 +206,7 @@ describe('getFinancialStatsText', () => {
     test('handles corrupted market objects in details returning no financial rows', async () => {
         const fixtures = {
             '../data/analysis/index.json': {
-                tickers: [
-                    { symbol: 'ERR', path: '../data/analysis/ERR.json' },
-                ],
+                tickers: [{ symbol: 'ERR', path: '../data/analysis/ERR.json' }],
             },
         };
         // Intentionally throw inside loadAnalysisDetails handling to hit the catch block and return null

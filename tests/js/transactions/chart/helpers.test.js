@@ -368,10 +368,7 @@ describe('Chart Helpers', () => {
         });
 
         it('handles invalid date types gracefully', () => {
-            const badSeries = [
-                { date: 'invalid', value: 100 },
-                ...series,
-            ];
+            const badSeries = [{ date: 'invalid', value: 100 }, ...series];
             const start = new Date('2023-01-01');
             const result = constrainSeriesToRange(badSeries, start, null);
             // The bad date point should be filtered out
