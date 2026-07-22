@@ -105,7 +105,40 @@ export function exponentialMovingAverage(data, alpha = 0.3, preserveEnd = true) 
 }
 
 /**
+ * Helper to calculate a single smoothed point for Savitzky-Golay
+ * @param {Point[]} data - Array of {x, y} points
+ * @param {number} index - Current index
+ * @param {number} halfWindow - Half window size
+ * @param {number} order - Polynomial order
+ * @param {boolean} preserveEnd - Whether to preserve the last point
+ * @returns {Point}
+ */
+function calculateSmoothedPoint(data, index, halfWindow, order, preserveEnd) {
+    // Preserve the last point if requested
+    if (preserveEnd && index === data.length - 1) {
+        return { ...data[index] };
+    }
+
+    // Calculate the window boundaries
+    const start = Math.max(0, index - halfWindow);
+    const end = Math.min(data.length, index + halfWindow + 1);
+    const windowLength = end - start;
+
+    if (windowLength < 3) {
+        return { ...data[index] };
+    }
+
+    // Simple polynomial fitting for small windows
+    const smoothedValue = polynomialFit(data, start, end, order, index - start);
+    return {
+        x: data[index].x,
+        y: smoothedValue,
+    };
+}
+
+/**
  * Savitzky-Golay Filter
+
  * Preserves peaks and valleys better than simple moving averages
  * @param {Point[]} data - Array of {x, y} points
  * @param {number} window - Window size (must be odd)
@@ -131,29 +164,7 @@ export function savitzkyGolay(data, window = 5, order = 2, preserveEnd = true) {
     const smoothed = [];
 
     for (let i = 0; i < data.length; i++) {
-        // Preserve the last point if requested
-        if (preserveEnd && i === data.length - 1) {
-            smoothed.push({ ...data[i] });
-            continue;
-        }
-
-        // Calculate the window boundaries
-        const start = Math.max(0, i - halfWindow);
-        const end = Math.min(data.length, i + halfWindow + 1);
-        // Bolt: Optimize O(N * W) slice allocations by using original array and indices
-        const windowLength = end - start;
-
-        if (windowLength < 3) {
-            smoothed.push({ ...data[i] });
-            continue;
-        }
-
-        // Simple polynomial fitting for small windows
-        const smoothedValue = polynomialFit(data, start, end, order, i - start);
-        smoothed.push({
-            x: data[i].x,
-            y: smoothedValue,
-        });
+        smoothed.push(calculateSmoothedPoint(data, i, halfWindow, order, preserveEnd));
     }
 
     return smoothed;
