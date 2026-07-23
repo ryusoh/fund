@@ -51,7 +51,6 @@
         "playwright": "^1.61.1",
         "prettier": "^3.9.5",
         "stylelint": "^17.14.1",
-        "stylelint-config-standard": "^40.0.0",
         "typescript": "^7.0.2",
         "wrangler": "^4.112.0"
     },
