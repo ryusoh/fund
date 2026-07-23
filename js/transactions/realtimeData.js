@@ -43,7 +43,8 @@ function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
     const tickerPEs = {};
     const tickerWeights = {};
 
-    tickers.forEach((ticker) => {
+    for (let i = 0; i < tickers.length; i++) {
+        const ticker = tickers[i];
         const details = holdings[ticker];
         const shares = parseFloat(details.shares) || 0;
         const price = parseFloat(prices[ticker]) || 0;
@@ -73,7 +74,7 @@ function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
             tickerWeights[ticker] = value;
             weightSum += value;
         }
-    });
+    }
 
     return {
         weightSum,
@@ -145,9 +146,9 @@ export async function fetchRealTimeData() {
 
         // 2. Add Composition Percentages
         if (totalBalanceUSD > 0) {
-            composition.forEach((item) => {
-                item.percent = (item.value / totalBalanceUSD) * 100;
-            });
+            for (let i = 0; i < composition.length; i++) {
+                composition[i].percent = (composition[i].value / totalBalanceUSD) * 100;
+            }
         }
 
         // Sort composition by value desc for consistency
