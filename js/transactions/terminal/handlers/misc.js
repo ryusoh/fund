@@ -228,110 +228,106 @@ export function handleLabelCommand(args, { appendMessage, chartManager }) {
     appendMessage(result);
 }
 
-export async function handleAbsCommand(args, { appendMessage, chartManager }) {
+const CHART_CONFIGS = {
+    composition: {
+        base: 'composition',
+        abs: 'compositionAbs',
+        name: 'Composition',
+        snapshot: getCompositionSnapshotLine,
+        snapshotLabel: 'Composition',
+    },
+    drawdown: {
+        base: 'drawdown',
+        abs: 'drawdownAbs',
+        name: 'Drawdown',
+        snapshot: () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: true }),
+        pctSnapshot: () => getDrawdownSnapshotLine({ includeHidden: true, isAbsolute: false }),
+        snapshotLabel: '',
+    },
+    sectors: {
+        base: 'sectors',
+        abs: 'sectorsAbs',
+        name: 'Sector allocation',
+        snapshot: async (opts) => {
+            const mod = await import('../snapshots.js');
+            return mod.getSectorsSnapshotLine(opts);
+        },
+        snapshotLabel: 'Sectors',
+    },
+    geography: {
+        base: 'geography',
+        abs: 'geographyAbs',
+        name: 'Geography',
+        snapshot: async (opts) => {
+            const mod = await import('../snapshots.js');
+            return mod.getGeographySnapshotLine(opts);
+        },
+        snapshotLabel: 'Geography',
+    },
+    marketcap: {
+        base: 'marketcap',
+        abs: 'marketcapAbs',
+        name: 'Market cap',
+        snapshot: async (opts) => {
+            const mod = await import('../snapshots.js');
+            return mod.getMarketcapSnapshotLine(opts);
+        },
+        snapshotLabel: 'Market Cap',
+    },
+};
+
+function getMatchedChartConfig(activeChart) {
+    return Object.values(CHART_CONFIGS).find(
+        (config) => activeChart === config.base || activeChart === config.abs
+    );
+}
+
+async function getChartSnapshot(config, isAbs) {
+    if (config.base === 'drawdown') {
+        return isAbs ? config.snapshot() : config.pctSnapshot();
+    }
+    const prefix = `${config.snapshotLabel}${isAbs ? ' Abs' : ''}`;
+    return await config.snapshot({ labelPrefix: prefix });
+}
+
+function updateChartStateAndRender(targetChart, chartManager) {
+    setActiveChart(targetChart);
+    if (chartManager && typeof chartManager.update === 'function') {
+        chartManager.update();
+    }
+}
+
+export async function handleAbsCommand(args, context) {
+    const { appendMessage, chartManager } = context;
     let result = '';
     const chartSection = document.getElementById('runningAmountSection');
     const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
     const activeChart = transactionState.activeChart;
 
-    if (activeChart === 'composition' || activeChart === 'compositionAbs') {
-        if (!isChartVisible) {
-            result = 'Composition chart must be active. Use `plot composition` first.';
-        } else if (activeChart === 'compositionAbs') {
-            result = 'Composition chart is already showing absolute values.';
-        } else {
-            setActiveChart('compositionAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched composition chart to absolute view.';
-            const summary = await getCompositionSnapshotLine({
-                labelPrefix: 'Composition Abs',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'drawdown' || activeChart === 'drawdownAbs') {
-        if (!isChartVisible) {
-            result = 'Drawdown chart must be active. Use `plot drawdown` first.';
-        } else if (activeChart === 'drawdownAbs') {
-            result = 'Drawdown chart is already showing absolute values.';
-        } else {
-            setActiveChart('drawdownAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched drawdown chart to absolute view.';
-            const summary = getDrawdownSnapshotLine({
-                includeHidden: true,
-                isAbsolute: true,
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'sectors' || activeChart === 'sectorsAbs') {
-        if (!isChartVisible) {
-            result = 'Sector allocation chart must be active. Use `plot sectors` first.';
-        } else if (activeChart === 'sectorsAbs') {
-            result = 'Sector allocation chart is already showing absolute values.';
-        } else {
-            setActiveChart('sectorsAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched sector allocation chart to absolute view.';
-            const { getSectorsSnapshotLine } = await import('../snapshots.js');
-            const summary = await getSectorsSnapshotLine({
-                labelPrefix: 'Sectors Abs',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'geography' || activeChart === 'geographyAbs') {
-        if (!isChartVisible) {
-            result = 'Geography chart must be active. Use `plot geography` first.';
-        } else if (activeChart === 'geographyAbs') {
-            result = 'Geography chart is already showing absolute values.';
-        } else {
-            setActiveChart('geographyAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched geography chart to absolute view.';
-            const { getGeographySnapshotLine } = await import('../snapshots.js');
-            const summary = await getGeographySnapshotLine({
-                labelPrefix: 'Geography Abs',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'marketcap' || activeChart === 'marketcapAbs') {
-        if (!isChartVisible) {
-            result = 'Market cap chart must be active. Use `plot marketcap` first.';
-        } else if (activeChart === 'marketcapAbs') {
-            result = 'Market cap chart is already showing absolute values.';
-        } else {
-            setActiveChart('marketcapAbs');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched market cap chart to absolute view.';
-            const { getMarketcapSnapshotLine } = await import('../snapshots.js');
-            const summary = await getMarketcapSnapshotLine({
-                labelPrefix: 'Market Cap Abs',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else {
+    const matchedConfig = getMatchedChartConfig(activeChart);
+
+    if (!matchedConfig) {
         result =
             'Composition, Sectors, Geography, Drawdown, or Market Cap chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, `plot drawdown`, or `plot marketcap` first.';
+    } else {
+        const targetChart = matchedConfig.abs;
+
+        if (!isChartVisible) {
+            result = `${matchedConfig.name} chart must be active. Use \`plot ${matchedConfig.base}\` first.`;
+        } else if (activeChart === targetChart) {
+            result = `${matchedConfig.name} chart is already showing absolute values.`;
+        } else {
+            updateChartStateAndRender(targetChart, chartManager);
+            result = `Switched ${matchedConfig.name.toLowerCase()} chart to absolute view.`;
+
+            const summary = await getChartSnapshot(matchedConfig, true);
+            if (summary) {
+                result += `
+${summary}`;
+            }
+        }
     }
+
     appendMessage(result);
 }
 
