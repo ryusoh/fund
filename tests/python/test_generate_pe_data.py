@@ -13,18 +13,18 @@ sys.path.insert(0, str(project_root))
 from scripts.generate_pe_data import (  # noqa: E402
     ETF_TICKERS,
     EXEMPT_TICKERS,
+    build_point_in_time_eps_series,
     calculate_harmonic_pe,
     cumulative_forward_split_factor,
     fetch_stock_eps_data,
-    interpolate_eps_series,
     is_etf,
     yf_symbol,
 )
 
 
 class TestGeneratePEData(unittest.TestCase):
-    def test_interpolate_eps_series(self) -> None:
-        """Test daily interpolation logic between annual EPS points."""
+    def test_build_point_in_time_eps_series(self) -> None:
+        """Step function: each date uses the latest anchor on/before it."""
         dates = pd.date_range(start="2023-01-01", end="2023-01-05")
 
         stock_data: Dict[str, Any] = {
@@ -36,11 +36,57 @@ class TestGeneratePEData(unittest.TestCase):
             "currency": "USD",
         }
 
-        series = interpolate_eps_series(stock_data, dates)
+        series = build_point_in_time_eps_series(stock_data, dates)
 
         self.assertAlmostEqual(series["2023-01-01"], 1.0)
         self.assertAlmostEqual(series["2023-01-05"], 5.0)
-        self.assertAlmostEqual(series["2023-01-02"], 2.0)
+        # Point-in-time: no interpolation toward the future anchor.
+        self.assertAlmostEqual(series["2023-01-02"], 1.0)
+        self.assertAlmostEqual(series["2023-01-04"], 1.0)
+
+    def test_build_point_in_time_eps_series_history_is_stable(self) -> None:
+        """Regression: a new earnings anchor must not rewrite past dates.
+
+        The old time-interpolation blended each date toward the NEXT anchor,
+        so every earnings report shifted the trailing year of the PE curve
+        retroactively. With the step function, past values are frozen.
+        """
+        dates = pd.date_range(start="2023-01-01", end="2023-06-01")
+        base: Dict[str, Any] = {
+            "points": [{"date": pd.Timestamp("2023-01-01"), "eps": 1.0}],
+            "current_ttm": None,
+            "currency": "USD",
+        }
+        before = build_point_in_time_eps_series(base, dates)
+
+        with_report: Dict[str, Any] = {
+            "points": [
+                {"date": pd.Timestamp("2023-01-01"), "eps": 1.0},
+                {"date": pd.Timestamp("2023-04-01"), "eps": 10.0},
+            ],
+            "current_ttm": None,
+            "currency": "USD",
+        }
+        after = build_point_in_time_eps_series(with_report, dates)
+
+        # Every date before the new report is unchanged...
+        pd.testing.assert_series_equal(before[:"2023-03-31"], after[:"2023-03-31"])
+        # ...and the step takes effect only from the report date onward.
+        self.assertAlmostEqual(after["2023-03-31"], 1.0)
+        self.assertAlmostEqual(after["2023-04-01"], 10.0)
+
+    def test_build_point_in_time_eps_series_no_bfill(self) -> None:
+        """Dates before the first anchor have no knowable EPS (NaN), not a
+        future value back-filled into the past."""
+        dates = pd.date_range(start="2023-01-01", end="2023-01-03")
+        stock_data: Dict[str, Any] = {
+            "points": [{"date": pd.Timestamp("2023-01-03"), "eps": 2.0}],
+            "current_ttm": None,
+            "currency": "USD",
+        }
+        series = build_point_in_time_eps_series(stock_data, dates)
+        self.assertTrue(pd.isna(series["2023-01-01"]))
+        self.assertAlmostEqual(series["2023-01-03"], 2.0)
 
     def test_calculate_harmonic_pe_basic(self) -> None:
         """Test basic weighted harmonic mean calculation."""
@@ -795,15 +841,15 @@ class TestGeneratePEData(unittest.TestCase):
             result = fetch_etf_pe("TEST", dates)
             self.assertEqual(result.iloc[0], 15.0)
 
-    def test_interpolate_eps_series_exception(self):
-        from scripts.generate_pe_data import interpolate_eps_series
+    def test_build_point_in_time_eps_series_exception(self):
+        from scripts.generate_pe_data import build_point_in_time_eps_series
 
         stock_data = {
             "points": [{"date": pd.Timestamp("2023-01-01"), "eps": 1.0}],
             "current_ttm": None,
         }
         dates = pd.DatetimeIndex([pd.Timestamp("2023-01-01"), pd.Timestamp("2023-01-02")])
-        res = interpolate_eps_series(stock_data, dates)
+        res = build_point_in_time_eps_series(stock_data, dates)
         self.assertEqual(res.iloc[0], 1.0)
         self.assertEqual(res.iloc[1], 1.0)
 

@@ -9,7 +9,7 @@ Methodology (V5):
    - Use `income_stmt` (Annual) and `quarterly_income_stmt` (Quarterly) as "Anchors" (reliable adjusted data).
    - Use `get_earnings_dates()` for deep history.
    - Intelligent Split Detection: Compare reported values against Anchor values to detect and fix Yahoo's inconsistent adjustment history.
-   - Interpolate EPS linearly between points.
+   - Point-in-time: each date uses the latest reported EPS anchor (step function), never interpolated — new earnings reports must not rewrite history.
 """
 
 from __future__ import annotations
@@ -983,7 +983,18 @@ def fetch_etf_pe(ticker: str, dates: pd.DatetimeIndex) -> Optional[pd.Series]:
     return None
 
 
-def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd.Series[Any]:
+def build_point_in_time_eps_series(
+    stock_data: Dict, date_index: pd.DatetimeIndex
+) -> pd.Series[Any]:
+    """Daily trailing EPS as knowable on each date (point-in-time).
+
+    Step function over the EPS anchor points: each date uses the most recent
+    anchor on or before it. No time interpolation — interpolating smears future
+    earnings into past dates, so every new earnings report rewrote the trailing
+    year of the PE curve retroactively. No bfill either: dates before the first
+    anchor have no knowable EPS and stay NaN (the ticker is simply excluded
+    from the harmonic mean until its first report).
+    """
     points = stock_data["points"]
     current_ttm = stock_data["current_ttm"]
     known_data = {p["date"]: p["eps"] for p in points}
@@ -996,9 +1007,9 @@ def interpolate_eps_series(stock_data: Dict, date_index: pd.DatetimeIndex) -> pd
         return pd.Series(dtype=float).reindex(date_index)
     s_points = pd.Series(known_data).sort_index()
     s_points = s_points[~s_points.index.duplicated(keep='last')]
-    full_series = s_points.reindex(s_points.index.union(date_index))
-    interpolated = full_series.interpolate(method='time')
-    return interpolated.reindex(date_index).ffill().bfill()  # type: ignore[no-any-return]
+    # Union first so anchors falling between index dates still set the step level.
+    full_series = s_points.reindex(s_points.index.union(date_index)).ffill()
+    return full_series.reindex(date_index)  # type: ignore[no-any-return]
 
 
 def load_data():
@@ -1426,7 +1437,7 @@ def main():
     for t, data in all_stock_data.items():
         if not data["points"] and data["current_ttm"] is None:
             continue
-        stock_eps_series[t] = interpolate_eps_series(data, dates)
+        stock_eps_series[t] = build_point_in_time_eps_series(data, dates)
         p0 = data["points"][0]["eps"] if data["points"] else 0
         curr = data["current_ttm"] if data["current_ttm"] else 0
         print(f"  {t}: HistPts={len(data['points'])}, First={p0:.2f}, Curr={curr:.2f}")
