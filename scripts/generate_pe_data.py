@@ -1225,6 +1225,56 @@ def apply_fail_open_backstop(
     return final_output
 
 
+def carry_forward_ticker_series(
+    final_output: Dict[str, Any], existing_pe_data: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Per-ticker fail-open for ticker_pe / ticker_weights.
+
+    The top-level backstop only guards whole blocks, but a single flaky fetch
+    (e.g. yfinance ``info.trailingPE`` returning None for VT) makes that ticker
+    all-None on every date, and ``valid_ticker_mask`` then drops it from the
+    file entirely — silently rewriting the whole historical curve without one
+    of the portfolio's holdings. When a ticker had data in the previous file
+    but this run produced nothing for it, rebuild its series from the previous
+    file date-aligned, forward-filling dates added since (the chart's trailing
+    tail stays continuous). Tickers with any fresh data are never touched.
+    """
+    if not isinstance(existing_pe_data, dict):
+        return final_output
+    new_dates = final_output.get("dates")
+    old_dates = existing_pe_data.get("dates")
+    if not isinstance(new_dates, list) or not isinstance(old_dates, list):
+        return final_output
+    old_index = {d: i for i, d in enumerate(old_dates)}
+    for key in ("ticker_pe", "ticker_weights"):
+        prev_block = existing_pe_data.get(key)
+        if not isinstance(prev_block, dict):
+            continue
+        new_block = final_output.get(key)
+        if not isinstance(new_block, dict):
+            new_block = {}
+            final_output[key] = new_block
+        for ticker, prev_series in prev_block.items():
+            if not isinstance(prev_series, list) or not any(v is not None for v in prev_series):
+                continue
+            new_series = new_block.get(ticker)
+            if isinstance(new_series, list) and any(v is not None for v in new_series):
+                continue  # fresh data — never overwrite
+            carried: List[Any] = []
+            last_val: Any = None
+            for d in new_dates:
+                j = old_index.get(d)
+                if j is not None and j < len(prev_series) and prev_series[j] is not None:
+                    last_val = prev_series[j]
+                carried.append(last_val)
+            new_block[ticker] = carried
+            print(
+                f"  Fail-open: carried forward '{key}.{ticker}' from previous "
+                "pe_ratio.json (no fresh data)."
+            )
+    return final_output
+
+
 def scrape_msci_pe_data() -> Optional[Dict[str, float]]:
     """Scrape both trailing P/E and forward P/E from MSCI World Index page.
 
@@ -1540,6 +1590,11 @@ def main():
             target_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
             final_output["forward_pe"] = {"target_date": target_date}
         final_output["forward_pe"]["benchmark_forward_pe"] = benchmark_fwd_pe
+
+    # Per-ticker fail-open: a single flaky fetch must not erase a holding from
+    # all of history (e.g. VT's trailingPE returning None rewrites the whole
+    # curve without its largest-weight ticker).
+    final_output = carry_forward_ticker_series(final_output, existing_pe_data)
 
     # Final safety net: never blank a block the previous file had just because
     # this run's fetch for it failed (e.g. benchmark_pe on a total scrape outage).

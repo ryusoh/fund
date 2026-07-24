@@ -625,6 +625,57 @@ class TestGeneratePEData(unittest.TestCase):
         )
         self.assertEqual(apply_fail_open_backstop(fresh, None), {"portfolio_pe": [21.0]})
 
+    def test_carry_forward_ticker_series_restores_dropped_ticker(self):
+        # Regression: one flaky yfinance run returned no trailingPE for VT, so
+        # VT came out all-None on every date and valid_ticker_mask dropped it
+        # from the file — silently recomputing the whole historical curve
+        # without a ~29%-weight holding. Carry the previous series forward,
+        # date-aligned, forward-filling dates added since the last good run.
+        from scripts.generate_pe_data import carry_forward_ticker_series
+
+        fresh = {
+            "dates": ["2026-06-01", "2026-06-02", "2026-06-03"],
+            "ticker_pe": {"GOOG": [22.1, 22.2, 22.3]},
+            "ticker_weights": {"GOOG": [0.5, 0.5, 0.5]},
+        }
+        existing = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            "ticker_pe": {"VT": [22.3, 22.4], "GOOG": [28.4, 28.5]},
+            "ticker_weights": {"VT": [0.29, 0.29], "GOOG": [0.5, 0.5]},
+        }
+        result = carry_forward_ticker_series(fresh, existing)
+        # VT restored; the new 2026-06-03 date forward-fills the last value.
+        self.assertEqual(result["ticker_pe"]["VT"], [22.3, 22.4, 22.4])
+        self.assertEqual(result["ticker_weights"]["VT"], [0.29, 0.29, 0.29])
+        # Fresh GOOG data must never be overwritten by stale fallback.
+        self.assertEqual(result["ticker_pe"]["GOOG"], [22.1, 22.2, 22.3])
+
+    def test_carry_forward_ticker_series_restores_all_none_series(self):
+        # An all-None series this run counts as "nothing fetched", same as a
+        # dropped key.
+        from scripts.generate_pe_data import carry_forward_ticker_series
+
+        fresh = {
+            "dates": ["2026-06-01"],
+            "ticker_pe": {"VT": [None]},
+        }
+        existing = {
+            "dates": ["2026-06-01"],
+            "ticker_pe": {"VT": [22.3]},
+        }
+        result = carry_forward_ticker_series(fresh, existing)
+        self.assertEqual(result["ticker_pe"]["VT"], [22.3])
+
+    def test_carry_forward_ticker_series_noop_without_existing(self):
+        from scripts.generate_pe_data import carry_forward_ticker_series
+
+        fresh = {"dates": ["2026-06-01"], "ticker_pe": {"GOOG": [22.1]}}
+        self.assertEqual(carry_forward_ticker_series(fresh, None), fresh)
+        # Existing file has no usable series for the ticker — nothing added.
+        existing = {"dates": ["2026-06-01"], "ticker_pe": {"VT": [None]}}
+        result = carry_forward_ticker_series(fresh, existing)
+        self.assertNotIn("VT", result["ticker_pe"])
+
     @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
     def test_fetch_forward_pe_exception(self, mock_path):
         from scripts.generate_pe_data import fetch_forward_pe
