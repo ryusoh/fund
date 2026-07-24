@@ -199,11 +199,15 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **Y-axis tick algorithm** (volume pane labels) → `docs/y-axis-tick-algorithm.md`.
   Two-phase generate→collide pipeline with strict no-overlap invariant. Read before
   touching `generateConcreteTicks` or the `drawAxes` collision filter in `core.js`.
-- **Forward P/E & the PER column** → `docs/pe-forward-pe-pipeline.md`. The Python
+- **PE pipeline (forward P/E, PER column, historical PE)** →
+  `docs/pe-forward-pe-pipeline.md`. The Python
   scrape writes `forward_pe.msci_pe_ratio` into `pe_ratio.json`; the frontend
   derives VT's forward P/E from it. A null ratio renders the cell **trailing-only,
-  not an error** — verify in the rendered table. Read before editing forward-PE in
-  `generate_pe_data.py` or `dataService.js`.
+  not an error** — verify in the rendered table. The historical PE series is
+  point-in-time by design (step-function EPS, per-ticker fail-open) — past dates
+  must not rewrite themselves; the doc lists the mechanisms that still can
+  (ETF flat-lining, restatements). Read before editing forward-PE or the EPS
+  pipeline in `generate_pe_data.py` or `dataService.js`.
 - **Pages deploy & bot data workflows** → `docs/pages-deploy.md`. Bot commits
   reach the live site only via an explicit `workflow_dispatch` of `pages.yml`;
   a skip-ci marker anywhere in a commit message (even quoted in the body) kills

@@ -27,13 +27,22 @@ bug is live. If the symptom smells like one of these, build the loop to catch it
   `docs/terminal-data-readiness.md`.
 - **Null `forward_pe.msci_pe_ratio`** → PER cell renders trailing-only, not an
   error. See `docs/pe-forward-pe-pipeline.md`.
+- **Generated `data/` history that rewrites itself retroactively.** The pipeline
+  regenerates the whole time-series every run — a value for a past date can
+  change today with no error (a ticker silently dropped after one flaky fetch,
+  a current value flat-lined over all history, an interpolated series re-blended
+  by new anchors). The loop is **git forensics on the committed data**: the bots
+  commit `data/`, so `git log --oneline -- <file>` then `git show <rev>:<file>`
+  and diff the *same logical record* (one date, one ticker) across revisions.
+  When the value changed tells you which mechanism; which tickers changed tells
+  you why. See `docs/pe-forward-pe-pipeline.md`.
 - **Glass / refraction / lighting** are Chromium-only and visual — unit tests
   **cannot** see a transparent edge or misaligned rim. See `docs/liquid-glass.md`.
 
 ## Phase 1 — Build a feedback loop
 
 **This is the skill.** Everything else is mechanical. If you have a **tight**
-pass/fail signal that goes red on _this_ bug, you will find the cause. If you
+pass/fail signal that goes red on *this* bug, you will find the cause. If you
 don't, no amount of staring at code will save you. Spend disproportionate effort
 here. **Be aggressive. Be creative. Refuse to give up.**
 
