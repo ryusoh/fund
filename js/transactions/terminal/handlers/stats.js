@@ -15,6 +15,21 @@ import {
 import { getGeographySummaryText } from './geographySummary.js';
 import { STATS_SUBCOMMANDS } from '../constants.js';
 
+const STATS_DISPATCH = {
+    transactions: () => getStatsText(transactionState.selectedCurrency || 'USD'),
+    holdings: () => getHoldingsText(transactionState.selectedCurrency || 'USD'),
+    'holdings-debug': () => getHoldingsDebugText(),
+    financial: () => getFinancialStatsText(),
+    technical: () => getTechnicalStatsText(),
+    cagr: () => getCagrText(),
+    return: () => getAnnualReturnText(),
+    ratio: () => getRatioText(),
+    duration: () => getDurationStatsText(),
+    lifespan: () => getLifespanStatsText(),
+    concentration: () => getConcentrationText(),
+    geography: () => getGeographySummaryText(),
+};
+
 export async function handleStatsCommand(args, { appendMessage }) {
     if (args.length === 0) {
         // Show stats help
@@ -46,46 +61,10 @@ export async function handleStatsCommand(args, { appendMessage }) {
     const subcommand = args[0].toLowerCase();
     let result = '';
 
-    switch (subcommand) {
-        case 'transactions':
-            result = await getStatsText(transactionState.selectedCurrency || 'USD');
-            break;
-        case 'holdings':
-            result = await getHoldingsText(transactionState.selectedCurrency || 'USD');
-            break;
-        case 'holdings-debug':
-            result = await getHoldingsDebugText();
-            break;
-        case 'financial':
-            result = await getFinancialStatsText();
-            break;
-        case 'technical':
-            result = await getTechnicalStatsText();
-            break;
-        case 'cagr':
-            result = await getCagrText();
-            break;
-        case 'return':
-            result = await getAnnualReturnText();
-            break;
-        case 'ratio':
-            result = await getRatioText();
-            break;
-        case 'duration':
-            result = await getDurationStatsText();
-            break;
-        case 'lifespan':
-            result = await getLifespanStatsText();
-            break;
-        case 'concentration':
-            result = await getConcentrationText();
-            break;
-        case 'geography':
-            result = await getGeographySummaryText();
-            break;
-        default:
-            result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;
-            break;
+    if (Object.hasOwn(STATS_DISPATCH, subcommand)) {
+        result = await STATS_DISPATCH[subcommand]();
+    } else {
+        result = `Unknown stats subcommand: ${subcommand}\nAvailable: ${STATS_SUBCOMMANDS.join(', ')}`;
     }
 
     if (result) {
