@@ -205,19 +205,6 @@ describe('Autocomplete Completeness', () => {
     });
 
     describe('Cross-Reference Validation', () => {
-        test('commands.js uses the same constants as autocomplete.js', async () => {
-            const commandsCode = fs.readFileSync(
-                path.join(__dirname, '../../../js/transactions/terminal/commands.js'),
-                'utf8'
-            );
-
-            // Verify commands.js imports the same constants
-            expect(commandsCode).toContain('COMMAND_ALIASES');
-            expect(commandsCode).toContain('PLOT_SUBCOMMANDS');
-            expect(commandsCode).toContain('STATS_SUBCOMMANDS');
-            expect(commandsCode).toContain('HELP_SUBCOMMANDS');
-            expect(commandsCode).toContain("from './constants.js'");
-        });
 
         test('no unexpected command is in multiple subcommand lists (avoiding ambiguity)', () => {
             // Check for overlaps between subcommand lists

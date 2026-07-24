@@ -1,10 +1,3 @@
-import {
-    COMMAND_ALIASES,
-    STATS_SUBCOMMANDS,
-    PLOT_SUBCOMMANDS,
-    HELP_SUBCOMMANDS,
-} from './constants.js';
-
 import { handleHelpCommand } from './handlers/help.js';
 import { handleStatsCommand } from './handlers/stats.js';
 import { handlePlotCommand } from './handlers/plot.js';
@@ -29,9 +22,6 @@ import {
 } from './handlers/misc.js';
 
 import { setFadePreserveSecondLast } from '../fade.js';
-
-// Re-export constants for backward compatibility (if needed)
-export { COMMAND_ALIASES, STATS_SUBCOMMANDS, PLOT_SUBCOMMANDS, HELP_SUBCOMMANDS };
 
 export async function executeCommand(command, context) {
     const { onCommandExecuted } = context;
