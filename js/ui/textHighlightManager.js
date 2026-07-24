@@ -57,9 +57,9 @@ function normalizeTargets(target) {
 
     if (Array.isArray(target)) {
         const nodes = [];
-        target.forEach((item) => {
-            nodes.push(...normalizeTargets(item));
-        });
+        for (let i = 0; i < target.length; i++) {
+            nodes.push(...normalizeTargets(target[i]));
+        }
         return nodes;
     }
 
@@ -98,16 +98,17 @@ export function setHighlightState(target, shouldHighlight, options = DEFAULT_OPT
     const { className = DEFAULT_OPTIONS.className } = options || DEFAULT_OPTIONS;
     const nodes = normalizeTargets(target);
 
-    nodes.forEach((node) => {
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
         if (!node || !node.classList) {
-            return;
+            continue;
         }
         if (shouldHighlight) {
             node.classList.add(className);
         } else {
             node.classList.remove(className);
         }
-    });
+    }
 }
 
 /**
@@ -136,7 +137,8 @@ function createCharacterNodes(node, baseText, baseColor) {
     // Check if this is an SVG element
     const isSvg = node.namespaceURI === SVG_NS || node.closest('svg') !== null;
 
-    characters.forEach((char, index) => {
+    for (let index = 0; index < characters.length; index++) {
+        const char = characters[index];
         let child;
         if (isSvg) {
             // Create SVG tspan element
@@ -155,7 +157,7 @@ function createCharacterNodes(node, baseText, baseColor) {
         child.setAttribute('data-thinking-index', String(index));
         fragment.appendChild(child);
         created.push(child);
-    });
+    }
     node.appendChild(fragment);
     return created;
 }
@@ -221,7 +223,9 @@ function scheduleThinkingFrame(entry) {
 
         if (!isConnected) {
             if (entry.isGroup) {
-                entry.nodes.forEach((n) => stopThinking(n.node));
+                for (let i = 0; i < entry.nodes.length; i++) {
+                    stopThinking(entry.nodes[i].node);
+                }
             } else {
                 stopThinking(entry.node);
             }
@@ -290,26 +294,28 @@ function startThinkingGroup(nodes, options) {
         return;
     }
 
-    validNodes.forEach((node) => {
+    for (let i = 0; i < validNodes.length; i++) {
+        const node = validNodes[i];
         if (THINKING_REGISTRY.get(node)) {
             stopThinking(node);
         }
-    });
+    }
 
     const nodeStates = [];
     const charNodes = [];
 
-    validNodes.forEach((node) => {
+    for (let i = 0; i < validNodes.length; i++) {
+        const node = validNodes[i];
         const baseText = node.textContent || '';
         if (!baseText) {
-            return;
+            continue;
         }
         const result = createThinkingEntry(node, baseText, mergedOptions);
         if (result) {
             nodeStates.push(result.nodeState);
             charNodes.push(...result.charNodes);
         }
-    });
+    }
 
     if (!charNodes.length) {
         return;
@@ -327,7 +333,9 @@ function startThinkingGroup(nodes, options) {
         isGroup: true,
     };
 
-    nodeStates.forEach((state) => THINKING_REGISTRY.set(state.node, entry));
+    for (let i = 0; i < nodeStates.length; i++) {
+        THINKING_REGISTRY.set(nodeStates[i].node, entry);
+    }
     applyThinkingWave(entry);
 
     if (!(mergedOptions.disableAnimation || prefersReducedMotion())) {
@@ -355,9 +363,10 @@ function stopThinking(node) {
         },
     ];
 
-    states.forEach((state) => {
+    for (let i = 0; i < states.length; i++) {
+        const state = states[i];
         if (!state || !state.node) {
-            return;
+            continue;
         }
         state.node.textContent = state.baseText || '';
         if (state.baseFillAttr !== null && state.baseFillAttr !== undefined) {
@@ -380,7 +389,7 @@ function stopThinking(node) {
         }
         state.node.removeAttribute('data-thinking-active');
         THINKING_REGISTRY.delete(state.node);
-    });
+    }
 }
 
 /**
@@ -399,20 +408,23 @@ export function setThinkingHighlight(target, shouldHighlight, options = null) {
         if (shouldHighlight) {
             startThinkingGroup(nodes, options || undefined);
         } else {
-            nodes.forEach((node) => stopThinking(node));
+            for (let i = 0; i < nodes.length; i++) {
+                stopThinking(nodes[i]);
+            }
         }
         return;
     }
 
     const nodes = normalizeTargets(target);
-    nodes.forEach((node) => {
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
         if (!node || node.nodeType !== 1) {
-            return;
+            continue;
         }
         if (shouldHighlight) {
             startThinking(node, options || undefined);
         } else {
             stopThinking(node);
         }
-    });
+    }
 }
