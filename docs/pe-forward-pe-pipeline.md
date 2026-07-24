@@ -59,6 +59,16 @@ values forward:
   MSCI sub-scrape failed (block present, `msci_pe_ratio` absent), reuse the last
   good ratio. Without this, a _partial_ success overwrites the good ratio with
   nothing.
+- `carry_forward_ticker_series` — per-ticker net for `ticker_pe`/`ticker_weights`.
+  A single flaky fetch (e.g. yfinance `info.trailingPE` returning null for VT)
+  makes that ticker all-null on every date, and `valid_ticker_mask` then drops
+  it from the file — silently recomputing the whole historical curve without
+  one of the portfolio's holdings (this happened on 2026-07-23: VT, IHF, VNQ,
+  VOO, VOX vanished and the curve rewrote ~2 points lower). If a ticker had data
+  in the previous file but this run produced none, the previous series is
+  rebuilt date-aligned and forward-filled. Fresh data is never overwritten.
+  Caveat: it carries from the _previous_ file, so if a broken file is already
+  committed, the hole heals only on the next successful fetch.
 - `apply_fail_open_backstop` — general net before write: any top-level key the
   previous file had that this run produced empty/missing (`{}`/`[]`/absent) is
   restored. Covers `benchmark_pe`, `^IXIC` forward, etc. Fresh data is never
