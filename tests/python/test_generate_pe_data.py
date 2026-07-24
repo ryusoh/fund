@@ -70,7 +70,8 @@ class TestGeneratePEData(unittest.TestCase):
         after = build_point_in_time_eps_series(with_report, dates)
 
         # Every date before the new report is unchanged...
-        pd.testing.assert_series_equal(before[:"2023-03-31"], after[:"2023-03-31"])
+        before_report = before.index <= pd.Timestamp("2023-03-31")
+        pd.testing.assert_series_equal(before[before_report], after[before_report])
         # ...and the step takes effect only from the report date onward.
         self.assertAlmostEqual(after["2023-03-31"], 1.0)
         self.assertAlmostEqual(after["2023-04-01"], 10.0)
