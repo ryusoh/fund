@@ -232,6 +232,59 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.load_eps_cache")
     @patch("scripts.generate_pe_data.load_manual_patch")
     @patch("scripts.generate_pe_data.save_eps_cache")
+    def test_fetch_eps_annual_anchor_skipped_when_quarterly_coverage(
+        self, mock_save, mock_patch, mock_cache, mock_ticker
+    ) -> None:
+        """Regression (BRKB PE cliffs): an annual income_stmt anchor whose fiscal
+        year is covered by >=4 quarterly reports must be skipped. Berkshire's
+        GAAP annual EPS includes unrealized investment gains (44.27 for FY2023
+        vs ~17 reported TTM), so the FY-end anchor contradicted the quarterly
+        series and produced single-day ~10% portfolio-PE cliffs at FY-end and
+        at the Q4 report date. Annual anchors remain as fallback for years the
+        quarterly reports don't reach."""
+        mock_cache.return_value = {}
+        mock_patch.return_value = {}
+
+        mock_stock = MagicMock()
+        mock_stock.info = {"currency": "USD", "trailingEps": 5.0}
+        mock_stock.splits = pd.Series(dtype=float)
+        # Annual GAAP EPS: FY2023 wildly inconsistent (investment gains),
+        # FY2010 beyond the quarterly window (fallback must keep it).
+        mock_stock.income_stmt = pd.DataFrame(
+            {"2010-12-31": [3.0], "2023-12-31": [44.27]}, index=["Basic EPS"]
+        )
+        mock_stock.quarterly_income_stmt = pd.DataFrame()
+        # 8 quarters of reported EPS (~4/quarter → TTM 16), true report dates.
+        q_dates = pd.to_datetime(
+            [
+                "2022-02-26",
+                "2022-05-07",
+                "2022-08-06",
+                "2022-11-05",
+                "2023-02-25",
+                "2023-05-06",
+                "2023-08-05",
+                "2023-11-04",
+            ]
+        )
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame(
+            {"Reported EPS": [4.0] * 8}, index=q_dates
+        )
+        mock_ticker.return_value = mock_stock
+
+        results = fetch_stock_eps_data(["BRKB"])
+        points = {p["date"].strftime("%Y-%m-%d"): p["eps"] for p in results["BRKB"]["points"]}
+
+        # Inconsistent FY2023 anchor dropped — quarterly TTM series wins.
+        self.assertNotIn("2023-12-31", points)
+        self.assertAlmostEqual(points["2023-11-04"], 16.0)
+        # Deep-history annual anchor (no quarterly coverage) kept as fallback.
+        self.assertAlmostEqual(points["2010-12-31"], 3.0)
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    @patch("scripts.generate_pe_data.load_eps_cache")
+    @patch("scripts.generate_pe_data.load_manual_patch")
+    @patch("scripts.generate_pe_data.save_eps_cache")
     def test_fetch_eps_manual_patch(self, mock_save, mock_patch, mock_cache, mock_ticker) -> None:
         """Test that manual patch overrides/augments fetched data."""
         # Setup Mocks

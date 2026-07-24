@@ -6,8 +6,9 @@ Reads daily holdings, historical prices, and earnings data from yfinance.
 Methodology (V5):
 1. For ETFs: Use `info.trailingPE` or yield proxy.
 2. For Stocks:
-   - Use `income_stmt` (Annual) and `quarterly_income_stmt` (Quarterly) as "Anchors" (reliable adjusted data).
-   - Use `get_earnings_dates()` for deep history.
+   - Use `get_earnings_dates()` for the point-in-time EPS series (true report dates).
+   - Use `income_stmt` (Annual) and `quarterly_income_stmt` (Quarterly) as split-calibration
+     anchors, and as EPS fallback only where quarterly reports don't reach (deep history).
    - Intelligent Split Detection: Compare reported values against Anchor values to detect and fix Yahoo's inconsistent adjustment history.
    - Point-in-time: each date uses the latest reported EPS anchor (step function), never interpolated — new earnings reports must not rewrite history.
 """
@@ -567,7 +568,13 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                     val /= 100.0
                 result_entry["points"][d_str] = val
 
-            # 1. Annual income_stmt → fully split-adjusted, use directly
+            # 1. Annual income_stmt → fully split-adjusted. Collected but only
+            # used as deep-history fallback (step 4) — where quarterly reports
+            # cover the fiscal year, the annual figure is a duplicate keyed at
+            # period-end (a look-ahead leak) and, for tickers like Berkshire
+            # whose GAAP EPS includes unrealized investment gains, contradicts
+            # the quarterly series and produces single-day PE cliffs.
+            annual_points: List[Tuple[str, float]] = []
             try:
                 annual = stock.income_stmt
             except Exception as e:
@@ -580,13 +587,7 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             if annual is not None and not annual.empty and "Basic EPS" in annual.index:
                 for d_val, v in annual.loc["Basic EPS"].items():
                     if pd.notna(v):
-                        add_point(
-                            pd.Timestamp(d_val).strftime("%Y-%m-%d"),
-                            float(v),
-                            fx_series,
-                            currency,
-                            fin_curr,
-                        )
+                        annual_points.append((pd.Timestamp(d_val).strftime("%Y-%m-%d"), float(v)))
 
             # 2. Quarterly income_stmt → fully split-adjusted, build TTM
             try:
@@ -616,12 +617,14 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                         )
 
             # 3. get_earnings_dates() → REQUIRES split normalization
+            q_eps_index: Optional[pd.Index] = None
             try:
                 ed = stock.get_earnings_dates(limit=40)
                 if ed is not None and not ed.empty and "Reported EPS" in ed.columns:
                     q_eps_raw = ed["Reported EPS"].dropna().sort_index()
                     q_eps_raw.index = q_eps_raw.index.normalize().tz_localize(None)
                     q_eps_raw = q_eps_raw.groupby(q_eps_raw.index).last()
+                    q_eps_index = q_eps_raw.index
 
                     calibration_factor = 1.0
                     if (
@@ -676,6 +679,25 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
             except Exception as e:
                 if "NoneType" not in str(e):
                     print(f"Warning: Quarterly fetch failed for {symbol}: {e}")
+
+            # 4. Annual anchors — deep-history fallback only. Skip any fiscal
+            # year covered by >=4 quarterly reports (prior ~400 days): the
+            # annual figure would duplicate the quarterly TTM, and for tickers
+            # whose GAAP EPS includes unrealized investment gains (e.g. BRKB)
+            # it contradicts the quarterly series, producing single-day PE
+            # cliffs at FY-end and at the Q4 report date.
+            for d_str, v in annual_points:
+                ann_ts = pd.Timestamp(d_str)
+                if q_eps_index is not None:
+                    covered = int(
+                        (
+                            (q_eps_index <= ann_ts)
+                            & (q_eps_index > ann_ts - pd.Timedelta(days=400))
+                        ).sum()
+                    )
+                    if covered >= 4:
+                        continue
+                add_point(d_str, v, fx_series, currency, fin_curr)
             return (t, result_entry)
         except Exception as e:
             if "NoneType" not in str(e):

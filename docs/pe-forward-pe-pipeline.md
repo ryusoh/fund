@@ -86,6 +86,28 @@ and `tests/js/services/dataService.test.js` (`_calculateDynamicPeValues` VT
 derivation). No unit test can catch a live scrape failing — the fail-open + stale
 warning _is_ the guard.
 
+## Historical PE is point-in-time (must not rewrite itself)
+
+The trailing PE history in `pe_ratio.json` is built so past dates stay frozen:
+
+- **Stocks**: `build_point_in_time_eps_series` is a step function over EPS
+  anchors — each date uses the latest anchor reported on/before it. No time
+  interpolation (it smeared future earnings into the past, so every earnings
+  report rewrote the trailing year) and no bfill (dates before the first
+  anchor stay empty).
+- **Annual `income_stmt` EPS is deep-history fallback only.** Where ≥4
+  quarterly reports cover a fiscal year, the annual anchor is skipped: it's a
+  duplicate keyed at period-end (a ~2-month look-ahead leak), and for tickers
+  like BRKB whose GAAP EPS includes unrealized investment gains it contradicts
+  the quarterly series — that produced ±11% portfolio-PE cliffs at each FY-end
+  and Q4 report date (fixed 2026-07-24).
+- **ETFs have no historical EPS source** — Yahoo exposes only the current
+  trailing PE, so non-manual ETFs render flat at today's value and their
+  history still wobbles daily. `MANUAL_TICKER_PE_CURVES` (hand-sourced yearly
+  anchors) is the only fix mechanism. VT is the big one.
+- Residual: `quarterly_income_stmt` TTM anchors are keyed at quarter-end, a
+  ~3-week look-ahead at quarter boundaries vs. the actual report date.
+
 ## Gotcha: repairing pe_ratio.json by hand
 
 `data/` is generated (don't hand-edit — see CLAUDE.md). But a one-time regression
