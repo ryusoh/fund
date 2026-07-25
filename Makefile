@@ -164,9 +164,9 @@ sec:
 	@echo "Note: For Python dependency security scanning, run: pip install pip-audit && pip-audit"
 
 js-lint:
-	@# --max-warnings ratchets the eslint complexity rule (see eslint.config.cjs):
-	@# 64 is the current baseline; any new warning anywhere fails the gate.
-	npx --yes eslint . --ext .js --max-warnings 64
+	@# eslint-suppressions.json baselines the legacy complexity violations
+	@# (see eslint.config.cjs); any new one is an error and fails here.
+	npx --yes eslint . --ext .js
 
 lint-fix:
 	npx --yes eslint . --ext .js --fix || true

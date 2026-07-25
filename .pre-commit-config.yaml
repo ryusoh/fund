@@ -71,6 +71,15 @@ repos:
             types_or: [css]
             pass_filenames: true
 
+    - repo: local
+      hooks:
+          - id: xenon-complexity
+            name: xenon (Python complexity ratchet)
+            entry: bash -lc 'PY=venv/bin/python; [ -x "$PY" ] || PY=python3; if ! "$PY" -c "import xenon" >/dev/null 2>&1; then echo "xenon missing; skipping"; exit 0; fi; "$PY" -m xenon --max-average C --max-modules F --max-absolute F scripts tests'
+            language: system
+            pass_filenames: false
+            always_run: true
+
     # JS tests (commit): related tests only
     - repo: local
       hooks:

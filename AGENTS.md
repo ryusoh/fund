@@ -147,10 +147,11 @@ instantly identifiable.
   targets so you match CI. Use scoped `npx jest <file>` only for the tight
   edit→verify loop; use `make verify` before opening the PR.
 - **Complexity ratchet** — `make lint` also gates cyclomatic complexity
-  (`docs/agentic-quality-gates.md`): ESLint `complexity` warns above 20 with
-  `--max-warnings 64` pinning today's baseline (the total can only go down),
-  and `xenon` freezes Python's complexity ranks. Lower the ceilings as the
-  Architect lane burns the backlog down; never raise them.
+  (`docs/agentic-quality-gates.md`): ESLint `complexity` errors above 20 with
+  `eslint-suppressions.json` baselining the legacy violations (any NEW or
+  worsened one fails; shrink the baseline with `npx eslint
+--prune-suppressions`), and `xenon` freezes Python's complexity ranks. Never
+  raise the ceilings or hand-edit the suppressions file.
 - **Jest runs silent** — `console.log` prints nothing. The suite is TZ=UTC while
   browsers here are UTC+8, so a date-off-by-one can be wrong in the browser but
   green under tests. Before debugging an odd or flaky JS test, read

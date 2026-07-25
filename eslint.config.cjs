@@ -54,10 +54,12 @@ module.exports = [
         rules: {
             'no-undef': 'error',
             'no-unused-vars': ['warn', { args: 'after-used', ignoreRestSiblings: true }],
-            // Complexity ratchet (docs/agentic-quality-gates.md): warn above
-            // max 20; `make js-lint` pins --max-warnings so the total can only
-            // go down. Lower this ceiling as the Architect lane refactors.
-            complexity: ['warn', { max: 20 }],
+            // Complexity ratchet (docs/agentic-quality-gates.md): error above
+            // max 20; eslint-suppressions.json baselines the existing 64
+            // violations (ESLint bulk suppressions only apply to errors), so
+            // only NEW or worsened violations fail. After fixing one, run
+            // `npx eslint --prune-suppressions` to shrink the baseline.
+            complexity: ['error', { max: 20 }],
             'no-unreachable': 'error',
             'no-constant-binary-expression': 'error',
             eqeqeq: ['warn', 'always', { null: 'ignore' }],
