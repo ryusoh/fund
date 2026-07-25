@@ -160,7 +160,15 @@ one with zero coverage in this repo today.
   the same honesty applies here. Cycles + page isolation are the two rules that
   map to real pain in this repo.
 
-### 4. Whole-suite coverage floor (trivial, optional)
+### 4. Whole-suite coverage floor (trivial, optional) — ✅ implemented
+
+**Status (2026-07-25):** landed. `package.json` `coverageThreshold.global` is
+now `{ statements: 85, branches: 70, functions: 85, lines: 85 }` — measured on
+landing day at 88.5 / 74.05 / 88.97 / 88.43, so the floor sits ~3-4 points
+below reality (headroom for harmless fluctuation; branches has the most slack
+because it's the noisiest metric). Verified: suite passes at the floor, and
+raising `branches` to 75 makes jest fail with "does not meet global threshold".
+The floor only ratchets UP — Testpilot raises it as coverage improves.
 
 `package.json` has `"coverageThreshold": {}` — the only coverage enforcement is
 the 90% **diff** gate. A low global floor (e.g. lines/branches at the current
