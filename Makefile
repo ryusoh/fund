@@ -132,6 +132,9 @@ perms:
 
 lint: js-lint
 	$(PY) -m ruff check scripts tests
+	@# Complexity ratchet (docs/agentic-quality-gates.md): xenon fails if the
+	@# average/worst cyclomatic-complexity rank regresses past these ceilings.
+	$(PY) -m xenon --max-average C --max-modules F --max-absolute F scripts tests
 	npx --yes stylelint "**/*.css"
 	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
 
@@ -161,7 +164,9 @@ sec:
 	@echo "Note: For Python dependency security scanning, run: pip install pip-audit && pip-audit"
 
 js-lint:
-	npx --yes eslint . --ext .js
+	@# --max-warnings ratchets the eslint complexity rule (see eslint.config.cjs):
+	@# 64 is the current baseline; any new warning anywhere fails the gate.
+	npx --yes eslint . --ext .js --max-warnings 64
 
 lint-fix:
 	npx --yes eslint . --ext .js --fix || true

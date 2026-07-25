@@ -39,7 +39,15 @@ adding any new check to `make verify` or a new CI workflow.
 Ordered by value-per-effort. Each is compatible with the existing
 `make verify` / `make precommit-fix` gate; none requires reading AI code.
 
-### 1. Automate the complexity gate (cheap, do first)
+### 1. Automate the complexity gate (cheap, do first) — ✅ implemented
+
+**Status (2026-07-25):** landed. JS: `'complexity': ['warn', { max: 20 }]` in
+`eslint.config.cjs` + `--max-warnings 64` (current baseline) on `make js-lint`
+as the ratchet — the warning total can only go down. Python: `radon`/`xenon`
+added to `requirements-dev.txt`, wired into `make lint` as
+`xenon --max-average C --max-modules F --max-absolute F scripts tests`
+(current average is C 18.59, worst block F 77 — ceilings freeze today). Next
+ratchet steps: lower `--max-warnings` toward 0 and the ESLint `max` toward 10.
 
 **Gap closed:** Uncle Bob's "cyclomatic complexity" and "module size" metrics.
 Today complexity is policed by a persona's manual labour, not by the gate.

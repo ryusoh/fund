@@ -205,7 +205,6 @@ describe('Autocomplete Completeness', () => {
     });
 
     describe('Cross-Reference Validation', () => {
-
         test('no unexpected command is in multiple subcommand lists (avoiding ambiguity)', () => {
             // Check for overlaps between subcommand lists
             const plotSet = new Set(PLOT_SUBCOMMANDS);

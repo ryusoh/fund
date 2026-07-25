@@ -59,12 +59,7 @@ function computeWeightedMedian(entries, weightGetter, valueGetter) {
 }
 
 function isValidCompositionData(data) {
-    return (
-        data &&
-        typeof data === 'object' &&
-        Array.isArray(data.dates) &&
-        data.dates.length > 0
-    );
+    return data && typeof data === 'object' && Array.isArray(data.dates) && data.dates.length > 0;
 }
 
 function hasValuesAtIndex(compositionSeries, index) {
