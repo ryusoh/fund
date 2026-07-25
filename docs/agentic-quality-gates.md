@@ -175,7 +175,34 @@ the 90% **diff** gate. A low global floor (e.g. lines/branches at the current
 measured value, ratcheted upward by Testpilot) would stop silent whole-suite
 erosion that a diff gate can't see. One config stanza; zero runtime cost.
 
-### 5. Acceptance-layer tests in domain language (defer; smallest concrete step only)
+### 5. Acceptance-layer tests in domain language (defer; smallest concrete step only) — ✅ smallest step landed
+
+**Status (2026-07-25):** the cheapest honest step landed as
+`tests/python/test_twrr_acceptance.py` — five behaviour-level pytest cases
+that chain the real pipeline functions (`step02.apply_split_adjustments` →
+`step04.build_holdings` → `step05.compute_cashflows` →
+`step06.compute_twrr`) over tiny hand-computable fixtures, with domain-name
+tests, Given/When/Then comments, and expected values computed by hand in the
+comments (e.g. a deposit of $100 at a flat price contributes a daily factor
+of exactly 1.0, so the period TWRR equals the pure price return). Behaviours
+pinned: buy-and-hold equals the price return; a deposit is not a return; a
+2:1 split doubles the share count without changing the return; a withdrawal
+distorts nothing; a zero-price (spin-off/gift) transaction is not an external
+cashflow. This is the honest smallest step because the pre-existing step02
+tests mock pandas/numpy and assert _calls_, not values — they execute lines
+without pinning any number, so these five cases are the first tests that
+would fail if the TWRR math actually broke. Coverage delta on
+`scripts/twrr/`: `step02_apply_splits.py` 52% → 54% (the mock test already
+_executed_ the split loop, so the line delta is only the empty-splits branch
+— the value these tests add is assertion, not lines), and
+`step04_compute_holdings.py` / `step05_cashflows.py` /
+`step06_compute_twrr.py` go from unmeasured (never imported by any test) to
+38% / 53% / 48% — the first real coverage of the pipeline core; `utils.py`
+stays at 100%. What a fuller ATDD layer would still add later: more
+behaviours from §5's list (delisted tickers keeping their last price,
+multi-security portfolios, same-day flow conventions), fixtures driven
+through the parquet checkpoints instead of in-memory chaining, and — only if
+these prove their worth — a Gherkin runner.
 
 Uncle Bob's ATDD-for-agents approach uses two test streams — acceptance and
 unit — so the agent "can't just willy-nilly plop code around"
