@@ -126,9 +126,13 @@ rules — `no-circular`, `no-cross-page-imports` (AGENTS.md non-negotiable #6),
 371 dependencies), so no baseline was needed; the gate is purely preventive.
 Wired as `make depcheck` (a `make lint` dependency, so it lands in
 `make verify`) and as an `always_run` pre-commit hook (so it also runs in the
-CI gate `make precommit-fix`). Alias resolution (`@js/` etc.) goes through
-`jsconfig.json` paths. Probe-tested: a circular import and a cross-page import
-each fail the gate; `git restore` returns green.
+CI gate `make precommit-fix`). Alias resolution (`@js/` etc.) goes through a
+webpack-config stub, `.dependency-cruiser.webpack.cjs` — deliberately not
+`options.tsConfig`, which makes dependency-cruiser look for a typescript <7
+compiler (the repo has v7) and print a spurious "missing-typescript-transpiler"
+warning every run; keep the stub's aliases in sync with `jsconfig.json` paths.
+Probe-tested: a circular import and a cross-page import each fail the gate;
+`git restore` returns green.
 Python side **deliberately skipped after measuring**: `scripts/` is mostly
 namespace packages (no `__init__.py` in `data/`, `twrr/`, `pnl/`, `portfolio/`,
 `ratios/`), and grimp (import-linter's graph builder) has no namespace-package
