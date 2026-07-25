@@ -58,14 +58,44 @@ function computeWeightedMedian(entries, weightGetter, valueGetter) {
     return normalized.length ? normalized[normalized.length - 1].value : null;
 }
 
+function isValidCompositionData(data) {
+    return (
+        data &&
+        typeof data === 'object' &&
+        Array.isArray(data.dates) &&
+        data.dates.length > 0
+    );
+}
+
+function hasValuesAtIndex(compositionSeries, index) {
+    return Object.values(compositionSeries).some((values) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percent = Number(seriesValues[index] ?? 0);
+        return Number.isFinite(percent) && percent > 0;
+    });
+}
+
+function parseCompositionHoldings(compositionSeries, targetIndex) {
+    const holdings = [];
+    Object.entries(compositionSeries).forEach(([ticker, values]) => {
+        const seriesValues = Array.isArray(values) ? values : [];
+        const percent = Number(seriesValues[targetIndex] ?? 0);
+        if (Number.isFinite(percent) && percent > 0) {
+            holdings.push({
+                ticker,
+                percent,
+                weight: percent / 100,
+            });
+        }
+    });
+
+    holdings.sort((a, b) => b.weight - a.weight);
+    return holdings;
+}
+
 async function getLatestCompositionSnapshot() {
     const data = await loadCompositionSnapshotData();
-    if (
-        !data ||
-        typeof data !== 'object' ||
-        !Array.isArray(data.dates) ||
-        data.dates.length === 0
-    ) {
+    if (!isValidCompositionData(data)) {
         return null;
     }
     const compositionSeries = data.composition || data.series;
@@ -74,15 +104,7 @@ async function getLatestCompositionSnapshot() {
     }
 
     let targetIndex = data.dates.length - 1;
-    const hasValuesAtIndex = (index) => {
-        return Object.values(compositionSeries).some((values) => {
-            const seriesValues = Array.isArray(values) ? values : [];
-            const percent = Number(seriesValues[index] ?? 0);
-            return Number.isFinite(percent) && percent > 0;
-        });
-    };
-
-    while (targetIndex >= 0 && !hasValuesAtIndex(targetIndex)) {
+    while (targetIndex >= 0 && !hasValuesAtIndex(compositionSeries, targetIndex)) {
         targetIndex -= 1;
     }
 
@@ -90,21 +112,7 @@ async function getLatestCompositionSnapshot() {
         return null;
     }
 
-    const holdings = [];
-    Object.entries(compositionSeries).forEach(([ticker, values]) => {
-        const seriesValues = Array.isArray(values) ? values : [];
-        const percent = Number(seriesValues[targetIndex] ?? 0);
-        if (!Number.isFinite(percent) || percent <= 0) {
-            return;
-        }
-        holdings.push({
-            ticker,
-            percent,
-            weight: percent / 100,
-        });
-    });
-
-    holdings.sort((a, b) => b.weight - a.weight);
+    const holdings = parseCompositionHoldings(compositionSeries, targetIndex);
 
     return {
         dateLabel: data.dates[targetIndex],
