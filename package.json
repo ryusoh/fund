@@ -39,6 +39,7 @@
         "d3-fetch": "^3.0.1",
         "d3-selection": "^3.0.0",
         "dayjs": "^1.11.21",
+        "dependency-cruiser": "^18.1.0",
         "esbuild": "^0.28.1",
         "eslint": "^10.7.0",
         "eventemitter3": "^5.0.4",

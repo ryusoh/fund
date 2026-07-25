@@ -118,7 +118,26 @@ coverage while asserting nothing important.
 - **Where it wires in:** new `make mutate-js` / `make mutate-py` targets +
   one scheduled workflow; a one-line mention in `AGENTS.md`'s command table.
 
-### 3. Dependency-structure checks (moderate value, cheap)
+### 3. Dependency-structure checks (moderate value, cheap) — ✅ JS landed; Python skipped with evidence
+
+**Status (2026-07-25):** JS side landed: `.dependency-cruiser.cjs` with three
+rules — `no-circular`, `no-cross-page-imports` (AGENTS.md non-negotiable #6),
+`not-to-vendor` — all measured **zero violations** on day one (124 modules,
+371 dependencies), so no baseline was needed; the gate is purely preventive.
+Wired as `make depcheck` (a `make lint` dependency, so it lands in
+`make verify`) and as an `always_run` pre-commit hook (so it also runs in the
+CI gate `make precommit-fix`). Alias resolution (`@js/` etc.) goes through
+`jsconfig.json` paths. Probe-tested: a circular import and a cross-page import
+each fail the gate; `git restore` returns green.
+Python side **deliberately skipped after measuring**: `scripts/` is mostly
+namespace packages (no `__init__.py` in `data/`, `twrr/`, `pnl/`, `portfolio/`,
+`ratios/`), and grimp (import-linter's graph builder) has no namespace-package
+support — the interesting edges (`commands → data`, `twrr → twrr.utils`) are
+invisible to it, while among the four real packages there are **zero**
+cross-imports, so a contract would gate an empty relation. Unblock condition:
+add `__init__.py` to those dirs (a packaging change, not done here), then a
+`layers` contract becomes meaningful. `import-linter` was uninstalled again;
+nothing was wired in.
 
 **Gap closed:** "dependency structure" is on Uncle Bob's metric list and is the
 one with zero coverage in this repo today.

@@ -140,6 +140,7 @@ instantly identifiable.
 | JS strict type check                    | `npx tsc -p jsconfig.json`                          |
 | One CSS file lint                       | `npx stylelint <path.css>`                          |
 | Generated-commands freshness check      | `make sync-check`                                   |
+| Dependency-structure gate (JS)          | `make depcheck`                                     |
 | Dev server (serves repo root at :8000)  | `make serve`                                        |
 | Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                    |
 

@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -130,13 +130,18 @@ _pytest:
 perms:
 	chmod +x bin/fund bin/portfolio bin/holdings bin/update-all
 
-lint: js-lint
+lint: js-lint depcheck
 	$(PY) -m ruff check scripts tests
 	@# Complexity ratchet (docs/agentic-quality-gates.md): xenon fails if the
 	@# average/worst cyclomatic-complexity rank regresses past these ceilings.
 	$(PY) -m xenon --max-average C --max-modules F --max-absolute F scripts tests
 	npx --yes stylelint "**/*.css"
 	npm exec -- markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#venv/**" "#.qwen/**" "#.claude/**"
+
+depcheck:
+	@# Dependency-structure gate (docs/agentic-quality-gates.md §3): no cycles,
+	@# no cross-page imports, no direct vendor imports. Rules: .dependency-cruiser.cjs
+	npx --yes dependency-cruiser js sw.js worker/src --config .dependency-cruiser.cjs
 
 fmt:
 	$(PY) -m black .

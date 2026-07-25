@@ -80,6 +80,15 @@ repos:
             pass_filenames: false
             always_run: true
 
+    - repo: local
+      hooks:
+          - id: dependency-cruiser
+            name: dependency-cruiser (JS dependency structure)
+            entry: bash -lc 'if ! command -v npx >/dev/null 2>&1; then echo "npx missing; skipping dependency-cruiser"; exit 0; fi; npx --yes dependency-cruiser js sw.js worker/src --config .dependency-cruiser.cjs'
+            language: system
+            pass_filenames: false
+            always_run: true
+
     # JS tests (commit): related tests only
     - repo: local
       hooks:
