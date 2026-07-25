@@ -53,6 +53,21 @@ as `xenon --max-average C --max-modules F --max-absolute F scripts tests`
 ratchet steps: prune the suppressions file toward empty, lower the ESLint
 `max` toward 10, and tighten xenon ranks.
 
+**Gotchas learned during implementation** (cost a full redesign to discover):
+
+- Check `.pre-commit-config.yaml` before designing any warn-based ratchet — the
+  eslint hook there runs `--max-warnings=0`, which silently kills any approach
+  based on warning budgets. Bulk suppressions sidestep this because they are
+  error-severity only (hence the rule must be `error`, not `warn`).
+- When a file's violations exceed its suppressed count, ESLint reports **all**
+  of that rule's violations in the file, not just the excess — touching a
+  baselined file surfaces its whole backlog in the error output.
+- Probe-test protocol: append the probe to a **tracked** file, verify the gate
+  fails, then `git restore` and verify it passes — never create a new file for
+  a probe (an untracked probe file pollutes parallel gate runs), and never
+  mask the backup/restore step's errors (`|| true` hid exactly that failure
+  once).
+
 **Gap closed:** Uncle Bob's "cyclomatic complexity" and "module size" metrics.
 Today complexity is policed by a persona's manual labour, not by the gate.
 

@@ -166,8 +166,12 @@ instantly identifiable.
   for direct calls use
   `$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')/venv/bin/<tool>`.
 - The **CI gate is `make precommit-fix`** (the `web-ci` job: format + lint +
-  JS/Python tests); `make verify` is the stricter local superset (adds `mypy` +
-  `bandit` + `sync-check`).
+  JS/Python tests). `make verify` is NOT a superset of it: verify adds `mypy` +
+  `bandit` + `sync-check`, but only `precommit`/`precommit-fix` runs the
+  `.pre-commit-config.yaml` hooks — whose eslint hook uses
+  `--max-warnings=0`, so a new warn-level rule can be green under `make verify`
+  and red in CI. Before adding lint rules, read `.pre-commit-config.yaml`;
+  before opening a PR, run `make precommit-fix`, not just `make verify`.
 
 ## Environment setup (run once in the VM before working)
 
