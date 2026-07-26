@@ -66,7 +66,14 @@ ratchet steps: prune the suppressions file toward empty, lower the ESLint
   fails, then `git restore` and verify it passes — never create a new file for
   a probe (an untracked probe file pollutes parallel gate runs), and never
   mask the backup/restore step's errors (`|| true` hid exactly that failure
-  once).
+  once). Two corollaries learned when this trap fired a second time:
+    - **After any probe-restore cycle, confirm your intended changes survived**
+      before committing: `git restore` on an uncommitted-but-legitimate edit
+      wipes it along with the probe (a coverage floor was silently lost this
+      way; the commit's `--stat` file count was the only tell). Sanity-check
+      the commit stat against what you expect to be in it.
+    - **Pipes mask exit codes** — `cmd 2>&1 | tail` reports tail's status, not
+      cmd's. Probe exit codes via `${PIPESTATUS[0]}` or an unpiped redirect.
 
 **Gap closed:** Uncle Bob's "cyclomatic complexity" and "module size" metrics.
 Today complexity is policed by a persona's manual labour, not by the gate.

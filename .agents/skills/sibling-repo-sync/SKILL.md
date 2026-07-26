@@ -79,3 +79,14 @@ Update this skill's repo profiles above with anything the run learned that
 contradicts them, and record the sync in each repo's own docs (they each keep
 their own AGENTS.md/tooling docs — the knowledge lives in the repo it
 concerns, not here).
+
+## Fleet resilience (learned running 5 parallel sync agents)
+
+A provider quota/error event can kill background agents mid-flight (4 of 5
+died at once in the 2026-07 run). Recovery pattern that worked cleanly:
+`Agent(resume=...)` retains the agent's full context — resume each failed
+agent with "audit what you already did (git status / git log), then
+continue"; commits it made are fine, uncommitted partial work gets assessed
+before it proceeds. The per-repo isolation of this skill's delegation pattern
+is what makes partial failure cheap: one dead agent never poisons another
+repo's tree.

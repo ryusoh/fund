@@ -198,3 +198,13 @@ const july4 = new Date('2024-07-04T12:00:00');
 When debugging, don't create `scratch.js` / `fix_*.js` in the repo root — ESLint
 will flag them and they'll leak into git. Use the session artifact scratch
 directory or a temp file outside the repo.
+
+## `tests/js/transactions/terminal_core.test.js:400` is genuinely flaky (rAF vs setTimeout race)
+
+Discovered by the StrykerJS dry run (2026-07-26): the test passes standalone
+but flakes ~50% under Stryker's sandbox (passes 3/3 standalone; make/direct
+runs split 3 pass / 2 fail). Root cause is a `requestAnimationFrame` vs
+`setTimeout(0)` ordering race in the test, not in prod code. The mutation
+scaffold mitigates with a documented single retry in `make mutate-js` and the
+weekly workflow. Fixing the test properly is Testpilot-lane work — if you see
+this test fail intermittently anywhere else, this note is why.
