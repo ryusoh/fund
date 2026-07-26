@@ -129,20 +129,22 @@ instantly identifiable.
 
 ## Command interface — prefer `make` (matches CI)
 
-| Need                                    | Command                                             |
-| --------------------------------------- | --------------------------------------------------- |
-| All checks (lint + types + sec + tests) | `make verify`                                       |
-| Lint (JS + CSS + Python + Markdown)     | `make lint`                                         |
-| Auto-fix lint + format                  | `make fix`                                          |
-| Full test suite (JS + Python, coverage) | `make test`                                         |
-| Scoped JS test (fast, no coverage)      | `npx jest <path/to/test>`                           |
-| Scoped Python check (fast)              | `venv/bin/ruff check <path>` (also `black`, `mypy`) |
-| JS strict type check                    | `npx tsc -p jsconfig.json`                          |
-| One CSS file lint                       | `npx stylelint <path.css>`                          |
-| Generated-commands freshness check      | `make sync-check`                                   |
-| Dependency-structure gate (JS)          | `make depcheck`                                     |
-| Dev server (serves repo root at :8000)  | `make serve`                                        |
-| Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                    |
+| Need                                    | Command                                                 |
+| --------------------------------------- | ------------------------------------------------------- |
+| All checks (lint + types + sec + tests) | `make verify`                                           |
+| Lint (JS + CSS + Python + Markdown)     | `make lint`                                             |
+| Auto-fix lint + format                  | `make fix`                                              |
+| Full test suite (JS + Python, coverage) | `make test`                                             |
+| Scoped JS test (fast, no coverage)      | `npx jest <path/to/test>`                               |
+| Scoped Python check (fast)              | `venv/bin/ruff check <path>` (also `black`, `mypy`)     |
+| JS strict type check                    | `npx tsc -p jsconfig.json`                              |
+| One CSS file lint                       | `npx stylelint <path.css>`                              |
+| Generated-commands freshness check      | `make sync-check`                                       |
+| Dependency-structure gate (JS)          | `make depcheck`                                         |
+| JS mutation test (scoped, manual only)  | `make mutate-js MUTATE=js/utils/host.js`                |
+| Py mutation test (scoped, manual only)  | `make mutate-py SCOPE='scripts.utils.security_utils.*'` |
+| Dev server (serves repo root at :8000)  | `make serve`                                            |
+| Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                        |
 
 - Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
   targets so you match CI. Use scoped `npx jest <file>` only for the tight

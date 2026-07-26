@@ -10,6 +10,7 @@ mypy
 bandit
 radon
 xenon
+mutmut
 pre-commit
 argcomplete
 types-pytz

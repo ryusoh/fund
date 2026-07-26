@@ -91,6 +91,69 @@ Today complexity is policed by a persona's manual labour, not by the gate.
 
 ### 2. Diff-scoped mutation testing, non-blocking then ratcheted (high value, real cost)
 
+**Status (2026-07-25):** landed, manual/scheduled-only. JS: StrykerJS
+(`@stryker-mutator/core` + `jest-runner` 9.6.1, `stryker.config.mjs`,
+incremental mode). Python: mutmut 3.6.0 (`[tool.mutmut]` in `pyproject.toml`).
+Wired as `make mutate-js MUTATE=js/utils/host.js` /
+`make mutate-py SCOPE='scripts.utils.security_utils.*'` — **not** in
+`make verify` / `make precommit-fix` — plus a weekly scheduled workflow
+(`.github/workflows/mutation-testing.yml`, Sunday 04:42 UTC, diff-scoped to
+files changed in the last 7 days, uploads reports as artifacts, never gates
+PRs). Ratchet: `mutation-ratchet.json` floors + `scripts/check_mutation_ratchet.py`
+(covered by `tests/python/test_check_mutation_ratchet.py`); floors are `null`
+(report-only) until seeded from real scheduled runs via
+`make mutate-ratchet-update`.
+
+**Verified smoke runs (2026-07-25, this machine):**
+
+- `TZ=UTC npx stryker run --mutate js/utils/host.js` → 62 mutants, **91.94%**
+  (43 killed, 14 timeout, 5 survived), 3m05s cold, 44s incremental re-run,
+  exit 0.
+- `venv/bin/mutmut run 'scripts.utils.security_utils.*'` → 20 mutants,
+  **19 killed / 1 survived (95%)**, 2.5s (after a one-time ~60s stats
+  collection), exit 0. The survivor (`x_scrub_secrets__mutmut_20`) replaces
+  the `"***"` literal in the `quote_plus` line — effectively equivalent for
+  secrets without spaces (where `quote == quote_plus`), i.e. a real assertion
+  gap the tests don't pin down.
+
+**Gotchas learned during implementation** (each cost a failed run):
+
+- npm `overrides.minimatch: ^3.1.2` broke Stryker's ESM `import { minimatch }`
+  (v3 has no named export) — scoped exception added:
+  `overrides["@stryker-mutator/core"].minimatch: ~10.2.4`.
+- Stryker `coverageAnalysis: 'perTest'` is **not usable here**: six test files
+  pin `@jest-environment jsdom` via docblock, overriding the config-level
+  environment, and plain jsdom can't report coverage to Stryker (dry run dies
+  with "Missing coverage results"). Shipped `'off'` (full suite per mutant,
+  ~3s each) — fine for diff-scoped weekly runs.
+- Stryker's sandbox dry run can flake on
+  `tests/js/transactions/terminal_core.test.js:400` (a
+  `requestAnimationFrame`-vs-`setTimeout(0)` race that resolves differently
+  under sandbox load; passes 3/3 standalone). `make mutate-js` and the
+  workflow therefore retry the Stryker invocation once.
+- mutmut 3.6 needs explicit config: `source_paths = ["scripts"]`, and
+  `also_copy` must include `pytest.ini` — otherwise pytest inside `mutants/`
+  loses `testpaths`/`pythonpath`, collects `scripts/test_*.py`, and the
+  trampoline's sys.path side effects break collection
+  (`test_twrr_acceptance.py` import chain). `also_copy` also lists the repo
+  meta-files conformance tests read (`.jules/`, `AGENTS.md`, `Makefile`,
+  `package.json`, `.github/`, `data/`).
+- Four test files patch `os.environ.get` globally; mutmut's trampoline reads
+  `MUTANT_UNDER_TEST` through `os.environ.get` at call time and crashes under
+  the patch. They are `--ignore`d in `[tool.mutmut]` (tests can't be edited
+  for a tooling change); mutants in the modules they cover report as untested.
+- mutmut run filters are dotted mutant-name globs
+  (`scripts.utils.security_utils.*`), not file paths.
+- Scratch dirs (`mutants/`, `reports/`, `.stryker-tmp/`) are gitignored and
+  excluded from eslint/markdownlint/black so a local mutation run can't dirty
+  the gates.
+
+**Deferred (next steps, in plan order):** seed the ratchet floors from the
+first 2–3 weekly runs (floors are per-tool, "don't get worse" on whatever the
+run covered — interpret regressions against scope changes before acting);
+only then consider stage 3, a PR-blocking diff-scoped check via `--mutate` on
+changed files.
+
 **Gap closed:** the diff-coverage gate proves changed lines are _executed_; it
 cannot prove tests would _catch a bug_ in them. Mutation testing is the only
 metric on Uncle Bob's list that measures assertion strength — the
@@ -246,7 +309,7 @@ testing.
 | Unit tests              | Jest (`package.json` → `npm test`, TZ=UTC) + pytest with coverage; `make test-tz` runs the JS suite under UTC± zones       | ✅ strong    |
 | Coverage                | 90% **diff**-coverage gate on both JS and Python (`.github/workflows/diff-coverage.yml`); no whole-suite floor             | ✅ diff-only |
 | Acceptance tests (BDD)  | None — no jest-cucumber/pytest-bdd/behave anywhere; `tdd` skill covers the unit loop only                                  | ❌ missing   |
-| Mutation testing        | None — no stryker/mutmut/cosmic-ray in `package.json` / `requirements-dev.txt`                                             | ❌ missing   |
+| Mutation testing        | Stryker + mutmut, diff-scoped, weekly scheduled non-blocking workflow + ratchet floors (`make mutate-js`/`mutate-py`; §2)  | ✅ scheduled |
 | Cyclomatic complexity   | No tooling — ESLint `complexity` not configured (`eslint.config.cjs`); ruff selection is `E,F,I,B` only (`pyproject.toml`) | ⚠️ manual    |
 | …as a process           | Architect persona refactors one function > 10 per run, by hand (`.jules/architect.md`)                                     | ⚠️ manual    |
 | Module size             | No limits (no `max-lines`, no radon/xenon)                                                                                 | ❌ missing   |

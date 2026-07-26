@@ -1,0 +1,140 @@
+name: Mutation Testing (weekly, non-blocking)
+
+# Diff-scoped mutation testing (docs/agentic-quality-gates.md §2). Runs the
+# Stryker/mutmut incremental passes over the files changed in the last 7 days
+# and uploads the reports as artifacts. Scheduled-only by design: it never
+# gates PRs and is not part of `make verify` / `make precommit-fix`.
+#
+# Ratchet: scores are compared against mutation-ratchet.json floors. While a
+# floor is null the check is report-only (never fails); seed floors with
+# `make mutate-ratchet-update` after reviewing a few runs.
+
+on:
+    schedule:
+        # Weekly, Sunday 04:42 UTC — deliberately off the :00/:30 marks to
+        # dodge top-of-hour Actions congestion and this repo's other cron jobs
+        # (05:00 forex daily, 03:15 npm-audit).
+        - cron: '42 4 * * 0'
+    workflow_dispatch:
+        inputs:
+            mutate_js:
+                description: 'JS scope override: comma-separated files/globs for stryker --mutate'
+                required: false
+                default: ''
+            mutate_py:
+                description: 'Python scope override: space-separated mutant-name filters for mutmut run'
+                required: false
+                default: ''
+
+concurrency:
+    group: ${{ github.workflow }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read # read-only: reports ship as artifacts, nothing is committed
+
+jobs:
+    mutation:
+        runs-on: ubuntu-latest
+        timeout-minutes: 120 # cold first run mutates a full week of changed files
+        env:
+            FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0 # needed for the 7-day diff scope
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: '24'
+                  cache: npm
+
+            - name: Set up Python
+              uses: actions/setup-python@v7
+              with:
+                  python-version: '3.x'
+                  cache: pip
+
+            - name: Install dependencies
+              run: |
+                  npm ci
+                  pip install -r requirements-dev.txt
+
+            # Incremental state: mutmut keeps its stats/cache in mutants/,
+            # Stryker in reports/stryker-incremental.json. Restoring last
+            # week's cache keeps re-runs scoped to what actually changed.
+            - name: Restore mutmut incremental cache
+              uses: actions/cache@v7
+              with:
+                  path: mutants/
+                  key: mutmut-${{ github.run_id }}
+                  restore-keys: mutmut-
+
+            - name: Restore Stryker incremental cache
+              uses: actions/cache@v7
+              with:
+                  path: reports/
+                  key: stryker-${{ github.run_id }}
+                  restore-keys: stryker-
+
+            - name: Determine diff scope (files changed in the last 7 days)
+              id: scope
+              env:
+                  JS_OVERRIDE: ${{ inputs.mutate_js }}
+                  PY_OVERRIDE: ${{ inputs.mutate_py }}
+              run: |
+                  set -u
+                  if [ -n "$JS_OVERRIDE" ] || [ -n "$PY_OVERRIDE" ]; then
+                      echo "js_scope=$JS_OVERRIDE" >> "$GITHUB_OUTPUT"
+                      echo "py_scope=$PY_OVERRIDE" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+                  BASE=$(git rev-list -1 --before='7 days ago' HEAD)
+                  echo "Diffing $BASE..HEAD"
+                  JS=$(git diff --name-only "$BASE" HEAD -- 'js/*.js' 'js/**/*.js' \
+                      | grep -v '^js/vendor/' | paste -sd, - || true)
+                  PY=$(git diff --name-only "$BASE" HEAD -- 'scripts/*.py' 'scripts/**/*.py' \
+                      | grep -v '^scripts/test_' | grep -v '^scripts/vendor/' || true)
+                  # mutmut filters match dotted mutant names: scripts/foo/bar.py -> scripts.foo.bar.*
+                  PY_SCOPE=$(echo "$PY" | sed '/^$/d; s|/|.|g; s|\.py$|.*|' | paste -sd' ' - || true)
+                  echo "js_scope=$JS" >> "$GITHUB_OUTPUT"
+                  echo "py_scope=$PY_SCOPE" >> "$GITHUB_OUTPUT"
+
+            - name: Run Stryker (JS)
+              if: steps.scope.outputs.js_scope != ''
+              # One retry: the sandbox dry run can flake on a rAF-timing test
+              # (docs/agentic-quality-gates.md §2).
+              run: |
+                  TZ=UTC npx stryker run --mutate "${{ steps.scope.outputs.js_scope }}" || \
+                  TZ=UTC npx stryker run --mutate "${{ steps.scope.outputs.js_scope }}"
+
+            - name: Run mutmut (Python)
+              if: steps.scope.outputs.py_scope != ''
+              run: |
+                  python -m mutmut run ${{ steps.scope.outputs.py_scope }}
+                  python -m mutmut export-cicd-stats
+
+            - name: Ratchet check (report-only until floors are seeded)
+              if: always()
+              run: |
+                  if [ -f reports/mutation/mutation.json ]; then
+                      python scripts/check_mutation_ratchet.py stryker \
+                          --score-file reports/mutation/mutation.json
+                  fi
+                  if [ -f mutants/mutmut-cicd-stats.json ]; then
+                      python scripts/check_mutation_ratchet.py mutmut \
+                          --score-file mutants/mutmut-cicd-stats.json
+                  fi
+
+            - name: Upload mutation reports
+              if: always()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: mutation-reports
+                  retention-days: 30
+                  if-no-files-found: warn
+                  path: |
+                      reports/mutation/
+                      mutants/mutmut-cicd-stats.json

@@ -27,6 +27,11 @@ worker/.wrangler/
 # Coverage artifacts
 .coverage*
 
+# Mutation testing (make mutate-py / mutate-js): mutmut copies + cache, Stryker reports
+mutants/
+reports/
+.stryker-tmp/
+
 # Claude Code: share reusable agent assets, keep personal/transient state local.
 .claude/*
 !.claude/commands/

@@ -5,5 +5,5 @@
     "MD041": false,
     "MD013": false,
     "MD007": { "indent": 4 },
-    "ignores": [".claude/**"]
+    "ignores": [".claude/**", "mutants/**", "reports/**", ".stryker-tmp/**"]
 }

@@ -15,6 +15,10 @@ module.exports = [
             '.mypy_cache/**',
             '.pytest_cache/**',
             '.ruff_cache/**',
+            // Mutation-testing scratch dirs (make mutate-js / mutate-py)
+            'mutants/**',
+            'reports/**',
+            '.stryker-tmp/**',
         ],
     },
     {

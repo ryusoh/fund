@@ -1,0 +1,12 @@
+{
+    "mutmut": {
+        "floor": null,
+        "updated": null,
+        "note": "Seed after the first scheduled run: make mutate-ratchet-update. Until then the weekly workflow reports the score but never fails."
+    },
+    "stryker": {
+        "floor": null,
+        "updated": null,
+        "note": "Seed after the first scheduled run: make mutate-ratchet-update. Until then the weekly workflow reports the score but never fails."
+    }
+}

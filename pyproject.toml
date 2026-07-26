@@ -4,6 +4,8 @@
 line-length = 100
 target-version = ["py311"]
 skip-string-normalization = true
+# Mutation-testing scratch copy trees (mutmut / Stryker) — never reformat them.
+extend-exclude = "(mutants|\\.stryker-tmp)/"
 
 [tool.ruff]
 line-length = 100
@@ -21,6 +23,43 @@ ignore = [
   "E501",  # handled by black (line length)
 ]
 per-file-ignores = { "bin/*" = ["E402"] }
+
+# Mutation testing (docs/agentic-quality-gates.md §2): manual/scheduled only,
+# NEVER part of `make verify` / `make precommit-fix`. Run via `make mutate-py`.
+# Tests are excluded from mutation: only `scripts/` is a source path, and
+# `do_not_mutate` guards the rest explicitly.
+[tool.mutmut]
+source_paths = ["scripts"]
+# Never mutate test code: scraper test scripts live inside scripts/ too.
+do_not_mutate = ["scripts/vendor/*", "scripts/test_*.py"]
+# mutmut runs pytest with cwd=mutants/ and --rootdir=.; without pytest.ini there,
+# testpaths/pythonpath are lost and pytest collects scripts/test_*.py, whose
+# trampoline side effects put the real scripts/ dir on sys.path and break
+# collection (test_twrr_acceptance.py import chain). The rest are repo
+# meta-files that conformance tests read relative to the (copied) repo root:
+# test_jules_personas (.jules/, AGENTS.md), test_ci_parity (Makefile,
+# .github/, package.json), test_main / test_sync_configs_currency (data/).
+also_copy = [
+  "pytest.ini",
+  "AGENTS.md",
+  "Makefile",
+  "package.json",
+  ".jules/",
+  ".github/",
+  "data/",
+]
+# These four test files patch os.environ.get globally; mutmut's trampoline reads
+# MUTANT_UNDER_TEST through os.environ.get at call time and crashes with
+# AttributeError under the patch. Ignored here (can't edit the tests for a
+# tooling-only change); mutants in the modules they cover report as untested.
+pytest_add_cli_args = [
+  "-q",
+  "--no-header",
+  "--ignore=tests/python/test_fetch_etf_country_allocations.py",
+  "--ignore=tests/python/test_scraperapi_https.py",
+  "--ignore=tests/python/test_update_vt_hhi.py",
+  "--ignore=tests/python/test_update_vt_sectors.py",
+]
 
 [build-system]
 requires = ["setuptools>=83.0.0", "wheel"]

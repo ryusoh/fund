@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -51,6 +51,8 @@ help:
 	@echo "  test-js       Scoped fast JS test, no coverage (FILE=path/to.test.js)"
 	@echo "  test-tz       JS suite under UTC− and UTC+ zones (fires TZ regression tests)"
 	@echo "  verify        Lint, type, sec, and tests"
+	@echo "  mutate-js     Scoped JS mutation test (MUTATE=path; manual/scheduled only)"
+	@echo "  mutate-py     Scoped Python mutation test (SCOPE=filter; manual/scheduled only)"
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
 	@echo "  vendor-*      Manage vendor assets"
@@ -214,6 +216,31 @@ sync-check:
 		echo "sync-check FAIL: .claude/commands was stale and has been regenerated — commit the updated files (python3 scripts/sync_commands.py)."; \
 		exit 1; \
 	fi
+
+# Mutation testing (docs/agentic-quality-gates.md §2) — manual/scheduled only.
+# NEVER part of verify/precommit-fix: a full run multiplies test-suite time by
+# the mutant count. Always run diff-scoped.
+#   make mutate-js MUTATE=js/utils/host.js        (comma-separated globs/files)
+#   make mutate-py SCOPE='scripts.utils.security_utils.*'  (mutant-name filters)
+MUTATE ?= js/utils/host.js
+SCOPE ?= scripts.utils.security_utils.*
+
+mutate-js:
+	@# One retry: the sandbox dry run can flake on terminal_core.test.js:400
+	@# (requestAnimationFrame vs setTimeout(0) race — docs/agentic-quality-gates.md §2).
+	TZ=UTC npx --yes stryker run --mutate $(MUTATE) || TZ=UTC npx --yes stryker run --mutate $(MUTATE)
+	$(PY) scripts/check_mutation_ratchet.py stryker --score-file reports/mutation/mutation.json
+
+mutate-py:
+	$(PY) -m mutmut run $(SCOPE)
+	$(PY) -m mutmut export-cicd-stats
+	$(PY) scripts/check_mutation_ratchet.py mutmut --score-file mutants/mutmut-cicd-stats.json
+
+# Ratchet the floors in mutation-ratchet.json UP to the last measured scores
+# (never lowers them). Run after reviewing a scheduled-run report.
+mutate-ratchet-update:
+	-$(PY) scripts/check_mutation_ratchet.py stryker --score-file reports/mutation/mutation.json --update
+	-$(PY) scripts/check_mutation_ratchet.py mutmut --score-file mutants/mutmut-cicd-stats.json --update
 
 check: fmt-check lint
 
