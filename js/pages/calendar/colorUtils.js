@@ -11,19 +11,25 @@ export function getValueFieldForCurrency(currency) {
     return VALUE_FIELD_BY_CURRENCY[currency] || VALUE_FIELD_BY_CURRENCY.USD;
 }
 
+function resolveDomainConfig(scaleConfig) {
+    return Array.isArray(scaleConfig?.domain) && scaleConfig.domain.length === 2
+        ? scaleConfig.domain
+        : [-0.01, 0.01];
+}
+
+function resolveRangeConfig(scaleConfig) {
+    return Array.isArray(scaleConfig?.range) && scaleConfig.range.length === 3
+        ? scaleConfig.range
+        : ['rgba(244, 67, 54, 0.95)', 'rgba(120, 120, 125, 0.5)', 'rgba(76, 175, 80, 0.95)'];
+}
+
 function resolveColorScale(d3Instance, scaleConfig = CALENDAR_CONFIG.scale?.color) {
     if (!d3Instance || typeof d3Instance.scaleLinear !== 'function') {
         return null;
     }
 
-    const domainConfig =
-        Array.isArray(scaleConfig?.domain) && scaleConfig.domain.length === 2
-            ? scaleConfig.domain
-            : [-0.01, 0.01];
-    const rangeConfig =
-        Array.isArray(scaleConfig?.range) && scaleConfig.range.length === 3
-            ? scaleConfig.range
-            : ['rgba(244, 67, 54, 0.95)', 'rgba(120, 120, 125, 0.5)', 'rgba(76, 175, 80, 0.95)'];
+    const domainConfig = resolveDomainConfig(scaleConfig);
+    const rangeConfig = resolveRangeConfig(scaleConfig);
 
     return d3Instance
         .scaleLinear()
