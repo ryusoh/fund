@@ -226,8 +226,8 @@ MUTATE ?= js/utils/host.js
 SCOPE ?= scripts.utils.security_utils.*
 
 mutate-js:
-	@# One retry: the sandbox dry run can flake on terminal_core.test.js:400
-	@# (requestAnimationFrame vs setTimeout(0) race — docs/agentic-quality-gates.md §2).
+	@# One retry: belt-and-braces against sandbox flakes (the terminal_core
+	@# rAF race itself was fixed — docs/agentic-quality-gates.md §2).
 	TZ=UTC npx --yes stryker run --mutate $(MUTATE) || TZ=UTC npx --yes stryker run --mutate $(MUTATE)
 	$(PY) scripts/check_mutation_ratchet.py stryker --score-file reports/mutation/mutation.json
 

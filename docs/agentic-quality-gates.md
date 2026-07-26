@@ -133,11 +133,13 @@ PRs). Ratchet: `mutation-ratchet.json` floors + `scripts/check_mutation_ratchet.
   environment, and plain jsdom can't report coverage to Stryker (dry run dies
   with "Missing coverage results"). Shipped `'off'` (full suite per mutant,
   ~3s each) — fine for diff-scoped weekly runs.
-- Stryker's sandbox dry run can flake on
+- Stryker's sandbox dry run used to flake on
   `tests/js/transactions/terminal_core.test.js:400` (a
-  `requestAnimationFrame`-vs-`setTimeout(0)` race that resolves differently
-  under sandbox load; passes 3/3 standalone). `make mutate-js` and the
-  workflow therefore retry the Stryker invocation once.
+  `requestAnimationFrame`-vs-`setTimeout(0)` race that resolved differently
+  under sandbox load). Fixed 2026-07-26: the test now awaits its own
+  `requestAnimationFrame`, which is deterministic (rAF callbacks run FIFO
+  within a frame). The single retry in `make mutate-js` and the workflow is
+  kept as belt-and-braces for any future sandbox flake.
 - mutmut 3.6 needs explicit config: `source_paths = ["scripts"]`, and
   `also_copy` must include `pytest.ini` — otherwise pytest inside `mutants/`
   loses `testpaths`/`pythonpath`, collects `scripts/test_*.py`, and the

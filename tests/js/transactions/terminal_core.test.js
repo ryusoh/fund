@@ -390,8 +390,11 @@ describe('updateTerminalCrosshair displays dateLabel correctly', () => {
             null
         );
 
-        // Wait for requestAnimationFrame to add the active class
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        // Wait for the pending requestAnimationFrame to add the active class.
+        // rAF callbacks run FIFO within a frame, so awaiting our own rAF
+        // guarantees the show callback above has already run (a setTimeout(0)
+        // races the rAF callback and is flaky under Stryker's sandbox).
+        await new Promise((resolve) => requestAnimationFrame(resolve));
 
         const overlay = document.getElementById('terminalCrosshairOverlay');
         expect(overlay).not.toBeNull();
