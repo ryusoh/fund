@@ -783,9 +783,18 @@ function getActiveLayout() {
     return chartLayouts[key];
 }
 
+let redrawRafId = null;
+
 function requestChartRedraw() {
     if (crosshairChartManager && typeof crosshairChartManager.redraw === 'function') {
-        crosshairChartManager.redraw();
+        if (!redrawRafId) {
+            redrawRafId = requestAnimationFrame(() => {
+                if (crosshairChartManager && typeof crosshairChartManager.redraw === 'function') {
+                    crosshairChartManager.redraw();
+                }
+                redrawRafId = null;
+            });
+        }
     }
 }
 
