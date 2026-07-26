@@ -213,11 +213,6 @@ export function isTradingDay(date) {
  * @param {Date|null} [dateOverride] - Optional date to check instead of current NY date
  * @returns {Date|null} The current date in New York if it's a trading day, null otherwise.
  */
-export function getTradingDayDate(dateOverride = null) {
-    const nyDate = dateOverride || getNyDate();
-    return isTradingDay(nyDate) ? nyDate : null;
-}
-
 /**
  * UTC-domain only: extracts the UTC calendar day. Correct for dates built
  * with `Date.UTC(...)` / parsed from bare ISO strings. For dates carrying
