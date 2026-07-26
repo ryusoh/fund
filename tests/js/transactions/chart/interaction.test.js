@@ -194,12 +194,18 @@ describe('Interaction logic', () => {
             expect(interactionMod.crosshairState.dragging).toBe(true);
 
             // Execute the requestAnimationFrame callback
-            if (global.requestAnimationFrame.mock && global.requestAnimationFrame.mock.calls.length > 0) {
-                const cb = global.requestAnimationFrame.mock.calls[global.requestAnimationFrame.mock.calls.length - 1][0];
+            if (
+                global.requestAnimationFrame.mock &&
+                global.requestAnimationFrame.mock.calls.length > 0
+            ) {
+                const cb =
+                    global.requestAnimationFrame.mock.calls[
+                        global.requestAnimationFrame.mock.calls.length - 1
+                    ][0];
                 cb();
             } else {
                 // For native requestAnimationFrame in jsdom
-                await new Promise(resolve => requestAnimationFrame(resolve));
+                await new Promise((resolve) => requestAnimationFrame(resolve));
             }
 
             expect(chartManager.redraw).toHaveBeenCalled();
