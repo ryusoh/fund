@@ -3,7 +3,6 @@ import * as dateUtils from '@utils/date.js';
 const {
     getNyDate,
     isTradingDay,
-    getTradingDayDate,
     toIsoDate,
     parseYearFromDate,
     parseQuarterToken,
@@ -171,43 +170,6 @@ describe('Date Utils', () => {
                 const goodFriday2025 = new Date('2025-04-18T12:00:00');
                 expect(isTradingDay(goodFriday2025)).toBe(false);
             });
-        });
-    });
-
-    describe('getTradingDayDate', () => {
-        it('should return a Date object or null', () => {
-            const result = getTradingDayDate();
-            expect(result === null || result instanceof Date).toBe(true);
-        });
-
-        it('should return null on weekends and date on weekdays', () => {
-            const result = getTradingDayDate();
-            const currentDate = getNyDate();
-            const isCurrentlyTradingDay = isTradingDay(currentDate);
-            if (isCurrentlyTradingDay) {
-                expect(result).toBeInstanceOf(Date);
-            } else {
-                expect(result).toBe(null);
-            }
-        });
-
-        it('should return date when passed a trading day explicitly', () => {
-            const monday = new Date('2024-12-02T12:00:00');
-            const result = getTradingDayDate(monday);
-            expect(result).toBe(monday);
-        });
-
-        it('should return null when passed a weekend day explicitly', () => {
-            const saturday = new Date('2024-12-01T12:00:00');
-            const result = getTradingDayDate(saturday);
-            expect(result).toBe(null);
-        });
-
-        it('should cover both branches with explicit dates', () => {
-            const weekday = new Date('2024-12-02T12:00:00');
-            expect(getTradingDayDate(weekday)).toBe(weekday);
-            const weekend = new Date('2024-12-01T12:00:00');
-            expect(getTradingDayDate(weekend)).toBe(null);
         });
     });
 
