@@ -313,18 +313,18 @@ as reported by [Codeminer42](https://blog.codeminer42.com/stop-reading-ai-code-s
 coverage, dependency structure, cyclomatic complexity, module sizes, mutation
 testing.
 
-| Gate (Uncle Bob's list) | This repo today                                                                                                            | Status       |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Unit tests              | Jest (`package.json` → `npm test`, TZ=UTC) + pytest with coverage; `make test-tz` runs the JS suite under UTC± zones       | ✅ strong    |
-| Coverage                | 90% **diff**-coverage gate on both JS and Python (`.github/workflows/diff-coverage.yml`); no whole-suite floor             | ✅ diff-only |
-| Acceptance tests (BDD)  | None — no jest-cucumber/pytest-bdd/behave anywhere; `tdd` skill covers the unit loop only                                  | ❌ missing   |
-| Mutation testing        | Stryker + mutmut, diff-scoped, weekly scheduled non-blocking workflow + ratchet floors (`make mutate-js`/`mutate-py`; §2)  | ✅ scheduled |
-| Cyclomatic complexity   | No tooling — ESLint `complexity` not configured (`eslint.config.cjs`); ruff selection is `E,F,I,B` only (`pyproject.toml`) | ⚠️ manual    |
-| …as a process           | Architect persona refactors one function > 10 per run, by hand (`.jules/architect.md`)                                     | ⚠️ manual    |
-| Module size             | No limits (no `max-lines`, no radon/xenon)                                                                                 | ❌ missing   |
-| Dependency structure    | No dependency-cruiser / import-linter; import-map aliases exist but are not enforced (`jsconfig.json` `paths`)             | ❌ missing   |
-| Security/QA             | `bandit` (`make sec`), `npm-audit.yml`, Sentinel persona for error-handling                                                | ✅           |
-| Spec stage              | `AGENTS.md` + per-subsystem `docs/` + subsystem landmines section; personas must read them before touching an area         | ✅ partial   |
+| Gate (Uncle Bob's list) | This repo today                                                                                                                              | Status           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Unit tests              | Jest (`package.json` → `npm test`, TZ=UTC) + pytest with coverage; `make test-tz` runs the JS suite under UTC± zones                         | ✅ strong        |
+| Coverage                | 90% **diff**-coverage gate on both JS and Python + whole-suite floor (stmts/funcs/lines 85, branches 70 — `coverageThreshold`, §4)           | ✅ diff + floor  |
+| Acceptance tests (BDD)  | Gherkin still deferred; smallest step landed: `tests/python/test_twrr_acceptance.py` behaviour-level cases (§5)                              | ⚠️ partial       |
+| Mutation testing        | Stryker + mutmut, diff-scoped, weekly scheduled non-blocking workflow + ratchet floors (`make mutate-js`/`mutate-py`; §2)                    | ✅ scheduled     |
+| Cyclomatic complexity   | ESLint `complexity` error > 20 with `eslint-suppressions.json` baseline + xenon ranks, in `make lint` and pre-commit (§1)                    | ✅ gated         |
+| …as a process           | Architect works the suppressions backlog / `radon` list — the metric finds, the agent fixes (`.jules/architect.md`)                          | ✅ metric-driven |
+| Module size             | No limits (no `max-lines`)                                                                                                                   | ❌ missing       |
+| Dependency structure    | dependency-cruiser: no-circular + no-cross-page-imports + not-to-vendor, via `make depcheck` + pre-commit (§3); Python skipped with evidence | ✅ JS gated      |
+| Security/QA             | `bandit` (`make sec`), `npm-audit.yml`, Sentinel persona for error-handling                                                                  | ✅               |
+| Spec stage              | `AGENTS.md` + per-subsystem `docs/` + subsystem landmines section; personas must read them before touching an area                           | ✅ partial       |
 
 The workflow-level machinery also already matches the philosophy:
 
@@ -343,7 +343,9 @@ The workflow-level machinery also already matches the philosophy:
 
 ## Evidence, claim by claim
 
-**Repo facts** (all verified by direct inspection this session):
+**Repo facts** (verified by direct inspection on 2026-07-25, the research day,
+**pre-implementation** — several lines below are now historical; the inventory
+table above and the per-recommendation status blocks are the living version):
 
 - `AGENTS.md` — two audiences, lanes table, non-negotiables, 90% diff-coverage
   description, PR-proof rules.
