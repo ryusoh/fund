@@ -66,14 +66,14 @@ jobs:
             # Stryker in reports/stryker-incremental.json. Restoring last
             # week's cache keeps re-runs scoped to what actually changed.
             - name: Restore mutmut incremental cache
-              uses: actions/cache@v7
+              uses: actions/cache@v6
               with:
                   path: mutants/
                   key: mutmut-${{ github.run_id }}
                   restore-keys: mutmut-
 
             - name: Restore Stryker incremental cache
-              uses: actions/cache@v7
+              uses: actions/cache@v6
               with:
                   path: reports/
                   key: stryker-${{ github.run_id }}
