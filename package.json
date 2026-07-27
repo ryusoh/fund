@@ -43,19 +43,19 @@
         "dayjs": "^1.11.21",
         "dependency-cruiser": "^18.1.0",
         "esbuild": "^0.28.1",
-        "eslint": "^10.7.0",
+        "eslint": "^10.8.0",
         "eventemitter3": "^5.0.4",
         "husky": "^9.1.6",
         "jest": "^30.4.2",
         "jest-environment-jsdom": "^30.4.1",
-        "lint-staged": "^17.1.0",
+        "lint-staged": "^17.2.0",
         "lodash-es": "^4.18.1",
-        "markdownlint-cli2": "^0.23.1",
-        "playwright": "^1.61.1",
-        "prettier": "^3.9.5",
+        "markdownlint-cli2": "^0.23.2",
+        "playwright": "^1.62.0",
+        "prettier": "^3.9.6",
         "stylelint": "^17.14.1",
         "typescript": "^7.0.2",
-        "wrangler": "^4.112.0"
+        "wrangler": "^4.114.0"
     },
     "lint-staged": {
         "*.js": [
