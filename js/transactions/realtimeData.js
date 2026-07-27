@@ -168,6 +168,8 @@ export async function fetchRealTimeData() {
             forwardPe: portfolioFwdPE,
             tickerPEs,
             tickerWeights,
+            holdings,
+            prices,
         };
     } catch (error) {
         logger.warn('Failed to fetch real-time data:', error);

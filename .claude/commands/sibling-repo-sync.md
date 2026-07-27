@@ -5,9 +5,10 @@ argument-hint: "[what to sync, e.g. 'the complexity gate' or 'depcheck']"
 
 Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 
-- `~/dev/ryusoh.github.io` — JS-only static site; gate = `.pre-commit-config.yaml`
-  hooks (CI runs `pre-commit run --all-files`); Makefile `lint-js` uses
-  `--max-warnings=0`; `pnpm-lock.yaml` drifts by convention, don't regenerate it.
+- `~/dev/ryusoh.github.io` — JS-only static site; CI-parity gate = `make
+precommit-fix` (runs `.pre-commit-config.yaml` hooks, sync-check, Jest +
+  coverage, etc.); Makefile `lint-js` uses `--max-warnings=0`; `pnpm-lock.yaml`
+  drifts by convention, don't regenerate it.
 - `~/dev/anki` — JS + Python (Anki addons); **no** `.pre-commit-config.yaml`;
   CI gate = `make precommit SKIP=1` (fmt-check lint typecheck-js quality-py
   check sync-check); aliases via package.json `imports` (`#js/*`, `#ui/*`);

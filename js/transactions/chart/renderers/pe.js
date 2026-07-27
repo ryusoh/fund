@@ -25,6 +25,83 @@ let peDataCache = null;
 let peDataLoading = false;
 
 /**
+ * Recompute realtime PE values using the same EPS basis as the historical
+ * pipeline: last historical PE scaled by the price change since the last
+ * pipeline run. This prevents a jump caused by mixing the pipeline's
+ * point-in-time EPS with a different EPS source from analysis JSON.
+ * @param {Object} data - Historical pe_ratio.json payload.
+ * @param {Object} realtime - Realtime payload from fetchRealTimeData.
+ * @returns {Object} Realtime payload with scaled PE values.
+ */
+function _computeScaledTickerPe(ticker, lastIdx, lastHistoricalPe, lastHistoricalPrices, realtime) {
+    const historicalPe = lastHistoricalPe[ticker]?.[lastIdx];
+    const historicalPrice = lastHistoricalPrices[ticker];
+    if (
+        Number.isFinite(historicalPe) &&
+        historicalPe > 0 &&
+        Number.isFinite(historicalPrice) &&
+        historicalPrice > 0
+    ) {
+        const currentPrice = parseFloat(realtime.prices?.[ticker]) || 0;
+        if (currentPrice > 0) {
+            return historicalPe * (currentPrice / historicalPrice);
+        }
+    }
+    // Fallback for tickers without historical data (new holdings)
+    return realtime.tickerPEs?.[ticker] || null;
+}
+
+function _scaleRealtimePeToHistoricalBasis(data, realtime) {
+    if (!data || !realtime || !Array.isArray(data.dates) || data.dates.length === 0) {
+        return realtime;
+    }
+    const lastIdx = data.dates.length - 1;
+    const lastHistoricalPe = data.ticker_pe || {};
+    const lastHistoricalPrices = data.ticker_prices || {};
+    const holdings = realtime.holdings || {};
+    const scaledTickerPEs = {};
+    let weightSum = 0;
+    let weightedYieldSum = 0;
+
+    const tickers = Object.keys(holdings);
+    for (let i = 0; i < tickers.length; i += 1) {
+        const ticker = tickers[i];
+        const shares = parseFloat(holdings[ticker]?.shares) || 0;
+        const currentPrice = parseFloat(realtime.prices?.[ticker]) || 0;
+        if (shares <= 0 || currentPrice <= 0) {
+            continue;
+        }
+        const value = shares * currentPrice;
+        const pe = _computeScaledTickerPe(
+            ticker,
+            lastIdx,
+            lastHistoricalPe,
+            lastHistoricalPrices,
+            realtime
+        );
+        if (Number.isFinite(pe) && pe > 0) {
+            scaledTickerPEs[ticker] = pe;
+            weightedYieldSum += value / pe;
+            weightSum += value;
+        }
+    }
+
+    // If we couldn't scale any ticker (missing holdings/prices or no historical
+    // data), fall back to the original realtime values so the merge still works.
+    if (weightSum <= 0 || weightedYieldSum <= 0) {
+        return realtime;
+    }
+
+    const portfolioPE = weightSum / weightedYieldSum;
+
+    return {
+        ...realtime,
+        pe: portfolioPE,
+        tickerPEs: scaledTickerPEs,
+    };
+}
+
+/**
  * Load PE ratio data from the backend JSON and merge real-time data if available.
  * @returns {Promise<Object|null>}
  */
@@ -43,41 +120,48 @@ export async function loadPEData() {
             data = await response.json();
         }
 
-        if (data && realtime && realtime.date && realtime.pe !== null) {
+        // Scale realtime PEs to the historical EPS basis so the realtime point
+        // doesn't jump when the portfolio value barely moves.
+        const scaledRealtime = _scaleRealtimePeToHistoricalBasis(data, realtime);
+
+        if (data && scaledRealtime && scaledRealtime.date && scaledRealtime.pe !== null) {
             const lastDate = data.dates[data.dates.length - 1];
-            if (lastDate === realtime.date || lastDate < realtime.date) {
-                if (lastDate === realtime.date) {
-                    data.portfolio_pe[data.portfolio_pe.length - 1] = realtime.pe;
+            if (lastDate === scaledRealtime.date || lastDate < scaledRealtime.date) {
+                if (lastDate === scaledRealtime.date) {
+                    data.portfolio_pe[data.portfolio_pe.length - 1] = scaledRealtime.pe;
 
                     const idx = data.dates.length - 1;
                     // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
                     const peKeys = Object.keys(data.ticker_pe || {});
                     for (let k = 0; k < peKeys.length; k += 1) {
                         const ticker = peKeys[k];
-                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker] || null;
+                        data.ticker_pe[ticker][idx] = scaledRealtime.tickerPEs[ticker] || null;
                     }
 
                     const weightKeys = Object.keys(data.ticker_weights || {});
                     for (let k = 0; k < weightKeys.length; k += 1) {
                         const ticker = weightKeys[k];
-                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker] || null;
+                        data.ticker_weights[ticker][idx] =
+                            scaledRealtime.tickerWeights[ticker] || null;
                     }
                 } else {
-                    data.dates.push(realtime.date);
-                    data.portfolio_pe.push(realtime.pe);
+                    data.dates.push(scaledRealtime.date);
+                    data.portfolio_pe.push(scaledRealtime.pe);
 
                     // Pad existing ticker arrays
                     // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
                     const peKeys = Object.keys(data.ticker_pe || {});
                     for (let k = 0; k < peKeys.length; k += 1) {
                         const ticker = peKeys[k];
-                        data.ticker_pe[ticker].push(realtime.tickerPEs[ticker] || null);
+                        data.ticker_pe[ticker].push(scaledRealtime.tickerPEs[ticker] || null);
                     }
 
                     const weightKeys = Object.keys(data.ticker_weights || {});
                     for (let k = 0; k < weightKeys.length; k += 1) {
                         const ticker = weightKeys[k];
-                        data.ticker_weights[ticker].push(realtime.tickerWeights[ticker] || null);
+                        data.ticker_weights[ticker].push(
+                            scaledRealtime.tickerWeights[ticker] || null
+                        );
                     }
                 }
 
@@ -87,29 +171,29 @@ export async function loadPEData() {
                 data.ticker_weights = data.ticker_weights || {};
 
                 // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
-                const newPEKeys = Object.keys(realtime.tickerPEs || {});
+                const newPEKeys = Object.keys(scaledRealtime.tickerPEs || {});
                 for (let k = 0; k < newPEKeys.length; k += 1) {
                     const ticker = newPEKeys[k];
                     if (!data.ticker_pe[ticker]) {
                         data.ticker_pe[ticker] = new Array(idx + 1).fill(null);
-                        data.ticker_pe[ticker][idx] = realtime.tickerPEs[ticker];
+                        data.ticker_pe[ticker][idx] = scaledRealtime.tickerPEs[ticker];
                     }
                 }
 
-                const newWeightKeys = Object.keys(realtime.tickerWeights || {});
+                const newWeightKeys = Object.keys(scaledRealtime.tickerWeights || {});
                 for (let k = 0; k < newWeightKeys.length; k += 1) {
                     const ticker = newWeightKeys[k];
                     if (!data.ticker_weights[ticker]) {
                         data.ticker_weights[ticker] = new Array(idx + 1).fill(null);
-                        data.ticker_weights[ticker][idx] = realtime.tickerWeights[ticker];
+                        data.ticker_weights[ticker][idx] = scaledRealtime.tickerWeights[ticker];
                     }
                 }
 
-                if (realtime.forwardPe !== null) {
+                if (scaledRealtime.forwardPe !== null) {
                     data.forward_pe = data.forward_pe || {};
-                    data.forward_pe.portfolio_forward_pe = realtime.forwardPe;
+                    data.forward_pe.portfolio_forward_pe = scaledRealtime.forwardPe;
                     if (!data.forward_pe.target_date) {
-                        const parts = realtime.date.split('-');
+                        const parts = scaledRealtime.date.split('-');
                         if (parts.length === 3) {
                             parts[0] = String(Number(parts[0]) + 1);
                             data.forward_pe.target_date = parts.join('-');

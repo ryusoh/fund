@@ -1643,28 +1643,108 @@ describe('dataService', () => {
     });
 });
 
-describe('_calculateDynamicPeValues — VT forward P/E derivation', () => {
-    // VT has no native forward estimate (forwardPe/forwardEps null), so its
-    // forward P/E is derived from the daily trailing P/E and the MSCI ratio.
-    // Regression: a null msci_pe_ratio in pe_ratio.json made this vanish.
+describe('_calculateDynamicPeValues — ETF trailing P/E must not use price/eps', () => {
+    // ETFs report an EPS figure, but it is the fund's own EPS (net income /
+    // shares outstanding), not the weighted EPS of the underlying holdings.
+    // The historical PE pipeline uses info.trailingPE for ETFs; overriding it
+    // with price/eps in realtime creates a jump on the chart.
     const vtSnapshot = () => ({
         pe: 22.0335,
         forwardPe: null,
         eps: 6.22,
         forwardEps: null,
         msciPeRatio: 1.2622,
+        isEtf: true,
     });
 
-    it('derives VT forward P/E from trailing / msci ratio when the ratio is present', () => {
-        const { trailingValue, forwardValue } = _calculateDynamicPeValues(vtSnapshot(), 154.33);
-        expect(trailingValue).toBeCloseTo(154.33 / 6.22, 2);
-        expect(forwardValue).toBeCloseTo(154.33 / 6.22 / 1.2622, 2);
+    it('keeps ETF trailing P/E at the fetched market.pe instead of price/eps', () => {
+        const { trailingValue } = _calculateDynamicPeValues(vtSnapshot(), 154.33);
+        // 154.33 / 6.22 = 24.81, which is NOT the portfolio-weighted trailing PE
+        expect(trailingValue).toBeCloseTo(22.0335, 2);
+        expect(trailingValue).not.toBeCloseTo(154.33 / 6.22, 2);
+    });
+
+    it('still derives VT forward P/E from trailing / msci ratio', () => {
+        const { forwardValue } = _calculateDynamicPeValues(vtSnapshot(), 154.33);
+        expect(forwardValue).toBeCloseTo(22.0335 / 1.2622, 2);
     });
 
     it('leaves forward P/E blank when the msci ratio is missing (broken-data case)', () => {
         const snap = { ...vtSnapshot(), msciPeRatio: undefined };
         const { forwardValue } = _calculateDynamicPeValues(snap, 154.33);
         expect(Number.isFinite(forwardValue)).toBe(false);
+    });
+});
+
+describe('_calculateDynamicPeValues — stocks still use live price/eps', () => {
+    it('overrides trailing PE with currentPrice / eps for non-ETFs', () => {
+        const snapshot = {
+            pe: 25.0,
+            forwardPe: 20.0,
+            eps: 4.0,
+            forwardEps: 5.0,
+            isEtf: false,
+        };
+        const { trailingValue, forwardValue } = _calculateDynamicPeValues(snapshot, 120.0);
+        expect(trailingValue).toBeCloseTo(120.0 / 4.0, 2);
+        expect(forwardValue).toBeCloseTo(120.0 / 5.0, 2);
+    });
+});
+
+describe('fetchMarketRatiosForTickers', () => {
+    beforeEach(() => {
+        __testables.resetAnalysisTickerCache();
+        __testables.resetTickerMetadataCache();
+    });
+
+    it('tags ETFs with isEtf so realtime PE does not use price/eps', async () => {
+        const mockAnalysisIndex = {
+            tickers: [
+                { symbol: 'VT', path: '../data/analysis/VT.json' },
+                { symbol: 'AAPL', path: '../data/analysis/AAPL.json' },
+            ],
+        };
+        const mockTickerMetadata = {
+            VT: { quoteType: 'ETF' },
+            AAPL: { quoteType: 'EQUITY' },
+        };
+
+        fetch.mockImplementation((url) => {
+            if (url.includes('analysis/index')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve(mockAnalysisIndex),
+                });
+            }
+            if (url.includes('ticker_metadata')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve(mockTickerMetadata),
+                });
+            }
+            if (url.includes('pe_ratio.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+            }
+            if (url.includes('analysis/VT')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ market: { pe: 22.0, eps: 6.0 } }),
+                });
+            }
+            if (url.includes('analysis/AAPL')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ market: { pe: 25.0, eps: 5.0 } }),
+                });
+            }
+            return Promise.reject(new Error(`Unexpected URL: ${url}`));
+        });
+
+        const { fetchMarketRatiosForTickers } = require('@services/dataService.js');
+        const ratios = await fetchMarketRatiosForTickers(['VT', 'AAPL']);
+
+        expect(ratios.get('VT').isEtf).toBe(true);
+        expect(ratios.get('AAPL').isEtf).toBe(false);
     });
 });
 

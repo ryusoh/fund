@@ -1507,12 +1507,25 @@ def main():
             result_ticker_pe[t].append(val)
             w = mv_map.get(t, 0) / total_mv if total_mv > 0 else 0
             result_ticker_weights[t].append(round(w, 5) if w > 0 else None)
+    # Record the last known price for each valid ticker so the frontend can
+    # scale the historical PE by the live price change without re-deriving EPS
+    # from a different source (which causes chart jumps).
+    result_ticker_last_prices: Dict[str, float] = {}
+    for t in all_tickers:
+        t_clean = t.strip().upper().replace("-", "")
+        if t_clean in prices_df.columns:
+            price_series = prices_df[t_clean].dropna()
+            if not price_series.empty:
+                result_ticker_last_prices[t] = round(float(price_series.iloc[-1]), 4)
     final_output = {
         "dates": result_dates,
         "portfolio_pe": result_portfolio_pe,
         "ticker_pe": {t: v for t, v in result_ticker_pe.items() if t in valid_ticker_mask},
         "ticker_weights": {
             t: v for t, v in result_ticker_weights.items() if t in valid_ticker_mask
+        },
+        "ticker_prices": {
+            t: v for t, v in result_ticker_last_prices.items() if t in valid_ticker_mask
         },
     }
 

@@ -82,6 +82,43 @@ describe('loadPEData', () => {
         expect(data.forward_pe.portfolio_forward_pe).toBe(18);
         expect(data.forward_pe.target_date).toBe('2024-12-31');
     });
+
+    it('scales realtime PEs to the historical EPS basis using ticker_prices', async () => {
+        const mockPEData = {
+            dates: ['2023-01-01', '2023-01-02'],
+            portfolio_pe: [15, 16],
+            ticker_pe: { AAPL: [20, 21] },
+            ticker_weights: { AAPL: [0.5, 0.5] },
+            ticker_prices: { AAPL: 100.0 },
+        };
+
+        const mockRealtimeData = {
+            date: '2023-01-03',
+            pe: 25, // would be used without scaling
+            forwardPe: 18,
+            tickerPEs: { AAPL: 25 },
+            tickerWeights: { AAPL: 11000 },
+            holdings: { AAPL: { shares: '100' } },
+            prices: { AAPL: 110.0 },
+        };
+
+        jest.doMock('../../../../../js/transactions/realtimeData.js', () => ({
+            fetchRealTimeData: jest.fn().mockResolvedValue(mockRealtimeData),
+        }));
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve(mockPEData),
+        });
+
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        const data = await peModule.loadPEData();
+
+        // Scaled PE = 21 * (110 / 100) = 23.1
+        expect(data.ticker_pe.AAPL).toEqual([20, 21, 23.1]);
+        // Portfolio PE = (100 * 110) / (100 * 110 / 23.1) = 23.1
+        expect(data.portfolio_pe).toEqual([15, 16, 23.1]);
+    });
 });
 
 describe('buildPESeries', () => {

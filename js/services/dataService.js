@@ -19,7 +19,9 @@ import { logger } from '@utils/logger.js';
 
 const PE_RATIO_URL = '../data/output/figures/pe_ratio.json';
 const ANALYSIS_INDEX_URL = '../data/analysis/index.json';
+const TICKER_METADATA_URL = '../data/ticker_metadata.json';
 let analysisTickerPathCache = null;
+let tickerMetadataCache = null;
 
 function lightenHexToRgba(hex, lightenFactor, alpha) {
     /* istanbul ignore next: defensive parameter validation */
@@ -98,6 +100,29 @@ async function loadAnalysisTickerPaths() {
     return analysisTickerPathCache;
 }
 
+async function loadTickerMetadata() {
+    if (tickerMetadataCache) {
+        return tickerMetadataCache;
+    }
+    try {
+        const payload = await fetchJSON(TICKER_METADATA_URL);
+        tickerMetadataCache = payload || {};
+    } catch (error) {
+        logger.warn('Failed to load ticker metadata:', error);
+        tickerMetadataCache = {};
+    }
+    return tickerMetadataCache;
+}
+
+function isEtfFromMetadata(symbol, metadata) {
+    const record = metadata?.[symbol];
+    if (!record) {
+        return false;
+    }
+    const quoteType = typeof record.quoteType === 'string' ? record.quoteType.toUpperCase() : '';
+    return quoteType === 'ETF' || quoteType === 'MUTUALFUND';
+}
+
 export async function fetchMarketRatiosForTickers(tickers = []) {
     if (!Array.isArray(tickers) || tickers.length === 0) {
         return new Map();
@@ -114,7 +139,10 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
             return new Map();
         }
 
-        const tickerPaths = await loadAnalysisTickerPaths();
+        const [tickerPaths, tickerMetadata] = await Promise.all([
+            loadAnalysisTickerPaths(),
+            loadTickerMetadata(),
+        ]);
         const ratiosByTicker = new Map();
 
         // Load global PE ratio data as fallback for forward PE
@@ -195,6 +223,7 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
                     forwardPe: Number.isFinite(forwardPe) ? forwardPe : null,
                     eps: Number.isFinite(eps) ? eps : null,
                     forwardEps: Number.isFinite(forwardEps) ? forwardEps : null,
+                    isEtf: isEtfFromMetadata(symbol, tickerMetadata),
                 };
 
                 // Attach MSCI ratio for VT so _calculateDynamicPeValues can use it
@@ -267,7 +296,10 @@ export function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
     let forwardValue = ratioSnapshot.forwardPe;
 
     if (Number.isFinite(currentPrice) && currentPrice > 0) {
-        if (Number.isFinite(ratioSnapshot.eps) && ratioSnapshot.eps > 0) {
+        // For ETFs, market.pe is the fund's portfolio-weighted trailing P/E.
+        // market.eps is the fund's own EPS (net income / shares), which is NOT
+        // the weighted EPS of the underlying holdings, so price/eps is wrong.
+        if (!ratioSnapshot.isEtf && Number.isFinite(ratioSnapshot.eps) && ratioSnapshot.eps > 0) {
             trailingValue = currentPrice / ratioSnapshot.eps;
         }
         if (Number.isFinite(ratioSnapshot.forwardEps) && ratioSnapshot.forwardEps > 0) {
@@ -874,6 +906,9 @@ export const __testables = {
     computeMonthlyPnl,
     resetAnalysisTickerCache: () => {
         analysisTickerPathCache = null;
+    },
+    resetTickerMetadataCache: () => {
+        tickerMetadataCache = null;
     },
 };
 
