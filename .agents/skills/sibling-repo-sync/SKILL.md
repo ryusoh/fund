@@ -6,23 +6,37 @@ argument-hint: "[what to sync, e.g. 'the complexity gate' or 'depcheck']"
 
 Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 
-- `~/dev/ryusoh.github.io` — JS-only static site; CI-parity gate = `make
-precommit-fix` (runs `.pre-commit-config.yaml` hooks, sync-check, Jest +
-  coverage, etc.); Makefile `lint-js` uses `--max-warnings=0`; `pnpm-lock.yaml`
-  drifts by convention, don't regenerate it.
+- `~/dev/ryusoh.github.io` — JS-only static site (plain `<script>` tags, no ES
+  modules, no Python pipeline); CI-parity gate = `make precommit-fix` (runs
+  `.pre-commit-config.yaml` hooks, sync-check, Jest + coverage, etc.); Makefile
+  `lint-js` uses `--max-warnings=0`; default branch is **`master`**, not `main`;
+  `package-lock.json` is authoritative, `pnpm-lock.yaml` drifts by convention
+  (regenerated out-of-band) — don't regenerate it; its sync generator is
+  `tools/sync_commands.py` (not `scripts/`); `precommit-fix` stages auto-fixes
+  via `git add -u` — uncommitted work may get staged.
 - `~/dev/anki` — JS + Python (Anki addons); **no** `.pre-commit-config.yaml`;
   CI gate = `make precommit SKIP=1` (fmt-check lint typecheck-js quality-py
   check sync-check); aliases via package.json `imports` (`#js/*`, `#ui/*`);
   Python addon dirs are REAL packages (`__init__.py` present) — import-linter
-  works here.
+  works here; its sync generator is `tools/sync_commands.py` and its
+  frontmatter parser is naive (single-line `description`/`argument-hint` only);
+  `precommit-fix` has a `YOLO=1`/`MSG=` mode that runs `git add -A` — hazard
+  for uncommitted work.
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
-  `make precommit`; `Dockerfile.precommit` pip-installs `requirements-dev.txt`
-  and runs `npm ci`; its AGENTS.md non-negotiable #6 forbids JULES ROUTINES from
-  touching build/lint config — interactive agents acting on explicit user
-  direction are exempt, note it in the PR body.
+  `make precommit` (on macOS the parity gate is `make precommit-docker` —
+  raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
+  noise** — judge by exit code, not the log); `Dockerfile.precommit`
+  pip-installs `requirements-dev.txt` and runs `npm ci`; its AGENTS.md
+  non-negotiable #6 forbids JULES ROUTINES from adding dependencies or touching
+  build/lint/test config (and #5 pins jest to v29) — interactive agents acting
+  on explicit user direction are exempt, note it in the PR body.
 
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
+
+This skill exists in all four repos (added 2026-07), each with the perspective
+flipped to its own home repo — a sync can be initiated from any side. When
+improving this skill, sync the improvement to the other three copies.
 
 ## Process
 
