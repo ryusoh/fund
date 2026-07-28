@@ -154,11 +154,6 @@
             "count": 1
         }
     },
-    "js/transactions/terminal/handlers/misc.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/transactions/terminal/snapshots.js": {
         "complexity": {
             "count": 6
