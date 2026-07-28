@@ -331,109 +331,100 @@ ${summary}`;
     appendMessage(result);
 }
 
+async function _switchPercentageView(
+    chartManager,
+    targetChart,
+    successMsg,
+    snapshotFn,
+    snapshotArgs
+) {
+    setActiveChart(targetChart);
+    if (chartManager && typeof chartManager.update === 'function') {
+        chartManager.update();
+    }
+    let result = successMsg;
+    if (snapshotFn) {
+        const summary = await snapshotFn(snapshotArgs);
+        if (summary) {
+            result += `\n${summary}`;
+        }
+    }
+    return result;
+}
+
+async function _handlePercentageView(activeChart, chartManager) {
+    const isAbs = activeChart.endsWith('Abs');
+    const baseChart = isAbs ? activeChart.slice(0, -3) : activeChart;
+
+    if (!isAbs) {
+        if (baseChart === 'sectors') {
+            return 'Sector allocation chart is already showing percentages.';
+        } else if (baseChart === 'marketcap') {
+            return 'Market cap chart is already showing percentages.';
+        }
+        return `${baseChart.charAt(0).toUpperCase() + baseChart.slice(1)} chart is already showing percentages.`;
+    }
+
+    let snapshotFn, snapshotArgs, msgName;
+    if (baseChart === 'composition') {
+        const { getCompositionSnapshotLine } = await import('../snapshots.js');
+        snapshotFn = getCompositionSnapshotLine;
+        snapshotArgs = { labelPrefix: 'Composition' };
+        msgName = 'composition';
+    } else if (baseChart === 'drawdown') {
+        const { getDrawdownSnapshotLine } = await import('../snapshots.js');
+        snapshotFn = getDrawdownSnapshotLine;
+        snapshotArgs = { includeHidden: true, isAbsolute: false };
+        msgName = 'drawdown';
+    } else if (baseChart === 'sectors') {
+        const { getSectorsSnapshotLine } = await import('../snapshots.js');
+        snapshotFn = getSectorsSnapshotLine;
+        snapshotArgs = { labelPrefix: 'Sectors' };
+        msgName = 'sector allocation';
+    } else if (baseChart === 'geography') {
+        const { getGeographySnapshotLine } = await import('../snapshots.js');
+        snapshotFn = getGeographySnapshotLine;
+        snapshotArgs = { labelPrefix: 'Geography' };
+        msgName = 'geography';
+    } else if (baseChart === 'marketcap') {
+        const { getMarketcapSnapshotLine } = await import('../snapshots.js');
+        snapshotFn = getMarketcapSnapshotLine;
+        snapshotArgs = { labelPrefix: 'Market Cap' };
+        msgName = 'market cap';
+    }
+
+    const successMsg = `Switched ${msgName} chart to percentage view.`;
+    return await _switchPercentageView(
+        chartManager,
+        baseChart,
+        successMsg,
+        snapshotFn,
+        snapshotArgs
+    );
+}
+
 export async function handlePercentageCommand(args, { appendMessage, chartManager }) {
-    let result = '';
     const chartSection = document.getElementById('runningAmountSection');
     const isChartVisible = chartSection && !chartSection.classList.contains('is-hidden');
     const activeChart = transactionState.activeChart;
 
-    if (activeChart === 'composition' || activeChart === 'compositionAbs') {
-        if (!isChartVisible) {
-            result = 'Composition chart must be active. Use `plot composition` first.';
-        } else if (activeChart === 'composition') {
-            result = 'Composition chart is already showing percentages.';
-        } else {
-            setActiveChart('composition');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched composition chart to percentage view.';
-            const summary = await getCompositionSnapshotLine({
-                labelPrefix: 'Composition',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'drawdown' || activeChart === 'drawdownAbs') {
-        if (!isChartVisible) {
-            result = 'Drawdown chart must be active. Use `plot drawdown` first.';
-        } else if (activeChart === 'drawdown') {
-            result = 'Drawdown chart is already showing percentages.';
-        } else {
-            setActiveChart('drawdown');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched drawdown chart to percentage view.';
-            const summary = getDrawdownSnapshotLine({
-                includeHidden: true,
-                isAbsolute: false,
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'sectors' || activeChart === 'sectorsAbs') {
-        if (!isChartVisible) {
-            result = 'Sector allocation chart must be active. Use `plot sectors` first.';
-        } else if (activeChart === 'sectors') {
-            result = 'Sector allocation chart is already showing percentages.';
-        } else {
-            setActiveChart('sectors');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched sector allocation chart to percentage view.';
-            const { getSectorsSnapshotLine } = await import('../snapshots.js');
-            const summary = await getSectorsSnapshotLine({
-                labelPrefix: 'Sectors',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'geography' || activeChart === 'geographyAbs') {
-        if (!isChartVisible) {
-            result = 'Geography chart must be active. Use `plot geography` first.';
-        } else if (activeChart === 'geography') {
-            result = 'Geography chart is already showing percentages.';
-        } else {
-            setActiveChart('geography');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched geography chart to percentage view.';
-            const { getGeographySnapshotLine } = await import('../snapshots.js');
-            const summary = await getGeographySnapshotLine({
-                labelPrefix: 'Geography',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else if (activeChart === 'marketcap' || activeChart === 'marketcapAbs') {
-        if (!isChartVisible) {
-            result = 'Market cap chart must be active. Use `plot marketcap` first.';
-        } else if (activeChart === 'marketcap') {
-            result = 'Market cap chart is already showing percentages.';
-        } else {
-            setActiveChart('marketcap');
-            if (chartManager && typeof chartManager.update === 'function') {
-                chartManager.update();
-            }
-            result = 'Switched market cap chart to percentage view.';
-            const { getMarketcapSnapshotLine } = await import('../snapshots.js');
-            const summary = await getMarketcapSnapshotLine({
-                labelPrefix: 'Market Cap',
-            });
-            if (summary) {
-                result += `\n${summary}`;
-            }
-        }
-    } else {
+    const validCharts = ['composition', 'drawdown', 'sectors', 'geography', 'marketcap'];
+    const baseChart = activeChart.endsWith('Abs') ? activeChart.slice(0, -3) : activeChart;
+
+    let result = '';
+    if (!validCharts.includes(baseChart)) {
         result =
             'Composition, Sectors, Geography, Drawdown, or Market Cap chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, `plot drawdown`, or `plot marketcap` first.';
+    } else if (!isChartVisible) {
+        const msgName =
+            baseChart === 'sectors'
+                ? 'Sector allocation'
+                : baseChart === 'marketcap'
+                  ? 'Market cap'
+                  : baseChart.charAt(0).toUpperCase() + baseChart.slice(1);
+        result = `${msgName} chart must be active. Use \`plot ${baseChart}\` first.`;
+    } else {
+        result = await _handlePercentageView(activeChart, chartManager);
     }
     appendMessage(result);
 }
