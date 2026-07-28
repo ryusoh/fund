@@ -331,7 +331,13 @@ ${summary}`;
     appendMessage(result);
 }
 
-async function _switchPercentageView(chartManager, targetChart, successMsg, snapshotFn, snapshotArgs) {
+async function _switchPercentageView(
+    chartManager,
+    targetChart,
+    successMsg,
+    snapshotFn,
+    snapshotArgs
+) {
     setActiveChart(targetChart);
     if (chartManager && typeof chartManager.update === 'function') {
         chartManager.update();
@@ -351,10 +357,12 @@ async function _handlePercentageView(activeChart, chartManager) {
     const baseChart = isAbs ? activeChart.slice(0, -3) : activeChart;
 
     if (!isAbs) {
-        const titleCase = baseChart === 'sectors' ? 'Sector allocation' :
-                        baseChart === 'marketcap' ? 'Market cap' :
-                        baseChart.charAt(0).toUpperCase() + baseChart.slice(1);
-        return `${titleCase} chart is already showing percentages.`;
+        if (baseChart === 'sectors') {
+            return 'Sector allocation chart is already showing percentages.';
+        } else if (baseChart === 'marketcap') {
+            return 'Market cap chart is already showing percentages.';
+        }
+        return `${baseChart.charAt(0).toUpperCase() + baseChart.slice(1)} chart is already showing percentages.`;
     }
 
     let snapshotFn, snapshotArgs, msgName;
@@ -386,7 +394,13 @@ async function _handlePercentageView(activeChart, chartManager) {
     }
 
     const successMsg = `Switched ${msgName} chart to percentage view.`;
-    return await _switchPercentageView(chartManager, baseChart, successMsg, snapshotFn, snapshotArgs);
+    return await _switchPercentageView(
+        chartManager,
+        baseChart,
+        successMsg,
+        snapshotFn,
+        snapshotArgs
+    );
 }
 
 export async function handlePercentageCommand(args, { appendMessage, chartManager }) {
@@ -399,11 +413,15 @@ export async function handlePercentageCommand(args, { appendMessage, chartManage
 
     let result = '';
     if (!validCharts.includes(baseChart)) {
-        result = 'Composition, Sectors, Geography, Drawdown, or Market Cap chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, `plot drawdown`, or `plot marketcap` first.';
+        result =
+            'Composition, Sectors, Geography, Drawdown, or Market Cap chart must be active to switch views. Use `plot composition`, `plot sectors`, `plot geography`, `plot drawdown`, or `plot marketcap` first.';
     } else if (!isChartVisible) {
-        const msgName = baseChart === 'sectors' ? 'Sector allocation' :
-                        baseChart === 'marketcap' ? 'Market cap' :
-                        baseChart.charAt(0).toUpperCase() + baseChart.slice(1);
+        const msgName =
+            baseChart === 'sectors'
+                ? 'Sector allocation'
+                : baseChart === 'marketcap'
+                  ? 'Market cap'
+                  : baseChart.charAt(0).toUpperCase() + baseChart.slice(1);
         result = `${msgName} chart must be active. Use \`plot ${baseChart}\` first.`;
     } else {
         result = await _handlePercentageView(activeChart, chartManager);
