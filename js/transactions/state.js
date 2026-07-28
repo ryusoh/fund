@@ -151,17 +151,18 @@ export function setCompositionFilterTickers(tickers) {
     }
     const normalized = [];
     const seen = new Set();
-    tickers.forEach((ticker) => {
+    for (let i = 0; i < tickers.length; i++) {
+        const ticker = tickers[i];
         if (typeof ticker !== 'string') {
-            return;
+            continue;
         }
         const cleaned = ticker.trim().toUpperCase();
         if (!cleaned || seen.has(cleaned)) {
-            return;
+            continue;
         }
         seen.add(cleaned);
         normalized.push(cleaned);
-    });
+    }
     transactionState.compositionFilterTickers = normalized;
 }
 
