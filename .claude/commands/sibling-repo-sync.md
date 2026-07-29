@@ -12,7 +12,10 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   `package-lock.json` is authoritative, `pnpm-lock.yaml` drifts by convention
   (regenerated out-of-band) — don't regenerate it; its sync generator is
   `tools/sync_commands.py` (not `scripts/`); `precommit-fix` stages auto-fixes
-  via `git add -u` — uncommitted work may get staged.
+  via `git add -u` — uncommitted work may get staged; its `ship` skill has no
+  Mode A/B split (single numbered flow on `master`, gates `make check` +
+  `make test`, asks for acknowledgement before pushing); run prettier there
+  via `./scripts/run-npx.sh prettier`.
 - `~/dev/anki` — JS + Python (Anki addons); **no** `.pre-commit-config.yaml`;
   CI gate = `make precommit SKIP=1` (fmt-check lint typecheck-js quality-py
   check sync-check); aliases via package.json `imports` (`#js/*`, `#ui/*`);
@@ -28,7 +31,12 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   pip-installs `requirements-dev.txt` and runs `npm ci`; its AGENTS.md
   non-negotiable #6 forbids JULES ROUTINES from adding dependencies or touching
   build/lint/test config (and #5 pins jest to v29) — interactive agents acting
-  on explicit user direction are exempt, note it in the PR body.
+  on explicit user direction are exempt, note it in the PR body; its sync
+  generator is `tools/sync_commands.py` (naive `content.split("---", 2)`
+  frontmatter parser — a `---` horizontal rule in a skill body would be
+  mangled); its `ship` skill uses `<primary-branch>`/`<branch_name>`
+  placeholders (deliberately no hardcoded `main`), has an audience check and
+  asks for acknowledgement before pushing.
 
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
