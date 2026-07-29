@@ -41,6 +41,13 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
 
+Fund-specific quirks that do NOT exist in any sibling (checked 2026-07):
+none of the three has a pre-push hook (fund's `.husky/pre-push` fast-forward/
+deletion guard is unique — anki's `make hooks` installs only pre-commit), and
+their `.jules/` personas already gate on their own CI-parity gate — the
+`make verify` vs `make precommit-fix` split that bit fund's Bolt persona is
+fund-specific.
+
 This skill exists in all four repos (added 2026-07), each with the perspective
 flipped to its own home repo — a sync can be initiated from any side. When
 improving this skill, sync the improvement to the other three copies.
