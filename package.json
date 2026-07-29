@@ -82,7 +82,8 @@
         ],
         "modulePathIgnorePatterns": [
             "<rootDir>/venv/",
-            "<rootDir>/.claude/"
+            "<rootDir>/.claude/",
+            "<rootDir>/mutants/"
         ],
         "collectCoverageFrom": [
             "js/**/*.js",
