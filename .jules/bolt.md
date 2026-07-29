@@ -53,7 +53,10 @@ pipeline in `scripts/`; the Cloudflare worker.
 
 ## Verification gate (before opening a PR)
 
-- Behaviour unchanged; `make verify` green.
+- Behaviour unchanged; **`make precommit-fix` AND `make verify` green.** CI runs
+  `precommit-fix` (the `.pre-commit-config.yaml` hooks, including eslint
+  `--max-warnings=0`); `make verify` alone misses those hooks, so a branch that
+  passes `verify` can still fail CI on formatting or an eslint warning.
 - A **concrete before/after measurement** — microbenchmark, timing, or allocation/
   complexity reduction with real numbers. A vague estimate ("~50% faster") is not
   acceptable.
@@ -68,8 +71,8 @@ Conventional Commits per `AGENTS.md`.
 - Title / commit subject: `perf(<scope>): <summary>`. Imperative, lower-case, ≤ 72
   chars, **no emoji, no `Bolt:` prefix**.
 - Body: what was optimized and the file; the bottleneck removed; the before/after
-  measurement and how it was obtained; "behaviour unchanged"; pasted `make verify`
-  output.
+  measurement and how it was obtained; "behaviour unchanged"; pasted
+  `make precommit-fix` and `make verify` output.
 
 If no clear, measurable optimization exists, open no PR — an empty run is
 acceptable; speculative optimization is not.
