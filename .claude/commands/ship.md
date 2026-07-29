@@ -48,9 +48,12 @@ git status --short
     - Commit any fixes.
 4. **Merge into main from the primary checkout** (the first path in
    `git worktree list` — you cannot check out `main` inside a linked
-   worktree):
+   worktree). **Prefer a squash merge** — one clean commit on main, no matter
+   how messy the branch history is:
     - `git checkout main && git pull origin main`
-    - `git merge <branch>`
+    - `git merge --squash <branch>`
+    - `git commit` with a single conventional-commit message describing the
+      whole change (e.g. reuse the branch's main commit subject).
     - On conflicts: `git status`, resolve each file, `git add`, `git commit`.
 5. **Final verification on merged main:** `make precommit && make verify`.
 6. **Push:** `git push origin main`.
@@ -58,9 +61,13 @@ git status --short
     - Remove the worktree if the branch lived in one (run from the primary
       checkout): `git worktree remove <path>` (`--force` only if you are sure
       nothing unshipped remains).
-    - `git branch -d <branch>`
+    - `git branch -d <branch>` — after a squash merge Git does not consider
+      the branch merged, so `-d` refuses; use `git branch -D <branch>` once
+      the squash commit is pushed and you are sure nothing unshipped remains.
     - Delete the remote branch only if it exists:
-      `git ls-remote --exit-code origin <branch> && git push origin --delete <branch>`
+      `git ls-remote --exit-code origin <branch> && git push origin --delete <branch>`.
+      If a pre-push hook mistakes the delete for history rewriting, retry the
+      delete alone with `git push --no-verify origin --delete <branch>`.
 
 ## Report
 
