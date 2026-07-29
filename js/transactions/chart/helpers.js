@@ -217,40 +217,35 @@ function componentFromChannel(channel) {
     return Number.isFinite(numeric) ? Math.round(numeric) : 0;
 }
 
-export function parseColorToRgb(baseColor) {
-    if (typeof baseColor !== 'string' || baseColor.length === 0) {
-        return null;
+function extractHexComponents(hexStr) {
+    let hex = hexStr;
+    if (hex.length === 3) {
+        hex = hex
+            .split('')
+            .map((char) => char + char)
+            .join('');
     }
+    const intVal = parseInt(hex, 16);
+    return {
+        r: (intVal >> 16) & 255,
+        g: (intVal >> 8) & 255,
+        b: intVal & 255,
+    };
+}
 
-    const hexMatch = baseColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hexMatch) {
-        let hex = hexMatch[1];
-        if (hex.length === 3) {
-            hex = hex
-                .split('')
-                .map((char) => char + char)
-                .join('');
-        }
-        const intVal = parseInt(hex, 16);
+function extractRgbComponents(rgbStr) {
+    const parts = rgbStr.split(',');
+    if (parts.length >= 3) {
         return {
-            r: (intVal >> 16) & 255,
-            g: (intVal >> 8) & 255,
-            b: intVal & 255,
+            r: componentFromChannel(parts[0]),
+            g: componentFromChannel(parts[1]),
+            b: componentFromChannel(parts[2]),
         };
     }
+    return null;
+}
 
-    const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
-    if (rgbMatch) {
-        const parts = rgbMatch[1].split(',');
-        if (parts.length >= 3) {
-            return {
-                r: componentFromChannel(parts[0]),
-                g: componentFromChannel(parts[1]),
-                b: componentFromChannel(parts[2]),
-            };
-        }
-    }
-
+function resolveCanvasColor(baseColor) {
     if (!COLOR_PARSER_CONTEXT) {
         return null;
     }
@@ -281,6 +276,25 @@ export function parseColorToRgb(baseColor) {
         return null;
     }
     return null;
+}
+
+export function parseColorToRgb(baseColor) {
+    if (typeof baseColor !== 'string' || baseColor.length === 0) {
+        return null;
+    }
+
+    const hexMatch = baseColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+        return extractHexComponents(hexMatch[1]);
+    }
+
+    const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
+    if (rgbMatch) {
+        const rgb = extractRgbComponents(rgbMatch[1]);
+        if (rgb) {return rgb;}
+    }
+
+    return resolveCanvasColor(baseColor);
 }
 
 export function colorWithAlpha(baseColor, alpha) {
