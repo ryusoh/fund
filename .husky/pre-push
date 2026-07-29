@@ -16,6 +16,14 @@ if [ "$branch" = "main" ]; then
 
   # Also reject any push that would rewrite history (non-fast-forward)
   while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+      # Ref deletion: deleting a branch rewrites no history, but never main.
+      if [ "$remote_ref" = "refs/heads/main" ]; then
+        echo "ERROR: Deleting main is blocked."
+        exit 1
+      fi
+      continue
+    fi
     if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
       continue  # new branch, allow
     fi
