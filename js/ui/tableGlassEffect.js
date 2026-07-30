@@ -882,10 +882,7 @@ export class TableGlassEffect {
                 // Use a power curve for more elegant falloff
                 const opacity = Math.pow(1 - segmentProgress, 2);
 
-                // Parse color to apply opacity
-                // Assuming color is rgba or hex, but for simplicity let's rely on globalAlpha
-                // and the fact that the palette colors might already have alpha.
-                // Best to use the base color and apply alpha.
+                // Apply opacity via globalAlpha; palette colors are used as-is.
 
                 this.ctx.globalAlpha = opacity;
                 this.ctx.strokeStyle = color;
@@ -963,22 +960,11 @@ export class TableGlassEffect {
             fadeMultiplier = phase / fadeZone;
         }
 
-        // Parse color to apply intensity/alpha
-        // If color is rgba, we can just use it directly if we assume the user handles alpha,
-        // OR we can try to inject intensity.
-        // For simplicity and flexibility, let's assume 'color' is the peak color (e.g. white)
-        // and we modulate opacity via stop colors.
+        // `color` is the gradient peak (e.g. white); opacity is modulated via stop colors.
 
-        // 'overlay' blend mode works best with white/grey.
-        // Keep the existing logic but allow color override.
-        // If the user provides a color, we use it.
-        // We need transparent versions of that color for the edges.
-
-        // Helper to get transparent version of a color
-        // This is tricky without a full color parser.
-        // Let's assume the user provides an rgba string or we default to white.
-
-        // If we just use globalAlpha, it might be easier.
+        // 'overlay' blend mode works best with white/grey; a provided color is used as-is.
+        // Edges use transparent white; intensity is applied via globalAlpha, so no color
+        // parsing is needed.
         this.ctx.globalAlpha = intensity * fadeMultiplier;
 
         gradient.addColorStop(Math.max(0, start), 'rgba(255,255,255,0)'); // Start transparent

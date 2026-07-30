@@ -30,7 +30,7 @@ EXCLUDED_PARTS = ('assets/vendor/', 'js/vendor/', 'tests/js/vendor/', 'node_modu
 # stripped; unanchored ones may appear anywhere in the comment.
 THINKING_RE = re.compile(
     r'(?:'
-    r'\bwait[,!?…—]'  # "Wait, ..." / "oh wait!"
+    r'\bwait[,!?…—]'  # exclamatory openers
     r'|^hmm+\b'
     r'|^huh\b'
     r'|^ah[,!?]'  # "Ah, ..."
@@ -41,6 +41,9 @@ THINKING_RE = re.compile(
     r'|^actually[,!?]'
     r'|^how about\b'
     r"|^let'?s (?:check|see|try|look)\b"
+    r"|\blet'?s (?:assume|rely)\b"
+    r'|\bmight be (?:easier|better|simpler|cleaner)\b'
+    r'|^this is (?:tricky|hard|hacky)\b'
     r'|^let me think\b'
     r'|\bto (?:hit|reach) line \d+'  # coverage-chasing notes
     r')',

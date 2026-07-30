@@ -176,7 +176,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         // 3. Portfolio series (balance source) already has data (simulating it was loaded/cached in CNY or pre-converted)
         // In the real app, setPortfolioSeries updates this.
         // chart.js reads transactionState.portfolioSeries when filters are inactive.
-        // Let's assume this data is already "correct" for the view (e.g. if it was loaded from CNY endpoint or converted once globally).
+        // This data is already correct for the view (loaded from the CNY endpoint or converted once globally).
         // The regression was that chart.js would take this AND convert it AGAIN based on selectedCurrency.
 
         const balanceData = [
@@ -231,7 +231,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         // `buildFilteredBalanceSeries` is defined in chart.js itself, not imported.
 
         // However, `buildFilteredBalanceSeries` uses `historicalPrices`.
-        // Let's rely on the fact that the internal logic calculates a raw balance.
+        // The internal logic calculates a raw balance.
         // If we provide transactions and prices, `buildFilteredBalanceSeries` will generate data.
 
         transactionState.historicalPrices = {
@@ -242,7 +242,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         // We mock the internal buildFilteredBalanceSeries? No, it's hard.
         // But the test environment loads the real chart.js, so it uses the real buildFilteredBalanceSeries.
         // That function returns values in base currency (USD usually, or whatever prices are in).
-        // Let's assume prices are in USD.
+        // Prices are in USD.
         // calculated value = 1 * 150 = 150 (USD).
 
         const chartManager = createChartManager();

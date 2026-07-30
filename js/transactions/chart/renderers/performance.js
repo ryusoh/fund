@@ -387,14 +387,7 @@ export async function drawPerformanceChart(ctx, chartManager, timestamp) {
 
     const formatValue = (value) => `${value.toFixed(1)}%`;
 
-    // getShowChartLabels is not imported, but do we need it?
-    // chart.js imported it from state.js. We should import it here OR use transactionState logic.
-    // chart.js: import { getShowChartLabels } from './state.js';
-    // Let's assume we need to import it.
-    // I will use a dummy check or import it?
-    // I'll skip importing it for this pass and use default or just import it.
-    // To match chart.js, I should import it.
-    // Adding it to top imports.
+    // getShowChartLabels is imported from state.js, matching chart.js.
     const showChartLabels = getShowChartLabels();
     const labelBounds = [];
     if (showChartLabels) {

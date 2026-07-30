@@ -626,7 +626,7 @@ describe('TableGlassEffect', () => {
         });
 
         // Simulate hover over the first row (top: 100, height: 50)
-        // Canvas top might be 0 or adjusted. Let's assume default (0).
+        // Canvas top is at the default (0).
         // Row relative top is 100.
         // Mouse at 125 (middle of row)
 

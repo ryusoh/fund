@@ -31,6 +31,10 @@ FLAGGED_COMMENTS = [
     "Let's check `handleCommand`",
     "lets look at what's in the map",
     'Let me think about this',
+    "Let's assume the user provides an rgba string",
+    "for simplicity let's rely on globalAlpha",
+    'If we just use globalAlpha, it might be easier.',
+    'This is tricky without a full color parser.',
     'To hit line 238, core must be empty',
     'blocks to reach line 746.',  # mid-comment coverage note
 ]
@@ -41,6 +45,8 @@ CLEAN_COMMENTS = [
     'It groups by table, so counting works',
     "Expands to 'due' via the switchShortcuts map",
     'Matches the legacy behaviour of upstream',
+    'Assume the API returns JSON',
+    'It lets the caller decide',
 ]
 
 

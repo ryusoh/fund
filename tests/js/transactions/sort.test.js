@@ -87,7 +87,7 @@ describe('sortTransactions', () => {
     it('sorts by netAmount (absolute) asc', () => {
         sortTransactions(transactions, { column: 'netAmount', order: 'asc' }, 'USD');
         // JS sort is stable in modern environments, so 3 and 5 will preserve relative order when ties are perfectly 0.
-        // Let's assume order is 3, 5 for the tie
+        // Stable sort preserves the tie order: 3, 5.
         expect(transactions.map((t) => t.transactionId)).toEqual(['2', '1', '3', '5', '4']);
     });
 
