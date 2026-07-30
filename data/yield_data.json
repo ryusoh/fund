@@ -3435,7 +3435,7 @@
     "date": "2021-08-27",
     "forward_yield": 2.2366,
     "ttm_income": 1067.18,
-    "market_value": 77069.66,
+    "market_value": 77069.67,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -3443,7 +3443,7 @@
     "date": "2021-08-28",
     "forward_yield": 2.2366,
     "ttm_income": 1067.18,
-    "market_value": 77069.66,
+    "market_value": 77069.67,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -3451,7 +3451,7 @@
     "date": "2021-08-29",
     "forward_yield": 2.2366,
     "ttm_income": 1067.18,
-    "market_value": 77069.66,
+    "market_value": 77069.67,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -3459,7 +3459,7 @@
     "date": "2021-08-30",
     "forward_yield": 2.2236,
     "ttm_income": 1067.18,
-    "market_value": 77519.6,
+    "market_value": 77519.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -3655,7 +3655,7 @@
     "date": "2021-09-23",
     "forward_yield": 2.271,
     "ttm_income": 1087.37,
-    "market_value": 81669.05,
+    "market_value": 81669.06,
     "daily_dividend": 10.11,
     "daily_dividends_by_ticker": {
       "VTSAX": 10.11
@@ -3931,7 +3931,7 @@
     "date": "2021-10-27",
     "forward_yield": 2.0899,
     "ttm_income": 1106.99,
-    "market_value": 97231.08,
+    "market_value": 97231.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -3997,7 +3997,7 @@
     "date": "2021-11-04",
     "forward_yield": 1.8676,
     "ttm_income": 1117.15,
-    "market_value": 113095.29,
+    "market_value": 113095.28,
     "daily_dividend": 8.58,
     "daily_dividends_by_ticker": {
       "PFE": 8.58
@@ -4033,7 +4033,7 @@
     "date": "2021-11-08",
     "forward_yield": 1.836,
     "ttm_income": 1119.79,
-    "market_value": 115235.95,
+    "market_value": 115235.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4105,7 +4105,7 @@
     "date": "2021-11-17",
     "forward_yield": 1.7969,
     "ttm_income": 1130.33,
-    "market_value": 121556.0,
+    "market_value": 121556.01,
     "daily_dividend": 10.54,
     "daily_dividends_by_ticker": {
       "MSFT": 10.54
@@ -4219,7 +4219,7 @@
     "date": "2021-12-01",
     "forward_yield": 1.6884,
     "ttm_income": 1130.93,
-    "market_value": 132362.71,
+    "market_value": 132362.72,
     "daily_dividend": 0.6,
     "daily_dividends_by_ticker": {
       "NVDA": 0.6
@@ -4277,7 +4277,7 @@
     "date": "2021-12-08",
     "forward_yield": 1.6269,
     "ttm_income": 1130.93,
-    "market_value": 137514.39,
+    "market_value": 137514.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4317,7 +4317,7 @@
     "date": "2021-12-13",
     "forward_yield": 1.6345,
     "ttm_income": 1130.93,
-    "market_value": 139518.89,
+    "market_value": 139518.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4375,7 +4375,7 @@
     "date": "2021-12-20",
     "forward_yield": 1.6604,
     "ttm_income": 1163.78,
-    "market_value": 138319.34,
+    "market_value": 138319.33,
     "daily_dividend": 13.26,
     "daily_dividends_by_ticker": {
       "QQQ": 13.26
@@ -4453,7 +4453,7 @@
     "date": "2021-12-29",
     "forward_yield": 1.5637,
     "ttm_income": 1213.06,
-    "market_value": 149213.17,
+    "market_value": 149213.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4503,7 +4503,7 @@
     "date": "2022-01-04",
     "forward_yield": 2.5897,
     "ttm_income": 3132.76,
-    "market_value": 154397.55,
+    "market_value": 154397.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4527,7 +4527,7 @@
     "date": "2022-01-07",
     "forward_yield": 2.7501,
     "ttm_income": 3132.76,
-    "market_value": 148258.09,
+    "market_value": 148258.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4535,7 +4535,7 @@
     "date": "2022-01-08",
     "forward_yield": 2.7501,
     "ttm_income": 3132.76,
-    "market_value": 148258.09,
+    "market_value": 148258.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4543,7 +4543,7 @@
     "date": "2022-01-09",
     "forward_yield": 2.7501,
     "ttm_income": 3132.76,
-    "market_value": 148258.09,
+    "market_value": 148258.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4615,7 +4615,7 @@
     "date": "2022-01-18",
     "forward_yield": 2.8117,
     "ttm_income": 3132.76,
-    "market_value": 145010.25,
+    "market_value": 145010.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4639,7 +4639,7 @@
     "date": "2022-01-21",
     "forward_yield": 2.9867,
     "ttm_income": 3132.76,
-    "market_value": 139311.86,
+    "market_value": 139311.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4647,7 +4647,7 @@
     "date": "2022-01-22",
     "forward_yield": 2.9867,
     "ttm_income": 3132.76,
-    "market_value": 139311.86,
+    "market_value": 139311.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4655,7 +4655,7 @@
     "date": "2022-01-23",
     "forward_yield": 2.9867,
     "ttm_income": 3132.76,
-    "market_value": 139311.86,
+    "market_value": 139311.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4671,7 +4671,7 @@
     "date": "2022-01-25",
     "forward_yield": 3.0318,
     "ttm_income": 3132.76,
-    "market_value": 137241.43,
+    "market_value": 137241.42,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4679,7 +4679,7 @@
     "date": "2022-01-26",
     "forward_yield": 3.0239,
     "ttm_income": 3132.76,
-    "market_value": 137601.8,
+    "market_value": 137601.81,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4687,7 +4687,7 @@
     "date": "2022-01-27",
     "forward_yield": 3.0364,
     "ttm_income": 3132.76,
-    "market_value": 137031.72,
+    "market_value": 137031.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4719,7 +4719,7 @@
     "date": "2022-01-31",
     "forward_yield": 2.8815,
     "ttm_income": 3132.76,
-    "market_value": 144401.49,
+    "market_value": 144401.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4727,7 +4727,7 @@
     "date": "2022-02-01",
     "forward_yield": 2.8602,
     "ttm_income": 3132.76,
-    "market_value": 145917.36,
+    "market_value": 145917.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4901,7 +4901,7 @@
     "date": "2022-02-22",
     "forward_yield": 2.753,
     "ttm_income": 3165.88,
-    "market_value": 157689.33,
+    "market_value": 157689.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4957,7 +4957,7 @@
     "date": "2022-03-01",
     "forward_yield": 2.775,
     "ttm_income": 3165.88,
-    "market_value": 156922.66,
+    "market_value": 156922.67,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4983,7 +4983,7 @@
     "date": "2022-03-04",
     "forward_yield": 2.7865,
     "ttm_income": 3166.64,
-    "market_value": 156304.82,
+    "market_value": 156304.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4991,7 +4991,7 @@
     "date": "2022-03-05",
     "forward_yield": 2.7865,
     "ttm_income": 3166.64,
-    "market_value": 156304.82,
+    "market_value": 156304.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -4999,7 +4999,7 @@
     "date": "2022-03-06",
     "forward_yield": 2.7865,
     "ttm_income": 3166.64,
-    "market_value": 156304.82,
+    "market_value": 156304.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5063,7 +5063,7 @@
     "date": "2022-03-14",
     "forward_yield": 2.9259,
     "ttm_income": 3166.64,
-    "market_value": 151870.75,
+    "market_value": 151870.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5071,7 +5071,7 @@
     "date": "2022-03-15",
     "forward_yield": 2.8312,
     "ttm_income": 3166.64,
-    "market_value": 156946.11,
+    "market_value": 156946.12,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5131,7 +5131,7 @@
     "date": "2022-03-22",
     "forward_yield": 2.6437,
     "ttm_income": 3224.71,
-    "market_value": 172164.82,
+    "market_value": 172164.83,
     "daily_dividend": 22.02,
     "daily_dividends_by_ticker": {
       "VTSAX": 22.02
@@ -5141,7 +5141,7 @@
     "date": "2022-03-23",
     "forward_yield": 2.6848,
     "ttm_income": 3224.71,
-    "market_value": 169525.69,
+    "market_value": 169525.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5149,7 +5149,7 @@
     "date": "2022-03-24",
     "forward_yield": 2.6045,
     "ttm_income": 3257.68,
-    "market_value": 175716.89,
+    "market_value": 175716.88,
     "daily_dividend": 32.98,
     "daily_dividends_by_ticker": {
       "VOO": 32.98
@@ -5183,7 +5183,7 @@
     "date": "2022-03-28",
     "forward_yield": 2.577,
     "ttm_income": 3257.68,
-    "market_value": 176389.24,
+    "market_value": 176389.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5199,7 +5199,7 @@
     "date": "2022-03-30",
     "forward_yield": 2.573,
     "ttm_income": 3257.68,
-    "market_value": 176738.92,
+    "market_value": 176738.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5255,7 +5255,7 @@
     "date": "2022-04-06",
     "forward_yield": 2.6892,
     "ttm_income": 3257.68,
-    "market_value": 173451.31,
+    "market_value": 173451.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5433,7 +5433,7 @@
     "date": "2022-04-28",
     "forward_yield": 2.9215,
     "ttm_income": 3265.14,
-    "market_value": 162924.24,
+    "market_value": 162924.23,
     "daily_dividend": 7.2,
     "daily_dividends_by_ticker": {
       "COST": 7.2
@@ -5475,7 +5475,7 @@
     "date": "2022-05-03",
     "forward_yield": 3.0568,
     "ttm_income": 3265.14,
-    "market_value": 158947.31,
+    "market_value": 158947.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5499,7 +5499,7 @@
     "date": "2022-05-06",
     "forward_yield": 4.9058,
     "ttm_income": 5720.14,
-    "market_value": 155058.69,
+    "market_value": 155058.7,
     "daily_dividend": 2455.0,
     "daily_dividends_by_ticker": {
       "AAPL": 13.11,
@@ -5510,7 +5510,7 @@
     "date": "2022-05-07",
     "forward_yield": 4.8977,
     "ttm_income": 5720.14,
-    "market_value": 155058.69,
+    "market_value": 155058.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5518,7 +5518,7 @@
     "date": "2022-05-08",
     "forward_yield": 4.8977,
     "ttm_income": 5720.14,
-    "market_value": 155058.69,
+    "market_value": 155058.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5542,7 +5542,7 @@
     "date": "2022-05-11",
     "forward_yield": 5.1949,
     "ttm_income": 5720.14,
-    "market_value": 146188.18,
+    "market_value": 146188.19,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5608,7 +5608,7 @@
     "date": "2022-05-19",
     "forward_yield": 4.0723,
     "ttm_income": 4894.37,
-    "market_value": 145235.49,
+    "market_value": 145235.5,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5658,7 +5658,7 @@
     "date": "2022-05-25",
     "forward_yield": 3.909,
     "ttm_income": 4895.86,
-    "market_value": 151304.3,
+    "market_value": 151304.31,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5666,7 +5666,7 @@
     "date": "2022-05-26",
     "forward_yield": 3.8189,
     "ttm_income": 4895.86,
-    "market_value": 154874.67,
+    "market_value": 154874.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5706,7 +5706,7 @@
     "date": "2022-05-31",
     "forward_yield": 3.8422,
     "ttm_income": 4895.86,
-    "market_value": 156758.12,
+    "market_value": 156758.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5756,7 +5756,7 @@
     "date": "2022-06-06",
     "forward_yield": 3.8045,
     "ttm_income": 4898.46,
-    "market_value": 158674.3,
+    "market_value": 158674.31,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5764,7 +5764,7 @@
     "date": "2022-06-07",
     "forward_yield": 3.7704,
     "ttm_income": 4898.46,
-    "market_value": 160111.73,
+    "market_value": 160111.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -5903,7 +5903,7 @@
     "date": "2022-06-23",
     "forward_yield": 4.1832,
     "ttm_income": 4979.41,
-    "market_value": 147406.5,
+    "market_value": 147406.49,
     "daily_dividend": 3.74,
     "daily_dividends_by_ticker": {
       "VTI": 3.74
@@ -6083,7 +6083,7 @@
     "date": "2022-07-15",
     "forward_yield": 4.1491,
     "ttm_income": 5014.16,
-    "market_value": 155168.8,
+    "market_value": 155168.81,
     "daily_dividend": 0.38,
     "daily_dividends_by_ticker": {
       "DIA": 0.38
@@ -6093,7 +6093,7 @@
     "date": "2022-07-16",
     "forward_yield": 4.1487,
     "ttm_income": 5014.16,
-    "market_value": 155168.8,
+    "market_value": 155168.81,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6101,7 +6101,7 @@
     "date": "2022-07-17",
     "forward_yield": 4.1487,
     "ttm_income": 5014.16,
-    "market_value": 155168.8,
+    "market_value": 155168.81,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6239,7 +6239,7 @@
     "date": "2022-08-03",
     "forward_yield": 3.7317,
     "ttm_income": 5021.36,
-    "market_value": 176320.9,
+    "market_value": 176320.91,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6313,7 +6313,7 @@
     "date": "2022-08-12",
     "forward_yield": 3.6694,
     "ttm_income": 5034.27,
-    "market_value": 182747.29,
+    "market_value": 182747.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6321,7 +6321,7 @@
     "date": "2022-08-13",
     "forward_yield": 3.6694,
     "ttm_income": 5034.27,
-    "market_value": 182747.29,
+    "market_value": 182747.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6329,7 +6329,7 @@
     "date": "2022-08-14",
     "forward_yield": 3.6694,
     "ttm_income": 5034.27,
-    "market_value": 182747.29,
+    "market_value": 182747.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6413,7 +6413,7 @@
     "date": "2022-08-24",
     "forward_yield": 3.4791,
     "ttm_income": 5050.04,
-    "market_value": 196431.74,
+    "market_value": 196431.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6461,7 +6461,7 @@
     "date": "2022-08-30",
     "forward_yield": 3.6173,
     "ttm_income": 5050.04,
-    "market_value": 188928.27,
+    "market_value": 188928.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6485,7 +6485,7 @@
     "date": "2022-09-02",
     "forward_yield": 3.7512,
     "ttm_income": 5050.04,
-    "market_value": 185864.4,
+    "market_value": 185864.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6493,7 +6493,7 @@
     "date": "2022-09-03",
     "forward_yield": 3.7512,
     "ttm_income": 5050.04,
-    "market_value": 185864.4,
+    "market_value": 185864.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6501,7 +6501,7 @@
     "date": "2022-09-04",
     "forward_yield": 3.7512,
     "ttm_income": 5050.04,
-    "market_value": 185864.4,
+    "market_value": 185864.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6509,7 +6509,7 @@
     "date": "2022-09-05",
     "forward_yield": 3.7512,
     "ttm_income": 5050.04,
-    "market_value": 185864.4,
+    "market_value": 185864.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6535,7 +6535,7 @@
     "date": "2022-09-08",
     "forward_yield": 3.6524,
     "ttm_income": 5056.04,
-    "market_value": 191053.24,
+    "market_value": 191053.25,
     "daily_dividend": 5.2,
     "daily_dividends_by_ticker": {
       "WM": 5.2
@@ -6545,7 +6545,7 @@
     "date": "2022-09-09",
     "forward_yield": 3.5957,
     "ttm_income": 5056.04,
-    "market_value": 194065.6,
+    "market_value": 194065.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6553,7 +6553,7 @@
     "date": "2022-09-10",
     "forward_yield": 3.5957,
     "ttm_income": 5056.04,
-    "market_value": 194065.6,
+    "market_value": 194065.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6561,7 +6561,7 @@
     "date": "2022-09-11",
     "forward_yield": 3.5957,
     "ttm_income": 5056.04,
-    "market_value": 194065.6,
+    "market_value": 194065.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6577,7 +6577,7 @@
     "date": "2022-09-13",
     "forward_yield": 3.721,
     "ttm_income": 5056.04,
-    "market_value": 187534.53,
+    "market_value": 187534.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6708,7 +6708,7 @@
     "date": "2022-09-28",
     "forward_yield": 3.9618,
     "ttm_income": 5160.83,
-    "market_value": 180665.69,
+    "market_value": 180665.7,
     "daily_dividend": 35.26,
     "daily_dividends_by_ticker": {
       "VOO": 35.26
@@ -6862,7 +6862,7 @@
     "date": "2022-10-17",
     "forward_yield": 4.2749,
     "ttm_income": 5141.21,
-    "market_value": 173620.11,
+    "market_value": 173620.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6878,7 +6878,7 @@
     "date": "2022-10-19",
     "forward_yield": 4.2592,
     "ttm_income": 5141.21,
-    "market_value": 174259.59,
+    "market_value": 174259.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6886,7 +6886,7 @@
     "date": "2022-10-20",
     "forward_yield": 4.2604,
     "ttm_income": 5141.21,
-    "market_value": 174210.8,
+    "market_value": 174210.79,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6920,7 +6920,7 @@
     "date": "2022-10-24",
     "forward_yield": 4.1076,
     "ttm_income": 5142.12,
-    "market_value": 180713.69,
+    "market_value": 180713.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6954,7 +6954,7 @@
     "date": "2022-10-28",
     "forward_yield": 4.934,
     "ttm_income": 5148.64,
-    "market_value": 153202.86,
+    "market_value": 153202.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6962,7 +6962,7 @@
     "date": "2022-10-29",
     "forward_yield": 4.934,
     "ttm_income": 5148.64,
-    "market_value": 153202.86,
+    "market_value": 153202.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6970,7 +6970,7 @@
     "date": "2022-10-30",
     "forward_yield": 4.934,
     "ttm_income": 5148.64,
-    "market_value": 153202.86,
+    "market_value": 153202.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -6994,7 +6994,7 @@
     "date": "2022-11-02",
     "forward_yield": 5.0186,
     "ttm_income": 5148.64,
-    "market_value": 150619.15,
+    "market_value": 150619.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7100,7 +7100,7 @@
     "date": "2022-11-15",
     "forward_yield": 4.7309,
     "ttm_income": 5151.45,
-    "market_value": 162524.99,
+    "market_value": 162525.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7268,7 +7268,7 @@
     "date": "2022-12-05",
     "forward_yield": 4.8049,
     "ttm_income": 5166.01,
-    "market_value": 162710.16,
+    "market_value": 162710.15,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7284,7 +7284,7 @@
     "date": "2022-12-07",
     "forward_yield": 4.8876,
     "ttm_income": 5166.01,
-    "market_value": 160146.84,
+    "market_value": 160146.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7292,7 +7292,7 @@
     "date": "2022-12-08",
     "forward_yield": 4.8406,
     "ttm_income": 5166.01,
-    "market_value": 161703.29,
+    "market_value": 161703.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7348,7 +7348,7 @@
   },
   {
     "date": "2022-12-15",
-    "forward_yield": 4.952,
+    "forward_yield": 4.9521,
     "ttm_income": 5171.72,
     "market_value": 160821.76,
     "daily_dividend": 0.0,
@@ -7694,7 +7694,7 @@
     "date": "2023-01-25",
     "forward_yield": 3.5906,
     "ttm_income": 4672.85,
-    "market_value": 169526.88,
+    "market_value": 169526.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7800,7 +7800,7 @@
     "date": "2023-02-07",
     "forward_yield": 3.4231,
     "ttm_income": 4664.79,
-    "market_value": 179421.85,
+    "market_value": 179421.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7850,7 +7850,7 @@
     "date": "2023-02-13",
     "forward_yield": 3.4272,
     "ttm_income": 4679.51,
-    "market_value": 179871.78,
+    "market_value": 179871.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7866,7 +7866,7 @@
     "date": "2023-02-15",
     "forward_yield": 3.1589,
     "ttm_income": 4695.15,
-    "market_value": 195667.37,
+    "market_value": 195667.36,
     "daily_dividend": 15.64,
     "daily_dividends_by_ticker": {
       "MSFT": 15.64
@@ -7876,7 +7876,7 @@
     "date": "2023-02-16",
     "forward_yield": 3.4086,
     "ttm_income": 4680.89,
-    "market_value": 181020.1,
+    "market_value": 181020.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7926,7 +7926,7 @@
     "date": "2023-02-22",
     "forward_yield": 3.4152,
     "ttm_income": 4685.3,
-    "market_value": 183658.03,
+    "market_value": 183658.04,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7934,7 +7934,7 @@
     "date": "2023-02-23",
     "forward_yield": 3.5026,
     "ttm_income": 4685.3,
-    "market_value": 179428.35,
+    "market_value": 179428.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7966,7 +7966,7 @@
     "date": "2023-02-27",
     "forward_yield": 3.5078,
     "ttm_income": 4685.3,
-    "market_value": 179635.56,
+    "market_value": 179635.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7974,7 +7974,7 @@
     "date": "2023-02-28",
     "forward_yield": 3.5107,
     "ttm_income": 4685.3,
-    "market_value": 179482.94,
+    "market_value": 179482.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7982,7 +7982,7 @@
     "date": "2023-03-01",
     "forward_yield": 3.5172,
     "ttm_income": 4685.3,
-    "market_value": 179151.33,
+    "market_value": 179151.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -7990,7 +7990,7 @@
     "date": "2023-03-02",
     "forward_yield": 3.5193,
     "ttm_income": 4684.54,
-    "market_value": 179055.1,
+    "market_value": 179055.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8058,7 +8058,7 @@
     "date": "2023-03-10",
     "forward_yield": 3.5179,
     "ttm_income": 4700.58,
-    "market_value": 183437.28,
+    "market_value": 183437.27,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8066,7 +8066,7 @@
     "date": "2023-03-11",
     "forward_yield": 3.5179,
     "ttm_income": 4700.58,
-    "market_value": 183437.28,
+    "market_value": 183437.27,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8090,7 +8090,7 @@
     "date": "2023-03-14",
     "forward_yield": 3.4383,
     "ttm_income": 4713.32,
-    "market_value": 187891.18,
+    "market_value": 187891.19,
     "daily_dividend": 12.74,
     "daily_dividends_by_ticker": {
       "SCI": 12.74
@@ -8206,7 +8206,7 @@
     "date": "2023-03-27",
     "forward_yield": 3.3195,
     "ttm_income": 4748.1,
-    "market_value": 197352.21,
+    "market_value": 197352.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8342,7 +8342,7 @@
     "date": "2023-04-13",
     "forward_yield": 3.2786,
     "ttm_income": 4748.1,
-    "market_value": 202414.89,
+    "market_value": 202414.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8374,7 +8374,7 @@
     "date": "2023-04-17",
     "forward_yield": 3.3219,
     "ttm_income": 4747.85,
-    "market_value": 202528.32,
+    "market_value": 202528.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8432,7 +8432,7 @@
     "date": "2023-04-24",
     "forward_yield": 3.3731,
     "ttm_income": 4750.61,
-    "market_value": 200090.95,
+    "market_value": 200090.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8440,7 +8440,7 @@
     "date": "2023-04-25",
     "forward_yield": 3.427,
     "ttm_income": 4750.61,
-    "market_value": 197050.22,
+    "market_value": 197050.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8488,7 +8488,7 @@
     "date": "2023-05-01",
     "forward_yield": 3.3837,
     "ttm_income": 4743.41,
-    "market_value": 201860.11,
+    "market_value": 201860.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8504,7 +8504,7 @@
     "date": "2023-05-03",
     "forward_yield": 3.5832,
     "ttm_income": 4743.41,
-    "market_value": 191529.41,
+    "market_value": 191529.42,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8512,7 +8512,7 @@
     "date": "2023-05-04",
     "forward_yield": 3.5867,
     "ttm_income": 4755.65,
-    "market_value": 191685.52,
+    "market_value": 191685.53,
     "daily_dividend": 12.24,
     "daily_dividends_by_ticker": {
       "COST": 12.24
@@ -8681,7 +8681,7 @@
     "date": "2023-05-24",
     "forward_yield": 1.6495,
     "ttm_income": 2779.83,
-    "market_value": 199790.84,
+    "market_value": 199790.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8787,7 +8787,7 @@
     "date": "2023-06-06",
     "forward_yield": 1.616,
     "ttm_income": 2719.8,
-    "market_value": 202603.09,
+    "market_value": 202603.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8837,7 +8837,7 @@
     "date": "2023-06-12",
     "forward_yield": 1.5808,
     "ttm_income": 2719.64,
-    "market_value": 207698.16,
+    "market_value": 207698.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8845,7 +8845,7 @@
     "date": "2023-06-13",
     "forward_yield": 1.5765,
     "ttm_income": 2719.64,
-    "market_value": 207237.32,
+    "market_value": 207237.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8871,7 +8871,7 @@
     "date": "2023-06-16",
     "forward_yield": 1.6204,
     "ttm_income": 2753.55,
-    "market_value": 205914.94,
+    "market_value": 205914.93,
     "daily_dividend": 20.95,
     "daily_dividends_by_ticker": {
       "DIA": 20.95
@@ -8881,7 +8881,7 @@
     "date": "2023-06-17",
     "forward_yield": 1.6113,
     "ttm_income": 2751.47,
-    "market_value": 205914.94,
+    "market_value": 205914.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8889,7 +8889,7 @@
     "date": "2023-06-18",
     "forward_yield": 1.6113,
     "ttm_income": 2751.47,
-    "market_value": 205914.94,
+    "market_value": 205914.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8897,7 +8897,7 @@
     "date": "2023-06-19",
     "forward_yield": 1.6113,
     "ttm_income": 2751.47,
-    "market_value": 205914.94,
+    "market_value": 205914.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8915,7 +8915,7 @@
     "date": "2023-06-21",
     "forward_yield": 1.6807,
     "ttm_income": 2802.11,
-    "market_value": 205078.37,
+    "market_value": 205078.36,
     "daily_dividend": 71.12,
     "daily_dividends_by_ticker": {
       "RWM": 0.51,
@@ -8939,7 +8939,7 @@
     "date": "2023-06-23",
     "forward_yield": 1.6659,
     "ttm_income": 2777.86,
-    "market_value": 208501.52,
+    "market_value": 208501.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8947,7 +8947,7 @@
     "date": "2023-06-24",
     "forward_yield": 1.6659,
     "ttm_income": 2777.86,
-    "market_value": 208502.82,
+    "market_value": 208502.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8955,7 +8955,7 @@
     "date": "2023-06-25",
     "forward_yield": 1.6659,
     "ttm_income": 2777.86,
-    "market_value": 208501.65,
+    "market_value": 208501.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -8971,7 +8971,7 @@
     "date": "2023-06-27",
     "forward_yield": 1.632,
     "ttm_income": 2678.57,
-    "market_value": 212063.49,
+    "market_value": 212063.5,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9021,7 +9021,7 @@
     "date": "2023-07-03",
     "forward_yield": 1.5964,
     "ttm_income": 2534.56,
-    "market_value": 216935.18,
+    "market_value": 216935.17,
     "daily_dividend": 1.44,
     "daily_dividends_by_ticker": {
       "JEPI": 1.44
@@ -9031,7 +9031,7 @@
     "date": "2023-07-04",
     "forward_yield": 1.5964,
     "ttm_income": 2534.56,
-    "market_value": 216936.1,
+    "market_value": 216936.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9089,7 +9089,7 @@
     "date": "2023-07-11",
     "forward_yield": 1.6097,
     "ttm_income": 2534.7,
-    "market_value": 224052.36,
+    "market_value": 224052.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9105,7 +9105,7 @@
     "date": "2023-07-13",
     "forward_yield": 1.5639,
     "ttm_income": 2608.08,
-    "market_value": 231553.53,
+    "market_value": 231553.52,
     "daily_dividend": 0.13,
     "daily_dividends_by_ticker": {
       "ABT": 0.13
@@ -9139,7 +9139,7 @@
     "date": "2023-07-17",
     "forward_yield": 0.5646,
     "ttm_income": 2607.69,
-    "market_value": 234650.93,
+    "market_value": 234650.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9200,7 +9200,7 @@
     "date": "2023-07-24",
     "forward_yield": 0.5707,
     "ttm_income": 2617.83,
-    "market_value": 237771.89,
+    "market_value": 237771.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9218,7 +9218,7 @@
     "date": "2023-07-26",
     "forward_yield": 0.58,
     "ttm_income": 2618.79,
-    "market_value": 236167.87,
+    "market_value": 236167.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9226,7 +9226,7 @@
     "date": "2023-07-27",
     "forward_yield": 0.5917,
     "ttm_income": 2619.04,
-    "market_value": 235289.85,
+    "market_value": 235289.86,
     "daily_dividend": 0.25,
     "daily_dividends_by_ticker": {
       "SIG": 0.25
@@ -9236,7 +9236,7 @@
     "date": "2023-07-28",
     "forward_yield": 0.5919,
     "ttm_income": 2611.84,
-    "market_value": 233754.19,
+    "market_value": 233754.18,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9260,7 +9260,7 @@
     "date": "2023-07-31",
     "forward_yield": 0.5835,
     "ttm_income": 2611.84,
-    "market_value": 235664.64,
+    "market_value": 235664.65,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9286,7 +9286,7 @@
     "date": "2023-08-03",
     "forward_yield": 0.6224,
     "ttm_income": 2616.08,
-    "market_value": 249645.61,
+    "market_value": 249645.6,
     "daily_dividend": 3.08,
     "daily_dividends_by_ticker": {
       "WFC": 3.08
@@ -9369,7 +9369,7 @@
     "date": "2023-08-12",
     "forward_yield": 0.651,
     "ttm_income": 2625.69,
-    "market_value": 237717.6,
+    "market_value": 237717.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9423,7 +9423,7 @@
     "date": "2023-08-18",
     "forward_yield": 0.8972,
     "ttm_income": 2634.95,
-    "market_value": 233467.65,
+    "market_value": 233467.66,
     "daily_dividend": 18.41,
     "daily_dividends_by_ticker": {
       "DIA": 18.41
@@ -9433,7 +9433,7 @@
     "date": "2023-08-19",
     "forward_yield": 0.8871,
     "ttm_income": 2632.33,
-    "market_value": 233467.65,
+    "market_value": 233467.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9441,7 +9441,7 @@
     "date": "2023-08-20",
     "forward_yield": 0.8871,
     "ttm_income": 2632.33,
-    "market_value": 233467.65,
+    "market_value": 233467.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9457,7 +9457,7 @@
     "date": "2023-08-22",
     "forward_yield": 0.906,
     "ttm_income": 2632.33,
-    "market_value": 241694.65,
+    "market_value": 241694.64,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9484,7 +9484,7 @@
     "date": "2023-08-25",
     "forward_yield": 1.0005,
     "ttm_income": 2639.96,
-    "market_value": 241795.55,
+    "market_value": 241795.54,
     "daily_dividend": 2.0,
     "daily_dividends_by_ticker": {
       "JNJ": 2.0
@@ -9494,7 +9494,7 @@
     "date": "2023-08-26",
     "forward_yield": 1.0005,
     "ttm_income": 2639.96,
-    "market_value": 241795.55,
+    "market_value": 241795.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9502,7 +9502,7 @@
     "date": "2023-08-27",
     "forward_yield": 1.0005,
     "ttm_income": 2639.96,
-    "market_value": 241795.55,
+    "market_value": 241795.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9534,7 +9534,7 @@
     "date": "2023-08-31",
     "forward_yield": 1.1128,
     "ttm_income": 2643.06,
-    "market_value": 284541.31,
+    "market_value": 284541.3,
     "daily_dividend": 3.1,
     "daily_dividends_by_ticker": {
       "MCD": 1.44,
@@ -9579,7 +9579,7 @@
     "date": "2023-09-05",
     "forward_yield": 1.1081,
     "ttm_income": 2645.85,
-    "market_value": 286178.89,
+    "market_value": 286178.88,
     "daily_dividend": 1.44,
     "daily_dividends_by_ticker": {
       "CI": 1.44
@@ -9589,7 +9589,7 @@
     "date": "2023-09-06",
     "forward_yield": 1.1159,
     "ttm_income": 2646.87,
-    "market_value": 284521.78,
+    "market_value": 284521.79,
     "daily_dividend": 1.02,
     "daily_dividends_by_ticker": {
       "NVDA": 0.13,
@@ -9600,7 +9600,7 @@
     "date": "2023-09-07",
     "forward_yield": 1.1384,
     "ttm_income": 2696.42,
-    "market_value": 283296.56,
+    "market_value": 283296.57,
     "daily_dividend": 50.35,
     "daily_dividends_by_ticker": {
       "CME": 0.54,
@@ -9645,7 +9645,7 @@
     "date": "2023-09-12",
     "forward_yield": 1.1474,
     "ttm_income": 2793.26,
-    "market_value": 379775.31,
+    "market_value": 379775.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9653,7 +9653,7 @@
     "date": "2023-09-13",
     "forward_yield": 1.1462,
     "ttm_income": 2793.26,
-    "market_value": 379642.34,
+    "market_value": 379642.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9699,7 +9699,7 @@
     "date": "2023-09-18",
     "forward_yield": 1.4165,
     "ttm_income": 3490.81,
-    "market_value": 428540.04,
+    "market_value": 428540.0,
     "daily_dividend": 648.29,
     "daily_dividends_by_ticker": {
       "QQQ": 0.07,
@@ -9711,7 +9711,7 @@
     "date": "2023-09-19",
     "forward_yield": 1.2803,
     "ttm_income": 3471.78,
-    "market_value": 433155.22,
+    "market_value": 433155.2,
     "daily_dividend": 1.21,
     "daily_dividends_by_ticker": {
       "QSR": 1.17,
@@ -9722,7 +9722,7 @@
     "date": "2023-09-20",
     "forward_yield": 1.3775,
     "ttm_income": 3852.33,
-    "market_value": 430119.61,
+    "market_value": 430119.6,
     "daily_dividend": 380.56,
     "daily_dividends_by_ticker": {
       "PSQ": 146.09,
@@ -9734,7 +9734,7 @@
     "date": "2023-09-21",
     "forward_yield": 1.5693,
     "ttm_income": 3750.29,
-    "market_value": 436424.58,
+    "market_value": 436424.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9742,7 +9742,7 @@
     "date": "2023-09-22",
     "forward_yield": 1.569,
     "ttm_income": 3750.29,
-    "market_value": 436752.68,
+    "market_value": 436752.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "WRB": 0.0
@@ -9752,7 +9752,7 @@
     "date": "2023-09-23",
     "forward_yield": 1.569,
     "ttm_income": 3750.29,
-    "market_value": 436752.68,
+    "market_value": 436752.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9760,7 +9760,7 @@
     "date": "2023-09-24",
     "forward_yield": 1.569,
     "ttm_income": 3750.29,
-    "market_value": 436752.68,
+    "market_value": 436752.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9768,7 +9768,7 @@
     "date": "2023-09-25",
     "forward_yield": 1.6147,
     "ttm_income": 3750.29,
-    "market_value": 437654.71,
+    "market_value": 437654.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9776,7 +9776,7 @@
     "date": "2023-09-26",
     "forward_yield": 1.6374,
     "ttm_income": 3752.61,
-    "market_value": 438140.46,
+    "market_value": 438140.45,
     "daily_dividend": 2.32,
     "daily_dividends_by_ticker": {
       "IHF": 0.05,
@@ -9787,7 +9787,7 @@
     "date": "2023-09-27",
     "forward_yield": 1.6359,
     "ttm_income": 3752.61,
-    "market_value": 438548.91,
+    "market_value": 438548.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9795,7 +9795,7 @@
     "date": "2023-09-28",
     "forward_yield": 1.6293,
     "ttm_income": 3753.04,
-    "market_value": 441042.4,
+    "market_value": 441042.42,
     "daily_dividend": 0.43,
     "daily_dividends_by_ticker": {
       "CP": 0.19,
@@ -9807,7 +9807,7 @@
     "date": "2023-09-29",
     "forward_yield": 1.6315,
     "ttm_income": 3753.04,
-    "market_value": 445528.3,
+    "market_value": 445528.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9815,7 +9815,7 @@
     "date": "2023-09-30",
     "forward_yield": 1.6315,
     "ttm_income": 3753.04,
-    "market_value": 445528.3,
+    "market_value": 445528.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9823,7 +9823,7 @@
     "date": "2023-10-01",
     "forward_yield": 1.6315,
     "ttm_income": 3753.04,
-    "market_value": 445528.3,
+    "market_value": 445528.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9831,7 +9831,7 @@
     "date": "2023-10-02",
     "forward_yield": 1.639,
     "ttm_income": 3754.49,
-    "market_value": 447850.53,
+    "market_value": 447850.56,
     "daily_dividend": 1.45,
     "daily_dividends_by_ticker": {
       "JEPI": 1.45
@@ -9841,7 +9841,7 @@
     "date": "2023-10-03",
     "forward_yield": 1.6616,
     "ttm_income": 3754.22,
-    "market_value": 450774.86,
+    "market_value": 450774.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9849,7 +9849,7 @@
     "date": "2023-10-04",
     "forward_yield": 1.6573,
     "ttm_income": 3754.22,
-    "market_value": 453375.25,
+    "market_value": 453375.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9857,7 +9857,7 @@
     "date": "2023-10-05",
     "forward_yield": 1.6525,
     "ttm_income": 3754.7,
-    "market_value": 458248.21,
+    "market_value": 458248.25,
     "daily_dividend": 0.48,
     "daily_dividends_by_ticker": {
       "JPM": 0.39,
@@ -9894,7 +9894,7 @@
     "date": "2023-10-09",
     "forward_yield": 1.6313,
     "ttm_income": 3755.61,
-    "market_value": 465492.55,
+    "market_value": 465492.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9902,7 +9902,7 @@
     "date": "2023-10-10",
     "forward_yield": 1.6235,
     "ttm_income": 3755.61,
-    "market_value": 467720.09,
+    "market_value": 467720.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9910,7 +9910,7 @@
     "date": "2023-10-11",
     "forward_yield": 1.6245,
     "ttm_income": 3755.61,
-    "market_value": 471338.69,
+    "market_value": 471338.63,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9928,7 +9928,7 @@
     "date": "2023-10-13",
     "forward_yield": 1.7119,
     "ttm_income": 3630.34,
-    "market_value": 476686.45,
+    "market_value": 476686.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9936,7 +9936,7 @@
     "date": "2023-10-14",
     "forward_yield": 1.7119,
     "ttm_income": 3630.34,
-    "market_value": 476686.45,
+    "market_value": 476686.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9944,7 +9944,7 @@
     "date": "2023-10-15",
     "forward_yield": 1.7119,
     "ttm_income": 3630.34,
-    "market_value": 476686.45,
+    "market_value": 476686.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9960,7 +9960,7 @@
     "date": "2023-10-17",
     "forward_yield": 1.6961,
     "ttm_income": 3630.34,
-    "market_value": 482307.87,
+    "market_value": 482307.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -9976,7 +9976,7 @@
     "date": "2023-10-19",
     "forward_yield": 1.7405,
     "ttm_income": 3635.08,
-    "market_value": 482919.79,
+    "market_value": 482919.82,
     "daily_dividend": 4.74,
     "daily_dividends_by_ticker": {
       "CVS": 2.27,
@@ -9987,7 +9987,7 @@
     "date": "2023-10-20",
     "forward_yield": 1.7629,
     "ttm_income": 3635.37,
-    "market_value": 483737.16,
+    "market_value": 483737.09,
     "daily_dividend": 0.29,
     "daily_dividends_by_ticker": {
       "CAT": 0.29
@@ -9997,7 +9997,7 @@
     "date": "2023-10-21",
     "forward_yield": 1.7629,
     "ttm_income": 3635.37,
-    "market_value": 483737.16,
+    "market_value": 483737.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10005,7 +10005,7 @@
     "date": "2023-10-22",
     "forward_yield": 1.7629,
     "ttm_income": 3635.37,
-    "market_value": 483737.16,
+    "market_value": 483737.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10013,7 +10013,7 @@
     "date": "2023-10-23",
     "forward_yield": 1.7645,
     "ttm_income": 3635.37,
-    "market_value": 483283.55,
+    "market_value": 483283.62,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10021,7 +10021,7 @@
     "date": "2023-10-24",
     "forward_yield": 1.7535,
     "ttm_income": 3636.14,
-    "market_value": 486351.97,
+    "market_value": 486351.99,
     "daily_dividend": 0.76,
     "daily_dividends_by_ticker": {
       "LOW": 0.76
@@ -10031,7 +10031,7 @@
     "date": "2023-10-25",
     "forward_yield": 1.7736,
     "ttm_income": 3636.14,
-    "market_value": 488178.69,
+    "market_value": 488178.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10039,7 +10039,7 @@
     "date": "2023-10-26",
     "forward_yield": 1.8004,
     "ttm_income": 3636.85,
-    "market_value": 490047.5,
+    "market_value": 490047.48,
     "daily_dividend": 0.72,
     "daily_dividends_by_ticker": {
       "SIG": 0.72
@@ -10049,7 +10049,7 @@
     "date": "2023-10-27",
     "forward_yield": 1.8034,
     "ttm_income": 3628.75,
-    "market_value": 492968.01,
+    "market_value": 492968.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10057,7 +10057,7 @@
     "date": "2023-10-28",
     "forward_yield": 1.8034,
     "ttm_income": 3628.75,
-    "market_value": 492968.01,
+    "market_value": 492968.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10065,7 +10065,7 @@
     "date": "2023-10-29",
     "forward_yield": 1.8034,
     "ttm_income": 3628.75,
-    "market_value": 492968.01,
+    "market_value": 492968.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10073,7 +10073,7 @@
     "date": "2023-10-30",
     "forward_yield": 1.81,
     "ttm_income": 3628.75,
-    "market_value": 498535.67,
+    "market_value": 498535.64,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10081,7 +10081,7 @@
     "date": "2023-10-31",
     "forward_yield": 1.7854,
     "ttm_income": 3695.82,
-    "market_value": 505531.72,
+    "market_value": 505531.77,
     "daily_dividend": 67.07,
     "daily_dividends_by_ticker": {
       "O": 67.07
@@ -10091,7 +10091,7 @@
     "date": "2023-11-01",
     "forward_yield": 1.7674,
     "ttm_income": 3697.26,
-    "market_value": 510841.85,
+    "market_value": 510841.84,
     "daily_dividend": 1.44,
     "daily_dividends_by_ticker": {
       "JEPI": 1.44
@@ -10101,7 +10101,7 @@
     "date": "2023-11-02",
     "forward_yield": 1.7377,
     "ttm_income": 3700.8,
-    "market_value": 519767.77,
+    "market_value": 519767.82,
     "daily_dividend": 3.54,
     "daily_dividends_by_ticker": {
       "COST": 3.54
@@ -10111,7 +10111,7 @@
     "date": "2023-11-03",
     "forward_yield": 1.7237,
     "ttm_income": 3700.8,
-    "market_value": 523994.98,
+    "market_value": 523994.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10119,7 +10119,7 @@
     "date": "2023-11-04",
     "forward_yield": 1.721,
     "ttm_income": 3686.77,
-    "market_value": 523994.98,
+    "market_value": 523994.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10127,7 +10127,7 @@
     "date": "2023-11-05",
     "forward_yield": 1.721,
     "ttm_income": 3686.77,
-    "market_value": 523994.98,
+    "market_value": 523994.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10135,7 +10135,7 @@
     "date": "2023-11-06",
     "forward_yield": 2.0088,
     "ttm_income": 3685.58,
-    "market_value": 521697.4,
+    "market_value": 521697.38,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10143,7 +10143,7 @@
     "date": "2023-11-07",
     "forward_yield": 2.0057,
     "ttm_income": 3677.96,
-    "market_value": 521920.83,
+    "market_value": 521920.86,
     "daily_dividend": 0.2,
     "daily_dividends_by_ticker": {
       "URI": 0.2
@@ -10153,7 +10153,7 @@
     "date": "2023-11-08",
     "forward_yield": 2.0074,
     "ttm_income": 3678.21,
-    "market_value": 521502.93,
+    "market_value": 521502.96,
     "daily_dividend": 0.24,
     "daily_dividends_by_ticker": {
       "V": 0.24
@@ -10163,7 +10163,7 @@
     "date": "2023-11-09",
     "forward_yield": 2.0152,
     "ttm_income": 3679.09,
-    "market_value": 519481.84,
+    "market_value": 519481.88,
     "daily_dividend": 0.88,
     "daily_dividends_by_ticker": {
       "SBUX": 0.88
@@ -10173,7 +10173,7 @@
     "date": "2023-11-10",
     "forward_yield": 2.004,
     "ttm_income": 3693.73,
-    "market_value": 524112.56,
+    "market_value": 524112.55,
     "daily_dividend": 14.64,
     "daily_dividends_by_ticker": {
       "AAPL": 14.64
@@ -10183,7 +10183,7 @@
     "date": "2023-11-11",
     "forward_yield": 2.004,
     "ttm_income": 3693.73,
-    "market_value": 524112.56,
+    "market_value": 524112.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10191,7 +10191,7 @@
     "date": "2023-11-12",
     "forward_yield": 2.004,
     "ttm_income": 3693.73,
-    "market_value": 524112.56,
+    "market_value": 524112.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10199,7 +10199,7 @@
     "date": "2023-11-13",
     "forward_yield": 2.0025,
     "ttm_income": 3694.14,
-    "market_value": 524544.49,
+    "market_value": 524544.53,
     "daily_dividend": 0.42,
     "daily_dividends_by_ticker": {
       "WELL": 0.42
@@ -10209,7 +10209,7 @@
     "date": "2023-11-14",
     "forward_yield": 1.8689,
     "ttm_income": 3548.06,
-    "market_value": 515668.7,
+    "market_value": 515668.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10217,7 +10217,7 @@
     "date": "2023-11-15",
     "forward_yield": 1.8699,
     "ttm_income": 3564.85,
-    "market_value": 516308.55,
+    "market_value": 516308.54,
     "daily_dividend": 16.79,
     "daily_dividends_by_ticker": {
       "MSFT": 16.79
@@ -10227,7 +10227,7 @@
     "date": "2023-11-16",
     "forward_yield": 1.867,
     "ttm_income": 3549.43,
-    "market_value": 516500.52,
+    "market_value": 516500.56,
     "daily_dividend": 0.23,
     "daily_dividends_by_ticker": {
       "HLT": 0.13,
@@ -10238,7 +10238,7 @@
     "date": "2023-11-17",
     "forward_yield": 1.86,
     "ttm_income": 3549.43,
-    "market_value": 518407.5,
+    "market_value": 518407.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10246,7 +10246,7 @@
     "date": "2023-11-18",
     "forward_yield": 1.86,
     "ttm_income": 3549.43,
-    "market_value": 518407.5,
+    "market_value": 518407.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10254,7 +10254,7 @@
     "date": "2023-11-19",
     "forward_yield": 1.86,
     "ttm_income": 3549.43,
-    "market_value": 518407.5,
+    "market_value": 518407.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10262,7 +10262,7 @@
     "date": "2023-11-20",
     "forward_yield": 1.8261,
     "ttm_income": 3548.96,
-    "market_value": 535328.43,
+    "market_value": 535328.42,
     "daily_dividend": 2.01,
     "daily_dividends_by_ticker": {
       "JNJ": 2.01
@@ -10272,7 +10272,7 @@
     "date": "2023-11-21",
     "forward_yield": 1.8293,
     "ttm_income": 3548.96,
-    "market_value": 534297.2,
+    "market_value": 534297.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10280,7 +10280,7 @@
     "date": "2023-11-22",
     "forward_yield": 1.8596,
     "ttm_income": 3451.63,
-    "market_value": 523621.79,
+    "market_value": 523621.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10288,7 +10288,7 @@
     "date": "2023-11-23",
     "forward_yield": 1.8596,
     "ttm_income": 3451.63,
-    "market_value": 523621.79,
+    "market_value": 523621.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10296,7 +10296,7 @@
     "date": "2023-11-24",
     "forward_yield": 1.8556,
     "ttm_income": 3451.63,
-    "market_value": 525826.58,
+    "market_value": 525826.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10304,7 +10304,7 @@
     "date": "2023-11-25",
     "forward_yield": 1.8556,
     "ttm_income": 3451.63,
-    "market_value": 525826.58,
+    "market_value": 525826.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10312,7 +10312,7 @@
     "date": "2023-11-26",
     "forward_yield": 1.8556,
     "ttm_income": 3451.63,
-    "market_value": 525826.58,
+    "market_value": 525826.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10328,7 +10328,7 @@
     "date": "2023-11-28",
     "forward_yield": 1.857,
     "ttm_income": 3430.14,
-    "market_value": 534229.96,
+    "market_value": 534229.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10336,7 +10336,7 @@
     "date": "2023-11-29",
     "forward_yield": 1.855,
     "ttm_income": 3430.14,
-    "market_value": 534805.32,
+    "market_value": 534805.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10344,7 +10344,7 @@
     "date": "2023-11-30",
     "forward_yield": 1.8605,
     "ttm_income": 3547.84,
-    "market_value": 536102.93,
+    "market_value": 536102.9,
     "daily_dividend": 118.5,
     "daily_dividends_by_ticker": {
       "LMT": 0.0,
@@ -10356,7 +10356,7 @@
     "date": "2023-12-01",
     "forward_yield": 1.8472,
     "ttm_income": 3665.4,
-    "market_value": 538853.79,
+    "market_value": 538853.74,
     "daily_dividend": 123.4,
     "daily_dividends_by_ticker": {
       "BNDW": 123.4
@@ -10366,7 +10366,7 @@
     "date": "2023-12-02",
     "forward_yield": 1.8472,
     "ttm_income": 3665.4,
-    "market_value": 538853.79,
+    "market_value": 538853.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10374,7 +10374,7 @@
     "date": "2023-12-03",
     "forward_yield": 1.8472,
     "ttm_income": 3665.4,
-    "market_value": 538853.79,
+    "market_value": 538853.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10390,7 +10390,7 @@
     "date": "2023-12-05",
     "forward_yield": 1.8551,
     "ttm_income": 3665.52,
-    "market_value": 536555.3,
+    "market_value": 536555.27,
     "daily_dividend": 0.12,
     "daily_dividends_by_ticker": {
       "NVDA": 0.12
@@ -10400,7 +10400,7 @@
     "date": "2023-12-06",
     "forward_yield": 1.8919,
     "ttm_income": 3837.13,
-    "market_value": 535363.24,
+    "market_value": 535363.23,
     "daily_dividend": 171.62,
     "daily_dividends_by_ticker": {
       "SCHD": 171.62
@@ -10410,7 +10410,7 @@
     "date": "2023-12-07",
     "forward_yield": 1.8566,
     "ttm_income": 3853.69,
-    "market_value": 539675.9,
+    "market_value": 539675.92,
     "daily_dividend": 16.56,
     "daily_dividends_by_ticker": {
       "OXY": 16.56
@@ -10420,7 +10420,7 @@
     "date": "2023-12-08",
     "forward_yield": 1.8492,
     "ttm_income": 3861.49,
-    "market_value": 543317.79,
+    "market_value": 543317.77,
     "daily_dividend": 7.8,
     "daily_dividends_by_ticker": {
       "DIS": 7.8
@@ -10430,7 +10430,7 @@
     "date": "2023-12-09",
     "forward_yield": 1.847,
     "ttm_income": 3861.49,
-    "market_value": 543317.79,
+    "market_value": 543317.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10438,7 +10438,7 @@
     "date": "2023-12-10",
     "forward_yield": 1.847,
     "ttm_income": 3861.49,
-    "market_value": 543317.79,
+    "market_value": 543317.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10446,7 +10446,7 @@
     "date": "2023-12-11",
     "forward_yield": 1.8392,
     "ttm_income": 3861.49,
-    "market_value": 545949.59,
+    "market_value": 545949.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10454,7 +10454,7 @@
     "date": "2023-12-12",
     "forward_yield": 1.8317,
     "ttm_income": 3861.49,
-    "market_value": 548192.84,
+    "market_value": 548192.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10462,7 +10462,7 @@
     "date": "2023-12-13",
     "forward_yield": 1.8081,
     "ttm_income": 3861.49,
-    "market_value": 555361.75,
+    "market_value": 555361.78,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10470,7 +10470,7 @@
     "date": "2023-12-14",
     "forward_yield": 1.7979,
     "ttm_income": 3920.93,
-    "market_value": 558744.84,
+    "market_value": 558744.79,
     "daily_dividend": 65.15,
     "daily_dividends_by_ticker": {
       "SCI": 65.15
@@ -10480,7 +10480,7 @@
     "date": "2023-12-15",
     "forward_yield": 2.0796,
     "ttm_income": 5447.18,
-    "market_value": 557828.43,
+    "market_value": 557828.39,
     "daily_dividend": 1526.25,
     "daily_dividends_by_ticker": {
       "FSGGX": 798.8,
@@ -10492,7 +10492,7 @@
     "date": "2023-12-16",
     "forward_yield": 1.8406,
     "ttm_income": 5447.18,
-    "market_value": 557828.43,
+    "market_value": 557828.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10500,7 +10500,7 @@
     "date": "2023-12-17",
     "forward_yield": 1.8406,
     "ttm_income": 5447.18,
-    "market_value": 557832.73,
+    "market_value": 557832.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10508,7 +10508,7 @@
     "date": "2023-12-18",
     "forward_yield": 2.2049,
     "ttm_income": 7531.09,
-    "market_value": 560240.8,
+    "market_value": 560240.85,
     "daily_dividend": 2083.92,
     "daily_dividends_by_ticker": {
       "VT": 2083.92
@@ -10518,7 +10518,7 @@
     "date": "2023-12-19",
     "forward_yield": 1.8986,
     "ttm_income": 7531.09,
-    "market_value": 563184.58,
+    "market_value": 563184.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10526,7 +10526,7 @@
     "date": "2023-12-20",
     "forward_yield": 1.9222,
     "ttm_income": 7531.09,
-    "market_value": 556292.85,
+    "market_value": 556292.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "BABA": 0.0,
@@ -10580,7 +10580,7 @@
     "date": "2023-12-26",
     "forward_yield": 2.0043,
     "ttm_income": 8336.23,
-    "market_value": 565660.21,
+    "market_value": 565660.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10588,7 +10588,7 @@
     "date": "2023-12-27",
     "forward_yield": 2.009,
     "ttm_income": 8395.09,
-    "market_value": 567296.17,
+    "market_value": 567296.2,
     "daily_dividend": 58.86,
     "daily_dividends_by_ticker": {
       "COST": 45.14,
@@ -10599,7 +10599,7 @@
     "date": "2023-12-28",
     "forward_yield": 2.0086,
     "ttm_income": 8395.09,
-    "market_value": 567401.54,
+    "market_value": 567401.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "FNSFX": 0.0
@@ -10609,7 +10609,7 @@
     "date": "2023-12-29",
     "forward_yield": 2.0262,
     "ttm_income": 6864.21,
-    "market_value": 565795.62,
+    "market_value": 565795.6,
     "daily_dividend": 67.33,
     "daily_dividends_by_ticker": {
       "O": 67.33
@@ -10619,7 +10619,7 @@
     "date": "2023-12-30",
     "forward_yield": 2.0147,
     "ttm_income": 6864.21,
-    "market_value": 565795.62,
+    "market_value": 565795.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10627,7 +10627,7 @@
     "date": "2023-12-31",
     "forward_yield": 2.0147,
     "ttm_income": 6864.21,
-    "market_value": 565795.56,
+    "market_value": 565795.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10635,7 +10635,7 @@
     "date": "2024-01-01",
     "forward_yield": 2.0147,
     "ttm_income": 6864.21,
-    "market_value": 565795.62,
+    "market_value": 565795.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10643,7 +10643,7 @@
     "date": "2024-01-02",
     "forward_yield": 2.026,
     "ttm_income": 6864.21,
-    "market_value": 562631.66,
+    "market_value": 562631.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10651,7 +10651,7 @@
     "date": "2024-01-03",
     "forward_yield": 2.0392,
     "ttm_income": 6864.21,
-    "market_value": 559002.34,
+    "market_value": 559002.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10659,7 +10659,7 @@
     "date": "2024-01-04",
     "forward_yield": 2.0429,
     "ttm_income": 6864.21,
-    "market_value": 557992.15,
+    "market_value": 557992.18,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10667,7 +10667,7 @@
     "date": "2024-01-05",
     "forward_yield": 2.041,
     "ttm_income": 6864.21,
-    "market_value": 558486.49,
+    "market_value": 558486.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10675,7 +10675,7 @@
     "date": "2024-01-06",
     "forward_yield": 2.041,
     "ttm_income": 6864.21,
-    "market_value": 558486.55,
+    "market_value": 558486.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10683,7 +10683,7 @@
     "date": "2024-01-07",
     "forward_yield": 2.041,
     "ttm_income": 6864.21,
-    "market_value": 558486.43,
+    "market_value": 558486.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10691,7 +10691,7 @@
     "date": "2024-01-08",
     "forward_yield": 2.011,
     "ttm_income": 6864.21,
-    "market_value": 566819.26,
+    "market_value": 566819.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10699,7 +10699,7 @@
     "date": "2024-01-09",
     "forward_yield": 2.0187,
     "ttm_income": 6864.21,
-    "market_value": 564662.15,
+    "market_value": 564662.18,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10707,7 +10707,7 @@
     "date": "2024-01-10",
     "forward_yield": 2.0097,
     "ttm_income": 6864.21,
-    "market_value": 567193.25,
+    "market_value": 567193.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10757,7 +10757,7 @@
     "date": "2024-01-16",
     "forward_yield": 2.0186,
     "ttm_income": 6864.21,
-    "market_value": 564694.23,
+    "market_value": 564694.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10773,7 +10773,7 @@
     "date": "2024-01-18",
     "forward_yield": 2.0158,
     "ttm_income": 6864.21,
-    "market_value": 565564.38,
+    "market_value": 565564.34,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10781,7 +10781,7 @@
     "date": "2024-01-19",
     "forward_yield": 1.9961,
     "ttm_income": 6864.21,
-    "market_value": 571146.51,
+    "market_value": 571146.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10789,7 +10789,7 @@
     "date": "2024-01-20",
     "forward_yield": 1.9961,
     "ttm_income": 6864.21,
-    "market_value": 571146.51,
+    "market_value": 571146.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10797,7 +10797,7 @@
     "date": "2024-01-21",
     "forward_yield": 1.9961,
     "ttm_income": 6864.21,
-    "market_value": 571146.45,
+    "market_value": 571146.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10805,7 +10805,7 @@
     "date": "2024-01-22",
     "forward_yield": 1.9889,
     "ttm_income": 6864.21,
-    "market_value": 573217.66,
+    "market_value": 573217.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10813,7 +10813,7 @@
     "date": "2024-01-23",
     "forward_yield": 1.9876,
     "ttm_income": 6864.21,
-    "market_value": 573572.25,
+    "market_value": 573572.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10821,7 +10821,7 @@
     "date": "2024-01-24",
     "forward_yield": 1.9845,
     "ttm_income": 6864.21,
-    "market_value": 574477.5,
+    "market_value": 574477.49,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10863,7 +10863,7 @@
     "date": "2024-01-29",
     "forward_yield": 1.9598,
     "ttm_income": 6864.21,
-    "market_value": 581703.06,
+    "market_value": 581703.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10879,7 +10879,7 @@
     "date": "2024-01-31",
     "forward_yield": 1.9893,
     "ttm_income": 6931.54,
-    "market_value": 573195.3,
+    "market_value": 573195.27,
     "daily_dividend": 67.33,
     "daily_dividends_by_ticker": {
       "O": 67.33
@@ -10889,7 +10889,7 @@
     "date": "2024-02-01",
     "forward_yield": 1.9717,
     "ttm_income": 7060.66,
-    "market_value": 579750.0,
+    "market_value": 579750.02,
     "daily_dividend": 129.12,
     "daily_dividends_by_ticker": {
       "BNDW": 126.05,
@@ -10900,7 +10900,7 @@
     "date": "2024-02-02",
     "forward_yield": 1.9603,
     "ttm_income": 7049.86,
-    "market_value": 582985.69,
+    "market_value": 582985.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10908,7 +10908,7 @@
     "date": "2024-02-03",
     "forward_yield": 1.9603,
     "ttm_income": 7049.86,
-    "market_value": 582985.69,
+    "market_value": 582985.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10916,7 +10916,7 @@
     "date": "2024-02-04",
     "forward_yield": 1.9603,
     "ttm_income": 7049.86,
-    "market_value": 582985.75,
+    "market_value": 582985.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10924,7 +10924,7 @@
     "date": "2024-02-05",
     "forward_yield": 1.9686,
     "ttm_income": 7049.86,
-    "market_value": 580529.88,
+    "market_value": 580529.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10932,7 +10932,7 @@
     "date": "2024-02-06",
     "forward_yield": 1.9649,
     "ttm_income": 7049.86,
-    "market_value": 581610.04,
+    "market_value": 581610.07,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10948,7 +10948,7 @@
     "date": "2024-02-08",
     "forward_yield": 1.948,
     "ttm_income": 7049.86,
-    "market_value": 586656.12,
+    "market_value": 586656.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10982,7 +10982,7 @@
     "date": "2024-02-12",
     "forward_yield": 1.9364,
     "ttm_income": 7049.78,
-    "market_value": 590220.76,
+    "market_value": 590220.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -10998,7 +10998,7 @@
     "date": "2024-02-14",
     "forward_yield": 2.0197,
     "ttm_income": 7066.35,
-    "market_value": 593174.92,
+    "market_value": 593174.91,
     "daily_dividend": 16.57,
     "daily_dividends_by_ticker": {
       "MSFT": 16.57
@@ -11008,7 +11008,7 @@
     "date": "2024-02-15",
     "forward_yield": 1.964,
     "ttm_income": 7050.71,
-    "market_value": 609230.97,
+    "market_value": 609230.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11016,7 +11016,7 @@
     "date": "2024-02-16",
     "forward_yield": 1.9694,
     "ttm_income": 7050.71,
-    "market_value": 607619.59,
+    "market_value": 607619.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11024,7 +11024,7 @@
     "date": "2024-02-17",
     "forward_yield": 1.9694,
     "ttm_income": 7050.71,
-    "market_value": 607619.65,
+    "market_value": 607619.64,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11032,7 +11032,7 @@
     "date": "2024-02-18",
     "forward_yield": 1.9694,
     "ttm_income": 7050.71,
-    "market_value": 607619.77,
+    "market_value": 607619.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11040,7 +11040,7 @@
     "date": "2024-02-19",
     "forward_yield": 1.9694,
     "ttm_income": 7050.71,
-    "market_value": 607619.83,
+    "market_value": 607619.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11056,7 +11056,7 @@
     "date": "2024-02-21",
     "forward_yield": 1.9655,
     "ttm_income": 7050.71,
-    "market_value": 608885.67,
+    "market_value": 608885.62,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "META": 0.0
@@ -11066,7 +11066,7 @@
     "date": "2024-02-22",
     "forward_yield": 1.9027,
     "ttm_income": 7050.71,
-    "market_value": 619825.28,
+    "market_value": 619825.27,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11074,7 +11074,7 @@
     "date": "2024-02-23",
     "forward_yield": 1.9014,
     "ttm_income": 7050.71,
-    "market_value": 620254.79,
+    "market_value": 620254.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11082,7 +11082,7 @@
     "date": "2024-02-24",
     "forward_yield": 1.9014,
     "ttm_income": 7050.71,
-    "market_value": 620254.79,
+    "market_value": 620254.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11090,7 +11090,7 @@
     "date": "2024-02-25",
     "forward_yield": 1.9014,
     "ttm_income": 7050.71,
-    "market_value": 620254.79,
+    "market_value": 620254.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11098,7 +11098,7 @@
     "date": "2024-02-26",
     "forward_yield": 1.9062,
     "ttm_income": 7050.71,
-    "market_value": 619391.75,
+    "market_value": 619391.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11114,7 +11114,7 @@
     "date": "2024-02-28",
     "forward_yield": 1.896,
     "ttm_income": 7050.71,
-    "market_value": 619206.51,
+    "market_value": 619206.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11122,7 +11122,7 @@
     "date": "2024-02-29",
     "forward_yield": 1.8838,
     "ttm_income": 7118.04,
-    "market_value": 621807.66,
+    "market_value": 621807.76,
     "daily_dividend": 67.33,
     "daily_dividends_by_ticker": {
       "LMT": 0.0,
@@ -11133,7 +11133,7 @@
     "date": "2024-03-01",
     "forward_yield": 1.8863,
     "ttm_income": 7240.94,
-    "market_value": 627503.74,
+    "market_value": 627503.75,
     "daily_dividend": 122.9,
     "daily_dividends_by_ticker": {
       "BNDW": 122.9,
@@ -11144,7 +11144,7 @@
     "date": "2024-03-02",
     "forward_yield": 1.8863,
     "ttm_income": 7240.94,
-    "market_value": 627503.68,
+    "market_value": 627503.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11152,7 +11152,7 @@
     "date": "2024-03-03",
     "forward_yield": 1.8863,
     "ttm_income": 7240.94,
-    "market_value": 627503.68,
+    "market_value": 627503.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11160,7 +11160,7 @@
     "date": "2024-03-04",
     "forward_yield": 1.8895,
     "ttm_income": 7240.94,
-    "market_value": 626478.57,
+    "market_value": 626478.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11168,7 +11168,7 @@
     "date": "2024-03-05",
     "forward_yield": 1.9057,
     "ttm_income": 7241.06,
-    "market_value": 621148.33,
+    "market_value": 621148.34,
     "daily_dividend": 0.12,
     "daily_dividends_by_ticker": {
       "NVDA": 0.12
@@ -11178,7 +11178,7 @@
     "date": "2024-03-06",
     "forward_yield": 1.8915,
     "ttm_income": 7240.42,
-    "market_value": 625804.5,
+    "market_value": 625804.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11186,7 +11186,7 @@
     "date": "2024-03-07",
     "forward_yield": 1.8826,
     "ttm_income": 7264.62,
-    "market_value": 630434.26,
+    "market_value": 630434.23,
     "daily_dividend": 24.2,
     "daily_dividends_by_ticker": {
       "OXY": 24.2
@@ -11196,7 +11196,7 @@
     "date": "2024-03-08",
     "forward_yield": 1.8861,
     "ttm_income": 7249.22,
-    "market_value": 625511.01,
+    "market_value": 625510.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11204,7 +11204,7 @@
     "date": "2024-03-09",
     "forward_yield": 1.8861,
     "ttm_income": 7249.22,
-    "market_value": 625511.07,
+    "market_value": 625511.04,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11212,7 +11212,7 @@
     "date": "2024-03-10",
     "forward_yield": 1.8861,
     "ttm_income": 7249.22,
-    "market_value": 625511.13,
+    "market_value": 625511.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11220,7 +11220,7 @@
     "date": "2024-03-11",
     "forward_yield": 1.889,
     "ttm_income": 7249.22,
-    "market_value": 624525.82,
+    "market_value": 624525.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11228,7 +11228,7 @@
     "date": "2024-03-12",
     "forward_yield": 1.8698,
     "ttm_income": 7249.22,
-    "market_value": 630927.7,
+    "market_value": 630927.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11236,7 +11236,7 @@
     "date": "2024-03-13",
     "forward_yield": 1.8621,
     "ttm_income": 7236.48,
-    "market_value": 630287.86,
+    "market_value": 630287.91,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11244,7 +11244,7 @@
     "date": "2024-03-14",
     "forward_yield": 1.8866,
     "ttm_income": 7358.98,
-    "market_value": 628588.02,
+    "market_value": 628587.95,
     "daily_dividend": 122.5,
     "daily_dividends_by_ticker": {
       "SCI": 67.4,
@@ -11255,7 +11255,7 @@
     "date": "2024-03-15",
     "forward_yield": 2.0709,
     "ttm_income": 8454.27,
-    "market_value": 626214.44,
+    "market_value": 626214.48,
     "daily_dividend": 1095.29,
     "daily_dividends_by_ticker": {
       "VT": 1095.29
@@ -11265,7 +11265,7 @@
     "date": "2024-03-16",
     "forward_yield": 2.0709,
     "ttm_income": 8454.27,
-    "market_value": 626214.32,
+    "market_value": 626214.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11273,7 +11273,7 @@
     "date": "2024-03-17",
     "forward_yield": 2.0709,
     "ttm_income": 8454.27,
-    "market_value": 626214.32,
+    "market_value": 626214.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11281,7 +11281,7 @@
     "date": "2024-03-18",
     "forward_yield": 2.057,
     "ttm_income": 8454.27,
-    "market_value": 630711.0,
+    "market_value": 630710.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11289,7 +11289,7 @@
     "date": "2024-03-19",
     "forward_yield": 1.9339,
     "ttm_income": 8454.27,
-    "market_value": 632522.03,
+    "market_value": 632522.07,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11297,7 +11297,7 @@
     "date": "2024-03-20",
     "forward_yield": 1.9331,
     "ttm_income": 8597.04,
-    "market_value": 640172.59,
+    "market_value": 640172.6,
     "daily_dividend": 142.76,
     "daily_dividends_by_ticker": {
       "SCHD": 142.76,
@@ -11308,7 +11308,7 @@
     "date": "2024-03-21",
     "forward_yield": 1.9027,
     "ttm_income": 8585.1,
-    "market_value": 643062.07,
+    "market_value": 643062.02,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11316,7 +11316,7 @@
     "date": "2024-03-22",
     "forward_yield": 1.9069,
     "ttm_income": 8585.1,
-    "market_value": 641663.41,
+    "market_value": 641663.42,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11324,7 +11324,7 @@
     "date": "2024-03-23",
     "forward_yield": 1.9069,
     "ttm_income": 8585.1,
-    "market_value": 641663.41,
+    "market_value": 641663.42,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11332,7 +11332,7 @@
     "date": "2024-03-24",
     "forward_yield": 1.9069,
     "ttm_income": 8585.1,
-    "market_value": 641663.35,
+    "market_value": 641663.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11340,7 +11340,7 @@
     "date": "2024-03-25",
     "forward_yield": 1.9109,
     "ttm_income": 8585.1,
-    "market_value": 640325.46,
+    "market_value": 640325.44,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11348,7 +11348,7 @@
     "date": "2024-03-26",
     "forward_yield": 1.9191,
     "ttm_income": 8585.1,
-    "market_value": 638080.76,
+    "market_value": 638080.73,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11356,7 +11356,7 @@
     "date": "2024-03-27",
     "forward_yield": 1.9116,
     "ttm_income": 8585.1,
-    "market_value": 640566.61,
+    "market_value": 640566.64,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11364,7 +11364,7 @@
     "date": "2024-03-28",
     "forward_yield": 1.9186,
     "ttm_income": 8652.43,
-    "market_value": 641758.85,
+    "market_value": 641758.84,
     "daily_dividend": 67.33,
     "daily_dividends_by_ticker": {
       "O": 67.33
@@ -11374,7 +11374,7 @@
     "date": "2024-03-29",
     "forward_yield": 1.9186,
     "ttm_income": 8652.43,
-    "market_value": 641758.91,
+    "market_value": 641758.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11382,7 +11382,7 @@
     "date": "2024-03-30",
     "forward_yield": 1.9081,
     "ttm_income": 8652.43,
-    "market_value": 641758.97,
+    "market_value": 641758.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11390,7 +11390,7 @@
     "date": "2024-03-31",
     "forward_yield": 1.9081,
     "ttm_income": 8652.43,
-    "market_value": 641758.85,
+    "market_value": 641758.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11398,7 +11398,7 @@
     "date": "2024-04-01",
     "forward_yield": 1.9273,
     "ttm_income": 8783.99,
-    "market_value": 643659.73,
+    "market_value": 643659.78,
     "daily_dividend": 131.56,
     "daily_dividends_by_ticker": {
       "BNDW": 131.56
@@ -11416,7 +11416,7 @@
     "date": "2024-04-03",
     "forward_yield": 1.9177,
     "ttm_income": 8783.99,
-    "market_value": 641216.42,
+    "market_value": 641216.41,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11424,7 +11424,7 @@
     "date": "2024-04-04",
     "forward_yield": 1.9402,
     "ttm_income": 8783.99,
-    "market_value": 633794.41,
+    "market_value": 633794.43,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11432,7 +11432,7 @@
     "date": "2024-04-05",
     "forward_yield": 1.9213,
     "ttm_income": 8783.99,
-    "market_value": 640031.1,
+    "market_value": 640031.14,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11440,7 +11440,7 @@
     "date": "2024-04-06",
     "forward_yield": 1.9213,
     "ttm_income": 8783.99,
-    "market_value": 640031.1,
+    "market_value": 640031.14,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11448,7 +11448,7 @@
     "date": "2024-04-07",
     "forward_yield": 1.9213,
     "ttm_income": 8783.99,
-    "market_value": 640031.04,
+    "market_value": 640031.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11456,7 +11456,7 @@
     "date": "2024-04-08",
     "forward_yield": 1.9198,
     "ttm_income": 8783.99,
-    "market_value": 640506.53,
+    "market_value": 640506.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11472,7 +11472,7 @@
     "date": "2024-04-10",
     "forward_yield": 1.9442,
     "ttm_income": 8783.99,
-    "market_value": 632485.41,
+    "market_value": 632485.44,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11488,7 +11488,7 @@
     "date": "2024-04-12",
     "forward_yield": 1.9905,
     "ttm_income": 8905.5,
-    "market_value": 624315.39,
+    "market_value": 624315.38,
     "daily_dividend": 121.51,
     "daily_dividends_by_ticker": {
       "ABT": 0.0,
@@ -11499,7 +11499,7 @@
     "date": "2024-04-13",
     "forward_yield": 1.9741,
     "ttm_income": 8905.5,
-    "market_value": 624315.33,
+    "market_value": 624315.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11507,7 +11507,7 @@
     "date": "2024-04-14",
     "forward_yield": 1.9741,
     "ttm_income": 8905.5,
-    "market_value": 624315.21,
+    "market_value": 624315.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11515,7 +11515,7 @@
     "date": "2024-04-15",
     "forward_yield": 1.9962,
     "ttm_income": 8905.5,
-    "market_value": 617401.49,
+    "market_value": 617401.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11531,7 +11531,7 @@
     "date": "2024-04-17",
     "forward_yield": 2.0172,
     "ttm_income": 8905.5,
-    "market_value": 611315.22,
+    "market_value": 611315.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11539,7 +11539,7 @@
     "date": "2024-04-18",
     "forward_yield": 2.0298,
     "ttm_income": 8905.5,
-    "market_value": 612311.17,
+    "market_value": 612311.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11547,7 +11547,7 @@
     "date": "2024-04-19",
     "forward_yield": 2.0404,
     "ttm_income": 8905.5,
-    "market_value": 609110.24,
+    "market_value": 609110.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11555,7 +11555,7 @@
     "date": "2024-04-20",
     "forward_yield": 2.0404,
     "ttm_income": 8905.5,
-    "market_value": 609110.24,
+    "market_value": 609110.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11563,7 +11563,7 @@
     "date": "2024-04-21",
     "forward_yield": 2.0404,
     "ttm_income": 8905.5,
-    "market_value": 609110.18,
+    "market_value": 609110.15,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11579,7 +11579,7 @@
     "date": "2024-04-23",
     "forward_yield": 2.0048,
     "ttm_income": 8905.5,
-    "market_value": 619941.54,
+    "market_value": 619941.51,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11587,7 +11587,7 @@
     "date": "2024-04-24",
     "forward_yield": 2.0059,
     "ttm_income": 8905.5,
-    "market_value": 621614.33,
+    "market_value": 621614.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11595,7 +11595,7 @@
     "date": "2024-04-25",
     "forward_yield": 2.0082,
     "ttm_income": 8908.99,
-    "market_value": 623084.25,
+    "market_value": 623084.23,
     "daily_dividend": 3.49,
     "daily_dividends_by_ticker": {
       "COST": 3.49,
@@ -11606,7 +11606,7 @@
     "date": "2024-04-26",
     "forward_yield": 1.998,
     "ttm_income": 8908.99,
-    "market_value": 628859.19,
+    "market_value": 628859.15,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11614,7 +11614,7 @@
     "date": "2024-04-27",
     "forward_yield": 1.9874,
     "ttm_income": 8908.99,
-    "market_value": 628859.07,
+    "market_value": 628859.03,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11622,7 +11622,7 @@
     "date": "2024-04-28",
     "forward_yield": 1.9874,
     "ttm_income": 8908.99,
-    "market_value": 628859.07,
+    "market_value": 628859.03,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11630,7 +11630,7 @@
     "date": "2024-04-29",
     "forward_yield": 1.9802,
     "ttm_income": 8908.99,
-    "market_value": 631141.15,
+    "market_value": 631141.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11638,7 +11638,7 @@
     "date": "2024-04-30",
     "forward_yield": 2.0035,
     "ttm_income": 8976.33,
-    "market_value": 621372.86,
+    "market_value": 621372.89,
     "daily_dividend": 67.33,
     "daily_dividends_by_ticker": {
       "O": 67.33
@@ -11648,7 +11648,7 @@
     "date": "2024-05-01",
     "forward_yield": 2.0288,
     "ttm_income": 9118.02,
-    "market_value": 620611.41,
+    "market_value": 620611.4,
     "daily_dividend": 141.69,
     "daily_dividends_by_ticker": {
       "BNDW": 129.99,
@@ -11659,7 +11659,7 @@
     "date": "2024-05-02",
     "forward_yield": 2.007,
     "ttm_income": 9118.02,
-    "market_value": 627390.86,
+    "market_value": 627390.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11667,7 +11667,7 @@
     "date": "2024-05-03",
     "forward_yield": 1.9805,
     "ttm_income": 9105.78,
-    "market_value": 635623.39,
+    "market_value": 635623.41,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11675,7 +11675,7 @@
     "date": "2024-05-04",
     "forward_yield": 1.9805,
     "ttm_income": 9105.78,
-    "market_value": 635623.45,
+    "market_value": 635623.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11683,7 +11683,7 @@
     "date": "2024-05-05",
     "forward_yield": 1.9805,
     "ttm_income": 9105.78,
-    "market_value": 635623.51,
+    "market_value": 635623.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11707,7 +11707,7 @@
     "date": "2024-05-08",
     "forward_yield": 1.9565,
     "ttm_income": 9105.78,
-    "market_value": 643959.69,
+    "market_value": 643959.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11723,7 +11723,7 @@
     "date": "2024-05-10",
     "forward_yield": 1.9302,
     "ttm_income": 9121.03,
-    "market_value": 656423.29,
+    "market_value": 656423.28,
     "daily_dividend": 15.25,
     "daily_dividends_by_ticker": {
       "AAPL": 15.25,
@@ -11734,7 +11734,7 @@
     "date": "2024-05-11",
     "forward_yield": 1.928,
     "ttm_income": 8655.57,
-    "market_value": 656423.35,
+    "market_value": 656423.34,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11742,7 +11742,7 @@
     "date": "2024-05-12",
     "forward_yield": 1.928,
     "ttm_income": 8655.57,
-    "market_value": 656423.35,
+    "market_value": 656423.34,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11758,7 +11758,7 @@
     "date": "2024-05-14",
     "forward_yield": 1.9173,
     "ttm_income": 8655.57,
-    "market_value": 660133.63,
+    "market_value": 660133.65,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11784,7 +11784,7 @@
     "date": "2024-05-17",
     "forward_yield": 1.8675,
     "ttm_income": 8657.18,
-    "market_value": 669495.6,
+    "market_value": 669495.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11792,7 +11792,7 @@
     "date": "2024-05-18",
     "forward_yield": 1.8675,
     "ttm_income": 8657.18,
-    "market_value": 669495.78,
+    "market_value": 669495.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11800,7 +11800,7 @@
     "date": "2024-05-19",
     "forward_yield": 1.8675,
     "ttm_income": 8657.18,
-    "market_value": 669495.6,
+    "market_value": 669495.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11808,7 +11808,7 @@
     "date": "2024-05-20",
     "forward_yield": 1.8696,
     "ttm_income": 8657.18,
-    "market_value": 668724.97,
+    "market_value": 668725.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11816,7 +11816,7 @@
     "date": "2024-05-21",
     "forward_yield": 1.8699,
     "ttm_income": 8657.18,
-    "market_value": 668632.42,
+    "market_value": 668632.38,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11824,7 +11824,7 @@
     "date": "2024-05-22",
     "forward_yield": 1.876,
     "ttm_income": 8657.18,
-    "market_value": 666433.07,
+    "market_value": 666433.04,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11840,7 +11840,7 @@
     "date": "2024-05-24",
     "forward_yield": 1.8872,
     "ttm_income": 8657.18,
-    "market_value": 665660.32,
+    "market_value": 665660.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11848,7 +11848,7 @@
     "date": "2024-05-25",
     "forward_yield": 1.8872,
     "ttm_income": 8657.18,
-    "market_value": 665660.32,
+    "market_value": 665660.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11856,7 +11856,7 @@
     "date": "2024-05-26",
     "forward_yield": 1.8872,
     "ttm_income": 8657.18,
-    "market_value": 665659.92,
+    "market_value": 665659.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11864,7 +11864,7 @@
     "date": "2024-05-27",
     "forward_yield": 1.8872,
     "ttm_income": 8657.18,
-    "market_value": 665660.12,
+    "market_value": 665660.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11872,7 +11872,7 @@
     "date": "2024-05-28",
     "forward_yield": 1.8915,
     "ttm_income": 8657.18,
-    "market_value": 664430.39,
+    "market_value": 664430.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11880,7 +11880,7 @@
     "date": "2024-05-29",
     "forward_yield": 1.9062,
     "ttm_income": 8657.18,
-    "market_value": 659311.88,
+    "market_value": 659311.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11888,7 +11888,7 @@
     "date": "2024-05-30",
     "forward_yield": 1.9028,
     "ttm_income": 8657.18,
-    "market_value": 661443.68,
+    "market_value": 661443.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11896,7 +11896,7 @@
     "date": "2024-05-31",
     "forward_yield": 1.8651,
     "ttm_income": 8631.28,
-    "market_value": 665044.58,
+    "market_value": 665044.57,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11904,7 +11904,7 @@
     "date": "2024-06-01",
     "forward_yield": 1.8651,
     "ttm_income": 8631.28,
-    "market_value": 665045.12,
+    "market_value": 665045.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11912,7 +11912,7 @@
     "date": "2024-06-02",
     "forward_yield": 1.8651,
     "ttm_income": 8631.28,
-    "market_value": 665044.58,
+    "market_value": 665044.57,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11920,7 +11920,7 @@
     "date": "2024-06-03",
     "forward_yield": 1.8997,
     "ttm_income": 8859.09,
-    "market_value": 664924.63,
+    "market_value": 664924.67,
     "daily_dividend": 227.82,
     "daily_dividends_by_ticker": {
       "BNDW": 135.5,
@@ -11933,7 +11933,7 @@
     "date": "2024-06-04",
     "forward_yield": 1.9045,
     "ttm_income": 8859.09,
-    "market_value": 663227.35,
+    "market_value": 663227.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11941,7 +11941,7 @@
     "date": "2024-06-05",
     "forward_yield": 1.888,
     "ttm_income": 8859.09,
-    "market_value": 669048.02,
+    "market_value": 669048.01,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11949,7 +11949,7 @@
     "date": "2024-06-06",
     "forward_yield": 1.8891,
     "ttm_income": 8858.45,
-    "market_value": 668880.75,
+    "market_value": 668880.73,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -11983,7 +11983,7 @@
     "date": "2024-06-10",
     "forward_yield": 1.9025,
     "ttm_income": 8937.75,
-    "market_value": 670588.08,
+    "market_value": 670588.07,
     "daily_dividend": 24.2,
     "daily_dividends_by_ticker": {
       "OXY": 24.2
@@ -11993,7 +11993,7 @@
     "date": "2024-06-11",
     "forward_yield": 1.897,
     "ttm_income": 8938.05,
-    "market_value": 672560.19,
+    "market_value": 672560.18,
     "daily_dividend": 0.3,
     "daily_dividends_by_ticker": {
       "IEMG": 0.0,
@@ -12004,7 +12004,7 @@
     "date": "2024-06-12",
     "forward_yield": 1.8799,
     "ttm_income": 8938.05,
-    "market_value": 678663.76,
+    "market_value": 678663.78,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12049,7 +12049,7 @@
     "date": "2024-06-17",
     "forward_yield": 1.8564,
     "ttm_income": 8975.38,
-    "market_value": 686809.69,
+    "market_value": 686809.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12057,7 +12057,7 @@
     "date": "2024-06-18",
     "forward_yield": 1.8528,
     "ttm_income": 8975.38,
-    "market_value": 688174.77,
+    "market_value": 688174.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12065,7 +12065,7 @@
     "date": "2024-06-19",
     "forward_yield": 1.607,
     "ttm_income": 8975.38,
-    "market_value": 688174.22,
+    "market_value": 688174.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12073,7 +12073,7 @@
     "date": "2024-06-20",
     "forward_yield": 1.5866,
     "ttm_income": 8905.44,
-    "market_value": 687224.73,
+    "market_value": 687224.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12081,7 +12081,7 @@
     "date": "2024-06-21",
     "forward_yield": 1.8119,
     "ttm_income": 10429.27,
-    "market_value": 689007.53,
+    "market_value": 689007.55,
     "daily_dividend": 1523.84,
     "daily_dividends_by_ticker": {
       "VEMRX": 3.45,
@@ -12094,7 +12094,7 @@
     "date": "2024-06-22",
     "forward_yield": 1.8119,
     "ttm_income": 10429.27,
-    "market_value": 689006.43,
+    "market_value": 689006.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12102,7 +12102,7 @@
     "date": "2024-06-23",
     "forward_yield": 1.8119,
     "ttm_income": 10429.27,
-    "market_value": 689006.98,
+    "market_value": 689007.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12120,7 +12120,7 @@
     "date": "2024-06-25",
     "forward_yield": 1.7962,
     "ttm_income": 10429.27,
-    "market_value": 695442.32,
+    "market_value": 695442.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12128,7 +12128,7 @@
     "date": "2024-06-26",
     "forward_yield": 1.8346,
     "ttm_income": 10621.81,
-    "market_value": 697648.22,
+    "market_value": 697648.21,
     "daily_dividend": 192.53,
     "daily_dividends_by_ticker": {
       "SCHD": 192.53,
@@ -12150,7 +12150,7 @@
     "date": "2024-06-28",
     "forward_yield": 1.8288,
     "ttm_income": 10680.41,
-    "market_value": 700300.8,
+    "market_value": 700300.83,
     "daily_dividend": 56.91,
     "daily_dividends_by_ticker": {
       "VFFSX": 21.42,
@@ -12162,7 +12162,7 @@
     "date": "2024-06-29",
     "forward_yield": 1.8192,
     "ttm_income": 10680.41,
-    "market_value": 700301.45,
+    "market_value": 700301.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12170,7 +12170,7 @@
     "date": "2024-06-30",
     "forward_yield": 1.8192,
     "ttm_income": 10680.41,
-    "market_value": 700300.8,
+    "market_value": 700300.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12178,7 +12178,7 @@
     "date": "2024-07-01",
     "forward_yield": 1.8499,
     "ttm_income": 10910.02,
-    "market_value": 701243.41,
+    "market_value": 701243.39,
     "daily_dividend": 229.6,
     "daily_dividends_by_ticker": {
       "BNDW": 133.93,
@@ -12190,7 +12190,7 @@
     "date": "2024-07-02",
     "forward_yield": 1.823,
     "ttm_income": 10910.02,
-    "market_value": 704443.54,
+    "market_value": 704443.5,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12198,7 +12198,7 @@
     "date": "2024-07-03",
     "forward_yield": 1.8093,
     "ttm_income": 10910.02,
-    "market_value": 709783.49,
+    "market_value": 709783.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12206,7 +12206,7 @@
     "date": "2024-07-04",
     "forward_yield": 1.8093,
     "ttm_income": 10910.02,
-    "market_value": 709783.49,
+    "market_value": 709783.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12214,7 +12214,7 @@
     "date": "2024-07-05",
     "forward_yield": 1.8025,
     "ttm_income": 10910.02,
-    "market_value": 716238.59,
+    "market_value": 716238.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12222,7 +12222,7 @@
     "date": "2024-07-06",
     "forward_yield": 1.8025,
     "ttm_income": 10910.02,
-    "market_value": 716239.37,
+    "market_value": 716239.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12230,7 +12230,7 @@
     "date": "2024-07-07",
     "forward_yield": 1.8025,
     "ttm_income": 10910.02,
-    "market_value": 716238.59,
+    "market_value": 716238.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12238,7 +12238,7 @@
     "date": "2024-07-08",
     "forward_yield": 1.8025,
     "ttm_income": 10923.07,
-    "market_value": 717018.05,
+    "market_value": 717018.06,
     "daily_dividend": 13.05,
     "daily_dividends_by_ticker": {
       "DIS": 13.05
@@ -12256,7 +12256,7 @@
     "date": "2024-07-10",
     "forward_yield": 1.7869,
     "ttm_income": 10923.07,
-    "market_value": 723299.42,
+    "market_value": 723299.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12264,7 +12264,7 @@
     "date": "2024-07-11",
     "forward_yield": 1.7876,
     "ttm_income": 10923.07,
-    "market_value": 723003.74,
+    "market_value": 723003.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12272,7 +12272,7 @@
     "date": "2024-07-12",
     "forward_yield": 1.7768,
     "ttm_income": 10922.94,
-    "market_value": 727412.57,
+    "market_value": 727412.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12280,7 +12280,7 @@
     "date": "2024-07-13",
     "forward_yield": 1.7768,
     "ttm_income": 10922.94,
-    "market_value": 727410.95,
+    "market_value": 727410.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12288,7 +12288,7 @@
     "date": "2024-07-14",
     "forward_yield": 1.7768,
     "ttm_income": 10922.94,
-    "market_value": 727411.76,
+    "market_value": 727411.79,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12296,7 +12296,7 @@
     "date": "2024-07-15",
     "forward_yield": 1.7724,
     "ttm_income": 10922.94,
-    "market_value": 729214.21,
+    "market_value": 729214.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "ABT": 0.0
@@ -12314,7 +12314,7 @@
     "date": "2024-07-17",
     "forward_yield": 1.7798,
     "ttm_income": 10922.94,
-    "market_value": 726338.88,
+    "market_value": 726338.87,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12322,7 +12322,7 @@
     "date": "2024-07-18",
     "forward_yield": 1.7942,
     "ttm_income": 10922.94,
-    "market_value": 720503.61,
+    "market_value": 720503.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12330,7 +12330,7 @@
     "date": "2024-07-19",
     "forward_yield": 1.7948,
     "ttm_income": 10922.94,
-    "market_value": 723673.6,
+    "market_value": 723673.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12338,7 +12338,7 @@
     "date": "2024-07-20",
     "forward_yield": 1.7948,
     "ttm_income": 10922.94,
-    "market_value": 723674.45,
+    "market_value": 723674.43,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12346,7 +12346,7 @@
     "date": "2024-07-21",
     "forward_yield": 1.7948,
     "ttm_income": 10922.94,
-    "market_value": 723672.75,
+    "market_value": 723672.73,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12354,7 +12354,7 @@
     "date": "2024-07-22",
     "forward_yield": 1.7822,
     "ttm_income": 10922.94,
-    "market_value": 728810.2,
+    "market_value": 728810.15,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12362,7 +12362,7 @@
     "date": "2024-07-23",
     "forward_yield": 1.7807,
     "ttm_income": 10922.94,
-    "market_value": 729416.24,
+    "market_value": 729416.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12370,7 +12370,7 @@
     "date": "2024-07-24",
     "forward_yield": 1.8216,
     "ttm_income": 10922.94,
-    "market_value": 716791.74,
+    "market_value": 716791.73,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12378,7 +12378,7 @@
     "date": "2024-07-25",
     "forward_yield": 1.8308,
     "ttm_income": 10922.94,
-    "market_value": 713347.41,
+    "market_value": 713347.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12386,7 +12386,7 @@
     "date": "2024-07-26",
     "forward_yield": 1.8105,
     "ttm_income": 10926.18,
-    "market_value": 721536.83,
+    "market_value": 721536.88,
     "daily_dividend": 3.49,
     "daily_dividends_by_ticker": {
       "COST": 3.49,
@@ -12397,7 +12397,7 @@
     "date": "2024-07-27",
     "forward_yield": 1.8105,
     "ttm_income": 10926.18,
-    "market_value": 721535.69,
+    "market_value": 721535.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12405,7 +12405,7 @@
     "date": "2024-07-28",
     "forward_yield": 1.8105,
     "ttm_income": 10926.18,
-    "market_value": 721536.83,
+    "market_value": 721536.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12413,7 +12413,7 @@
     "date": "2024-07-29",
     "forward_yield": 1.8105,
     "ttm_income": 10926.18,
-    "market_value": 721558.22,
+    "market_value": 721558.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12429,7 +12429,7 @@
     "date": "2024-07-31",
     "forward_yield": 1.7496,
     "ttm_income": 10926.18,
-    "market_value": 734489.11,
+    "market_value": 734489.12,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12437,7 +12437,7 @@
     "date": "2024-08-01",
     "forward_yield": 1.8107,
     "ttm_income": 11168.07,
-    "market_value": 723083.24,
+    "market_value": 723083.21,
     "daily_dividend": 241.89,
     "daily_dividends_by_ticker": {
       "BNDW": 138.65,
@@ -12449,7 +12449,7 @@
     "date": "2024-08-02",
     "forward_yield": 1.8451,
     "ttm_income": 11168.07,
-    "market_value": 712997.64,
+    "market_value": 712997.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12457,7 +12457,7 @@
     "date": "2024-08-03",
     "forward_yield": 1.845,
     "ttm_income": 11168.07,
-    "market_value": 712999.96,
+    "market_value": 712999.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12465,7 +12465,7 @@
     "date": "2024-08-04",
     "forward_yield": 1.845,
     "ttm_income": 11168.07,
-    "market_value": 712998.8,
+    "market_value": 712998.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12473,7 +12473,7 @@
     "date": "2024-08-05",
     "forward_yield": 1.8878,
     "ttm_income": 11168.07,
-    "market_value": 696842.53,
+    "market_value": 696842.5,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12481,7 +12481,7 @@
     "date": "2024-08-06",
     "forward_yield": 1.8711,
     "ttm_income": 11168.07,
-    "market_value": 703148.9,
+    "market_value": 703148.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12489,7 +12489,7 @@
     "date": "2024-08-07",
     "forward_yield": 1.88,
     "ttm_income": 11168.07,
-    "market_value": 699838.59,
+    "market_value": 699838.63,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12497,7 +12497,7 @@
     "date": "2024-08-08",
     "forward_yield": 1.8401,
     "ttm_income": 11168.07,
-    "market_value": 714993.31,
+    "market_value": 714993.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12539,7 +12539,7 @@
     "date": "2024-08-13",
     "forward_yield": 1.8115,
     "ttm_income": 11167.68,
-    "market_value": 725481.6,
+    "market_value": 725481.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12547,7 +12547,7 @@
     "date": "2024-08-14",
     "forward_yield": 1.8052,
     "ttm_income": 11167.68,
-    "market_value": 728013.18,
+    "market_value": 728013.15,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12555,7 +12555,7 @@
     "date": "2024-08-15",
     "forward_yield": 1.7831,
     "ttm_income": 11169.54,
-    "market_value": 737155.97,
+    "market_value": 737156.0,
     "daily_dividend": 16.57,
     "daily_dividends_by_ticker": {
       "MSFT": 16.57
@@ -12565,7 +12565,7 @@
     "date": "2024-08-16",
     "forward_yield": 1.7303,
     "ttm_income": 11169.54,
-    "market_value": 742483.91,
+    "market_value": 742483.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12573,7 +12573,7 @@
     "date": "2024-08-17",
     "forward_yield": 1.7306,
     "ttm_income": 11169.54,
-    "market_value": 742678.24,
+    "market_value": 742678.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12581,7 +12581,7 @@
     "date": "2024-08-18",
     "forward_yield": 1.7306,
     "ttm_income": 11169.54,
-    "market_value": 742679.97,
+    "market_value": 742680.01,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12589,7 +12589,7 @@
     "date": "2024-08-19",
     "forward_yield": 1.718,
     "ttm_income": 11169.54,
-    "market_value": 746508.84,
+    "market_value": 746508.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12597,7 +12597,7 @@
     "date": "2024-08-20",
     "forward_yield": 1.7207,
     "ttm_income": 11169.54,
-    "market_value": 745297.95,
+    "market_value": 745297.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12605,7 +12605,7 @@
     "date": "2024-08-21",
     "forward_yield": 1.7134,
     "ttm_income": 11169.54,
-    "market_value": 748478.47,
+    "market_value": 748478.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12613,7 +12613,7 @@
     "date": "2024-08-22",
     "forward_yield": 1.7265,
     "ttm_income": 11169.54,
-    "market_value": 742831.56,
+    "market_value": 742831.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12621,7 +12621,7 @@
     "date": "2024-08-23",
     "forward_yield": 1.7042,
     "ttm_income": 11164.03,
-    "market_value": 752344.76,
+    "market_value": 752344.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12629,7 +12629,7 @@
     "date": "2024-08-24",
     "forward_yield": 1.7042,
     "ttm_income": 11164.03,
-    "market_value": 752344.76,
+    "market_value": 752344.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12637,7 +12637,7 @@
     "date": "2024-08-25",
     "forward_yield": 1.6991,
     "ttm_income": 11164.03,
-    "market_value": 754805.79,
+    "market_value": 754805.78,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12645,7 +12645,7 @@
     "date": "2024-08-26",
     "forward_yield": 1.7093,
     "ttm_income": 11164.03,
-    "market_value": 750272.31,
+    "market_value": 750272.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12661,7 +12661,7 @@
     "date": "2024-08-28",
     "forward_yield": 1.7138,
     "ttm_income": 11164.03,
-    "market_value": 748289.94,
+    "market_value": 748289.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12669,7 +12669,7 @@
     "date": "2024-08-29",
     "forward_yield": 1.7086,
     "ttm_income": 11164.03,
-    "market_value": 750596.96,
+    "market_value": 750596.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12709,7 +12709,7 @@
     "date": "2024-09-03",
     "forward_yield": 1.7353,
     "ttm_income": 11403.22,
-    "market_value": 744027.2,
+    "market_value": 744027.18,
     "daily_dividend": 239.19,
     "daily_dividends_by_ticker": {
       "BNDW": 141.8,
@@ -12722,7 +12722,7 @@
     "date": "2024-09-04",
     "forward_yield": 1.7358,
     "ttm_income": 11403.22,
-    "market_value": 743819.4,
+    "market_value": 743819.41,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12762,7 +12762,7 @@
     "date": "2024-09-09",
     "forward_yield": 1.7161,
     "ttm_income": 11369.62,
-    "market_value": 736289.34,
+    "market_value": 736289.33,
     "daily_dividend": 16.34,
     "daily_dividends_by_ticker": {
       "GOOG": 16.34
@@ -12772,7 +12772,7 @@
     "date": "2024-09-10",
     "forward_yield": 1.709,
     "ttm_income": 11413.18,
-    "market_value": 738365.52,
+    "market_value": 738365.5,
     "daily_dividend": 43.56,
     "daily_dividends_by_ticker": {
       "OXY": 43.56
@@ -12782,7 +12782,7 @@
     "date": "2024-09-11",
     "forward_yield": 1.6734,
     "ttm_income": 11413.18,
-    "market_value": 745558.55,
+    "market_value": 745558.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12790,7 +12790,7 @@
     "date": "2024-09-12",
     "forward_yield": 1.658,
     "ttm_income": 11413.48,
-    "market_value": 752501.0,
+    "market_value": 752500.98,
     "daily_dividend": 0.3,
     "daily_dividends_by_ticker": {
       "NVDA": 0.3
@@ -12827,7 +12827,7 @@
     "date": "2024-09-16",
     "forward_yield": 1.6448,
     "ttm_income": 11488.18,
-    "market_value": 763294.13,
+    "market_value": 763294.14,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "META": 0.0
@@ -12837,7 +12837,7 @@
     "date": "2024-09-17",
     "forward_yield": 1.5051,
     "ttm_income": 10841.42,
-    "market_value": 763999.31,
+    "market_value": 763999.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12845,7 +12845,7 @@
     "date": "2024-09-18",
     "forward_yield": 1.5086,
     "ttm_income": 10841.42,
-    "market_value": 762202.94,
+    "market_value": 762202.97,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12853,7 +12853,7 @@
     "date": "2024-09-19",
     "forward_yield": 1.4643,
     "ttm_income": 10606.96,
-    "market_value": 774529.04,
+    "market_value": 774529.01,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12861,7 +12861,7 @@
     "date": "2024-09-20",
     "forward_yield": 1.609,
     "ttm_income": 11709.21,
-    "market_value": 773417.32,
+    "market_value": 773417.3,
     "daily_dividend": 1102.25,
     "daily_dividends_by_ticker": {
       "VEMRX": 5.99,
@@ -12874,7 +12874,7 @@
     "date": "2024-09-21",
     "forward_yield": 1.609,
     "ttm_income": 11709.21,
-    "market_value": 773417.32,
+    "market_value": 773417.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12882,7 +12882,7 @@
     "date": "2024-09-22",
     "forward_yield": 1.609,
     "ttm_income": 11709.21,
-    "market_value": 773417.32,
+    "market_value": 773417.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12890,7 +12890,7 @@
     "date": "2024-09-23",
     "forward_yield": 1.605,
     "ttm_income": 11709.21,
-    "market_value": 775324.33,
+    "market_value": 775324.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "WRB": 0.0
@@ -12900,7 +12900,7 @@
     "date": "2024-09-24",
     "forward_yield": 1.5899,
     "ttm_income": 11709.21,
-    "market_value": 777346.04,
+    "market_value": 777346.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12908,7 +12908,7 @@
     "date": "2024-09-25",
     "forward_yield": 1.6127,
     "ttm_income": 11885.62,
-    "market_value": 778451.39,
+    "market_value": 778451.43,
     "daily_dividend": 176.41,
     "daily_dividends_by_ticker": {
       "SCHD": 176.41,
@@ -12919,7 +12919,7 @@
     "date": "2024-09-26",
     "forward_yield": 1.5858,
     "ttm_income": 11889.67,
-    "market_value": 783094.18,
+    "market_value": 783094.21,
     "daily_dividend": 4.06,
     "daily_dividends_by_ticker": {
       "VMVAX": 0.3,
@@ -12930,7 +12930,7 @@
     "date": "2024-09-27",
     "forward_yield": 1.6058,
     "ttm_income": 12007.01,
-    "market_value": 787010.72,
+    "market_value": 787010.7,
     "daily_dividend": 117.34,
     "daily_dividends_by_ticker": {
       "VFFSX": 43.73,
@@ -12942,7 +12942,7 @@
     "date": "2024-09-28",
     "forward_yield": 1.5973,
     "ttm_income": 12007.01,
-    "market_value": 787010.72,
+    "market_value": 787010.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12950,7 +12950,7 @@
     "date": "2024-09-29",
     "forward_yield": 1.5973,
     "ttm_income": 12007.01,
-    "market_value": 787010.72,
+    "market_value": 787010.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12958,7 +12958,7 @@
     "date": "2024-09-30",
     "forward_yield": 1.5858,
     "ttm_income": 12007.01,
-    "market_value": 789575.81,
+    "market_value": 789575.78,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12966,7 +12966,7 @@
     "date": "2024-10-01",
     "forward_yield": 1.6028,
     "ttm_income": 12200.1,
-    "market_value": 784845.4,
+    "market_value": 784845.39,
     "daily_dividend": 193.09,
     "daily_dividends_by_ticker": {
       "BNDW": 91.69,
@@ -12978,7 +12978,7 @@
     "date": "2024-10-02",
     "forward_yield": 1.5985,
     "ttm_income": 12200.1,
-    "market_value": 786975.73,
+    "market_value": 786975.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -12986,7 +12986,7 @@
     "date": "2024-10-03",
     "forward_yield": 1.6017,
     "ttm_income": 12200.1,
-    "market_value": 785371.68,
+    "market_value": 785371.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13018,7 +13018,7 @@
     "date": "2024-10-07",
     "forward_yield": 1.6015,
     "ttm_income": 12200.1,
-    "market_value": 785723.69,
+    "market_value": 785723.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13026,7 +13026,7 @@
     "date": "2024-10-08",
     "forward_yield": 1.5668,
     "ttm_income": 12200.1,
-    "market_value": 789119.72,
+    "market_value": 789119.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13034,7 +13034,7 @@
     "date": "2024-10-09",
     "forward_yield": 1.5585,
     "ttm_income": 12200.1,
-    "market_value": 792279.6,
+    "market_value": 792279.62,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13042,7 +13042,7 @@
     "date": "2024-10-10",
     "forward_yield": 1.5573,
     "ttm_income": 12200.1,
-    "market_value": 792864.79,
+    "market_value": 792864.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13050,7 +13050,7 @@
     "date": "2024-10-11",
     "forward_yield": 1.5463,
     "ttm_income": 12199.58,
-    "market_value": 802182.07,
+    "market_value": 802182.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13058,7 +13058,7 @@
     "date": "2024-10-12",
     "forward_yield": 1.5463,
     "ttm_income": 12199.58,
-    "market_value": 802182.07,
+    "market_value": 802182.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13066,7 +13066,7 @@
     "date": "2024-10-13",
     "forward_yield": 1.5463,
     "ttm_income": 12199.58,
-    "market_value": 802182.07,
+    "market_value": 802182.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13074,7 +13074,7 @@
     "date": "2024-10-14",
     "forward_yield": 1.5406,
     "ttm_income": 12199.58,
-    "market_value": 805114.41,
+    "market_value": 805114.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13092,7 +13092,7 @@
     "date": "2024-10-16",
     "forward_yield": 1.5439,
     "ttm_income": 12199.58,
-    "market_value": 802613.26,
+    "market_value": 802613.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13100,7 +13100,7 @@
     "date": "2024-10-17",
     "forward_yield": 1.5457,
     "ttm_income": 12199.58,
-    "market_value": 801672.65,
+    "market_value": 801672.67,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13108,7 +13108,7 @@
     "date": "2024-10-18",
     "forward_yield": 1.5426,
     "ttm_income": 12199.58,
-    "market_value": 803280.09,
+    "market_value": 803280.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13116,7 +13116,7 @@
     "date": "2024-10-19",
     "forward_yield": 1.5426,
     "ttm_income": 12199.58,
-    "market_value": 803280.09,
+    "market_value": 803280.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13124,7 +13124,7 @@
     "date": "2024-10-20",
     "forward_yield": 1.5426,
     "ttm_income": 12199.58,
-    "market_value": 803280.09,
+    "market_value": 803280.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13132,7 +13132,7 @@
     "date": "2024-10-21",
     "forward_yield": 1.5471,
     "ttm_income": 12199.58,
-    "market_value": 800936.33,
+    "market_value": 800936.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13148,7 +13148,7 @@
     "date": "2024-10-23",
     "forward_yield": 1.5647,
     "ttm_income": 12199.58,
-    "market_value": 791960.2,
+    "market_value": 791960.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13156,7 +13156,7 @@
     "date": "2024-10-24",
     "forward_yield": 1.5636,
     "ttm_income": 12199.58,
-    "market_value": 792507.97,
+    "market_value": 792507.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13164,7 +13164,7 @@
     "date": "2024-10-25",
     "forward_yield": 1.5642,
     "ttm_income": 12198.86,
-    "market_value": 797307.98,
+    "market_value": 797308.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SIG": 0.0
@@ -13174,7 +13174,7 @@
     "date": "2024-10-26",
     "forward_yield": 1.5642,
     "ttm_income": 12198.86,
-    "market_value": 797307.98,
+    "market_value": 797308.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13182,7 +13182,7 @@
     "date": "2024-10-27",
     "forward_yield": 1.5642,
     "ttm_income": 12198.86,
-    "market_value": 797307.98,
+    "market_value": 797308.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13190,7 +13190,7 @@
     "date": "2024-10-28",
     "forward_yield": 1.557,
     "ttm_income": 12198.86,
-    "market_value": 801517.21,
+    "market_value": 801517.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13206,7 +13206,7 @@
     "date": "2024-10-30",
     "forward_yield": 1.5505,
     "ttm_income": 12131.79,
-    "market_value": 800568.57,
+    "market_value": 800568.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13214,7 +13214,7 @@
     "date": "2024-10-31",
     "forward_yield": 1.5585,
     "ttm_income": 12131.79,
-    "market_value": 790832.28,
+    "market_value": 790832.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13222,7 +13222,7 @@
     "date": "2024-11-01",
     "forward_yield": 1.5741,
     "ttm_income": 12298.53,
-    "market_value": 793610.87,
+    "market_value": 793610.82,
     "daily_dividend": 170.28,
     "daily_dividends_by_ticker": {
       "BNDW": 63.72,
@@ -13235,7 +13235,7 @@
     "date": "2024-11-02",
     "forward_yield": 1.5741,
     "ttm_income": 12298.53,
-    "market_value": 793610.87,
+    "market_value": 793610.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13243,7 +13243,7 @@
     "date": "2024-11-03",
     "forward_yield": 1.5741,
     "ttm_income": 12298.53,
-    "market_value": 793610.87,
+    "market_value": 793610.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13251,7 +13251,7 @@
     "date": "2024-11-04",
     "forward_yield": 1.5747,
     "ttm_income": 12298.53,
-    "market_value": 793319.22,
+    "market_value": 793319.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13259,7 +13259,7 @@
     "date": "2024-11-05",
     "forward_yield": 1.5548,
     "ttm_income": 12298.53,
-    "market_value": 803452.73,
+    "market_value": 803452.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13267,7 +13267,7 @@
     "date": "2024-11-06",
     "forward_yield": 1.5208,
     "ttm_income": 12298.53,
-    "market_value": 821468.78,
+    "market_value": 821468.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13275,7 +13275,7 @@
     "date": "2024-11-07",
     "forward_yield": 1.5062,
     "ttm_income": 12298.53,
-    "market_value": 829303.47,
+    "market_value": 829303.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13283,7 +13283,7 @@
     "date": "2024-11-08",
     "forward_yield": 1.5227,
     "ttm_income": 12313.78,
-    "market_value": 824957.8,
+    "market_value": 824957.83,
     "daily_dividend": 15.25,
     "daily_dividends_by_ticker": {
       "AAPL": 15.25
@@ -13293,7 +13293,7 @@
     "date": "2024-11-09",
     "forward_yield": 1.5209,
     "ttm_income": 12299.14,
-    "market_value": 824957.8,
+    "market_value": 824957.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13301,7 +13301,7 @@
     "date": "2024-11-10",
     "forward_yield": 1.5209,
     "ttm_income": 12299.14,
-    "market_value": 824957.8,
+    "market_value": 824957.83,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13309,7 +13309,7 @@
     "date": "2024-11-11",
     "forward_yield": 1.5019,
     "ttm_income": 12299.14,
-    "market_value": 825249.9,
+    "market_value": 825249.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13317,7 +13317,7 @@
     "date": "2024-11-12",
     "forward_yield": 1.5109,
     "ttm_income": 12299.14,
-    "market_value": 820296.31,
+    "market_value": 820296.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13325,7 +13325,7 @@
     "date": "2024-11-13",
     "forward_yield": 1.5001,
     "ttm_income": 12299.14,
-    "market_value": 818930.6,
+    "market_value": 818930.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13333,7 +13333,7 @@
     "date": "2024-11-14",
     "forward_yield": 1.5032,
     "ttm_income": 12282.35,
-    "market_value": 813609.86,
+    "market_value": 813609.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13341,7 +13341,7 @@
     "date": "2024-11-15",
     "forward_yield": 1.4937,
     "ttm_income": 12282.35,
-    "market_value": 806165.45,
+    "market_value": 806165.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13349,7 +13349,7 @@
     "date": "2024-11-16",
     "forward_yield": 1.4937,
     "ttm_income": 12282.35,
-    "market_value": 806165.45,
+    "market_value": 806165.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13357,7 +13357,7 @@
     "date": "2024-11-17",
     "forward_yield": 1.4937,
     "ttm_income": 12282.35,
-    "market_value": 806165.45,
+    "market_value": 806165.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13365,7 +13365,7 @@
     "date": "2024-11-18",
     "forward_yield": 1.4862,
     "ttm_income": 12282.35,
-    "market_value": 810302.97,
+    "market_value": 810303.02,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13373,7 +13373,7 @@
     "date": "2024-11-19",
     "forward_yield": 1.479,
     "ttm_income": 12282.35,
-    "market_value": 814218.28,
+    "market_value": 814218.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13389,7 +13389,7 @@
     "date": "2024-11-21",
     "forward_yield": 1.3676,
     "ttm_income": 9968.01,
-    "market_value": 825011.87,
+    "market_value": 825011.89,
     "daily_dividend": 20.82,
     "daily_dividends_by_ticker": {
       "MSFT": 20.82
@@ -13399,7 +13399,7 @@
     "date": "2024-11-22",
     "forward_yield": 1.3643,
     "ttm_income": 9968.01,
-    "market_value": 832618.22,
+    "market_value": 832618.19,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13407,7 +13407,7 @@
     "date": "2024-11-23",
     "forward_yield": 1.3643,
     "ttm_income": 9968.01,
-    "market_value": 832618.22,
+    "market_value": 832618.19,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13415,7 +13415,7 @@
     "date": "2024-11-24",
     "forward_yield": 1.3643,
     "ttm_income": 9968.01,
-    "market_value": 832618.22,
+    "market_value": 832618.19,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13423,7 +13423,7 @@
     "date": "2024-11-25",
     "forward_yield": 1.3581,
     "ttm_income": 9968.01,
-    "market_value": 836907.46,
+    "market_value": 836907.44,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13439,7 +13439,7 @@
     "date": "2024-11-27",
     "forward_yield": 1.3331,
     "ttm_income": 9968.01,
-    "market_value": 839562.2,
+    "market_value": 839562.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13447,7 +13447,7 @@
     "date": "2024-11-28",
     "forward_yield": 1.3331,
     "ttm_income": 9968.01,
-    "market_value": 839562.2,
+    "market_value": 839562.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13455,7 +13455,7 @@
     "date": "2024-11-29",
     "forward_yield": 1.2967,
     "ttm_income": 9849.51,
-    "market_value": 840852.38,
+    "market_value": 840852.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13463,7 +13463,7 @@
     "date": "2024-11-30",
     "forward_yield": 1.2967,
     "ttm_income": 9849.51,
-    "market_value": 840852.38,
+    "market_value": 840852.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13471,7 +13471,7 @@
     "date": "2024-12-01",
     "forward_yield": 1.2967,
     "ttm_income": 9849.51,
-    "market_value": 840852.38,
+    "market_value": 840852.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13479,7 +13479,7 @@
     "date": "2024-12-02",
     "forward_yield": 1.2984,
     "ttm_income": 9918.68,
-    "market_value": 845048.38,
+    "market_value": 845048.4,
     "daily_dividend": 69.17,
     "daily_dividends_by_ticker": {
       "LMT": 0.0,
@@ -13490,7 +13490,7 @@
     "date": "2024-12-03",
     "forward_yield": 1.2978,
     "ttm_income": 9918.68,
-    "market_value": 845446.64,
+    "market_value": 845446.65,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13506,7 +13506,7 @@
     "date": "2024-12-05",
     "forward_yield": 1.3002,
     "ttm_income": 9747.24,
-    "market_value": 848527.64,
+    "market_value": 848527.65,
     "daily_dividend": 0.3,
     "daily_dividends_by_ticker": {
       "NVDA": 0.3
@@ -13516,7 +13516,7 @@
     "date": "2024-12-06",
     "forward_yield": 1.2931,
     "ttm_income": 9785.78,
-    "market_value": 855198.07,
+    "market_value": 855198.06,
     "daily_dividend": 55.1,
     "daily_dividends_by_ticker": {
       "WM": 55.1
@@ -13526,7 +13526,7 @@
     "date": "2024-12-07",
     "forward_yield": 1.2921,
     "ttm_income": 9777.98,
-    "market_value": 855387.78,
+    "market_value": 855387.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13534,7 +13534,7 @@
     "date": "2024-12-08",
     "forward_yield": 1.2921,
     "ttm_income": 9777.98,
-    "market_value": 855387.78,
+    "market_value": 855387.77,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13542,7 +13542,7 @@
     "date": "2024-12-09",
     "forward_yield": 1.3013,
     "ttm_income": 9831.63,
-    "market_value": 853477.04,
+    "market_value": 853477.06,
     "daily_dividend": 53.64,
     "daily_dividends_by_ticker": {
       "GOOG": 53.64
@@ -13552,7 +13552,7 @@
     "date": "2024-12-10",
     "forward_yield": 1.3212,
     "ttm_income": 9947.71,
-    "market_value": 849394.85,
+    "market_value": 849394.79,
     "daily_dividend": 116.08,
     "daily_dividends_by_ticker": {
       "OXY": 116.08
@@ -13562,7 +13562,7 @@
     "date": "2024-12-11",
     "forward_yield": 1.3307,
     "ttm_income": 10133.47,
-    "market_value": 857330.07,
+    "market_value": 857330.08,
     "daily_dividend": 185.76,
     "daily_dividends_by_ticker": {
       "SCHD": 185.76
@@ -13572,7 +13572,7 @@
     "date": "2024-12-12",
     "forward_yield": 1.3382,
     "ttm_income": 10133.47,
-    "market_value": 852473.0,
+    "market_value": 852472.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13607,7 +13607,7 @@
     "date": "2024-12-16",
     "forward_yield": 1.1416,
     "ttm_income": 7111.71,
-    "market_value": 862714.61,
+    "market_value": 862714.64,
     "daily_dividend": 19.5,
     "daily_dividends_by_ticker": {
       "DIS": 19.5,
@@ -13619,7 +13619,7 @@
     "date": "2024-12-17",
     "forward_yield": 0.8309,
     "ttm_income": 5027.79,
-    "market_value": 859128.35,
+    "market_value": 859128.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "IEMG": 0.0
@@ -13629,7 +13629,7 @@
     "date": "2024-12-18",
     "forward_yield": 0.8332,
     "ttm_income": 4933.32,
-    "market_value": 813397.08,
+    "market_value": 813397.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13637,7 +13637,7 @@
     "date": "2024-12-19",
     "forward_yield": 0.8245,
     "ttm_income": 4933.32,
-    "market_value": 814623.42,
+    "market_value": 814623.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13645,7 +13645,7 @@
     "date": "2024-12-20",
     "forward_yield": 1.1983,
     "ttm_income": 8089.74,
-    "market_value": 827859.17,
+    "market_value": 827859.21,
     "daily_dividend": 3156.42,
     "daily_dividends_by_ticker": {
       "FSKAX": 0.0,
@@ -13658,7 +13658,7 @@
     "date": "2024-12-21",
     "forward_yield": 1.1983,
     "ttm_income": 8089.74,
-    "market_value": 827859.17,
+    "market_value": 827859.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13666,7 +13666,7 @@
     "date": "2024-12-22",
     "forward_yield": 1.1983,
     "ttm_income": 8089.74,
-    "market_value": 827859.17,
+    "market_value": 827859.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13674,7 +13674,7 @@
     "date": "2024-12-23",
     "forward_yield": 1.2101,
     "ttm_income": 8236.17,
-    "market_value": 834435.47,
+    "market_value": 834435.53,
     "daily_dividend": 146.43,
     "daily_dividends_by_ticker": {
       "SH": 0.0,
@@ -13688,7 +13688,7 @@
     "date": "2024-12-24",
     "forward_yield": 1.2011,
     "ttm_income": 8236.17,
-    "market_value": 840641.77,
+    "market_value": 840641.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13696,7 +13696,7 @@
     "date": "2024-12-25",
     "forward_yield": 1.198,
     "ttm_income": 8236.17,
-    "market_value": 843561.67,
+    "market_value": 843561.65,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13704,7 +13704,7 @@
     "date": "2024-12-26",
     "forward_yield": 1.1918,
     "ttm_income": 8177.3,
-    "market_value": 844643.9,
+    "market_value": 844643.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13712,7 +13712,7 @@
     "date": "2024-12-27",
     "forward_yield": 1.2029,
     "ttm_income": 8177.3,
-    "market_value": 836835.25,
+    "market_value": 836835.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13720,7 +13720,7 @@
     "date": "2024-12-28",
     "forward_yield": 1.2029,
     "ttm_income": 8177.3,
-    "market_value": 836835.25,
+    "market_value": 836835.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13728,7 +13728,7 @@
     "date": "2024-12-29",
     "forward_yield": 1.2029,
     "ttm_income": 8177.3,
-    "market_value": 836835.25,
+    "market_value": 836835.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13736,7 +13736,7 @@
     "date": "2024-12-30",
     "forward_yield": 1.2167,
     "ttm_income": 8177.3,
-    "market_value": 827349.35,
+    "market_value": 827349.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "FNSFX": 0.0
@@ -13746,7 +13746,7 @@
     "date": "2024-12-31",
     "forward_yield": 1.2178,
     "ttm_income": 8177.3,
-    "market_value": 826648.78,
+    "market_value": 826648.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13754,7 +13754,7 @@
     "date": "2025-01-01",
     "forward_yield": 1.2178,
     "ttm_income": 8177.3,
-    "market_value": 826648.78,
+    "market_value": 826648.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13762,7 +13762,7 @@
     "date": "2025-01-02",
     "forward_yield": 1.2194,
     "ttm_income": 8177.3,
-    "market_value": 825547.48,
+    "market_value": 825547.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13770,7 +13770,7 @@
     "date": "2025-01-03",
     "forward_yield": 1.2066,
     "ttm_income": 8177.3,
-    "market_value": 837341.86,
+    "market_value": 837341.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13778,7 +13778,7 @@
     "date": "2025-01-04",
     "forward_yield": 1.2066,
     "ttm_income": 8177.3,
-    "market_value": 837341.86,
+    "market_value": 837341.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13786,7 +13786,7 @@
     "date": "2025-01-05",
     "forward_yield": 1.2066,
     "ttm_income": 8177.3,
-    "market_value": 837341.86,
+    "market_value": 837341.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13802,7 +13802,7 @@
     "date": "2025-01-07",
     "forward_yield": 1.2087,
     "ttm_income": 8177.3,
-    "market_value": 839618.96,
+    "market_value": 839618.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13826,7 +13826,7 @@
     "date": "2025-01-10",
     "forward_yield": 1.2247,
     "ttm_income": 8130.19,
-    "market_value": 824408.09,
+    "market_value": 824408.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13834,7 +13834,7 @@
     "date": "2025-01-11",
     "forward_yield": 1.2247,
     "ttm_income": 8130.19,
-    "market_value": 824408.09,
+    "market_value": 824408.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13842,7 +13842,7 @@
     "date": "2025-01-12",
     "forward_yield": 1.2247,
     "ttm_income": 8130.19,
-    "market_value": 824408.09,
+    "market_value": 824408.11,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13850,7 +13850,7 @@
     "date": "2025-01-13",
     "forward_yield": 1.2243,
     "ttm_income": 8130.19,
-    "market_value": 824654.89,
+    "market_value": 824654.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13858,7 +13858,7 @@
     "date": "2025-01-14",
     "forward_yield": 1.2165,
     "ttm_income": 8130.19,
-    "market_value": 829988.99,
+    "market_value": 829988.97,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13866,7 +13866,7 @@
     "date": "2025-01-15",
     "forward_yield": 1.1955,
     "ttm_income": 8130.19,
-    "market_value": 844563.79,
+    "market_value": 844563.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "ABT": 0.0
@@ -13876,7 +13876,7 @@
     "date": "2025-01-16",
     "forward_yield": 1.1925,
     "ttm_income": 8130.19,
-    "market_value": 846660.77,
+    "market_value": 846660.78,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13924,7 +13924,7 @@
     "date": "2025-01-22",
     "forward_yield": 1.1621,
     "ttm_income": 8130.19,
-    "market_value": 873719.03,
+    "market_value": 873719.06,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13932,7 +13932,7 @@
     "date": "2025-01-23",
     "forward_yield": 1.1598,
     "ttm_income": 8130.19,
-    "market_value": 875472.23,
+    "market_value": 875472.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13940,7 +13940,7 @@
     "date": "2025-01-24",
     "forward_yield": 1.154,
     "ttm_income": 8130.19,
-    "market_value": 879861.8,
+    "market_value": 879861.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SIG": 0.0
@@ -13950,7 +13950,7 @@
     "date": "2025-01-25",
     "forward_yield": 1.1511,
     "ttm_income": 8130.19,
-    "market_value": 882855.94,
+    "market_value": 882855.99,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13958,7 +13958,7 @@
     "date": "2025-01-26",
     "forward_yield": 1.1511,
     "ttm_income": 8130.19,
-    "market_value": 882855.94,
+    "market_value": 882855.99,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13966,7 +13966,7 @@
     "date": "2025-01-27",
     "forward_yield": 1.1981,
     "ttm_income": 8130.19,
-    "market_value": 848213.38,
+    "market_value": 848213.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13974,7 +13974,7 @@
     "date": "2025-01-28",
     "forward_yield": 1.1833,
     "ttm_income": 8130.19,
-    "market_value": 858824.55,
+    "market_value": 858824.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13982,7 +13982,7 @@
     "date": "2025-01-29",
     "forward_yield": 1.1843,
     "ttm_income": 8130.19,
-    "market_value": 858084.82,
+    "market_value": 858084.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13990,7 +13990,7 @@
     "date": "2025-01-30",
     "forward_yield": 1.1651,
     "ttm_income": 8130.19,
-    "market_value": 872269.25,
+    "market_value": 872269.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -13998,7 +13998,7 @@
     "date": "2025-01-31",
     "forward_yield": 1.1757,
     "ttm_income": 8130.19,
-    "market_value": 871734.83,
+    "market_value": 871734.79,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14006,7 +14006,7 @@
     "date": "2025-02-01",
     "forward_yield": 1.1757,
     "ttm_income": 8130.19,
-    "market_value": 871734.83,
+    "market_value": 871734.79,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14014,7 +14014,7 @@
     "date": "2025-02-02",
     "forward_yield": 1.1757,
     "ttm_income": 8130.19,
-    "market_value": 871734.83,
+    "market_value": 871734.79,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14030,7 +14030,7 @@
     "date": "2025-02-04",
     "forward_yield": 1.1762,
     "ttm_income": 8130.19,
-    "market_value": 871772.82,
+    "market_value": 871772.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14038,7 +14038,7 @@
     "date": "2025-02-05",
     "forward_yield": 1.177,
     "ttm_income": 8130.19,
-    "market_value": 871177.1,
+    "market_value": 871177.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14046,7 +14046,7 @@
     "date": "2025-02-06",
     "forward_yield": 1.1732,
     "ttm_income": 8130.19,
-    "market_value": 873993.13,
+    "market_value": 873993.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14054,7 +14054,7 @@
     "date": "2025-02-07",
     "forward_yield": 1.1718,
     "ttm_income": 8059.67,
-    "market_value": 871102.45,
+    "market_value": 871102.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14062,7 +14062,7 @@
     "date": "2025-02-08",
     "forward_yield": 1.1701,
     "ttm_income": 8045.03,
-    "market_value": 871102.45,
+    "market_value": 871102.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14070,7 +14070,7 @@
     "date": "2025-02-09",
     "forward_yield": 1.1701,
     "ttm_income": 8045.03,
-    "market_value": 871102.45,
+    "market_value": 871102.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14078,7 +14078,7 @@
     "date": "2025-02-10",
     "forward_yield": 1.1597,
     "ttm_income": 8060.28,
-    "market_value": 880226.99,
+    "market_value": 880227.02,
     "daily_dividend": 15.25,
     "daily_dividends_by_ticker": {
       "AAPL": 15.25
@@ -14096,7 +14096,7 @@
     "date": "2025-02-12",
     "forward_yield": 1.1703,
     "ttm_income": 8060.28,
-    "market_value": 872274.76,
+    "market_value": 872274.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14104,7 +14104,7 @@
     "date": "2025-02-13",
     "forward_yield": 1.1587,
     "ttm_income": 8060.28,
-    "market_value": 880974.56,
+    "market_value": 880974.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14112,7 +14112,7 @@
     "date": "2025-02-14",
     "forward_yield": 1.1617,
     "ttm_income": 8060.28,
-    "market_value": 880754.92,
+    "market_value": 880754.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14120,7 +14120,7 @@
     "date": "2025-02-15",
     "forward_yield": 1.1617,
     "ttm_income": 8060.28,
-    "market_value": 880754.92,
+    "market_value": 880754.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14128,7 +14128,7 @@
     "date": "2025-02-16",
     "forward_yield": 1.1617,
     "ttm_income": 8060.28,
-    "market_value": 880754.92,
+    "market_value": 880754.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14136,7 +14136,7 @@
     "date": "2025-02-17",
     "forward_yield": 1.1617,
     "ttm_income": 8060.28,
-    "market_value": 880754.92,
+    "market_value": 880754.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14144,7 +14144,7 @@
     "date": "2025-02-18",
     "forward_yield": 1.1479,
     "ttm_income": 8060.28,
-    "market_value": 891396.0,
+    "market_value": 891396.08,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14160,7 +14160,7 @@
     "date": "2025-02-20",
     "forward_yield": 1.1077,
     "ttm_income": 7570.29,
-    "market_value": 884174.24,
+    "market_value": 884174.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14168,7 +14168,7 @@
     "date": "2025-02-21",
     "forward_yield": 1.1349,
     "ttm_income": 7509.29,
-    "market_value": 871071.0,
+    "market_value": 871070.99,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14176,7 +14176,7 @@
     "date": "2025-02-22",
     "forward_yield": 1.1349,
     "ttm_income": 7509.29,
-    "market_value": 871071.0,
+    "market_value": 871070.99,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14184,7 +14184,7 @@
     "date": "2025-02-23",
     "forward_yield": 1.1349,
     "ttm_income": 7509.29,
-    "market_value": 871071.0,
+    "market_value": 871070.99,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14192,7 +14192,7 @@
     "date": "2025-02-24",
     "forward_yield": 1.1534,
     "ttm_income": 7509.29,
-    "market_value": 857129.71,
+    "market_value": 857129.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14200,7 +14200,7 @@
     "date": "2025-02-25",
     "forward_yield": 1.1555,
     "ttm_income": 7509.29,
-    "market_value": 856368.31,
+    "market_value": 856368.34,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14208,7 +14208,7 @@
     "date": "2025-02-26",
     "forward_yield": 1.1567,
     "ttm_income": 7509.29,
-    "market_value": 859303.91,
+    "market_value": 859303.94,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14216,7 +14216,7 @@
     "date": "2025-02-27",
     "forward_yield": 1.1737,
     "ttm_income": 7509.29,
-    "market_value": 847039.19,
+    "market_value": 847039.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14224,7 +14224,7 @@
     "date": "2025-02-28",
     "forward_yield": 1.0911,
     "ttm_income": 7509.29,
-    "market_value": 855456.04,
+    "market_value": 855456.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14259,7 +14259,7 @@
     "date": "2025-03-04",
     "forward_yield": 1.1128,
     "ttm_income": 7509.29,
-    "market_value": 832301.33,
+    "market_value": 832301.3,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14267,7 +14267,7 @@
     "date": "2025-03-05",
     "forward_yield": 1.0931,
     "ttm_income": 7509.29,
-    "market_value": 847329.65,
+    "market_value": 847329.64,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14275,7 +14275,7 @@
     "date": "2025-03-06",
     "forward_yield": 1.1084,
     "ttm_income": 7509.29,
-    "market_value": 835642.23,
+    "market_value": 835642.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "EXPE": 0.0
@@ -14285,7 +14285,7 @@
     "date": "2025-03-07",
     "forward_yield": 1.0516,
     "ttm_income": 7485.09,
-    "market_value": 840225.48,
+    "market_value": 840225.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14293,7 +14293,7 @@
     "date": "2025-03-08",
     "forward_yield": 1.0516,
     "ttm_income": 7485.09,
-    "market_value": 840225.48,
+    "market_value": 840225.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14301,7 +14301,7 @@
     "date": "2025-03-09",
     "forward_yield": 1.0516,
     "ttm_income": 7485.09,
-    "market_value": 840225.48,
+    "market_value": 840225.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14309,7 +14309,7 @@
     "date": "2025-03-10",
     "forward_yield": 1.1316,
     "ttm_income": 7857.28,
-    "market_value": 813728.24,
+    "market_value": 813728.22,
     "daily_dividend": 372.19,
     "daily_dividends_by_ticker": {
       "GOOG": 117.94,
@@ -14320,7 +14320,7 @@
     "date": "2025-03-11",
     "forward_yield": 1.1312,
     "ttm_income": 7857.28,
-    "market_value": 814017.28,
+    "market_value": 814017.23,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14328,7 +14328,7 @@
     "date": "2025-03-12",
     "forward_yield": 1.1232,
     "ttm_income": 7857.28,
-    "market_value": 819802.1,
+    "market_value": 819802.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14336,7 +14336,7 @@
     "date": "2025-03-13",
     "forward_yield": 1.1323,
     "ttm_income": 7857.28,
-    "market_value": 813202.71,
+    "market_value": 813202.74,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14370,7 +14370,7 @@
     "date": "2025-03-17",
     "forward_yield": 0.8895,
     "ttm_income": 6433.78,
-    "market_value": 797216.3,
+    "market_value": 797216.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14378,7 +14378,7 @@
     "date": "2025-03-18",
     "forward_yield": 0.8656,
     "ttm_income": 6433.78,
-    "market_value": 833805.38,
+    "market_value": 833805.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14386,7 +14386,7 @@
     "date": "2025-03-19",
     "forward_yield": 0.8588,
     "ttm_income": 6433.78,
-    "market_value": 840458.42,
+    "market_value": 840458.47,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14394,7 +14394,7 @@
     "date": "2025-03-20",
     "forward_yield": 0.8446,
     "ttm_income": 6330.0,
-    "market_value": 835853.87,
+    "market_value": 835853.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14402,7 +14402,7 @@
     "date": "2025-03-21",
     "forward_yield": 0.9859,
     "ttm_income": 7466.99,
-    "market_value": 831336.55,
+    "market_value": 831336.56,
     "daily_dividend": 1136.99,
     "daily_dividends_by_ticker": {
       "VT": 1136.99
@@ -14412,7 +14412,7 @@
     "date": "2025-03-22",
     "forward_yield": 0.9859,
     "ttm_income": 7466.99,
-    "market_value": 831336.55,
+    "market_value": 831336.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14420,7 +14420,7 @@
     "date": "2025-03-23",
     "forward_yield": 0.9859,
     "ttm_income": 7466.99,
-    "market_value": 831336.55,
+    "market_value": 831336.56,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14428,7 +14428,7 @@
     "date": "2025-03-24",
     "forward_yield": 0.9615,
     "ttm_income": 7466.99,
-    "market_value": 852586.42,
+    "market_value": 852586.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14436,7 +14436,7 @@
     "date": "2025-03-25",
     "forward_yield": 0.9596,
     "ttm_income": 7466.99,
-    "market_value": 855692.66,
+    "market_value": 855692.65,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14454,7 +14454,7 @@
     "date": "2025-03-27",
     "forward_yield": 0.8834,
     "ttm_income": 7466.99,
-    "market_value": 842833.88,
+    "market_value": 842833.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14462,7 +14462,7 @@
     "date": "2025-03-28",
     "forward_yield": 0.9039,
     "ttm_income": 7466.99,
-    "market_value": 823703.68,
+    "market_value": 823703.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14470,7 +14470,7 @@
     "date": "2025-03-29",
     "forward_yield": 0.9039,
     "ttm_income": 7466.99,
-    "market_value": 823703.68,
+    "market_value": 823703.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14478,7 +14478,7 @@
     "date": "2025-03-30",
     "forward_yield": 0.9039,
     "ttm_income": 7466.99,
-    "market_value": 823703.68,
+    "market_value": 823703.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14486,7 +14486,7 @@
     "date": "2025-03-31",
     "forward_yield": 0.9034,
     "ttm_income": 7466.99,
-    "market_value": 824204.3,
+    "market_value": 824204.32,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14502,7 +14502,7 @@
     "date": "2025-04-02",
     "forward_yield": 0.8902,
     "ttm_income": 7466.99,
-    "market_value": 836353.69,
+    "market_value": 836353.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14510,7 +14510,7 @@
     "date": "2025-04-03",
     "forward_yield": 0.9455,
     "ttm_income": 7466.99,
-    "market_value": 787497.53,
+    "market_value": 787497.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14518,7 +14518,7 @@
     "date": "2025-04-04",
     "forward_yield": 1.0154,
     "ttm_income": 7466.99,
-    "market_value": 733282.0,
+    "market_value": 733281.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14526,7 +14526,7 @@
     "date": "2025-04-05",
     "forward_yield": 1.0154,
     "ttm_income": 7466.99,
-    "market_value": 733282.0,
+    "market_value": 733281.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14534,7 +14534,7 @@
     "date": "2025-04-06",
     "forward_yield": 1.0154,
     "ttm_income": 7466.99,
-    "market_value": 733282.0,
+    "market_value": 733281.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14550,7 +14550,7 @@
     "date": "2025-04-08",
     "forward_yield": 1.0262,
     "ttm_income": 7466.99,
-    "market_value": 727755.02,
+    "market_value": 727755.03,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14558,7 +14558,7 @@
     "date": "2025-04-09",
     "forward_yield": 0.9519,
     "ttm_income": 7466.99,
-    "market_value": 784625.58,
+    "market_value": 784625.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14566,7 +14566,7 @@
     "date": "2025-04-10",
     "forward_yield": 0.9906,
     "ttm_income": 7466.99,
-    "market_value": 753964.22,
+    "market_value": 753964.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14574,7 +14574,7 @@
     "date": "2025-04-11",
     "forward_yield": 0.9728,
     "ttm_income": 7466.99,
-    "market_value": 767722.61,
+    "market_value": 767722.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "FSKAX": 0.0
@@ -14584,7 +14584,7 @@
     "date": "2025-04-12",
     "forward_yield": 0.9728,
     "ttm_income": 7345.48,
-    "market_value": 767722.61,
+    "market_value": 767722.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14592,7 +14592,7 @@
     "date": "2025-04-13",
     "forward_yield": 0.9728,
     "ttm_income": 7345.48,
-    "market_value": 767722.61,
+    "market_value": 767722.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14600,7 +14600,7 @@
     "date": "2025-04-14",
     "forward_yield": 0.9582,
     "ttm_income": 7345.48,
-    "market_value": 781135.13,
+    "market_value": 781135.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14618,7 +14618,7 @@
     "date": "2025-04-16",
     "forward_yield": 0.9776,
     "ttm_income": 7345.48,
-    "market_value": 765732.88,
+    "market_value": 765732.91,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14626,7 +14626,7 @@
     "date": "2025-04-17",
     "forward_yield": 0.9755,
     "ttm_income": 7345.48,
-    "market_value": 767390.73,
+    "market_value": 767390.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14634,7 +14634,7 @@
     "date": "2025-04-18",
     "forward_yield": 0.9755,
     "ttm_income": 7345.48,
-    "market_value": 767390.73,
+    "market_value": 767390.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14642,7 +14642,7 @@
     "date": "2025-04-19",
     "forward_yield": 0.9755,
     "ttm_income": 7345.48,
-    "market_value": 767390.73,
+    "market_value": 767390.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14650,7 +14650,7 @@
     "date": "2025-04-20",
     "forward_yield": 0.9755,
     "ttm_income": 7345.48,
-    "market_value": 767390.73,
+    "market_value": 767390.71,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14658,7 +14658,7 @@
     "date": "2025-04-21",
     "forward_yield": 0.9981,
     "ttm_income": 7345.48,
-    "market_value": 750007.46,
+    "market_value": 750007.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14666,7 +14666,7 @@
     "date": "2025-04-22",
     "forward_yield": 0.9747,
     "ttm_income": 7345.48,
-    "market_value": 768010.21,
+    "market_value": 768010.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14682,7 +14682,7 @@
     "date": "2025-04-24",
     "forward_yield": 0.9302,
     "ttm_income": 7345.48,
-    "market_value": 804711.36,
+    "market_value": 804711.38,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14690,7 +14690,7 @@
     "date": "2025-04-25",
     "forward_yield": 0.9171,
     "ttm_income": 7345.48,
-    "market_value": 817742.38,
+    "market_value": 817742.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SIG": 0.0
@@ -14700,7 +14700,7 @@
     "date": "2025-04-26",
     "forward_yield": 0.9171,
     "ttm_income": 7345.48,
-    "market_value": 817742.38,
+    "market_value": 817742.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14708,7 +14708,7 @@
     "date": "2025-04-27",
     "forward_yield": 0.9171,
     "ttm_income": 7345.48,
-    "market_value": 817742.38,
+    "market_value": 817742.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14748,7 +14748,7 @@
     "date": "2025-05-02",
     "forward_yield": 0.8642,
     "ttm_income": 7345.48,
-    "market_value": 872061.08,
+    "market_value": 872061.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14756,7 +14756,7 @@
     "date": "2025-05-03",
     "forward_yield": 0.8642,
     "ttm_income": 7345.48,
-    "market_value": 872061.08,
+    "market_value": 872061.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14764,7 +14764,7 @@
     "date": "2025-05-04",
     "forward_yield": 0.8642,
     "ttm_income": 7345.48,
-    "market_value": 872061.08,
+    "market_value": 872061.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14772,7 +14772,7 @@
     "date": "2025-05-05",
     "forward_yield": 0.8717,
     "ttm_income": 7345.48,
-    "market_value": 864617.8,
+    "market_value": 864617.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14780,7 +14780,7 @@
     "date": "2025-05-06",
     "forward_yield": 0.8725,
     "ttm_income": 7345.48,
-    "market_value": 863735.94,
+    "market_value": 863735.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14788,7 +14788,7 @@
     "date": "2025-05-07",
     "forward_yield": 0.8955,
     "ttm_income": 7345.48,
-    "market_value": 841577.74,
+    "market_value": 841577.73,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14796,7 +14796,7 @@
     "date": "2025-05-08",
     "forward_yield": 0.8877,
     "ttm_income": 7345.48,
-    "market_value": 848950.74,
+    "market_value": 848950.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14830,7 +14830,7 @@
     "date": "2025-05-12",
     "forward_yield": 0.8556,
     "ttm_income": 7345.48,
-    "market_value": 884520.03,
+    "market_value": 884520.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14854,7 +14854,7 @@
     "date": "2025-05-15",
     "forward_yield": 0.8396,
     "ttm_income": 7345.48,
-    "market_value": 901408.92,
+    "market_value": 901408.91,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14862,7 +14862,7 @@
     "date": "2025-05-16",
     "forward_yield": 0.8351,
     "ttm_income": 7345.48,
-    "market_value": 906266.21,
+    "market_value": 906266.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14870,7 +14870,7 @@
     "date": "2025-05-17",
     "forward_yield": 0.8351,
     "ttm_income": 7345.48,
-    "market_value": 906266.21,
+    "market_value": 906266.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14878,7 +14878,7 @@
     "date": "2025-05-18",
     "forward_yield": 0.8351,
     "ttm_income": 7345.48,
-    "market_value": 906266.21,
+    "market_value": 906266.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14886,7 +14886,7 @@
     "date": "2025-05-19",
     "forward_yield": 0.833,
     "ttm_income": 7345.48,
-    "market_value": 908495.23,
+    "market_value": 908495.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14902,7 +14902,7 @@
     "date": "2025-05-21",
     "forward_yield": 0.8495,
     "ttm_income": 7345.48,
-    "market_value": 890833.57,
+    "market_value": 890833.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14910,7 +14910,7 @@
     "date": "2025-05-22",
     "forward_yield": 0.845,
     "ttm_income": 7345.48,
-    "market_value": 895651.84,
+    "market_value": 895651.85,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14950,7 +14950,7 @@
     "date": "2025-05-27",
     "forward_yield": 0.8502,
     "ttm_income": 7345.48,
-    "market_value": 892670.98,
+    "market_value": 892670.97,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14966,7 +14966,7 @@
     "date": "2025-05-29",
     "forward_yield": 0.8719,
     "ttm_income": 7345.48,
-    "market_value": 870531.15,
+    "market_value": 870531.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "EXPE": 0.0
@@ -14976,7 +14976,7 @@
     "date": "2025-05-30",
     "forward_yield": 0.8744,
     "ttm_income": 7345.48,
-    "market_value": 868019.32,
+    "market_value": 868019.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14984,7 +14984,7 @@
     "date": "2025-05-31",
     "forward_yield": 0.8744,
     "ttm_income": 7345.48,
-    "market_value": 868019.32,
+    "market_value": 868019.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -14992,7 +14992,7 @@
     "date": "2025-06-01",
     "forward_yield": 0.8744,
     "ttm_income": 7345.48,
-    "market_value": 868019.32,
+    "market_value": 868019.36,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15000,7 +15000,7 @@
     "date": "2025-06-02",
     "forward_yield": 0.866,
     "ttm_income": 7345.48,
-    "market_value": 876407.92,
+    "market_value": 876407.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "LMT": 0.0
@@ -15010,7 +15010,7 @@
     "date": "2025-06-03",
     "forward_yield": 0.8533,
     "ttm_income": 7345.48,
-    "market_value": 889451.85,
+    "market_value": 889451.87,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15018,7 +15018,7 @@
     "date": "2025-06-04",
     "forward_yield": 0.8508,
     "ttm_income": 7345.48,
-    "market_value": 892042.47,
+    "market_value": 892042.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15026,7 +15026,7 @@
     "date": "2025-06-05",
     "forward_yield": 0.8518,
     "ttm_income": 7345.48,
-    "market_value": 891050.35,
+    "market_value": 891050.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15034,7 +15034,7 @@
     "date": "2025-06-06",
     "forward_yield": 0.8383,
     "ttm_income": 7345.48,
-    "market_value": 905344.94,
+    "market_value": 905344.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15042,7 +15042,7 @@
     "date": "2025-06-07",
     "forward_yield": 0.8383,
     "ttm_income": 7345.48,
-    "market_value": 905344.94,
+    "market_value": 905344.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15050,7 +15050,7 @@
     "date": "2025-06-08",
     "forward_yield": 0.8383,
     "ttm_income": 7345.48,
-    "market_value": 905344.94,
+    "market_value": 905344.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15068,7 +15068,7 @@
     "date": "2025-06-10",
     "forward_yield": 0.8378,
     "ttm_income": 7777.18,
-    "market_value": 909946.62,
+    "market_value": 909946.64,
     "daily_dividend": 301.94,
     "daily_dividends_by_ticker": {
       "OXY": 301.94
@@ -15078,7 +15078,7 @@
     "date": "2025-06-11",
     "forward_yield": 0.8369,
     "ttm_income": 7777.18,
-    "market_value": 910848.03,
+    "market_value": 910848.02,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15086,7 +15086,7 @@
     "date": "2025-06-12",
     "forward_yield": 0.8329,
     "ttm_income": 7777.18,
-    "market_value": 915285.29,
+    "market_value": 915285.28,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "BABA": 0.0
@@ -15096,7 +15096,7 @@
     "date": "2025-06-13",
     "forward_yield": 0.8471,
     "ttm_income": 7777.18,
-    "market_value": 899944.51,
+    "market_value": 899944.49,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15104,7 +15104,7 @@
     "date": "2025-06-14",
     "forward_yield": 0.8471,
     "ttm_income": 7777.18,
-    "market_value": 899944.51,
+    "market_value": 899944.49,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15112,7 +15112,7 @@
     "date": "2025-06-15",
     "forward_yield": 0.8471,
     "ttm_income": 7777.18,
-    "market_value": 899944.51,
+    "market_value": 899944.49,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15120,7 +15120,7 @@
     "date": "2025-06-16",
     "forward_yield": 0.8357,
     "ttm_income": 7777.18,
-    "market_value": 912222.85,
+    "market_value": 912222.86,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "IEMG": 0.0,
@@ -15131,7 +15131,7 @@
     "date": "2025-06-17",
     "forward_yield": 0.8517,
     "ttm_income": 7777.18,
-    "market_value": 895036.39,
+    "market_value": 895036.41,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15139,7 +15139,7 @@
     "date": "2025-06-18",
     "forward_yield": 0.8533,
     "ttm_income": 7777.18,
-    "market_value": 893347.16,
+    "market_value": 893347.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15147,7 +15147,7 @@
     "date": "2025-06-19",
     "forward_yield": 0.8533,
     "ttm_income": 7777.18,
-    "market_value": 893347.16,
+    "market_value": 893347.21,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15155,7 +15155,7 @@
     "date": "2025-06-20",
     "forward_yield": 1.0451,
     "ttm_income": 9325.16,
-    "market_value": 877561.95,
+    "market_value": 877561.92,
     "daily_dividend": 1547.98,
     "daily_dividends_by_ticker": {
       "VT": 1547.98
@@ -15165,7 +15165,7 @@
     "date": "2025-06-21",
     "forward_yield": 0.8737,
     "ttm_income": 7821.41,
-    "market_value": 877561.95,
+    "market_value": 877561.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15173,7 +15173,7 @@
     "date": "2025-06-22",
     "forward_yield": 0.8737,
     "ttm_income": 7821.41,
-    "market_value": 877561.95,
+    "market_value": 877561.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15181,7 +15181,7 @@
     "date": "2025-06-23",
     "forward_yield": 0.8565,
     "ttm_income": 7821.41,
-    "market_value": 895191.86,
+    "market_value": 895191.87,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "WRB": 0.0
@@ -15191,7 +15191,7 @@
     "date": "2025-06-24",
     "forward_yield": 0.8406,
     "ttm_income": 7821.41,
-    "market_value": 912181.62,
+    "market_value": 912181.63,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15199,7 +15199,7 @@
     "date": "2025-06-25",
     "forward_yield": 0.8377,
     "ttm_income": 7821.41,
-    "market_value": 920678.24,
+    "market_value": 920678.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SH": 0.0
@@ -15209,7 +15209,7 @@
     "date": "2025-06-26",
     "forward_yield": 0.8222,
     "ttm_income": 7821.41,
-    "market_value": 938084.05,
+    "market_value": 938084.03,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15217,7 +15217,7 @@
     "date": "2025-06-27",
     "forward_yield": 0.8241,
     "ttm_income": 7821.41,
-    "market_value": 935938.55,
+    "market_value": 935938.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15225,7 +15225,7 @@
     "date": "2025-06-28",
     "forward_yield": 0.8241,
     "ttm_income": 7821.41,
-    "market_value": 935938.55,
+    "market_value": 935938.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15233,7 +15233,7 @@
     "date": "2025-06-29",
     "forward_yield": 0.8241,
     "ttm_income": 7821.41,
-    "market_value": 935938.55,
+    "market_value": 935938.52,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15241,7 +15241,7 @@
     "date": "2025-06-30",
     "forward_yield": 0.8183,
     "ttm_income": 7821.41,
-    "market_value": 942488.52,
+    "market_value": 942488.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15249,7 +15249,7 @@
     "date": "2025-07-01",
     "forward_yield": 0.8234,
     "ttm_income": 7821.41,
-    "market_value": 936654.7,
+    "market_value": 936654.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15257,7 +15257,7 @@
     "date": "2025-07-02",
     "forward_yield": 0.8167,
     "ttm_income": 7821.41,
-    "market_value": 944378.53,
+    "market_value": 944378.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15265,7 +15265,7 @@
     "date": "2025-07-03",
     "forward_yield": 0.8116,
     "ttm_income": 7821.41,
-    "market_value": 950357.14,
+    "market_value": 950357.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15273,7 +15273,7 @@
     "date": "2025-07-04",
     "forward_yield": 0.8116,
     "ttm_income": 7821.41,
-    "market_value": 950357.14,
+    "market_value": 950357.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15281,7 +15281,7 @@
     "date": "2025-07-05",
     "forward_yield": 0.8116,
     "ttm_income": 7821.41,
-    "market_value": 950357.14,
+    "market_value": 950357.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15289,7 +15289,7 @@
     "date": "2025-07-06",
     "forward_yield": 0.8116,
     "ttm_income": 7821.41,
-    "market_value": 950357.14,
+    "market_value": 950357.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15297,7 +15297,7 @@
     "date": "2025-07-07",
     "forward_yield": 0.8173,
     "ttm_income": 7821.41,
-    "market_value": 943665.58,
+    "market_value": 943665.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15313,7 +15313,7 @@
     "date": "2025-07-09",
     "forward_yield": 0.8029,
     "ttm_income": 7821.41,
-    "market_value": 960576.81,
+    "market_value": 960576.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15321,7 +15321,7 @@
     "date": "2025-07-10",
     "forward_yield": 0.8016,
     "ttm_income": 7821.41,
-    "market_value": 962132.92,
+    "market_value": 962132.91,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15353,7 +15353,7 @@
     "date": "2025-07-14",
     "forward_yield": 0.7988,
     "ttm_income": 7821.41,
-    "market_value": 966239.34,
+    "market_value": 966239.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15361,7 +15361,7 @@
     "date": "2025-07-15",
     "forward_yield": 0.8032,
     "ttm_income": 7821.41,
-    "market_value": 960868.5,
+    "market_value": 960868.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "ABT": 0.0
@@ -15387,7 +15387,7 @@
     "date": "2025-07-18",
     "forward_yield": 0.789,
     "ttm_income": 7821.41,
-    "market_value": 984239.7,
+    "market_value": 984239.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15395,7 +15395,7 @@
     "date": "2025-07-19",
     "forward_yield": 0.789,
     "ttm_income": 7821.41,
-    "market_value": 984239.7,
+    "market_value": 984239.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15403,7 +15403,7 @@
     "date": "2025-07-20",
     "forward_yield": 0.789,
     "ttm_income": 7821.41,
-    "market_value": 984239.7,
+    "market_value": 984239.68,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15411,7 +15411,7 @@
     "date": "2025-07-21",
     "forward_yield": 0.7841,
     "ttm_income": 7821.41,
-    "market_value": 990484.43,
+    "market_value": 990484.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15419,7 +15419,7 @@
     "date": "2025-07-22",
     "forward_yield": 0.7826,
     "ttm_income": 7821.41,
-    "market_value": 992339.28,
+    "market_value": 992339.29,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15427,7 +15427,7 @@
     "date": "2025-07-23",
     "forward_yield": 0.7697,
     "ttm_income": 7821.41,
-    "market_value": 1009024.47,
+    "market_value": 1009024.5,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15443,7 +15443,7 @@
     "date": "2025-07-25",
     "forward_yield": 0.7637,
     "ttm_income": 7821.41,
-    "market_value": 1018475.77,
+    "market_value": 1018475.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SIG": 0.0
@@ -15453,7 +15453,7 @@
     "date": "2025-07-26",
     "forward_yield": 0.7637,
     "ttm_income": 7821.41,
-    "market_value": 1018475.77,
+    "market_value": 1018475.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15461,7 +15461,7 @@
     "date": "2025-07-27",
     "forward_yield": 0.7637,
     "ttm_income": 7821.41,
-    "market_value": 1018475.77,
+    "market_value": 1018475.72,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15469,7 +15469,7 @@
     "date": "2025-07-28",
     "forward_yield": 0.7602,
     "ttm_income": 7821.41,
-    "market_value": 1023124.71,
+    "market_value": 1023124.75,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15477,7 +15477,7 @@
     "date": "2025-07-29",
     "forward_yield": 0.7589,
     "ttm_income": 7821.41,
-    "market_value": 1024968.44,
+    "market_value": 1024968.43,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15485,7 +15485,7 @@
     "date": "2025-07-30",
     "forward_yield": 0.7575,
     "ttm_income": 7821.41,
-    "market_value": 1029740.78,
+    "market_value": 1029740.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15493,7 +15493,7 @@
     "date": "2025-07-31",
     "forward_yield": 0.7595,
     "ttm_income": 7821.41,
-    "market_value": 1026968.15,
+    "market_value": 1026968.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15525,7 +15525,7 @@
     "date": "2025-08-04",
     "forward_yield": 0.7663,
     "ttm_income": 7821.41,
-    "market_value": 1017973.7,
+    "market_value": 1017973.69,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15533,7 +15533,7 @@
     "date": "2025-08-05",
     "forward_yield": 0.7696,
     "ttm_income": 7821.41,
-    "market_value": 1013611.51,
+    "market_value": 1013611.48,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15541,7 +15541,7 @@
     "date": "2025-08-06",
     "forward_yield": 0.7314,
     "ttm_income": 7821.41,
-    "market_value": 1066498.97,
+    "market_value": 1066498.96,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15549,7 +15549,7 @@
     "date": "2025-08-07",
     "forward_yield": 0.7299,
     "ttm_income": 7821.41,
-    "market_value": 1068705.08,
+    "market_value": 1068705.04,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15557,7 +15557,7 @@
     "date": "2025-08-08",
     "forward_yield": 0.7253,
     "ttm_income": 7821.41,
-    "market_value": 1075496.77,
+    "market_value": 1075496.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15565,7 +15565,7 @@
     "date": "2025-08-09",
     "forward_yield": 0.7253,
     "ttm_income": 7821.41,
-    "market_value": 1075496.77,
+    "market_value": 1075496.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15573,7 +15573,7 @@
     "date": "2025-08-10",
     "forward_yield": 0.7253,
     "ttm_income": 7821.41,
-    "market_value": 1075496.77,
+    "market_value": 1075496.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15581,7 +15581,7 @@
     "date": "2025-08-11",
     "forward_yield": 0.7306,
     "ttm_income": 7821.41,
-    "market_value": 1067730.19,
+    "market_value": 1067730.14,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15589,7 +15589,7 @@
     "date": "2025-08-12",
     "forward_yield": 0.7172,
     "ttm_income": 7821.41,
-    "market_value": 1087616.15,
+    "market_value": 1087616.17,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15597,7 +15597,7 @@
     "date": "2025-08-13",
     "forward_yield": 0.7207,
     "ttm_income": 7821.41,
-    "market_value": 1082353.96,
+    "market_value": 1082354.01,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15605,7 +15605,7 @@
     "date": "2025-08-14",
     "forward_yield": 0.7245,
     "ttm_income": 7821.41,
-    "market_value": 1076668.56,
+    "market_value": 1076668.54,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15613,7 +15613,7 @@
     "date": "2025-08-15",
     "forward_yield": 0.7197,
     "ttm_income": 7821.41,
-    "market_value": 1083806.99,
+    "market_value": 1083807.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15621,7 +15621,7 @@
     "date": "2025-08-16",
     "forward_yield": 0.7197,
     "ttm_income": 7821.41,
-    "market_value": 1083806.99,
+    "market_value": 1083807.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15629,7 +15629,7 @@
     "date": "2025-08-17",
     "forward_yield": 0.7197,
     "ttm_income": 7821.41,
-    "market_value": 1083806.99,
+    "market_value": 1083807.0,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15637,7 +15637,7 @@
     "date": "2025-08-18",
     "forward_yield": 0.7195,
     "ttm_income": 7821.41,
-    "market_value": 1084181.39,
+    "market_value": 1084181.43,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15653,7 +15653,7 @@
     "date": "2025-08-20",
     "forward_yield": 0.7327,
     "ttm_income": 7821.41,
-    "market_value": 1064563.77,
+    "market_value": 1064563.76,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15661,7 +15661,7 @@
     "date": "2025-08-21",
     "forward_yield": 0.7287,
     "ttm_income": 7821.41,
-    "market_value": 1070473.19,
+    "market_value": 1070473.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15669,7 +15669,7 @@
     "date": "2025-08-22",
     "forward_yield": 0.7154,
     "ttm_income": 7821.41,
-    "market_value": 1090309.81,
+    "market_value": 1090309.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15677,7 +15677,7 @@
     "date": "2025-08-23",
     "forward_yield": 0.7154,
     "ttm_income": 7821.41,
-    "market_value": 1090309.81,
+    "market_value": 1090309.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15685,7 +15685,7 @@
     "date": "2025-08-24",
     "forward_yield": 0.7154,
     "ttm_income": 7821.41,
-    "market_value": 1090309.81,
+    "market_value": 1090309.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15693,7 +15693,7 @@
     "date": "2025-08-25",
     "forward_yield": 0.7142,
     "ttm_income": 7821.41,
-    "market_value": 1093847.49,
+    "market_value": 1093847.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15701,7 +15701,7 @@
     "date": "2025-08-26",
     "forward_yield": 0.7153,
     "ttm_income": 7821.41,
-    "market_value": 1092049.79,
+    "market_value": 1092049.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15709,7 +15709,7 @@
     "date": "2025-08-27",
     "forward_yield": 0.7169,
     "ttm_income": 7821.41,
-    "market_value": 1089694.5,
+    "market_value": 1089694.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15727,7 +15727,7 @@
     "date": "2025-08-29",
     "forward_yield": 0.7078,
     "ttm_income": 7821.41,
-    "market_value": 1103769.17,
+    "market_value": 1103769.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15735,7 +15735,7 @@
     "date": "2025-08-30",
     "forward_yield": 0.7078,
     "ttm_income": 7821.41,
-    "market_value": 1103769.17,
+    "market_value": 1103769.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15743,7 +15743,7 @@
     "date": "2025-08-31",
     "forward_yield": 0.7078,
     "ttm_income": 7821.41,
-    "market_value": 1103769.17,
+    "market_value": 1103769.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15751,7 +15751,7 @@
     "date": "2025-09-01",
     "forward_yield": 0.7078,
     "ttm_income": 7821.41,
-    "market_value": 1103769.17,
+    "market_value": 1103769.13,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15759,7 +15759,7 @@
     "date": "2025-09-02",
     "forward_yield": 0.7098,
     "ttm_income": 7821.41,
-    "market_value": 1100653.56,
+    "market_value": 1100653.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "LMT": 0.0
@@ -15769,7 +15769,7 @@
     "date": "2025-09-03",
     "forward_yield": 0.6969,
     "ttm_income": 7821.41,
-    "market_value": 1121085.65,
+    "market_value": 1121085.61,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15777,7 +15777,7 @@
     "date": "2025-09-04",
     "forward_yield": 0.6887,
     "ttm_income": 7821.41,
-    "market_value": 1134375.97,
+    "market_value": 1134375.92,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15809,7 +15809,7 @@
     "date": "2025-09-08",
     "forward_yield": 0.704,
     "ttm_income": 7984.65,
-    "market_value": 1133015.9,
+    "market_value": 1133015.94,
     "daily_dividend": 163.24,
     "daily_dividends_by_ticker": {
       "GOOG": 163.24
@@ -15819,7 +15819,7 @@
     "date": "2025-09-09",
     "forward_yield": 0.6838,
     "ttm_income": 7968.31,
-    "market_value": 1143645.24,
+    "market_value": 1143645.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15827,7 +15827,7 @@
     "date": "2025-09-10",
     "forward_yield": 0.6735,
     "ttm_income": 8255.29,
-    "market_value": 1165273.21,
+    "market_value": 1165273.17,
     "daily_dividend": 330.54,
     "daily_dividends_by_ticker": {
       "OXY": 330.54
@@ -15837,7 +15837,7 @@
     "date": "2025-09-11",
     "forward_yield": 0.6663,
     "ttm_income": 8255.29,
-    "market_value": 1177784.04,
+    "market_value": 1177784.05,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15877,7 +15877,7 @@
     "date": "2025-09-16",
     "forward_yield": 0.6735,
     "ttm_income": 8255.29,
-    "market_value": 1168982.35,
+    "market_value": 1168982.4,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15893,7 +15893,7 @@
     "date": "2025-09-18",
     "forward_yield": 0.6642,
     "ttm_income": 8255.29,
-    "market_value": 1185490.94,
+    "market_value": 1185490.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15901,7 +15901,7 @@
     "date": "2025-09-19",
     "forward_yield": 0.7663,
     "ttm_income": 9498.88,
-    "market_value": 1189817.51,
+    "market_value": 1189817.55,
     "daily_dividend": 1243.58,
     "daily_dividends_by_ticker": {
       "VT": 1243.58
@@ -15911,7 +15911,7 @@
     "date": "2025-09-20",
     "forward_yield": 0.6751,
     "ttm_income": 8413.99,
-    "market_value": 1189817.51,
+    "market_value": 1189817.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15919,7 +15919,7 @@
     "date": "2025-09-21",
     "forward_yield": 0.6751,
     "ttm_income": 8413.99,
-    "market_value": 1189817.51,
+    "market_value": 1189817.55,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15927,7 +15927,7 @@
     "date": "2025-09-22",
     "forward_yield": 0.6821,
     "ttm_income": 8413.99,
-    "market_value": 1177648.37,
+    "market_value": 1177648.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "META": 0.0,
@@ -15946,7 +15946,7 @@
     "date": "2025-09-24",
     "forward_yield": 0.6853,
     "ttm_income": 8413.99,
-    "market_value": 1172274.56,
+    "market_value": 1172274.53,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "SH": 0.0
@@ -15956,7 +15956,7 @@
     "date": "2025-09-25",
     "forward_yield": 0.6855,
     "ttm_income": 8413.99,
-    "market_value": 1173894.04,
+    "market_value": 1173894.01,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15964,7 +15964,7 @@
     "date": "2025-09-26",
     "forward_yield": 0.6849,
     "ttm_income": 8413.99,
-    "market_value": 1174958.91,
+    "market_value": 1174958.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15972,7 +15972,7 @@
     "date": "2025-09-27",
     "forward_yield": 0.6849,
     "ttm_income": 8413.99,
-    "market_value": 1174958.91,
+    "market_value": 1174958.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15980,7 +15980,7 @@
     "date": "2025-09-28",
     "forward_yield": 0.6849,
     "ttm_income": 8413.99,
-    "market_value": 1174958.91,
+    "market_value": 1174958.88,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -15988,7 +15988,7 @@
     "date": "2025-09-29",
     "forward_yield": 0.6832,
     "ttm_income": 8413.99,
-    "market_value": 1177780.57,
+    "market_value": 1177780.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16004,7 +16004,7 @@
     "date": "2025-10-01",
     "forward_yield": 0.6706,
     "ttm_income": 8413.99,
-    "market_value": 1199910.44,
+    "market_value": 1199910.46,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16012,7 +16012,7 @@
     "date": "2025-10-02",
     "forward_yield": 0.6794,
     "ttm_income": 8413.99,
-    "market_value": 1184493.85,
+    "market_value": 1184493.82,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16020,7 +16020,7 @@
     "date": "2025-10-03",
     "forward_yield": 0.6773,
     "ttm_income": 8413.99,
-    "market_value": 1188067.22,
+    "market_value": 1188067.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16028,7 +16028,7 @@
     "date": "2025-10-04",
     "forward_yield": 0.6773,
     "ttm_income": 8413.99,
-    "market_value": 1188067.22,
+    "market_value": 1188067.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16036,7 +16036,7 @@
     "date": "2025-10-05",
     "forward_yield": 0.6773,
     "ttm_income": 8413.99,
-    "market_value": 1188067.22,
+    "market_value": 1188067.25,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16044,7 +16044,7 @@
     "date": "2025-10-06",
     "forward_yield": 0.6686,
     "ttm_income": 8413.99,
-    "market_value": 1203535.35,
+    "market_value": 1203535.39,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16052,7 +16052,7 @@
     "date": "2025-10-07",
     "forward_yield": 0.6782,
     "ttm_income": 8413.99,
-    "market_value": 1186532.26,
+    "market_value": 1186532.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16060,7 +16060,7 @@
     "date": "2025-10-08",
     "forward_yield": 0.6619,
     "ttm_income": 8413.99,
-    "market_value": 1215753.99,
+    "market_value": 1215753.98,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16068,7 +16068,7 @@
     "date": "2025-10-09",
     "forward_yield": 0.6644,
     "ttm_income": 8413.99,
-    "market_value": 1211246.62,
+    "market_value": 1211246.6,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16100,7 +16100,7 @@
     "date": "2025-10-13",
     "forward_yield": 0.6842,
     "ttm_income": 8413.99,
-    "market_value": 1176199.17,
+    "market_value": 1176199.22,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16108,7 +16108,7 @@
     "date": "2025-10-14",
     "forward_yield": 0.696,
     "ttm_income": 8413.99,
-    "market_value": 1156140.57,
+    "market_value": 1156140.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16126,7 +16126,7 @@
     "date": "2025-10-16",
     "forward_yield": 0.6841,
     "ttm_income": 8413.99,
-    "market_value": 1176782.14,
+    "market_value": 1176782.1,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16182,7 +16182,7 @@
     "date": "2025-10-23",
     "forward_yield": 0.6658,
     "ttm_income": 8413.99,
-    "market_value": 1209112.23,
+    "market_value": 1209112.2,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16190,7 +16190,7 @@
     "date": "2025-10-24",
     "forward_yield": 0.66,
     "ttm_income": 8413.99,
-    "market_value": 1221328.86,
+    "market_value": 1221328.87,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16198,7 +16198,7 @@
     "date": "2025-10-25",
     "forward_yield": 0.6588,
     "ttm_income": 8413.99,
-    "market_value": 1225620.42,
+    "market_value": 1225620.44,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16206,7 +16206,7 @@
     "date": "2025-10-26",
     "forward_yield": 0.6588,
     "ttm_income": 8413.99,
-    "market_value": 1225620.42,
+    "market_value": 1225620.44,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16214,7 +16214,7 @@
     "date": "2025-10-27",
     "forward_yield": 0.6473,
     "ttm_income": 8413.99,
-    "market_value": 1247522.99,
+    "market_value": 1247522.95,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16222,7 +16222,7 @@
     "date": "2025-10-28",
     "forward_yield": 0.6492,
     "ttm_income": 8413.99,
-    "market_value": 1243798.28,
+    "market_value": 1243798.26,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16238,7 +16238,7 @@
     "date": "2025-10-30",
     "forward_yield": 0.6462,
     "ttm_income": 8413.99,
-    "market_value": 1252988.94,
+    "market_value": 1252988.93,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16246,7 +16246,7 @@
     "date": "2025-10-31",
     "forward_yield": 0.6471,
     "ttm_income": 8413.99,
-    "market_value": 1251315.34,
+    "market_value": 1251315.37,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16254,7 +16254,7 @@
     "date": "2025-11-01",
     "forward_yield": 0.6471,
     "ttm_income": 8413.99,
-    "market_value": 1251315.34,
+    "market_value": 1251315.37,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16262,7 +16262,7 @@
     "date": "2025-11-02",
     "forward_yield": 0.6471,
     "ttm_income": 8413.99,
-    "market_value": 1251315.34,
+    "market_value": 1251315.37,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16270,7 +16270,7 @@
     "date": "2025-11-03",
     "forward_yield": 0.6465,
     "ttm_income": 8413.99,
-    "market_value": 1252433.97,
+    "market_value": 1252434.02,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16278,7 +16278,7 @@
     "date": "2025-11-04",
     "forward_yield": 0.6572,
     "ttm_income": 8413.99,
-    "market_value": 1232101.33,
+    "market_value": 1232101.35,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16326,7 +16326,7 @@
     "date": "2025-11-10",
     "forward_yield": 0.6658,
     "ttm_income": 8413.99,
-    "market_value": 1216102.67,
+    "market_value": 1216102.7,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16342,7 +16342,7 @@
     "date": "2025-11-12",
     "forward_yield": 0.6693,
     "ttm_income": 8413.99,
-    "market_value": 1209865.86,
+    "market_value": 1209865.84,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16358,7 +16358,7 @@
     "date": "2025-11-14",
     "forward_yield": 0.6846,
     "ttm_income": 8413.99,
-    "market_value": 1182923.43,
+    "market_value": 1182923.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16366,7 +16366,7 @@
     "date": "2025-11-15",
     "forward_yield": 0.6846,
     "ttm_income": 8413.99,
-    "market_value": 1182923.43,
+    "market_value": 1182923.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16374,7 +16374,7 @@
     "date": "2025-11-16",
     "forward_yield": 0.6846,
     "ttm_income": 8413.99,
-    "market_value": 1182923.43,
+    "market_value": 1182923.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16382,7 +16382,7 @@
     "date": "2025-11-17",
     "forward_yield": 0.6909,
     "ttm_income": 8413.99,
-    "market_value": 1172176.76,
+    "market_value": 1172176.8,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16398,7 +16398,7 @@
     "date": "2025-11-19",
     "forward_yield": 0.6995,
     "ttm_income": 8413.99,
-    "market_value": 1157729.12,
+    "market_value": 1157729.16,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "EXPE": 0.0
@@ -16408,7 +16408,7 @@
     "date": "2025-11-20",
     "forward_yield": 0.7162,
     "ttm_income": 8413.99,
-    "market_value": 1130749.85,
+    "market_value": 1130749.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16448,7 +16448,7 @@
     "date": "2025-11-25",
     "forward_yield": 0.681,
     "ttm_income": 8413.99,
-    "market_value": 1191194.54,
+    "market_value": 1191194.58,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16456,7 +16456,7 @@
     "date": "2025-11-26",
     "forward_yield": 0.6759,
     "ttm_income": 8413.99,
-    "market_value": 1200148.56,
+    "market_value": 1200148.63,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16464,7 +16464,7 @@
     "date": "2025-11-27",
     "forward_yield": 0.6759,
     "ttm_income": 8413.99,
-    "market_value": 1200148.56,
+    "market_value": 1200148.63,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16472,7 +16472,7 @@
     "date": "2025-11-28",
     "forward_yield": 0.67,
     "ttm_income": 8413.99,
-    "market_value": 1210641.92,
+    "market_value": 1210641.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16480,7 +16480,7 @@
     "date": "2025-11-29",
     "forward_yield": 0.67,
     "ttm_income": 8413.99,
-    "market_value": 1210641.92,
+    "market_value": 1210641.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16488,7 +16488,7 @@
     "date": "2025-11-30",
     "forward_yield": 0.67,
     "ttm_income": 8413.99,
-    "market_value": 1210641.92,
+    "market_value": 1210641.9,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16496,7 +16496,7 @@
     "date": "2025-12-01",
     "forward_yield": 0.6752,
     "ttm_income": 8413.99,
-    "market_value": 1201402.26,
+    "market_value": 1201402.33,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "LMT": 0.0
@@ -16522,7 +16522,7 @@
     "date": "2025-12-04",
     "forward_yield": 0.6713,
     "ttm_income": 8413.99,
-    "market_value": 1208308.44,
+    "market_value": 1208308.45,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16530,7 +16530,7 @@
     "date": "2025-12-05",
     "forward_yield": 0.6688,
     "ttm_income": 8413.99,
-    "market_value": 1212907.92,
+    "market_value": 1212907.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16538,7 +16538,7 @@
     "date": "2025-12-06",
     "forward_yield": 0.6688,
     "ttm_income": 8413.99,
-    "market_value": 1212907.92,
+    "market_value": 1212907.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16546,7 +16546,7 @@
     "date": "2025-12-07",
     "forward_yield": 0.6688,
     "ttm_income": 8413.99,
-    "market_value": 1212907.92,
+    "market_value": 1212907.89,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16554,7 +16554,7 @@
     "date": "2025-12-08",
     "forward_yield": 0.6879,
     "ttm_income": 8587.48,
-    "market_value": 1204395.39,
+    "market_value": 1204395.4,
     "daily_dividend": 173.49,
     "daily_dividends_by_ticker": {
       "GOOG": 173.49
@@ -16572,7 +16572,7 @@
     "date": "2025-12-10",
     "forward_yield": 0.6693,
     "ttm_income": 8764.8,
-    "market_value": 1217532.17,
+    "market_value": 1217532.21,
     "daily_dividend": 347.04,
     "daily_dividends_by_ticker": {
       "OXY": 347.04
@@ -16582,7 +16582,7 @@
     "date": "2025-12-11",
     "forward_yield": 0.671,
     "ttm_income": 8764.8,
-    "market_value": 1214493.55,
+    "market_value": 1214493.59,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16627,7 +16627,7 @@
     "date": "2025-12-16",
     "forward_yield": 0.6909,
     "ttm_income": 8764.8,
-    "market_value": 1179473.13,
+    "market_value": 1179473.09,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {
       "IEMG": 0.0
@@ -16637,7 +16637,7 @@
     "date": "2025-12-17",
     "forward_yield": 0.6893,
     "ttm_income": 8764.8,
-    "market_value": 1157010.45,
+    "market_value": 1157010.49,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -16645,7 +16645,7 @@
     "date": "2025-12-18",
     "forward_yield": 0.6818,
     "ttm_income": 8764.8,
-    "market_value": 1169694.91,
+    "market_value": 1169694.87,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   },
@@ -18486,6 +18486,14 @@
     "forward_yield": 0.5297,
     "ttm_income": 7858.96,
     "market_value": 1370714.29,
+    "daily_dividend": 0.0,
+    "daily_dividends_by_ticker": {}
+  },
+  {
+    "date": "2026-07-30",
+    "forward_yield": 0.5164,
+    "ttm_income": 7858.96,
+    "market_value": 1405962.66,
     "daily_dividend": 0.0,
     "daily_dividends_by_ticker": {}
   }
