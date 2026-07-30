@@ -27,9 +27,7 @@ import {
 } from '../helpers.js';
 import { smoothFinancialData } from '../../../utils/smoothing.js';
 import { chartLayouts } from '../state.js';
-// glowAnimator is managed in animation.js, but drawPerformanceChart calls `glowAnimator.drawSeriesGlow`?
-// Ah, `glowAnimator` is not exported from `animation.js`. `drawSeriesGlow` IS exported (I added it).
-// So I should import `drawSeriesGlow` from `../animation.js`.
+// drawSeriesGlow (not glowAnimator) is the exported glow entry point in ../animation.js.
 
 import { drawSeriesGlow } from '../animation.js';
 export async function drawPerformanceChart(ctx, chartManager, timestamp) {

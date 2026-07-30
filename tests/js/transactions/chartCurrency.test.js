@@ -228,8 +228,7 @@ describe('Regression: Currency Double Conversion in Balance Chart', () => {
         // Since we can't easily mock internal function usage without rewiring, we rely on the fact that
         // chart.js calls buildFilteredBalanceSeries which returns raw USD/base values.
         // We need to intercept that.
-        // Actually, we can rely on the fact that `buildFilteredBalanceSeries` is imported from `./chart.js` inside `chart.js`?
-        // No, it's defined in the same file.
+        // `buildFilteredBalanceSeries` is defined in chart.js itself, not imported.
 
         // However, `buildFilteredBalanceSeries` uses `historicalPrices`.
         // Let's rely on the fact that the internal logic calculates a raw balance.

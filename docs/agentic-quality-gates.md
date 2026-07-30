@@ -331,9 +331,13 @@ The workflow-level machinery also already matches the philosophy:
 - `AGENTS.md` — PRs must be "self-evidently correct and approvable at a glance";
   the PR body must paste verification output; the human does a binary
   approve/close and never iterates.
-- `Makefile` — `verify` (lint type sec test sync-check), `precommit-fix` (the CI
-  gate, called from `.github/workflows/ci.yml`), `sync-check` (generated-file
-  drift detection — a gate the agent cannot talk its way past).
+- `Makefile` — `verify` (lint type sec test sync-check thinking-check),
+  `precommit-fix` (the CI gate, called from `.github/workflows/ci.yml`),
+  `sync-check` (generated-file drift detection — a gate the agent cannot talk
+  its way past), `thinking-check` (deterministic stream-of-consciousness scan:
+  thinking-out-loud comments + abandoned test bodies over all tracked
+  py/js/ts/css — `scripts/check_thinking_comments.py`; AGENTS.md
+  non-negotiable #9).
 - `.jules/` personas — Typist (strict JSDoc), Testpilot (coverage → 100%),
   Architect (complexity), Sentinel (security/error-handling), Janitor (dead
   code), Bolt (perf). These are, in effect, Uncle Bob's "refactor agent" and

@@ -969,8 +969,8 @@ export class TableGlassEffect {
         // For simplicity and flexibility, let's assume 'color' is the peak color (e.g. white)
         // and we modulate opacity via stop colors.
 
-        // Actually, 'overlay' blend mode works best with white/grey.
-        // Let's stick to the existing logic but allow color override.
+        // 'overlay' blend mode works best with white/grey.
+        // Keep the existing logic but allow color override.
         // If the user provides a color, we use it.
         // We need transparent versions of that color for the edges.
 

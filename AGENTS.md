@@ -49,6 +49,9 @@ ES modules via an import map.
    committed code: no thinking-out-loud comments ("Wait, ...", "Ah, ..."), no
    abandoned `pass`-only tests. If an approach fails mid-write, delete the
    attempt — don't commit the trail. Code comments state facts about behaviour.
+   Enforced deterministically by `make thinking-check`
+   (`scripts/check_thinking_comments.py`, part of `make verify` and the
+   `precommit-fix` CI gate) over all tracked py/js/ts/css sources.
 
 ## You cannot see the rendered page
 
@@ -145,6 +148,7 @@ instantly identifiable.
 | JS strict type check                    | `npx tsc -p jsconfig.json`                              |
 | One CSS file lint                       | `npx stylelint <path.css>`                              |
 | Generated-commands freshness check      | `make sync-check`                                       |
+| Stream-of-consciousness scan            | `make thinking-check`                                   |
 | Dependency-structure gate (JS)          | `make depcheck`                                         |
 | JS mutation test (scoped, manual only)  | `make mutate-js MUTATE=js/utils/host.js`                |
 | Py mutation test (scoped, manual only)  | `make mutate-py SCOPE='scripts.utils.security_utils.*'` |

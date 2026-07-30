@@ -261,7 +261,7 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         // We need to set peDataCache. Since it's a module-level variable,
         // we trigger it via loadPEData mock. Instead, call drawPEChart after
         // priming the cache by calling loadPEData first.
-        // Actually, let's mock fetch to return our data and call drawPEChart twice.
+        // Mock fetch to return our data and call drawPEChart twice.
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,

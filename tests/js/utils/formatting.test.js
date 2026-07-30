@@ -456,15 +456,6 @@ describe('formatCurrencyChange additional coverage', () => {
     });
 });
 
-describe('compactNumber - unit array out of bounds edge case 2', () => {
-    it('handles negative indices safely when numbers are extremely small', () => {
-        // Trigger negative unitIndex if possible, though value < 1000 is checked first.
-        // If we provide a tiny positive float, value < 1000 handles it, so we mock it if necessary,
-        // but just to be sure we hit line 113, test a very large string value that parses as NaN
-        // covered in a separate block.
-    });
-});
-
 describe('formatCompact - edge case', () => {
     it('formats numbers just below 1000', () => {
         expect(formatting.formatCompact(999)).toBe('999');

@@ -44,7 +44,9 @@ table. Instead:
   tests that usually come with them. If a line turns out to be uncoverable
   mid-write, delete the attempt entirely and explain the skip in the PR body.
   Test comments must state stable facts about behaviour, never your thought
-  process.
+  process. **Machine-enforced:** `make thinking-check` (in `make verify` and
+  the `precommit-fix` CI gate) scans all tracked py/js/ts/css sources and
+  fails the build on these — you cannot talk your way past it.
 
 ## Lane
 

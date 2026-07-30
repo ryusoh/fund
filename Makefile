@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -55,6 +55,7 @@ help:
 	@echo "  mutate-py     Scoped Python mutation test (SCOPE=filter; manual/scheduled only)"
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
+	@echo "  thinking-check Stream-of-consciousness scan (thinking comments, abandoned test bodies)"
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
@@ -99,6 +100,7 @@ precommit-fix:
 	@# Timezone pass: UTC-only jest can't fire the TZ regression tests
 	@$(MAKE) test-tz
 	@# Phase 4: Final verification
+	@$(MAKE) thinking-check
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
 	git checkout data/transactions.csv 2>/dev/null || true; \
@@ -201,7 +203,7 @@ test-tz:
 test: js-test
 	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
-verify: lint type sec test sync-check
+verify: lint type sec test sync-check thinking-check
 
 # .claude/commands/ is generated from .agents/skills/ (the canonical source) by
 # scripts/sync_commands.py. Fail if regeneration is not a no-op (content hash of
@@ -216,6 +218,15 @@ sync-check:
 		echo "sync-check FAIL: .claude/commands was stale and has been regenerated — commit the updated files (python3 scripts/sync_commands.py)."; \
 		exit 1; \
 	fi
+
+# Stream-of-consciousness gate (AGENTS.md non-negotiable #9): deterministic
+# scan of all tracked Python/JS/TS/CSS sources for thinking-out-loud comments
+# and abandoned test bodies (pass-only pytest functions, empty it()/test()
+# callbacks). Whole-codebase, not just tests — unattended agents write both
+# languages. Implementation: scripts/check_thinking_comments.py.
+thinking-check:
+	@echo "🧠 Stream-of-consciousness scan (py/js/ts/css)..."
+	@$(PY) scripts/check_thinking_comments.py
 
 # Mutation testing (docs/agentic-quality-gates.md §2) — manual/scheduled only.
 # NEVER part of verify/precommit-fix: a full run multiplies test-suite time by

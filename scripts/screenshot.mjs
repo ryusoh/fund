@@ -16,7 +16,7 @@
  *   make screenshot URL=/terminal/ ARGS='--type transaction'
  *
  * Pages with an entrance fade-in (e.g. /calendar/) can out-race the default
- * 1200ms wait and shoot blank — pass a longer wait, e.g. `--wait 2500`. Any page
+ * 1200ms wait and shoot blank — pass a longer wait such as `--wait 2500`. Any page
  * console errors / uncaught exceptions are printed to stderr to disambiguate a
  * genuinely-broken page from one that just needs more wait.
  *
