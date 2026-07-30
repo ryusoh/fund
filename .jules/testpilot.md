@@ -39,6 +39,12 @@ table. Instead:
   fail loudly on a real fault, and must distinguish an expected environmental
   absence (missing global, unavailable WebGL/canvas context) from an actual runtime
   error — assert the specific behaviour in each case.
+- **Also banned:** stream-of-consciousness reasoning committed as comments
+  ("Wait, ...", "Ah, ...", "To hit line N, ...") and the abandoned `pass`-only
+  tests that usually come with them. If a line turns out to be uncoverable
+  mid-write, delete the attempt entirely and explain the skip in the PR body.
+  Test comments must state stable facts about behaviour, never your thought
+  process.
 
 ## Lane
 
