@@ -251,3 +251,72 @@ describe('Terminal index page', () => {
         });
     });
 });
+
+describe('Keyboard Navigation Helpers', () => {
+    let shouldIgnoreKeyboardEvent;
+    let handleCurrencyCycleEvent;
+
+    beforeAll(async () => {
+        const module = await import('../../../../js/pages/terminal/index.js');
+        shouldIgnoreKeyboardEvent = module.__terminalTesting.shouldIgnoreKeyboardEvent;
+        handleCurrencyCycleEvent = module.__terminalTesting.handleCurrencyCycleEvent;
+    });
+
+    describe('shouldIgnoreKeyboardEvent', () => {
+        it('returns true for INPUT element', () => {
+            const el = document.createElement('input');
+            expect(shouldIgnoreKeyboardEvent(el)).toBe(true);
+        });
+        it('returns true for TEXTAREA element', () => {
+            const el = document.createElement('textarea');
+            expect(shouldIgnoreKeyboardEvent(el)).toBe(true);
+        });
+        it('returns true for SELECT element', () => {
+            const el = document.createElement('select');
+            expect(shouldIgnoreKeyboardEvent(el)).toBe(true);
+        });
+        it('returns true for contentEditable element', () => {
+            const el = document.createElement('div');
+            el.isContentEditable = true;
+            expect(shouldIgnoreKeyboardEvent(el)).toBe(true);
+        });
+        it('returns false for generic div', () => {
+            const el = document.createElement('div');
+            expect(shouldIgnoreKeyboardEvent(el)).toBe(false);
+        });
+        it('returns false for null element', () => {
+            expect(shouldIgnoreKeyboardEvent(null)).toBe(false);
+        });
+    });
+
+    describe('handleCurrencyCycleEvent', () => {
+        let preventDefaultMock;
+
+        beforeEach(() => {
+            preventDefaultMock = jest.fn();
+            // We test it indirectly using the exported function, mocking cycleCurrency if necessary,
+            // but cycleCurrency is local to the module. Since we can't easily mock the local one,
+            // we'll rely on the unit test above for the pure logic and test the DOM side effects via dispatchEvent.
+        });
+
+        it('ignores non-arrow keys', () => {
+            const event = { key: 'Enter', preventDefault: preventDefaultMock };
+            handleCurrencyCycleEvent(event);
+            expect(preventDefaultMock).not.toHaveBeenCalled();
+        });
+
+        it('ignores when terminal input is focused', () => {
+            const input = document.createElement('input');
+            input.id = 'terminalInput';
+            document.body.appendChild(input);
+            input.focus();
+
+            const event = { key: 'ArrowLeft', preventDefault: preventDefaultMock };
+            handleCurrencyCycleEvent(event);
+
+            expect(preventDefaultMock).not.toHaveBeenCalled();
+
+            document.body.removeChild(input);
+        });
+    });
+});

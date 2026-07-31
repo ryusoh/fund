@@ -458,65 +458,42 @@ window.addEventListener('beforeunload', () => {
     perlinBackgroundHandle = null;
 });
 
-window.addEventListener('keydown', (event) => {
-    // Handle Ctrl/Cmd + Arrow keys (should work even when terminal input has text)
-    if (
-        (event.metaKey || event.ctrlKey) &&
-        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-    ) {
-        const active = document.activeElement;
-        if (
-            active &&
-            (active.tagName === 'INPUT' ||
-                active.tagName === 'TEXTAREA' ||
-                active.tagName === 'SELECT' ||
-                active.isContentEditable)
-        ) {
-            // If terminal input is focused, the terminal input handler will process Cmd/Ctrl+arrows
-            if (active.id === 'terminalInput') {
-                // Return early to let terminal input handler handle it
-                return;
-            }
-            // For other inputs, don't interfere with their functionality
-            return;
-        }
+function shouldIgnoreKeyboardEvent(activeElement) {
+    if (!activeElement) {
+        return false;
+    }
+    return !!(
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.isContentEditable
+    );
+}
 
-        // If not in any input field, handle the arrow key to cycle currency
-        event.preventDefault();
-        cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
+function handleCurrencyCycleEvent(event) {
+    const isArrow = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+    if (!isArrow) {
+        return;
     }
 
-    // Handle Arrow keys alone for currency toggle when not in input fields
-    if (
-        !event.metaKey &&
-        !event.ctrlKey &&
-        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-    ) {
-        const active = document.activeElement;
-        if (
-            active &&
-            (active.tagName === 'INPUT' ||
-                active.tagName === 'TEXTAREA' ||
-                active.tagName === 'SELECT' ||
-                active.isContentEditable)
-        ) {
-            // If we're in the terminal input, let that handle the event in handleTerminalInput
-            // The terminal input handler only cycles when empty
-            if (active.id === 'terminalInput') {
-                return;
-            }
-            // For other inputs, don't interfere with their functionality
+    const active = document.activeElement;
+    if (shouldIgnoreKeyboardEvent(active)) {
+        if (active.id === 'terminalInput') {
             return;
         }
-
-        // If not in any input field, handle the arrow key to cycle currency
-        event.preventDefault();
-        cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
+        return;
     }
-});
+
+    event.preventDefault();
+    cycleCurrency(event.key === 'ArrowRight' ? 1 : -1);
+}
+
+window.addEventListener('keydown', handleCurrencyCycleEvent);
 
 export const __terminalTesting = {
     buildFxRateMaps,
     ensureSyntheticStart,
     convertCurrencySeries,
+    shouldIgnoreKeyboardEvent,
+    handleCurrencyCycleEvent,
 };
