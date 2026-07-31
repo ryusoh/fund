@@ -1261,7 +1261,7 @@ def apply_fail_open_backstop(
 def carry_forward_ticker_series(
     final_output: Dict[str, Any], existing_pe_data: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
-    """Per-ticker fail-open for ticker_pe / ticker_weights.
+    """Per-ticker fail-open for ticker_pe / ticker_weights / ticker_prices.
 
     The top-level backstop only guards whole blocks, but a single flaky fetch
     (e.g. yfinance ``info.trailingPE`` returning None for VT) makes that ticker
@@ -1271,6 +1271,8 @@ def carry_forward_ticker_series(
     but this run produced nothing for it, rebuild its series from the previous
     file date-aligned, forward-filling dates added since (the chart's trailing
     tail stays continuous). Tickers with any fresh data are never touched.
+    Restored tickers also get their previous anchor price carried into
+    ticker_prices so the frontend's realtime scaling keeps the same EPS basis.
     """
     if not isinstance(existing_pe_data, dict):
         return final_output
@@ -1279,6 +1281,7 @@ def carry_forward_ticker_series(
     if not isinstance(new_dates, list) or not isinstance(old_dates, list):
         return final_output
     old_index = {d: i for i, d in enumerate(old_dates)}
+    restored_tickers = set()
     for key in ("ticker_pe", "ticker_weights"):
         prev_block = existing_pe_data.get(key)
         if not isinstance(prev_block, dict):
@@ -1301,10 +1304,65 @@ def carry_forward_ticker_series(
                     last_val = prev_series[j]
                 carried.append(last_val)
             new_block[ticker] = carried
+            restored_tickers.add(ticker)
             print(
                 f"  Fail-open: carried forward '{key}.{ticker}' from previous "
                 "pe_ratio.json (no fresh data)."
             )
+    # Carried tickers also need their anchor price: the frontend scales the
+    # last historical PE by live/anchor, and a missing anchor makes it fall
+    # back to a different EPS basis (mixing bases causes chart jumps).
+    prev_prices = existing_pe_data.get("ticker_prices")
+    if isinstance(prev_prices, dict) and restored_tickers:
+        new_prices = final_output.get("ticker_prices")
+        if not isinstance(new_prices, dict):
+            new_prices = {}
+            final_output["ticker_prices"] = new_prices
+        for ticker in restored_tickers:
+            if ticker not in new_prices and prev_prices.get(ticker) is not None:
+                new_prices[ticker] = prev_prices[ticker]
+    return final_output
+
+
+def recompute_portfolio_pe_from_ticker_series(final_output: Dict[str, Any]) -> Dict[str, Any]:
+    """Recompute portfolio_pe from the final per-ticker series.
+
+    portfolio_pe is computed from this run's pe_map *before* the per-ticker
+    fail-open restores dropped tickers (e.g. VT after one flaky fetch). That
+    leaves the file internally inconsistent: portfolio_pe excludes a holding
+    whose ticker_pe line is present — a >1-point silent divergence between the
+    historical curve and the frontend's realtime point, which includes every
+    current holding. Recomputing from the written per-ticker series makes the
+    file self-consistent by construction: fresh and carried data contribute to
+    the harmonic mean on equal footing. Dates with no per-ticker data at all
+    keep this run's value (there is nothing to recompute from).
+    """
+    dates = final_output.get("dates")
+    portfolio_pe = final_output.get("portfolio_pe")
+    ticker_pe = final_output.get("ticker_pe")
+    ticker_weights = final_output.get("ticker_weights")
+    if not (
+        isinstance(dates, list)
+        and isinstance(portfolio_pe, list)
+        and len(portfolio_pe) == len(dates)
+        and isinstance(ticker_pe, dict)
+        and isinstance(ticker_weights, dict)
+    ):
+        return final_output
+    for i in range(len(dates)):
+        weight_sum = 0.0
+        weighted_yield = 0.0
+        for ticker, pe_series in ticker_pe.items():
+            if not isinstance(pe_series, list) or i >= len(pe_series):
+                continue
+            pe_val = pe_series[i]
+            w_series = ticker_weights.get(ticker)
+            w_val = w_series[i] if isinstance(w_series, list) and i < len(w_series) else None
+            if pe_val is not None and pe_val > 0 and w_val is not None and w_val > 0:
+                weight_sum += w_val
+                weighted_yield += w_val / pe_val
+        if weight_sum > 0 and weighted_yield > 0:
+            portfolio_pe[i] = round(weight_sum / weighted_yield, 2)
     return final_output
 
 
@@ -1645,6 +1703,11 @@ def main():
     # Final safety net: never blank a block the previous file had just because
     # this run's fetch for it failed (e.g. benchmark_pe on a total scrape outage).
     final_output = apply_fail_open_backstop(final_output, existing_pe_data)
+
+    # portfolio_pe was computed from this run's pe_map before the fail-open
+    # repairs above; recompute it from the per-ticker series actually written
+    # so a carried ticker is part of the harmonic mean too.
+    final_output = recompute_portfolio_pe_from_ticker_series(final_output)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:

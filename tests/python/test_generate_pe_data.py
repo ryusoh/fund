@@ -776,6 +776,79 @@ class TestGeneratePEData(unittest.TestCase):
         result = carry_forward_ticker_series(fresh, existing)
         self.assertNotIn("VT", result["ticker_pe"])
 
+    def test_carry_forward_ticker_series_restores_ticker_prices(self):
+        # A carried ticker needs its anchor price: the frontend scales the last
+        # historical PE by live/anchor, and a missing anchor falls back to a
+        # different EPS basis. Fresh prices are never overwritten.
+        from scripts.generate_pe_data import carry_forward_ticker_series
+
+        fresh = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            "ticker_pe": {"GOOG": [22.1, 22.2]},
+            "ticker_weights": {"GOOG": [0.5, 0.5]},
+            "ticker_prices": {"GOOG": 200.0},
+        }
+        existing = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            "ticker_pe": {"VT": [22.3, 22.4], "GOOG": [28.4, 28.5]},
+            "ticker_weights": {"VT": [0.29, 0.29], "GOOG": [0.5, 0.5]},
+            "ticker_prices": {"VT": 150.0, "GOOG": 199.0},
+        }
+        result = carry_forward_ticker_series(fresh, existing)
+        self.assertEqual(result["ticker_prices"]["VT"], 150.0)
+        self.assertEqual(result["ticker_prices"]["GOOG"], 200.0)
+
+    def test_recompute_portfolio_pe_includes_carried_ticker(self):
+        # Regression: portfolio_pe is computed from this run's pe_map before
+        # carry_forward_ticker_series restores a dropped ticker, so the written
+        # file disagreed with its own per-ticker series (VT — ~29% weight —
+        # silently excluded from the harmonic mean). After the fail-open
+        # repairs, portfolio_pe must be recomputed from the written series.
+        from scripts.generate_pe_data import (
+            carry_forward_ticker_series,
+            recompute_portfolio_pe_from_ticker_series,
+        )
+
+        fresh = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            # Stale: computed without VT (harmonic of GOOG alone).
+            "portfolio_pe": [20.0, 20.0],
+            "ticker_pe": {"GOOG": [20.0, 20.0]},
+            "ticker_weights": {"GOOG": [0.71, 0.71]},
+        }
+        existing = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            "ticker_pe": {"VT": [40.0, 40.0]},
+            "ticker_weights": {"VT": [0.29, 0.29]},
+        }
+        result = carry_forward_ticker_series(fresh, existing)
+        result = recompute_portfolio_pe_from_ticker_series(result)
+        # Harmonic over both: (0.71+0.29) / (0.71/20 + 0.29/40) = 23.42...
+        expected = 1.0 / (0.71 / 20.0 + 0.29 / 40.0)
+        for val in result["portfolio_pe"]:
+            self.assertAlmostEqual(val, expected, places=2)
+
+    def test_recompute_portfolio_pe_keeps_value_without_ticker_data(self):
+        # A date with no per-ticker data has nothing to recompute from — keep
+        # this run's value rather than blanking it.
+        from scripts.generate_pe_data import recompute_portfolio_pe_from_ticker_series
+
+        fresh = {
+            "dates": ["2026-06-01", "2026-06-02"],
+            "portfolio_pe": [21.0, 21.5],
+            "ticker_pe": {"GOOG": [None, 20.0]},
+            "ticker_weights": {"GOOG": [None, 1.0]},
+        }
+        result = recompute_portfolio_pe_from_ticker_series(fresh)
+        self.assertEqual(result["portfolio_pe"], [21.0, 20.0])
+
+    def test_recompute_portfolio_pe_noop_on_malformed(self):
+        from scripts.generate_pe_data import recompute_portfolio_pe_from_ticker_series
+
+        fresh = {"dates": ["2026-06-01"], "portfolio_pe": [21.0]}
+        self.assertEqual(recompute_portfolio_pe_from_ticker_series(fresh), fresh)
+        self.assertEqual(recompute_portfolio_pe_from_ticker_series({"dates": []}), {"dates": []})
+
     @patch("scripts.generate_pe_data.HOLDINGS_DETAILS_PATH")
     def test_fetch_forward_pe_exception(self, mock_path):
         from scripts.generate_pe_data import fetch_forward_pe

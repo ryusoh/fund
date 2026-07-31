@@ -291,7 +291,9 @@ export function parseColorToRgb(baseColor) {
     const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
     if (rgbMatch) {
         const rgb = extractRgbComponents(rgbMatch[1]);
-        if (rgb) {return rgb;}
+        if (rgb) {
+            return rgb;
+        }
     }
 
     return resolveCanvasColor(baseColor);

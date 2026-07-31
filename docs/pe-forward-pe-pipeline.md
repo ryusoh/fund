@@ -66,9 +66,21 @@ values forward:
   one of the portfolio's holdings (this happened on 2026-07-23: VT, IHF, VNQ,
   VOO, VOX vanished and the curve rewrote ~2 points lower). If a ticker had data
   in the previous file but this run produced none, the previous series is
-  rebuilt date-aligned and forward-filled. Fresh data is never overwritten.
+  rebuilt date-aligned and forward-filled, and its anchor price is carried into
+  `ticker_prices` (the frontend's realtime scaling needs it to keep the same
+  EPS basis). Fresh data is never overwritten.
   Caveat: it carries from the _previous_ file, so if a broken file is already
   committed, the hole heals only on the next successful fetch.
+- `recompute_portfolio_pe_from_ticker_series` — consistency net. `portfolio_pe`
+  is computed from the run's `pe_map` **before** the per-ticker carry-forward,
+  so without this step a restored ticker's line is present in the file while
+  the portfolio line still excludes it (this happened on 2026-07-29: VT, ~29%
+  weight, dropped from the harmonic mean across all history — the curve sat
+  ~1.3 points low while the frontend realtime point still included VT, a
+  visible seam jump with no portfolio-value move). This step recomputes
+  `portfolio_pe` from the per-ticker series actually written, so fresh and
+  carried data contribute to the harmonic mean on equal footing. Dates with no
+  per-ticker data at all keep the run's value.
 - `apply_fail_open_backstop` — general net before write: any top-level key the
   previous file had that this run produced empty/missing (`{}`/`[]`/absent) is
   restored. Covers `benchmark_pe`, `^IXIC` forward, etc. Fresh data is never
