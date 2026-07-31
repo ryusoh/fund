@@ -201,7 +201,11 @@ export function trackTransactionDataLoad(loadPromise) {
     }
     transactionDataReady = false;
     transactionDataLoadPromise = Promise.resolve(loadPromise)
-        .catch(() => {})
+        .catch((err) => {
+            // Sentinel: Fix silent catch block that hides failures
+            // eslint-disable-next-line no-console
+            console.error('Failed to load transaction data:', err);
+        })
         .then(() => {
             transactionDataReady = true;
         });
