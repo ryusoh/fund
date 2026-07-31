@@ -19,11 +19,6 @@
             "count": 2
         }
     },
-    "js/pages/terminal/index.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/plugins/glass3dPlugin.js": {
         "complexity": {
             "count": 1
