@@ -341,6 +341,7 @@ describe('transaction data readiness', () => {
     });
 
     test('becomes ready even when the tracked load rejects', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         let failLoad;
         trackTransactionDataLoad(
             new Promise((resolve, reject) => {
@@ -351,10 +352,13 @@ describe('transaction data readiness', () => {
         expect(isTransactionDataReady()).toBe(false);
 
         const waiter = whenTransactionDataReady();
-        failLoad(new Error('network down'));
+        const testError = new Error('network down');
+        failLoad(testError);
         await expect(waiter).resolves.toBeUndefined();
 
         expect(isTransactionDataReady()).toBe(true);
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load transaction data:', testError);
+        consoleErrorSpy.mockRestore();
     });
 
     test('tracking a non-promise resets to the ready state', () => {
