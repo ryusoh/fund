@@ -459,7 +459,9 @@ window.addEventListener('beforeunload', () => {
 });
 
 function shouldIgnoreKeyboardEvent(activeElement) {
-    if (!activeElement) {return false;}
+    if (!activeElement) {
+        return false;
+    }
     return (
         activeElement.tagName === 'INPUT' ||
         activeElement.tagName === 'TEXTAREA' ||
