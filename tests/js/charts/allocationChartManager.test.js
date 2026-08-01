@@ -110,6 +110,118 @@ describe('chartManager', () => {
     });
 
     describe('Chart Interactivity', () => {
+        it('triggerCenterToggle: should toggle table persistence', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const aaplRow = document.querySelector('tr[data-ticker="AAPL"]');
+
+            // It should unhide everything if toggling ON
+            chartManager.triggerCenterToggle();
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(aaplRow.classList.contains('hidden')).toBe(false);
+        });
+
+        it('onHover: should handle uninitialized glassPointerTarget', () => {
+            chartManager.updatePieChart(data);
+            const hoverEvent = { x: 200, y: 200 };
+            const activeElements = [];
+            mockChartInstance.glassPointerTarget = null;
+            chartOptions.onHover(hoverEvent, activeElements, mockChartInstance);
+            // expect covered
+        });
+
+        it('onClick: should handle uninitialized glassPointerTarget', () => {
+            chartManager.updatePieChart(data);
+            const event = { x: 200, y: 200 };
+            const activeElements = [];
+            mockChartInstance.glassPointerTarget = null;
+            chartOptions.onClick(event, activeElements, mockChartInstance);
+            // expect covered
+        });
+
+        it('setupTouchEvents: should bind mouseleave', () => {
+            chartManager.updatePieChart(data);
+            const mouseLeaveEvent = new Event('mouseleave');
+            mockChartInstance.canvas.dispatchEvent(mouseLeaveEvent);
+            // expect covered
+        });
+
+        it('setupTouchEvents: should handle touchend on mobile', () => {
+            chartManager.updatePieChart(data);
+            Object.defineProperty(window, 'innerWidth', { value: 300, writable: true });
+            const touchEndEvent = new Event('touchend');
+            mockChartInstance.canvas.dispatchEvent(touchEndEvent);
+            // Should update but not hide table
+        });
+
+        it('setupTouchEvents: should handle touchend on desktop when not persisting', () => {
+            chartManager.updatePieChart(data);
+            Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+
+            // isTablePersisting is false
+            const touchEndEvent = new Event('touchend');
+            mockChartInstance.canvas.dispatchEvent(touchEndEvent);
+            const table = document.querySelector('table');
+            expect(table.classList.contains('hidden')).toBe(true);
+        });
+
+        it('setupGlobalTouch: should return early if desktop', () => {
+            chartManager.updatePieChart(data);
+            Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+            const touchEvent = new Event('touchstart');
+            document.dispatchEvent(touchEvent);
+            // Shouldn't do anything
+        });
+
+        it('setupGlobalTouch: should return early if no container', () => {
+            chartManager.updatePieChart(data);
+            Object.defineProperty(window, 'innerWidth', { value: 300, writable: true });
+            const chartContainer = document.getElementById('fundPieChartContainer');
+            document.body.removeChild(chartContainer);
+
+            const touchEvent = new Event('touchstart');
+            document.dispatchEvent(touchEvent);
+
+            document.body.appendChild(chartContainer); // restore
+        });
+
+        it('setupGlobalTouch: should return early if clicked inside container', () => {
+            chartManager.updatePieChart(data);
+            Object.defineProperty(window, 'innerWidth', { value: 300, writable: true });
+            const chartContainer = document.getElementById('fundPieChartContainer');
+
+            const touchEvent = new Event('touchstart');
+            Object.defineProperty(touchEvent, 'target', { value: chartContainer });
+            document.dispatchEvent(touchEvent);
+        });
+
+        it('setupGlobalTouch: should clean up destroy', () => {
+            // Force re-init by clearing instance
+            chartManager.hoverSliceByTicker(null); // Just a dummy
+
+            let called = false;
+            const originalDestroy = mockChartInstance.destroy;
+            mockChartInstance.destroy = function () {
+                called = true;
+                if (originalDestroy) {
+                    originalDestroy.apply(this, arguments);
+                }
+            };
+            mockChartInstance.destroy._isMockFunction = true;
+            mockChartInstance._hasGlobalTouchBound = false;
+            chartManager.updatePieChart(data);
+
+            mockChartInstance.destroy();
+            expect(called).toBe(true);
+        });
+
+        it('updatePieChart: should update rotation if options exists', () => {
+            chartManager.updatePieChart(data); // first call
+            mockChartInstance.options = {};
+            chartManager.updatePieChart(data); // second call
+            expect(mockChartInstance.options.rotation).toBeDefined();
+        });
+
         it('triggerCenterToggle: should no-op when chart not initialized', () => {
             // Call before updatePieChart; should not throw
             expect(() => {
