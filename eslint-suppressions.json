@@ -1,9 +1,4 @@
 {
-    "js/charts/allocationChartManager.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/charts/imageDrawer.js": {
         "complexity": {
             "count": 1

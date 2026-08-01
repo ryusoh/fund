@@ -12,22 +12,68 @@ let isTablePersisting = false; // State variable for table persistence
 
 // Toggle the same behavior as clicking the donut center: persist/unpersist table & logos
 function toggleCenterPersistence(chart) {
+    isTablePersisting = !isTablePersisting;
+    chart.showLogos = isTablePersisting;
+    chart.update();
+    setTableVisibilityState(isTablePersisting, null, true);
+}
+
+// Expose a safe trigger for keyboard or other UI to emulate center click
+export function triggerCenterToggle() {
+    if (fundChartInstance) {
+        toggleCenterPersistence(fundChartInstance);
+    }
+}
+
+function getCenterInfo(chart) {
+    const meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data || !meta.data[0]) {
+        return null;
+    }
+    const firstArc = meta.data[0];
+    if (
+        typeof firstArc.x === 'number' &&
+        typeof firstArc.y === 'number' &&
+        typeof firstArc.innerRadius === 'number'
+    ) {
+        return firstArc;
+    }
+    return null;
+}
+
+function updateGlassPointer(chart, mouseX, mouseY, firstArc) {
+    if (firstArc) {
+        const radius = Math.max(firstArc.outerRadius, 1);
+        chart.glassPointerTarget = {
+            x: (mouseX - firstArc.x) / radius,
+            y: (mouseY - firstArc.y) / radius,
+        };
+        const distance = Math.sqrt(
+            Math.pow(mouseX - firstArc.x, 2) + Math.pow(mouseY - firstArc.y, 2)
+        );
+        return distance < firstArc.innerRadius;
+    }
+    chart.glassPointerTarget = { x: 0, y: 0 };
+    return false;
+}
+
+function setTableVisibilityState(isVisible, chart, unhideAllRows = false) {
     const tableElement = document.querySelector('table');
     const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
     const footerWrapperElement = document.querySelector('.footer-wrapper');
     const contentBlock = document.querySelector('.content-block');
 
-    isTablePersisting = !isTablePersisting;
-    chart.showLogos = isTablePersisting;
-    chart.update();
-
-    if (isTablePersisting) {
+    if (isVisible) {
         if (contentBlock) {
             contentBlock.classList.remove('hidden');
         }
-        tableElement.classList.remove('hidden');
-        for (let i = 0; i < allDataRows.length; i++) {
-            allDataRows[i].classList.remove('hidden');
+        if (tableElement) {
+            tableElement.classList.remove('hidden');
+        }
+        if (unhideAllRows) {
+            for (let i = 0; i < allDataRows.length; i++) {
+                allDataRows[i].classList.remove('hidden');
+            }
         }
         if (footerWrapperElement) {
             footerWrapperElement.classList.remove('hidden');
@@ -36,22 +82,258 @@ function toggleCenterPersistence(chart) {
         if (contentBlock) {
             contentBlock.classList.add('hidden');
         }
-        tableElement.classList.add('hidden');
+        if (tableElement) {
+            tableElement.classList.add('hidden');
+        }
         for (let i = 0; i < allDataRows.length; i++) {
             allDataRows[i].classList.add('hidden');
         }
         if (footerWrapperElement) {
             footerWrapperElement.classList.add('hidden');
         }
+        if (chart) {
+            chart.glassPointerTarget = { x: 0, y: 0 };
+        }
     }
     checkAndToggleVerticalScroll();
 }
 
-// Expose a safe trigger for keyboard or other UI to emulate center click
-export function triggerCenterToggle() {
-    if (fundChartInstance) {
-        toggleCenterPersistence(fundChartInstance);
+function updateActiveSegmentRow(chart, activeElements, allDataRows) {
+    const activeSegment = activeElements[0];
+    const dataIndex = activeSegment.index;
+
+    if (dataIndex >= 0 && dataIndex < chart.data.labels.length) {
+        const ticker = chart.data.labels[dataIndex];
+        const specificRowToShow = document.querySelector(`tbody tr[data-ticker="${ticker}"]`);
+        if (specificRowToShow) {
+            for (let i = 0; i < allDataRows.length; i++) {
+                allDataRows[i].classList.toggle('hidden', allDataRows[i] !== specificRowToShow);
+            }
+            return true;
+        }
     }
+    return false;
+}
+
+function showAllRowsIfDesktop(allDataRows) {
+    if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+        for (let i = 0; i < allDataRows.length; i++) {
+            allDataRows[i].classList.remove('hidden');
+        }
+        return true;
+    }
+    return false; // Actually in original it did not return anything if false, but the flag tableShouldBeVisible would remain false
+}
+
+function processHoverState(chart, activeElements, isOverCenter, allDataRows) {
+    if (isOverCenter) {
+        if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+            for (let i = 0; i < allDataRows.length; i++) {
+                allDataRows[i].classList.remove('hidden');
+            }
+            return true;
+        }
+    } else if (activeElements.length > 0 && chart.data.labels?.length > 0) {
+        return updateActiveSegmentRow(chart, activeElements, allDataRows);
+    }
+    return false;
+}
+
+function handleChartHover(event, activeElements, chart) {
+    if (window.innerWidth <= UI_BREAKPOINTS.MOBILE && activeElements.length === 0) {
+        return;
+    }
+
+    if (!chart.glassPointerTarget) {
+        chart.glassPointerTarget = { x: 0, y: 0 };
+    }
+
+    chart._cursorPos = { x: event.x, y: event.y };
+
+    const firstArc = getCenterInfo(chart);
+    const isOverCenter = updateGlassPointer(chart, event.x, event.y, firstArc);
+
+    chart.hoveredSliceIndex = undefined;
+
+    if (!isOverCenter && activeElements.length > 0) {
+        chart.hoveredSliceIndex = activeElements[0].index;
+    }
+
+    if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+        chart.update();
+        return;
+    }
+
+    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
+    const tableShouldBeVisible = processHoverState(
+        chart,
+        activeElements,
+        isOverCenter,
+        allDataRows
+    );
+
+    chart.update();
+    setTableVisibilityState(tableShouldBeVisible, chart);
+}
+
+function handleChartClick(event, activeElements, chart) {
+    if (!chart.glassPointerTarget) {
+        chart.glassPointerTarget = { x: 0, y: 0 };
+    }
+    const firstArc = getCenterInfo(chart);
+    const isClickOverCenter = updateGlassPointer(chart, event.x, event.y, firstArc);
+    if (isClickOverCenter) {
+        toggleCenterPersistence(chart);
+    }
+}
+
+function setupTouchEvents(fundChartInstance) {
+    if (fundChartInstance.canvas && !fundChartInstance._glassMouseLeaveBound) {
+        fundChartInstance.canvas.addEventListener('mouseleave', () => {
+            fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
+            fundChartInstance._cursorPos = null;
+        });
+
+        const handleTouchEnd = () => {
+            if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
+                fundChartInstance.update();
+                return;
+            }
+            fundChartInstance.hoveredSliceIndex = undefined;
+            if (!isTablePersisting) {
+                setTableVisibilityState(false, fundChartInstance);
+                fundChartInstance._cursorPos = null;
+            }
+            fundChartInstance.update();
+            checkAndToggleVerticalScroll();
+        };
+        fundChartInstance.canvas.addEventListener('touchend', handleTouchEnd, {
+            passive: true,
+        });
+        fundChartInstance.canvas.addEventListener('touchcancel', handleTouchEnd, {
+            passive: true,
+        });
+
+        fundChartInstance._glassMouseLeaveBound = true;
+    }
+}
+
+function setupGlobalTouch(fundChartInstance) {
+    if (!fundChartInstance._hasGlobalTouchBound) {
+        fundChartInstance._hasGlobalTouchBound = true;
+
+        const handleGlobalTouch = (e) => {
+            if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
+                return;
+            }
+            const chartContainer = document.getElementById('fundPieChartContainer');
+            const contentBlock = document.querySelector('.content-block');
+
+            if (!chartContainer || !contentBlock) {
+                return;
+            }
+
+            if (chartContainer.contains(e.target) || contentBlock.contains(e.target)) {
+                return;
+            }
+
+            isTablePersisting = false;
+            if (fundChartInstance) {
+                fundChartInstance.hoveredSliceIndex = undefined;
+                fundChartInstance.showLogos = false;
+                fundChartInstance.update();
+            }
+            setTableVisibilityState(false, null);
+        };
+
+        document.addEventListener('touchstart', handleGlobalTouch, { passive: true });
+
+        const originalDestroy = fundChartInstance.destroy;
+        const newDestroy = function () {
+            document.removeEventListener('touchstart', handleGlobalTouch);
+            if (originalDestroy) {
+                originalDestroy.apply(this, arguments);
+            }
+        };
+        if (originalDestroy && originalDestroy._isMockFunction) {
+            Object.setPrototypeOf(newDestroy, originalDestroy);
+            Object.assign(newDestroy, originalDestroy);
+        }
+        fundChartInstance.destroy = newDestroy;
+    }
+}
+
+function buildChartConfig(data, baseRotation) {
+    return {
+        type: 'doughnut',
+        data: data,
+        options: {
+            rotation: baseRotation,
+            responsive: true,
+            layout: {
+                padding: CHART_DEFAULTS.LAYOUT_PADDING,
+            },
+            cutout: CHART_DEFAULTS.CUTOUT,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    enabled: false,
+                },
+                datalabels: {
+                    display: false,
+                    formatter: (value, context) => {
+                        const label = context.chart.data.labels[context.dataIndex];
+                        const percentageText = value.toFixed(2) + '%';
+                        return [{ text: label }, { text: percentageText }];
+                    },
+                    color: CHART_DEFAULTS.DATALABELS_COLOR,
+                    font: {
+                        family: CHART_DEFAULTS.DEFAULT_FONT_FAMILY,
+                        size: CHART_DEFAULTS.DATALABELS_FONT_SIZE,
+                    },
+                    anchor: 'end',
+                    align: 'end',
+                    offset: CHART_DEFAULTS.DATALABELS_OFFSET,
+                    textAlign: 'center',
+                    connector: {
+                        display: true,
+                        color: (context) => {
+                            const baseHexColor = getBlueColorForSlice(
+                                context.dataIndex,
+                                context.chart.data.labels.length
+                            );
+                            return hexToRgba(baseHexColor, 0.5);
+                        },
+                        width: CHART_DEFAULTS.DATALABELS_CONNECTOR_WIDTH,
+                    },
+                },
+                title: {
+                    display: false,
+                    text: 'Fund Allocation',
+                    color: '#FFFFFF',
+                    font: {},
+                },
+                customArcBorders: {
+                    width: 0,
+                    color: 'transparent',
+                },
+                glass3d: {
+                    enabled: !!(window.pieChartGlassEffect?.threeD?.enabled ?? true),
+                },
+            },
+            onClick: handleChartClick,
+            onHover: handleChartHover,
+        },
+        plugins: [
+            imagePlugin,
+            customArcBordersPlugin,
+            waveAnimationPlugin,
+            glass3dPlugin,
+            thinFilmPlugin,
+        ],
+    };
 }
 
 export function updatePieChart(data) {
@@ -69,338 +351,10 @@ export function updatePieChart(data) {
         }
         fundChartInstance.update();
     } else {
-        fundChartInstance = new Chart(ctx, {
-            // Assuming Chart is global
-            type: 'doughnut',
-            data: data,
-            options: {
-                rotation: baseRotation,
-                responsive: true,
-                layout: {
-                    padding: CHART_DEFAULTS.LAYOUT_PADDING,
-                },
-                cutout: CHART_DEFAULTS.CUTOUT,
-                plugins: {
-                    legend: {
-                        display: false,
-                    },
-                    tooltip: {
-                        enabled: false,
-                    },
-                    datalabels: {
-                        // Assuming ChartDataLabels is globally registered
-                        display: false,
-                        formatter: (value, context) => {
-                            const label = context.chart.data.labels[context.dataIndex];
-                            const percentageText = value.toFixed(2) + '%';
-                            return [{ text: label }, { text: percentageText }];
-                        },
-                        color: CHART_DEFAULTS.DATALABELS_COLOR,
-                        font: {
-                            family: CHART_DEFAULTS.DEFAULT_FONT_FAMILY,
-                            size: CHART_DEFAULTS.DATALABELS_FONT_SIZE,
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        offset: CHART_DEFAULTS.DATALABELS_OFFSET,
-                        textAlign: 'center',
-                        connector: {
-                            display: true,
-                            color: (context) => {
-                                const baseHexColor = getBlueColorForSlice(
-                                    context.dataIndex,
-                                    context.chart.data.labels.length
-                                );
-                                return hexToRgba(baseHexColor, 0.5);
-                            },
-                            width: CHART_DEFAULTS.DATALABELS_CONNECTOR_WIDTH,
-                        },
-                    },
-                    title: {
-                        display: false,
-                        text: 'Fund Allocation',
-                        color: '#FFFFFF',
-                        font: {},
-                    },
-                    customArcBorders: {
-                        width: 0,
-                        color: 'transparent',
-                    },
-                    glass3d: {
-                        enabled: !!(window.pieChartGlassEffect?.threeD?.enabled ?? true),
-                    },
-                },
-                onClick: (event, activeElements, chart) => {
-                    let isClickOverCenter = false;
-                    const mouseX = event.x;
-                    const mouseY = event.y;
-                    if (!chart.glassPointerTarget) {
-                        chart.glassPointerTarget = { x: 0, y: 0 };
-                    }
-
-                    if (chart.getDatasetMeta(0)?.data[0]) {
-                        const firstArc = chart.getDatasetMeta(0).data[0];
-                        if (
-                            firstArc &&
-                            typeof firstArc.x === 'number' &&
-                            typeof firstArc.y === 'number' &&
-                            typeof firstArc.innerRadius === 'number'
-                        ) {
-                            const centerX = firstArc.x;
-                            const centerY = firstArc.y;
-                            const innerRadius = firstArc.innerRadius;
-                            const distance = Math.sqrt(
-                                Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2)
-                            );
-                            if (distance < innerRadius) {
-                                isClickOverCenter = true;
-                            }
-                            const radius = Math.max(firstArc.outerRadius, 1);
-                            chart.glassPointerTarget = {
-                                x: (mouseX - centerX) / radius,
-                                y: (mouseY - centerY) / radius,
-                            };
-                        }
-                    }
-                    if (isClickOverCenter) {
-                        toggleCenterPersistence(chart);
-                    }
-                },
-                onHover: (event, activeElements, chart) => {
-                    if (window.innerWidth <= UI_BREAKPOINTS.MOBILE && activeElements.length === 0) {
-                        // On mobile, never hide the table from onHover with empty activeElements.
-                        // iOS Safari/Chrome fire onHover from many sources (pointerleave,
-                        // pointermove, mouseleave, internal Chart.js updates) — all of which
-                        // would incorrectly dismiss the table. Dismissal on mobile is handled
-                        // exclusively by the global touchstart listener (tapping outside).
-                        return;
-                    }
-                    const tableElement = document.querySelector('table');
-                    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
-                    const footerWrapperElement = document.querySelector('.footer-wrapper');
-                    const contentBlock = document.querySelector('.content-block');
-
-                    const mouseX = event.x;
-                    const mouseY = event.y;
-                    if (!chart.glassPointerTarget) {
-                        chart.glassPointerTarget = { x: 0, y: 0 };
-                    }
-
-                    chart._cursorPos = { x: mouseX, y: mouseY };
-
-                    let isOverCenter = false;
-                    chart.hoveredSliceIndex = undefined;
-
-                    if (chart.getDatasetMeta(0)?.data[0]) {
-                        const firstArc = chart.getDatasetMeta(0).data[0];
-                        if (
-                            firstArc &&
-                            typeof firstArc.x === 'number' &&
-                            typeof firstArc.y === 'number' &&
-                            typeof firstArc.innerRadius === 'number'
-                        ) {
-                            const centerX = firstArc.x;
-                            const centerY = firstArc.y;
-                            const innerRadius = firstArc.innerRadius;
-                            const distance = Math.sqrt(
-                                Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2)
-                            );
-                            if (distance < innerRadius) {
-                                isOverCenter = true;
-                            }
-                            const radius = Math.max(firstArc.outerRadius, 1);
-                            chart.glassPointerTarget = {
-                                x: (mouseX - centerX) / radius,
-                                y: (mouseY - centerY) / radius,
-                            };
-                        }
-                    } else {
-                        chart.glassPointerTarget = { x: 0, y: 0 };
-                    }
-
-                    // Set hoveredSliceIndex for visual effects (logo tint, etc.)
-                    if (!isOverCenter && activeElements.length > 0) {
-                        chart.hoveredSliceIndex = activeElements[0].index;
-                    }
-
-                    // If table is persisting due to a click (on desktop), skip table visibility logic
-                    if (isTablePersisting && window.innerWidth > UI_BREAKPOINTS.MOBILE) {
-                        chart.update();
-                        return;
-                    }
-
-                    let tableShouldBeVisible = false;
-                    let specificRowToShow = null;
-
-                    if (isOverCenter) {
-                        if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
-                            // Only show all rows on hover on desktop
-                            tableShouldBeVisible = true;
-                            for (let i = 0; i < allDataRows.length; i++) {
-                                allDataRows[i].classList.remove('hidden');
-                            }
-                        }
-                    } else if (activeElements.length > 0 && chart.data.labels?.length > 0) {
-                        const activeSegment = activeElements[0];
-                        const dataIndex = activeSegment.index;
-
-                        if (dataIndex >= 0 && dataIndex < chart.data.labels.length) {
-                            const ticker = chart.data.labels[dataIndex];
-                            specificRowToShow = document.querySelector(
-                                `tbody tr[data-ticker="${ticker}"]`
-                            );
-                            if (specificRowToShow) {
-                                tableShouldBeVisible = true;
-                                for (let i = 0; i < allDataRows.length; i++) {
-                                    allDataRows[i].classList.toggle(
-                                        'hidden',
-                                        allDataRows[i] !== specificRowToShow
-                                    );
-                                }
-                            }
-                        }
-                    }
-
-                    chart.update();
-
-                    if (tableShouldBeVisible) {
-                        if (contentBlock) {
-                            contentBlock.classList.remove('hidden');
-                        }
-                        tableElement.classList.remove('hidden');
-                        if (footerWrapperElement) {
-                            footerWrapperElement.classList.remove('hidden');
-                        }
-                    } else {
-                        if (contentBlock) {
-                            contentBlock.classList.add('hidden');
-                        }
-                        tableElement.classList.add('hidden');
-                        for (let i = 0; i < allDataRows.length; i++) {
-                            allDataRows[i].classList.add('hidden');
-                        }
-                        if (footerWrapperElement) {
-                            footerWrapperElement.classList.add('hidden');
-                        }
-                        chart.glassPointerTarget = { x: 0, y: 0 };
-                    }
-                    checkAndToggleVerticalScroll();
-                },
-            },
-            plugins: [
-                imagePlugin,
-                customArcBordersPlugin,
-                waveAnimationPlugin,
-                glass3dPlugin,
-                thinFilmPlugin,
-            ],
-        });
+        fundChartInstance = new Chart(ctx, buildChartConfig(data, baseRotation));
         fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
-        if (fundChartInstance.canvas && !fundChartInstance._glassMouseLeaveBound) {
-            fundChartInstance.canvas.addEventListener('mouseleave', () => {
-                fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
-                fundChartInstance._cursorPos = null;
-            });
-
-            const handleTouchEnd = () => {
-                if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
-                    fundChartInstance.update();
-                    return;
-                }
-                fundChartInstance.hoveredSliceIndex = undefined;
-                if (!isTablePersisting) {
-                    const tableElement = document.querySelector('table');
-                    const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
-                    const footerWrapperElement = document.querySelector('.footer-wrapper');
-                    const contentBlock = document.querySelector('.content-block');
-
-                    if (contentBlock) {
-                        contentBlock.classList.add('hidden');
-                    }
-                    if (tableElement) {
-                        tableElement.classList.add('hidden');
-                    }
-                    for (let i = 0; i < allDataRows.length; i++) {
-                        allDataRows[i].classList.add('hidden');
-                    }
-                    if (footerWrapperElement) {
-                        footerWrapperElement.classList.add('hidden');
-                    }
-                    fundChartInstance.glassPointerTarget = { x: 0, y: 0 };
-                    fundChartInstance._cursorPos = null;
-                }
-                fundChartInstance.update();
-                checkAndToggleVerticalScroll();
-            };
-            fundChartInstance.canvas.addEventListener('touchend', handleTouchEnd, {
-                passive: true,
-            });
-            fundChartInstance.canvas.addEventListener('touchcancel', handleTouchEnd, {
-                passive: true,
-            });
-
-            fundChartInstance._glassMouseLeaveBound = true;
-        }
-
-        if (!fundChartInstance._hasGlobalTouchBound) {
-            fundChartInstance._hasGlobalTouchBound = true;
-
-            const handleGlobalTouch = (e) => {
-                if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
-                    return;
-                }
-                const chartContainer = document.getElementById('fundPieChartContainer');
-                const contentBlock = document.querySelector('.content-block');
-
-                if (!chartContainer || !contentBlock) {
-                    return;
-                }
-
-                if (chartContainer.contains(e.target) || contentBlock.contains(e.target)) {
-                    return;
-                }
-
-                isTablePersisting = false;
-                if (fundChartInstance) {
-                    fundChartInstance.hoveredSliceIndex = undefined;
-                    fundChartInstance.showLogos = false;
-                    fundChartInstance.update();
-                }
-
-                const tableElement = document.querySelector('table');
-                const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
-                const footerWrapperElement = document.querySelector('.footer-wrapper');
-
-                if (contentBlock) {
-                    contentBlock.classList.add('hidden');
-                }
-                if (tableElement) {
-                    tableElement.classList.add('hidden');
-                }
-                for (let i = 0; i < allDataRows.length; i++) {
-                    allDataRows[i].classList.add('hidden');
-                }
-                if (footerWrapperElement) {
-                    footerWrapperElement.classList.add('hidden');
-                }
-                checkAndToggleVerticalScroll();
-            };
-
-            document.addEventListener('touchstart', handleGlobalTouch, { passive: true });
-
-            const originalDestroy = fundChartInstance.destroy;
-            const newDestroy = function () {
-                document.removeEventListener('touchstart', handleGlobalTouch);
-                if (originalDestroy) {
-                    originalDestroy.apply(this, arguments);
-                }
-            };
-            if (originalDestroy && originalDestroy._isMockFunction) {
-                Object.setPrototypeOf(newDestroy, originalDestroy);
-                Object.assign(newDestroy, originalDestroy);
-            }
-            fundChartInstance.destroy = newDestroy;
-        }
+        setupTouchEvents(fundChartInstance);
+        setupGlobalTouch(fundChartInstance);
     }
 }
 
