@@ -27,6 +27,37 @@ import {
 import { COLOR_PALETTES, getHoldingAssetClass } from '../../../config.js';
 let compositionDataCache = null;
 let compositionDataLoading = false;
+
+// Bolt: Cache the painted static layer (axes + stacked areas) so hover-driven
+// redraws blit the cached bitmap and repaint only the crosshair overlay, instead
+// of re-parsing every date and re-rasterizing every stacked band per frame.
+let compositionStaticLayerCache = null;
+
+function resolveCanvasDpr(ctx) {
+    if (ctx && typeof ctx.getTransform === 'function') {
+        const scale = ctx.getTransform().a;
+        if (Number.isFinite(scale) && scale > 0) {
+            return scale;
+        }
+    }
+    return (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+}
+
+function createStaticLayer(width, height, dpr) {
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+        return null;
+    }
+    const layerCanvas = document.createElement('canvas');
+    layerCanvas.width = Math.max(1, Math.round(width * dpr));
+    layerCanvas.height = Math.max(1, Math.round(height * dpr));
+    const layerCtx =
+        typeof layerCanvas.getContext === 'function' ? layerCanvas.getContext('2d') : null;
+    if (!layerCtx) {
+        return null;
+    }
+    layerCtx.scale(dpr, dpr);
+    return { canvas: layerCanvas, ctx: layerCtx };
+}
 function aggregateCompositionSeries(tickers, chartData, seriesLength) {
     if (!Array.isArray(tickers) || tickers.length === 0 || !Number.isFinite(seriesLength)) {
         return null;
@@ -105,11 +136,58 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     if (emptyState) {
         emptyState.style.display = 'none';
     }
-    // 2. Prepare Basic Data (Indices, Dates)
-    const rawDates = data.dates.slice();
-    const rawSeries = data.composition || data.series || {};
+    // 2. Setup Canvas Geometry and Static-Layer Cache Key
+    const layoutKey = valueMode === 'absolute' ? 'compositionAbs' : 'composition';
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
     const { chartDateRange } = transactionState;
+    const explicitTickerFilters = getCompositionFilterTickers();
+    const assetClassFilter = getCompositionAssetClassFilter();
+    const canvas = ctx.canvas;
+    const canvasWidth = canvas.offsetWidth;
+    const canvasHeight = canvas.offsetHeight;
+    const isMobile = window.innerWidth <= 768;
+    const padding = isMobile
+        ? { top: 15, right: 18, bottom: 36, left: 48 }
+        : { top: 22, right: 26, bottom: 48, left: 68 };
+    const plotWidth = canvasWidth - padding.left - padding.right;
+    const plotHeight = canvasHeight - padding.top - padding.bottom;
+    if (plotWidth <= 0 || plotHeight <= 0) {
+        if (valueMode === 'absolute') {
+            chartLayouts.compositionAbs = null;
+        } else {
+            chartLayouts.composition = null;
+        }
+        updateCrosshairUI(null, null);
+        return;
+    }
+    const dpr = resolveCanvasDpr(ctx);
+    const staticCacheKey = [
+        valueMode,
+        selectedCurrency,
+        chartDateRange.from || '',
+        chartDateRange.to || '',
+        assetClassFilter || '',
+        explicitTickerFilters.join(','),
+        canvasWidth,
+        canvasHeight,
+        dpr,
+    ].join('|');
+    const cachedLayer = compositionStaticLayerCache;
+    if (cachedLayer && cachedLayer.key === staticCacheKey && cachedLayer.data === data) {
+        if (valueMode === 'absolute') {
+            chartLayouts.composition = null;
+        } else {
+            chartLayouts.compositionAbs = null;
+        }
+        chartLayouts[layoutKey] = cachedLayer.layout;
+        ctx.drawImage(cachedLayer.canvas, 0, 0, canvasWidth, canvasHeight);
+        drawCrosshairOverlay(ctx, cachedLayer.layout);
+        updateLegend(cachedLayer.legendSeries, chartManager);
+        return;
+    }
+    // 3. Prepare Basic Data (Indices, Dates)
+    const rawDates = data.dates.slice();
+    const rawSeries = data.composition || data.series || {};
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
     // Bolt: Replaced O(N) Array .map().filter().map() with a single inline loop
@@ -195,8 +273,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         const lastB = arrB[arrB.length - 1] ?? 0;
         return lastB - lastA;
     });
-    const explicitTickerFilters = getCompositionFilterTickers();
-    const assetClassFilter = getCompositionAssetClassFilter();
     let derivedTickerFilters = explicitTickerFilters;
     if (assetClassFilter === 'etf' || assetClassFilter === 'stock') {
         const shouldMatchEtf = assetClassFilter === 'etf';
@@ -229,25 +305,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
     const percentOthersSeries = valueMode === 'absolute' ? filteredReference : filteredOthers;
     const activeTickerOrder = filteredOrder.length > 0 ? filteredOrder : baseTickerOrder;
     const usingFilteredOthers = Boolean(filteredOthers);
-    // 5. Setup Canvas and Scales
-    const canvas = ctx.canvas;
-    const canvasWidth = canvas.offsetWidth;
-    const canvasHeight = canvas.offsetHeight;
-    const isMobile = window.innerWidth <= 768;
-    const padding = isMobile
-        ? { top: 15, right: 18, bottom: 36, left: 48 }
-        : { top: 22, right: 26, bottom: 48, left: 68 };
-    const plotWidth = canvasWidth - padding.left - padding.right;
-    const plotHeight = canvasHeight - padding.top - padding.bottom;
-    if (plotWidth <= 0 || plotHeight <= 0) {
-        if (valueMode === 'absolute') {
-            chartLayouts.compositionAbs = null;
-        } else {
-            chartLayouts.composition = null;
-        }
-        updateCrosshairUI(null, null);
-        return;
-    }
+    // 5. Setup Scales
     const colors = COLOR_PALETTES.COMPOSITION_CHART_COLORS;
     // Local resolveTickerColor logic to match original chart.js exactly
     const resolveTickerColor = (ticker) => {
@@ -304,8 +362,10 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         left: padding.left,
         right: padding.left + plotWidth,
     };
+    const staticLayer = createStaticLayer(canvasWidth, canvasHeight, dpr);
+    const layerCtx = staticLayer ? staticLayer.ctx : ctx;
     drawAxes(
-        ctx,
+        layerCtx,
         padding,
         plotWidth,
         plotHeight,
@@ -329,33 +389,35 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
             continue;
         }
         const color = resolveTickerColor(ticker) || colors[tickerIndex % colors.length];
-        ctx.beginPath();
-        ctx.fillStyle = `${color}80`;
-        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
-        ctx.lineWidth = 1;
+        layerCtx.beginPath();
+        layerCtx.fillStyle = `${color}80`;
+        layerCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+        layerCtx.lineWidth = 1;
         // Bolt: Use standard for loop instead of .forEach to avoid closure allocation
         for (let index = 0; index < dates.length; index += 1) {
-            const dateStr = dates[index];
-            const x = xScale(parseLocalDate(dateStr).getTime());
+            const x = xScale(dateTimes[index]);
             const y = yScale(cumulativeValues[index] + values[index]);
             if (index === 0) {
-                ctx.moveTo(x, y);
+                layerCtx.moveTo(x, y);
             } else {
-                ctx.lineTo(x, y);
+                layerCtx.lineTo(x, y);
             }
         }
         for (let i = dates.length - 1; i >= 0; i -= 1) {
-            const x = xScale(parseLocalDate(dates[i]).getTime());
+            const x = xScale(dateTimes[i]);
             const y = yScale(cumulativeValues[i]);
-            ctx.lineTo(x, y);
+            layerCtx.lineTo(x, y);
         }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        layerCtx.closePath();
+        layerCtx.fill();
+        layerCtx.stroke();
         // Bolt: Optimize array allocation by mutating cumulativeValues in place instead of map
         for (let i = 0; i < cumulativeValues.length; i += 1) {
             cumulativeValues[i] += values[i];
         }
+    }
+    if (staticLayer) {
+        ctx.drawImage(staticLayer.canvas, 0, 0, canvasWidth, canvasHeight);
     }
     // 8. Prepare Legend and Crosshair Data
     const latestIndex = dates.length - 1;
@@ -446,7 +508,6 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         time,
         value: Number(totalValuesConverted[idx] ?? 0),
     }));
-    const layoutKey = valueMode === 'absolute' ? 'compositionAbs' : 'composition';
     if (valueMode === 'absolute') {
         chartLayouts.composition = null;
     } else {
@@ -481,6 +542,15 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         percentOthersSeries,
         getTotalValueAtTime: createTimeInterpolator(totalValuePoints),
     };
+    if (staticLayer) {
+        compositionStaticLayerCache = {
+            key: staticCacheKey,
+            data,
+            canvas: staticLayer.canvas,
+            layout: chartLayouts[layoutKey],
+            legendSeries,
+        };
+    }
     drawCrosshairOverlay(ctx, chartLayouts[layoutKey]);
     updateLegend(legendSeries, chartManager);
 }

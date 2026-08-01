@@ -642,11 +642,32 @@ export const legendState = {
     contributionDirty: true,
 };
 
+let lastLegendSignature = null;
+
+function buildLegendSignature(series) {
+    const visibility = transactionState.chartVisibility || {};
+    const parts = new Array(series.length);
+    for (let i = 0; i < series.length; i++) {
+        const s = series[i];
+        parts[i] = `${s.key}|${s.name}|${s.color}|${visibility[s.key] === false ? 0 : 1}`;
+    }
+    return `${transactionState.activeChart || ''}#${parts.join('#')}`;
+}
+
 export function updateLegend(series, chartManager) {
     const legendContainer = document.querySelector('.chart-legend');
     if (!legendContainer) {
         return;
     }
+
+    // Bolt: Skip the DOM rebuild when nothing the legend renders has changed.
+    // Hover-driven redraws call this every frame; the signature covers the
+    // series content, the active chart, and visibility toggles.
+    const signature = buildLegendSignature(series);
+    if (signature === lastLegendSignature && legendContainer.childElementCount > 0) {
+        return;
+    }
+    lastLegendSignature = signature;
 
     if (typeof legendContainer.replaceChildren === 'function') {
         legendContainer.replaceChildren();

@@ -265,4 +265,127 @@ describe('drawCompositionChart', () => {
 
         expect(chartLayouts.composition).toBeNull();
     });
+
+    it('reuses the cached static layer across redraws with unchanged inputs', async () => {
+        const layerCtxStub = {
+            scale: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            closePath: jest.fn(),
+            fill: jest.fn(),
+            stroke: jest.fn(),
+        };
+        jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(layerCtxStub);
+        mockCtx.drawImage = jest.fn();
+        mockCtx.getTransform = () => ({ a: 2 });
+
+        const coreModule = await import('../../../../../js/transactions/chart/core.js');
+        const interactionModule =
+            await import('../../../../../js/transactions/chart/interaction.js');
+        const { drawCompositionChart } =
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+        const firstLayout = mockState.chartLayouts.composition;
+        expect(firstLayout).toBeDefined();
+
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        // Static layer painted once; the hover redraw only blits the cached bitmap.
+        expect(coreModule.drawAxes).toHaveBeenCalledTimes(1);
+        expect(mockCtx.drawImage).toHaveBeenCalledTimes(2);
+        expect(mockState.chartLayouts.composition).toBe(firstLayout);
+        expect(interactionModule.drawCrosshairOverlay).toHaveBeenCalledTimes(2);
+    });
+
+    it('re-renders the static layer when the date range changes', async () => {
+        const layerCtxStub = {
+            scale: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            closePath: jest.fn(),
+            fill: jest.fn(),
+            stroke: jest.fn(),
+        };
+        jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(layerCtxStub);
+        mockCtx.drawImage = jest.fn();
+        mockCtx.getTransform = () => ({ a: 2 });
+
+        const coreModule = await import('../../../../../js/transactions/chart/core.js');
+        const { drawCompositionChart } =
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        mockState.transactionState.chartDateRange = { from: '2023-01-02', to: '2023-01-02' };
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        expect(coreModule.drawAxes).toHaveBeenCalledTimes(2);
+        expect(mockState.chartLayouts.composition).toBeDefined();
+    });
+
+    it('renders directly every time when no offscreen canvas is available', async () => {
+        const coreModule = await import('../../../../../js/transactions/chart/core.js');
+        const { drawCompositionChart } =
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+        drawCompositionChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        // jsdom canvas getContext returns null, so no static-layer cache is used.
+        expect(coreModule.drawAxes).toHaveBeenCalledTimes(2);
+        expect(mockState.chartLayouts.composition).toBeDefined();
+        expect(mockState.chartLayouts.composition.valueMode).toBe('percent');
+    });
+
+    it('reuses the cached static layer for absolute mode redraws', async () => {
+        const layerCtxStub = {
+            scale: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            closePath: jest.fn(),
+            fill: jest.fn(),
+            stroke: jest.fn(),
+        };
+        jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(layerCtxStub);
+        mockCtx.drawImage = jest.fn();
+        mockCtx.getTransform = () => ({ a: 2 });
+
+        const coreModule = await import('../../../../../js/transactions/chart/core.js');
+        const { drawCompositionAbsoluteChart } =
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+
+        drawCompositionAbsoluteChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+        drawCompositionAbsoluteChart(mockCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        expect(coreModule.drawAxes).toHaveBeenCalledTimes(1);
+        expect(mockCtx.drawImage).toHaveBeenCalledTimes(2);
+        expect(mockState.chartLayouts.compositionAbs).toBeDefined();
+        expect(mockState.chartLayouts.composition).toBeNull();
+    });
+
+    it('bails out and clears the layout when the plot area has no size', async () => {
+        const zeroSizeCtx = { canvas: { offsetWidth: 50, offsetHeight: 30 } };
+        const interactionModule =
+            await import('../../../../../js/transactions/chart/interaction.js');
+        const { drawCompositionChart } =
+            await import('../../../../../js/transactions/chart/renderers/composition.js');
+
+        drawCompositionChart(zeroSizeCtx, mockChartManager);
+        await new Promise(process.nextTick);
+
+        expect(mockState.chartLayouts.composition).toBeNull();
+        expect(interactionModule.updateCrosshairUI).toHaveBeenCalledWith(null, null);
+    });
 });
