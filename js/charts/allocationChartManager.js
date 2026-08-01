@@ -115,16 +115,6 @@ function updateActiveSegmentRow(chart, activeElements, allDataRows) {
     return false;
 }
 
-function showAllRowsIfDesktop(allDataRows) {
-    if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
-        for (let i = 0; i < allDataRows.length; i++) {
-            allDataRows[i].classList.remove('hidden');
-        }
-        return true;
-    }
-    return false; // Actually in original it did not return anything if false, but the flag tableShouldBeVisible would remain false
-}
-
 function processHoverState(chart, activeElements, isOverCenter, allDataRows) {
     if (isOverCenter) {
         if (window.innerWidth > UI_BREAKPOINTS.MOBILE) {
