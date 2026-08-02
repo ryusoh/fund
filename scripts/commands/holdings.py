@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -56,7 +57,9 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     # Optional: argcomplete dynamic ticker completion from holdings file
     try:
         from argcomplete.completers import ChoicesCompleter, FilesCompleter  # type: ignore
-    except Exception:  # pragma: no cover - optional dependency
+    except Exception as e:  # pragma: no cover - optional dependency
+        # security: remediate silent catch block hiding failures
+        logging.debug(f"Optional dependency argcomplete missing: {e}")
         FilesCompleter = None  # type: ignore
 
     def ticker_completer(prefix, parsed_args, **kwargs):  # pragma: no cover - runtime completion

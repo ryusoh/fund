@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import shlex
 from pathlib import Path
 
@@ -45,7 +46,9 @@ def _read_tickers(file_arg: str | None) -> list[str]:
         with json_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         return sorted(map(str, data.keys()))
-    except Exception:
+    except Exception as e:
+        # security: remediate silent catch block hiding failures
+        logging.error(f"Failed to load complete debug data: {e}")
         return []
 
 

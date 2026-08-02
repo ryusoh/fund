@@ -54,7 +54,9 @@ def main():
                 eps_coverage[t] = earliest
             else:
                 eps_coverage[t] = None  # No data
-        except Exception:
+        except Exception as e:
+            # security: remediate silent catch block hiding failures
+            print(f"Warning: Failed to fetch EPS coverage for {t}: {e}")
             eps_coverage[t] = None
 
     # 4. Check Gaps

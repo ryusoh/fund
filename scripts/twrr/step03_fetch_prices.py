@@ -194,7 +194,9 @@ def fetch_stooq_price(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> Op
         series.index = pd.DatetimeIndex(series.index.date)
         series.name = ticker
         return pd.Series(series)  # type: ignore
-    except Exception:
+    except Exception as e:
+        # security: remediate silent catch block hiding failures
+        logging.error(f"Failed to fetch stooq price for {ticker}: {e}")
         return None
 
 
