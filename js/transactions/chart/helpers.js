@@ -411,34 +411,94 @@ export function getSmoothingConfig(chartType) {
     return methodConfig;
 }
 
-export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
+function _extractFirstFilteredTime(filteredData) {
     if (!Array.isArray(filteredData) || filteredData.length === 0) {
-        return filteredData;
+        return null;
     }
-    if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
-        return filteredData;
-    }
-
     const firstFiltered = filteredData[0];
     const firstTime =
         firstFiltered && firstFiltered.date instanceof Date
             ? firstFiltered.date.getTime()
             : new Date(firstFiltered.date).getTime();
-    if (!Number.isFinite(firstTime)) {
-        return filteredData;
-    }
+    return Number.isFinite(firstTime) ? firstTime : null;
+}
 
-    const matchingIndex = fullSeries.findIndex((item) => {
+function _findMatchingIndex(fullSeries, firstTime) {
+    if (!Array.isArray(fullSeries) || fullSeries.length === 0) {
+        return -1;
+    }
+    return fullSeries.findIndex((item) => {
         if (!item) {
             return false;
         }
         const itemDate = new Date(item.date);
-        if (Number.isNaN(itemDate.getTime())) {
-            return false;
-        }
-        return itemDate.getTime() === firstTime;
+        return !Number.isNaN(itemDate.getTime()) && itemDate.getTime() === firstTime;
     });
+}
 
+function _createClampedPoint(previousPoint, filterFrom, firstTime) {
+    if (Math.abs(firstTime - filterFrom.getTime()) < 1000) {
+        return null;
+    }
+    return {
+        ...previousPoint,
+        date: new Date(filterFrom),
+        synthetic: true,
+    };
+}
+
+function _createStandardSyntheticPoint(previousPoint, prevDate, filteredData, filterFrom) {
+    const prevValue = Number(previousPoint.value);
+    const epsilon = 1e-6;
+    if (!Number.isFinite(prevValue) || Math.abs(prevValue) > epsilon) {
+        return null;
+    }
+
+    if (
+        filteredData[0].date instanceof Date &&
+        filteredData[0].date.getTime() === prevDate.getTime()
+    ) {
+        return null;
+    }
+
+    if (filterFrom && prevDate < filterFrom) {
+        return null;
+    }
+
+    return {
+        date: prevDate,
+        value: Number.isFinite(prevValue) ? prevValue : 0,
+        synthetic: true,
+    };
+}
+
+function _processSyntheticPoint(previousPoint, filterFrom, firstTime, filteredData) {
+    const prevDate = new Date(previousPoint.date);
+    if (Number.isNaN(prevDate.getTime())) {
+        return null;
+    }
+
+    if (filterFrom && prevDate < filterFrom) {
+        const clampedPoint = _createClampedPoint(previousPoint, filterFrom, firstTime);
+        return clampedPoint ? [clampedPoint, ...filteredData] : null;
+    }
+
+    const standardPoint = _createStandardSyntheticPoint(
+        previousPoint,
+        prevDate,
+        filteredData,
+        filterFrom
+    );
+    return standardPoint ? [standardPoint, ...filteredData] : null;
+}
+
+export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom = null) {
+    const firstTime = _extractFirstFilteredTime(filteredData);
+    if (firstTime === null) {
+        return filteredData;
+    }
+
+    const matchingIndex = _findMatchingIndex(fullSeries, firstTime);
     if (matchingIndex <= 0) {
         return filteredData;
     }
@@ -448,64 +508,8 @@ export function injectSyntheticStartPoint(filteredData, fullSeries, filterFrom =
         return filteredData;
     }
 
-    const prevDate = new Date(previousPoint.date);
-    if (Number.isNaN(prevDate.getTime())) {
-        return filteredData;
-    }
-
-    // If we have a filterFrom date and the synthetic point is before it, clamp it to filterFrom
-    // This fixes the "left-edge overhang" where the line starts to the left of the Y-axis
-    if (filterFrom && prevDate < filterFrom) {
-        // Check if we already have a point at filterFrom to avoid duplicates
-        const firstFiltered = filteredData[0];
-        const firstTime =
-            firstFiltered && firstFiltered.date instanceof Date
-                ? firstFiltered.date.getTime()
-                : new Date(firstFiltered.date).getTime();
-
-        if (Math.abs(firstTime - filterFrom.getTime()) < 1000) {
-            return filteredData;
-        }
-
-        return [
-            {
-                ...previousPoint,
-                date: new Date(filterFrom),
-                synthetic: true,
-            },
-            ...filteredData,
-        ];
-    }
-
-    const prevValue = Number(previousPoint.value);
-    const epsilon = 1e-6;
-    if (!Number.isFinite(prevValue) || Math.abs(prevValue) > epsilon) {
-        return filteredData;
-    }
-
-    // Don't add the synthetic point if it would be at the same position as the first filtered point
-    if (
-        filteredData[0].date instanceof Date &&
-        filteredData[0].date.getTime() === prevDate.getTime()
-    ) {
-        return filteredData;
-    }
-
-    // Only add synthetic point if it's within the filter range
-    // Note: The clamping logic above handles the case where prevDate < filterFrom
-    if (filterFrom && prevDate < filterFrom) {
-        // This block is now redundant due to the clamping above, but keeping for safety
-        // in case the logic flow changes.
-        return filteredData;
-    }
-
-    const syntheticPoint = {
-        date: prevDate,
-        value: Number.isFinite(prevValue) ? prevValue : 0,
-        synthetic: true,
-    };
-
-    return [syntheticPoint, ...filteredData];
+    const result = _processSyntheticPoint(previousPoint, filterFrom, firstTime, filteredData);
+    return result || filteredData;
 }
 
 /**
