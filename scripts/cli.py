@@ -21,7 +21,11 @@ def _load_command_modules() -> List[str]:
         module_name = mod.name
         try:
             module = importlib.import_module(module_name)
-        except Exception:
+        except Exception as e:
+            import logging
+
+            # security: remediate silent catch block hiding failures
+            logging.warning(f"Failed to import command module {module_name}: {e}")
             # Skip modules that fail to import; they won't be registered
             continue
         if hasattr(module, "add_parser"):
