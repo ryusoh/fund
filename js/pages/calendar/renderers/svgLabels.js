@@ -23,42 +23,7 @@ export function renderLabels(byDate, state, currencySymbols) {
         updateMonthLabels(d3, monthState, currencySymbols);
     }
     if (!state.labelsVisible) {
-        if (state.isAnimating) {
-            // Smooth fade-out animation when toggling off
-            /* istanbul ignore next: style method availability in test environment */
-            const allTextElements = d3
-                .select(CALENDAR_SELECTORS.heatmap)
-                .selectAll('text.ch-subdomain-text');
-
-            /* istanbul ignore next: filter method availability in test environment */
-            const fadeOutSelection = allTextElements.filter
-                ? allTextElements.filter(function () {
-                      return this.textContent && this.textContent.trim() !== '';
-                  })
-                : allTextElements;
-            /* istanbul ignore next: style method availability in test environment */
-            if (fadeOutSelection.style) {
-                fadeOutSelection
-                    .transition()
-                    .duration(400)
-                    .ease(d3.easeCubicInOut)
-                    .style('opacity', 0)
-                    .on('end', function () {
-                        d3.select(this).text('');
-                        state.isAnimating = false;
-                    });
-            } else {
-                // Fallback for test environment
-                fadeOutSelection.text('');
-                state.isAnimating = false;
-            }
-        } else {
-            // Immediate clear without animation (navigation)
-            const textNodes = d3
-                .select(CALENDAR_SELECTORS.heatmap)
-                .selectAll('text.ch-subdomain-text');
-            textNodes.text('');
-        }
+        hideLabels(state);
         return;
     }
 
@@ -113,6 +78,49 @@ export function renderLabels(byDate, state, currencySymbols) {
             }
         });
 
+    showLabels(state);
+}
+
+function hideLabels(state) {
+    if (state.isAnimating) {
+        // Smooth fade-out animation when toggling off
+        /* istanbul ignore next: style method availability in test environment */
+        const allTextElements = d3
+            .select(CALENDAR_SELECTORS.heatmap)
+            .selectAll('text.ch-subdomain-text');
+
+        /* istanbul ignore next: filter method availability in test environment */
+        const fadeOutSelection = allTextElements.filter
+            ? allTextElements.filter(function () {
+                  return this.textContent && this.textContent.trim() !== '';
+              })
+            : allTextElements;
+        /* istanbul ignore next: style method availability in test environment */
+        if (fadeOutSelection.style) {
+            fadeOutSelection
+                .transition()
+                .duration(400)
+                .ease(d3.easeCubicInOut)
+                .style('opacity', 0)
+                .on('end', function () {
+                    d3.select(this).text('');
+                    state.isAnimating = false;
+                });
+        } else {
+            // Fallback for test environment
+            fadeOutSelection.text('');
+            state.isAnimating = false;
+        }
+    } else {
+        // Immediate clear without animation (navigation)
+        const textNodes = d3
+            .select(CALENDAR_SELECTORS.heatmap)
+            .selectAll('text.ch-subdomain-text');
+        textNodes.text('');
+    }
+}
+
+function showLabels(state) {
     // Handle animation vs immediate display
     if (state.isAnimating) {
         // Smooth fade-in animation when toggling on
