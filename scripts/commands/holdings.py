@@ -93,6 +93,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
                 act.completer = ticker_completer
             if getattr(act, "dest", "") == "action" and 'choices' in act.__dict__:
                 # Explicitly attach choices completer for clarity
-                act.completer = ChoicesCompleter(list(act.choices))
+                act.completer = ChoicesCompleter({c: '' for c in act.choices})  # type: ignore
     except Exception as e:
         print(f"Warning: Failed to set up autocomplete for holdings command: {e}", file=sys.stderr)
