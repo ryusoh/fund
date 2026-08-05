@@ -27,6 +27,36 @@ function _calculatePortfolioPE(weightSum, yieldSum) {
 }
 
 /**
+ * Computes trailing and forward yield delta for a holding.
+ * @param {Object} ratioSnapshot
+ * @param {number} price
+ * @param {number} value
+ * @returns {Object}
+ */
+function _computeHoldingYields(ratioSnapshot, price, value) {
+    let yieldDelta = 0;
+    let fwdYieldDelta = 0;
+    let peValue = null;
+
+    if (ratioSnapshot) {
+        const { trailingValue, forwardValue } = _calculateDynamicPeValues(
+            ratioSnapshot,
+            price
+        );
+
+        if (Number.isFinite(trailingValue) && trailingValue > 0) {
+            peValue = trailingValue;
+            yieldDelta = value / trailingValue;
+        }
+        if (Number.isFinite(forwardValue) && forwardValue > 0) {
+            fwdYieldDelta = value / forwardValue;
+        }
+    }
+
+    return { yieldDelta, fwdYieldDelta, peValue };
+}
+
+/**
  * Processes holdings to compute metrics
  * @param {string[]} tickers
  * @param {Object} holdings
@@ -57,20 +87,18 @@ function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
             });
 
             const ratioSnapshot = marketRatiosByTicker.get(ticker);
-            if (ratioSnapshot) {
-                const { trailingValue, forwardValue } = _calculateDynamicPeValues(
-                    ratioSnapshot,
-                    price
-                );
+            const { yieldDelta, fwdYieldDelta, peValue } = _computeHoldingYields(
+                ratioSnapshot,
+                price,
+                value
+            );
 
-                if (Number.isFinite(trailingValue) && trailingValue > 0) {
-                    tickerPEs[ticker] = trailingValue;
-                    weightedYieldSum += value / trailingValue;
-                }
-                if (Number.isFinite(forwardValue) && forwardValue > 0) {
-                    weightedFwdYieldSum += value / forwardValue;
-                }
+            if (peValue !== null) {
+                tickerPEs[ticker] = peValue;
             }
+            weightedYieldSum += yieldDelta;
+            weightedFwdYieldSum += fwdYieldDelta;
+
             tickerWeights[ticker] = value;
             weightSum += value;
         }
