@@ -39,10 +39,7 @@ function _computeHoldingYields(ratioSnapshot, price, value) {
     let peValue = null;
 
     if (ratioSnapshot) {
-        const { trailingValue, forwardValue } = _calculateDynamicPeValues(
-            ratioSnapshot,
-            price
-        );
+        const { trailingValue, forwardValue } = _calculateDynamicPeValues(ratioSnapshot, price);
 
         if (Number.isFinite(trailingValue) && trailingValue > 0) {
             peValue = trailingValue;

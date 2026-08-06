@@ -1164,6 +1164,87 @@ describe('dataService', () => {
             expect(lastEntry.total).toBe(1000);
         });
 
+        it('snaps sub-cent realtime daily changes to zero (price-precision residue)', async () => {
+            d3.csv.mockResolvedValue([{ date: '2024-01-12', value_usd: '1000.00' }]);
+            d3.json.mockImplementation((url) => {
+                if (url.includes('fx')) {
+                    return Promise.resolve({
+                        rates: { USD: 1.0, CNY: 7, JPY: 110, KRW: 1200 },
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ AAPL: { shares: '10' } }),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ AAPL: '100.0005' }),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+            });
+            getNyDate.mockReturnValue(new Date('2024-01-15T12:00:00Z'));
+
+            const result = await getCalendarData({
+                historical: 'historical.csv',
+                fx: 'fx.json',
+                holdings: 'holdings.json',
+                fund: 'fund.json',
+            });
+
+            const todayEntry = result.processedData[result.processedData.length - 1];
+            expect(todayEntry.date).toBe('2024-01-15');
+            // delta is $0.005 — residue between 2-decimal quotes and the
+            // pipeline's full-precision close, not real PnL
+            expect(todayEntry.dailyChange).toBe(0);
+            expect(todayEntry.dailyChangeCNY).toBe(0);
+            expect(todayEntry.dailyChangeJPY).toBe(0);
+            expect(todayEntry.dailyChangeKRW).toBe(0);
+            expect(todayEntry.value).toBe(0);
+        });
+
+        it('keeps realtime daily changes of at least one cent', async () => {
+            d3.csv.mockResolvedValue([{ date: '2024-01-12', value_usd: '1000.00' }]);
+            d3.json.mockImplementation((url) => {
+                if (url.includes('fx')) {
+                    return Promise.resolve({ rates: { USD: 1.0 } });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ AAPL: { shares: '10' } }),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ AAPL: '100.002' }),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+            });
+            getNyDate.mockReturnValue(new Date('2024-01-15T12:00:00Z'));
+
+            const result = await getCalendarData({
+                historical: 'historical.csv',
+                fx: 'fx.json',
+                holdings: 'holdings.json',
+                fund: 'fund.json',
+            });
+
+            const todayEntry = result.processedData[result.processedData.length - 1];
+            expect(todayEntry.dailyChange).toBeCloseTo(0.02, 10);
+        });
+
         it('covers allocation 100% and triggers pnl calc (lines 52,57,101)', async () => {
             const mockHoldings = { ONE: { shares: '2', average_price: '50.00', name: 'One Inc.' } };
             const mockPrices = { ONE: '75.00' };

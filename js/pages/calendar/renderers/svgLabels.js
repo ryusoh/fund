@@ -113,9 +113,7 @@ function hideLabels(state) {
         }
     } else {
         // Immediate clear without animation (navigation)
-        const textNodes = d3
-            .select(CALENDAR_SELECTORS.heatmap)
-            .selectAll('text.ch-subdomain-text');
+        const textNodes = d3.select(CALENDAR_SELECTORS.heatmap).selectAll('text.ch-subdomain-text');
         textNodes.text('');
     }
 }

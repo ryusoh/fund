@@ -660,10 +660,21 @@ function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {})
     const currentTotalValueKRW = currentTotalValueUSD * (rates.KRW || 1);
 
     // Calculate daily changes (using USD as baseline for percentage)
-    const dailyChangeUSD = currentTotalValueUSD - baselineTotals.totalUSD;
-    const dailyChangeCNY = currentTotalValueCNY - baselineTotals.totalCNY;
-    const dailyChangeJPY = currentTotalValueJPY - baselineTotals.totalJPY;
-    const dailyChangeKRW = currentTotalValueKRW - baselineTotals.totalKRW;
+    let dailyChangeUSD = currentTotalValueUSD - baselineTotals.totalUSD;
+    let dailyChangeCNY = currentTotalValueCNY - baselineTotals.totalCNY;
+    let dailyChangeJPY = currentTotalValueJPY - baselineTotals.totalJPY;
+    let dailyChangeKRW = currentTotalValueKRW - baselineTotals.totalKRW;
+
+    // Sub-cent realtime deltas are price-precision residue (2-decimal live
+    // quotes vs the pipeline's full-precision closes), not real PnL — snap to
+    // flat. Threshold is on USD; the other currencies are the same noise
+    // scaled by FX rates.
+    if (Math.abs(dailyChangeUSD) < 0.01) {
+        dailyChangeUSD = 0;
+        dailyChangeCNY = 0;
+        dailyChangeJPY = 0;
+        dailyChangeKRW = 0;
+    }
 
     const calculatePnlPercentage = (change, previous) => {
         if (!Number.isFinite(change) || !Number.isFinite(previous) || previous === 0) {
