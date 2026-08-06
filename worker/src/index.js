@@ -45,8 +45,6 @@ function getTradingSession() {
     return 'closed';
 }
 
-export { getTradingSession };
-
 function corsHeaders(origin) {
     let isSubdomain = false;
     try {
