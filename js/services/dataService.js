@@ -668,8 +668,10 @@ function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {})
     // Sub-cent realtime deltas are price-precision residue (2-decimal live
     // quotes vs the pipeline's full-precision closes), not real PnL — snap to
     // flat. Threshold is on USD; the other currencies are the same noise
-    // scaled by FX rates.
-    if (Math.abs(dailyChangeUSD) < 0.01) {
+    // scaled by FX rates. isFlat lets the calendar distinguish a flat day
+    // (render a zero label) from missing data (render nothing).
+    const isFlat = Math.abs(dailyChangeUSD) < 0.01;
+    if (isFlat) {
         dailyChangeUSD = 0;
         dailyChangeCNY = 0;
         dailyChangeJPY = 0;
@@ -709,6 +711,7 @@ function calculateRealtimePnl(holdingsData, fundData, baselineEntry, rates = {})
         dailyChangeCNY: dailyChangeCNY,
         dailyChangeJPY: dailyChangeJPY,
         dailyChangeKRW: dailyChangeKRW,
+        isFlat: isFlat,
     };
 }
 

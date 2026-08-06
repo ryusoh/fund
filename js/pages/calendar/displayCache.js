@@ -7,7 +7,10 @@ export function computeEntryDisplay(entry, currency, rates, currencySymbols) {
 
     const dailyChange = Number(entry.dailyChange);
     const isInitialDataPoint = Boolean(entry.isInitialDataPoint);
-    if (!Number.isFinite(dailyChange) || (dailyChange === 0 && !isInitialDataPoint)) {
+    // isFlat marks a realtime day snapped to zero (sub-cent price-precision
+    // residue): the cell renders a zero label instead of looking like no data.
+    const isFlat = Boolean(entry.isFlat);
+    if (!Number.isFinite(dailyChange) || (dailyChange === 0 && !isInitialDataPoint && !isFlat)) {
         return { changeText: '', totalText: '', showDetails: false };
     }
 

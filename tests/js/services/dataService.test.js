@@ -1207,6 +1207,7 @@ describe('dataService', () => {
             expect(todayEntry.dailyChangeJPY).toBe(0);
             expect(todayEntry.dailyChangeKRW).toBe(0);
             expect(todayEntry.value).toBe(0);
+            expect(todayEntry.isFlat).toBe(true);
         });
 
         it('keeps realtime daily changes of at least one cent', async () => {
@@ -1243,6 +1244,7 @@ describe('dataService', () => {
 
             const todayEntry = result.processedData[result.processedData.length - 1];
             expect(todayEntry.dailyChange).toBeCloseTo(0.02, 10);
+            expect(todayEntry.isFlat).toBe(false);
         });
 
         it('covers allocation 100% and triggers pnl calc (lines 52,57,101)', async () => {

@@ -58,6 +58,26 @@ describe('calendar displayCache', () => {
         );
     });
 
+    it('shows a zero label for realtime entries flagged isFlat', () => {
+        formatNumber.mockImplementationOnce(() => '$0').mockImplementationOnce(() => '$1,000.00');
+        const entry = { dailyChange: 0, total: 1000, isFlat: true };
+        const result = ensureEntryDisplay(entry, 'USD', rates, currencySymbols);
+        expect(result.showDetails).toBe(true);
+        expect(result.changeText).toBe('$0');
+        expect(result.totalText).toBe('$1,000.00');
+        expect(formatNumber).toHaveBeenCalledTimes(2);
+        expect(formatNumber).toHaveBeenNthCalledWith(
+            1,
+            0,
+            currencySymbols,
+            true,
+            'USD',
+            rates,
+            entry,
+            'dailyChange'
+        );
+    });
+
     it('returns empty for null entry in ensureEntryDisplay', () => {
         expect(ensureEntryDisplay(null, 'USD', rates, currencySymbols)).toEqual({
             changeText: '',
