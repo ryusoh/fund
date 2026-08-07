@@ -4,9 +4,9 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              71.95%  ███████████████████████████████████
-  Asia                       22.91%  ███████████
-  Europe                      3.97%  █
+  North America              71.68%  ███████████████████████████████████
+  Asia                       23.13%  ███████████
+  Europe                      4.00%  ██
   Oceania                     0.46%  
   Other                       0.42%  
   South America               0.18%  
@@ -14,9 +14,9 @@ CONTINENT BREAKDOWN (Ranked)
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           71.88%  ███████████████████████████████████
-  East Asia                  21.99%  ██████████
-  Western Europe              3.02%  █
+  Northern America           71.61%  ███████████████████████████████████
+  East Asia                  22.20%  ███████████
+  Western Europe              3.05%  █
   South Asia                  0.55%  
   Northern Europe             0.46%  
   Australasia                 0.46%  
@@ -29,19 +29,19 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            71.05%  ███████████████████████████████████
-   2. China                    19.69%  █████████
-   3. Japan                     1.55%  
-   4. United Kingdom            0.89%  
-   5. Canada                    0.83%  
-   6. Taiwan                    0.63%  
-   7. Switzerland               0.60%  
+   1. United States            70.77%  ███████████████████████████████████
+   2. China                    19.88%  █████████
+   3. Japan                     1.56%  
+   4. United Kingdom            0.90%  
+   5. Canada                    0.84%  
+   6. Taiwan                    0.64%  
+   7. Switzerland               0.61%  
    8. India                     0.55%  
    9. France                    0.55%  
   10. Germany                   0.55%  
   11. Australia                 0.44%  
   12. Korea                     0.42%  
-  13. Netherlands               0.32%  
+  13. Netherlands               0.33%  
   14. Sweden                    0.24%  
   15. Spain                     0.22%  
   16. Italy                     0.20%  
