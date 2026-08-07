@@ -105,6 +105,81 @@ function _scaleRealtimePeToHistoricalBasis(data, realtime) {
  * Load PE ratio data from the backend JSON and merge real-time data if available.
  * @returns {Promise<Object|null>}
  */
+
+function _updateSingleTickerMap(dataMap, realtimeMap, idx, isAppend) {
+    const keys = Object.keys(dataMap || {});
+    for (let k = 0; k < keys.length; k += 1) {
+        const ticker = keys[k];
+        if (isAppend) {
+            dataMap[ticker].push(realtimeMap[ticker] || null);
+        } else {
+            dataMap[ticker][idx] = realtimeMap[ticker] || null;
+        }
+    }
+}
+
+function _updateTickerArrays(data, realtimeData, idx, isAppend) {
+    _updateSingleTickerMap(data.ticker_pe, realtimeData.tickerPEs, idx, isAppend);
+    _updateSingleTickerMap(data.ticker_weights, realtimeData.tickerWeights, idx, isAppend);
+}
+
+function _addNewTickerEntries(dataMap, realtimeMap, idx) {
+    const keys = Object.keys(realtimeMap || {});
+    for (let k = 0; k < keys.length; k += 1) {
+        const ticker = keys[k];
+        if (!dataMap[ticker]) {
+            dataMap[ticker] = new Array(idx + 1).fill(null);
+            dataMap[ticker][idx] = realtimeMap[ticker];
+        }
+    }
+}
+
+function _addNewTickers(data, realtimeData, idx) {
+    data.ticker_pe = data.ticker_pe || {};
+    data.ticker_weights = data.ticker_weights || {};
+
+    _addNewTickerEntries(data.ticker_pe, realtimeData.tickerPEs, idx);
+    _addNewTickerEntries(data.ticker_weights, realtimeData.tickerWeights, idx);
+}
+
+function _updateForwardPE(data, realtimeData) {
+    if (realtimeData.forwardPe !== null) {
+        data.forward_pe = data.forward_pe || {};
+        data.forward_pe.portfolio_forward_pe = realtimeData.forwardPe;
+        if (!data.forward_pe.target_date) {
+            const parts = realtimeData.date.split('-');
+            if (parts.length === 3) {
+                parts[0] = String(Number(parts[0]) + 1);
+                data.forward_pe.target_date = parts.join('-');
+            }
+        }
+    }
+}
+
+function _mergeRealtimeData(data, scaledRealtime) {
+    if (!data || !scaledRealtime || !scaledRealtime.date || scaledRealtime.pe === null) {
+        return;
+    }
+    const lastDate = data.dates[data.dates.length - 1];
+    if (lastDate > scaledRealtime.date) {
+        return;
+    }
+
+    if (lastDate === scaledRealtime.date) {
+        data.portfolio_pe[data.portfolio_pe.length - 1] = scaledRealtime.pe;
+        const idx = data.dates.length - 1;
+        _updateTickerArrays(data, scaledRealtime, idx, false);
+    } else {
+        data.dates.push(scaledRealtime.date);
+        data.portfolio_pe.push(scaledRealtime.pe);
+        _updateTickerArrays(data, scaledRealtime, null, true);
+    }
+
+    const idx = data.dates.length - 1;
+    _addNewTickers(data, scaledRealtime, idx);
+    _updateForwardPE(data, scaledRealtime);
+}
+
 export async function loadPEData() {
     try {
         const [response, realtime] = await Promise.all([
@@ -124,84 +199,7 @@ export async function loadPEData() {
         // doesn't jump when the portfolio value barely moves.
         const scaledRealtime = _scaleRealtimePeToHistoricalBasis(data, realtime);
 
-        if (data && scaledRealtime && scaledRealtime.date && scaledRealtime.pe !== null) {
-            const lastDate = data.dates[data.dates.length - 1];
-            if (lastDate === scaledRealtime.date || lastDate < scaledRealtime.date) {
-                if (lastDate === scaledRealtime.date) {
-                    data.portfolio_pe[data.portfolio_pe.length - 1] = scaledRealtime.pe;
-
-                    const idx = data.dates.length - 1;
-                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
-                    const peKeys = Object.keys(data.ticker_pe || {});
-                    for (let k = 0; k < peKeys.length; k += 1) {
-                        const ticker = peKeys[k];
-                        data.ticker_pe[ticker][idx] = scaledRealtime.tickerPEs[ticker] || null;
-                    }
-
-                    const weightKeys = Object.keys(data.ticker_weights || {});
-                    for (let k = 0; k < weightKeys.length; k += 1) {
-                        const ticker = weightKeys[k];
-                        data.ticker_weights[ticker][idx] =
-                            scaledRealtime.tickerWeights[ticker] || null;
-                    }
-                } else {
-                    data.dates.push(scaledRealtime.date);
-                    data.portfolio_pe.push(scaledRealtime.pe);
-
-                    // Pad existing ticker arrays
-                    // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
-                    const peKeys = Object.keys(data.ticker_pe || {});
-                    for (let k = 0; k < peKeys.length; k += 1) {
-                        const ticker = peKeys[k];
-                        data.ticker_pe[ticker].push(scaledRealtime.tickerPEs[ticker] || null);
-                    }
-
-                    const weightKeys = Object.keys(data.ticker_weights || {});
-                    for (let k = 0; k < weightKeys.length; k += 1) {
-                        const ticker = weightKeys[k];
-                        data.ticker_weights[ticker].push(
-                            scaledRealtime.tickerWeights[ticker] || null
-                        );
-                    }
-                }
-
-                const idx = data.dates.length - 1;
-                // Add new tickers that may not exist in historical data
-                data.ticker_pe = data.ticker_pe || {};
-                data.ticker_weights = data.ticker_weights || {};
-
-                // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
-                const newPEKeys = Object.keys(scaledRealtime.tickerPEs || {});
-                for (let k = 0; k < newPEKeys.length; k += 1) {
-                    const ticker = newPEKeys[k];
-                    if (!data.ticker_pe[ticker]) {
-                        data.ticker_pe[ticker] = new Array(idx + 1).fill(null);
-                        data.ticker_pe[ticker][idx] = scaledRealtime.tickerPEs[ticker];
-                    }
-                }
-
-                const newWeightKeys = Object.keys(scaledRealtime.tickerWeights || {});
-                for (let k = 0; k < newWeightKeys.length; k += 1) {
-                    const ticker = newWeightKeys[k];
-                    if (!data.ticker_weights[ticker]) {
-                        data.ticker_weights[ticker] = new Array(idx + 1).fill(null);
-                        data.ticker_weights[ticker][idx] = scaledRealtime.tickerWeights[ticker];
-                    }
-                }
-
-                if (scaledRealtime.forwardPe !== null) {
-                    data.forward_pe = data.forward_pe || {};
-                    data.forward_pe.portfolio_forward_pe = scaledRealtime.forwardPe;
-                    if (!data.forward_pe.target_date) {
-                        const parts = scaledRealtime.date.split('-');
-                        if (parts.length === 3) {
-                            parts[0] = String(Number(parts[0]) + 1);
-                            data.forward_pe.target_date = parts.join('-');
-                        }
-                    }
-                }
-            }
-        }
+        _mergeRealtimeData(data, scaledRealtime);
 
         if (!data) {
             // eslint-disable-next-line no-console
