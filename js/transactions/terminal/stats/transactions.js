@@ -53,64 +53,78 @@ ${table}
 `;
 }
 
+function _buildStatsRows(counts, values, selectedCurrency) {
+    return [
+        [
+            'Total Transactions',
+            getNumberFormatter(undefined, 0, 0).format(Number(counts.total_transactions || 0)),
+        ],
+        ['Buy Orders', getNumberFormatter(undefined, 0, 0).format(Number(counts.buy_orders || 0))],
+        [
+            'Sell Orders',
+            getNumberFormatter(undefined, 0, 0).format(Number(counts.sell_orders || 0)),
+        ],
+        [
+            'Total Buy Amount',
+            formatCurrency(values.total_buy_amount || 0, { currency: selectedCurrency }),
+        ],
+        [
+            'Total Sell Amount',
+            formatCurrency(values.total_sell_amount || 0, { currency: selectedCurrency }),
+        ],
+        [
+            'Net Contributions',
+            formatCurrency(values.net_contributions || 0, { currency: selectedCurrency }),
+        ],
+        [
+            'Realized Gain',
+            formatCurrency(values.realized_gain || 0, { currency: selectedCurrency }),
+        ],
+    ];
+}
+
+async function _fetchStatsData() {
+    if (!statsDataCache) {
+        const response = await fetch('../data/output/transaction_stats.json');
+        if (response.ok) {
+            statsDataCache = await response.json();
+        }
+    }
+    return statsDataCache;
+}
+
+function _renderStatsTable(data, normalizedCurrency) {
+    const availableCurrencies = data.currency_values || {};
+    const selectedCurrency = availableCurrencies[normalizedCurrency] ? normalizedCurrency : 'USD';
+    const counts = data.counts || {};
+    const values = availableCurrencies[selectedCurrency] || {};
+    const rows = _buildStatsRows(counts, values, selectedCurrency);
+    const table = renderAsciiTable({
+        title: 'TRANSACTION STATS',
+        headers: ['Metric', 'Value'],
+        rows,
+        alignments: ['left', 'right'],
+    });
+    return `
+${table}
+`;
+}
+
+async function _fetchLegacyStats() {
+    const response = await fetch('../data/output/transaction_stats.txt');
+    if (!response.ok) {
+        return 'Error loading transaction stats.';
+    }
+    return await response.text();
+}
+
 export async function getStatsText(currency = 'USD') {
     const normalizedCurrency =
         typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD';
     try {
-        if (!statsDataCache) {
-            const response = await fetch('../data/output/transaction_stats.json');
-            if (response.ok) {
-                statsDataCache = await response.json();
-            }
-        }
-        if (statsDataCache) {
-            const availableCurrencies = statsDataCache.currency_values || {};
-            const selectedCurrency = availableCurrencies[normalizedCurrency]
-                ? normalizedCurrency
-                : 'USD';
-            const counts = statsDataCache.counts || {};
-            const values = availableCurrencies[selectedCurrency] || {};
-            const rows = [
-                [
-                    'Total Transactions',
-                    getNumberFormatter(undefined, 0, 0).format(
-                        Number(counts.total_transactions || 0)
-                    ),
-                ],
-                [
-                    'Buy Orders',
-                    getNumberFormatter(undefined, 0, 0).format(Number(counts.buy_orders || 0)),
-                ],
-                [
-                    'Sell Orders',
-                    getNumberFormatter(undefined, 0, 0).format(Number(counts.sell_orders || 0)),
-                ],
-                [
-                    'Total Buy Amount',
-                    formatCurrency(values.total_buy_amount || 0, { currency: selectedCurrency }),
-                ],
-                [
-                    'Total Sell Amount',
-                    formatCurrency(values.total_sell_amount || 0, { currency: selectedCurrency }),
-                ],
-                [
-                    'Net Contributions',
-                    formatCurrency(values.net_contributions || 0, { currency: selectedCurrency }),
-                ],
-                [
-                    'Realized Gain',
-                    formatCurrency(values.realized_gain || 0, { currency: selectedCurrency }),
-                ],
-            ];
-            const table = renderAsciiTable({
-                title: 'TRANSACTION STATS',
-                headers: ['Metric', 'Value'],
-                rows,
-                alignments: ['left', 'right'],
-            });
-            return `
-${table}
-`;
+        const statsData = await _fetchStatsData();
+        if (statsData) {
+            return _renderStatsTable(statsData, normalizedCurrency);
         }
     } catch (error) {
         logger.warn('Transactions stats processing failed:', error);
@@ -118,11 +132,7 @@ ${table}
     }
 
     try {
-        const response = await fetch('../data/output/transaction_stats.txt');
-        if (!response.ok) {
-            return 'Error loading transaction stats.';
-        }
-        return await response.text();
+        return await _fetchLegacyStats();
     } catch (error) {
         logger.warn('Transactions stats processing failed:', error);
         return 'Error loading transaction stats.';

@@ -149,11 +149,6 @@
             "count": 2
         }
     },
-    "js/transactions/terminal/stats/transactions.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/ui/calendarMonthLabelManager.js": {
         "complexity": {
             "count": 2
