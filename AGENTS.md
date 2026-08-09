@@ -30,7 +30,10 @@ ES modules via an import map.
 ## Non-negotiables (a PR that violates any of these will be closed)
 
 1. **Open a PR only if `make verify` is green.** It is the CI gate
-   (`lint type sec test`). Red = don't open it.
+   (`lint type sec test`). Red = don't open it. And don't rerun a red gate on an
+   unchanged tree — a failed gate over an untouched worktree cannot go green, so
+   edit something first. `python3 -m scripts.agents.gate_guard` enforces this:
+   `snapshot` before the run, `check <hash>` before a retry (exit 1 = unchanged).
 2. **One concern, smallest possible diff.** No drive-by edits, no scope creep.
    Diff size is inversely proportional to approval — keep it tiny.
 3. **Stay in your lane** (see "Lanes" below). If two routines touch the same files,
@@ -306,3 +309,9 @@ files as the only source of truth.
   `js/transactions/terminal/handlers/help.js`: `transaction` toggles the table,
   `plot` needs a subcommand, `all` only clears filters.) Guessing here has twice
   cost a correction round-trip.
+- **Concurrent agents sharing one worktree.** When you run parallel subagents
+  (swarms, background agents) in this checkout: stage only files you changed
+  (`git add <specific-files>`, never `git add -A`), never `git stash`,
+  `git reset --hard`, or `git commit --no-verify` — a sibling agent's work may be
+  sitting in the same tree. Keep concurrent agents on disjoint file sets; if a
+  rebase/conflict lands mid-run, resolve only files your task owns.

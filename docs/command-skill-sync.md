@@ -13,6 +13,14 @@ generated directory looks fine until the next sync **deletes it**.
   **Never hand-edit.** `scripts/sync_commands.py` calls `shutil.rmtree` on the
   whole directory and regenerates it, so any manual edit is **silently lost**.
 
+## Progressive disclosure
+
+Skills are loaded progressively: only the frontmatter `name` + `description`
+enter an agent's system prompt; the body is read on demand once the skill
+triggers. So the `description` is the only always-loaded surface — write it as a
+discriminative trigger ("Use when ..."), and don't contort the body to save
+prompt space; length there is free until the skill fires.
+
 ## Adding or editing a skill
 
 1. Create/edit `.agents/skills/<name>/SKILL.md`.

@@ -120,3 +120,7 @@ continue"; commits it made are fine, uncommitted partial work gets assessed
 before it proceeds. The per-repo isolation of this skill's delegation pattern
 is what makes partial failure cheap: one dead agent never poisons another
 repo's tree.
+
+Parallel agents that touch THIS repo share one worktree — follow AGENTS.md
+"Concurrent agents sharing one worktree": stage only files you changed, never
+`git add -A` / `git stash` / `git reset --hard`, keep file sets disjoint.

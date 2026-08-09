@@ -63,6 +63,10 @@ pipeline in `scripts/`; the Cloudflare worker.
 - If the change alters any observable behaviour, add a test covering the changed
   lines (CI enforces diff coverage). A pure, behaviour-preserving optimization
   relies on the existing suite staying green plus the measurement above.
+- Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
+  worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
+  before the run, `check <hash>` before a retry); unchanged means edit something
+  first (AGENTS.md non-negotiable #1).
 
 ## Commit and pull request
 

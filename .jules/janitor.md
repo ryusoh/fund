@@ -51,6 +51,10 @@ success, not a reason to invent work or reach into another lane.
 - State the evidence the removal is safe (the reference search you ran turned up
   nothing). `make verify` green — full JS + Python suite still passes.
 - If you resolved a TODO that adds behaviour, a test covers the changed lines.
+- Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
+  worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
+  before the run, `check <hash>` before a retry); unchanged means edit something
+  first (AGENTS.md non-negotiable #1).
 
 ## Commit and pull request
 

@@ -63,6 +63,10 @@ already proposed or previously rejected — pick a different target.
   `eslint-suppressions.json` in the PR — the baseline only ratchets down.
 - `make verify` green — lint, types, security, full JS + Python suite, with
   **coverage preserved**.
+- Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
+  worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
+  before the run, `check <hash>` before a retry); unchanged means edit something
+  first (AGENTS.md non-negotiable #1).
 
 ## Commit and pull request
 
