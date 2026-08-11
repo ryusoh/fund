@@ -4,9 +4,9 @@ PORTFOLIO GEOGRAPHIC ALLOCATION - HIERARCHICAL SUMMARY
 
 CONTINENT BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  North America              71.30%  ███████████████████████████████████
-  Asia                       23.50%  ███████████
-  Europe                      4.01%  ██
+  North America              71.73%  ███████████████████████████████████
+  Asia                       23.06%  ███████████
+  Europe                      4.02%  ██
   Oceania                     0.46%  
   Other                       0.42%  
   South America               0.18%  
@@ -14,8 +14,8 @@ CONTINENT BREAKDOWN (Ranked)
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           71.23%  ███████████████████████████████████
-  East Asia                  22.57%  ███████████
+  Northern America           71.66%  ███████████████████████████████████
+  East Asia                  22.12%  ███████████
   Western Europe              3.06%  █
   South Asia                  0.56%  
   Northern Europe             0.46%  
@@ -29,17 +29,17 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            70.39%  ███████████████████████████████████
-   2. China                    20.25%  ██████████
+   1. United States            70.82%  ███████████████████████████████████
+   2. China                    19.79%  █████████
    3. Japan                     1.57%  
    4. United Kingdom            0.90%  
    5. Canada                    0.84%  
    6. Taiwan                    0.64%  
    7. Switzerland               0.61%  
    8. India                     0.56%  
-   9. France                    0.55%  
+   9. France                    0.56%  
   10. Germany                   0.55%  
-  11. Australia                 0.44%  
+  11. Australia                 0.45%  
   12. Korea                     0.42%  
   13. Netherlands               0.33%  
   14. Sweden                    0.24%  
