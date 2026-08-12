@@ -43,19 +43,28 @@ function resolveCanvasDpr(ctx) {
     return (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
 }
 
-function createStaticLayer(width, height, dpr) {
+function createStaticLayer(width, height, dpr, targetCanvas) {
     if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
         return null;
     }
-    const layerCanvas = document.createElement('canvas');
-    layerCanvas.width = Math.max(1, Math.round(width * dpr));
-    layerCanvas.height = Math.max(1, Math.round(height * dpr));
-    const layerCtx =
-        typeof layerCanvas.getContext === 'function' ? layerCanvas.getContext('2d') : null;
+
+    if (targetCanvas && !targetCanvas._compositionStaticLayer) {
+        targetCanvas._compositionStaticLayer = document.createElement('canvas');
+    }
+
+    const layerCanvas = targetCanvas ? targetCanvas._compositionStaticLayer : document.createElement('canvas');
+    const layerCtx = typeof layerCanvas.getContext === 'function' ? layerCanvas.getContext('2d') : null;
+
     if (!layerCtx) {
         return null;
     }
+
+    layerCanvas.width = Math.max(1, Math.round(width * dpr));
+    layerCanvas.height = Math.max(1, Math.round(height * dpr));
+
+    // Resetting width/height resets transform, apply scale again
     layerCtx.scale(dpr, dpr);
+
     return { canvas: layerCanvas, ctx: layerCtx };
 }
 function aggregateCompositionSeries(tickers, chartData, seriesLength) {
@@ -362,7 +371,7 @@ function renderCompositionChartWithMode(ctx, chartManager, data, options = {}) {
         left: padding.left,
         right: padding.left + plotWidth,
     };
-    const staticLayer = createStaticLayer(canvasWidth, canvasHeight, dpr);
+    const staticLayer = createStaticLayer(canvasWidth, canvasHeight, dpr, canvas);
     const layerCtx = staticLayer ? staticLayer.ctx : ctx;
     drawAxes(
         layerCtx,
