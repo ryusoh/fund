@@ -52,8 +52,11 @@ function createStaticLayer(width, height, dpr, targetCanvas) {
         targetCanvas._compositionStaticLayer = document.createElement('canvas');
     }
 
-    const layerCanvas = targetCanvas ? targetCanvas._compositionStaticLayer : document.createElement('canvas');
-    const layerCtx = typeof layerCanvas.getContext === 'function' ? layerCanvas.getContext('2d') : null;
+    const layerCanvas = targetCanvas
+        ? targetCanvas._compositionStaticLayer
+        : document.createElement('canvas');
+    const layerCtx =
+        typeof layerCanvas.getContext === 'function' ? layerCanvas.getContext('2d') : null;
 
     if (!layerCtx) {
         return null;

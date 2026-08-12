@@ -311,7 +311,7 @@ function computeBaseScenarioOutcome(scenario) {
     return {
         id: scenario.id || scenario.name || 'scenario',
         name: scenario.name || scenario.id || 'Scenario',
-        prob: prob
+        prob: prob,
     };
 }
 
@@ -337,7 +337,13 @@ function resolveFallbackEpsCagr(scenario) {
     return null;
 }
 
-function resolvePrecomputedEarningsCagr(scenario, terminalEps, entryEps, safeHorizon, fallbackEpsCagr) {
+function resolvePrecomputedEarningsCagr(
+    scenario,
+    terminalEps,
+    entryEps,
+    safeHorizon,
+    fallbackEpsCagr
+) {
     const precomputedEarningsCagr = extractOutcomeNumber(scenario.precomputedEarningsCagr, null);
     if (precomputedEarningsCagr !== null) {
         return precomputedEarningsCagr;
@@ -346,21 +352,49 @@ function resolvePrecomputedEarningsCagr(scenario, terminalEps, entryEps, safeHor
 }
 
 function resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon) {
-    const precomputedCagr = extractOutcomeNumber(scenario.precomputedCagr ?? scenario.scenarioCagr, null);
+    const precomputedCagr = extractOutcomeNumber(
+        scenario.precomputedCagr ?? scenario.scenarioCagr,
+        null
+    );
     if (precomputedCagr !== null) {
         return precomputedCagr;
     }
     return precomputedMultiple ** (1 / safeHorizon) - 1;
 }
 
-function computePrecomputedScenarioOutcome(scenario, base, precomputedMultiple, entryEps, safeHorizon, fallbackEpsCagr) {
+function computePrecomputedScenarioOutcome(
+    scenario,
+    base,
+    precomputedMultiple,
+    entryEps,
+    safeHorizon,
+    fallbackEpsCagr
+) {
     const priceCagr = resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon);
-    const terminalEps = extractOutcomeNumber(scenario.precomputedTerminalEps ?? scenario.terminalEps, null);
-    const earningsCagr = resolvePrecomputedEarningsCagr(scenario, terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
+    const terminalEps = extractOutcomeNumber(
+        scenario.precomputedTerminalEps ?? scenario.terminalEps,
+        null
+    );
+    const earningsCagr = resolvePrecomputedEarningsCagr(
+        scenario,
+        terminalEps,
+        entryEps,
+        safeHorizon,
+        fallbackEpsCagr
+    );
     return { ...base, multiple: precomputedMultiple, priceCagr, earningsCagr, terminalEps };
 }
 
-function computeDerivedScenarioOutcome(scenario, base, price, eps, horizon, safeHorizon, entryEps, fallbackEpsCagr) {
+function computeDerivedScenarioOutcome(
+    scenario,
+    base,
+    price,
+    eps,
+    horizon,
+    safeHorizon,
+    entryEps,
+    fallbackEpsCagr
+) {
     const growth = scenario.growth || {};
     const valuation = scenario.valuation || {};
     const epsCagr = extractOutcomeNumber(growth.epsCagr ?? scenario.epsCagr, 0);
@@ -369,7 +403,12 @@ function computeDerivedScenarioOutcome(scenario, base, price, eps, horizon, safe
     const terminalPrice = terminalEps * exitPe;
     const multiple = price > 0 ? terminalPrice / price : 0;
     const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
-    const earningsCagr = deriveEarningsCagrHelper(terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
+    const earningsCagr = deriveEarningsCagrHelper(
+        terminalEps,
+        entryEps,
+        safeHorizon,
+        fallbackEpsCagr
+    );
     return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
 }
 
@@ -388,11 +427,30 @@ function computeScenarioOutcome(scenario, { price, eps, horizon }) {
     const entryEps = Number.isFinite(eps) && eps > 0 ? eps : null;
     const fallbackEpsCagr = resolveFallbackEpsCagr(scenario);
 
-    const precomputedMultiple = extractOutcomeNumber(scenario.precomputedMultiple ?? scenario.multiple, null);
+    const precomputedMultiple = extractOutcomeNumber(
+        scenario.precomputedMultiple ?? scenario.multiple,
+        null
+    );
     if (precomputedMultiple !== null && precomputedMultiple > 0) {
-        return computePrecomputedScenarioOutcome(scenario, base, precomputedMultiple, entryEps, safeHorizon, fallbackEpsCagr);
+        return computePrecomputedScenarioOutcome(
+            scenario,
+            base,
+            precomputedMultiple,
+            entryEps,
+            safeHorizon,
+            fallbackEpsCagr
+        );
     }
-    return computeDerivedScenarioOutcome(scenario, base, price, eps, horizon, safeHorizon, entryEps, fallbackEpsCagr);
+    return computeDerivedScenarioOutcome(
+        scenario,
+        base,
+        price,
+        eps,
+        horizon,
+        safeHorizon,
+        entryEps,
+        fallbackEpsCagr
+    );
 }
 
 function computeMetrics(config) {

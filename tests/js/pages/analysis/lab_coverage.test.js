@@ -206,3 +206,55 @@ describe('getSharesOutstanding additional coverage', () => {
         expect(getSharesOutstanding(config)).toBe(100);
     });
 });
+
+describe('computeScenarioOutcome new branches coverage', () => {
+    it('covers base prob fallback', () => {
+        const scenario = { prob: NaN };
+        const result = __analysisLabTesting.computeScenarioOutcome(scenario, {
+            price: 100,
+            eps: 10,
+            horizon: 5,
+        });
+        expect(result.prob).toBe(0);
+    });
+
+    it('covers deriveEarningsCagrHelper early return when eps is <= 0', () => {
+        const scenario = { growth: { epsCagr: 0.05 }, valuation: { exitPe: 10 } };
+        const result = __analysisLabTesting.computeScenarioOutcome(scenario, {
+            price: 100,
+            eps: -5,
+            horizon: 5,
+        });
+        expect(result.earningsCagr).toBe(0.05);
+    });
+
+    it('covers deriveEarningsCagrHelper early return when terminalValue <= 0', () => {
+        const scenario = { precomputedMultiple: 2, precomputedTerminalEps: -5 };
+        const result = __analysisLabTesting.computeScenarioOutcome(scenario, {
+            price: 100,
+            eps: 5,
+            horizon: 5,
+        });
+        expect(result.earningsCagr).toBe(null);
+    });
+
+    it('covers resolvePrecomputedEarningsCagr explicitly provided', () => {
+        const scenario = { precomputedMultiple: 2, precomputedEarningsCagr: 0.15 };
+        const result = __analysisLabTesting.computeScenarioOutcome(scenario, {
+            price: 100,
+            eps: 10,
+            horizon: 5,
+        });
+        expect(result.earningsCagr).toBe(0.15);
+    });
+
+    it('covers deriveEarningsCagrHelper when epsCagr is totally missing and derived Cagr is used', () => {
+        const scenario = { growth: { epsCagr: null }, valuation: { exitPe: 10 } };
+        const result = __analysisLabTesting.computeScenarioOutcome(scenario, {
+            price: 100,
+            eps: 10,
+            horizon: 5,
+        });
+        expect(result.earningsCagr).toBe(0);
+    });
+});
