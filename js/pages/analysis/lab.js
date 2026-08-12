@@ -301,6 +301,78 @@ function normalizeScenario(scenario) {
     };
 }
 
+function extractOutcomeNumber(value, fallback) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+}
+
+function computeBaseScenarioOutcome(scenario) {
+    const prob = extractOutcomeNumber(scenario.prob, 0);
+    return {
+        id: scenario.id || scenario.name || 'scenario',
+        name: scenario.name || scenario.id || 'Scenario',
+        prob: prob
+    };
+}
+
+function deriveEarningsCagrHelper(terminalValue, entryEps, safeHorizon, fallbackEpsCagr) {
+    if (entryEps === null || !Number.isFinite(terminalValue) || terminalValue <= 0) {
+        return fallbackEpsCagr;
+    }
+    const ratio = terminalValue / entryEps;
+    if (ratio <= 0) {
+        return fallbackEpsCagr;
+    }
+    const derived = ratio ** (1 / safeHorizon) - 1;
+    return Number.isFinite(derived) ? derived : fallbackEpsCagr;
+}
+
+function resolveFallbackEpsCagr(scenario) {
+    if (Number.isFinite(scenario?.growth?.epsCagr) && scenario.growth.epsCagr !== null) {
+        return scenario.growth.epsCagr;
+    }
+    if (Number.isFinite(scenario?.epsCagr)) {
+        return scenario.epsCagr;
+    }
+    return null;
+}
+
+function resolvePrecomputedEarningsCagr(scenario, terminalEps, entryEps, safeHorizon, fallbackEpsCagr) {
+    const precomputedEarningsCagr = extractOutcomeNumber(scenario.precomputedEarningsCagr, null);
+    if (precomputedEarningsCagr !== null) {
+        return precomputedEarningsCagr;
+    }
+    return deriveEarningsCagrHelper(terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
+}
+
+function resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon) {
+    const precomputedCagr = extractOutcomeNumber(scenario.precomputedCagr ?? scenario.scenarioCagr, null);
+    if (precomputedCagr !== null) {
+        return precomputedCagr;
+    }
+    return precomputedMultiple ** (1 / safeHorizon) - 1;
+}
+
+function computePrecomputedScenarioOutcome(scenario, base, precomputedMultiple, entryEps, safeHorizon, fallbackEpsCagr) {
+    const priceCagr = resolvePrecomputedPriceCagr(scenario, precomputedMultiple, safeHorizon);
+    const terminalEps = extractOutcomeNumber(scenario.precomputedTerminalEps ?? scenario.terminalEps, null);
+    const earningsCagr = resolvePrecomputedEarningsCagr(scenario, terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
+    return { ...base, multiple: precomputedMultiple, priceCagr, earningsCagr, terminalEps };
+}
+
+function computeDerivedScenarioOutcome(scenario, base, price, eps, horizon, safeHorizon, entryEps, fallbackEpsCagr) {
+    const growth = scenario.growth || {};
+    const valuation = scenario.valuation || {};
+    const epsCagr = extractOutcomeNumber(growth.epsCagr ?? scenario.epsCagr, 0);
+    const exitPe = extractOutcomeNumber(valuation.exitPe ?? scenario.exitPe, 1);
+    const terminalEps = eps * (1 + epsCagr) ** horizon;
+    const terminalPrice = terminalEps * exitPe;
+    const multiple = price > 0 ? terminalPrice / price : 0;
+    const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
+    const earningsCagr = deriveEarningsCagrHelper(terminalEps, entryEps, safeHorizon, fallbackEpsCagr);
+    return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
+}
+
 function diffDescriptor(price, entry) {
     if (!Number.isFinite(entry) || entry <= 0) {
         return 'n/a';
@@ -312,62 +384,15 @@ function diffDescriptor(price, entry) {
 
 function computeScenarioOutcome(scenario, { price, eps, horizon }) {
     const safeHorizon = horizon > 0 ? horizon : 1;
-    const baseProbRaw = Number(scenario.prob ?? 0);
-    const base = {
-        id: scenario.id || scenario.name || 'scenario',
-        name: scenario.name || scenario.id || 'Scenario',
-        prob: Number.isFinite(baseProbRaw) ? baseProbRaw : 0,
-    };
+    const base = computeBaseScenarioOutcome(scenario);
     const entryEps = Number.isFinite(eps) && eps > 0 ? eps : null;
-    const fallbackEpsCagr =
-        Number.isFinite(scenario?.growth?.epsCagr) && scenario.growth.epsCagr !== null
-            ? scenario.growth.epsCagr
-            : Number.isFinite(scenario?.epsCagr)
-              ? scenario.epsCagr
-              : null;
-    const deriveEarningsCagr = (terminalValue) => {
-        if (entryEps !== null && Number.isFinite(terminalValue) && terminalValue > 0) {
-            const ratio = terminalValue / entryEps;
-            if (ratio > 0) {
-                const derived = ratio ** (1 / safeHorizon) - 1;
-                if (Number.isFinite(derived)) {
-                    return derived;
-                }
-            }
-        }
-        return fallbackEpsCagr;
-    };
+    const fallbackEpsCagr = resolveFallbackEpsCagr(scenario);
 
-    const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
-    if (Number.isFinite(precomputedMultipleRaw) && precomputedMultipleRaw > 0) {
-        const multiple = precomputedMultipleRaw;
-        const precomputedCagrRaw = Number(scenario.precomputedCagr ?? scenario.scenarioCagr);
-        const priceCagr = Number.isFinite(precomputedCagrRaw)
-            ? precomputedCagrRaw
-            : multiple > 0
-              ? multiple ** (1 / safeHorizon) - 1
-              : 0;
-        const impliedEpsRaw = Number(scenario.precomputedTerminalEps ?? scenario.terminalEps);
-        const terminalEps = Number.isFinite(impliedEpsRaw) ? impliedEpsRaw : null;
-        const precomputedEarningsCagrRaw = Number(scenario.precomputedEarningsCagr);
-        const earningsCagr = Number.isFinite(precomputedEarningsCagrRaw)
-            ? precomputedEarningsCagrRaw
-            : deriveEarningsCagr(terminalEps);
-        return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
+    const precomputedMultiple = extractOutcomeNumber(scenario.precomputedMultiple ?? scenario.multiple, null);
+    if (precomputedMultiple !== null && precomputedMultiple > 0) {
+        return computePrecomputedScenarioOutcome(scenario, base, precomputedMultiple, entryEps, safeHorizon, fallbackEpsCagr);
     }
-
-    const growth = scenario.growth || {};
-    const valuation = scenario.valuation || {};
-    const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
-    const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
-    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
-    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
-    const terminalEps = eps * (1 + epsCagr) ** horizon;
-    const terminalPrice = terminalEps * exitPe;
-    const multiple = price > 0 ? terminalPrice / price : 0;
-    const priceCagr = multiple > 0 ? multiple ** (1 / safeHorizon) - 1 : 0;
-    const earningsCagr = deriveEarningsCagr(terminalEps);
-    return { ...base, multiple, priceCagr, earningsCagr, terminalEps };
+    return computeDerivedScenarioOutcome(scenario, base, price, eps, horizon, safeHorizon, entryEps, fallbackEpsCagr);
 }
 
 function computeMetrics(config) {
