@@ -1,0 +1,18 @@
+<<<<<<< SEARCH
+            it('should return original value for invalid inputs', () => {
+                expect(parseColorToRgb('')).toBeNull();
+                expect(parseColorToRgb(null)).toBeNull();
+                expect(parseColorToRgb(undefined)).toBeNull();
+                expect(parseColorToRgb(123)).toBeNull();
+            });
+=======
+            it('should return original value for invalid inputs', () => {
+                expect(parseColorToRgb('')).toBeNull();
+                expect(parseColorToRgb(null)).toBeNull();
+                expect(parseColorToRgb(undefined)).toBeNull();
+                expect(parseColorToRgb(123)).toBeNull();
+                // Test the rgb extraction path where there aren't enough parts
+                expect(parseColorToRgb('rgb()')).toBeNull();
+                expect(parseColorToRgb('rgba(255,0)')).toBeNull();
+            });
+>>>>>>> REPLACE
