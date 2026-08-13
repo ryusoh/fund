@@ -124,7 +124,7 @@ export function formatPercentage(value) {
  * @param {string} valueType Either 'total' or 'dailyChange'.
  * @returns {number} The value in the specified currency.
  */
-export function getHistoricalCurrencyValue(entry, currency, valueType = 'total') {
+function getHistoricalCurrencyValue(entry, currency, valueType = 'total') {
     if (!entry) {
         return 0;
     }
@@ -536,3 +536,7 @@ export function formatCompact(num) {
     }
     return num.toString();
 }
+
+export const __formattingTestables = {
+    getHistoricalCurrencyValue
+};
