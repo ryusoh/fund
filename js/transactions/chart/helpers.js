@@ -299,6 +299,46 @@ export function parseColorToRgb(baseColor) {
     return resolveCanvasColor(baseColor);
 }
 
+function _applyAlphaToHex(match, alpha) {
+    let hex = match[1];
+    if (hex.length === 3) {
+        hex = hex
+            .split('')
+            .map((char) => char + char)
+            .join('');
+    }
+    const intVal = parseInt(hex, 16);
+    const r = (intVal >> 16) & 255;
+    const g = (intVal >> 8) & 255;
+    const b = intVal & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function _applyAlphaToRgb(match, alpha) {
+    const parts = match[1].split(',');
+    if (parts.length >= 3) {
+        const r = componentFromChannel(parts[0]);
+        const g = componentFromChannel(parts[1]);
+        const b = componentFromChannel(parts[2]);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return null;
+}
+
+function _applyAlphaToCanvasColor(baseColor, alpha) {
+    if (COLOR_PARSER_CONTEXT) {
+        const ctx = COLOR_PARSER_CONTEXT;
+        ctx.save();
+        ctx.fillStyle = baseColor;
+        const computed = ctx.fillStyle;
+        ctx.restore();
+        if (computed && computed !== baseColor) {
+            return colorWithAlpha(computed, alpha);
+        }
+    }
+    return null;
+}
+
 export function colorWithAlpha(baseColor, alpha) {
     const normalizedAlpha = clamp01(alpha);
     if (normalizedAlpha <= 0) {
@@ -311,40 +351,20 @@ export function colorWithAlpha(baseColor, alpha) {
 
     const hexMatch = baseColor.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
     if (hexMatch) {
-        let hex = hexMatch[1];
-        if (hex.length === 3) {
-            hex = hex
-                .split('')
-                .map((char) => char + char)
-                .join('');
-        }
-        const intVal = parseInt(hex, 16);
-        const r = (intVal >> 16) & 255;
-        const g = (intVal >> 8) & 255;
-        const b = intVal & 255;
-        return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+        return _applyAlphaToHex(hexMatch, normalizedAlpha);
     }
 
     const rgbMatch = baseColor.match(/^rgba?\(([^)]+)\)$/i);
     if (rgbMatch) {
-        const parts = rgbMatch[1].split(',');
-        if (parts.length >= 3) {
-            const r = componentFromChannel(parts[0]);
-            const g = componentFromChannel(parts[1]);
-            const b = componentFromChannel(parts[2]);
-            return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+        const rgbColor = _applyAlphaToRgb(rgbMatch, normalizedAlpha);
+        if (rgbColor) {
+            return rgbColor;
         }
     }
 
-    if (COLOR_PARSER_CONTEXT) {
-        const ctx = COLOR_PARSER_CONTEXT;
-        ctx.save();
-        ctx.fillStyle = baseColor;
-        const computed = ctx.fillStyle;
-        ctx.restore();
-        if (computed && computed !== baseColor) {
-            return colorWithAlpha(computed, normalizedAlpha);
-        }
+    const canvasColor = _applyAlphaToCanvasColor(baseColor, normalizedAlpha);
+    if (canvasColor) {
+        return canvasColor;
     }
 
     return baseColor;

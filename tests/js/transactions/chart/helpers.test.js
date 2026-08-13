@@ -99,6 +99,56 @@ describe('Chart Helpers', () => {
                 expect(parseColorToRgb(null)).toBeNull();
                 expect(parseColorToRgb(undefined)).toBeNull();
                 expect(parseColorToRgb(123)).toBeNull();
+                // Test the rgb extraction path where there aren't enough parts
+                expect(parseColorToRgb('rgb()')).toBeNull();
+                expect(parseColorToRgb('rgba(255,0)')).toBeNull();
+            });
+
+            it('should parse named colors via canvas fallback', async () => {
+                // Mock canvas context using isolateModulesAsync
+                const originalCreateElement = document.createElement.bind(document);
+
+                const mockContext = {
+                    save: jest.fn(),
+                    restore: jest.fn(),
+                    _fillStyle: '',
+                    get fillStyle() {
+                        if (this._fillStyle === 'purple') {
+                            return '#800080';
+                        }
+                        if (this._fillStyle === '#000000') {
+                            return '#000000';
+                        }
+                        if (this._fillStyle === '#ffffff') {
+                            return '#ffffff';
+                        }
+                        return this._fillStyle;
+                    },
+                    set fillStyle(val) {
+                        this._fillStyle = val;
+                    }
+                };
+
+                document.createElement = (tagName) => {
+                    if (tagName === 'canvas') {
+                        return {
+                            width: 0,
+                            height: 0,
+                            getContext: () => mockContext
+                        };
+                    }
+                    return originalCreateElement(tagName);
+                };
+
+                let isolatedParseColorToRgb;
+                await jest.isolateModulesAsync(async () => {
+                    const module = await import('../../../../js/transactions/chart/helpers.js');
+                    isolatedParseColorToRgb = module.parseColorToRgb;
+                });
+
+                expect(isolatedParseColorToRgb('purple')).toEqual({ r: 128, g: 0, b: 128 });
+
+                document.createElement = originalCreateElement;
             });
         });
 
@@ -131,6 +181,52 @@ describe('Chart Helpers', () => {
             it('should return original value for invalid inputs', () => {
                 expect(colorWithAlpha('', 0.5)).toBe('');
                 expect(colorWithAlpha(null, 0.5)).toBeNull();
+            });
+
+            it('should handle canvas fallback successfully resolving to hex', async () => {
+                // In Jest with Babel/ESM, we can use jest.isolateModulesAsync to reload the module
+                // and mock the DOM context before it evaluates COLOR_PARSER_CONTEXT.
+
+                // We'll mock document.createElement to return a fake canvas with a mocked getContext
+                const originalCreateElement = document.createElement.bind(document);
+
+                const mockContext = {
+                    save: jest.fn(),
+                    restore: jest.fn(),
+                    _fillStyle: '',
+                    get fillStyle() {
+                        if (this._fillStyle === 'blue') {
+                            return '#0000ff';
+                        }
+                        return this._fillStyle;
+                    },
+                    set fillStyle(val) {
+                        this._fillStyle = val;
+                    }
+                };
+
+                document.createElement = (tagName) => {
+                    if (tagName === 'canvas') {
+                        return {
+                            width: 0,
+                            height: 0,
+                            getContext: () => mockContext
+                        };
+                    }
+                    return originalCreateElement(tagName);
+                };
+
+                let isolatedColorWithAlpha;
+                await jest.isolateModulesAsync(async () => {
+                    const module = await import('../../../../js/transactions/chart/helpers.js');
+                    isolatedColorWithAlpha = module.colorWithAlpha;
+                });
+
+                expect(isolatedColorWithAlpha('blue', 0.5)).toBe('rgba(0, 0, 255, 0.5)');
+
+                expect(isolatedColorWithAlpha('rgb(255)', 0.5)).toBe('rgb(255)');
+
+                document.createElement = originalCreateElement;
             });
         });
 
