@@ -538,5 +538,5 @@ export function formatCompact(num) {
 }
 
 export const __formattingTestables = {
-    getHistoricalCurrencyValue
+    getHistoricalCurrencyValue,
 };

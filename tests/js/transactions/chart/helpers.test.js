@@ -126,7 +126,7 @@ describe('Chart Helpers', () => {
                     },
                     set fillStyle(val) {
                         this._fillStyle = val;
-                    }
+                    },
                 };
 
                 document.createElement = (tagName) => {
@@ -134,7 +134,7 @@ describe('Chart Helpers', () => {
                         return {
                             width: 0,
                             height: 0,
-                            getContext: () => mockContext
+                            getContext: () => mockContext,
                         };
                     }
                     return originalCreateElement(tagName);
@@ -202,7 +202,7 @@ describe('Chart Helpers', () => {
                     },
                     set fillStyle(val) {
                         this._fillStyle = val;
-                    }
+                    },
                 };
 
                 document.createElement = (tagName) => {
@@ -210,7 +210,7 @@ describe('Chart Helpers', () => {
                         return {
                             width: 0,
                             height: 0,
-                            getContext: () => mockContext
+                            getContext: () => mockContext,
                         };
                     }
                     return originalCreateElement(tagName);

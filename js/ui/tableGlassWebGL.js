@@ -386,23 +386,8 @@ export class TableGlassWebGL {
         this.syncPositionStyle();
     }
 
-    draw(state, options, width, height, dpr, rows) {
-        if (!this.gl || !options.rowHoverEffect?.enabled || !rows || rows.length === 0) {
-            return;
-        }
-
+    _setSpotlightUniforms(state, options, width, height, alpha) {
         const gl = this.gl;
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        const alpha = state.spotlightAlpha !== undefined ? state.spotlightAlpha : 0.0;
-        if (state.hoveredRowIndex === -1 && alpha < 0.001) {
-            return; // Clear but do not draw if not hovering and fully faded out
-        }
-
-        gl.useProgram(this.program);
-
-        // Compute mouse position using smoothed coordinates for a physical fluid dynamic chase
         const mouseX = ((state.pointerSmoothed.x + 1) / 2) * width;
         const mouseY = ((state.pointerSmoothed.y + 1) / 2) * height;
 
@@ -428,13 +413,36 @@ export class TableGlassWebGL {
         );
         gl.uniform1f(this.uniforms.pointerVelocity, state.pointerVelocity || 0.0);
         gl.uniform1f(this.uniforms.spotlightAlpha, alpha);
+    }
 
+    _setTbodyUniforms(rows) {
+        const gl = this.gl;
         const firstRow = rows[0];
         const lastRow = rows[rows.length - 1];
         gl.uniform1f(this.uniforms.tbodyTop, firstRow.top);
         gl.uniform1f(this.uniforms.tbodyBottom, lastRow.top + lastRow.height);
         gl.uniform1f(this.uniforms.tbodyLeft, firstRow.left);
         gl.uniform1f(this.uniforms.tbodyWidth, firstRow.width);
+    }
+
+    draw(state, options, width, height, dpr, rows) {
+        if (!this.gl || !options.rowHoverEffect?.enabled || !rows || rows.length === 0) {
+            return;
+        }
+
+        const gl = this.gl;
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        const alpha = state.spotlightAlpha !== undefined ? state.spotlightAlpha : 0.0;
+        if (state.hoveredRowIndex === -1 && alpha < 0.001) {
+            return; // Clear but do not draw if not hovering and fully faded out
+        }
+
+        gl.useProgram(this.program);
+
+        this._setSpotlightUniforms(state, options, width, height, alpha);
+        this._setTbodyUniforms(rows);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
