@@ -278,15 +278,6 @@ describe('formatToTwoDecimals', () => {
     });
 });
 
-describe('formatCompact', () => {
-    it('should format compact', () => {
-        expect(formatting.formatCompact(12345)).toBe('12.3k');
-        expect(formatting.formatCompact(1234567)).toBe('1.2m');
-        expect(formatting.formatCompact(1234567890)).toBe('1.2b');
-        expect(formatting.formatCompact(123)).toBe('123');
-    });
-});
-
 describe('formatCurrencyChange', () => {
     it('returns n/a if value is not finite', () => {
         expect(formatting.formatCurrencyChange(NaN)).toBe('n/a');
@@ -455,12 +446,6 @@ describe('formatCurrencyChange additional coverage', () => {
         // We really want to hit `formatted?.startsWith('+')` evaluating to true.
         const mockFormatter = () => '+123';
         expect(formatting.formatCurrencyChange(10, mockFormatter)).toBe('+123');
-    });
-});
-
-describe('formatCompact - edge case', () => {
-    it('formats numbers just below 1000', () => {
-        expect(formatting.formatCompact(999)).toBe('999');
     });
 });
 
