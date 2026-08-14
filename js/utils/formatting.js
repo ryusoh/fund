@@ -519,24 +519,6 @@ function calculateAppreciationPercentage(valueAdded, endValue) {
     return '';
 }
 
-/**
- * Formats a number to a compact string with a suffix (k, m, b).
- * @param {number} num The number to format.
- * @returns {string} The formatted compact number string.
- */
-export function formatCompact(num) {
-    if (num >= 1e9) {
-        return (num / 1e9).toFixed(1) + 'b';
-    }
-    if (num >= 1e6) {
-        return (num / 1e6).toFixed(1) + 'm';
-    }
-    if (num >= 1e3) {
-        return (num / 1e3).toFixed(1) + 'k';
-    }
-    return num.toString();
-}
-
 export const __formattingTestables = {
-    getHistoricalCurrencyValue
+    getHistoricalCurrencyValue,
 };

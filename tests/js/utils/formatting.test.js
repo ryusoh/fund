@@ -278,15 +278,6 @@ describe('formatToTwoDecimals', () => {
     });
 });
 
-describe('formatCompact', () => {
-    it('should format compact', () => {
-        expect(formatting.formatCompact(12345)).toBe('12.3k');
-        expect(formatting.formatCompact(1234567)).toBe('1.2m');
-        expect(formatting.formatCompact(1234567890)).toBe('1.2b');
-        expect(formatting.formatCompact(123)).toBe('123');
-    });
-});
-
 describe('formatCurrencyChange', () => {
     it('returns n/a if value is not finite', () => {
         expect(formatting.formatCurrencyChange(NaN)).toBe('n/a');
@@ -438,7 +429,9 @@ describe('getHistoricalCurrencyValue coverage', () => {
 
     it('returns 0 if entry[valueType] is missing and base fallback kicks in', () => {
         const entry = { otherKey: 10 };
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')).toBe(0);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')
+        ).toBe(0);
     });
 });
 
@@ -453,12 +446,6 @@ describe('formatCurrencyChange additional coverage', () => {
         // We really want to hit `formatted?.startsWith('+')` evaluating to true.
         const mockFormatter = () => '+123';
         expect(formatting.formatCurrencyChange(10, mockFormatter)).toBe('+123');
-    });
-});
-
-describe('formatCompact - edge case', () => {
-    it('formats numbers just below 1000', () => {
-        expect(formatting.formatCompact(999)).toBe('999');
     });
 });
 
@@ -779,15 +766,31 @@ describe('getHistoricalCurrencyValue', () => {
             dailyChangeKRW: 67500,
         };
 
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')).toBe(1000);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'total')).toBe(7200);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'JPY', 'total')).toBe(150000);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'KRW', 'total')).toBe(1350000);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')
+        ).toBe(1000);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'total')
+        ).toBe(7200);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'JPY', 'total')
+        ).toBe(150000);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'KRW', 'total')
+        ).toBe(1350000);
 
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')).toBe(50);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')).toBe(360);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'JPY', 'dailyChange')).toBe(7500);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'KRW', 'dailyChange')).toBe(67500);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')
+        ).toBe(50);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')
+        ).toBe(360);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'JPY', 'dailyChange')
+        ).toBe(7500);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'KRW', 'dailyChange')
+        ).toBe(67500);
     });
 
     it('should fallback to base value when historical data missing', () => {
@@ -796,15 +799,27 @@ describe('getHistoricalCurrencyValue', () => {
             dailyChange: 50,
         };
 
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')).toBe(1000);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'total')).toBe(1000);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')).toBe(50);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')).toBe(50);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'total')
+        ).toBe(1000);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'total')
+        ).toBe(1000);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'USD', 'dailyChange')
+        ).toBe(50);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(entry, 'CNY', 'dailyChange')
+        ).toBe(50);
     });
 
     it('should handle null or undefined entry', () => {
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(null, 'USD', 'total')).toBe(0);
-        expect(formatting.__formattingTestables.getHistoricalCurrencyValue(undefined, 'USD', 'total')).toBe(0);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(null, 'USD', 'total')
+        ).toBe(0);
+        expect(
+            formatting.__formattingTestables.getHistoricalCurrencyValue(undefined, 'USD', 'total')
+        ).toBe(0);
     });
 });
 
