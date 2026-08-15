@@ -27,42 +27,37 @@ import {
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 import { initBackgroundSweepEffect } from '@ui/backgroundSweep.js';
 
-// Helper function to convert currency series
-function convertCurrencySeries(series, targetCurrency) {
-    if (!Array.isArray(series) || targetCurrency === 'USD') {
-        return series;
-    }
-
-    const len = series.length;
-    let hasNetAmount = false;
+function _hasNetAmount(series, len) {
     for (let i = 0; i < len; i += 1) {
         if (Object.prototype.hasOwnProperty.call(series[i], 'netAmount')) {
-            hasNetAmount = true;
-            break;
+            return true;
         }
     }
+    return false;
+}
 
+function _convertNetAmounts(series, len, targetCurrency) {
     const resultSeries = new Array(len);
-
-    if (hasNetAmount) {
-        let cumulative = 0;
-        for (let i = 0; i < len; i += 1) {
-            const item = series[i];
-            const dateRef = item.tradeDate || item.date;
-            const convertedNet = convertValueToCurrency(item.netAmount, dateRef, targetCurrency);
-            cumulative += convertedNet;
-            const result = { ...item, netAmount: convertedNet };
-            if (Object.prototype.hasOwnProperty.call(item, 'amount')) {
-                result.amount = cumulative;
-            }
-            if (item.synthetic && item.orderType === 'padding') {
-                result.amount = cumulative;
-            }
-            resultSeries[i] = result;
+    let cumulative = 0;
+    for (let i = 0; i < len; i += 1) {
+        const item = series[i];
+        const dateRef = item.tradeDate || item.date;
+        const convertedNet = convertValueToCurrency(item.netAmount, dateRef, targetCurrency);
+        cumulative += convertedNet;
+        const result = { ...item, netAmount: convertedNet };
+        if (Object.prototype.hasOwnProperty.call(item, 'amount')) {
+            result.amount = cumulative;
         }
-        return resultSeries;
+        if (item.synthetic && item.orderType === 'padding') {
+            result.amount = cumulative;
+        }
+        resultSeries[i] = result;
     }
+    return resultSeries;
+}
 
+function _convertValues(series, len, targetCurrency) {
+    const resultSeries = new Array(len);
     for (let i = 0; i < len; i += 1) {
         const item = series[i];
         const result = { ...item };
@@ -72,6 +67,19 @@ function convertCurrencySeries(series, targetCurrency) {
         resultSeries[i] = result;
     }
     return resultSeries;
+}
+
+// Helper function to convert currency series
+function convertCurrencySeries(series, targetCurrency) {
+    if (!Array.isArray(series) || targetCurrency === 'USD') {
+        return series;
+    }
+
+    const len = series.length;
+    if (_hasNetAmount(series, len)) {
+        return _convertNetAmounts(series, len, targetCurrency);
+    }
+    return _convertValues(series, len, targetCurrency);
 }
 import {
     loadSplitHistory,
