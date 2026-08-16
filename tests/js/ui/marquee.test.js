@@ -41,22 +41,27 @@ describe('Marquee', () => {
         jest.clearAllMocks();
     });
 
-    it('should do nothing if gsap is not defined', () => {
+    it('should do nothing if gsap is not defined and hide wrapper if present', () => {
         delete window.gsap;
+        document.body.innerHTML = '<div class="marquee-wrapper"></div>';
         initMarquee();
-        expect(document.querySelectorAll('.marquee-container').length).toBe(0);
+        expect(document.querySelector('.marquee-wrapper').style.display).toBe('none');
     });
 
-    it('should do nothing if touch device', () => {
+    it('should do nothing if touch device and hide wrapper', () => {
+        document.body.innerHTML = '<div class="marquee-wrapper"></div>';
         window.ontouchstart = true;
         initMarquee();
         expect(window.gsap.to).not.toHaveBeenCalled();
+        expect(document.querySelector('.marquee-wrapper').style.display).toBe('none');
     });
 
-    it('should do nothing if MARQUEE_CONFIG is not enabled', () => {
+    it('should do nothing if MARQUEE_CONFIG is not enabled and hide wrapper', () => {
+        document.body.innerHTML = '<div class="marquee-wrapper"></div>';
         MARQUEE_CONFIG.enabled = false;
         initMarquee();
         expect(window.gsap.to).not.toHaveBeenCalled();
+        expect(document.querySelector('.marquee-wrapper').style.display).toBe('none');
         MARQUEE_CONFIG.enabled = true;
     });
 
@@ -94,6 +99,11 @@ describe('Marquee', () => {
                     ticker: { add: jest.fn() },
                 },
             };
+            const config = require('../../../js/config.js');
+            config.MARQUEE_CONFIG.enabled = true;
+            config.MARQUEE_CONFIG.sizeMultiplier = undefined;
+            config.MARQUEE_CONFIG.direction = undefined;
+            config.MARQUEE_CONFIG.animationDuration = undefined;
             marqueeModule = require('../../../js/ui/marquee.js');
         });
 

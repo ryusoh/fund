@@ -10,11 +10,18 @@ const GRAVITY = {
 };
 
 export function initMarquee() {
+    const wrapper = document.querySelector('.marquee-wrapper');
     if (typeof window === 'undefined' || !window.gsap || !MARQUEE_CONFIG.enabled) {
+        if (wrapper) {
+            wrapper.style.display = 'none';
+        }
         return;
     }
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
+        if (wrapper) {
+            wrapper.style.display = 'none';
+        }
         return;
     }
 
