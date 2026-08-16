@@ -643,6 +643,212 @@ function updateEnergyParticles(state, delta, options) {
     }
 }
 
+function computeFresnelAt(angle, squash, fresnelR0, fresnelExp) {
+    const grazing = 1 - Math.abs(Math.sin(angle) * squash);
+    return fresnelR0 + (1 - fresnelR0) * Math.pow(grazing, fresnelExp);
+}
+
+function computeSpecularOverlap(angle, reflStart, reflWidth) {
+    // Normalize angle into [0, 2π) range
+    const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    // Check against the reflection band (which may wrap around 2π)
+    const rStart = ((reflStart % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const rSpan = reflWidth * Math.PI * 2;
+    let dist;
+    if (rStart + rSpan <= Math.PI * 2) {
+        // Band doesn't wrap
+        if (a >= rStart && a <= rStart + rSpan) {
+            dist = Math.min(a - rStart, rStart + rSpan - a) / (rSpan * 0.5);
+            return 1 - dist;
+        }
+        return 0;
+    }
+    // Band wraps around 2π
+    if (a >= rStart || a <= (rStart + rSpan) % (Math.PI * 2)) {
+        const wrapped = a >= rStart ? a - rStart : a + Math.PI * 2 - rStart;
+        dist = Math.min(wrapped, rSpan - wrapped) / (rSpan * 0.5);
+        return 1 - Math.max(0, dist);
+    }
+    return 0;
+}
+
+function drawGhostTrailSegments(ctx, p) {
+    const {
+        cx,
+        cy,
+        squash,
+        ghostRadius,
+        segments,
+        arcStart,
+        arcSpan,
+        flareColor,
+        color,
+        arcThickness,
+        pulseBase,
+        reflStart,
+        reflWidth,
+        fresnelBoost,
+        fresnelR0,
+        fresnelExp,
+        ghostOffset,
+    } = p;
+    for (let s = 0; s < segments; s += 1) {
+        const t = (s + 0.5) / segments;
+        const segStart = arcStart - ghostOffset + arcSpan * (s / segments);
+        const segEnd = arcStart - ghostOffset + arcSpan * ((s + 1) / segments);
+
+        // Asymmetric comet fade: fast rise at head (t≈1), long decay into tail (t≈0)
+        const cometFade = Math.pow(t, 0.6) * Math.pow(1 - Math.pow(t, 3), 0.5);
+        const segMid = (segStart + segEnd) / 2;
+        const flare = computeSpecularOverlap(segMid, reflStart, reflWidth);
+        const fresnel = 1 + computeFresnelAt(segMid, squash, fresnelR0, fresnelExp) * fresnelBoost;
+        const ghostAlpha = cometFade * (0.2 + flare * 0.3) * pulseBase * fresnel;
+
+        if (ghostAlpha < 0.005) {
+            continue;
+        }
+
+        const ghostColor = flare > 0.1 ? flareColor : color;
+        const ghostWidth = arcThickness * 2.5 * cometFade * (1 + flare * 0.5);
+
+        // Glow pass: wider, dimmer stroke (replaces expensive shadowBlur)
+        ctx.strokeStyle = ghostColor;
+        ctx.lineWidth = ghostWidth * 3;
+        ctx.globalAlpha = ghostAlpha * 0.25;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
+        ctx.stroke();
+
+        // Core pass
+        ctx.lineWidth = ghostWidth;
+        ctx.globalAlpha = ghostAlpha;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
+        ctx.stroke();
+    }
+}
+
+function drawMainTrailSegments(ctx, p) {
+    const {
+        cx,
+        cy,
+        squash,
+        trailRadius,
+        segments,
+        arcStart,
+        arcSpan,
+        color,
+        flareColor,
+        headColor,
+        tailColor,
+        pulseBase,
+        pulsePhase,
+        reflStart,
+        reflWidth,
+        fresnelBoost,
+        fresnelR0,
+        fresnelExp,
+        arcThickness,
+    } = p;
+    for (let s = 0; s < segments; s += 1) {
+        const t = (s + 0.5) / segments; // 0 = tail, 1 = head
+        const segStart = arcStart + arcSpan * (s / segments);
+        const segEnd = arcStart + arcSpan * ((s + 1) / segments);
+
+        // Asymmetric comet envelope: sharp bright head, long diffuse tail
+        const cometFade = Math.pow(t, 0.5) * Math.pow(1 - Math.pow(t, 4), 0.4);
+        const pulse = pulseBase * (0.85 + 0.15 * Math.sin(t * Math.PI * 6 + pulsePhase));
+
+        // Color temperature: interpolate from tail (cool base color) → head (hot white-blue)
+        // Head segments (t > 0.7) shift to hot white, tail stays as the base color
+        const headMix = Math.pow(Math.max(0, (t - 0.4) / 0.6), 2);
+        const tailMix = Math.pow(Math.max(0, (0.5 - t) / 0.5), 1.5);
+        let segColor = color;
+        if (headMix > 0.01) {
+            segColor = applyAlpha(headColor, headMix * 0.8);
+        } else if (tailMix > 0.01) {
+            segColor = applyAlpha(tailColor, tailMix * 0.5);
+        }
+
+        // Specular flare: boost when crossing the reflection band
+        const mainSegMid = (segStart + segEnd) / 2;
+        const flare = computeSpecularOverlap(mainSegMid, reflStart, reflWidth);
+        // Fresnel modulation: glancing angles on the torus surface reflect more light
+        const fresnel =
+            1 + computeFresnelAt(mainSegMid, squash, fresnelR0, fresnelExp) * fresnelBoost;
+        const alpha = cometFade * pulse * (1 + flare * 1.5) * fresnel;
+        const thickness = arcThickness * (0.2 + 0.8 * cometFade) * (1 + flare * 0.4);
+
+        if (alpha < 0.005) {
+            continue;
+        }
+
+        // Glow pass: wide, dim stroke simulates the blur halo
+        const mainColor = flare > 0.15 ? flareColor : color;
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = thickness * (2.5 + headMix * 2 + flare * 3);
+        ctx.globalAlpha = alpha * 0.2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+        ctx.stroke();
+
+        // Core pass: sharp, bright — uses color temperature shift
+        ctx.strokeStyle = flare > 0.15 ? flareColor : segColor;
+        ctx.lineWidth = thickness;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+        ctx.stroke();
+
+        // Hot core overlay at the head OR in the specular zone
+        if (headMix > 0.05 || flare > 0.2) {
+            const coreMix = Math.max(headMix, flare);
+            ctx.strokeStyle = flareColor;
+            ctx.lineWidth = thickness * (0.4 + flare * 0.3);
+            ctx.globalAlpha = alpha * coreMix * 0.9;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
+            ctx.stroke();
+        }
+    }
+}
+
+function extractElectricConfig(options) {
+    const electric = options.electric || {};
+    return {
+        arcCount: electric.arcCount ?? 3,
+        widthFactor: electric.width ?? 0.22,
+        arcThickness: electric.arcThickness ?? 2.4,
+        speedMultiplier: electric.streakSpeedMultiplier ?? 1,
+    };
+}
+
+function extractElectricTrailParams(options, state, pointer, outerRadius, innerRadius) {
+    const reflectionCfg = options.reflection || {};
+    const fresnelCfg = options.fresnel || {};
+    const eConf = extractElectricConfig(options);
+
+    return {
+        arcCount: eConf.arcCount,
+        widthFactor: eConf.widthFactor,
+        arcThickness: eConf.arcThickness,
+        speedMultiplier: eConf.speedMultiplier,
+        bandThickness: outerRadius - innerRadius,
+        baseRadius: innerRadius + (outerRadius - innerRadius) * 0.65,
+        offsetX: pointer.x * 0.2,
+        offsetY: pointer.y * 0.2,
+        segments: 12,
+        headColor: 'rgba(220, 240, 255, 1)',
+        tailColor: 'rgba(140, 100, 255, 1)',
+        flareColor: 'rgba(240, 250, 255, 1)',
+        reflWidth: reflectionCfg.width ?? 0.2,
+        reflStart: (state.phase || 0) * Math.PI * 2,
+        fresnelR0: fresnelCfg.r0 ?? 0.04,
+        fresnelExp: fresnelCfg.exponent ?? 5,
+        fresnelBoost: fresnelCfg.trailBoost ?? 0.6,
+    };
+}
+
 function drawElectricTrail(
     ctx,
     centerX,
@@ -654,187 +860,76 @@ function drawElectricTrail(
     pointer,
     squash
 ) {
-    const electric = options.electric || {};
     const colors = getOverlayColors(options);
-    const arcCount = electric.arcCount ?? 3;
-    const widthFactor = electric.width ?? 0.22;
-    const arcThickness = electric.arcThickness ?? 2.4;
-    const bandThickness = outerRadius - innerRadius;
-    const baseRadius = innerRadius + bandThickness * 0.65;
-    const offsetX = pointer.x * 0.2;
-    const offsetY = pointer.y * 0.2;
-    const speedMultiplier = electric.streakSpeedMultiplier ?? 1;
-    const segments = 12;
-
-    // Head color: hot white-blue plasma
-    const headColor = 'rgba(220, 240, 255, 1)';
-    // Tail tint shifts toward cool violet
-    const tailColor = 'rgba(140, 100, 255, 1)';
-
-    // Reflection band angular range — trails flare when crossing the specular zone
-    const reflectionCfg = options.reflection || {};
-    const reflWidth = reflectionCfg.width ?? 0.2;
-    const reflPhase = state.phase || 0;
-    const reflStart = reflPhase * Math.PI * 2;
-    const flareColor = 'rgba(240, 250, 255, 1)';
-
-    // Fresnel modulation: trails glow brighter at glancing angles on the torus
-    const fresnelCfg = options.fresnel || {};
-    const fresnelR0 = fresnelCfg.r0 ?? 0.04;
-    const fresnelExp = fresnelCfg.exponent ?? 5;
-    const fresnelBoost = fresnelCfg.trailBoost ?? 0.6;
-
-    const fresnelAt = (angle) => {
-        const grazing = 1 - Math.abs(Math.sin(angle) * squash);
-        return fresnelR0 + (1 - fresnelR0) * Math.pow(grazing, fresnelExp);
-    };
+    const p = extractElectricTrailParams(options, state, pointer, outerRadius, innerRadius);
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
 
-    const cx = centerX + offsetX;
-    const cy = centerY + offsetY;
+    const cx = centerX + p.offsetX;
+    const cy = centerY + p.offsetY;
 
-    for (let i = 0; i < arcCount; i += 1) {
+    for (let i = 0; i < p.arcCount; i += 1) {
         const color = colors[i % colors.length];
-        const localPhase = state.continuousPhase * speedMultiplier + (i / arcCount) * 0.65;
+        const localPhase = state.continuousPhase * p.speedMultiplier + (i / p.arcCount) * 0.65;
         const arcStart = localPhase * Math.PI * 2;
-        const arcSpan = widthFactor * Math.PI * 2 * 0.75;
+        const arcSpan = p.widthFactor * Math.PI * 2 * 0.75;
 
         // Each trail orbits at a slightly different radius (weave within the band)
-        const radiusOffset = Math.sin(localPhase * Math.PI * 4 + i * 2.1) * bandThickness * 0.08;
-        const trailRadius = baseRadius + radiusOffset;
+        const radiusOffset = Math.sin(localPhase * Math.PI * 4 + i * 2.1) * p.bandThickness * 0.08;
+        const trailRadius = p.baseRadius + radiusOffset;
 
         // Energy pulse: sinusoidal throb along the trail phase
         const pulsePhase = state.continuousPhase * 3 + i * 1.7;
         const pulseBase = 0.7 + 0.3 * Math.sin(pulsePhase * Math.PI * 2);
 
-        // Compute specular overlap for a segment mid-angle.
-        // Returns 0–1: how deeply this angle sits inside the reflection band.
-        const specularOverlap = (angle) => {
-            // Normalize angle into [0, 2π) range
-            const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-            // Check against the reflection band (which may wrap around 2π)
-            const rStart = ((reflStart % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-            const rSpan = reflWidth * Math.PI * 2;
-            let dist;
-            if (rStart + rSpan <= Math.PI * 2) {
-                // Band doesn't wrap
-                if (a >= rStart && a <= rStart + rSpan) {
-                    dist = Math.min(a - rStart, rStart + rSpan - a) / (rSpan * 0.5);
-                    return 1 - dist;
-                }
-                return 0;
-            }
-            // Band wraps around 2π
-            if (a >= rStart || a <= (rStart + rSpan) % (Math.PI * 2)) {
-                const wrapped = a >= rStart ? a - rStart : a + Math.PI * 2 - rStart;
-                dist = Math.min(wrapped, rSpan - wrapped) / (rSpan * 0.5);
-                return 1 - Math.max(0, dist);
-            }
-            return 0;
-        };
-
         // --- Ghost afterglow trail (wider, dimmer, slightly behind) ---
         const ghostOffset = arcSpan * 0.15;
-        const ghostRadius = trailRadius + bandThickness * 0.05 * (i % 2 === 0 ? 1 : -1);
-        for (let s = 0; s < segments; s += 1) {
-            const t = (s + 0.5) / segments;
-            const segStart = arcStart - ghostOffset + arcSpan * (s / segments);
-            const segEnd = arcStart - ghostOffset + arcSpan * ((s + 1) / segments);
+        const ghostRadius = trailRadius + p.bandThickness * 0.05 * (i % 2 === 0 ? 1 : -1);
 
-            // Asymmetric comet fade: fast rise at head (t≈1), long decay into tail (t≈0)
-            const cometFade = Math.pow(t, 0.6) * Math.pow(1 - Math.pow(t, 3), 0.5);
-            const segMid = (segStart + segEnd) / 2;
-            const flare = specularOverlap(segMid);
-            const fresnel = 1 + fresnelAt(segMid) * fresnelBoost;
-            const ghostAlpha = cometFade * (0.2 + flare * 0.3) * pulseBase * fresnel;
-
-            if (ghostAlpha < 0.005) {
-                continue;
-            }
-
-            const ghostColor = flare > 0.1 ? flareColor : color;
-            const ghostWidth = arcThickness * 2.5 * cometFade * (1 + flare * 0.5);
-
-            // Glow pass: wider, dimmer stroke (replaces expensive shadowBlur)
-            ctx.strokeStyle = ghostColor;
-            ctx.lineWidth = ghostWidth * 3;
-            ctx.globalAlpha = ghostAlpha * 0.25;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
-            ctx.stroke();
-
-            // Core pass
-            ctx.lineWidth = ghostWidth;
-            ctx.globalAlpha = ghostAlpha;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, ghostRadius, ghostRadius * squash, 0, segStart, segEnd);
-            ctx.stroke();
-        }
+        drawGhostTrailSegments(ctx, {
+            cx,
+            cy,
+            squash,
+            ghostRadius,
+            segments: p.segments,
+            arcStart,
+            arcSpan,
+            flareColor: p.flareColor,
+            color,
+            arcThickness: p.arcThickness,
+            pulseBase,
+            reflStart: p.reflStart,
+            reflWidth: p.reflWidth,
+            fresnelBoost: p.fresnelBoost,
+            fresnelR0: p.fresnelR0,
+            fresnelExp: p.fresnelExp,
+            ghostOffset,
+        });
 
         // --- Main plasma trail with color temperature shift ---
-        for (let s = 0; s < segments; s += 1) {
-            const t = (s + 0.5) / segments; // 0 = tail, 1 = head
-            const segStart = arcStart + arcSpan * (s / segments);
-            const segEnd = arcStart + arcSpan * ((s + 1) / segments);
-
-            // Asymmetric comet envelope: sharp bright head, long diffuse tail
-            const cometFade = Math.pow(t, 0.5) * Math.pow(1 - Math.pow(t, 4), 0.4);
-            const pulse = pulseBase * (0.85 + 0.15 * Math.sin(t * Math.PI * 6 + pulsePhase));
-
-            // Color temperature: interpolate from tail (cool base color) → head (hot white-blue)
-            // Head segments (t > 0.7) shift to hot white, tail stays as the base color
-            const headMix = Math.pow(Math.max(0, (t - 0.4) / 0.6), 2);
-            const tailMix = Math.pow(Math.max(0, (0.5 - t) / 0.5), 1.5);
-            let segColor = color;
-            if (headMix > 0.01) {
-                segColor = applyAlpha(headColor, headMix * 0.8);
-            } else if (tailMix > 0.01) {
-                segColor = applyAlpha(tailColor, tailMix * 0.5);
-            }
-
-            // Specular flare: boost when crossing the reflection band
-            const mainSegMid = (segStart + segEnd) / 2;
-            const flare = specularOverlap(mainSegMid);
-            // Fresnel modulation: glancing angles on the torus surface reflect more light
-            const fresnel = 1 + fresnelAt(mainSegMid) * fresnelBoost;
-            const alpha = cometFade * pulse * (1 + flare * 1.5) * fresnel;
-            const thickness = arcThickness * (0.2 + 0.8 * cometFade) * (1 + flare * 0.4);
-
-            if (alpha < 0.005) {
-                continue;
-            }
-
-            // Glow pass: wide, dim stroke simulates the blur halo
-            const mainColor = flare > 0.15 ? flareColor : color;
-            ctx.strokeStyle = mainColor;
-            ctx.lineWidth = thickness * (2.5 + headMix * 2 + flare * 3);
-            ctx.globalAlpha = alpha * 0.2;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
-            ctx.stroke();
-
-            // Core pass: sharp, bright — uses color temperature shift
-            ctx.strokeStyle = flare > 0.15 ? flareColor : segColor;
-            ctx.lineWidth = thickness;
-            ctx.globalAlpha = alpha;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
-            ctx.stroke();
-
-            // Hot core overlay at the head OR in the specular zone
-            if (headMix > 0.05 || flare > 0.2) {
-                const coreMix = Math.max(headMix, flare);
-                ctx.strokeStyle = flareColor;
-                ctx.lineWidth = thickness * (0.4 + flare * 0.3);
-                ctx.globalAlpha = alpha * coreMix * 0.9;
-                ctx.beginPath();
-                ctx.ellipse(cx, cy, trailRadius, trailRadius * squash, 0, segStart, segEnd);
-                ctx.stroke();
-            }
-        }
+        drawMainTrailSegments(ctx, {
+            cx,
+            cy,
+            squash,
+            trailRadius,
+            segments: p.segments,
+            arcStart,
+            arcSpan,
+            color,
+            flareColor: p.flareColor,
+            headColor: p.headColor,
+            tailColor: p.tailColor,
+            pulseBase,
+            pulsePhase,
+            reflStart: p.reflStart,
+            reflWidth: p.reflWidth,
+            fresnelBoost: p.fresnelBoost,
+            fresnelR0: p.fresnelR0,
+            fresnelExp: p.fresnelExp,
+            arcThickness: p.arcThickness,
+        });
     }
     ctx.globalAlpha = 1;
     ctx.restore();

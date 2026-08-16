@@ -509,4 +509,119 @@ describe('glass3dPlugin', () => {
         );
         expect(blueTintedGradients.length).toBeGreaterThanOrEqual(1);
     });
+
+    it('should handle edge cases in electric trails (wrap-around reflection, low alpha skipping, default fallbacks)', () => {
+        // Trigger default fallbacks by providing minimal config
+        const minimalChart = {
+            ctx,
+            chartArea: { top: 0, bottom: 100, left: 0, right: 100 },
+            getDatasetMeta: () => ({
+                data: [createArc(0, Math.PI, 10, { backgroundColor: '#00ff00', bevel: {} })],
+            }),
+            config: {
+                options: {
+                    plugins: {
+                        glass3d: {
+                            enabled: true,
+                            // Omitting electric, reflection, fresnel entirely to test ?? fallbacks
+                            electric: {},
+                            reflection: {},
+                            fresnel: {},
+                        },
+                    },
+                },
+            },
+        };
+
+        // Inject a state with a phase that forces reflStart + reflWidth to wrap around 2π.
+        // reflWidth defaults to 0.2, which is 0.2 * 2π = 0.4π.
+        // If phase = 0.9, reflStart = 1.8π. 1.8π + 0.4π = 2.2π > 2π.
+        glass3dPlugin.beforeDatasetsDraw(
+            minimalChart,
+            { meta: {} },
+            minimalChart.config.options.plugins.glass3d
+        );
+        const state = minimalChart.$glass3d;
+        state.phase = 0.9;
+
+        // Force alpha to be < 0.005 so the 'continue' paths in drawGhostTrailSegments / drawMainTrailSegments are hit.
+        // The easiest way is to mock Math.pow to return 0 for the comet fade envelope calculations,
+        // which forces cometFade = 0 and consequently alpha = 0.
+        const originalPow = Math.pow;
+        jest.spyOn(Math, 'pow').mockImplementation((base, exp) => {
+            // Check if this is the comet fade calculation (exp 0.6, 0.5, 0.4)
+            if (exp === 0.6 || exp === 0.5 || exp === 0.4) {
+                return 0; // Forces cometFade to 0
+            }
+            return originalPow(base, exp);
+        });
+
+        // This call should not throw and should internally hit the 'continue' lines
+        // and the reflection band wrap-around logic.
+        expect(() =>
+            glass3dPlugin.afterDatasetsDraw(
+                minimalChart,
+                { meta: {} },
+                minimalChart.config.options.plugins.glass3d
+            )
+        ).not.toThrow();
+
+        Math.pow.mockRestore();
+    });
+
+    it('should handle edge cases in electric trails (wrap-around reflection, low alpha skipping, default fallbacks)', () => {
+        // Trigger default fallbacks by providing minimal config
+        const minimalChart = {
+            ctx,
+            chartArea: { top: 0, bottom: 100, left: 0, right: 100 },
+            getDatasetMeta: () => ({
+                data: [createArc(0, Math.PI, 10, { backgroundColor: '#00ff00', bevel: {} })],
+            }),
+            config: {
+                options: {
+                    plugins: {
+                        glass3d: {
+                            enabled: true,
+                            // Omitting electric, reflection, fresnel entirely to test ?? fallbacks
+                            electric: {},
+                            reflection: {},
+                            fresnel: {},
+                        },
+                    },
+                },
+            },
+            draw: jest.fn(),
+        };
+
+        glass3dPlugin.beforeDatasetsDraw(
+            minimalChart,
+            { meta: {} },
+            minimalChart.config.options.plugins.glass3d
+        );
+
+        const state = minimalChart.$glass3d;
+        // Inject a state with a phase that forces reflStart + reflWidth to wrap around 2π.
+        state.phase = 0.9;
+
+        // Force alpha to be < 0.005 so the 'continue' paths in drawGhostTrailSegments / drawMainTrailSegments are hit.
+        const originalPow = Math.pow;
+        jest.spyOn(Math, 'pow').mockImplementation((base, exp) => {
+            if (exp === 0.6 || exp === 0.5 || exp === 0.4) {
+                return 0; // Forces cometFade to 0
+            }
+            return originalPow(base, exp);
+        });
+
+        // This call should not throw and should internally hit the 'continue' lines
+        // and the reflection band wrap-around logic.
+        expect(() =>
+            glass3dPlugin.afterDatasetsDraw(
+                minimalChart,
+                { meta: {} },
+                minimalChart.config.options.plugins.glass3d
+            )
+        ).not.toThrow();
+
+        Math.pow.mockRestore();
+    });
 });
