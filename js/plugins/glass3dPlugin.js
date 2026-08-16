@@ -673,7 +673,25 @@ function computeSpecularOverlap(angle, reflStart, reflWidth) {
 }
 
 function drawGhostTrailSegments(ctx, p) {
-    const { cx, cy, squash, ghostRadius, segments, arcStart, arcSpan, flareColor, color, arcThickness, pulseBase, reflStart, reflWidth, fresnelBoost, fresnelR0, fresnelExp, ghostOffset } = p;
+    const {
+        cx,
+        cy,
+        squash,
+        ghostRadius,
+        segments,
+        arcStart,
+        arcSpan,
+        flareColor,
+        color,
+        arcThickness,
+        pulseBase,
+        reflStart,
+        reflWidth,
+        fresnelBoost,
+        fresnelR0,
+        fresnelExp,
+        ghostOffset,
+    } = p;
     for (let s = 0; s < segments; s += 1) {
         const t = (s + 0.5) / segments;
         const segStart = arcStart - ghostOffset + arcSpan * (s / segments);
@@ -711,7 +729,27 @@ function drawGhostTrailSegments(ctx, p) {
 }
 
 function drawMainTrailSegments(ctx, p) {
-    const { cx, cy, squash, trailRadius, segments, arcStart, arcSpan, color, flareColor, headColor, tailColor, pulseBase, pulsePhase, reflStart, reflWidth, fresnelBoost, fresnelR0, fresnelExp, arcThickness } = p;
+    const {
+        cx,
+        cy,
+        squash,
+        trailRadius,
+        segments,
+        arcStart,
+        arcSpan,
+        color,
+        flareColor,
+        headColor,
+        tailColor,
+        pulseBase,
+        pulsePhase,
+        reflStart,
+        reflWidth,
+        fresnelBoost,
+        fresnelR0,
+        fresnelExp,
+        arcThickness,
+    } = p;
     for (let s = 0; s < segments; s += 1) {
         const t = (s + 0.5) / segments; // 0 = tail, 1 = head
         const segStart = arcStart + arcSpan * (s / segments);
@@ -736,7 +774,8 @@ function drawMainTrailSegments(ctx, p) {
         const mainSegMid = (segStart + segEnd) / 2;
         const flare = computeSpecularOverlap(mainSegMid, reflStart, reflWidth);
         // Fresnel modulation: glancing angles on the torus surface reflect more light
-        const fresnel = 1 + computeFresnelAt(mainSegMid, squash, fresnelR0, fresnelExp) * fresnelBoost;
+        const fresnel =
+            1 + computeFresnelAt(mainSegMid, squash, fresnelR0, fresnelExp) * fresnelBoost;
         const alpha = cometFade * pulse * (1 + flare * 1.5) * fresnel;
         const thickness = arcThickness * (0.2 + 0.8 * cometFade) * (1 + flare * 0.4);
 
@@ -780,7 +819,7 @@ function extractElectricConfig(options) {
         arcCount: electric.arcCount ?? 3,
         widthFactor: electric.width ?? 0.22,
         arcThickness: electric.arcThickness ?? 2.4,
-        speedMultiplier: electric.streakSpeedMultiplier ?? 1
+        speedMultiplier: electric.streakSpeedMultiplier ?? 1,
     };
 }
 
@@ -806,7 +845,7 @@ function extractElectricTrailParams(options, state, pointer, outerRadius, innerR
         reflStart: (state.phase || 0) * Math.PI * 2,
         fresnelR0: fresnelCfg.r0 ?? 0.04,
         fresnelExp: fresnelCfg.exponent ?? 5,
-        fresnelBoost: fresnelCfg.trailBoost ?? 0.6
+        fresnelBoost: fresnelCfg.trailBoost ?? 0.6,
     };
 }
 
@@ -850,14 +889,46 @@ function drawElectricTrail(
         const ghostRadius = trailRadius + p.bandThickness * 0.05 * (i % 2 === 0 ? 1 : -1);
 
         drawGhostTrailSegments(ctx, {
-            cx, cy, squash, ghostRadius, segments: p.segments, arcStart, arcSpan, flareColor: p.flareColor, color,
-            arcThickness: p.arcThickness, pulseBase, reflStart: p.reflStart, reflWidth: p.reflWidth, fresnelBoost: p.fresnelBoost, fresnelR0: p.fresnelR0, fresnelExp: p.fresnelExp, ghostOffset
+            cx,
+            cy,
+            squash,
+            ghostRadius,
+            segments: p.segments,
+            arcStart,
+            arcSpan,
+            flareColor: p.flareColor,
+            color,
+            arcThickness: p.arcThickness,
+            pulseBase,
+            reflStart: p.reflStart,
+            reflWidth: p.reflWidth,
+            fresnelBoost: p.fresnelBoost,
+            fresnelR0: p.fresnelR0,
+            fresnelExp: p.fresnelExp,
+            ghostOffset,
         });
 
         // --- Main plasma trail with color temperature shift ---
         drawMainTrailSegments(ctx, {
-            cx, cy, squash, trailRadius, segments: p.segments, arcStart, arcSpan, color, flareColor: p.flareColor, headColor: p.headColor, tailColor: p.tailColor,
-            pulseBase, pulsePhase, reflStart: p.reflStart, reflWidth: p.reflWidth, fresnelBoost: p.fresnelBoost, fresnelR0: p.fresnelR0, fresnelExp: p.fresnelExp, arcThickness: p.arcThickness
+            cx,
+            cy,
+            squash,
+            trailRadius,
+            segments: p.segments,
+            arcStart,
+            arcSpan,
+            color,
+            flareColor: p.flareColor,
+            headColor: p.headColor,
+            tailColor: p.tailColor,
+            pulseBase,
+            pulsePhase,
+            reflStart: p.reflStart,
+            reflWidth: p.reflWidth,
+            fresnelBoost: p.fresnelBoost,
+            fresnelR0: p.fresnelR0,
+            fresnelExp: p.fresnelExp,
+            arcThickness: p.arcThickness,
         });
     }
     ctx.globalAlpha = 1;
