@@ -4,7 +4,7 @@ Single source of truth for agent guidance on this repo — **edit this file, not
 `CLAUDE.md`** (that is a stub that imports this one). Deeper how-tos live in
 `docs/`; slash-command workflows live in `.agents/skills/` (canonical — the open
 Agent Skills format; `.claude/commands/` is generated from it by
-`scripts/sync_commands.py`, and the gate drift-checks it via `make sync-check`).
+`scripts/sync_commands.py`, `.claude/skills` is symlinked to `.agents/skills`, and the gate drift-checks it via `make sync-check`).
 
 ## Two audiences (do not mix these up)
 
@@ -249,8 +249,14 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   `.agents/skills/<name>/SKILL.md` (canonical) and **generated** into
   `.claude/commands/` by `scripts/sync_commands.py` (the `/sync-commands` skill),
   which `rmtree`s and regenerates that dir — **never hand-edit `.claude/commands/`**
-  (edits are silently lost). `make sync-check` fails the gate when the generated
-  copy is stale. Read before adding/editing a slash-command.
+  (edits are silently lost). `.claude/skills` is symlinked to `../.agents/skills`
+  for autonomous runtime discovery across agent harnesses. Self-contained skill bundles
+  keep helper scripts (`scripts/`) and prompt/data assets (`references/`) scoped inside
+  their skill directory rather than polluting global tools. `tests/python/test_skills.py`
+  (run by `make test`) enforces schema validity, non-empty descriptions, frontmatter
+  directory-name matching, and symlink resolution across all skills.
+  `make sync-check` fails the gate when the generated copy is stale. Read before
+  adding/editing a slash-command.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 

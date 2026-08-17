@@ -46,19 +46,23 @@ For each `.agents/skills/<name>/SKILL.md` it writes `.claude/commands/<name>.md`
 compares a content hash before/after. If the sync was not a no-op, the check
 fails with the exact remedy — so the generated copy can never silently go stale.
 
-## Tests
+## Tests & schema validation
 
-`tests/python/test_sync_commands.py` covers the generator. **Run it when you touch
-`scripts/sync_commands.py`** — the scoped `ruff`/`black`/`mypy` loop does _not_ run
-tests, so a signature change (e.g. dropping a function) passes those and still
-breaks the suite:
+- `tests/python/test_skills.py` validates that all `.agents/skills/*/SKILL.md`
+  definitions have valid frontmatter (`name`, `description`), a non-empty body,
+  no unexpanded `$ARGUMENTS`, and that `.claude/skills` symlink exists and resolves
+  to `.agents/skills`.
+- `tests/python/test_sync_commands.py` covers the generator. **Run it when you touch
+  `scripts/sync_commands.py`** — the scoped `ruff`/`black`/`mypy` loop does _not_ run
+  tests, so a signature change (e.g. dropping a function) passes those and still
+  breaks the suite:
 
 ```sh
-venv/bin/pytest tests/python/test_sync_commands.py
+venv/bin/pytest tests/python/test_sync_commands.py tests/python/test_skills.py
 ```
 
 It locks the behaviours that have already regressed once: `{{args}}` → `$ARGUMENTS`
-translation and `argument-hint` quoting.
+translation, `argument-hint` quoting, and symlink maintenance.
 
 ## Gotchas that already cost a round-trip
 

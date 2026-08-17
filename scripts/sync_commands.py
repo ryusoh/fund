@@ -16,6 +16,7 @@ from typing import Dict, Tuple
 WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILLS_DIR = os.path.join(WORKSPACE_ROOT, ".agents", "skills")
 CLAUDE_DIR = os.path.join(WORKSPACE_ROOT, ".claude", "commands")
+CLAUDE_SKILLS_LINK = os.path.join(WORKSPACE_ROOT, ".claude", "skills")
 
 
 def parse_markdown(content: str) -> Tuple[Dict[str, str], str]:
@@ -76,8 +77,20 @@ def main() -> None:
                 f.write("\n")
 
     format_generated_commands()
+    ensure_skills_symlink()
 
     print("Successfully synchronized Agent Skills to Claude commands.")
+
+
+def ensure_skills_symlink() -> None:
+    """Ensure .claude/skills symlink exists pointing to ../.agents/skills."""
+    claude_base = os.path.join(WORKSPACE_ROOT, ".claude")
+    os.makedirs(claude_base, exist_ok=True)
+    if not os.path.exists(CLAUDE_SKILLS_LINK) and not os.path.islink(CLAUDE_SKILLS_LINK):
+        try:
+            os.symlink(os.path.join("..", ".agents", "skills"), CLAUDE_SKILLS_LINK)
+        except OSError:
+            pass
 
 
 def format_generated_commands() -> None:

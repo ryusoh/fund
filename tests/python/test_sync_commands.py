@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.sync_commands import main, parse_markdown
+from scripts.sync_commands import ensure_skills_symlink, main, parse_markdown
 
 
 def test_parse_markdown() -> None:
@@ -129,3 +129,19 @@ def test_argument_hint_is_quoted_string(tmp_path: Path) -> None:
 
     content = (claude_dir / "retro.md").read_text(encoding="utf-8")
     assert 'argument-hint: "[optional focus]"' in content
+
+
+def test_ensure_skills_symlink(tmp_path: Path) -> None:
+    """ensure_skills_symlink creates the symlink idempotently."""
+    claude_skills_link = tmp_path / ".claude" / "skills"
+    with (
+        patch("scripts.sync_commands.WORKSPACE_ROOT", str(tmp_path)),
+        patch("scripts.sync_commands.CLAUDE_SKILLS_LINK", str(claude_skills_link)),
+    ):
+        ensure_skills_symlink()
+        assert claude_skills_link.is_symlink()
+        assert claude_skills_link.readlink() == Path("..") / ".agents" / "skills"
+
+        # Calling again should be idempotent without error
+        ensure_skills_symlink()
+        assert claude_skills_link.is_symlink()

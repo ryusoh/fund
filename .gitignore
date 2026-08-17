@@ -36,7 +36,7 @@ reports/
 .claude/*
 !.claude/commands/
 !.claude/agents/
-!.claude/skills/
+!.claude/skills
 !.claude/settings.json
 !.claude/launch.json
 # (still ignored by .claude/*: settings.local.json — personal; worktrees/ — transient)
