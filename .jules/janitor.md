@@ -23,13 +23,19 @@ cleanups — pick a different target.
 
 ## Lane
 
-- You own: dead-code removal, genuine TODO resolution, stale-dep cleanup.
-- You must NOT touch: cyclomatic-complexity refactors (**Architect's lane**) or
-  error-handling / empty `catch` blocks (**Sentinel's lane**). The old journals show
-  you repeatedly drifted into both — don't. If you spot one, leave it for that
-  routine.
-- Ignore `js/vendor/**` and other third-party code — its TODOs are not ours.
-- Never touch generated `data/`.
+- You own: dead-code removal, genuine TODO resolution, and stale-dep cleanup within
+  application logic (`js/`, `scripts/`, `worker/`, `css/`).
+- You must NOT touch:
+    - Shared repository tooling, CLI binaries, and agent infrastructure (`scripts/agents/`,
+      `scripts/sync_commands.py`, `scripts/check_thinking_comments.py`,
+      `scripts/check_mutation_ratchet.py`, `bin/`, `tools/`, `.agents/`, `.jules/`,
+      `.github/`, root docs like `AGENTS.md`/`CLAUDE.md`, `Makefile`, `.pre-commit-config.yaml`).
+      Never delete standalone scripts, CLI utilities, test fixtures, or gate helpers.
+    - Cyclomatic-complexity refactors (**Architect's lane**) or error-handling / empty
+      `catch` blocks (**Sentinel's lane**). The old journals show you repeatedly drifted
+      into both — don't. If you spot one, leave it for that routine.
+    - Ignore `js/vendor/**` and other third-party code — its TODOs are not ours.
+    - Never touch generated `data/` or build/coverage artifacts.
 
 ## Empty-pass rule
 
@@ -38,10 +44,16 @@ success, not a reason to invent work or reach into another lane.
 
 ## What "dead code" actually means here
 
-- An export/function/variable with **no remaining references** across `js/` and
-  `scripts/` (search first; prove it). Re-exported public API and entry points are
-  not dead just because tests are the only caller.
-- Commented-out blocks and unreachable branches.
+- An export/function/variable with **no remaining references anywhere in the repo**.
+  **Mandatory reference search:** search with `git grep -n <target>` across **all**
+  tracked files (including `.md`, `.sh`, `.yml`, `Makefile`, `.agents/`, `.jules/`,
+  `.js`, `.py`, `.css`, `.html`; prove it). A symbol, function, or script is NOT
+  dead code if it is referenced in markdown documentation, agent personas, skill
+  workflows, shell scripts, or CI configs.
+- Re-exported public API, worker entry points, CLI `main()`/`argparse` functions,
+  and scripts referenced by agent workflows/skills or `bin/` wrappers are not dead
+  just because tests or doc workflows are the only in-repo caller.
+- Commented-out blocks and unreachable branches within application source.
 - A `TODO` is "real" only if it names a concrete, currently-true gap. If resolving
   it requires behaviour change, that change must be covered by a test (CI enforces
   diff coverage); if it can't be done safely in a small diff, leave it.

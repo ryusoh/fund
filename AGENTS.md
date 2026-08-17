@@ -203,7 +203,10 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - `css/` — stylesheets grouped by page under `css/<page>/`.
 - `<page>/index.html` — static page entries (`terminal/`, `position/`, `calendar/`).
 - `scripts/` — Python data pipeline + tooling (governed by `pyproject.toml`),
-  including `scripts/sync_commands.py` (skill/command sync).
+  including `scripts/sync_commands.py` (skill/command sync), agent helpers
+  in `scripts/agents/`, and gate checks. Scripts referenced across agent docs
+  and skills are verified by `tests/python/test_doc_tool_references.py`.
+- `bin/` — standalone CLI entry points (`bin/fund`, `bin/portfolio`, `bin/holdings`, `bin/update-all`).
 - `data/` — generated JSON/CSV consumed by the frontend (**don't hand-edit**).
 - `tests/` — `tests/js/**` (jest) and `tests/python/**` (pytest).
 - `docs/` — architecture & subsystem knowledge. **Read the relevant doc before
@@ -253,14 +256,14 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 
 ## Lanes (keep PRs disjoint to avoid collisions)
 
-| Routine   | Owns                                                             | Must NOT touch                                            |
-| --------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
-| Typist    | JS strict-type annotations (JSDoc), no logic change              | runtime behaviour                                         |
-| Testpilot | test-only additions/coverage, no prod-code change                | `js/`, `scripts/` prod files                              |
-| Architect | cyclomatic-complexity refactors (behaviour-preserving)           | error-handling, tests, features                           |
-| Sentinel  | security + error-handling (empty catches, leaks, resource leaks) | complexity refactors                                      |
-| Janitor   | dead code, stale deps, real TODOs only                           | complexity, error-handling (Architect/Sentinel own those) |
-| Bolt      | features / performance                                           | anything another lane owns in the same PR                 |
+| Routine   | Owns                                                             | Must NOT touch                                                                                                                                        |
+| --------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typist    | JS strict-type annotations (JSDoc), no logic change              | runtime behaviour                                                                                                                                     |
+| Testpilot | test-only additions/coverage, no prod-code change                | `js/`, `scripts/` prod files                                                                                                                          |
+| Architect | cyclomatic-complexity refactors (behaviour-preserving)           | error-handling, tests, features                                                                                                                       |
+| Sentinel  | security + error-handling (empty catches, leaks, resource leaks) | complexity refactors                                                                                                                                  |
+| Janitor   | dead code, stale deps, real TODOs only                           | complexity, error-handling (Architect/Sentinel own those); shared repo tooling/scripts (`scripts/agents/`, `bin/`, `.agents/`, `.jules/`, `Makefile`) |
+| Bolt      | features / performance                                           | anything another lane owns in the same PR                                                                                                             |
 
 If your finding belongs to another lane, **skip it** — that lane will get it.
 
