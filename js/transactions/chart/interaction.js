@@ -831,66 +831,82 @@ function handleContainerLeave() {
     requestChartRedraw();
 }
 
+let pendingPointerMoveEvent = null;
+let pointerMoveRafId = null;
+
 function handlePointerMove(event) {
     if (!pointerCanvas) {
-        return;
-    }
-    const layout = getActiveLayout();
-    if (!layout) {
-        updateCrosshairUI(null, null);
         return;
     }
     if (event.pointerType === 'touch') {
         event.preventDefault();
     }
-    const rect = pointerCanvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const insideX = x >= layout.chartBounds.left && x <= layout.chartBounds.right;
-    const insideY = y >= layout.chartBounds.top && y <= layout.chartBounds.bottom;
+    pendingPointerMoveEvent = event;
 
-    if (!insideX || !insideY) {
-        if (!crosshairState.dragging) {
-            crosshairState.active = false;
-            crosshairState.hoverTime = null;
-        }
-        requestChartRedraw();
-        return;
+    if (!pointerMoveRafId) {
+        pointerMoveRafId = requestAnimationFrame(() => {
+            pointerMoveRafId = null;
+            const currentEvent = pendingPointerMoveEvent;
+            if (!currentEvent || !pointerCanvas) {
+                return;
+            }
+
+            const layout = getActiveLayout();
+            if (!layout) {
+                updateCrosshairUI(null, null);
+                return;
+            }
+
+            const rect = pointerCanvas.getBoundingClientRect();
+            const x = currentEvent.clientX - rect.left;
+            const y = currentEvent.clientY - rect.top;
+            const insideX = x >= layout.chartBounds.left && x <= layout.chartBounds.right;
+            const insideY = y >= layout.chartBounds.top && y <= layout.chartBounds.bottom;
+
+            if (!insideX || !insideY) {
+                if (!crosshairState.dragging) {
+                    crosshairState.active = false;
+                    crosshairState.hoverTime = null;
+                }
+                requestChartRedraw();
+                return;
+            }
+
+            const time = layout.invertX ? layout.invertX(x) : null;
+            if (!Number.isFinite(time)) {
+                return;
+            }
+
+            crosshairState.active = true;
+            crosshairState.hoverTime = time;
+            crosshairState.hoverY = Math.max(
+                layout.chartBounds.top,
+                Math.min(y, layout.chartBounds.bottom)
+            );
+
+            // Skip range functionality for composition/sector/beta/yield/marketcap charts
+            if (
+                layout.key === 'composition' ||
+                layout.key === 'compositionAbs' ||
+                layout.key === 'sectors' ||
+                layout.key === 'sectorsAbs' ||
+                layout.key === 'geography' ||
+                layout.key === 'geographyAbs' ||
+                layout.key === 'marketcap' ||
+                layout.key === 'marketcapAbs' ||
+                layout.key === 'beta' ||
+                layout.key === 'yield'
+            ) {
+                crosshairState.dragging = false;
+                crosshairState.rangeStart = null;
+                crosshairState.rangeEnd = null;
+            } else if (crosshairState.dragging) {
+                crosshairState.rangeEnd = time;
+            }
+
+            requestChartRedraw();
+        });
     }
-
-    const time = layout.invertX ? layout.invertX(x) : null;
-    if (!Number.isFinite(time)) {
-        return;
-    }
-
-    crosshairState.active = true;
-    crosshairState.hoverTime = time;
-    crosshairState.hoverY = Math.max(
-        layout.chartBounds.top,
-        Math.min(y, layout.chartBounds.bottom)
-    );
-
-    // Skip range functionality for composition/sector/beta/yield/marketcap charts
-    if (
-        layout.key === 'composition' ||
-        layout.key === 'compositionAbs' ||
-        layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs' ||
-        layout.key === 'geography' ||
-        layout.key === 'geographyAbs' ||
-        layout.key === 'marketcap' ||
-        layout.key === 'marketcapAbs' ||
-        layout.key === 'beta' ||
-        layout.key === 'yield'
-    ) {
-        crosshairState.dragging = false;
-        crosshairState.rangeStart = null;
-        crosshairState.rangeEnd = null;
-    } else if (crosshairState.dragging) {
-        crosshairState.rangeEnd = time;
-    }
-
-    requestChartRedraw();
 }
 
 function handlePointerLeave() {

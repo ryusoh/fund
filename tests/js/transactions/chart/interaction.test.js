@@ -216,6 +216,7 @@ describe('Interaction logic', () => {
             pointerMoveEvent.clientX = 100;
             pointerMoveEvent.clientY = 50;
             canvas.dispatchEvent(pointerMoveEvent);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
 
             expect(interactionMod.crosshairState.rangeEnd).toBe(1000);
 
@@ -272,6 +273,7 @@ describe('Interaction logic', () => {
             pointerMoveEvent.clientX = 100;
             pointerMoveEvent.clientY = 50;
             canvas.dispatchEvent(pointerMoveEvent);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
 
             expect(interactionMod.crosshairState.rangeEnd).toBe(null);
 
