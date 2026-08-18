@@ -871,63 +871,62 @@ function aggregateScenarios(configs, horizon) {
     });
 }
 
-function normalizeConfig(raw, holdingDetails = {}) {
-    const legacyManual = raw.manual || {};
-    const config = {
+function _initBaseConfigFields(raw, holdingDetails) {
+    return {
         symbol: raw.symbol || holdingDetails.symbol || '',
         name: raw.name || raw.symbol || '',
         meta: raw.meta || {},
+        derived: raw.derived || {},
+    };
+}
+
+function _initBaseConfigNested(raw) {
+    return {
         model: raw.model ? { ...raw.model } : {},
         market: raw.market ? { ...raw.market } : {},
         risk: raw.risk ? { ...raw.risk } : {},
         position: raw.position ? { ...raw.position } : {},
-        derived: raw.derived || {},
         scenarios: Array.isArray(raw.scenarios)
             ? raw.scenarios.map((scenario) => ({ ...scenario }))
             : [],
     };
+}
 
-    config.market = config.market || {};
-    Object.keys(config.market).forEach((key) => {
-        const num = Number(config.market[key]);
+function _normalizeMarketConfig(market) {
+    const norm = market || {};
+    Object.keys(norm).forEach((key) => {
+        const num = Number(norm[key]);
         if (Number.isFinite(num)) {
-            config.market[key] = num;
+            norm[key] = num;
         }
     });
+    return norm;
+}
 
-    config.risk = config.risk || {};
-    if (config.risk.volatility !== undefined) {
-        const riskVol = Number(config.risk.volatility);
-        config.risk.volatility = Number.isFinite(riskVol) ? riskVol : undefined;
+function _normalizeRiskConfig(risk) {
+    const norm = risk || {};
+    if (norm.volatility !== undefined) {
+        const riskVol = Number(norm.volatility);
+        norm.volatility = Number.isFinite(riskVol) ? riskVol : undefined;
     }
+    return norm;
+}
 
-    config.model = config.model || {};
-    config.model.version = config.model.version || '1.0.0';
-    config.model.engine = config.model.engine || {
-        type: 'fermat-pascal-kelly',
-        useMonteCarlo: false,
-        paths: 10000,
-        useBayesianUpdate: false,
-    };
-    config.model.preferences = config.model.preferences || {};
-    const preferences = config.model.preferences;
-    preferences.overrides = preferences.overrides ? { ...preferences.overrides } : {};
-    const overrides = preferences.overrides;
+function _normalizeNumber(value, fallback) {
+    const num = Number(value);
+    if (Number.isFinite(num)) {
+        return num;
+    }
+    return fallback;
+}
 
-    const normalizeNumber = (value, fallback) => {
-        const num = Number(value);
-        if (Number.isFinite(num)) {
-            return num;
-        }
-        return fallback;
-    };
-
-    preferences.horizon = normalizeNumber(preferences.horizon ?? legacyManual.horizon, 5);
-    preferences.kellyScale = normalizeNumber(
+function _normalizeModelPreferences(preferences, legacyManual) {
+    preferences.horizon = _normalizeNumber(preferences.horizon ?? legacyManual.horizon, 5);
+    preferences.kellyScale = _normalizeNumber(
         preferences.kellyScale ?? legacyManual.kellyScale,
         0.5
     );
-    preferences.targetCagr = normalizeNumber(
+    preferences.targetCagr = _normalizeNumber(
         preferences.targetCagr ?? legacyManual.targetCagr,
         0.1
     );
@@ -936,9 +935,10 @@ function normalizeConfig(raw, holdingDetails = {}) {
         preferences.benchmark !== undefined
             ? { benchmark: preferences.benchmark }
             : { benchmark: legacyManual.benchmark ?? 0 };
-    const benchmarkDescriptor = getBenchmarkDescriptor(benchmarkSource);
-    preferences.benchmark = benchmarkDescriptor;
+    preferences.benchmark = getBenchmarkDescriptor(benchmarkSource);
+}
 
+function _normalizeModelOverrides(overrides, legacyManual) {
     ['price', 'eps', 'volatility'].forEach((key) => {
         const value = overrides[key] !== undefined ? overrides[key] : legacyManual[key];
         if (value !== undefined && value !== null) {
@@ -950,16 +950,50 @@ function normalizeConfig(raw, holdingDetails = {}) {
             }
         }
     });
+}
 
-    config.position = config.position || {};
+function _normalizeModelConfig(model, legacyManual) {
+    const norm = model || {};
+    norm.version = norm.version || '1.0.0';
+    norm.engine = norm.engine || {
+        type: 'fermat-pascal-kelly',
+        useMonteCarlo: false,
+        paths: 10000,
+        useBayesianUpdate: false,
+    };
+    norm.preferences = norm.preferences || {};
+    norm.preferences.overrides = norm.preferences.overrides ? { ...norm.preferences.overrides } : {};
+
+    _normalizeModelPreferences(norm.preferences, legacyManual);
+    _normalizeModelOverrides(norm.preferences.overrides, legacyManual);
+
+    return norm;
+}
+
+function _normalizePositionConfig(position, raw, holdingDetails, legacyManual) {
+    const norm = position || {};
     const holdingShares = holdingDetails?.shares ?? legacyManual.shares ?? raw.shares;
     if (holdingShares !== undefined) {
         const sharesNum = Number(holdingShares);
         if (Number.isFinite(sharesNum)) {
-            config.position.shares = sharesNum;
+            norm.shares = sharesNum;
         }
     }
-    config.position.constraints = config.position.constraints || { minWeight: 0, maxWeight: 0.3 };
+    norm.constraints = norm.constraints || { minWeight: 0, maxWeight: 0.3 };
+    return norm;
+}
+
+function normalizeConfig(raw, holdingDetails = {}) {
+    const legacyManual = raw.manual || {};
+    const config = {
+        ..._initBaseConfigFields(raw, holdingDetails),
+        ..._initBaseConfigNested(raw)
+    };
+
+    config.market = _normalizeMarketConfig(config.market);
+    config.risk = _normalizeRiskConfig(config.risk);
+    config.model = _normalizeModelConfig(config.model, legacyManual);
+    config.position = _normalizePositionConfig(config.position, raw, holdingDetails, legacyManual);
 
     config.scenarios = config.scenarios.map((scenario) => normalizeScenario(scenario));
 
