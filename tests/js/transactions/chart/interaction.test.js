@@ -217,6 +217,8 @@ describe('Interaction logic', () => {
             pointerMoveOutEvent.clientY = 50;
             canvas.dispatchEvent(pointerMoveOutEvent);
             await new Promise((resolve) => requestAnimationFrame(resolve));
+            expect(interactionMod.crosshairState.active).toBe(true); // active remains true because dragging is true
+            expect(interactionMod.crosshairState.hoverTime).not.toBe(null); // hoverTime persists while dragging outside
 
             // Pointer move
             const pointerMoveEvent = document.createEvent('Event');
@@ -227,6 +229,8 @@ describe('Interaction logic', () => {
             await new Promise((resolve) => requestAnimationFrame(resolve));
 
             expect(interactionMod.crosshairState.rangeEnd).toBe(1000);
+            expect(interactionMod.crosshairState.hoverTime).toBe(1000);
+            expect(interactionMod.crosshairState.hoverY).toBe(40);
 
             // Pointer up
             const pointerUpEvent = document.createEvent('Event');
@@ -274,6 +278,16 @@ describe('Interaction logic', () => {
             canvas.dispatchEvent(pointerDownEvent);
 
             expect(interactionMod.crosshairState.rangeStart).toBe(null);
+
+            // Pointer move outside bounds to test active = false
+            const pointerMoveOutEvent = document.createEvent('Event');
+            pointerMoveOutEvent.initEvent('pointermove', true, true);
+            pointerMoveOutEvent.clientX = 600;
+            pointerMoveOutEvent.clientY = 50;
+            canvas.dispatchEvent(pointerMoveOutEvent);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            expect(interactionMod.crosshairState.active).toBe(false);
+            expect(interactionMod.crosshairState.hoverTime).toBe(null);
 
             // Pointer move
             const pointerMoveEvent = document.createEvent('Event');
