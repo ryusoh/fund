@@ -210,6 +210,14 @@ describe('Interaction logic', () => {
 
             expect(chartManager.redraw).toHaveBeenCalled();
 
+            // Pointer move outside bounds to test active = false
+            const pointerMoveOutEvent = document.createEvent('Event');
+            pointerMoveOutEvent.initEvent('pointermove', true, true);
+            pointerMoveOutEvent.clientX = 600;
+            pointerMoveOutEvent.clientY = 50;
+            canvas.dispatchEvent(pointerMoveOutEvent);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+
             // Pointer move
             const pointerMoveEvent = document.createEvent('Event');
             pointerMoveEvent.initEvent('pointermove', true, true);
