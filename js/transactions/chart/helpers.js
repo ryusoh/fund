@@ -29,32 +29,43 @@ const COLOR_PARSER_CONTEXT = (() => {
     return canvas.getContext('2d');
 })();
 
+function _getRoundedNiceFraction(fraction) {
+    if (fraction < 1.5) {
+        return 1;
+    }
+    if (fraction < 3) {
+        return 2;
+    }
+    if (fraction < 7) {
+        return 5;
+    }
+    return 10;
+}
+
+function _getExactNiceFraction(fraction) {
+    if (fraction <= 1) {
+        return 1;
+    }
+    if (fraction <= 2) {
+        return 2;
+    }
+    if (fraction <= 5) {
+        return 5;
+    }
+    return 10;
+}
+
 export function niceNumber(range, round) {
     if (!Number.isFinite(range) || range === 0) {
         return 1;
     }
     const exponent = Math.floor(Math.log10(Math.abs(range)));
     const fraction = Math.abs(range) / 10 ** exponent;
-    let niceFraction;
-    if (round) {
-        if (fraction < 1.5) {
-            niceFraction = 1;
-        } else if (fraction < 3) {
-            niceFraction = 2;
-        } else if (fraction < 7) {
-            niceFraction = 5;
-        } else {
-            niceFraction = 10;
-        }
-    } else if (fraction <= 1) {
-        niceFraction = 1;
-    } else if (fraction <= 2) {
-        niceFraction = 2;
-    } else if (fraction <= 5) {
-        niceFraction = 5;
-    } else {
-        niceFraction = 10;
-    }
+
+    const niceFraction = round
+        ? _getRoundedNiceFraction(fraction)
+        : _getExactNiceFraction(fraction);
+
     return (range < 0 ? -1 : 1) * niceFraction * 10 ** exponent;
 }
 
