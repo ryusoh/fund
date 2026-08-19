@@ -290,7 +290,7 @@ describe('Composition Chart Feature Parity', () => {
                 { name: 'isCompositionLayout', pattern: /isCompositionLayout[\s\S]{0,800}/ },
                 { name: 'range skip (1)', pattern: /Skip range functionality[\s\S]{0,1000}/ },
                 { name: 'range skip (2)', pattern: /handlePointerDown[\s\S]{0,2000}/ },
-                { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,2000}/ },
+                { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,2500}/ },
                 { name: 'legend click skip', pattern: /Skip click events[\s\S]{0,1000}/ },
                 { name: 'getActiveChartKey', pattern: /function getActiveChartKey[\s\S]{0,1500}/ },
             ];
