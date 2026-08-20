@@ -45,9 +45,11 @@ function lightenHexToRgba(hex, lightenFactor, alpha) {
 
 // --- Private Functions ---
 
-async function fetchJSON(url) {
-    const separator = url.includes('?') ? '&' : '?';
-    const response = await fetch(`${url}${separator}t=${new Date().getTime()}`);
+async function fetchJSON(url, { cacheBust = false } = {}) {
+    const finalUrl = cacheBust
+        ? `${url}${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`
+        : url;
+    const response = await fetch(finalUrl, { cache: 'no-cache' });
     if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }
@@ -64,7 +66,8 @@ export async function fetchPortfolioData() {
         // Production: try Cloudflare Worker first, fall back to static file
         try {
             prices = await fetchJSON(
-                `${CF_WORKER_URL}/prices?symbols=${encodeURIComponent(symbols)}`
+                `${CF_WORKER_URL}/prices?symbols=${encodeURIComponent(symbols)}`,
+                { cacheBust: true }
             );
         } catch (err) {
             logger.warn(
@@ -518,10 +521,9 @@ function updateTableAndPrepareChartData(
 }
 
 async function fetchData(paths) {
-    const timestamp = new Date().getTime();
     const [historical, fx, { holdingsDetails, prices }] = await Promise.all([
-        d3.csv(`${paths.historical}?t=${timestamp}`),
-        d3.json(`${paths.fx}?t=${timestamp}`),
+        d3.csv(paths.historical, { cache: 'no-cache' }),
+        d3.json(paths.fx, { cache: 'no-cache' }),
         fetchPortfolioData(),
     ]);
     return { historical, fx, holdings: holdingsDetails, fund: prices };
@@ -918,6 +920,7 @@ function computeMonthlyPnl(processedData) {
 export const __testables = {
     _calculateCurrencyChanges,
     computeMonthlyPnl,
+    fetchJSON,
     resetAnalysisTickerCache: () => {
         analysisTickerPathCache = null;
     },

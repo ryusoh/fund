@@ -208,5 +208,20 @@ describe('realtimeData', () => {
 
             expect(result).toBeNull();
         });
+
+        it('fetches fx_data.json without timestamp cache-bust', async () => {
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: { VT: { shares: '100', average_price: '100' } },
+                prices: { VT: 110 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            await fetchRealTimeData();
+
+            const url = String(mockFetch.mock.calls[0][0]);
+            expect(url).not.toMatch(/[?&]t=\d+/);
+            expect(mockFetch.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
+        });
     });
 });

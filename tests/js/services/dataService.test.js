@@ -720,6 +720,24 @@ describe('dataService', () => {
         });
     });
 
+    describe('fetchJSON', () => {
+        it('uses cache: no-cache and no timestamp by default', async () => {
+            fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
+            await __testables.fetchJSON('../data/foo.json');
+            expect(fetch).toHaveBeenCalledWith('../data/foo.json', { cache: 'no-cache' });
+            expect(String(fetch.mock.calls[0][0])).not.toMatch(/[?&]t=\d+/);
+        });
+
+        it('cache-busts only when explicitly requested', async () => {
+            fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ ok: true }) });
+            await __testables.fetchJSON('../data/foo.json?bar=1', { cacheBust: true });
+            const url = String(fetch.mock.calls[0][0]);
+            expect(url).toContain('bar=1');
+            expect(url).toMatch(/[?&]t=\d+/);
+            expect(fetch.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
+        });
+    });
+
     describe('getCalendarData', () => {
         beforeEach(() => {
             // fetchPortfolioData() now calls fetch() directly (not d3.json) for

@@ -12,16 +12,6 @@ import {
 
 let analysisIndexCache = null;
 const analysisDetailCache = new Map();
-const ANALYSIS_FETCH_BUSTER = Date.now();
-
-function withCacheBust(url) {
-    if (!url) {
-        return url;
-    }
-    return url.includes('?')
-        ? `${url}&t=${ANALYSIS_FETCH_BUSTER}`
-        : `${url}?t=${ANALYSIS_FETCH_BUSTER}`;
-}
 
 function resolveCurrency(market) {
     return typeof market.currency === 'string' && market.currency.trim()
@@ -57,7 +47,7 @@ async function loadAnalysisIndex() {
     if (analysisIndexCache) {
         return analysisIndexCache;
     }
-    const response = await fetch(withCacheBust('../data/analysis/index.json'));
+    const response = await fetch('../data/analysis/index.json', { cache: 'no-cache' });
     if (!response.ok) {
         throw new Error('Failed to load analysis index');
     }
@@ -72,7 +62,7 @@ async function loadAnalysisDetails(path) {
     if (analysisDetailCache.has(path)) {
         return analysisDetailCache.get(path);
     }
-    const response = await fetch(withCacheBust(path));
+    const response = await fetch(path, { cache: 'no-cache' });
     if (!response.ok) {
         throw new Error(`Failed to load analysis details for ${path}`);
     }
@@ -88,7 +78,7 @@ async function loadPeRatioData() {
         return peRatioCache;
     }
     try {
-        const response = await fetch(withCacheBust('../data/output/figures/pe_ratio.json'));
+        const response = await fetch('../data/output/figures/pe_ratio.json', { cache: 'no-cache' });
         if (response.ok) {
             peRatioCache = await response.json();
             return peRatioCache;

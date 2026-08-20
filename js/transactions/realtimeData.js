@@ -9,7 +9,7 @@ import {
 const FX_DATA_URL = '../data/fx_data.json';
 
 async function fetchJSON(url) {
-    const response = await fetch(`${url}?t=${new Date().getTime()}`);
+    const response = await fetch(url, { cache: 'no-cache' });
     if (!response.ok) {
         throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
     }

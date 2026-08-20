@@ -13,6 +13,47 @@ describe('getFinancialStatsText', () => {
         jest.resetModules();
     });
 
+    test('fetches analysis data without timestamp cache-bust', async () => {
+        const fixtures = {
+            '../data/analysis/index.json': {
+                tickers: [
+                    {
+                        symbol: 'ANET',
+                        name: 'Arista Networks',
+                        path: '../data/analysis/ANET.json',
+                    },
+                ],
+            },
+            '../data/analysis/ANET.json': {
+                symbol: 'ANET',
+                market: {
+                    price: 122.36,
+                    eps: 2.63,
+                    forwardEps: 3.3607,
+                    pe: 46.5247,
+                    forwardPe: 36.4096,
+                    currency: 'USD',
+                },
+            },
+        };
+
+        global.fetch = jest.fn((url) => {
+            expect(url).not.toMatch(/[?&]t=\d+/);
+            const normalized = url.split('?')[0];
+            const payload = fixtures[normalized];
+            if (!payload) {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
+            }
+            return mockFetchResponse(payload);
+        });
+
+        const { getFinancialStatsText } =
+            await import('../../../../../js/transactions/terminal/stats/financial.js');
+        const snapshot = await getFinancialStatsText();
+
+        expect(snapshot).toContain('FINANCIAL SNAPSHOT');
+    });
+
     test('renders financial snapshot table from analysis data', async () => {
         const fixtures = {
             '../data/analysis/index.json': {
@@ -66,7 +107,8 @@ describe('getFinancialStatsText', () => {
         const snapshot = await getFinancialStatsText();
 
         expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('../data/analysis/index.json')
+            expect.stringContaining('../data/analysis/index.json'),
+            expect.anything()
         );
         expect(snapshot).toContain('FINANCIAL SNAPSHOT');
         expect(snapshot).toContain('ANET');
