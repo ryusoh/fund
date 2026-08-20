@@ -1,4 +1,6 @@
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Any, Dict
@@ -18,6 +20,7 @@ from scripts.generate_pe_data import (  # noqa: E402
     cumulative_forward_split_factor,
     fetch_stock_eps_data,
     is_etf,
+    write_pe_outputs,
     yf_symbol,
 )
 
@@ -1235,6 +1238,29 @@ class TestComputeBenchmarkPEFromProxy(unittest.TestCase):
         assert result is not None
 
         self.assertEqual(len(result), len(dates))
+
+
+class TestWritePeOutputs(unittest.TestCase):
+    def test_writes_sidecar_when_forward_pe_present(self) -> None:
+        final_output = {
+            "dates": ["2024-01-02"],
+            "portfolio_pe": [25.0],
+            "forward_pe": {"ticker_forward_pe": {"AAPL": 30.1}, "msci_pe_ratio": 0.95},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            write_pe_outputs(final_output, Path(tmp))
+            pe_file = Path(tmp) / "pe_ratio.json"
+            sidecar = Path(tmp) / "forward_pe.json"
+            self.assertTrue(pe_file.exists())
+            self.assertTrue(sidecar.exists())
+            self.assertEqual(json.loads(pe_file.read_text()), final_output)
+            self.assertEqual(json.loads(sidecar.read_text()), final_output["forward_pe"])
+
+    def test_skips_sidecar_when_forward_pe_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            write_pe_outputs({"dates": ["2024-01-02"]}, Path(tmp))
+            self.assertTrue((Path(tmp) / "pe_ratio.json").exists())
+            self.assertFalse((Path(tmp) / "forward_pe.json").exists())
 
 
 if __name__ == "__main__":

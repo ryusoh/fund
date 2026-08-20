@@ -17,7 +17,7 @@ import {
 } from '@js/config.js';
 import { logger } from '@utils/logger.js';
 
-const PE_RATIO_URL = '../data/output/figures/pe_ratio.json';
+const FORWARD_PE_URL = '../data/output/figures/forward_pe.json';
 const ANALYSIS_INDEX_URL = '../data/analysis/index.json';
 const TICKER_METADATA_URL = '../data/ticker_metadata.json';
 let analysisTickerPathCache = null;
@@ -149,11 +149,11 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
         let globalForwardPeMap = {};
         let msciPeRatio = null;
         try {
-            const peData = await fetchJSON(PE_RATIO_URL);
-            globalForwardPeMap = (peData?.forward_pe && peData.forward_pe.ticker_forward_pe) || {};
-            msciPeRatio = peData?.forward_pe?.msci_pe_ratio || null;
+            const peData = await fetchJSON(FORWARD_PE_URL);
+            globalForwardPeMap = peData?.ticker_forward_pe || {};
+            msciPeRatio = peData?.msci_pe_ratio || null;
         } catch (error) {
-            logger.warn('Failed to load global PE ratio data for fallback:', error);
+            logger.warn('Failed to load forward PE sidecar for fallback:', error);
         }
 
         const getFallbackValue = (val) => {

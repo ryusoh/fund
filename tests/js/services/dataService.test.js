@@ -244,7 +244,7 @@ describe('dataService', () => {
             );
         });
 
-        it('should fallback to pe_ratio.json when forwardPe is missing in analysis data', async () => {
+        it('should fallback to forward_pe.json when forwardPe is missing in analysis data', async () => {
             const mockHoldings = {
                 VT: { shares: '10', average_price: '100.00', name: 'Vanguard Total World' },
             };
@@ -280,14 +280,69 @@ describe('dataService', () => {
                         json: () => Promise.resolve({ market: { pe: 23.1 } }),
                     });
                 }
-                if (url.includes('pe_ratio.json')) {
-                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPeRatio) });
+                if (url.includes('forward_pe.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockPeRatio.forward_pe),
+                    });
                 }
                 return Promise.reject(new Error(`Unexpected URL: ${url}`));
             });
 
             await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
 
+            expect(document.querySelector('tr[data-ticker="VT"] td.per').textContent).toBe(
+                '23.10/20.02'
+            );
+        });
+
+        it('reads forward PE from the compact sidecar, not the full pe_ratio.json', async () => {
+            const mockHoldings = {
+                VT: { shares: '10', average_price: '100.00', name: 'Vanguard Total World' },
+            };
+            const mockPrices = { VT: '110.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'VT', path: '../data/analysis/VT.json' }],
+            };
+            const mockForwardPe = {
+                ticker_forward_pe: { VT: 20.02 },
+                msci_pe_ratio: 0.95,
+            };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/VT')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ market: { pe: 23.1 } }),
+                    });
+                }
+                if (url.includes('forward_pe.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockForwardPe),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected URL: ${url}`));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            const peRatioFetches = fetch.mock.calls.filter((c) =>
+                String(c[0]).includes('pe_ratio.json')
+            );
+            expect(peRatioFetches).toHaveLength(0);
             expect(document.querySelector('tr[data-ticker="VT"] td.per').textContent).toBe(
                 '23.10/20.02'
             );
@@ -1805,7 +1860,7 @@ describe('fetchMarketRatiosForTickers', () => {
                     json: () => Promise.resolve(mockTickerMetadata),
                 });
             }
-            if (url.includes('pe_ratio.json')) {
+            if (url.includes('forward_pe.json')) {
                 return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
             }
             if (url.includes('analysis/VT')) {

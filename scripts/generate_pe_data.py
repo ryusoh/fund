@@ -1468,6 +1468,23 @@ def scrape_wsj_forward_pe() -> Optional[float]:
     return None
 
 
+def write_pe_outputs(final_output: Dict[str, Any], output_dir: Path = OUTPUT_DIR) -> None:
+    """Write pe_ratio.json plus a compact forward_pe.json sidecar.
+
+    The position page only needs the small ``forward_pe`` section; giving it
+    its own file saves it from downloading the multi-MB historical series.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with open(output_dir / "pe_ratio.json", "w") as f:
+        json.dump(final_output, f, separators=(",", ":"))
+    print(f"\nSaved to {output_dir / 'pe_ratio.json'}")
+    forward_pe_section = final_output.get("forward_pe")
+    if isinstance(forward_pe_section, dict):
+        with open(output_dir / "forward_pe.json", "w") as f:
+            json.dump(forward_pe_section, f, separators=(",", ":"))
+        print(f"Saved to {output_dir / 'forward_pe.json'}")
+
+
 def main():
     print("Loading existing PE data for fail-open fallback...")
     existing_pe_data = {}
@@ -1709,10 +1726,7 @@ def main():
     # so a carried ticker is part of the harmonic mean too.
     final_output = recompute_portfolio_pe_from_ticker_series(final_output)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_DIR / "pe_ratio.json", "w") as f:
-        json.dump(final_output, f, separators=(",", ":"))
-    print(f"\nSaved to {OUTPUT_DIR / 'pe_ratio.json'}")
+    write_pe_outputs(final_output)
 
 
 if __name__ == "__main__":
