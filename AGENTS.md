@@ -157,6 +157,7 @@ instantly identifiable.
 | Py mutation test (scoped, manual only)  | `make mutate-py SCOPE='scripts.utils.security_utils.*'` |
 | Dev server (serves repo root at :8000)  | `make serve`                                            |
 | Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                        |
+| Regenerate AVIF/WebP background tiers   | `make images`                                           |
 
 - Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
   targets so you match CI. Use scoped `npx jest <file>` only for the tight
