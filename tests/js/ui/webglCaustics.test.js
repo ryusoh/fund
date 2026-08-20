@@ -142,6 +142,16 @@ describe('WebGLCaustics', () => {
         }
         window.ResizeObserver = MockResizeObserver;
 
+        // Mock MutationObserver
+        class MockMutationObserver {
+            constructor(cb) {
+                this._callback = cb;
+            }
+            observe() {}
+            disconnect() {}
+        }
+        window.MutationObserver = MockMutationObserver;
+
         // Provide a clientWidth/clientHeight for the container
         Object.defineProperty(element, 'clientWidth', { value: 500, configurable: true });
         Object.defineProperty(element, 'clientHeight', { value: 500, configurable: true });

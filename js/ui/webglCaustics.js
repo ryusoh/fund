@@ -354,8 +354,11 @@ export class WebGLCaustics {
         });
         this.resizeObserver.observe(this.container);
 
-        // Periodically update obstacle map in case calendar renders late
-        this.obstacleTimer = setInterval(() => this.updateObstacleMap(), 1000);
+        // Event-driven obstacle updates: the calendar re-renders mutate the DOM,
+        // and the ResizeObserver above covers geometry changes. No 1 s polling.
+        this.obstacleMutationObserver = new window.MutationObserver(() => this.updateObstacleMap());
+        this.obstacleMutationObserver.observe(this.element, { childList: true, subtree: true });
+        this.updateObstacleMap();
 
         // Interaction
         this.pointer = {
@@ -366,6 +369,8 @@ export class WebGLCaustics {
             dx: 0,
             dy: 0,
         };
+        this._lastPointerActivity = 0;
+        this._hasSettled = false;
 
         const onPointerMove = (e) => {
             const rect = this.container.getBoundingClientRect();
@@ -378,6 +383,7 @@ export class WebGLCaustics {
             this.pointer.x = x;
             this.pointer.y = y;
             this.pointer.moved = true;
+            this._lastPointerActivity = performance.now();
         };
 
         this.element.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -570,6 +576,15 @@ export class WebGLCaustics {
     step() {
         const dt = Math.min(this.clock.getDelta(), 0.03); // Cap dt
 
+        const pointerQuiet =
+            this.pointer.moved === false &&
+            this.pointer.down === false &&
+            performance.now() - this._lastPointerActivity > 2000;
+        if (pointerQuiet && this._hasSettled) {
+            // Fully idle: last frame stays on screen, skip the sim entirely.
+            return;
+        }
+
         // 1. Pointer interaction
         if (this.pointer.moved) {
             // Apply a strong velocity force along the pointer movement
@@ -586,8 +601,10 @@ export class WebGLCaustics {
 
         // 2. Continuous flow (ambient wind from left to right)
         // Splat continuously on the left side to simulate river
-        const yPoint = 0.5 + Math.sin(this.clock.elapsedTime * 2.0) * 0.3;
-        this.splat(new Vector2(0.1, yPoint), 10.0, 0.0, [0.1, 0.1, 0.1]);
+        if (!pointerQuiet) {
+            const yPoint = 0.5 + Math.sin(this.clock.elapsedTime * 2.0) * 0.3;
+            this.splat(new Vector2(0.1, yPoint), 10.0, 0.0, [0.1, 0.1, 0.1]);
+        }
 
         // 2. Advect Velocity
         this.advectionMat.uniforms.uVelocity.value = this.velocity.read.texture;
@@ -633,6 +650,8 @@ export class WebGLCaustics {
 
         this.mesh.material = this.displayMat;
         this.renderer.render(this.scene, this.camera);
+
+        this._hasSettled = pointerQuiet;
     }
 
     start() {
@@ -678,8 +697,9 @@ export class WebGLCaustics {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
-        if (this.obstacleTimer) {
-            clearInterval(this.obstacleTimer);
+        if (this.obstacleMutationObserver) {
+            this.obstacleMutationObserver.disconnect();
+            this.obstacleMutationObserver = null;
         }
         this.geometry.dispose();
         this.renderer.dispose();

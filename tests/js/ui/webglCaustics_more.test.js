@@ -128,6 +128,12 @@ describe('WebGLCaustics execution', () => {
             unobserve: jest.fn(),
             disconnect: jest.fn(),
         }));
+
+        window.MutationObserver = jest.fn().mockImplementation((cb) => ({
+            observe: jest.fn(),
+            disconnect: jest.fn(),
+            _callback: cb,
+        }));
     });
 
     afterEach(() => {
@@ -184,6 +190,63 @@ describe('WebGLCaustics execution', () => {
         caustics.stop();
         expect(caustics.isRunning).toBe(false);
         expect(window.cancelAnimationFrame).toHaveBeenCalled();
+        caustics.dispose();
+    });
+
+    test('rebuilds obstacle map on DOM mutation, not on a timer', () => {
+        const setIntervalSpy = jest.spyOn(global, 'setInterval');
+        const caustics = new WebGLCaustics(element, { simResolution: 128 });
+        caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
+
+        const timerCalls = setIntervalSpy.mock.calls.filter((c) => c[1] === 1000);
+        expect(timerCalls).toHaveLength(0);
+
+        const updateSpy = jest.spyOn(caustics, 'updateObstacleMap');
+        caustics.obstacleMutationObserver._callback();
+        expect(updateSpy).toHaveBeenCalled();
+
+        updateSpy.mockRestore();
+        setIntervalSpy.mockRestore();
+        caustics.dispose();
+    });
+
+    test('skips the sim when the pointer has been quiet', () => {
+        const caustics = new WebGLCaustics(element, { simResolution: 128 });
+        caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
+        caustics.pointer.moved = false;
+        caustics.pointer.down = false;
+        caustics._lastPointerActivity = -3000;
+        caustics._hasSettled = true;
+
+        const splatSpy = jest.spyOn(caustics, 'splat');
+        const renderSpy = jest.spyOn(caustics.renderer, 'render');
+
+        caustics.step();
+
+        expect(splatSpy).not.toHaveBeenCalled();
+        expect(renderSpy).not.toHaveBeenCalled();
+
+        splatSpy.mockRestore();
+        renderSpy.mockRestore();
+        caustics.dispose();
+    });
+
+    test('runs one settling pass after quieting', () => {
+        const caustics = new WebGLCaustics(element, { simResolution: 128 });
+        caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
+        caustics.pointer.moved = false;
+        caustics.pointer.down = false;
+        caustics._lastPointerActivity = -3000;
+        caustics._hasSettled = false;
+
+        const renderSpy = jest.spyOn(caustics.renderer, 'render');
+
+        caustics.step();
+
+        expect(renderSpy).toHaveBeenCalled();
+        expect(caustics._hasSettled).toBe(true);
+
+        renderSpy.mockRestore();
         caustics.dispose();
     });
 });
