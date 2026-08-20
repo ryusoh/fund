@@ -333,6 +333,9 @@ export class LiquidGlassRefraction {
 
         instanceCount++;
         this._lastGeometry = null;
+        this._mapGeneration = 0;
+        this._mapObjectUrl = null;
+        this._resizeDebounceTimer = null;
 
         // Capture the pane's stylesheet frost before we override it, so the
         // lens can be chained in front of the exact same blur/saturation.
@@ -350,7 +353,15 @@ export class LiquidGlassRefraction {
 
         this._rafPending = false;
         // eslint-disable-next-line no-undef
-        this.resizeObserver = new ResizeObserver(() => this._scheduleUpdate());
+        this.resizeObserver = new ResizeObserver(() => {
+            if (this._resizeDebounceTimer) {
+                clearTimeout(this._resizeDebounceTimer);
+            }
+            this._resizeDebounceTimer = setTimeout(() => {
+                this._resizeDebounceTimer = null;
+                this._scheduleUpdate();
+            }, 150);
+        });
         this.resizeObserver.observe(this.element);
         this._scheduleUpdate();
     }
@@ -520,7 +531,20 @@ export class LiquidGlassRefraction {
         const imageData = this.ctx.createImageData(map.width, map.height);
         imageData.data.set(map.data);
         this.ctx.putImageData(imageData, 0, 0);
-        this.feImage.setAttribute('href', this.canvas.toDataURL('image/png'));
+
+        this._mapGeneration += 1;
+        const generation = this._mapGeneration;
+        this.canvas.toBlob((blob) => {
+            // Drop stale encodes: a newer update() ran while this one encoded.
+            if (!blob || !this.enabled || generation !== this._mapGeneration) {
+                return;
+            }
+            if (this._mapObjectUrl) {
+                URL.revokeObjectURL(this._mapObjectUrl);
+            }
+            this._mapObjectUrl = URL.createObjectURL(blob);
+            this.feImage.setAttribute('href', this._mapObjectUrl);
+        }, 'image/png');
 
         // feDisplacementMap offset = scale · (channel − 0.5); the map encodes
         // shift / maxShift, so scale = 2 · maxShift reproduces CSS pixels.
@@ -580,6 +604,14 @@ export class LiquidGlassRefraction {
             return;
         }
         this.enabled = false;
+        if (this._resizeDebounceTimer) {
+            clearTimeout(this._resizeDebounceTimer);
+            this._resizeDebounceTimer = null;
+        }
+        if (this._mapObjectUrl) {
+            URL.revokeObjectURL(this._mapObjectUrl);
+            this._mapObjectUrl = null;
+        }
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;

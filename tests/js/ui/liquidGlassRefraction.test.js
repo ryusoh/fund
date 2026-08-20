@@ -1,3 +1,5 @@
+/* global Blob */
+
 import {
     LiquidGlassRefraction,
     supportsSvgBackdropFilter,
@@ -323,8 +325,11 @@ describe('LiquidGlassRefraction lifecycle', () => {
     let element;
     let originalGetContext;
     let originalToDataURL;
+    let originalToBlob;
     let originalRaf;
     let originalResizeObserver;
+    let originalCreateObjectURL;
+    let originalRevokeObjectURL;
 
     beforeEach(() => {
         element = document.createElement('div');
@@ -338,11 +343,19 @@ describe('LiquidGlassRefraction lifecycle', () => {
 
         originalGetContext = HTMLCanvasElement.prototype.getContext;
         originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+        originalToBlob = HTMLCanvasElement.prototype.toBlob;
         HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
             createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
             putImageData: jest.fn(),
         }));
-        HTMLCanvasElement.prototype.toDataURL = jest.fn(() => 'data:image/png;base64,AAAA');
+        HTMLCanvasElement.prototype.toBlob = jest.fn((cb) =>
+            cb(new Blob(['x'], { type: 'image/png' }))
+        );
+
+        originalCreateObjectURL = URL.createObjectURL;
+        originalRevokeObjectURL = URL.revokeObjectURL;
+        URL.createObjectURL = jest.fn(() => 'blob:mock');
+        URL.revokeObjectURL = jest.fn();
 
         originalRaf = global.requestAnimationFrame;
         global.requestAnimationFrame = (cb) => {
@@ -352,6 +365,9 @@ describe('LiquidGlassRefraction lifecycle', () => {
 
         originalResizeObserver = global.ResizeObserver;
         global.ResizeObserver = class {
+            constructor(cb) {
+                this._callback = cb;
+            }
             observe() {}
             disconnect() {}
         };
@@ -363,7 +379,10 @@ describe('LiquidGlassRefraction lifecycle', () => {
         }
         HTMLCanvasElement.prototype.getContext = originalGetContext;
         HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
+        HTMLCanvasElement.prototype.toBlob = originalToBlob;
         global.requestAnimationFrame = originalRaf;
+        URL.createObjectURL = originalCreateObjectURL;
+        URL.revokeObjectURL = originalRevokeObjectURL;
         global.ResizeObserver = originalResizeObserver;
         document.querySelectorAll('svg').forEach((svg) => svg.remove());
     });
@@ -514,9 +533,9 @@ describe('LiquidGlassRefraction lifecycle', () => {
     test('skips rebuild when geometry is unchanged', () => {
         const effect = new LiquidGlassRefraction(element, { force: true, frost: '' });
         const href = effect.feImage.getAttribute('href');
-        expect(href).toContain('data:image/png');
+        expect(href).toBe('blob:mock');
 
-        HTMLCanvasElement.prototype.toDataURL = jest.fn(() => 'data:image/png;base64,BBBB');
+        URL.createObjectURL = jest.fn(() => 'blob:new');
         effect.update();
         expect(effect.feImage.getAttribute('href')).toBe(href);
 
@@ -556,5 +575,45 @@ describe('LiquidGlassRefraction lifecycle', () => {
         expect(document.querySelector('svg')).toBeNull();
 
         second.remove();
+    });
+
+    test('encodes the map via toBlob and assigns a blob URL', () => {
+        const effect = new LiquidGlassRefraction(element, { force: true, frost: '' });
+        expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalled();
+        expect(URL.createObjectURL).toHaveBeenCalled();
+        expect(effect.feImage.getAttribute('href')).toBe('blob:mock');
+        effect.dispose();
+    });
+
+    test('revokes the blob URL on dispose', () => {
+        const effect = new LiquidGlassRefraction(element, { force: true, frost: '' });
+        effect.dispose();
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock');
+    });
+
+    test('debounces ResizeObserver-driven updates', () => {
+        jest.useFakeTimers();
+        let scheduleUpdateCalls = 0;
+        const originalScheduleUpdate = LiquidGlassRefraction.prototype._scheduleUpdate;
+        LiquidGlassRefraction.prototype._scheduleUpdate = function () {
+            scheduleUpdateCalls += 1;
+            return originalScheduleUpdate.call(this);
+        };
+
+        const effect = new LiquidGlassRefraction(element, { force: true, frost: '' });
+        scheduleUpdateCalls = 0;
+
+        // Trigger the observer callback multiple times rapidly.
+        effect.resizeObserver._callback();
+        effect.resizeObserver._callback();
+        effect.resizeObserver._callback();
+
+        expect(scheduleUpdateCalls).toBe(0);
+        jest.advanceTimersByTime(150);
+        expect(scheduleUpdateCalls).toBe(1);
+
+        effect.dispose();
+        LiquidGlassRefraction.prototype._scheduleUpdate = originalScheduleUpdate;
+        jest.useRealTimers();
     });
 });
