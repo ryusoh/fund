@@ -259,19 +259,25 @@ function computeExitYear(config, horizon) {
     return baseYear + roundedHorizon;
 }
 
-function normalizeScenario(scenario) {
-    const name = scenario.name || scenario.id || 'Scenario';
+function extractGrowthParams(scenario) {
     const growth = scenario.growth || {};
-    const valuation = scenario.valuation || {};
     const epsCagrRaw = Number(growth.epsCagr ?? scenario.epsCagr ?? 0);
     const epsCagr = Number.isFinite(epsCagrRaw) ? epsCagrRaw : 0;
-    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
-    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
     const epsSigmaRaw = Number(growth.epsCagrSigma ?? scenario.epsCagrSigma);
     const epsSigma = Number.isFinite(epsSigmaRaw) ? epsSigmaRaw : null;
+    return { epsCagr, epsSigma };
+}
+
+function extractValuationParams(scenario) {
+    const valuation = scenario.valuation || {};
+    const exitPeRaw = Number(valuation.exitPe ?? scenario.exitPe ?? 1);
+    const exitPe = Number.isFinite(exitPeRaw) ? exitPeRaw : 1;
     const exitSigmaRaw = Number(valuation.exitPeSigma ?? scenario.exitPeSigma);
     const exitSigma = Number.isFinite(exitSigmaRaw) ? exitSigmaRaw : null;
-    const probRaw = Number(scenario.prob ?? 0);
+    return { exitPe, exitSigma };
+}
+
+function extractPrecomputedParams(scenario) {
     const precomputedMultipleRaw = Number(scenario.precomputedMultiple ?? scenario.multiple);
     const precomputedMultiple = Number.isFinite(precomputedMultipleRaw)
         ? precomputedMultipleRaw
@@ -282,6 +288,16 @@ function normalizeScenario(scenario) {
     const precomputedEarningsCagr = Number.isFinite(precomputedEarningsCagrRaw)
         ? precomputedEarningsCagrRaw
         : null;
+    return { precomputedMultiple, precomputedCagr, precomputedEarningsCagr };
+}
+
+function normalizeScenario(scenario) {
+    const name = scenario.name || scenario.id || 'Scenario';
+    const { epsCagr, epsSigma } = extractGrowthParams(scenario);
+    const { exitPe, exitSigma } = extractValuationParams(scenario);
+    const probRaw = Number(scenario.prob ?? 0);
+    const { precomputedMultiple, precomputedCagr, precomputedEarningsCagr } =
+        extractPrecomputedParams(scenario);
     return {
         id: scenario.id || name.toLowerCase(),
         name,
