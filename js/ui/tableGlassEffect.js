@@ -78,6 +78,8 @@ export class TableGlassEffect {
             spotlightAlpha: 0,
         };
         this.resizePaused = false;
+        this._lastPointerMoveTime = 0;
+        this._framesDrawn = 0;
 
         this.init();
     }
@@ -435,6 +437,7 @@ export class TableGlassEffect {
         const y = (e.clientY - rect.top) / rect.height - 0.5;
         this.state.pointer.x = x * 2; // -1 to 1
         this.state.pointer.y = y * 2; // -1 to 1
+        this._lastPointerMoveTime = performance.now();
 
         // Determine hovered row by finding actual element under cursor
         if (this.options.rowHoverEffect?.enabled) {
@@ -496,6 +499,7 @@ export class TableGlassEffect {
         // Move pointer far off-screen so WebGL and Canvas trails don't freeze in the center
         this.state.pointer.x = -10;
         this.state.pointer.y = -10;
+        this._lastPointerMoveTime = 0;
         if (this.state.hoveredRowIndex !== -1) {
             this.state.hoveredRowIndex = -1;
             if (typeof this.options.onHoverRow === 'function') {
@@ -504,10 +508,29 @@ export class TableGlassEffect {
         }
     }
 
+    _isIdle(time) {
+        const s = this.state;
+        return (
+            this._framesDrawn > 0 && // never gate before the first paint
+            !this._needsResize && // a pending deferred resize must run
+            time - this._lastPointerMoveTime > 2000 &&
+            s.hoveredRowIndex === -1 &&
+            (s.spotlightAlpha ?? 0) <= 0.001 &&
+            (s.pointerVelocity ?? 0) < 0.01
+        );
+    }
+
     startLoop() {
         const loop = (time) => {
-            this.update(time);
-            this.draw();
+            if (this._isIdle(time)) {
+                // Keep lastTime current so the first active frame after idle
+                // doesn't see a multi-second delta.
+                this.state.lastTime = time;
+            } else {
+                this.update(time);
+                this.draw();
+                this._framesDrawn += 1;
+            }
             this.animationFrame = requestAnimationFrame(loop);
         };
         this.animationFrame = requestAnimationFrame(loop);

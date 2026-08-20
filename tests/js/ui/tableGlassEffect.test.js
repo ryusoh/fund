@@ -1578,4 +1578,92 @@ describe('TableGlassEffect', () => {
             effect.dispose();
         });
     });
+
+    describe('idle gating', () => {
+        let updateSpy;
+        let drawSpy;
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            updateSpy = jest
+                .spyOn(TableGlassEffect.prototype, 'update')
+                .mockImplementation(() => {});
+            drawSpy = jest.spyOn(TableGlassEffect.prototype, 'draw').mockImplementation(() => {});
+        });
+
+        afterEach(() => {
+            updateSpy.mockRestore();
+            drawSpy.mockRestore();
+            jest.useRealTimers();
+        });
+
+        test('skips update/draw when idle', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.dispose();
+            jest.clearAllTimers();
+            updateSpy.mockClear();
+            drawSpy.mockClear();
+
+            effect._needsResize = false;
+            effect._framesDrawn = 1;
+            effect.state.hoveredRowIndex = -1;
+            effect.state.spotlightAlpha = 0;
+            effect.state.pointerVelocity = 0;
+            effect._lastPointerMoveTime = performance.now() - 3000;
+
+            effect.startLoop();
+            jest.runOnlyPendingTimers();
+
+            expect(updateSpy).not.toHaveBeenCalled();
+            expect(drawSpy).not.toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        test('draws when a row is hovered', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.dispose();
+            jest.clearAllTimers();
+            drawSpy.mockClear();
+
+            effect._needsResize = false;
+            effect._framesDrawn = 1;
+            effect.state.hoveredRowIndex = 2;
+            effect.state.spotlightAlpha = 1;
+            effect.state.pointerVelocity = 0;
+            effect._lastPointerMoveTime = performance.now();
+
+            expect(effect._isIdle(0)).toBe(false);
+
+            effect.startLoop();
+            jest.runOnlyPendingTimers();
+
+            expect(typeof effect.animationFrame).toBe('number');
+            expect(updateSpy).toHaveBeenCalled();
+            expect(drawSpy).toHaveBeenCalled();
+
+            effect.dispose();
+        });
+
+        test('never gates before the first paint', () => {
+            const effect = new TableGlassEffect('.table-responsive-container');
+            effect.dispose();
+            jest.clearAllTimers();
+            drawSpy.mockClear();
+
+            effect._needsResize = false;
+            effect._framesDrawn = 0;
+            effect.state.hoveredRowIndex = -1;
+            effect.state.spotlightAlpha = 0;
+            effect.state.pointerVelocity = 0;
+            effect._lastPointerMoveTime = performance.now() - 3000;
+
+            effect.startLoop();
+            jest.runOnlyPendingTimers();
+
+            expect(drawSpy).toHaveBeenCalled();
+
+            effect.dispose();
+        });
+    });
 });
