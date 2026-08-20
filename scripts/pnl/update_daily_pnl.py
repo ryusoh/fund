@@ -12,7 +12,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -50,6 +50,46 @@ def load_json_data(file_path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 
+def _fetch_histories_batch(tickers: List[str]) -> Dict[str, Any]:
+    """Fetch 5-day history for all tickers in one yf.download call.
+
+    Returns a mapping of ticker -> per-ticker history DataFrame. Tickers
+    missing from the batch response are absent; the caller falls back to a
+    per-ticker fetch for those.
+    """
+    if not tickers:
+        return {}
+    try:
+        data = yf.download(
+            tickers,
+            period="5d",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception as e:
+        print(
+            f"Warning: batched yf.download failed ({e}); per-ticker fallback applies.",
+            file=sys.stderr,
+        )
+        return {}
+    histories: Dict[str, Any] = {}
+    if len(tickers) == 1:
+        # Single-ticker downloads come back with single-level columns.
+        if isinstance(data, pd.DataFrame) and not data.empty:
+            histories[tickers[0]] = data
+        return histories
+    for ticker in tickers:
+        try:
+            frame = data[ticker].dropna(how="all")
+        except (KeyError, TypeError):
+            continue
+        if isinstance(frame, pd.DataFrame) and not frame.empty:
+            histories[ticker] = frame
+    return histories
+
+
 def calculate_daily_values_with_date(
     holdings: Dict, forex: Dict
 ) -> tuple[Dict[str, Any], Optional[str]]:
@@ -64,11 +104,16 @@ def calculate_daily_values_with_date(
 
     actual_date = None
 
+    histories = _fetch_histories_batch(list(holdings.keys()))
+
     for ticker, holding_details in holdings.items():
         try:
             shares = float(holding_details["shares"])
             ticker_obj = yf.Ticker(ticker)
-            hist = ticker_obj.history(period="5d")
+            hist = histories.get(ticker)
+            if hist is None or hist.empty:
+                # Batch fetch missed this ticker; direct per-ticker fallback.
+                hist = ticker_obj.history(period="5d")
             if hist.empty:
                 print(
                     f"Warning: Could not get historical data for {ticker}. Skipping.",
@@ -229,19 +274,19 @@ def main():
             with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
                 f.write(file_content)
 
+    # Fetch market data ONCE per run: it both bootstraps the CSV header when
+    # the file is new and provides today's values plus the data date.
+    print("Fetching latest market data...")
+    current_values, market_data_date = calculate_daily_values_with_date(**all_data)
+
     if not header:
         print("Calculating current portfolio value...")
-        current_values, _ = calculate_daily_values_with_date(**all_data)
         header = ["date"] + list(current_values.keys())
         with HISTORICAL_CSV.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(header)
         with HISTORICAL_CSV.open("r", encoding="utf-8") as f:
             file_content = f.read()
-
-    # Fetch market data to get the ACTUAL date of the latest available data
-    print("Fetching latest market data...")
-    current_values, market_data_date = calculate_daily_values_with_date(**all_data)
 
     if market_data_date is None:
         print("Error: Could not determine the date of market data. Aborting.", file=sys.stderr)

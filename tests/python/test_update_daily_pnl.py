@@ -26,6 +26,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from scripts.pnl.update_daily_pnl import (  # noqa: E402
+    _fetch_histories_batch,
     _get_latest_trading_day,
     calculate_daily_values,
     calculate_daily_values_with_date,
@@ -56,6 +57,12 @@ class TestUpdateDailyPnlRegression(unittest.TestCase):
             "rates": {"CNY": 7.2, "JPY": 145.0, "KRW": 1300.0},
         }
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         """Clean up test fixtures."""
@@ -235,6 +242,13 @@ class TestUpdateDailyPnlRegression(unittest.TestCase):
 class TestGetLatestTradingDay(unittest.TestCase):
     """Tests for _get_latest_trading_day helper function."""
 
+    def setUp(self) -> None:
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
+
     @patch("yfinance.Ticker")
     def test_returns_latest_trading_day_from_market_data(self, mock_ticker_class) -> None:
         """Test that _get_latest_trading_day returns the most recent trading day from SPY data."""
@@ -285,6 +299,12 @@ class TestCalculateDailyValuesEdgeCases(unittest.TestCase):
         self.forex_path = self.temp_path / "fx_data.json"
         self.forex_data = {"rates": {"USD": 1.0}}
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         """Clean up test fixtures."""
@@ -367,6 +387,12 @@ class TestNaNClosePrice(unittest.TestCase):
         self.forex_data = {
             "rates": {"CNY": 7.2, "JPY": 145.0, "KRW": 1300.0},
         }
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -510,6 +536,12 @@ class TestNaNRowCleanup(unittest.TestCase):
         self.forex_path = self.temp_path / "fx_data.json"
         self.forex_data = {"rates": {"USD": 1.0}}
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -655,6 +687,12 @@ class TestStaleDataDetection(unittest.TestCase):
         self.forex_data = {"rates": {"USD": 1.0}}
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
 
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
+
     def tearDown(self) -> None:
         """Clean up test fixtures."""
         self.temp_dir.cleanup()
@@ -692,6 +730,12 @@ class TestCalculateDailyValuesWithDate(unittest.TestCase):
         self.forex_path = self.temp_path / "fx_data.json"
         self.forex_data = {"rates": {"USD": 1.0}}
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         """Clean up test fixtures."""
@@ -794,6 +838,12 @@ class TestDateOverwritePrevention(unittest.TestCase):
         self.forex_path = self.temp_path / "fx_data.json"
         self.forex_data = {"rates": {"USD": 1.0}}
         self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
 
     def tearDown(self) -> None:
         """Clean up test fixtures."""
@@ -1075,6 +1125,55 @@ class TestDateOverwritePrevention(unittest.TestCase):
 
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["date"], "2026-02-25")
+
+
+class TestFetchHistoriesBatch(unittest.TestCase):
+    @patch("yfinance.download")
+    def test_batch_returns_per_ticker_frames(self, mock_download) -> None:
+        idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
+        mock_download.return_value = pd.concat(
+            {
+                "AAPL": pd.DataFrame({"Close": [150.0, 151.0]}, index=idx),
+                "MSFT": pd.DataFrame({"Close": [280.0, 281.0]}, index=idx),
+            },
+            axis=1,
+        )
+        result = _fetch_histories_batch(["AAPL", "MSFT"])
+        self.assertEqual(set(result), {"AAPL", "MSFT"})
+        self.assertEqual(result["AAPL"]["Close"].iloc[-1], 151.0)
+        self.assertEqual(result["MSFT"]["Close"].iloc[-1], 281.0)
+
+    @patch("yfinance.download")
+    def test_batch_exception_returns_empty(self, mock_download) -> None:
+        mock_download.side_effect = Exception("network down")
+        self.assertEqual(_fetch_histories_batch(["AAPL"]), {})
+
+    @patch("yfinance.download")
+    def test_single_ticker_uses_single_level_frame(self, mock_download) -> None:
+        idx = pd.to_datetime(["2024-01-02"])
+        mock_download.return_value = pd.DataFrame({"Close": [150.0]}, index=idx)
+        result = _fetch_histories_batch(["AAPL"])
+        self.assertEqual(result["AAPL"]["Close"].iloc[-1], 150.0)
+
+    @patch("yfinance.download")
+    def test_calculate_daily_values_uses_batch_frames(self, mock_download) -> None:
+        idx = pd.to_datetime(["2024-01-02", "2024-01-03"])
+        mock_download.return_value = pd.concat(
+            {
+                "AAPL": pd.DataFrame({"Close": [150.0, 151.0]}, index=idx),
+                "MSFT": pd.DataFrame({"Close": [280.0, 281.0]}, index=idx),
+            },
+            axis=1,
+        )
+        holdings = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+            "MSFT": {"shares": "50", "average_price": "280.00"},
+        }
+        forex = {"rates": {"USD": 1.0}}
+        values, actual_date = calculate_daily_values_with_date(holdings, forex)
+        # 100*151 + 50*281 = 29150
+        self.assertEqual(values["value_usd"], 29150.0)
+        self.assertEqual(actual_date, "2024-01-03")
 
 
 if __name__ == "__main__":
