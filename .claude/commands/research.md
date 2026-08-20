@@ -37,8 +37,14 @@ Save following this repo's convention: durable subsystem knowledge lives under
 `docs/` (the same place the read-before-touching docs live). If the finding maps
 to an existing subsystem doc, extend it rather than creating a duplicate; if it's
 a genuinely new area, add a new `docs/<topic>.md` and note the location in your
-reply. For throwaway investigation that doesn't belong in version control, use the
-session scratchpad instead.
+reply.
+
+If the user asks for ranked action items, put them in a section of the same
+findings doc (e.g. `## Action items`) rather than spawning a second file. Only
+create a separate action-item doc if explicitly requested, and consolidate it
+back into the primary findings doc once implementation is complete. For
+throwaway investigation that doesn't belong in version control, use the session
+scratchpad instead.
 
 ## Output constraints
 
