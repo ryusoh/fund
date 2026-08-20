@@ -978,7 +978,9 @@ function _normalizeModelConfig(model, legacyManual) {
         useBayesianUpdate: false,
     };
     norm.preferences = norm.preferences || {};
-    norm.preferences.overrides = norm.preferences.overrides ? { ...norm.preferences.overrides } : {};
+    norm.preferences.overrides = norm.preferences.overrides
+        ? { ...norm.preferences.overrides }
+        : {};
 
     _normalizeModelPreferences(norm.preferences, legacyManual);
     _normalizeModelOverrides(norm.preferences.overrides, legacyManual);
@@ -1003,7 +1005,7 @@ function normalizeConfig(raw, holdingDetails = {}) {
     const legacyManual = raw.manual || {};
     const config = {
         ..._initBaseConfigFields(raw, holdingDetails),
-        ..._initBaseConfigNested(raw)
+        ..._initBaseConfigNested(raw),
     };
 
     config.market = _normalizeMarketConfig(config.market);

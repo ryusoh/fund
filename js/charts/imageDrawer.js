@@ -1,10 +1,14 @@
 import { LOGO_SIZE, LOGO_SHADOW, LOGO_MARGIN_DEFAULT } from '@js/config.js';
 
 function computeDefaultMarginConfigs() {
-    const defaultMax = LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.max === 'number'
-        ? LOGO_MARGIN_DEFAULT.max : 0.06;
-    const defaultMin = LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.min === 'number'
-        ? LOGO_MARGIN_DEFAULT.min : 0.02;
+    const defaultMax =
+        LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.max === 'number'
+            ? LOGO_MARGIN_DEFAULT.max
+            : 0.06;
+    const defaultMin =
+        LOGO_MARGIN_DEFAULT && typeof LOGO_MARGIN_DEFAULT.min === 'number'
+            ? LOGO_MARGIN_DEFAULT.min
+            : 0.02;
     return { defaultMax, defaultMin };
 }
 
@@ -47,9 +51,10 @@ function computeMargin(logoInfo, sliceAngle) {
     let margin = maxMargin - marginRange * sliceFactor;
     margin = Math.max(minMargin, Math.min(maxMargin, margin));
 
-    const radialMargin = typeof logoInfo.radialMargin === 'number'
-        ? Math.max(0, Math.min(0.2, logoInfo.radialMargin))
-        : null;
+    const radialMargin =
+        typeof logoInfo.radialMargin === 'number'
+            ? Math.max(0, Math.min(0.2, logoInfo.radialMargin))
+            : null;
     if (radialMargin !== null) {
         margin = radialMargin;
     }
@@ -57,8 +62,10 @@ function computeMargin(logoInfo, sliceAngle) {
 }
 
 function resolveTargetHeightMode() {
-    const globalMode = LOGO_SIZE && (LOGO_SIZE.mode === 'px' || LOGO_SIZE.mode === 'ratio')
-        ? LOGO_SIZE.mode : 'ratio';
+    const globalMode =
+        LOGO_SIZE && (LOGO_SIZE.mode === 'px' || LOGO_SIZE.mode === 'ratio')
+            ? LOGO_SIZE.mode
+            : 'ratio';
     const globalValue = LOGO_SIZE && typeof LOGO_SIZE.value === 'number' ? LOGO_SIZE.value : 0.12;
     const globalMinPx = LOGO_SIZE && typeof LOGO_SIZE.minPx === 'number' ? LOGO_SIZE.minPx : 14;
     return { globalMode, globalValue, globalMinPx };
@@ -135,7 +142,16 @@ function clampDimensions(drawW, drawH, rotationRad, arcLen, band, margin) {
     return { drawW, drawH };
 }
 
-function prepareOffscreenCanvas(dpr, drawW, drawH, img, opacity, renderAsWhite, glassRefraction, isHovered) {
+function prepareOffscreenCanvas(
+    dpr,
+    drawW,
+    drawH,
+    img,
+    opacity,
+    renderAsWhite,
+    glassRefraction,
+    isHovered
+) {
     if (!drawImage._sharedCanvas && typeof document !== 'undefined') {
         drawImage._sharedCanvas = document.createElement('canvas');
         drawImage._sharedCtx = drawImage._sharedCanvas.getContext('2d', {
@@ -251,7 +267,9 @@ export function drawImage(ctx, arc, img, logoInfo, magneticOffset, isHovered) {
     const margin = computeMargin(logoInfo, sliceAngle);
     const targetH = computeTargetHeight(logoInfo, arc, band, margin);
 
-    function getAspect(img) { return img && img.width && img.height ? img.width / img.height : 1; }
+    function getAspect(img) {
+        return img && img.width && img.height ? img.width / img.height : 1;
+    }
     const aspect = getAspect(img);
     let drawH = targetH * scale;
     let drawW = drawH * aspect;
@@ -275,8 +293,18 @@ export function drawImage(ctx, arc, img, logoInfo, magneticOffset, isHovered) {
 
     applyShadows(ctx);
 
-    const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
-    const off = prepareOffscreenCanvas(dpr, drawW, drawH, img, opacity, renderAsWhite, logoInfo.glassRefraction, isHovered);
+    const dpr =
+        typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+    const off = prepareOffscreenCanvas(
+        dpr,
+        drawW,
+        drawH,
+        img,
+        opacity,
+        renderAsWhite,
+        logoInfo.glassRefraction,
+        isHovered
+    );
 
     if (off) {
         ctx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
