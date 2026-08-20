@@ -277,12 +277,17 @@ serve:
 	npm run dev
 
 # Headless screenshot for visual verification (Chromium-only effects render).
-# Writes a PNG under screenshots/ and prints its path. Needs `npx playwright
-# install chromium` once (after `npm install`).
+# Writes a PNG under screenshots/ and prints its path. Run `make ensure-playwright`
+# once after `npm install` to install the Chromium binary.
 #   make screenshot URL=/terminal/
 #   make screenshot URL=/terminal/ ARGS="--full --wait 1500"
 screenshot:
 	node scripts/screenshot.mjs $(URL) $(ARGS)
+
+# Install the Playwright Chromium binary required by `make screenshot` and by
+# any headless browser measurement (e.g. counting DOM nodes for perf work).
+ensure-playwright:
+	npx playwright install chromium
 
 # Regenerate the AVIF/WebP tiers served by CSS image-set() for the large
 # page-background JPEGs (assets/backgrounds/*.jpg + assets/mobile_bg.jpg).
@@ -322,6 +327,7 @@ deploy-worker:
 twrr-refresh:
 	@# Note: Requires yfinance, polygon-api-client, pandas, numpy, matplotlib (see requirements.txt)
 	@# API keys needed: ALPACA_API_KEY, ALPACA_API_SECRET, POLYGON_KEY
+	@# Runtime: typically 5-10 minutes depending on network fetch latency.
 	@mkdir -p data/checkpoints data/output/figures
 	@echo 'Running TWRR pipeline...'
 	@for step in $(TWRR_STEPS); do \
