@@ -45,3 +45,6 @@ reports/
 pr_body.txt
 pr_title.txt
 commit_message.txt
+
+# TWRR pipeline execution log (regenerated on every run)
+data/changelog.json

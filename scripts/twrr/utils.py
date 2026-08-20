@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import FrozenSet, List
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 DELISTED_TICKERS_FILE = DATA_DIR / "delisted_tickers.csv"
 CHANGELOG_FILE = DATA_DIR / "changelog.json"

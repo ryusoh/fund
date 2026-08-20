@@ -11,6 +11,15 @@ import scripts.twrr.utils as twrr_utils
 
 class TestTwrrUtils(unittest.TestCase):
 
+    def test_data_dir_resolves_to_repo_root_data(self):
+        """DATA_DIR must point at the repository's data/ root, not scripts/data/."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        expected_data_dir = repo_root / 'data'
+        self.assertTrue(
+            twrr_utils.DATA_DIR.samefile(expected_data_dir),
+            f"Expected DATA_DIR {twrr_utils.DATA_DIR} to resolve to {expected_data_dir}",
+        )
+
     @patch('pathlib.Path.exists')
     def test_load_delisted_tickers_not_exists(self, mock_exists):
         mock_exists.return_value = False
