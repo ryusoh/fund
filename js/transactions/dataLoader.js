@@ -110,21 +110,31 @@ export async function loadTransactionData() {
 
 import { fetchRealTimeData } from './realtimeData.js';
 
+let balanceSeriesPayloadPromise = null;
+
+function loadBalanceSeriesPayload() {
+    if (!balanceSeriesPayloadPromise) {
+        balanceSeriesPayloadPromise = fetch('../data/output/balance_series.json')
+            .then((response) => (response.ok ? response.json() : null))
+            .catch(() => null);
+    }
+    return balanceSeriesPayloadPromise;
+}
+
 export async function loadPortfolioSeries() {
     try {
-        const [response, realtime] = await Promise.all([
-            fetch('../data/output/balance_series.json'),
+        const [payload, realtime] = await Promise.all([
+            loadBalanceSeriesPayload(),
             fetchRealTimeData().catch((err) => {
                 logger.warn('Real-time data fetch failed:', err);
                 return null;
             }),
         ]);
 
-        if (!response.ok) {
+        if (!payload) {
             logger.warn('balance_series.json not found; portfolio balance line disabled');
             return [];
         }
-        const payload = await response.json();
         const normalizeSeries = (entries) =>
             (Array.isArray(entries) ? entries : [])
                 .map((entry) => ({
@@ -287,8 +297,7 @@ export async function loadPerformanceSeries() {
             // Getting it from loadPortfolioSeries is circular or messy.
             // Simplified approach: fetch balance series here locally just to find the last point.
             try {
-                const balResponse = await fetch('../data/output/balance_series.json');
-                const balPayload = await balResponse.json();
+                const balPayload = await loadBalanceSeriesPayload();
                 const usdOpen = Array.isArray(balPayload)
                     ? balPayload[balPayload.length - 1]
                     : balPayload.USD

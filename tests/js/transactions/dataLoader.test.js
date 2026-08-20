@@ -351,6 +351,7 @@ INVALID_ROW`;
 
 describe('dataLoader real-time integration', () => {
     let loadPortfolioSeries;
+    let loadPerformanceSeries;
     let loadCompositionSnapshotData;
     let mockFetch;
 
@@ -374,6 +375,12 @@ describe('dataLoader real-time integration', () => {
             getNyDate: jest.fn(() => new Date()),
             isTradingDay: jest.fn(() => true),
         }));
+
+        // Mock realtimeData so this describe focuses on dataLoader fetch sharing,
+        // not the internals of fetchRealTimeData.
+        jest.unstable_mockModule('../../../js/transactions/realtimeData.js', () => ({
+            fetchRealTimeData: jest.fn(() => Promise.resolve(null)),
+        }));
     });
 
     afterEach(() => {
@@ -383,6 +390,7 @@ describe('dataLoader real-time integration', () => {
     async function loadModule() {
         const mod = await import('../../../js/transactions/dataLoader.js');
         loadPortfolioSeries = mod.loadPortfolioSeries;
+        loadPerformanceSeries = mod.loadPerformanceSeries;
         loadCompositionSnapshotData = mod.loadCompositionSnapshotData;
     }
 
@@ -489,6 +497,29 @@ describe('dataLoader real-time integration', () => {
             // Should return historical data only
             expect(result.USD).toHaveLength(1);
             expect(result.USD[0].value).toBe(10000);
+        });
+
+        it('shares a single balance_series.json fetch with loadPerformanceSeries', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        USD: [{ date: '2024-12-04', value: 10000 }],
+                    })
+                )
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        '^LZ': [{ date: '2024-12-04', value: 1.0 }],
+                    })
+                );
+
+            await loadModule();
+            await loadPortfolioSeries();
+            await loadPerformanceSeries();
+
+            const balanceCalls = mockFetch.mock.calls.filter((c) =>
+                String(c[0]).includes('balance_series.json')
+            );
+            expect(balanceCalls).toHaveLength(1);
         });
     });
 
