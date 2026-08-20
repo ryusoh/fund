@@ -63,8 +63,7 @@ def prepare_historical_prices():
     # Convert to string date *after* all datetime operations
     prices_df['date'] = prices_df['date'].dt.strftime('%Y-%m-%d')
 
-    for symbol in prices_df['symbol'].unique():
-        symbol_df = prices_df[prices_df['symbol'] == symbol]
+    for symbol, symbol_df in prices_df.groupby('symbol'):
         price_dict[symbol] = pd.Series(symbol_df.price.values, index=symbol_df.date).to_dict()
 
     # --- JSON Output ---
