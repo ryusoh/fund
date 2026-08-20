@@ -196,7 +196,7 @@ def save_json_data(df, output_path, label='composition'):
         data['series'][key] = df[key].fillna(0).tolist()
 
     with open(output_path, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, separators=(",", ":"))
 
     print(f"{label.capitalize()} data saved to {output_path}")
     print(f"Date range: {df['date'].min()} to {df['date'].max()}")

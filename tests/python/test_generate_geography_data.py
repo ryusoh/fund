@@ -1,6 +1,8 @@
+import json
+
 import pandas as pd
 
-from scripts.generate_geography_data import calculate_daily_geography
+from scripts.generate_geography_data import calculate_daily_geography, save_chart_json
 
 
 def test_calculate_daily_geography_fail_open_allocations():
@@ -47,3 +49,13 @@ def test_calculate_daily_geography_fail_open_allocations():
     finally:
         # Restore
         ggd.load_country_allocations = original_load
+
+
+def test_save_chart_json_writes_compact_json(tmp_path):
+    payload = {"dates": ["2023-01-01"], "series": {"United States": [100.0]}}
+    out = tmp_path / "nested" / "geography.json"
+    save_chart_json(payload, out)
+
+    text = out.read_text()
+    assert "\n" not in text  # compact: single line
+    assert json.loads(text) == payload

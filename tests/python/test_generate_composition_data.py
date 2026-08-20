@@ -1,3 +1,4 @@
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +8,7 @@ import pytest
 
 # Add scripts directory to path to import generate_composition_data
 sys.path.append(str(Path(__file__).parent.parent.parent / "scripts"))
-from generate_composition_data import calculate_daily_composition
+from generate_composition_data import calculate_daily_composition, save_json_data
 
 
 @pytest.fixture
@@ -134,3 +135,23 @@ def test_calculate_daily_composition_missing_ticker():
     assert comp_df.iloc[0]["date"] == "2023-01-01"
     assert comp_df.iloc[0]["total_value"] == 1500.0
     assert "UNKNOWN" not in comp_df.columns
+
+
+def test_save_json_data_writes_compact_json(tmp_path):
+    """save_json_data writes compact JSON that round-trips to the same data."""
+    df = pd.DataFrame(
+        {
+            "date": ["2023-01-01", "2023-01-02"],
+            "total_value": [100.0, 200.0],
+            "AAPL": [60.0, 55.0],
+        }
+    )
+    out = tmp_path / "composition.json"
+    save_json_data(df, out, label="composition")
+
+    text = out.read_text()
+    assert "\n" not in text  # compact: single line
+    parsed = json.loads(text)
+    assert parsed["dates"] == ["2023-01-01", "2023-01-02"]
+    assert parsed["total_values"] == [100.0, 200.0]
+    assert parsed["series"] == {"AAPL": [60.0, 55.0]}

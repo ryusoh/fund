@@ -725,6 +725,13 @@ def convert_to_chart_format(geography_data):
     }
 
 
+def save_chart_json(data, output_path):
+    """Save chart data to JSON, compact (no indentation)."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, 'w') as f:
+        json.dump(data, f, separators=(",", ":"))
+
+
 def main():
     """Main function to generate geography data."""
     print("Loading data...")
@@ -738,10 +745,7 @@ def main():
 
     # Save to output file
     output_path = Path('data/output/figures/geography.json')
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, 'w') as f:
-        json.dump(chart_format, f, indent=2)
+    save_chart_json(chart_format, output_path)
 
     print(f"\nGeography data saved to {output_path}")
 
@@ -805,8 +809,7 @@ def main():
     }
 
     aggregated_path = Path('data/output/figures/geography_aggregated.json')
-    with open(aggregated_path, 'w') as f:
-        json.dump(aggregated_output, f, indent=2)
+    save_chart_json(aggregated_output, aggregated_path)
     print(f"Aggregated data saved to {aggregated_path}")
 
 

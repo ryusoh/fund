@@ -77,6 +77,7 @@ class TestGenerateMarketcapFromComposition(unittest.TestCase):
                         self.assertTrue(result)
 
                         mock_json_dump.assert_called_once()
+                        self.assertEqual(mock_json_dump.call_args.kwargs, {'separators': (',', ':')})
                         output_data = mock_json_dump.call_args[0][0]
                         self.assertEqual(output_data['dates'], ['2023-01-01', '2023-01-02'])
                         self.assertEqual(output_data['total_values'], [100, 200])
