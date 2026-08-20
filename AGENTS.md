@@ -29,8 +29,9 @@ ES modules via an import map.
 
 ## Non-negotiables (a PR that violates any of these will be closed)
 
-1. **Open a PR only if `make verify` is green.** It is the CI gate
-   (`lint type sec test`). Red = don't open it. And don't rerun a red gate on an
+1. **Open a PR only if `make precommit-fix` is green.** It is the CI gate
+   (web-ci: format + lint + JS/Python tests + pre-commit hooks); `make verify`
+   (`lint type sec test`) is NOT a superset of it. Red = don't open it. And don't rerun a red gate on an
    unchanged tree — a failed gate over an untouched worktree cannot go green, so
    edit something first. `python3 -m scripts.agents.gate_guard` enforces this:
    `snapshot` before the run, `check <hash>` before a retry (exit 1 = unchanged).
