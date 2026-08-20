@@ -46,6 +46,33 @@ runs; no network fetches.
    while sibling scripts already batch/concurrent-fetch —
    `scripts/pnl/update_daily_pnl.py:67-71`.
 
+## Implementation status
+
+All findings except F6 were implemented on `main` in the commits below. The
+original, line-numbered work orders lived in `docs/performance-action-items.md`;
+that doc has been consolidated into this file now that the work is done.
+
+| Finding                                              | Commit     | Scope                                                                                                          |
+| :--------------------------------------------------- | :--------- | :------------------------------------------------------------------------------------------------------------- |
+| F4 — compact chart JSONs                             | `d2ead8dc` | `scripts/generate_composition_data.py`, `generate_geography_data.py`, `generate_marketcap_from_composition.py` |
+| F9 — share `balance_series.json` fetch               | `436489ca` | `js/transactions/dataLoader.js`                                                                                |
+| F3 — `forward_pe.json` sidecar                       | `3c365328` | `scripts/generate_pe_data.py`, `js/services/dataService.js`                                                    |
+| F1 — drop timestamp cache-busting                    | `328cfcf4` | `js/services/dataService.js`, `js/transactions/realtimeData.js`, `js/transactions/terminal/stats/financial.js` |
+| F2 — single-flight `fetchRealTimeData` + PE cache    | `111fe831` | `js/transactions/realtimeData.js`, `js/services/dataService.js`                                                |
+| F10 — batch yfinance downloads                       | `28489ccf` | `scripts/pnl/update_daily_pnl.py`                                                                              |
+| F11 — `groupby('symbol')` in `prepare_frontend_data` | `46619aea` | `scripts/prepare_frontend_data.py`                                                                             |
+| F5 — idle-gate `TableGlassEffect`                    | `2f79530c` | `js/ui/tableGlassEffect.js`                                                                                    |
+| F8 — `toBlob()` + debounced resize rebuilds          | `22d9330f` | `js/ui/liquidGlassRefraction.js`                                                                               |
+| F7 — event-driven caustics + idle sim pause          | `33b8e962` | `js/ui/webglCaustics.js`                                                                                       |
+| F6 — marquee per-char culling                        | **Closed** | Measured 0 `.mq-char` spans at runtime because `MARQUEE_CONFIG.enabled` is `false`; not implemented.           |
+
+Additional commits shipped with this batch:
+
+- `e6f3b185` — black-format the marketcap test assertion added in F4.
+- `d28dfd8b` — fix `scripts/twrr/utils.py` `DATA_DIR` resolving to `scripts/data/` instead of `data/`.
+- `28595ddf` — refresh generated data through 2026-08-20 (produces the new `forward_pe.json` sidecar).
+- `969f3f47` — add `make ensure-playwright` for headless browser checks.
+
 ## Findings
 
 ### F1. Cache-busting query param on every data fetch defeats HTTP caching
