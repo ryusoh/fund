@@ -112,6 +112,8 @@ function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
     };
 }
 
+let inFlightRealTimeData = null;
+
 /**
  * Fetches real-time data and calculates the current portfolio state.
  * @returns {Promise<{
@@ -125,7 +127,16 @@ function _processHoldings(tickers, holdings, prices, marketRatiosByTicker) {
  *   tickerWeights: Object
  * } | null>}
  */
-export async function fetchRealTimeData() {
+export function fetchRealTimeData() {
+    if (!inFlightRealTimeData) {
+        inFlightRealTimeData = fetchRealTimeDataUncached().finally(() => {
+            inFlightRealTimeData = null;
+        });
+    }
+    return inFlightRealTimeData;
+}
+
+async function fetchRealTimeDataUncached() {
     try {
         const today = getNyDate();
         if (!isTradingDay(today)) {

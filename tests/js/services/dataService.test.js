@@ -1,6 +1,7 @@
 import {
     loadAndDisplayPortfolioData,
     getCalendarData,
+    fetchMarketRatiosForTickers,
     _calculateDynamicPeValues,
     __testables,
 } from '@services/dataService.js';
@@ -63,6 +64,9 @@ describe('dataService', () => {
         `;
         if (typeof __testables.resetAnalysisTickerCache === 'function') {
             __testables.resetAnalysisTickerCache();
+        }
+        if (typeof __testables.resetPeRatioDataCache === 'function') {
+            __testables.resetPeRatioDataCache();
         }
 
         // Clear all mocks
@@ -735,6 +739,43 @@ describe('dataService', () => {
             expect(url).toContain('bar=1');
             expect(url).toMatch(/[?&]t=\d+/);
             expect(fetch.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
+        });
+    });
+
+    describe('fetchMarketRatiosForTickers', () => {
+        it('caches the forward PE sidecar across calls', async () => {
+            fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            tickers: [{ symbol: 'AAPL', path: '../data/analysis/AAPL.json' }],
+                        }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({}),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            ticker_forward_pe: { AAPL: 25.0 },
+                            msci_pe_ratio: 0.95,
+                        }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ market: { pe: 22.0 } }),
+                });
+
+            await fetchMarketRatiosForTickers(['AAPL']);
+            await fetchMarketRatiosForTickers(['AAPL']);
+
+            const forwardPeFetches = fetch.mock.calls.filter((c) =>
+                String(c[0]).includes('forward_pe.json')
+            );
+            expect(forwardPeFetches).toHaveLength(1);
         });
     });
 

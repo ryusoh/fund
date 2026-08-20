@@ -223,5 +223,41 @@ describe('realtimeData', () => {
             expect(url).not.toMatch(/[?&]t=\d+/);
             expect(mockFetch.mock.calls[0][1]).toEqual({ cache: 'no-cache' });
         });
+
+        it('dedupes concurrent fetchRealTimeData calls (single-flight)', async () => {
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: { VT: { shares: '100', average_price: '100' } },
+                prices: { VT: 110 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            const [a, b] = await Promise.all([fetchRealTimeData(), fetchRealTimeData()]);
+
+            expect(mockFetchPortfolioData).toHaveBeenCalledTimes(1);
+            expect(a).toEqual(b);
+        });
+
+        it('re-fetches after the in-flight call settles', async () => {
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: { VT: { shares: '100', average_price: '100' } },
+                prices: { VT: 110 },
+            });
+            mockFx({ USD: 1.0 });
+
+            await loadModule();
+            await fetchRealTimeData();
+
+            mockFetchPortfolioData.mockResolvedValueOnce({
+                holdingsDetails: { VT: { shares: '100', average_price: '100' } },
+                prices: { VT: 115 },
+            });
+            mockFx({ USD: 1.0 });
+
+            const result = await fetchRealTimeData();
+
+            expect(mockFetchPortfolioData).toHaveBeenCalledTimes(2);
+            expect(result.balance).toBe(11500);
+        });
     });
 });

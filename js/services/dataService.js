@@ -22,6 +22,7 @@ const ANALYSIS_INDEX_URL = '../data/analysis/index.json';
 const TICKER_METADATA_URL = '../data/ticker_metadata.json';
 let analysisTickerPathCache = null;
 let tickerMetadataCache = null;
+let peRatioDataCache = null;
 
 function lightenHexToRgba(hex, lightenFactor, alpha) {
     /* istanbul ignore next: defensive parameter validation */
@@ -152,7 +153,10 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
         let globalForwardPeMap = {};
         let msciPeRatio = null;
         try {
-            const peData = await fetchJSON(FORWARD_PE_URL);
+            if (!peRatioDataCache) {
+                peRatioDataCache = await fetchJSON(FORWARD_PE_URL);
+            }
+            const peData = peRatioDataCache;
             globalForwardPeMap = peData?.ticker_forward_pe || {};
             msciPeRatio = peData?.msci_pe_ratio || null;
         } catch (error) {
@@ -926,6 +930,9 @@ export const __testables = {
     },
     resetTickerMetadataCache: () => {
         tickerMetadataCache = null;
+    },
+    resetPeRatioDataCache: () => {
+        peRatioDataCache = null;
     },
 };
 
