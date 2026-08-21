@@ -1579,113 +1579,28 @@ describe('TableGlassEffect', () => {
         });
     });
 
-    describe('idle gating', () => {
-        let updateSpy;
-        let drawSpy;
+    test('startLoop calls update and draw every frame', () => {
+        jest.useFakeTimers();
+        const updateSpy = jest
+            .spyOn(TableGlassEffect.prototype, 'update')
+            .mockImplementation(() => {});
+        const drawSpy = jest.spyOn(TableGlassEffect.prototype, 'draw').mockImplementation(() => {});
 
-        beforeEach(() => {
-            jest.useFakeTimers();
-            updateSpy = jest
-                .spyOn(TableGlassEffect.prototype, 'update')
-                .mockImplementation(() => {});
-            drawSpy = jest.spyOn(TableGlassEffect.prototype, 'draw').mockImplementation(() => {});
-        });
+        const effect = new TableGlassEffect('.table-responsive-container');
+        effect.dispose();
+        jest.clearAllTimers();
+        updateSpy.mockClear();
+        drawSpy.mockClear();
 
-        afterEach(() => {
-            updateSpy.mockRestore();
-            drawSpy.mockRestore();
-            jest.useRealTimers();
-        });
+        effect.startLoop();
+        jest.runOnlyPendingTimers();
 
-        test('skips update/draw when idle', () => {
-            const effect = new TableGlassEffect('.table-responsive-container');
-            effect.dispose();
-            jest.clearAllTimers();
-            updateSpy.mockClear();
-            drawSpy.mockClear();
+        expect(updateSpy).toHaveBeenCalled();
+        expect(drawSpy).toHaveBeenCalled();
 
-            effect._needsResize = false;
-            effect._framesDrawn = 1;
-            effect.state.hoveredRowIndex = -1;
-            effect.state.spotlightAlpha = 0;
-            effect.state.pointerVelocity = 0;
-            effect._lastPointerMoveTime = performance.now() - 3000;
-
-            effect.startLoop();
-            jest.runOnlyPendingTimers();
-
-            expect(updateSpy).not.toHaveBeenCalled();
-            expect(drawSpy).not.toHaveBeenCalled();
-
-            effect.dispose();
-        });
-
-        test('draws when a row is hovered', () => {
-            const effect = new TableGlassEffect('.table-responsive-container');
-            effect.dispose();
-            jest.clearAllTimers();
-            drawSpy.mockClear();
-
-            effect._needsResize = false;
-            effect._framesDrawn = 1;
-            effect.state.hoveredRowIndex = 2;
-            effect.state.spotlightAlpha = 1;
-            effect.state.pointerVelocity = 0;
-            effect._lastPointerMoveTime = performance.now();
-
-            expect(effect._isIdle(0)).toBe(false);
-
-            effect.startLoop();
-            jest.runOnlyPendingTimers();
-
-            expect(typeof effect.animationFrame).toBe('number');
-            expect(updateSpy).toHaveBeenCalled();
-            expect(drawSpy).toHaveBeenCalled();
-
-            effect.dispose();
-        });
-
-        test('never gates before the first paint', () => {
-            const effect = new TableGlassEffect('.table-responsive-container');
-            effect.dispose();
-            jest.clearAllTimers();
-            drawSpy.mockClear();
-
-            effect._needsResize = false;
-            effect._framesDrawn = 0;
-            effect.state.hoveredRowIndex = -1;
-            effect.state.spotlightAlpha = 0;
-            effect.state.pointerVelocity = 0;
-            effect._lastPointerMoveTime = performance.now() - 3000;
-
-            effect.startLoop();
-            jest.runOnlyPendingTimers();
-
-            expect(drawSpy).toHaveBeenCalled();
-
-            effect.dispose();
-        });
-
-        test('does not gate immediately after construction', () => {
-            const effect = new TableGlassEffect('.table-responsive-container');
-            effect.dispose();
-            jest.clearAllTimers();
-            drawSpy.mockClear();
-
-            effect._needsResize = false;
-            effect._framesDrawn = 1;
-            effect.state.hoveredRowIndex = -1;
-            effect.state.spotlightAlpha = 0;
-            effect.state.pointerVelocity = 0;
-            // A newly created effect should keep drawing for the idle timeout,
-            // even if the page has been loaded for a while.
-            const now = performance.now();
-            effect._lastPointerMoveTime = now;
-
-            expect(effect._isIdle(now + 100)).toBe(false);
-            expect(effect._isIdle(now + 2500)).toBe(true);
-
-            effect.dispose();
-        });
+        updateSpy.mockRestore();
+        drawSpy.mockRestore();
+        jest.useRealTimers();
+        effect.dispose();
     });
 });

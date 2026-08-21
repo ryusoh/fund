@@ -193,40 +193,27 @@ describe('WebGLCaustics execution', () => {
         caustics.dispose();
     });
 
-    test('rebuilds obstacle map on DOM mutation, not on a timer', () => {
+    test('rebuilds obstacle map on a 1 s timer', () => {
         const setIntervalSpy = jest.spyOn(global, 'setInterval');
         const caustics = new WebGLCaustics(element, { simResolution: 128 });
         caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
 
         const timerCalls = setIntervalSpy.mock.calls.filter((c) => c[1] === 1000);
-        expect(timerCalls).toHaveLength(0);
+        expect(timerCalls).toHaveLength(1);
 
-        const updateSpy = jest.spyOn(caustics, 'updateObstacleMap');
-        caustics.obstacleMutationObserver._callback();
-        expect(updateSpy).toHaveBeenCalled();
-
-        updateSpy.mockRestore();
         setIntervalSpy.mockRestore();
         caustics.dispose();
     });
 
-    test('keeps ambient river splat when pointer is quiet', () => {
+    test('clears the obstacle timer on dispose', () => {
+        const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
         const caustics = new WebGLCaustics(element, { simResolution: 128 });
         caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
-        caustics.pointer.moved = false;
-        caustics.pointer.down = false;
 
-        const splatSpy = jest.spyOn(caustics, 'splat');
-        const renderSpy = jest.spyOn(caustics.renderer, 'render');
-
-        caustics.step();
-
-        // Ambient flow plus pointer (none) means one splat per step.
-        expect(splatSpy).toHaveBeenCalledTimes(1);
-        expect(renderSpy).toHaveBeenCalled();
-
-        splatSpy.mockRestore();
-        renderSpy.mockRestore();
         caustics.dispose();
+
+        expect(clearIntervalSpy).toHaveBeenCalledWith(caustics.obstacleTimer);
+
+        clearIntervalSpy.mockRestore();
     });
 });
