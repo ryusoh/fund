@@ -15,7 +15,6 @@ import {
     PERLIN_BACKGROUND_SETTINGS,
     CALENDAR_ZOOM_REFRACTION,
 } from '@js/config.js';
-import { WebGLCaustics } from '../../ui/webglCaustics.js';
 import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
 import { getNyDate } from '@utils/date.js';
 import { getCalendarData } from '@services/dataService.js';
@@ -1021,7 +1020,6 @@ let perlinBackgroundHandle = null;
 // is disposed on zoom-out so the unzoomed wrapper stays untouched.
 // is disposed on zoom-out so the unzoomed wrapper stays untouched.
 let zoomRefraction = null;
-let zoomCaustics = null;
 
 function initCalendarZoomPane() {
     const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
@@ -1049,31 +1047,14 @@ function initCalendarZoomPane() {
             centerZoomedPane();
             try {
                 zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
-
-                // Start the WebGL Caustics immediately to run alongside the zoom animation
-                if (
-                    !window.AMBIENT_CONFIG ||
-                    window.AMBIENT_CONFIG.webglCausticsEnabled !== false
-                ) {
-                    zoomCaustics = new WebGLCaustics(wrapper);
-                    zoomCaustics.start();
-                }
             } catch (e) {
                 logger.error('Failed to initialize zoom pane effects:', e);
                 zoomRefraction = null;
-                if (zoomCaustics) {
-                    zoomCaustics.dispose();
-                    zoomCaustics = null;
-                }
             }
         } else if (!isZoomed) {
             if (zoomRefraction) {
                 zoomRefraction.dispose();
                 zoomRefraction = null;
-            }
-            if (zoomCaustics) {
-                zoomCaustics.dispose();
-                zoomCaustics = null;
             }
         }
     };

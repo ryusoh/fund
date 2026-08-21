@@ -18,7 +18,6 @@
                 // If false, do not disable effect when user prefers-reduced-motion.
                 // Set to true to respect OS setting and disable motion by default.
                 respectReducedMotion: false,
-                webglCausticsEnabled: false,
             },
             window.AMBIENT_CONFIG || {}
         );

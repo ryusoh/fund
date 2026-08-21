@@ -25,7 +25,6 @@ describe('Ambient Config', () => {
             zIndex: 1,
             blend: 'screen',
             respectReducedMotion: false,
-            webglCausticsEnabled: false,
         });
     });
 
