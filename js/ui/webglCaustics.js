@@ -369,9 +369,6 @@ export class WebGLCaustics {
             dx: 0,
             dy: 0,
         };
-        this._lastPointerActivity = 0;
-        this._hasSettled = false;
-
         const onPointerMove = (e) => {
             const rect = this.container.getBoundingClientRect();
             // Convert to 0-1 UV coordinates
@@ -383,7 +380,6 @@ export class WebGLCaustics {
             this.pointer.x = x;
             this.pointer.y = y;
             this.pointer.moved = true;
-            this._lastPointerActivity = performance.now();
         };
 
         this.element.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -576,15 +572,6 @@ export class WebGLCaustics {
     step() {
         const dt = Math.min(this.clock.getDelta(), 0.03); // Cap dt
 
-        const pointerQuiet =
-            this.pointer.moved === false &&
-            this.pointer.down === false &&
-            performance.now() - this._lastPointerActivity > 2000;
-        if (pointerQuiet && this._hasSettled) {
-            // Fully idle: last frame stays on screen, skip the sim entirely.
-            return;
-        }
-
         // 1. Pointer interaction
         if (this.pointer.moved) {
             // Apply a strong velocity force along the pointer movement
@@ -601,10 +588,8 @@ export class WebGLCaustics {
 
         // 2. Continuous flow (ambient wind from left to right)
         // Splat continuously on the left side to simulate river
-        if (!pointerQuiet) {
-            const yPoint = 0.5 + Math.sin(this.clock.elapsedTime * 2.0) * 0.3;
-            this.splat(new Vector2(0.1, yPoint), 10.0, 0.0, [0.1, 0.1, 0.1]);
-        }
+        const yPoint = 0.5 + Math.sin(this.clock.elapsedTime * 2.0) * 0.3;
+        this.splat(new Vector2(0.1, yPoint), 10.0, 0.0, [0.1, 0.1, 0.1]);
 
         // 2. Advect Velocity
         this.advectionMat.uniforms.uVelocity.value = this.velocity.read.texture;
@@ -650,8 +635,6 @@ export class WebGLCaustics {
 
         this.mesh.material = this.displayMat;
         this.renderer.render(this.scene, this.camera);
-
-        this._hasSettled = pointerQuiet;
     }
 
     start() {

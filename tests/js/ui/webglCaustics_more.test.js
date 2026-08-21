@@ -210,42 +210,22 @@ describe('WebGLCaustics execution', () => {
         caustics.dispose();
     });
 
-    test('skips the sim when the pointer has been quiet', () => {
+    test('keeps ambient river splat when pointer is quiet', () => {
         const caustics = new WebGLCaustics(element, { simResolution: 128 });
         caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
         caustics.pointer.moved = false;
         caustics.pointer.down = false;
-        caustics._lastPointerActivity = -3000;
-        caustics._hasSettled = true;
 
         const splatSpy = jest.spyOn(caustics, 'splat');
         const renderSpy = jest.spyOn(caustics.renderer, 'render');
 
         caustics.step();
 
-        expect(splatSpy).not.toHaveBeenCalled();
-        expect(renderSpy).not.toHaveBeenCalled();
+        // Ambient flow plus pointer (none) means one splat per step.
+        expect(splatSpy).toHaveBeenCalledTimes(1);
+        expect(renderSpy).toHaveBeenCalled();
 
         splatSpy.mockRestore();
-        renderSpy.mockRestore();
-        caustics.dispose();
-    });
-
-    test('runs one settling pass after quieting', () => {
-        const caustics = new WebGLCaustics(element, { simResolution: 128 });
-        caustics.container = { clientWidth: 200, clientHeight: 200, style: {} };
-        caustics.pointer.moved = false;
-        caustics.pointer.down = false;
-        caustics._lastPointerActivity = -3000;
-        caustics._hasSettled = false;
-
-        const renderSpy = jest.spyOn(caustics.renderer, 'render');
-
-        caustics.step();
-
-        expect(renderSpy).toHaveBeenCalled();
-        expect(caustics._hasSettled).toBe(true);
-
         renderSpy.mockRestore();
         caustics.dispose();
     });
