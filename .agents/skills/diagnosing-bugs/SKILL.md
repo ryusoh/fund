@@ -39,6 +39,17 @@ bug is live. If the symptom smells like one of these, build the loop to catch it
   you why. See `docs/pe-forward-pe-pipeline.md`.
 - **Glass / refraction / lighting** are Chromium-only and visual — unit tests
   **cannot** see a transparent edge or misaligned rim. See `docs/liquid-glass.md`.
+- **`blob:` URL assets silently killed by CSP.** The pages' CSP (`img-src 'self'
+data:` — duplicated in each `index.html` meta AND `_headers`, both enforced)
+  blocks blob URLs, so any feature that switches an asset from `data:` to
+  `blob:` (e.g. `canvas.toDataURL` → `toBlob` + `createObjectURL` for an
+  `feImage` displacement map) dies with **no thrown error** — just one console
+  CSP warning and the effect gone everywhere. Grep console output for
+  "Content Security Policy" before theorising. See `docs/pages-deploy.md`.
+- **"Caustics" (and similar effect names) are ambiguous** — the word names the
+  refraction lens's `causticGain`, the glass3dPlugin shadow ring, and formerly
+  `WebGLCaustics`. Confirm WHICH implementation the user means before fixing;
+  see the disambiguation note at the top of `docs/liquid-glass.md`.
 
 ## Phase 1 — Build a feedback loop
 

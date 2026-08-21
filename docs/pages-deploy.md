@@ -32,6 +32,16 @@ data stale until the next human push.
 
 ## Gotchas that already bit
 
+- **The CSP lives in two places that are BOTH enforced.** Every main page has a
+  `<meta http-equiv="Content-Security-Policy">` tag, and `_headers` repeats the
+  same policy as an HTTP header. The browser intersects them, so loosening one
+  copy leaves the other's restriction live — e.g. allowing `blob:` in the meta
+  tags but not in `_headers` still blocks blob URLs on the deployed site (this
+  silently killed the liquid-glass refraction lens when its displacement map
+  moved from `data:` to `blob:` URLs; the only symptom is a console CSP
+  warning). Update every copy together; `tests/python/test_csp_consistency.py`
+  fails on drift. (`performance/index.html` intentionally has no meta copy.)
+
 - **A skip-ci marker anywhere in the head commit message** — body included,
   even quoted in prose — makes GitHub skip ALL push workflows, deploy
   included, with no error anywhere. The `.husky/commit-msg` hook now blocks

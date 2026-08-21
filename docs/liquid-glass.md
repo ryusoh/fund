@@ -1,5 +1,12 @@
 # Liquid Glass Effects (terminal page)
 
+> **"Caustics" names three different things in this repo** — disambiguate before
+> diagnosing: (1) the refraction lens's `causticGain` rim brightening (this doc,
+> `js/ui/liquidGlassRefraction.js`, all glass panes); (2) the painted caustic
+> light ring inside the donut's shadow pass (`js/plugins/glass3dPlugin.js`,
+> `drawShadow`, position page only). A third implementation, the `WebGLCaustics`
+> fluid sim on the calendar zoom pane, was removed in 2026-08.
+
 The "liquid glass" panes on `terminal/index.html` (the terminal, the chart card,
 and the transaction table) are built from **three independent layers**. This doc
 captures how they fit together and the hard-won gotchas — read it before touching
