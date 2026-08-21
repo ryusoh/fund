@@ -78,7 +78,7 @@ export class TableGlassEffect {
             spotlightAlpha: 0,
         };
         this.resizePaused = false;
-        this._lastPointerMoveTime = 0;
+        this._lastPointerMoveTime = performance.now();
         this._framesDrawn = 0;
 
         this.init();
@@ -499,7 +499,7 @@ export class TableGlassEffect {
         // Move pointer far off-screen so WebGL and Canvas trails don't freeze in the center
         this.state.pointer.x = -10;
         this.state.pointer.y = -10;
-        this._lastPointerMoveTime = 0;
+        this._lastPointerMoveTime = performance.now();
         if (this.state.hoveredRowIndex !== -1) {
             this.state.hoveredRowIndex = -1;
             if (typeof this.options.onHoverRow === 'function') {
