@@ -354,11 +354,8 @@ export class WebGLCaustics {
         });
         this.resizeObserver.observe(this.container);
 
-        // Event-driven obstacle updates: the calendar re-renders mutate the DOM,
-        // and the ResizeObserver above covers geometry changes. No 1 s polling.
-        this.obstacleMutationObserver = new window.MutationObserver(() => this.updateObstacleMap());
-        this.obstacleMutationObserver.observe(this.element, { childList: true, subtree: true });
-        this.updateObstacleMap();
+        // Periodically update obstacle map in case calendar renders late
+        this.obstacleTimer = setInterval(() => this.updateObstacleMap(), 1000);
 
         // Interaction
         this.pointer = {
@@ -680,9 +677,8 @@ export class WebGLCaustics {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
-        if (this.obstacleMutationObserver) {
-            this.obstacleMutationObserver.disconnect();
-            this.obstacleMutationObserver = null;
+        if (this.obstacleTimer) {
+            clearInterval(this.obstacleTimer);
         }
         this.geometry.dispose();
         this.renderer.dispose();
