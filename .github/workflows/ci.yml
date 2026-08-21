@@ -72,6 +72,16 @@ jobs:
               if: ${{ env.RUN_PRECOMMIT == 'true' }}
               run: make precommit-fix
 
+            # Browser smoke stays out of precommit-fix because it needs the
+            # Playwright Chromium binary, which local runs may not have.
+            - name: Install Chromium for page smoke test
+              if: ${{ env.RUN_PRECOMMIT == 'true' }}
+              run: npx playwright install chromium
+
+            - name: Page smoke test
+              if: ${{ env.RUN_PRECOMMIT == 'true' }}
+              run: make smoke
+
             - name: Deploy (placeholder)
               if: ${{ env.RUN_DEPLOY == 'true' }}
               run: echo "Deploy step controlled by caller workflow"

@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -59,6 +59,7 @@ help:
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
+	@echo "  smoke         Headless load of all pages; fails on pageerrors/console errors"
 	@echo "  images        Regenerate AVIF/WebP tiers for CSS background JPEGs"
 	@echo "  fund          Show CLI help"
 	@echo "  deploy-worker Deploy Cloudflare Worker"
@@ -283,6 +284,13 @@ serve:
 #   make screenshot URL=/terminal/ ARGS="--full --wait 1500"
 screenshot:
 	node scripts/screenshot.mjs $(URL) $(ARGS)
+
+# Headless smoke test: load every page in Chromium and fail on uncaught
+# exceptions or non-allowlisted console errors (CSP violations included — they
+# surface only as console text while the effect they power silently dies).
+# Requires the Chromium binary: run `make ensure-playwright` once.
+smoke:
+	node scripts/page_smoke.mjs
 
 # Install the Playwright Chromium binary required by `make screenshot` and by
 # any headless browser measurement (e.g. counting DOM nodes for perf work).

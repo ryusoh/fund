@@ -21,7 +21,10 @@ const state = {
     configs: [],
     activeSymbol: null,
     bayesEngine: null,
-    monteCarloWorker: new Worker('../js/pages/analysis/monte_carlo.worker.js'),
+    // Module worker: the worker file uses ESM `export` (imported by its jest
+    // test), which a classic worker cannot parse — it dies with a silent
+    // "Unexpected token 'export'" pageerror and Monte Carlo never runs.
+    monteCarloWorker: new Worker('../js/pages/analysis/monte_carlo.worker.js', { type: 'module' }),
 };
 const DATA_CACHE_BUST = Date.now().toString();
 const thesisTitleCache = new Map();

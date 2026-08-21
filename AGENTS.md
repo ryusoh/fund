@@ -158,6 +158,7 @@ instantly identifiable.
 | Py mutation test (scoped, manual only)  | `make mutate-py SCOPE='scripts.utils.security_utils.*'` |
 | Dev server (serves repo root at :8000)  | `make serve`                                            |
 | Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                        |
+| Page smoke (console/CSP errors)         | `make smoke`                                            |
 | Run TWRR data pipeline locally          | `make twrr-refresh`                                     |
 | Regenerate AVIF/WebP background tiers   | `make images`                                           |
 
