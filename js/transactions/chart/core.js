@@ -83,47 +83,49 @@ export function computePercentTickInfo(yMin, yMax) {
     };
 }
 
-export function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency, options = {}) {
-    if (isPerformanceChart) {
-        const percentTickInfo = computePercentTickInfo(yMin, yMax);
-        const margin = percentTickInfo.tickSpacing * 0.25;
-        return percentTickInfo.ticks.filter(
-            (tick) => tick >= yMin - margin && tick <= yMax + margin
-        );
+function handleFlatLineRange(yMin, yMax, range) {
+    if (Number.isFinite(range) && range > 1e-9) {
+        return { yMin, yMax, range };
     }
+    const base = Math.abs(yMin) < 1e-9 ? 100 : Math.abs(yMin);
+    const margin = base * 0.05; // +/- 5% margin
+    const safeMargin = margin < 1e-9 ? 1 : margin;
 
-    // maxTicks: compact panes (e.g. the volume subpane) ask for fewer, larger
-    // steps instead of the default dense grid
-    const maxTicks = Number.isFinite(options?.maxTicks) ? Math.max(1, options.maxTicks) : null;
+    // Create artificial range
+    const newMin = yMin - safeMargin;
+    const newMax = yMax + safeMargin;
+    return { yMin: newMin, yMax: newMax, range: newMax - newMin };
+}
+
+function calculateTickSpacing(yMin, yMax, maxTicks) {
+    const initialRange = yMax - yMin;
+    const {
+        yMin: adjustedMin,
+        yMax: adjustedMax,
+        range,
+    } = handleFlatLineRange(yMin, yMax, initialRange);
+
     const desiredTicks = maxTicks || 6;
-    let range = yMax - yMin;
-
-    // Handle flat-line constant value case
-    if (!Number.isFinite(range) || range <= 1e-9) {
-        const base = Math.abs(yMin) < 1e-9 ? 100 : Math.abs(yMin);
-        const margin = base * 0.05; // +/- 5% margin
-        const safeMargin = margin < 1e-9 ? 1 : margin;
-
-        // Create artificial range
-        yMin = yMin - safeMargin;
-        yMax = yMax + safeMargin;
-        range = yMax - yMin;
-    }
-
     const targetSegments = Math.max(1, desiredTicks - 1) * (maxTicks ? 2 : 1);
+
     let tickSpacing = Math.abs(niceNumber(range / targetSegments, true));
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
         tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
     }
+    // Duplicate check from original code
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
         tickSpacing = Math.pow(10, Math.floor(Math.log10(Math.abs(range))));
     }
     tickSpacing = Math.max(tickSpacing, 1e-6); // Avoid zero spacing
 
-    // Retry loop to ensure enough ticks are generated
+    return { yMin: adjustedMin, yMax: adjustedMax, tickSpacing };
+}
+
+function generateTickSequence(yMin, yMax, initialTickSpacing, maxTicks) {
     let finalTicks = [];
     const minRequiredTicks = maxTicks ? Math.floor(maxTicks * 0.5) : 5;
     const maxRetries = 6;
+    let tickSpacing = initialTickSpacing;
 
     for (let retry = 0; retry < maxRetries; retry++) {
         // Do not clamp to zero if we have negative values (e.g. drawdown or PnL)
@@ -164,8 +166,28 @@ export function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency, 
             finalTicks = viewTicks;
         }
     }
-
     return finalTicks;
+}
+
+export function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency, options = {}) {
+    if (isPerformanceChart) {
+        const percentTickInfo = computePercentTickInfo(yMin, yMax);
+        const margin = percentTickInfo.tickSpacing * 0.25;
+        return percentTickInfo.ticks.filter(
+            (tick) => tick >= yMin - margin && tick <= yMax + margin
+        );
+    }
+
+    // maxTicks: compact panes (e.g. the volume subpane) ask for fewer, larger
+    // steps instead of the default dense grid
+    const maxTicks = Number.isFinite(options?.maxTicks) ? Math.max(1, options.maxTicks) : null;
+    const {
+        yMin: adjustedMin,
+        yMax: adjustedMax,
+        tickSpacing,
+    } = calculateTickSpacing(yMin, yMax, maxTicks);
+
+    return generateTickSequence(adjustedMin, adjustedMax, tickSpacing, maxTicks);
 }
 
 export function generateYearBasedTicks(minTime, maxTime) {
