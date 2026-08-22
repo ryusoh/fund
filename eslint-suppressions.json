@@ -26,7 +26,7 @@
     },
     "js/transactions/chart/core.js": {
         "complexity": {
-            "count": 4
+            "count": 3
         }
     },
     "js/transactions/chart/data/contribution.js": {
