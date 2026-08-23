@@ -1,152 +1,152 @@
 {
-  "js/pages/calendar/index.js": {
-    "complexity": {
-      "count": 2
+    "js/pages/calendar/index.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/plugins/imagePlugin.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/plugins/thinFilmPlugin.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/plugins/waveAnimationPlugin.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/core.js": {
+        "complexity": {
+            "count": 3
+        }
+    },
+    "js/transactions/chart/data/contribution.js": {
+        "complexity": {
+            "count": 3
+        }
+    },
+    "js/transactions/chart/interaction.js": {
+        "complexity": {
+            "count": 6
+        }
+    },
+    "js/transactions/chart/renderers/beta.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/composition.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/concentration.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/transactions/chart/renderers/contribution.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/contributionComponents.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/drawdown.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/fx.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/transactions/chart/renderers/geography.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/marketcap.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/pe.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/transactions/chart/renderers/performance.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/rolling.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/sectors.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/volatility.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/chart/renderers/yield.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/dataLoader.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/transactions/terminal/commands.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "js/transactions/terminal/snapshots.js": {
+        "complexity": {
+            "count": 6
+        }
+    },
+    "js/transactions/terminal/stats/analysis.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/ui/calendarMonthLabelManager.js": {
+        "complexity": {
+            "count": 2
+        }
+    },
+    "js/ui/tableGlassEffect.js": {
+        "complexity": {
+            "count": 1
+        }
+    },
+    "tests/js/transactions/chart_regression.test.js": {
+        "complexity": {
+            "count": 1
+        }
     }
-  },
-  "js/plugins/imagePlugin.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/plugins/thinFilmPlugin.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/plugins/waveAnimationPlugin.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/core.js": {
-    "complexity": {
-      "count": 3
-    }
-  },
-  "js/transactions/chart/data/contribution.js": {
-    "complexity": {
-      "count": 3
-    }
-  },
-  "js/transactions/chart/interaction.js": {
-    "complexity": {
-      "count": 6
-    }
-  },
-  "js/transactions/chart/renderers/beta.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/composition.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/concentration.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/transactions/chart/renderers/contribution.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/contributionComponents.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/drawdown.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/fx.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/transactions/chart/renderers/geography.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/marketcap.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/pe.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/transactions/chart/renderers/performance.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/rolling.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/sectors.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/volatility.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/chart/renderers/yield.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/dataLoader.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/transactions/terminal/commands.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "js/transactions/terminal/snapshots.js": {
-    "complexity": {
-      "count": 6
-    }
-  },
-  "js/transactions/terminal/stats/analysis.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/ui/calendarMonthLabelManager.js": {
-    "complexity": {
-      "count": 2
-    }
-  },
-  "js/ui/tableGlassEffect.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "tests/js/transactions/chart_regression.test.js": {
-    "complexity": {
-      "count": 1
-    }
-  }
 }

@@ -39,7 +39,7 @@ bug is live. If the symptom smells like one of these, build the loop to catch it
 - **Glass / refraction / lighting** are Chromium-only and visual — unit tests
   **cannot** see a transparent edge or misaligned rim. See `docs/liquid-glass.md`.
 - **`blob:` URL assets silently killed by CSP.** The pages' CSP (`img-src 'self'
-  data:` — duplicated in each `index.html` meta AND `_headers`, both enforced)
+data:` — duplicated in each `index.html` meta AND `_headers`, both enforced)
   blocks blob URLs, so any feature that switches an asset from `data:` to
   `blob:` (e.g. `canvas.toDataURL` → `toBlob` + `createObjectURL` for an
   `feImage` displacement map) dies with **no thrown error** — just one console

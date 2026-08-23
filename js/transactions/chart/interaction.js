@@ -161,7 +161,15 @@ function drawCrosshairLine(ctx, layout, x) {
     ctx.restore();
 }
 
-function enhanceCompositionHoldings(layout, nonZeroHoldings, isAbsoluteMode, totalValueBase, crosshairDate, selectedCurrency, time) {
+function enhanceCompositionHoldings(
+    layout,
+    nonZeroHoldings,
+    isAbsoluteMode,
+    totalValueBase,
+    crosshairDate,
+    selectedCurrency,
+    time
+) {
     const allEnhancedHoldings = new Array(nonZeroHoldings.length);
     for (let i = 0; i < nonZeroHoldings.length; i++) {
         const holding = nonZeroHoldings[i];
@@ -287,9 +295,7 @@ function processCompositionCrosshair(ctx, layout, time, x, hasHover, seriesSnaps
     nonZeroHoldings.sort((a, b) => b.value - a.value);
 
     const totalValueRaw =
-        typeof layout.getTotalValueAtTime === 'function'
-            ? layout.getTotalValueAtTime(time)
-            : null;
+        typeof layout.getTotalValueAtTime === 'function' ? layout.getTotalValueAtTime(time) : null;
     const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
 
     const allEnhancedHoldings = enhanceCompositionHoldings(
@@ -401,11 +407,7 @@ function handleCrosshairRange(ctx, layout) {
     );
     drawCrosshairRangeBackground(ctx, layout, layout.xScale(startTime), layout.xScale(endTime));
 
-    return buildRangeSummary(
-        layout,
-        crosshairState.rangeStart,
-        crosshairState.rangeEnd
-    );
+    return buildRangeSummary(layout, crosshairState.rangeStart, crosshairState.rangeEnd);
 }
 
 function validateAndGetCrosshairReference(layout) {
@@ -414,7 +416,8 @@ function validateAndGetCrosshairReference(layout) {
     }
 
     const hasHover = crosshairState.active && Number.isFinite(crosshairState.hoverTime);
-    const hasRange = Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
+    const hasRange =
+        Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
 
     if (!hasHover && !hasRange) {
         return null;
@@ -461,12 +464,15 @@ export function drawCrosshairOverlay(ctx, layout) {
 
     sortCrosshairSnapshot(seriesSnapshot);
 
-    updateCrosshairUI({
-        time,
-        dateLabel: formatCrosshairDateLabel(time),
-        series: seriesSnapshot,
-        chartKey: layout.key,
-    }, rangeSummary);
+    updateCrosshairUI(
+        {
+            time,
+            dateLabel: formatCrosshairDateLabel(time),
+            series: seriesSnapshot,
+            chartKey: layout.key,
+        },
+        rangeSummary
+    );
 }
 
 export function buildRangeSummary(layout, rawStart, rawEnd) {
