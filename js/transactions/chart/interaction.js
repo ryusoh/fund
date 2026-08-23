@@ -137,63 +137,19 @@ export function findHoveredHolding(layout, time, hoverY, holdings) {
     return holdings[0];
 }
 
-export function drawCrosshairOverlay(ctx, layout) {
-    if (!layout) {
-        updateCrosshairUI(null, null);
-        return;
-    }
+function drawCrosshairRangeBackground(ctx, layout, startX, endX) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(120, 145, 255, 0.12)';
+    ctx.fillRect(
+        Math.min(startX, endX),
+        layout.chartBounds.top,
+        Math.abs(endX - startX),
+        layout.chartBounds.bottom - layout.chartBounds.top
+    );
+    ctx.restore();
+}
 
-    const hasHover = crosshairState.active && Number.isFinite(crosshairState.hoverTime);
-    const hasRange =
-        Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
-
-    if (!hasHover && !hasRange) {
-        updateCrosshairUI(null, null);
-        return;
-    }
-
-    const referenceTime = hasHover
-        ? crosshairState.hoverTime
-        : hasRange
-          ? (crosshairState.rangeEnd ?? crosshairState.rangeStart)
-          : null;
-
-    if (!Number.isFinite(referenceTime)) {
-        updateCrosshairUI(null, null);
-        return;
-    }
-
-    const time = clampTime(referenceTime, layout.minTime, layout.maxTime);
-    const x = layout.xScale(time);
-    if (!Number.isFinite(x) || x < layout.chartBounds.left || x > layout.chartBounds.right) {
-        updateCrosshairUI(null, null);
-        return;
-    }
-
-    if (hasRange) {
-        const startTime = clampTime(
-            Math.min(crosshairState.rangeStart, crosshairState.rangeEnd),
-            layout.minTime,
-            layout.maxTime
-        );
-        const endTime = clampTime(
-            Math.max(crosshairState.rangeStart, crosshairState.rangeEnd),
-            layout.minTime,
-            layout.maxTime
-        );
-        const startX = layout.xScale(startTime);
-        const endX = layout.xScale(endTime);
-        ctx.save();
-        ctx.fillStyle = 'rgba(120, 145, 255, 0.12)';
-        ctx.fillRect(
-            Math.min(startX, endX),
-            layout.chartBounds.top,
-            Math.abs(endX - startX),
-            layout.chartBounds.bottom - layout.chartBounds.top
-        );
-        ctx.restore();
-    }
-
+function drawCrosshairLine(ctx, layout, x) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
     ctx.setLineDash([4, 4]);
@@ -203,249 +159,314 @@ export function drawCrosshairOverlay(ctx, layout) {
     ctx.lineTo(x, layout.chartBounds.bottom);
     ctx.stroke();
     ctx.restore();
+}
 
-    const seriesSnapshot = [];
-    const isCompositionLayout =
-        layout.key === 'composition' ||
-        layout.key === 'compositionAbs' ||
-        layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs' ||
-        layout.key === 'geography' ||
-        layout.key === 'geographyAbs' ||
-        layout.key === 'marketcap' ||
-        layout.key === 'marketcapAbs';
+function enhanceCompositionHoldings(layout, nonZeroHoldings, isAbsoluteMode, totalValueBase, crosshairDate, selectedCurrency, time) {
+    const allEnhancedHoldings = new Array(nonZeroHoldings.length);
+    for (let i = 0; i < nonZeroHoldings.length; i++) {
+        const holding = nonZeroHoldings[i];
+        const absoluteValue = isAbsoluteMode
+            ? holding.value
+            : convertValueToCurrency(
+                  (totalValueBase * holding.value) / 100,
+                  crosshairDate,
+                  selectedCurrency
+              );
 
-    // Special handling for composition/sector charts to show breakdown at the crosshair time
-    if (isCompositionLayout) {
-        const crosshairDate = new Date(time);
-        const selectedCurrency = layout.currency || transactionState.selectedCurrency || 'USD';
-        const isAbsoluteMode = layout.valueMode === 'absolute';
-        // Get values at the current time for all series
-        // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
-        const valuesAtTime = [];
-        for (let i = 0; i < layout.series.length; i++) {
-            const series = layout.series[i];
-            if (typeof series.getValueAtTime !== 'function') {
-                continue;
+        let percentValue = 0;
+        if (!isAbsoluteMode) {
+            percentValue = holding.value;
+        } else if (
+            layout.percentSeriesMap &&
+            layout.percentSeriesMap[holding.key] &&
+            Array.isArray(layout.dates) &&
+            layout.dates.length > 0
+        ) {
+            layout.percentInterpolators = layout.percentInterpolators || {};
+            let interpolator = layout.percentInterpolators[holding.key];
+            if (!interpolator) {
+                const dates = layout.dates || [];
+                const timePoints = new Array(dates.length);
+                const holdingSeries = layout.percentSeriesMap[holding.key];
+                for (let j = 0; j < dates.length; j++) {
+                    timePoints[j] = {
+                        time: new Date(dates[j]).getTime(),
+                        value: holdingSeries[j],
+                    };
+                }
+                interpolator = createTimeInterpolator(timePoints);
+                layout.percentInterpolators[holding.key] = interpolator;
             }
-            const value = series.getValueAtTime(time);
-            // For composition chart, include all non-null values, even if very small
-            // This ensures holdings like FNSFX at 100% on Jan 01, 2021 are shown
-            if (value === null || value === undefined) {
-                continue;
-            }
-
-            valuesAtTime.push({
-                key: series.key,
-                label: series.label || series.key,
-                color: series.color || '#ffffff',
-                value,
-                percent: isAbsoluteMode ? 0 : value, // Will be enhanced below
-                formatted: series.formatValue
-                    ? series.formatValue(value, time)
-                    : layout.valueType === 'percent' || layout.valueType === 'fx'
-                      ? formatPercentInline(value)
-                      : formatCurrencyInline(value),
-            });
+            percentValue = interpolator(time) ?? 0;
+        } else {
+            percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
         }
 
-        // Filter out holdings that had 0% allocation at this time (were not held)
-        // Only keep holdings that had actual positive allocation
-        const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.01); // Lower threshold to capture small sectors
+        const currencyText = formatCurrencyInline(absoluteValue);
+        const percentText = `${percentValue.toFixed(2)}%`;
 
-        // Sort by value (percentage or absolute) in descending order
-        nonZeroHoldings.sort((a, b) => b.value - a.value);
+        allEnhancedHoldings[i] = {
+            ...holding,
+            percent: percentValue,
+            absoluteValue,
+            formatted: isAbsoluteMode ? `${currencyText} (${percentText})` : holding.formatted,
+            formattedPercent: percentText,
+            formattedValue: currencyText,
+        };
+    }
+    return allEnhancedHoldings;
+}
 
-        const totalValueRaw =
-            typeof layout.getTotalValueAtTime === 'function'
-                ? layout.getTotalValueAtTime(time)
-                : null;
-        const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
-
-        // Enhance ALL non-zero holdings so Y-position hit testing can match any stock
-        const allEnhancedHoldings = new Array(nonZeroHoldings.length);
-
-        for (let i = 0; i < nonZeroHoldings.length; i++) {
-            const holding = nonZeroHoldings[i];
-            const absoluteValue = isAbsoluteMode
-                ? holding.value
-                : convertValueToCurrency(
-                      (totalValueBase * holding.value) / 100,
-                      crosshairDate,
-                      selectedCurrency
-                  );
-
-            let percentValue = 0;
-            if (!isAbsoluteMode) {
-                percentValue = holding.value;
-            } else if (
-                layout.percentSeriesMap &&
-                layout.percentSeriesMap[holding.key] &&
-                Array.isArray(layout.dates) &&
-                layout.dates.length > 0
-            ) {
-                // Bolt: Cache interpolators on layout to avoid rebuilding them and repeatedly calling new Date() on every hover event frame
-                layout.percentInterpolators = layout.percentInterpolators || {};
-                let interpolator = layout.percentInterpolators[holding.key];
-                if (!interpolator) {
-                    const dates = layout.dates || [];
-                    const timePoints = new Array(dates.length);
-                    const holdingSeries = layout.percentSeriesMap[holding.key];
-                    for (let j = 0; j < dates.length; j++) {
-                        timePoints[j] = {
-                            time: new Date(dates[j]).getTime(),
-                            value: holdingSeries[j],
-                        };
-                    }
-                    interpolator = createTimeInterpolator(timePoints);
-                    layout.percentInterpolators[holding.key] = interpolator;
-                }
-                percentValue = interpolator(time) ?? 0;
-            } else {
-                percentValue = totalValueBase > 0 ? (holding.value / totalValueBase) * 100 : 0;
-            }
-
-            const currencyText = formatCurrencyInline(absoluteValue);
-            const percentText = `${percentValue.toFixed(2)}%`;
-
-            allEnhancedHoldings[i] = {
-                ...holding,
-                percent: percentValue,
-                absoluteValue,
-                formatted: isAbsoluteMode ? `${currencyText} (${percentText})` : holding.formatted,
-                formattedPercent: percentText,
-                formattedValue: currencyText,
-            };
+function processCompositionDots(ctx, layout, time, x, visibleKeys) {
+    let stackValue = 0;
+    for (let i = 0; i < layout.series.length; i++) {
+        const series = layout.series[i];
+        const value = series.getValueAtTime ? series.getValueAtTime(time) : 0;
+        if (!Number.isFinite(value)) {
+            continue;
         }
 
-        // Top 7 for display in snapshot panel and dots
-        const limit = Math.min(allEnhancedHoldings.length, 7);
-        const enhancedHoldings = new Array(limit);
-        const visibleKeys = new Set();
+        stackValue += value;
 
-        // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
-        for (let i = 0; i < limit; i++) {
-            const enhanced = allEnhancedHoldings[i];
-            enhancedHoldings[i] = enhanced;
-            seriesSnapshot.push(enhanced);
-            visibleKeys.add(enhanced.key);
+        if (!visibleKeys.has(series.key)) {
+            continue;
+        }
+        if (Math.abs(value) < 0.1) {
+            continue;
         }
 
-        // Draw dots for composition chart (stacked)
-        if (hasHover && typeof layout.yScale === 'function') {
-            let stackValue = 0;
-
-            for (let i = 0; i < layout.series.length; i++) {
-                const series = layout.series[i];
-                const value = series.getValueAtTime ? series.getValueAtTime(time) : 0;
-                if (!Number.isFinite(value)) {
-                    continue;
-                }
-
-                stackValue += value;
-
-                // Only draw dot if it's one of the top holdings shown in the panel
-                if (!visibleKeys.has(series.key)) {
-                    continue;
-                }
-
-                // Only draw dot if value is significant enough to be visible as a layer
-                if (Math.abs(value) < 0.1) {
-                    continue;
-                }
-
-                const y = layout.yScale(stackValue);
-                if (Number.isFinite(y)) {
-                    ctx.beginPath();
-                    ctx.fillStyle = series.color || '#ffffff';
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-                    ctx.lineWidth = 1.5;
-                    ctx.arc(x, y, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                }
-            }
-        }
-
-        if (hasHover && allEnhancedHoldings.length > 0) {
-            const hoveredHolding = findHoveredHolding(
-                layout,
-                time,
-                crosshairState.hoverY,
-                allEnhancedHoldings
-            );
-            drawCompositionHoverPanel(ctx, layout, x, crosshairState.hoverY, time, hoveredHolding);
-        }
-    } else {
-        for (let i = 0; i < layout.series.length; i++) {
-            const series = layout.series[i];
-            if (typeof series.getValueAtTime !== 'function') {
-                continue;
-            }
-            const value = series.getValueAtTime(time);
-            if (value === null || value === undefined) {
-                continue;
-            }
-
-            const isBuySellBar = series.key === 'buyVolume' || series.key === 'sellVolume';
-
-            seriesSnapshot.push({
-                key: series.key,
-                label: series.label || series.key,
-                color: series.color || '#ffffff',
-                value,
-                formatted: series.formatValue
-                    ? series.formatValue(value, time)
-                    : layout.valueType === 'percent' || layout.valueType === 'fx'
-                      ? formatPercentInline(value)
-                      : formatCurrencyInline(value),
-                isBuySellBar,
-            });
-
-            if (
-                hasHover &&
-                !isBuySellBar &&
-                (typeof series.yScale === 'function' || typeof layout.yScale === 'function')
-            ) {
-                const yScale = typeof series.yScale === 'function' ? series.yScale : layout.yScale;
-                const y = yScale(value);
-                if (Number.isFinite(y)) {
-                    ctx.beginPath();
-                    ctx.fillStyle = series.color || '#ffffff';
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-                    ctx.lineWidth = 1.5;
-                    ctx.arc(x, y, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                }
-            }
+        const y = layout.yScale(stackValue);
+        if (Number.isFinite(y)) {
+            ctx.beginPath();
+            ctx.fillStyle = series.color || '#ffffff';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.lineWidth = 1.5;
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
         }
     }
+}
 
-    // Sort snapshot for display
-    sortCrosshairSnapshot(seriesSnapshot);
+function getCompositionValuesAtTime(layout, time, isAbsoluteMode) {
+    const valuesAtTime = [];
+    for (let i = 0; i < layout.series.length; i++) {
+        const series = layout.series[i];
+        if (typeof series.getValueAtTime !== 'function') {
+            continue;
+        }
+        const value = series.getValueAtTime(time);
+        if (value === null || value === undefined) {
+            continue;
+        }
 
-    const dateLabel = formatCrosshairDateLabel(time);
+        valuesAtTime.push({
+            key: series.key,
+            label: series.label || series.key,
+            color: series.color || '#ffffff',
+            value,
+            percent: isAbsoluteMode ? 0 : value,
+            formatted: series.formatValue
+                ? series.formatValue(value, time)
+                : layout.valueType === 'percent' || layout.valueType === 'fx'
+                  ? formatPercentInline(value)
+                  : formatCurrencyInline(value),
+        });
+    }
+    return valuesAtTime;
+}
 
-    // Build range summary if range is selected
+function processCompositionCrosshair(ctx, layout, time, x, hasHover, seriesSnapshot) {
+    const crosshairDate = new Date(time);
+    const selectedCurrency = layout.currency || transactionState.selectedCurrency || 'USD';
+    const isAbsoluteMode = layout.valueMode === 'absolute';
+
+    const valuesAtTime = getCompositionValuesAtTime(layout, time, isAbsoluteMode);
+
+    const nonZeroHoldings = valuesAtTime.filter((item) => item.value > 0.01);
+    nonZeroHoldings.sort((a, b) => b.value - a.value);
+
+    const totalValueRaw =
+        typeof layout.getTotalValueAtTime === 'function'
+            ? layout.getTotalValueAtTime(time)
+            : null;
+    const totalValueBase = Number.isFinite(totalValueRaw) ? totalValueRaw : 0;
+
+    const allEnhancedHoldings = enhanceCompositionHoldings(
+        layout,
+        nonZeroHoldings,
+        isAbsoluteMode,
+        totalValueBase,
+        crosshairDate,
+        selectedCurrency,
+        time
+    );
+
+    const limit = Math.min(allEnhancedHoldings.length, 7);
+    const visibleKeys = new Set();
+    for (let i = 0; i < limit; i++) {
+        const enhanced = allEnhancedHoldings[i];
+        seriesSnapshot.push(enhanced);
+        visibleKeys.add(enhanced.key);
+    }
+
+    if (hasHover && typeof layout.yScale === 'function') {
+        processCompositionDots(ctx, layout, time, x, visibleKeys);
+    }
+
+    if (hasHover && allEnhancedHoldings.length > 0) {
+        const hoveredHolding = findHoveredHolding(
+            layout,
+            time,
+            crosshairState.hoverY,
+            allEnhancedHoldings
+        );
+        drawCompositionHoverPanel(ctx, layout, x, crosshairState.hoverY, time, hoveredHolding);
+    }
+}
+
+function processStandardCrosshairPoint(ctx, series, layout, value, x) {
+    const yScale = typeof series.yScale === 'function' ? series.yScale : layout.yScale;
+    const y = yScale(value);
+    if (Number.isFinite(y)) {
+        ctx.beginPath();
+        ctx.fillStyle = series.color || '#ffffff';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.lineWidth = 1.5;
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function processStandardCrosshair(ctx, layout, time, x, hasHover, seriesSnapshot) {
+    for (let i = 0; i < layout.series.length; i++) {
+        const series = layout.series[i];
+        if (typeof series.getValueAtTime !== 'function') {
+            continue;
+        }
+        const value = series.getValueAtTime(time);
+        if (value === null || value === undefined) {
+            continue;
+        }
+
+        const isBuySellBar = series.key === 'buyVolume' || series.key === 'sellVolume';
+
+        seriesSnapshot.push({
+            key: series.key,
+            label: series.label || series.key,
+            color: series.color || '#ffffff',
+            value,
+            formatted: series.formatValue
+                ? series.formatValue(value, time)
+                : layout.valueType === 'percent' || layout.valueType === 'fx'
+                  ? formatPercentInline(value)
+                  : formatCurrencyInline(value),
+            isBuySellBar,
+        });
+
+        if (
+            hasHover &&
+            !isBuySellBar &&
+            (typeof series.yScale === 'function' || typeof layout.yScale === 'function')
+        ) {
+            processStandardCrosshairPoint(ctx, series, layout, value, x);
+        }
+    }
+}
+
+function isCompositionLayoutType(key) {
+    return (
+        key === 'composition' ||
+        key === 'compositionAbs' ||
+        key === 'sectors' ||
+        key === 'sectorsAbs' ||
+        key === 'geography' ||
+        key === 'geographyAbs' ||
+        key === 'marketcap' ||
+        key === 'marketcapAbs'
+    );
+}
+
+function handleCrosshairRange(ctx, layout) {
+    const startTime = clampTime(
+        Math.min(crosshairState.rangeStart, crosshairState.rangeEnd),
+        layout.minTime,
+        layout.maxTime
+    );
+    const endTime = clampTime(
+        Math.max(crosshairState.rangeStart, crosshairState.rangeEnd),
+        layout.minTime,
+        layout.maxTime
+    );
+    drawCrosshairRangeBackground(ctx, layout, layout.xScale(startTime), layout.xScale(endTime));
+
+    return buildRangeSummary(
+        layout,
+        crosshairState.rangeStart,
+        crosshairState.rangeEnd
+    );
+}
+
+function validateAndGetCrosshairReference(layout) {
+    if (!layout || (!crosshairState.active && !Number.isFinite(crosshairState.rangeStart))) {
+        return null;
+    }
+
+    const hasHover = crosshairState.active && Number.isFinite(crosshairState.hoverTime);
+    const hasRange = Number.isFinite(crosshairState.rangeStart) && Number.isFinite(crosshairState.rangeEnd);
+
+    if (!hasHover && !hasRange) {
+        return null;
+    }
+
+    const referenceTime = hasHover
+        ? crosshairState.hoverTime
+        : (crosshairState.rangeEnd ?? crosshairState.rangeStart);
+
+    if (!Number.isFinite(referenceTime)) {
+        return null;
+    }
+
+    const time = clampTime(referenceTime, layout.minTime, layout.maxTime);
+    const x = layout.xScale(time);
+    if (!Number.isFinite(x) || x < layout.chartBounds.left || x > layout.chartBounds.right) {
+        return null;
+    }
+
+    return { hasHover, hasRange, time, x };
+}
+
+export function drawCrosshairOverlay(ctx, layout) {
+    const refs = validateAndGetCrosshairReference(layout);
+    if (!refs) {
+        updateCrosshairUI(null, null);
+        return;
+    }
+    const { hasHover, hasRange, time, x } = refs;
+
     let rangeSummary = null;
     if (hasRange) {
-        rangeSummary = buildRangeSummary(
-            layout,
-            crosshairState.rangeStart,
-            crosshairState.rangeEnd
-        );
+        rangeSummary = handleCrosshairRange(ctx, layout);
     }
 
-    updateCrosshairUI(
-        {
-            time,
-            dateLabel,
-            series: seriesSnapshot,
-            chartKey: layout.key,
-        },
-        rangeSummary
-    );
+    drawCrosshairLine(ctx, layout, x);
+
+    const seriesSnapshot = [];
+    if (isCompositionLayoutType(layout.key)) {
+        processCompositionCrosshair(ctx, layout, time, x, hasHover, seriesSnapshot);
+    } else {
+        processStandardCrosshair(ctx, layout, time, x, hasHover, seriesSnapshot);
+    }
+
+    sortCrosshairSnapshot(seriesSnapshot);
+
+    updateCrosshairUI({
+        time,
+        dateLabel: formatCrosshairDateLabel(time),
+        series: seriesSnapshot,
+        chartKey: layout.key,
+    }, rangeSummary);
 }
 
 export function buildRangeSummary(layout, rawStart, rawEnd) {
