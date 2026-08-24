@@ -343,6 +343,42 @@ function startThinkingGroup(nodes, options) {
     }
 }
 
+function resetThinkingNodeAttributes(state) {
+    state.node.textContent = state.baseText || '';
+    if (state.baseFillAttr !== null && state.baseFillAttr !== undefined) {
+        state.node.setAttribute('fill', state.baseFillAttr);
+    } else {
+        state.node.removeAttribute('fill');
+    }
+}
+
+function resetThinkingNodeStyles(state) {
+    if (!state.node.style) {
+        return;
+    }
+    if (state.baseStyleFill !== undefined) {
+        state.node.style.fill = state.baseStyleFill;
+    } else {
+        state.node.style.fill = '';
+    }
+    if (state.baseStyleColor !== undefined) {
+        state.node.style.color = state.baseStyleColor;
+    } else if (!state.baseFillAttr) {
+        // Only clear color if there's no SVG fill attribute
+        state.node.style.color = '';
+    }
+}
+
+function stopThinkingState(state) {
+    if (!state || !state.node) {
+        return;
+    }
+    resetThinkingNodeAttributes(state);
+    resetThinkingNodeStyles(state);
+    state.node.removeAttribute('data-thinking-active');
+    THINKING_REGISTRY.delete(state.node);
+}
+
 function stopThinking(node) {
     const entry = THINKING_REGISTRY.get(node);
     if (!entry) {
@@ -364,31 +400,7 @@ function stopThinking(node) {
     ];
 
     for (let i = 0; i < states.length; i++) {
-        const state = states[i];
-        if (!state || !state.node) {
-            continue;
-        }
-        state.node.textContent = state.baseText || '';
-        if (state.baseFillAttr !== null && state.baseFillAttr !== undefined) {
-            state.node.setAttribute('fill', state.baseFillAttr);
-        } else {
-            state.node.removeAttribute('fill');
-        }
-        if (state.node.style) {
-            if (state.baseStyleFill !== undefined) {
-                state.node.style.fill = state.baseStyleFill;
-            } else {
-                state.node.style.fill = '';
-            }
-            if (state.baseStyleColor !== undefined) {
-                state.node.style.color = state.baseStyleColor;
-            } else if (!state.baseFillAttr) {
-                // Only clear color if there's no SVG fill attribute
-                state.node.style.color = '';
-            }
-        }
-        state.node.removeAttribute('data-thinking-active');
-        THINKING_REGISTRY.delete(state.node);
+        stopThinkingState(states[i]);
     }
 }
 
