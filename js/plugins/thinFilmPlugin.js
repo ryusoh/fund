@@ -530,6 +530,171 @@ function syncSize(state, chartCanvas) {
     }
 }
 
+function getRenderIndex(isHovered, hoveredIndex, lastHoveredIndex, meta) {
+    let renderIndex = isHovered ? hoveredIndex : lastHoveredIndex;
+    if (renderIndex === undefined || !meta.data[renderIndex]) {
+        renderIndex = 0;
+    }
+    return renderIndex;
+}
+
+function processHoverState(chart, state, meta) {
+    const hoveredIndex = chart.hoveredSliceIndex;
+    const isHovered = hoveredIndex !== undefined && meta.data[hoveredIndex];
+    const targetOpacity = isHovered ? 0.55 : 0.0;
+
+    if (state.currentOpacity === undefined) {
+        state.currentOpacity = 0.0;
+        state.currentMid = 0;
+        state.currentSpan = 0;
+        state.wasHovered = false;
+    }
+
+    return { hoveredIndex, isHovered, targetOpacity };
+}
+
+function updateStateOpacityAndAngles(state, isHovered, dt, targetOpacity, targetMid, targetSpan) {
+    const factor = 1.0 - Math.exp(-dt * 15.0);
+    const opacityFactor = 1.0 - Math.exp(-dt * 10.0);
+
+    state.currentOpacity += (targetOpacity - state.currentOpacity) * opacityFactor;
+
+    if (state.currentOpacity < 0.005 && targetOpacity === 0) {
+        state.currentOpacity = 0;
+        return { isCleared: true, diff: 0 };
+    }
+
+    let diff = 0;
+    if (isHovered) {
+        if (state.currentOpacity < 0.01 && !state.wasHovered) {
+            state.currentMid = targetMid;
+            state.currentSpan = targetSpan;
+            state.smoothedVelocity = 0;
+        } else {
+            diff = targetMid - state.currentMid;
+            diff = ((((diff + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
+
+            state.currentMid += diff * factor;
+            state.currentSpan += (targetSpan - state.currentSpan) * factor;
+        }
+    }
+    return { isCleared: false, diff };
+}
+
+function calculateSmoothedVelocity(state, diff, dt, targetOpacity) {
+    const opacityVelocity = (targetOpacity - state.currentOpacity) * 15.0;
+    const currentVelocity = diff / Math.max(dt, 0.001) + opacityVelocity;
+    state.smoothedVelocity = state.smoothedVelocity || 0;
+    state.smoothedVelocity +=
+        (currentVelocity - state.smoothedVelocity) * (1.0 - Math.exp(-dt * 8.0));
+}
+
+function bindUniforms(
+    gl,
+    program,
+    uniforms,
+    props,
+    state,
+    renderStartAngle,
+    renderEndAngle,
+    pointerX,
+    pointerY
+) {
+    const dpr = window.devicePixelRatio || 1;
+    const overlay = state.overlay;
+
+    gl.useProgram(program);
+
+    gl.uniform2f(uniforms.u_center, props.x * dpr, props.y * dpr);
+    gl.uniform1f(uniforms.u_innerRadius, props.innerRadius * dpr);
+    gl.uniform1f(uniforms.u_outerRadius, props.outerRadius * dpr);
+    gl.uniform1f(uniforms.u_startAngle, renderStartAngle);
+    gl.uniform1f(uniforms.u_endAngle, renderEndAngle);
+    gl.uniform2f(uniforms.u_resolution, overlay.width, overlay.height);
+
+    const elapsed = (window.performance.now() - state.startTime) / 1000;
+    gl.uniform1f(uniforms.u_time, elapsed);
+    gl.uniform1f(uniforms.u_filmThicknessBase, 400.0);
+    gl.uniform1f(uniforms.u_filmThicknessRange, 300.0);
+    gl.uniform2f(uniforms.u_pointer, pointerX, pointerY);
+    gl.uniform1f(uniforms.u_refractiveIndex, 1.4);
+    gl.uniform1f(uniforms.u_opacity, state.currentOpacity);
+
+    const midRadius = (props.innerRadius + props.outerRadius) / 2;
+    const beamX = (props.x + Math.cos(state.currentMid) * midRadius) * dpr;
+    const beamY = (props.y + Math.sin(state.currentMid) * midRadius) * dpr;
+    const band = (props.outerRadius - props.innerRadius) * dpr;
+    gl.uniform2f(uniforms.u_beamCenter, beamX, beamY);
+    gl.uniform1f(uniforms.u_beamRadius, band * 1.2);
+    gl.uniform1f(uniforms.u_beamIntensity, 1.0);
+}
+
+function getElectricConfig(chart) {
+    const electricCfg = chart.options?.plugins?.glass3dPlugin?.electric || {};
+    return {
+        arcCount: electricCfg.arcCount ?? 3,
+        speedMul: electricCfg.streakSpeedMultiplier ?? 1,
+        trailWidth: (electricCfg.width ?? 0.22) * Math.PI * 2 * 0.75,
+    };
+}
+
+function getReflectionConfig(chart) {
+    const reflectionCfg = chart.options?.plugins?.glass3dPlugin?.reflection || {};
+    return {
+        reflWidth: reflectionCfg.width ?? 0.2,
+    };
+}
+
+function getGlassStateVariables(chart) {
+    const glassState = chart.$glass3d;
+    const continuousPhase = glassState ? glassState.continuousPhase || 0 : 0;
+
+    const { arcCount, speedMul, trailWidth } = getElectricConfig(chart);
+    const { reflWidth } = getReflectionConfig(chart);
+
+    const reflPhase = glassState ? glassState.phase || 0 : 0;
+    const reflStart = reflPhase * Math.PI * 2;
+    const reflSpan = reflWidth * Math.PI * 2;
+
+    return {
+        continuousPhase,
+        arcCount,
+        speedMul,
+        trailWidth,
+        reflStart,
+        reflSpan,
+    };
+}
+
+function calculateTrailAngles(continuousPhase, arcCount, speedMul, trailWidth) {
+    const trailAngles = [];
+    for (let i = 0; i < 3; i++) {
+        if (i < arcCount) {
+            const localPhase = continuousPhase * speedMul + (i / arcCount) * 0.65;
+            const arcStart = localPhase * Math.PI * 2;
+            const headAngle = (arcStart + trailWidth) % (Math.PI * 2);
+            trailAngles.push(headAngle);
+        } else {
+            trailAngles.push(-100);
+        }
+    }
+    return trailAngles;
+}
+
+function bindGlassUniforms(gl, uniforms, chart, state) {
+    const { continuousPhase, arcCount, speedMul, trailWidth, reflStart, reflSpan } =
+        getGlassStateVariables(chart);
+
+    const trailAngles = calculateTrailAngles(continuousPhase, arcCount, speedMul, trailWidth);
+
+    gl.uniform3f(uniforms.u_trailAngles, trailAngles[0], trailAngles[1], trailAngles[2]);
+    gl.uniform1f(uniforms.u_trailWidth, trailWidth);
+    gl.uniform1f(uniforms.u_suctionVelocity, state.smoothedVelocity || 0.0);
+
+    gl.uniform1f(uniforms.u_reflStart, reflStart);
+    gl.uniform1f(uniforms.u_reflSpan, reflSpan);
+}
+
 export const thinFilmPlugin = {
     id: 'thinFilmPlugin',
 
@@ -551,35 +716,9 @@ export const thinFilmPlugin = {
         const dt = Math.min((now - (state.lastFrameTime || now)) / 1000, 0.1);
         state.lastFrameTime = now;
 
-        const hoveredIndex = chart.hoveredSliceIndex;
-        const isHovered = hoveredIndex !== undefined && meta.data[hoveredIndex];
-        const targetOpacity = isHovered ? 0.55 : 0.0;
+        const { hoveredIndex, isHovered, targetOpacity } = processHoverState(chart, state, meta);
 
-        if (state.currentOpacity === undefined) {
-            state.currentOpacity = 0.0;
-            state.currentMid = 0;
-            state.currentSpan = 0;
-            state.wasHovered = false;
-        }
-
-        const factor = 1.0 - Math.exp(-dt * 15.0);
-        const opacityFactor = 1.0 - Math.exp(-dt * 10.0);
-
-        state.currentOpacity += (targetOpacity - state.currentOpacity) * opacityFactor;
-
-        if (state.currentOpacity < 0.005 && targetOpacity === 0) {
-            state.currentOpacity = 0;
-            const { gl, overlay } = state;
-            gl.viewport(0, 0, overlay.width, overlay.height);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            state.wasHovered = false;
-            return;
-        }
-
-        let renderIndex = isHovered ? hoveredIndex : state.lastHoveredIndex;
-        if (renderIndex === undefined || !meta.data[renderIndex]) {
-            renderIndex = 0;
-        }
+        const renderIndex = getRenderIndex(isHovered, hoveredIndex, state.lastHoveredIndex, meta);
         state.lastHoveredIndex = renderIndex;
 
         const arc = meta.data[renderIndex];
@@ -588,35 +727,27 @@ export const thinFilmPlugin = {
             true
         );
 
-        let diff = 0;
-        if (isHovered) {
-            const targetMid = (props.startAngle + props.endAngle) / 2;
-            const targetSpan = props.endAngle - props.startAngle;
+        const targetMid = (props.startAngle + props.endAngle) / 2;
+        const targetSpan = props.endAngle - props.startAngle;
 
-            if (state.currentOpacity < 0.01 && !state.wasHovered) {
-                // Snap to target if appearing from nothing
-                state.currentMid = targetMid;
-                state.currentSpan = targetSpan;
-                state.smoothedVelocity = 0;
-            } else {
-                diff = targetMid - state.currentMid;
-                diff =
-                    ((((diff + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
+        const { isCleared, diff } = updateStateOpacityAndAngles(
+            state,
+            isHovered,
+            dt,
+            targetOpacity,
+            targetMid,
+            targetSpan
+        );
 
-                state.currentMid += diff * factor;
-                state.currentSpan += (targetSpan - state.currentSpan) * factor;
-            }
+        if (isCleared) {
+            const { gl, overlay } = state;
+            gl.viewport(0, 0, overlay.width, overlay.height);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            state.wasHovered = false;
+            return;
         }
 
-        // Artificial velocity from opacity changes (surge when hovering in/out)
-        const opacityVelocity = (targetOpacity - state.currentOpacity) * 15.0;
-
-        // Track combined transition velocity for physical fluid suction effect
-        const currentVelocity = diff / Math.max(dt, 0.001) + opacityVelocity;
-        state.smoothedVelocity = state.smoothedVelocity || 0;
-        state.smoothedVelocity +=
-            (currentVelocity - state.smoothedVelocity) * (1.0 - Math.exp(-dt * 8.0));
-
+        calculateSmoothedVelocity(state, diff, dt, targetOpacity);
         state.wasHovered = isHovered;
 
         const renderStartAngle = state.currentMid - state.currentSpan / 2;
@@ -627,7 +758,6 @@ export const thinFilmPlugin = {
         const { gl, program, uniforms, overlay } = state;
         const dpr = window.devicePixelRatio || 1;
 
-        // Pointer position (in physical pixels, top-left origin like Canvas 2D)
         const cursor = chart._cursorPos;
         const pointerX = cursor ? cursor.x * dpr : props.x * dpr;
         const pointerY = cursor ? cursor.y * dpr : props.y * dpr;
@@ -638,65 +768,18 @@ export const thinFilmPlugin = {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-        gl.useProgram(program);
-
-        // All coordinates in physical pixels (top-left origin)
-        gl.uniform2f(uniforms.u_center, props.x * dpr, props.y * dpr);
-        gl.uniform1f(uniforms.u_innerRadius, props.innerRadius * dpr);
-        gl.uniform1f(uniforms.u_outerRadius, props.outerRadius * dpr);
-        gl.uniform1f(uniforms.u_startAngle, renderStartAngle);
-        gl.uniform1f(uniforms.u_endAngle, renderEndAngle);
-        gl.uniform2f(uniforms.u_resolution, overlay.width, overlay.height);
-
-        const elapsed = (window.performance.now() - state.startTime) / 1000;
-        gl.uniform1f(uniforms.u_time, elapsed);
-        gl.uniform1f(uniforms.u_filmThicknessBase, 400.0);
-        gl.uniform1f(uniforms.u_filmThicknessRange, 300.0);
-        gl.uniform2f(uniforms.u_pointer, pointerX, pointerY);
-        gl.uniform1f(uniforms.u_refractiveIndex, 1.4);
-        gl.uniform1f(uniforms.u_opacity, state.currentOpacity);
-
-        // Spotlight beam: centered on the smoothed midpoint
-        const midRadius = (props.innerRadius + props.outerRadius) / 2;
-        const beamX = (props.x + Math.cos(state.currentMid) * midRadius) * dpr;
-        const beamY = (props.y + Math.sin(state.currentMid) * midRadius) * dpr;
-        const band = (props.outerRadius - props.innerRadius) * dpr;
-        gl.uniform2f(uniforms.u_beamCenter, beamX, beamY);
-        gl.uniform1f(uniforms.u_beamRadius, band * 1.2);
-        gl.uniform1f(uniforms.u_beamIntensity, 1.0);
-
-        // Electric trail positions from glass3dPlugin state
-        const glassState = chart.$glass3d;
-        const continuousPhase = glassState ? glassState.continuousPhase || 0 : 0;
-        const electricCfg = chart.options?.plugins?.glass3dPlugin?.electric || {};
-        const arcCount = electricCfg.arcCount ?? 3;
-        const speedMul = electricCfg.streakSpeedMultiplier ?? 1;
-        const trailWidthFactor = electricCfg.width ?? 0.22;
-        const trailWidth = trailWidthFactor * Math.PI * 2 * 0.75;
-        const trailAngles = [];
-        for (let i = 0; i < 3; i++) {
-            if (i < arcCount) {
-                const localPhase = continuousPhase * speedMul + (i / arcCount) * 0.65;
-                const arcStart = localPhase * Math.PI * 2;
-                // Head is at arcStart + arcSpan (t=1 in drawElectricTrail)
-                const headAngle = (arcStart + trailWidth) % (Math.PI * 2);
-                trailAngles.push(headAngle);
-            } else {
-                trailAngles.push(-100);
-            }
-        }
-        gl.uniform3f(uniforms.u_trailAngles, trailAngles[0], trailAngles[1], trailAngles[2]);
-        gl.uniform1f(uniforms.u_trailWidth, trailWidth);
-        gl.uniform1f(uniforms.u_suctionVelocity, state.smoothedVelocity || 0.0);
-
-        // Reflection band from glass3dPlugin state
-        const reflectionCfg = chart.options?.plugins?.glass3dPlugin?.reflection || {};
-        const reflWidth = reflectionCfg.width ?? 0.2;
-        const reflPhase = glassState ? glassState.phase || 0 : 0;
-        const reflStart = reflPhase * Math.PI * 2;
-        const reflSpan = reflWidth * Math.PI * 2;
-        gl.uniform1f(uniforms.u_reflStart, reflStart);
-        gl.uniform1f(uniforms.u_reflSpan, reflSpan);
+        bindUniforms(
+            gl,
+            program,
+            uniforms,
+            props,
+            state,
+            renderStartAngle,
+            renderEndAngle,
+            pointerX,
+            pointerY
+        );
+        bindGlassUniforms(gl, uniforms, chart, state);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
