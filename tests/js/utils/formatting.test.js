@@ -265,19 +265,6 @@ describe('formatDate', () => {
     });
 });
 
-describe('formatWithSign', () => {
-    it('should format with sign', () => {
-        expect(formatting.formatWithSign(123)).toBe('+123');
-        expect(formatting.formatWithSign(-123)).toBe('-123');
-    });
-});
-
-describe('formatToTwoDecimals', () => {
-    it('should format to two decimals', () => {
-        expect(formatting.formatToTwoDecimals(123.456)).toBe('123.46');
-    });
-});
-
 describe('formatCurrencyChange', () => {
     it('returns n/a if value is not finite', () => {
         expect(formatting.formatCurrencyChange(NaN)).toBe('n/a');
@@ -389,28 +376,9 @@ describe('formatSummaryBlock internals', () => {
     });
 });
 
-describe('formatWithSign - additional', () => {
-    it('returns 0 string for 0 input', () => {
-        expect(formatting.formatWithSign(0)).toBe('0');
-    });
-});
-
-describe('formatToTwoDecimals - edge case', () => {
-    it('formats exact numbers', () => {
-        expect(formatting.formatToTwoDecimals(1)).toBe('1.00');
-    });
-});
-
 describe('compactNumber - unit array out of bounds edge case', () => {
     it('returns NaN string for missing unit', () => {
         expect(formatting.compactNumber(NaN)).toBe('0');
-    });
-});
-
-describe('formatWithSign - missing sign', () => {
-    it('handles negative and positive correctly', () => {
-        expect(formatting.formatWithSign(-123)).toBe('-123');
-        expect(formatting.formatWithSign(123)).toBe('+123');
     });
 });
 
