@@ -9,11 +9,6 @@
             "count": 1
         }
     },
-    "js/plugins/thinFilmPlugin.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/plugins/waveAnimationPlugin.js": {
         "complexity": {
             "count": 1
