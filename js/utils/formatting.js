@@ -360,22 +360,6 @@ export function formatDate(date) {
  * @param {number} num The number to format.
  * @returns {string} The formatted number string with a sign.
  */
-export function formatWithSign(num) {
-    if (num > 0) {
-        return '+' + num;
-    }
-    return num.toString();
-}
-
-/**
- * Formats a number to two decimal places.
- * @param {number} num The number to format.
- * @returns {string} The formatted number string.
- */
-export function formatToTwoDecimals(num) {
-    return num.toFixed(2);
-}
-
 /**
  * @param {unknown} value
  * @returns {string}
