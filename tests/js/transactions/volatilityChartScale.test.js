@@ -54,6 +54,7 @@ describe('Volatility Chart Scaling', () => {
                         createLinearGradient: jest.fn(() => gradientStub),
                         fill: jest.fn(),
                         fillRect: jest.fn(),
+                        clearRect: jest.fn(),
                         globalCompositeOperation: '',
                     })),
                 };

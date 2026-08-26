@@ -590,9 +590,16 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
         return;
     }
 
-    // Resizing the canvas implicitly clears it for the new frame
-    offscreen.width = width;
-    offscreen.height = height;
+    // Resizing the canvas implicitly clears it for the new frame; when the
+    // size is unchanged, clear it explicitly instead of reallocating the
+    // backing store.
+    if (offscreen.width !== width) {
+        offscreen.width = width;
+    }
+    if (offscreen.height !== height) {
+        offscreen.height = height;
+    }
+    offCtx.clearRect(0, 0, width, height);
 
     offCtx.beginPath();
     offCtx.moveTo(areaCoords[0].x - bounds.left, areaCoords[0].y - bounds.top);
