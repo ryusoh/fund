@@ -210,20 +210,20 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     const filterToTime =
         filterTo && Number.isFinite(filterTo.getTime()) ? filterTo.getTime() : null;
 
+    const filterFromStr = filterFrom ? toLocalIsoDate(filterFrom) : null;
+    const filterToStr = filterTo ? toLocalIsoDate(filterTo) : null;
+
     const filterDataByDateRange = (data) => {
         return data.filter((item) => {
-            const itemDate = parseLocalDate(item.date);
+            const itemDate = item.date instanceof Date ? item.date : parseLocalDate(item.date);
             if (!itemDate) {
                 return false;
             }
 
-            // Normalize dates to date-only strings for comparison (YYYY-MM-DD).
-            // All three are parseLocalDate results (local midnight), so format
-            // with local components — toISOString() shifts them all to the
-            // previous day in UTC+ timezones.
+            // All three are local-midnight Dates, so format with local
+            // components — toISOString() shifts them to the previous day in
+            // UTC+ timezones.
             const itemDateStr = toLocalIsoDate(itemDate);
-            const filterFromStr = filterFrom ? toLocalIsoDate(filterFrom) : null;
-            const filterToStr = filterTo ? toLocalIsoDate(filterTo) : null;
 
             // Check if item is within the filter range
             const withinStart = !filterFromStr || itemDateStr >= filterFromStr;
