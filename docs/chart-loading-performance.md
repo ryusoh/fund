@@ -172,9 +172,9 @@ the concentration renderer's separate cache
    cached points to pixels and draw. This one change subsumes findings 2, 3,
    5, and 6 in practice. Alternatively/adjacent: port the composition chart's
    static-bitmap layer (`renderers/composition.js:31-34`) to the contribution
-   chart, and/or stop the glow animation after a settle period instead of
-   running it forever (visual decision — needs human review, see
-   `docs/liquid-glass.md`-style caveats in AGENTS.md).
+   chart. Note: the perpetual glow animation is **intentional and stays
+   always-on** (decided by the repo owner) — optimizations must make each
+   frame cheaper, not reduce the frame count.
 2. **Binary-search interpolation in `computeAppreciationSeries`** — replace
    the linear scan (`data/contribution.js:515-527`) with the existing
    `createTimeInterpolator` or a two-pointer walk. ~3.9 ms → sub-ms per call;
@@ -212,7 +212,8 @@ scoped jest first, then `make precommit-fix`.
 Recommended order: 1 → 6 in any sequence (they touch disjoint code), then 7
 (the big restructure) last — items 1, 2, and 5 touch code that item 7
 restructures, so if 7 is scheduled soon, skip 1 and 5 and fold 2 into 7.
-Item 8 is a visual decision — human review, draft PR only.
+The glow animation is always-on by design (owner decision); no item may
+stop, throttle, or gate it — the goal is cheaper frames, not fewer frames.
 
 ### AI-1 — Binary-search interpolation in `computeAppreciationSeries`
 
@@ -325,19 +326,8 @@ Item 8 is a visual decision — human review, draft PR only.
   visual check via `make screenshot URL=/terminal/` — glow animation must
   still render.
 - **Expected:** the entire ~7 ms/frame JS compute load (findings 1, 2, 3, 5,
-  6) drops to ~0 on steady-state frames.
-
-### AI-8 — Stop or throttle the perpetual glow animation (VISUAL — draft PR)
-
-- **Files:** `js/plugins/glowTrailAnimator.js:248-285` (no stop condition),
-  `js/transactions/chart/animation.js:43-51`, config default
-  `js/config.js:80-82`.
-- **Change:** add a settle condition (e.g. stop rescheduling after N seconds
-  without state change) or reduce the redraw rate. **This changes an always-on
-  visual effect — open as draft, human visual review required** (AGENTS.md:
-  agents cannot judge visuals).
-- **Verify:** `npx jest tests/js/transactions/chart_animation.test.js`;
-  screenshot before/after for the human.
+  6) drops to ~0 on steady-state frames — the glow keeps animating at 60 fps,
+  but each frame only rescales and draws.
 
 ## Open questions / what I couldn't verify
 
@@ -346,9 +336,9 @@ Item 8 is a visual decision — human review, draft PR only.
   (polylines, `shadowBlur` glow, gradients, `drawImage` blits) is unmeasured.
   Confirm with a DevTools performance capture before prioritizing finding 7 or
   the glow's paint cost.
-- **Whether the perpetual glow animation is intentional** as an always-on
-  effect. It is config-enabled by default; throttling or stopping it is a
-  visual decision, not a correctness fix.
+- ~~Whether the perpetual glow animation is intentional~~ — **resolved: yes.
+  The glow stays always-on** (repo owner decision); all optimization items
+  must preserve the perpetual 60 fps animation and cut per-frame cost instead.
 - **Network-side latency of `plot composition`** (2.17 MB fetch + live-prices
   Worker + `fx_data.json` per command) depends on HTTP cache behavior after
   the F1 cache-busting removal (`docs/performance.md`); not re-measured here.
