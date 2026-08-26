@@ -57,6 +57,41 @@ function updateGlassPointer(chart, mouseX, mouseY, firstArc) {
     return false;
 }
 
+function _showTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, unhideAllRows) {
+    if (contentBlock) {
+        contentBlock.classList.remove('hidden');
+    }
+    if (tableElement) {
+        tableElement.classList.remove('hidden');
+    }
+    if (unhideAllRows) {
+        for (let i = 0; i < allDataRows.length; i++) {
+            allDataRows[i].classList.remove('hidden');
+        }
+    }
+    if (footerWrapperElement) {
+        footerWrapperElement.classList.remove('hidden');
+    }
+}
+
+function _hideTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, chart) {
+    if (contentBlock) {
+        contentBlock.classList.add('hidden');
+    }
+    if (tableElement) {
+        tableElement.classList.add('hidden');
+    }
+    for (let i = 0; i < allDataRows.length; i++) {
+        allDataRows[i].classList.add('hidden');
+    }
+    if (footerWrapperElement) {
+        footerWrapperElement.classList.add('hidden');
+    }
+    if (chart) {
+        chart.glassPointerTarget = { x: 0, y: 0 };
+    }
+}
+
 function setTableVisibilityState(isVisible, chart, unhideAllRows = false) {
     const tableElement = document.querySelector('table');
     const allDataRows = document.querySelectorAll('tbody tr[data-ticker]');
@@ -64,36 +99,9 @@ function setTableVisibilityState(isVisible, chart, unhideAllRows = false) {
     const contentBlock = document.querySelector('.content-block');
 
     if (isVisible) {
-        if (contentBlock) {
-            contentBlock.classList.remove('hidden');
-        }
-        if (tableElement) {
-            tableElement.classList.remove('hidden');
-        }
-        if (unhideAllRows) {
-            for (let i = 0; i < allDataRows.length; i++) {
-                allDataRows[i].classList.remove('hidden');
-            }
-        }
-        if (footerWrapperElement) {
-            footerWrapperElement.classList.remove('hidden');
-        }
+        _showTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, unhideAllRows);
     } else {
-        if (contentBlock) {
-            contentBlock.classList.add('hidden');
-        }
-        if (tableElement) {
-            tableElement.classList.add('hidden');
-        }
-        for (let i = 0; i < allDataRows.length; i++) {
-            allDataRows[i].classList.add('hidden');
-        }
-        if (footerWrapperElement) {
-            footerWrapperElement.classList.add('hidden');
-        }
-        if (chart) {
-            chart.glassPointerTarget = { x: 0, y: 0 };
-        }
+        _hideTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, chart);
     }
     checkAndToggleVerticalScroll();
 }
