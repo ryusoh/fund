@@ -1,45 +1,67 @@
 import { logger } from '@utils/logger.js';
+
+let sectorsSnapshotPromise = null;
+let geographySnapshotPromise = null;
+let marketcapSnapshotPromise = null;
+let compositionSnapshotPromise = null;
+
 export async function loadSectorsSnapshotData() {
-    try {
-        const response = await fetch('../data/output/figures/sectors.json');
-        if (!response.ok) {
-            logger.warn('figures/sectors.json not found');
-            return null;
-        }
-        return await response.json();
-    } catch (error) {
-        logger.warn('Failed to load sectors snapshot:', error);
-        return null;
+    if (!sectorsSnapshotPromise) {
+        sectorsSnapshotPromise = (async () => {
+            try {
+                const response = await fetch('../data/output/figures/sectors.json');
+                if (!response.ok) {
+                    logger.warn('figures/sectors.json not found');
+                    return null;
+                }
+                return await response.json();
+            } catch (error) {
+                logger.warn('Failed to load sectors snapshot:', error);
+                return null;
+            }
+        })();
     }
+    return sectorsSnapshotPromise;
 }
 
 export async function loadGeographySnapshotData() {
-    try {
-        const response = await fetch('../data/output/figures/geography.json');
-        if (!response.ok) {
-            logger.warn('figures/geography.json not found');
-            return null;
-        }
-        return await response.json();
-    } catch (error) {
-        logger.warn('Failed to load geography snapshot:', error);
-        return null;
+    if (!geographySnapshotPromise) {
+        geographySnapshotPromise = (async () => {
+            try {
+                const response = await fetch('../data/output/figures/geography.json');
+                if (!response.ok) {
+                    logger.warn('figures/geography.json not found');
+                    return null;
+                }
+                return await response.json();
+            } catch (error) {
+                logger.warn('Failed to load geography snapshot:', error);
+                return null;
+            }
+        })();
     }
+    return geographySnapshotPromise;
 }
 
 export async function loadMarketcapSnapshotData() {
-    try {
-        const response = await fetch('../data/output/figures/marketcap.json');
-        if (!response.ok) {
-            logger.warn('figures/marketcap.json not found');
-            return null;
-        }
-        return await response.json();
-    } catch (error) {
-        logger.warn('Failed to load market cap snapshot:', error);
-        return null;
+    if (!marketcapSnapshotPromise) {
+        marketcapSnapshotPromise = (async () => {
+            try {
+                const response = await fetch('../data/output/figures/marketcap.json');
+                if (!response.ok) {
+                    logger.warn('figures/marketcap.json not found');
+                    return null;
+                }
+                return await response.json();
+            } catch (error) {
+                logger.warn('Failed to load market cap snapshot:', error);
+                return null;
+            }
+        })();
     }
+    return marketcapSnapshotPromise;
 }
+
 import { parseCSV, clearSplitAdjustmentCache } from './calculations.js';
 import { parseCSVLine, clearFxRateCache } from './utils.js';
 
@@ -356,96 +378,108 @@ export async function loadFxDailyRates() {
 }
 
 export async function loadCompositionSnapshotData() {
-    try {
-        const [response, realtime] = await Promise.all([
-            fetch('../data/output/figures/composition.json'),
-            fetchRealTimeData().catch((error) => {
-                logger.warn('Data loading failed:', error);
-                return null;
-            }),
-        ]);
+    if (!compositionSnapshotPromise) {
+        compositionSnapshotPromise = (async () => {
+            try {
+                const [response, realtime] = await Promise.all([
+                    fetch('../data/output/figures/composition.json'),
+                    fetchRealTimeData().catch((error) => {
+                        logger.warn('Data loading failed:', error);
+                        return null;
+                    }),
+                ]);
 
-        if (!response.ok) {
-            logger.warn('figures/composition.json not found');
-            return null;
-        }
+                if (!response.ok) {
+                    logger.warn('figures/composition.json not found');
+                    return null;
+                }
 
-        const data = await response.json();
+                const data = await response.json();
 
-        // Merge real-time composition
-        if (realtime && realtime.composition && realtime.date) {
-            // Append date
-            if (data.dates) {
-                const lastDate = data.dates[data.dates.length - 1];
-                // Update if dates match (intraday) or append if new date
-                if (lastDate === realtime.date || lastDate < realtime.date) {
-                    // If dates match, remove the stale point first so we can append the fresh one
-                    // OR overwrite. Appending logic is simpler if we just pop the key arrays.
-                    // But data.composition is object of arrays.
-                    // Let's use an overwrite index strategy.
-                    let targetIndex = data.dates.length;
-                    if (lastDate === realtime.date) {
-                        targetIndex = data.dates.length - 1;
-                    } else {
-                        data.dates.push(realtime.date);
-                    }
-
-                    // Update/Append total balance
-                    if (Array.isArray(data.total_values) && Number.isFinite(realtime.balance)) {
-                        data.total_values[targetIndex] = realtime.balance;
-                    }
-
-                    // Merge composition values
-                    const composition = data.composition || data.series; // Support flexibility
-                    if (composition) {
-                        // Pre-compute real-time map for O(1) lookups
-                        const rtMap = new Map();
-                        const rtLen = realtime.composition.length;
-                        for (let i = 0; i < rtLen; i++) {
-                            const rtItem = realtime.composition[i];
-                            rtMap.set(normalizeTicker(rtItem.ticker), rtItem.percent);
-                        }
-
-                        // For each ticker in historical composition, update/add point
-                        const compKeys = Object.keys(composition);
-                        const compLen = compKeys.length;
-                        for (let i = 0; i < compLen; i++) {
-                            const ticker = compKeys[i];
-                            if (!Array.isArray(composition[ticker])) {
-                                continue;
+                // Merge real-time composition
+                if (realtime && realtime.composition && realtime.date) {
+                    // Append date
+                    if (data.dates) {
+                        const lastDate = data.dates[data.dates.length - 1];
+                        // Update if dates match (intraday) or append if new date
+                        if (lastDate === realtime.date || lastDate < realtime.date) {
+                            // If dates match, remove the stale point first so we can append the fresh one
+                            // OR overwrite. Appending logic is simpler if we just pop the key arrays.
+                            // But data.composition is object of arrays.
+                            // Let's use an overwrite index strategy.
+                            let targetIndex = data.dates.length;
+                            if (lastDate === realtime.date) {
+                                targetIndex = data.dates.length - 1;
+                            } else {
+                                data.dates.push(realtime.date);
                             }
-                            // Find real-time percent for this ticker
-                            const rtPercent = rtMap.has(ticker) ? rtMap.get(ticker) : 0;
-                            composition[ticker][targetIndex] = rtPercent;
-                        }
 
-                        // Add new tickers found in real-time but not history
-                        for (let i = 0; i < rtLen; i++) {
-                            const rtItem = realtime.composition[i];
-                            const normalizedTicker = normalizeTicker(rtItem.ticker);
-                            if (Math.abs(rtItem.percent) > 0.001) {
-                                // Only if significant
-                                if (!composition[normalizedTicker]) {
-                                    // Backfill with 0s up to targetIndex
-                                    composition[normalizedTicker] = new Array(targetIndex).fill(0);
-                                    composition[normalizedTicker][targetIndex] = rtItem.percent;
-                                } else {
-                                    // Ensure it has value at targetIndex (handled in loop above if key existed)
-                                    // If key didn't exist in composition before loop, it enters this block.
-                                    // If it partially existed but loop missed it? No, Object.keys covers existing.
-                                    // So this block is strictly for NEW keys.
-                                    composition[normalizedTicker][targetIndex] = rtItem.percent;
+                            // Update/Append total balance
+                            if (
+                                Array.isArray(data.total_values) &&
+                                Number.isFinite(realtime.balance)
+                            ) {
+                                data.total_values[targetIndex] = realtime.balance;
+                            }
+
+                            // Merge composition values
+                            const composition = data.composition || data.series; // Support flexibility
+                            if (composition) {
+                                // Pre-compute real-time map for O(1) lookups
+                                const rtMap = new Map();
+                                const rtLen = realtime.composition.length;
+                                for (let i = 0; i < rtLen; i++) {
+                                    const rtItem = realtime.composition[i];
+                                    rtMap.set(normalizeTicker(rtItem.ticker), rtItem.percent);
+                                }
+
+                                // For each ticker in historical composition, update/add point
+                                const compKeys = Object.keys(composition);
+                                const compLen = compKeys.length;
+                                for (let i = 0; i < compLen; i++) {
+                                    const ticker = compKeys[i];
+                                    if (!Array.isArray(composition[ticker])) {
+                                        continue;
+                                    }
+                                    // Find real-time percent for this ticker
+                                    const rtPercent = rtMap.has(ticker) ? rtMap.get(ticker) : 0;
+                                    composition[ticker][targetIndex] = rtPercent;
+                                }
+
+                                // Add new tickers found in real-time but not history
+                                for (let i = 0; i < rtLen; i++) {
+                                    const rtItem = realtime.composition[i];
+                                    const normalizedTicker = normalizeTicker(rtItem.ticker);
+                                    if (Math.abs(rtItem.percent) > 0.001) {
+                                        // Only if significant
+                                        if (!composition[normalizedTicker]) {
+                                            // Backfill with 0s up to targetIndex
+                                            composition[normalizedTicker] = new Array(
+                                                targetIndex
+                                            ).fill(0);
+                                            composition[normalizedTicker][targetIndex] =
+                                                rtItem.percent;
+                                        } else {
+                                            // Ensure it has value at targetIndex (handled in loop above if key existed)
+                                            // If key didn't exist in composition before loop, it enters this block.
+                                            // If it partially existed but loop missed it? No, Object.keys covers existing.
+                                            // So this block is strictly for NEW keys.
+                                            composition[normalizedTicker][targetIndex] =
+                                                rtItem.percent;
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
 
-        return data;
-    } catch (error) {
-        logger.warn('Failed to load composition snapshot:', error);
-        return null;
+                return data;
+            } catch (error) {
+                logger.warn('Failed to load composition snapshot:', error);
+                return null;
+            }
+        })();
     }
+    return compositionSnapshotPromise;
 }

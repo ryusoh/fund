@@ -73,6 +73,15 @@ describe('dataLoader basic history loaders', () => {
             expect(result).toBeNull();
         });
 
+        it('loadSectorsSnapshotData caches the result on repeated calls', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const first = await loadSectorsSnapshotData();
+            const second = await loadSectorsSnapshotData();
+            expect(second).toBe(first);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+
         it('loadGeographySnapshotData handles success', async () => {
             mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
             await loadModule();
@@ -88,6 +97,15 @@ describe('dataLoader basic history loaders', () => {
             expect(result).toBeNull();
         });
 
+        it('loadGeographySnapshotData caches the result on repeated calls', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const first = await loadGeographySnapshotData();
+            const second = await loadGeographySnapshotData();
+            expect(second).toBe(first);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+
         it('loadMarketcapSnapshotData handles success', async () => {
             mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
             await loadModule();
@@ -101,6 +119,14 @@ describe('dataLoader basic history loaders', () => {
             await loadModule();
             const result = await loadMarketcapSnapshotData();
             expect(result).toBeNull();
+        });
+        it('loadMarketcapSnapshotData caches the result on repeated calls', async () => {
+            mockFetch.mockResolvedValueOnce(createMockResponse({ some: 'data' }));
+            await loadModule();
+            const first = await loadMarketcapSnapshotData();
+            const second = await loadMarketcapSnapshotData();
+            expect(second).toBe(first);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -739,6 +765,26 @@ describe('dataLoader real-time integration', () => {
             // Verify composition percentages updated
             expect(result.composition.VT[1]).toBeCloseTo(92.3, 1);
             expect(result.composition.GOOG[1]).toBeCloseTo(7.7, 1);
+        });
+
+        it('loadCompositionSnapshotData caches the result on repeated calls', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        dates: ['2024-12-04'],
+                        composition: { VT: [100] },
+                    })
+                )
+                .mockRejectedValueOnce(new Error('Network error')); // For realtime fetch
+
+            await loadModule();
+            const first = await loadCompositionSnapshotData();
+            const second = await loadCompositionSnapshotData();
+            expect(second).toBe(first);
+            const compositionCalls = mockFetch.mock.calls.filter((c) =>
+                String(c[0]).includes('figures/composition.json')
+            );
+            expect(compositionCalls).toHaveLength(1);
         });
     });
 });
