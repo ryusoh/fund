@@ -45,7 +45,7 @@ inferred, not measured.
    `loadCompositionSnapshotData()` (`js/transactions/dataLoader.js:358-366`),
    so each `plot composition` re-fetches and re-parses the 2.17 MB
    `composition.json` and re-runs `fetchRealTimeData()` (single-flight only
-   dedupes *concurrent* calls — `js/transactions/realtimeData.js:130-137`).
+   dedupes _concurrent_ calls — `js/transactions/realtimeData.js:130-137`).
 5. **Per-frame transform chain allocates ~6-8 objects + Dates per data point**
    in `drawContributionChart`: spread+parse map (`contribution.js:248-252`),
    `filterDataByDateRange` re-parsing already-parsed Dates and recomputing the
@@ -76,7 +76,7 @@ inferred, not measured.
 renderer ends with:
 
 - `js/transactions/chart/renderers/contribution.js:840-844` — `if
-  (contributionAnimationEnabled && hasAnimatedSeries) { scheduleContributionAnimation(chartManager); }`
+(contributionAnimationEnabled && hasAnimatedSeries) { scheduleContributionAnimation(chartManager); }`
 - `js/transactions/chart/animation.js:43-51` → `glowAnimator.schedule(...)`
 - `js/plugins/glowTrailAnimator.js:248-261` — `schedule()` wraps
   `chartManager.redraw()` in `requestAnimationFrame`; there is **no stop
@@ -113,7 +113,7 @@ A bare term goes to `handleDefaultCommand` → `filterAndSort(command)`
   with **no caching** (unlike `getContributionSeriesForTransactions`, which is
   WeakMap-cached by array identity at `data/contribution.js:6-49`).
 - `js/transactions/chart/data/contribution.js:357-421` — the loop iterates
-  *every calendar day* from the first filtered transaction to today, and for
+  _every calendar day_ from the first filtered transaction to today, and for
   each day walks all held symbols doing `getPriceFromHistoricalData`
   (`:254-283`, with up to 10 `setDate`+`toISOString` fallback iterations on a
   miss) plus `getSplitAdjustment` per holding (cache:
@@ -168,7 +168,7 @@ the concentration renderer's separate cache
    the derived pipeline output (filtered balance series, dividend-merged
    contribution, date-filtered + smoothed series, appreciation, y-domain)
    keyed by `(filteredTransactions ref, portfolioSeries ref, currency,
-   chartDateRange, filtersActive, drawdownMode)`; per frame, only rescale
+chartDateRange, filtersActive, drawdownMode)`; per frame, only rescale
    cached points to pixels and draw. This one change subsumes findings 2, 3,
    5, and 6 in practice. Alternatively/adjacent: port the composition chart's
    static-bitmap layer (`renderers/composition.js:31-34`) to the contribution
@@ -312,7 +312,7 @@ stop, throttle, or gate it — the goal is cheaper frames, not fewer frames.
 - **Change:** cache the derived pipeline output (filtered balance series,
   dividend-merged contribution, date-filtered + smoothed series, appreciation,
   y-domain) keyed by `(filteredTransactions ref, portfolioSeries ref, currency,
-  chartDateRange, filtersActive, drawdownMode)`; the per-frame path only
+chartDateRange, filtersActive, drawdownMode)`; the per-frame path only
   rescales cached points to pixels and draws. Optionally also port the
   composition chart's static-bitmap layer pattern
   (`renderers/composition.js:31-34,187-199`).
@@ -325,8 +325,7 @@ stop, throttle, or gate it — the goal is cheaper frames, not fewer frames.
 - **Verify:** `npx jest tests/js/transactions/chart` then `make precommit-fix`;
   visual check via `make screenshot URL=/terminal/` — glow animation must
   still render.
-- **Expected:** the entire ~7 ms/frame JS compute load (findings 1, 2, 3, 5,
-  6) drops to ~0 on steady-state frames — the glow keeps animating at 60 fps,
+- **Expected:** the entire ~7 ms/frame JS compute load (findings 1, 2, 3, 5, 6) drops to ~0 on steady-state frames — the glow keeps animating at 60 fps,
   but each frame only rescales and draws.
 
 ## Open questions / what I couldn't verify
