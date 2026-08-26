@@ -4,6 +4,7 @@ import { getSplitAdjustment } from '../../calculations.js';
 import { parseLocalDate, createTimeInterpolator } from '../helpers.js';
 
 const contributionSeriesCache = new WeakMap();
+const filteredBalanceSeriesCache = new WeakMap();
 
 // Format a Date as YYYY-MM-DD using LOCAL calendar components. Never use
 // toISOString() for day keys derived from local-midnight dates: in UTC+
@@ -287,6 +288,21 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         return [];
     }
 
+    // Identity-based cache: same (transactions, historicalPrices, splitHistory)
+    // objects return the same computed series.
+    if (historicalPrices && splitHistory) {
+        const byPrices = filteredBalanceSeriesCache.get(transactions);
+        if (byPrices) {
+            const bySplits = byPrices.get(historicalPrices);
+            if (bySplits) {
+                const cached = bySplits.get(splitHistory);
+                if (cached) {
+                    return cached;
+                }
+            }
+        }
+    }
+
     const tsCache = new Map();
     const getTs = (t) => {
         let ts = tsCache.get(t);
@@ -439,6 +455,17 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
         series[0].synthetic = true;
     } else if (series.length > 0 && Math.abs(series[0].value || 0) <= epsilon) {
         series.shift();
+    }
+
+    if (historicalPrices && splitHistory) {
+        if (!filteredBalanceSeriesCache.has(transactions)) {
+            filteredBalanceSeriesCache.set(transactions, new WeakMap());
+        }
+        const byPrices = filteredBalanceSeriesCache.get(transactions);
+        if (!byPrices.has(historicalPrices)) {
+            byPrices.set(historicalPrices, new WeakMap());
+        }
+        byPrices.get(historicalPrices).set(splitHistory, series);
     }
 
     return series;

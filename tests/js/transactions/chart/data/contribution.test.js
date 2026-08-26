@@ -1,6 +1,61 @@
-import { computeAppreciationSeries } from '../../../../../js/transactions/chart/data/contribution.js';
+import {
+    computeAppreciationSeries,
+    buildFilteredBalanceSeries,
+} from '../../../../../js/transactions/chart/data/contribution.js';
 
 describe('Contribution Data Helpers', () => {
+    describe('buildFilteredBalanceSeries', () => {
+        it('returns an identical cached series when inputs are the same objects', () => {
+            const transactions = [
+                {
+                    tradeDate: '2024-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '10',
+                    price: '100',
+                    netAmount: '1000',
+                },
+            ];
+            const historicalPrices = {
+                AAPL: { '2024-01-01': 100 },
+            };
+            const splitHistory = [];
+
+            const first = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+            const second = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+
+            expect(second).toBe(first);
+            expect(first.length).toBeGreaterThan(0);
+        });
+
+        it('recomputes when the transactions array identity changes', () => {
+            const transactions = [
+                {
+                    tradeDate: '2024-01-01',
+                    orderType: 'Buy',
+                    security: 'AAPL',
+                    quantity: '10',
+                    price: '100',
+                    netAmount: '1000',
+                },
+            ];
+            const historicalPrices = {
+                AAPL: { '2024-01-01': 100 },
+            };
+            const splitHistory = [];
+
+            const first = buildFilteredBalanceSeries(transactions, historicalPrices, splitHistory);
+            const second = buildFilteredBalanceSeries(
+                [...transactions],
+                historicalPrices,
+                splitHistory
+            );
+
+            expect(second).not.toBe(first);
+            expect(second.length).toBe(first.length);
+        });
+    });
+
     describe('computeAppreciationSeries', () => {
         it('should calculate appreciation correctly when lengths match', () => {
             const balanceData = [
