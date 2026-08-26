@@ -2,7 +2,7 @@ import {
     getCompositionSnapshotLine,
     getSectorsSnapshotLine,
     getGeographySnapshotLine,
-    getMarketcapSnapshotLine
+    getMarketcapSnapshotLine,
 } from '../../../../js/transactions/terminal/snapshots.js';
 import { transactionState } from '../../../../js/transactions/state.js';
 import * as dataLoader from '../../../../js/transactions/dataLoader.js';
@@ -43,9 +43,9 @@ describe('getCompositionSnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             composition: {
-                'AAPL': [50, 60],
-                'MSFT': [50, 40]
-            }
+                AAPL: [50, 60],
+                MSFT: [50, 40],
+            },
         });
         transactionState.selectedCurrency = 'USD';
 
@@ -61,9 +61,9 @@ describe('getCompositionSnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01', '2023-03-01'],
             total_values: [1000, 2000, 3000],
             composition: {
-                'AAPL': [50, 60, 70],
-                'MSFT': [50, 40, 30]
-            }
+                AAPL: [50, 60, 70],
+                MSFT: [50, 40, 30],
+            },
         });
         transactionState.chartDateRange = { from: '2023-01-15', to: '2023-02-15' };
 
@@ -78,8 +78,8 @@ describe('getCompositionSnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             composition: {
-                'AAPL': [50, 60],
-            }
+                AAPL: [50, 60],
+            },
         });
         transactionState.chartDateRange = { from: '2024-01-01', to: '2024-12-31' };
 
@@ -91,8 +91,8 @@ describe('getCompositionSnapshotLine', () => {
         loadSpy.mockResolvedValueOnce({
             dates: ['2023-01-01'],
             composition: {
-                'AAPL': [100]
-            }
+                AAPL: [100],
+            },
         });
 
         const res = await getCompositionSnapshotLine();
@@ -104,10 +104,10 @@ describe('getCompositionSnapshotLine', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             composition: {
-                'AAPL': [0],
-                'MSFT': ['invalid'],
-                'GOOG': null
-            }
+                AAPL: [0],
+                MSFT: ['invalid'],
+                GOOG: null,
+            },
         });
 
         const res = await getCompositionSnapshotLine();
@@ -134,9 +134,9 @@ describe('getCompositionSnapshotLine with Abs', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             composition: {
-                'AAPL': [50, 60],
-                'MSFT': [50, 40]
-            }
+                AAPL: [50, 60],
+                MSFT: [50, 40],
+            },
         });
         transactionState.selectedCurrency = 'USD';
 
@@ -167,8 +167,8 @@ describe('getSectorsSnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             series: {
-                'Technology': [50, 60]
-            }
+                Technology: [50, 60],
+            },
         });
         transactionState.selectedCurrency = 'USD';
 
@@ -198,8 +198,8 @@ describe('getGeographySnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             series: {
-                'US': [50, 60]
-            }
+                US: [50, 60],
+            },
         });
         transactionState.selectedCurrency = 'USD';
 
@@ -229,8 +229,8 @@ describe('getMarketcapSnapshotLine', () => {
             dates: ['2023-01-01', '2023-02-01'],
             total_values: [1000, 2000],
             series: {
-                'Large': [50, 60]
-            }
+                Large: [50, 60],
+            },
         });
         transactionState.selectedCurrency = 'USD';
 
@@ -252,7 +252,10 @@ describe('getCompositionSnapshotLine with Filters', () => {
         loadSpy = jest.spyOn(dataLoader, 'loadCompositionSnapshotData');
 
         // Mock the state filters
-        getFiltersSpy = jest.spyOn(require('../../../../js/transactions/state.js'), 'getCompositionFilterTickers');
+        getFiltersSpy = jest.spyOn(
+            require('../../../../js/transactions/state.js'),
+            'getCompositionFilterTickers'
+        );
     });
 
     afterEach(() => {
@@ -265,10 +268,10 @@ describe('getCompositionSnapshotLine with Filters', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             composition: {
-                'AAPL': [50],
-                'MSFT': [30],
-                'GOOG': [20]
-            }
+                AAPL: [50],
+                MSFT: [30],
+                GOOG: [20],
+            },
         });
         transactionState.selectedCurrency = 'USD';
         getFiltersSpy.mockReturnValue(['AAPL']);
@@ -290,7 +293,10 @@ describe('getCompositionSnapshotLine empty result', () => {
         transactionState.chartDateRange = null;
         loadSpy = jest.spyOn(dataLoader, 'loadCompositionSnapshotData');
 
-        getFiltersSpy = jest.spyOn(require('../../../../js/transactions/state.js'), 'getCompositionFilterTickers');
+        getFiltersSpy = jest.spyOn(
+            require('../../../../js/transactions/state.js'),
+            'getCompositionFilterTickers'
+        );
     });
 
     afterEach(() => {
@@ -303,8 +309,8 @@ describe('getCompositionSnapshotLine empty result', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             composition: {
-                'AAPL': [0.01] // Below the 0.1 threshold
-            }
+                AAPL: [0.01], // Below the 0.1 threshold
+            },
         });
 
         const res = await getCompositionSnapshotLine();
@@ -331,8 +337,8 @@ describe('getCompositionSnapshotLine with BRK-B mapping', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             composition: {
-                'BRKB': [100]
-            }
+                BRKB: [100],
+            },
         });
 
         const res = await getCompositionSnapshotLine();
@@ -359,8 +365,8 @@ describe('getGeographySnapshotLine empty result', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             series: {
-                'US': [0.01] // Below the threshold
-            }
+                US: [0.01], // Below the threshold
+            },
         });
 
         const res = await getGeographySnapshotLine();
@@ -387,8 +393,8 @@ describe('getSectorsSnapshotLine empty result', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             series: {
-                'Technology': [0.01] // Below the threshold
-            }
+                Technology: [0.01], // Below the threshold
+            },
         });
 
         const res = await getSectorsSnapshotLine();
@@ -415,8 +421,8 @@ describe('getMarketcapSnapshotLine empty result', () => {
             dates: ['2023-01-01'],
             total_values: [1000],
             series: {
-                'Large': [0.01] // Below the threshold
-            }
+                Large: [0.01], // Below the threshold
+            },
         });
 
         const res = await getMarketcapSnapshotLine();
