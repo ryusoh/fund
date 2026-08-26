@@ -1,7 +1,7 @@
 import { transactionState } from '../../state.js';
 import { convertValueToCurrency } from '../../utils.js';
 import { getSplitAdjustment } from '../../calculations.js';
-import { parseLocalDate } from '../helpers.js';
+import { parseLocalDate, createTimeInterpolator } from '../helpers.js';
 
 const contributionSeriesCache = new WeakMap();
 
@@ -495,36 +495,12 @@ export function computeAppreciationSeries(balanceData, contributionData) {
     }
 
     // Sort contribution timestamps for interpolation
-    const contribTimes = new Array(contributionData.length);
+    const contribPoints = new Array(contributionData.length);
     for (let i = 0; i < contributionData.length; i++) {
         const item = contributionData[i];
-        contribTimes[i] = { time: item.date.getTime(), value: item.amount };
+        contribPoints[i] = { time: item.date.getTime(), value: item.amount };
     }
-    contribTimes.sort((a, b) => a.time - b.time);
-
-    const interpolateContrib = (targetTime) => {
-        if (contribTimes.length === 0) {
-            return null;
-        }
-        if (targetTime <= contribTimes[0].time) {
-            return contribTimes[0].value;
-        }
-        if (targetTime >= contribTimes[contribTimes.length - 1].time) {
-            return contribTimes[contribTimes.length - 1].value;
-        }
-        for (let i = 0; i < contribTimes.length - 1; i++) {
-            if (targetTime >= contribTimes[i].time && targetTime <= contribTimes[i + 1].time) {
-                const ratio =
-                    (targetTime - contribTimes[i].time) /
-                    (contribTimes[i + 1].time - contribTimes[i].time);
-                return (
-                    contribTimes[i].value +
-                    ratio * (contribTimes[i + 1].value - contribTimes[i].value)
-                );
-            }
-        }
-        return contribTimes[contribTimes.length - 1].value;
-    };
+    const interpolateContrib = createTimeInterpolator(contribPoints);
 
     const result = [];
     for (let i = 0; i < balanceData.length; i++) {

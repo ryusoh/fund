@@ -64,16 +64,35 @@ describe('Contribution Data Helpers', () => {
             expect(result[0].value).toBe(0); // 100 - 100 (first contrib value)
         });
 
-        it('should handle target time after last contribution', () => {
+        it('should handle a single contribution point with gap days', () => {
             const balanceData = [
-                { date: new Date('2024-01-02'), value: 150 },
+                { date: new Date('2024-01-01'), value: 100 },
+                { date: new Date('2024-01-04'), value: 150 },
             ];
             const contributionData = [
                 { date: new Date('2024-01-01'), amount: 100 },
             ];
             const result = computeAppreciationSeries(balanceData, contributionData);
-            expect(result.length).toBe(1);
-            expect(result[0].value).toBe(50); // 150 - 100 (last contrib value)
+            expect(result.length).toBe(2);
+            expect(result[0].value).toBe(0); // 100 - 100
+            expect(result[1].value).toBe(50); // 150 - 100 (clamped to last)
+        });
+
+        it('should interpolate across a multi-day gap', () => {
+            const balanceData = [
+                { date: new Date('2024-01-01'), value: 100 },
+                { date: new Date('2024-01-03'), value: 130 },
+                { date: new Date('2024-01-05'), value: 150 },
+            ];
+            const contributionData = [
+                { date: new Date('2024-01-01'), amount: 100 },
+                { date: new Date('2024-01-05'), amount: 140 },
+            ];
+            const result = computeAppreciationSeries(balanceData, contributionData);
+            expect(result.length).toBe(3);
+            expect(result[0].value).toBe(0); // 100 - 100
+            expect(result[1].value).toBe(10); // 130 - 120 (midpoint)
+            expect(result[2].value).toBe(10); // 150 - 140
         });
     });
 });
