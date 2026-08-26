@@ -199,6 +199,146 @@ the concentration renderer's separate cache
    `filterAndSort` (`table.js:216`) and rebuild on table toggle instead;
    avoids a ~19k-node DOM rebuild per `all`/`clear` while charting.
 
+## Action items (for one-by-one implementation)
+
+Each item is a self-contained brief sized for a low-cost agent. Rules for
+every item: one PR per item; no behaviour change beyond the stated perf goal;
+green `make precommit-fix` before opening; changed executable lines need test
+coverage (diff-coverage gate, threshold 90%) — so "pure perf" items that add
+cache/memo code still need a test that exercises the new branch. Suggested
+scoped test commands below were verified against existing test files; run the
+scoped jest first, then `make precommit-fix`.
+
+Recommended order: 1 → 6 in any sequence (they touch disjoint code), then 7
+(the big restructure) last — items 1, 2, and 5 touch code that item 7
+restructures, so if 7 is scheduled soon, skip 1 and 5 and fold 2 into 7.
+Item 8 is a visual decision — human review, draft PR only.
+
+### AI-1 — Binary-search interpolation in `computeAppreciationSeries`
+
+- **File:** `js/transactions/chart/data/contribution.js:515-527` (the
+  `interpolateContrib` linear scan).
+- **Change:** replace the per-point scan from index 0 with the existing
+  `createTimeInterpolator` (`js/transactions/chart/helpers.js:117-154`) or a
+  two-pointer walk (both series are time-sorted). Output values must be
+  identical for exact matches and interpolated gaps.
+- **Tests:** extend `tests/js/transactions/chart/data/contribution.test.js` —
+  exact-hit days, gap days, empty contribution series, single-point series.
+- **Verify:** `npx jest tests/js/transactions/chart/data/contribution.test.js`
+- **Expected:** ~3.9 ms → sub-ms per call (measured baseline in finding 3).
+
+### AI-2 — Memoize the four figure loaders in `dataLoader.js`
+
+- **File:** `js/transactions/dataLoader.js:358-366`
+  (`loadCompositionSnapshotData`) and `:2-42` (sectors / geography / marketcap
+  snapshot loaders).
+- **Change:** apply the promise-cache pattern already used by
+  `loadBalanceSeriesPayload` (`dataLoader.js:113-122`): cache the in-flight /
+  resolved promise, return the cached promise on repeat calls. Check whether
+  any caller depends on getting fresh data after a data refresh — if so, key
+  the cache or add an explicit invalidation call there.
+- **Tests:** assert a second call does not re-fetch (mock `fetch`, count
+  calls) in `tests/js/transactions/terminal/snapshots.test.js` or a loader
+  test near the existing balance-payload cache tests.
+- **Verify:** `npx jest tests/js/transactions/terminal/snapshots.test.js`
+- **Expected:** removes the second 2.17 MB `composition.json` parse +
+  `fetchRealTimeData()` refetch per `plot composition` (finding 4).
+
+### AI-3 — Hoist invariants in `filterDataByDateRange`
+
+- **File:** `js/transactions/chart/renderers/contribution.js:213-243`.
+- **Change:** compute `toLocalIsoDate(filterFrom)` / `toLocalIsoDate(filterTo)`
+  once before the filter callback (currently recomputed per item at
+  `:225-226`); skip the `parseLocalDate` when `item.date` is already a `Date`.
+- **Tests:** existing renderer coverage
+  (`tests/js/transactions/chart/renderers/`, `tests/js/transactions/chart_regression.test.js`)
+  should stay green; add a boundary-date case if none exists.
+- **Verify:** `npx jest tests/js/transactions/chart_regression.test.js`
+- **Expected:** part of the ~3.0 ms/frame transform chain (finding 5).
+
+### AI-4 — Resize mountain-fill offscreen canvas only on dimension change
+
+- **File:** `js/transactions/chart/core.js:594-595` (`drawMountainFill`).
+- **Change:** guard the `offscreen.width = …` / `height = …` assignments with
+  a same-size check (assigning `width` reallocates and clears the backing
+  store even when the value is unchanged).
+- **Tests:** extend `tests/js/transactions/chart_core.test.js` — same-size
+  redraw reuses the canvas object; different size reallocates.
+- **Verify:** `npx jest tests/js/transactions/chart_core.test.js`
+- **Expected:** removes 3 backing-store reallocations per frame on
+  `plot balance` (finding 7).
+
+### AI-5 — WeakMap-cache `buildFilteredBalanceSeries`
+
+- **File:** `js/transactions/chart/data/contribution.js:357-421`; call site
+  `js/transactions/chart/renderers/contribution.js:174-180`.
+- **Change:** cache on `(transactions, historicalPrices, splitHistory)` object
+  identity, mirroring the existing `getContributionSeriesForTransactions`
+  WeakMap pattern at `data/contribution.js:6-49`. Keyed identity only — do not
+  key on array contents.
+- **Tests:** extend `tests/js/transactions/chart/data/contribution.test.js` —
+  same inputs return the identical cached array; a new transactions array
+  recomputes.
+- **Verify:** `npx jest tests/js/transactions/chart/data/contribution.test.js`
+- **Expected:** removes ~0.85–2.5 ms/frame while a ticker filter is active
+  (finding 2). Note: the 8.2 MB first-fetch of `historical_prices.json` and
+  its suspected double-fetch race (`snapshots.js:1205-1228`) are **out of
+  scope** here.
+
+### AI-6 — Skip table DOM rebuild while the table is hidden
+
+- **File:** `js/transactions/table.js:206-216` (`filterAndSort`) →
+  `displayTransactions` (`:35-112`); table toggle handler (find it from the
+  `transaction` command handler under
+  `js/transactions/terminal/handlers/`).
+- **Change:** when the table container is `is-hidden`, update filter state
+  but defer `displayTransactions`; rebuild once when the table is toggled
+  visible. Keep `onFilterChange` (chart update) firing as today —
+  `js/pages/terminal/index.js:378-386` depends on it.
+- **Tests:** table hidden + `anet` filter → no row nodes created; toggle
+  visible → rows match the active filter.
+- **Verify:** `npx jest tests/js/transactions` (table tests live somewhere
+  under here — locate the `filterAndSort`/`displayTransactions` suite first).
+- **Expected:** removes a ~19k-node DOM rebuild per `all`/`clear` while
+  charting (finding 8).
+
+### AI-7 — Split `drawContributionChart` into compute-once / draw-per-frame
+
+- **Files:** `js/transactions/chart/renderers/contribution.js` (main body,
+  pipeline at `:144-308`, animation tail `:840-844`);
+  `js/transactions/chart/data/contribution.js`;
+  `js/transactions/chart/animation.js:43-51`.
+- **Change:** cache the derived pipeline output (filtered balance series,
+  dividend-merged contribution, date-filtered + smoothed series, appreciation,
+  y-domain) keyed by `(filteredTransactions ref, portfolioSeries ref, currency,
+  chartDateRange, filtersActive, drawdownMode)`; the per-frame path only
+  rescales cached points to pixels and draws. Optionally also port the
+  composition chart's static-bitmap layer pattern
+  (`renderers/composition.js:31-34,187-199`).
+- **This subsumes AI-1, AI-3, AI-5 and findings 5–6 for the per-frame path**;
+  those items still help the first-compute path, so they are not wasted.
+- **Tests:** this is the risky one — extend
+  `tests/js/transactions/chart/renderers/` and
+  `tests/js/transactions/chart_regression.test.js` so a state change
+  invalidates the cache and a no-change frame reuses it.
+- **Verify:** `npx jest tests/js/transactions/chart` then `make precommit-fix`;
+  visual check via `make screenshot URL=/terminal/` — glow animation must
+  still render.
+- **Expected:** the entire ~7 ms/frame JS compute load (findings 1, 2, 3, 5,
+  6) drops to ~0 on steady-state frames.
+
+### AI-8 — Stop or throttle the perpetual glow animation (VISUAL — draft PR)
+
+- **Files:** `js/plugins/glowTrailAnimator.js:248-285` (no stop condition),
+  `js/transactions/chart/animation.js:43-51`, config default
+  `js/config.js:80-82`.
+- **Change:** add a settle condition (e.g. stop rescheduling after N seconds
+  without state change) or reduce the redraw rate. **This changes an always-on
+  visual effect — open as draft, human visual review required** (AGENTS.md:
+  agents cannot judge visuals).
+- **Verify:** `npx jest tests/js/transactions/chart_animation.test.js`;
+  screenshot before/after for the human.
+
 ## Open questions / what I couldn't verify
 
 - **Real frame times in Chromium.** All numbers above are Node
