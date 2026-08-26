@@ -215,8 +215,16 @@ describe('transaction date filtering visibility guard', () => {
         const controller = initTable();
         controller.filterAndSort('');
 
-        const rows = document.querySelectorAll('#transactionBody tr');
-        expect(rows).toHaveLength(sampleTransactions.length);
+        // While hidden, no DOM rows are built, but the filtered state skips the date range.
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(0);
+        expect(transactionState.filteredTransactions.length).toBe(sampleTransactions.length);
+
+        // Showing the table renders the pending rows.
+        document.querySelector('.table-responsive-container').classList.remove('is-hidden');
+        controller.refreshTableIfPending();
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(
+            sampleTransactions.length
+        );
     });
 
     it('applies chart date range when table is visible', () => {
@@ -700,11 +708,14 @@ describe('sort after table becomes visible with date range', () => {
         const controller = initTable();
         controller.filterAndSort(''); // initial render while hidden
 
-        // Table should be populated (date range NOT applied while hidden)
-        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(3);
+        // No DOM rows built while hidden; date range is NOT applied yet.
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(0);
 
-        // 2. Make table visible (simulates user typing "table" command)
+        // 2. Make table visible and render pending rows (simulates "table" command)
         document.querySelector('.table-responsive-container').classList.remove('is-hidden');
+        controller.refreshTableIfPending();
+
+        expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(3);
 
         // 3. Click sort header — this is where the bug manifests
         document.getElementById('header-tradeDate').click();
@@ -1022,8 +1033,13 @@ describe('isTransactionTableVisible coverage', () => {
             const controller = initTable();
             controller.filterAndSort();
 
-            const rows = document.querySelectorAll('#transactionBody tr');
-            expect(rows.length).toBe(1);
+            // Hidden: no rows rendered yet.
+            expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(0);
+
+            // After showing and refreshing, the row renders.
+            document.querySelector('.table-responsive-container').classList.remove('is-hidden');
+            controller.refreshTableIfPending();
+            expect(document.querySelectorAll('#transactionBody tr')).toHaveLength(1);
         });
     });
 });
@@ -1210,5 +1226,67 @@ describe('displayTransactions fallback and dropdowns', () => {
             const input = document.getElementById('terminalInput');
             expect(input.value).toBeDefined();
         });
+    });
+});
+
+describe('hidden table deferral', () => {
+    let initTable;
+    let setAllTransactions;
+    let transactionState;
+
+    beforeEach(() => {
+        jest.resetModules();
+        global.requestAnimationFrame = (cb) => cb();
+        document.body.innerHTML = `
+            <div class="table-responsive-container is-hidden">
+                <table>
+                    <tbody id="transactionBody"></tbody>
+                </table>
+            </div>
+        `;
+
+        jest.isolateModules(() => {
+            ({ initTable } = require('../../../js/transactions/table.js'));
+            ({
+                setAllTransactions,
+                transactionState,
+            } = require('../../../js/transactions/state.js'));
+        });
+    });
+
+    it('defers DOM build while the table is hidden and renders on show', () => {
+        const sample = [
+            {
+                transactionId: 1,
+                tradeDate: '2025-01-01',
+                orderType: 'Buy',
+                security: 'AAA',
+                quantity: '1',
+                price: '100',
+                netAmount: '100',
+            },
+            {
+                transactionId: 2,
+                tradeDate: '2025-01-02',
+                orderType: 'Buy',
+                security: 'BBB',
+                quantity: '1',
+                price: '200',
+                netAmount: '200',
+            },
+        ];
+        setAllTransactions(sample);
+
+        const controller = initTable();
+        controller.filterAndSort('');
+
+        expect(document.querySelectorAll('#transactionBody tr').length).toBe(0);
+        expect(transactionState.filteredTransactions.length).toBe(2);
+
+        const container = document.querySelector('.table-responsive-container');
+        container.classList.remove('is-hidden');
+        controller.refreshTableIfPending();
+
+        expect(document.querySelectorAll('#transactionBody tr').length).toBe(2);
     });
 });

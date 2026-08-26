@@ -5,6 +5,7 @@ import {
     setChartDateRange,
 } from './state.js';
 import { adjustMobilePanels } from './layout.js';
+import { refreshTableIfPending } from './table.js';
 
 export function createUiController({ chartManager }) {
     function toggleTable() {
@@ -24,6 +25,7 @@ export function createUiController({ chartManager }) {
                 if (plotSection) {
                     plotSection.classList.add('is-hidden');
                 }
+                refreshTableIfPending();
             }
         }
 

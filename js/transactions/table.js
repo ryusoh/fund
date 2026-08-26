@@ -29,7 +29,9 @@ function isTransactionTableVisible() {
         return true;
     }
     const tableContainer = document.querySelector('.table-responsive-container');
-    return Boolean(tableContainer && !tableContainer.classList.contains('is-hidden'));
+    // If the container isn't present at all, treat the table as visible so
+    // callers that don't use the hide/show machinery still render.
+    return !tableContainer || !tableContainer.classList.contains('is-hidden');
 }
 
 function displayTransactions(transactions) {
@@ -213,7 +215,12 @@ function filterAndSort(searchTerm = '') {
 
     sortTransactions(filtered, transactionState.sortState, currentCurrency);
 
-    displayTransactions(filtered);
+    if (isTransactionTableVisible()) {
+        displayTransactions(filtered);
+        pendingTableTransactions = null;
+    } else {
+        pendingTableTransactions = filtered;
+    }
     setFilteredTransactions(filtered);
     if (typeof filterChangeListener === 'function') {
         filterChangeListener(filtered);
@@ -339,6 +346,14 @@ function setupTableControls() {
 }
 
 let filterChangeListener = null;
+let pendingTableTransactions = null;
+
+export function refreshTableIfPending() {
+    if (pendingTableTransactions && isTransactionTableVisible()) {
+        displayTransactions(pendingTableTransactions);
+        pendingTableTransactions = null;
+    }
+}
 
 export function initTable({ onFilterChange } = {}) {
     filterChangeListener = typeof onFilterChange === 'function' ? onFilterChange : null;
@@ -346,5 +361,6 @@ export function initTable({ onFilterChange } = {}) {
     return {
         filterAndSort,
         closeAllFilterDropdowns,
+        refreshTableIfPending,
     };
 }
