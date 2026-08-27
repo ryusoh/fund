@@ -36,6 +36,15 @@
 }
 
 @media screen and (max-width: 768px) {
+    html {
+        overflow: visible !important;
+    }
+
+    body::before,
+    body::after {
+        display: none;
+    }
+
     body {
         padding: 0;
         background: #000 url(../../assets/mobile_bg.jpg) center center no-repeat !important;
@@ -47,9 +56,10 @@
         background-size: cover !important;
         box-sizing: border-box;
         position: fixed;
-        width: 100%;
-        height: 100%;
-        min-height: 100dvh;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         overflow: hidden;
         overscroll-behavior: none;
         font-size: 12px;
