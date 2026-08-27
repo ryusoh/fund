@@ -738,15 +738,3 @@ export const CALENDAR_ZOOM_REFRACTION = {
     thickness: 26,
     rampMs: 550, // Match the 0.55s CSS transform duration so it thickens *during* the zoom
 };
-
-export const PERLIN_BACKGROUND_SETTINGS = {
-    enabled: false,
-    blendMode: 'screen',
-    opacity: 0.85,
-    tint: [1, 1, 1],
-    sizeFactor: 0.5,
-    speed: 0.001,
-    angle: 0,
-    respectReducedMotion: true,
-    maxPixelRatio: 10,
-};

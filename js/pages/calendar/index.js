@@ -12,7 +12,6 @@ import {
     CALENDAR_CONFIG,
     UI_BREAKPOINTS,
     getCalendarRange,
-    PERLIN_BACKGROUND_SETTINGS,
     CALENDAR_ZOOM_REFRACTION,
 } from '@js/config.js';
 import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
@@ -23,7 +22,6 @@ import { logger } from '@utils/logger.js';
 import { getValueFieldForCurrency } from '@pages/calendar/colorUtils.js';
 import { precomputeDisplayCaches } from '@pages/calendar/displayCache.js';
 import { createCalendarRenderer } from '@pages/calendar/renderers/index.js';
-import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
 
 // --- STATE ---
 // The zoom transform transition runs 0.55s; GPU-heavy effects (optic sweep,
@@ -1007,9 +1005,6 @@ export async function initCalendar() {
     }
 }
 
-// --- PERLIN BACKGROUND ---
-let perlinBackgroundHandle = null;
-
 // --- ZOOM PANE: CENTERING + LIQUID GLASS ---
 // When the calendar zooms, the pane glides to the viewport center and scales
 // as one composited transform (--zoom-center-shift is measured here, in the
@@ -1076,9 +1071,6 @@ function initCalendarZoomPane() {
 // Avoid auto-running during Jest tests to prevent async side-effects
 export function autoInitCalendar() {
     if (!(typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
-        if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
-            perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
-        }
         initCalendar().then(() => {
             initCalendarZoomPane();
         });
@@ -1114,9 +1106,4 @@ window.addEventListener('pageshow', (event) => {
     if (event.persisted && Date.now() - lastFetchedAt >= 60_000) {
         refreshCalendarData(basePaintConfig?.date?.start);
     }
-});
-
-window.addEventListener('beforeunload', () => {
-    perlinBackgroundHandle?.dispose();
-    perlinBackgroundHandle = null;
 });

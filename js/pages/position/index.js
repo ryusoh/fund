@@ -27,14 +27,12 @@ import {
 import { triggerCenterToggle, hoverSliceByTicker } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
 import { logger } from '@utils/logger.js';
-import { mountPerlinPlaneBackground } from '../../vendor/perlin-plane.js';
-import { PERLIN_BACKGROUND_SETTINGS, TABLE_GLASS_EFFECT, DONUT_REFRACTION } from '@js/config.js';
+import { TABLE_GLASS_EFFECT, DONUT_REFRACTION } from '@js/config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 import { LiquidGlassRefraction } from '@ui/liquidGlassRefraction.js';
 
 let currentSelectedCurrency = 'USD'; // Default currency
 let exchangeRates = { USD: 1.0 }; // Default rates, will be updated
-let perlinBackgroundHandle = null;
 
 // Make glass effect config globally available for Chart.js
 function cloneGlassEffectConfig(config) {
@@ -176,11 +174,6 @@ async function startApp() {
         }
         applyCurrencySelection(currentSelectedCurrency, { emitEvent: false });
         initFooterToggle();
-
-        // Initialize perlin background
-        if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
-            perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
-        }
 
         // Initialize table glass effect
         try {
@@ -341,9 +334,4 @@ window.addEventListener('pageshow', async (event) => {
     if (event.persisted) {
         await refreshPortfolioData();
     }
-});
-
-window.addEventListener('beforeunload', () => {
-    perlinBackgroundHandle?.dispose();
-    perlinBackgroundHandle = null;
 });

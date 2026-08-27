@@ -18,7 +18,6 @@ import {
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
 import {
-    PERLIN_BACKGROUND_SETTINGS,
     TABLE_GLASS_EFFECT,
     TERMINAL_BACKGROUND_EFFECT,
     TERMINAL_GLASS_MAGNIFICATION,
@@ -100,12 +99,6 @@ let chartManager;
 let tableController;
 let uiController;
 let triggerTerminalSweep = null;
-
-// ---------------------------------------------------------------------------
-// Perlin background helpers
-// ---------------------------------------------------------------------------
-
-let perlinBackgroundHandle = null;
 
 const ZERO_EPSILON = 1e-6;
 const SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'KRW'];
@@ -303,16 +296,6 @@ async function loadTransactions() {
 }
 
 function initialize() {
-    if (PERLIN_BACKGROUND_SETTINGS?.enabled) {
-        import('../../vendor/perlin-plane.js')
-            .then(({ mountPerlinPlaneBackground }) => {
-                perlinBackgroundHandle = mountPerlinPlaneBackground(PERLIN_BACKGROUND_SETTINGS);
-            })
-            .catch((err) => {
-                logger.error('Failed to load perlin-plane background:', err);
-            });
-    }
-
     // Initialize glass effects for terminal pane, chart card, and transaction table.
     // Each pane gets backdrop refraction with a lighter frost than the stylesheet
     // fallback, so the lensing and dispersion stay visible through the glass.
@@ -459,11 +442,6 @@ document.addEventListener('currencyChangedGlobal', (event) => {
     }
 
     adjustMobilePanels();
-});
-
-window.addEventListener('beforeunload', () => {
-    perlinBackgroundHandle?.dispose();
-    perlinBackgroundHandle = null;
 });
 
 function shouldIgnoreKeyboardEvent(activeElement) {
