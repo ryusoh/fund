@@ -408,7 +408,10 @@ export function initTerminal({
     }
 
     if (terminalInput) {
-        terminalInput.focus();
+        const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        if (!isCoarsePointer) {
+            terminalInput.focus();
+        }
         terminalInput.addEventListener('keydown', handleTerminalInput);
     }
 
