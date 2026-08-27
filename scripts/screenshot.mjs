@@ -41,6 +41,7 @@ function parseArgs(argv) {
         full: false,
         type: null,
         into: '#terminalInput',
+        click: null,
     };
     const positional = [];
     for (let i = 0; i < argv.length; i++) {
@@ -61,6 +62,8 @@ function parseArgs(argv) {
             opts.type = argv[++i];
         } else if (a === '--into') {
             opts.into = argv[++i];
+        } else if (a === '--click') {
+            opts.click = argv[++i];
         } else {
             positional.push(a);
         }
@@ -132,12 +135,15 @@ async function main() {
         if (response && response.status() >= 400) {
             throw new Error(`HTTP ${response.status()} for ${path}`);
         }
-        // Optionally drive the page first (e.g. type a terminal command to reveal
-        // panes that are hidden until then), so the resulting state is captured.
+        // Optionally drive the page first (e.g. type a terminal command or click a chart
+        // to reveal panes that are hidden until then), so the resulting state is captured.
         if (opts.type) {
             const input = page.locator(opts.into);
             await input.fill(opts.type, { timeout: 5000 });
             await input.press('Enter');
+        }
+        if (opts.click) {
+            await page.locator(opts.click).click({ force: true, timeout: 5000 });
         }
         // Let fonts, canvas/WebGL, and the glass animation settle before shooting.
         await sleep(opts.wait);
