@@ -326,7 +326,14 @@ function emulateTodayDoubleClick(todayBtnEl, getClickTimer, clearClickTimer) {
 }
 
 /* istanbul ignore next: keyboard navigation action helper */
-function handleCalendarArrowKeys(e, prevBtnEl, nextBtnEl, todayBtnEl, getClickTimer, clearClickTimer) {
+function handleCalendarArrowKeys(
+    e,
+    prevBtnEl,
+    nextBtnEl,
+    todayBtnEl,
+    getClickTimer,
+    clearClickTimer
+) {
     switch (e.key) {
         case 'ArrowLeft':
             if (prevBtnEl && !prevBtnEl.disabled) {
@@ -500,7 +507,9 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
             nextBtnEl,
             todayBtnEl,
             () => clickTimer,
-            () => { clickTimer = null; }
+            () => {
+                clickTimer = null;
+            }
         );
     });
 
