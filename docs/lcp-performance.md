@@ -374,14 +374,13 @@ Rules for the implementer (apply to every item):
 - **Verify:** `npx stylelint css/main_index.css` · `npx eslint js/loader/imageFallback.js`
   · `make screenshot URL=/` for human review.
 
-### 8. [skip] Position: don't let the PER column gate the chart
+### 8. [low] Position: don't let the PER column gate the chart
 
-`loadAndDisplayPortfolioData` (js/services/dataService.js:1016-1065) awaits
-`fetchMarketRatiosForTickers` (anchor:
-`const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);`)
-before `updatePieChart`, though the pie needs none of it. Splitting it requires
-a two-phase render (chart first, PER cells later) plus new tests — assign to a
-stronger model.
+`loadAndDisplayPortfolioData` (js/services/dataService.js) renders the table and
+calls `updatePieChart` immediately, then asynchronously resolves
+`fetchMarketRatiosForTickers` and updates the table's PER cells via
+`_updatePerColumn`. The pie chart no longer waits on analysis JSON network
+requests.
 
 ### 9. [skip] Consolidate the 8–11 render-blocking stylesheets per page
 

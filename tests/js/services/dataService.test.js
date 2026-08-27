@@ -722,6 +722,56 @@ describe('dataService', () => {
             // Should display with minus sign prefix for negative values
             expect(pnlCells[0].textContent).toContain('-$100.00');
         });
+
+        it('should update pie chart before market ratios resolve and then update PER column', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'AAPL', path: '../data/analysis/AAPL.json' }],
+            };
+            const analysisDetails = {
+                AAPL: { market: { pe: 18.5, forwardPe: 15.2 } },
+            };
+
+            let chartDrawnBeforeRatiosResolved = false;
+            chartManager.updatePieChart.mockImplementation(() => {
+                const perCell = document.querySelector('tr[data-ticker="AAPL"] td.per');
+                if (perCell && perCell.textContent === '—') {
+                    chartDrawnBeforeRatiosResolved = true;
+                }
+            });
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/AAPL')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(analysisDetails.AAPL),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(chartDrawnBeforeRatiosResolved).toBe(true);
+            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe(
+                '18.50/15.20'
+            );
+        });
     });
 
     describe('fetchJSON', () => {

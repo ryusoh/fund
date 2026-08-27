@@ -1013,6 +1013,30 @@ function _renderPnlSummary(
     setThinkingHighlight([pnlAmount, pnlPercent], true, thinkingOptions);
 }
 
+function _updatePerColumn(marketRatiosByTicker, sortedHoldings) {
+    if (!marketRatiosByTicker || !(marketRatiosByTicker instanceof Map)) {
+        return;
+    }
+    const rows = document.querySelectorAll('table tbody tr');
+    const holdingByTicker = new Map(sortedHoldings.map((h) => [h.ticker, h]));
+    rows.forEach((row) => {
+        const ticker = row.dataset.ticker;
+        if (!ticker) {
+            return;
+        }
+        const perCell = row.querySelector('td.per');
+        if (perCell) {
+            const holding = holdingByTicker.get(ticker);
+            const currentPrice = holding ? holding.currentPrice : null;
+            perCell.textContent = formatPerDisplayForTicker(
+                ticker,
+                marketRatiosByTicker,
+                currentPrice
+            );
+        }
+    });
+}
+
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
         const { holdingsDetails, prices } = await fetchPortfolioData();
@@ -1036,14 +1060,12 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             totalPnl: totalPnlUSD,
         } = processAndEnrichHoldings(holdingsDetails, prices);
         const tickerSymbols = sortedHoldings.map((holding) => holding.ticker);
-        const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);
         const chartData = updateTableAndPrepareChartData(
             sortedHoldings,
             totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
-            currencySymbols,
-            marketRatiosByTicker
+            currencySymbols
         );
 
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(
@@ -1063,6 +1085,9 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
 
         updatePieChart(chartData);
         checkAndToggleVerticalScroll();
+
+        const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);
+        _updatePerColumn(marketRatiosByTicker, sortedHoldings);
     } catch (error) {
         logger.error('Error fetching or processing fund data:', error);
     }
