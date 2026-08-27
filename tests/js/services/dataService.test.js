@@ -812,6 +812,42 @@ describe('dataService', () => {
             // Clean up
             delete window.pieChartGlassEffect;
         });
+
+        it('should draw visible divider lines between pie chart slices', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ tickers: [] }),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(chartManager.updatePieChart).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    datasets: [
+                        expect.objectContaining({
+                            borderColor: 'rgba(84, 84, 88, 0.5)',
+                            borderWidth: 0.5,
+                        }),
+                    ],
+                })
+            );
+        });
     });
 
     describe('fetchJSON', () => {

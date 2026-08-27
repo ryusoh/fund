@@ -475,8 +475,8 @@ function updateTableAndPrepareChartData(
             {
                 data: [],
                 backgroundColor: [],
-                borderColor: 'transparent',
-                borderWidth: 0,
+                borderColor: CHART_DEFAULTS.BORDER_COLOR,
+                borderWidth: CHART_DEFAULTS.BORDER_WIDTH,
                 hoverBorderWidth: 0,
                 borderAlign: 'inner',
                 images: [],
