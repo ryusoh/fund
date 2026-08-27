@@ -118,16 +118,22 @@
 
 @media (max-width: 768px) {
     .chart-legend {
+        /* Material data-viz mobile guidance: legend above the chart so it
+           stays visible during touch interaction (docs/mobile-terminal-ux.md) */
+        order: -1;
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
         justify-items: start;
         gap: 8px 10px;
-        margin-top: 12px;
+        margin-top: 0;
+        margin-bottom: 12px;
     }
 
     .legend-item {
         justify-content: flex-start;
+        align-items: center;
         gap: 6px;
+        min-height: 44px;
     }
 
     .legend-item span:last-child {
