@@ -1,360 +1,267 @@
 # Mobile UX for the Terminal Page — Research Findings
 
-Date: 2026-08-27. Research + documentation only; no code changed.
+Date: 2026-08-27 (revised same day: direction changed to Option D after visual review).
 
 ## 1. The question
 
-The site hides the Terminal nav link on mobile (`hide-on-mobile`), but the page itself is
-reachable and partially mobile-formatted. **What is the best way, grounded in HCI research
-and current industry practice, to expose this terminal's functionality to mobile/touch
-users?**
+The site hides the Terminal nav link on mobile (`hide-on-mobile`). **What is the best way,
+grounded in HCI research and current industry practice, to expose this page's functionality
+to mobile/touch users?**
 
-## 2. Short answer
+## 2. Short answer — DECIDED: Option D, chart-first mobile view
 
-Adopt an **assisted terminal**: keep the REPL (it is the page's identity and the engine is
-already touch-compatible at the output layer), but add a **tappable suggestion-chip row
-above the soft keyboard** driven by the existing command registry
-(`js/transactions/terminal/constants.js`) and the existing prefix-matcher
-(`js/transactions/terminal/autocomplete.js`), funneling completed commands through the
-existing `executeCommand` dispatcher. This converts the CLI's recall burden into
-recognition (NN/g heuristic #6) without a new UI paradigm, matches how every serious
-mobile terminal app (Termius, Blink, Termux, a-Shell) solves the same problem, and is the
-lowest-effort option. A read-only curated view (option d) is an acceptable interim
-fallback; a chat/NL interface (option c) is not recommended.
+**On mobile, drop the terminal pane entirely and show a chart-first view**: a tappable chart
+picker (a few curated charts), an Apple-Stocks-style timeline range selector, the chart with
+its existing touch crosshair, an adapted legend, and a compact currency switcher. No stats
+tables, no typed commands — on a phone screen the `<pre>` stats output wraps out of shape and
+is not worth the space (product decision by the owner after seeing option A rendered).
 
-## 3. Current interaction surface (Part 1, repo facts)
+History: Option A (assisted terminal with suggestion chips) was implemented and enabled
+(`513ef695`, `1a530c54`, `b2d7368b`, `63991795`, `dfadf680`, `edc303d0`), then rejected on
+visual review; the nav re-enable was reverted (`d2fedb2b`). **Do not re-enable the mobile nav
+link until the Option D items below land and the owner explicitly approves.**
+
+## 3. Current interaction surface (repo facts)
 
 All line numbers verified by direct read this session unless marked otherwise.
 
-### 3.1 Input affordances
+### 3.1 Input affordances (desktop REPL)
 
-- Single text input `#terminalInput` with `autocomplete="off"`, `spellcheck="false"`,
-  `autofocus` — `terminal/index.html:161-169`. `initTerminal` also calls
-  `terminalInput.focus()` on load — `js/transactions/terminal.js:410-412`. On a phone this
-  pops the soft keyboard immediately and keeps it popping: clicking anywhere on the
-  terminal body refocuses the input — `js/transactions/terminal.js:415-421`.
-- **Keyboard-only command handling**: one `keydown` switch — `js/transactions/terminal.js:382-408`:
-    - Enter → execute (`processEnterKey`, 335-345)
-    - ArrowUp/ArrowDown → command history (347-368)
-    - ArrowLeft/ArrowRight → **currency cycling** when input is empty or Ctrl/Meta held
-      (370-380); a global keydown handler also cycles currency on arrows when no input is
-      focused (`js/pages/terminal/index.js:447-477`)
-    - Tab → autocomplete (`autocompleteCommand`, `js/transactions/terminal/autocomplete.js:94-129`)
-- None of Enter/arrows/Tab has a touch equivalent on a soft keyboard; mobile keyboards
-  lack Tab and arrow keys entirely.
-- The **command registry is clean and reusable**: `COMMAND_ALIASES` (35 entries),
-  `STATS_SUBCOMMANDS` (12), `PLOT_SUBCOMMANDS` (18), `HELP_SUBCOMMANDS` —
-  `js/transactions/terminal/constants.js:1-76`. The matchers are pure prefix filters
-  (`getCommandMatches` / `getSubcommandMatches`, `autocomplete.js:58-64` and `42-56`).
-- Single dispatcher: `executeCommand(command, context)` — `js/transactions/terminal/commands.js:26-140`.
-  Any tap UI can synthesize the same command strings and call it; no command-layer changes
-  needed.
-- Filter mini-language (`type:buy`, `security:NVDA`, `min:`, `max:`, `stock`, `etf`,
-  `abs`/`per`, date filters `from:2022`, `2023q1`, `2022:2023`, `q2`) — documented in
-  `js/transactions/terminal/handlers/help.js:38-42`. Non-command input is a free-text
-  filter of the table — `commands.js:132-134` → `handleDefaultCommand`.
-- Help text is desktop-centric: "Hint: Press Tab to auto-complete" — `help.js:31`.
+- Single text input `#terminalInput` with `autofocus` — `terminal/index.html:161-169`;
+  `initTerminal` also calls `.focus()` on load but skips it on coarse pointers —
+  `js/transactions/terminal.js:410-412,451`.
+- Keyboard-only command handling (Enter/arrows/Tab) — `js/transactions/terminal.js:382-408`;
+  no touch equivalent on soft keyboards.
+- Command registry: `COMMAND_ALIASES`, `STATS_SUBCOMMANDS` (12), `PLOT_SUBCOMMANDS` (18) —
+  `js/transactions/terminal/constants.js:1-76`. Dispatcher: `executeCommand` —
+  `js/transactions/terminal/commands.js:26-140`.
+- A suggestion-chip bar was added for coarse pointers (`initChips`,
+  `js/transactions/terminal.js:25,453`; module `js/transactions/terminal/chips.js`; styles
+  `css/terminal/responsive.css:108-142`; tests `tests/js/transactions/terminal/chips.test.js`).
+  **Under Option D this is dead UI** — removal is action item 1.
 
-### 3.2 Output types and their touch-readiness
+### 3.2 Chart surface (what Option D keeps)
 
-- **Text output**: `<pre>` blocks appended to `#terminalOutput` — `js/transactions/terminal.js:298-307`;
-  `white-space: pre-wrap; word-wrap: break-word` — `css/terminal/terminal.css:70-74`.
-  Touch-friendly (read + scroll).
-- **Canvas chart** `#runningAmountCanvas` — `terminal/index.html:179-186`. Its crosshair
-  layer is **Pointer Events–based and explicitly touch-aware**: `preventDefault()` for
-  `pointerType === 'touch'` — `js/transactions/chart/interaction.js:868-870` (move) and
-  `954-956` (down); `setPointerCapture` at 957-958. `attachCrosshairEvents` binds
-  `pointermove`/`pointerdown` (`passive: false`), `pointerup`, `pointercancel`,
-  `pointerleave`, `dblclick` — interaction.js:1080-1111 (lines read by the orchestrating
-  agent; I verified 1-1000). The composition hover panel has a mobile branch (smaller
-  fonts/padding) — interaction.js:582-589. **Drag-to-scrub works on touch today.**
-- **Chart legend**: plain `click` listeners on DOM items — interaction.js:735 — tap-compatible.
-- **Transaction table**: header actions are real `<button>` elements (sortable/filterable) —
-  `terminal/index.html:194-257` — tappable, though dense. Mobile rules already set
-  `touch-action: auto`, `-webkit-overflow-scrolling: touch`, sticky `thead` —
-  `css/terminal/responsive.css:110-135`.
-- **Toggles**: currency toggle buttons exist but are hidden on mobile
-  (`terminal/index.html:114` has `hide-on-mobile`; `css/terminal/base.css:101-109`).
+- **19 chart keys** dispatched off `transactionState.activeChart` in
+  `js/transactions/chart.js:104-161`: `contribution` (= `plot balance`, the default per
+  `js/transactions/state.js:16`), `performance`, `drawdown`, `drawdownAbs`, `composition`(+`Abs`),
+  `sectors`(+`Abs`), `geography`(+`Abs`), `marketcap`(+`Abs`), `concentration`, `pe`, `fx`,
+  `rolling`, `volatility`, `beta`, `yield`. Renderers lazy-load per key.
+- Switching a chart is two calls: `setActiveChart(key)` (`js/transactions/state.js:118`) then
+  `chartManager.update()`; the plot handler also un-hides `#runningAmountSection` and hides the
+  table — `js/transactions/terminal/handlers/plot.js:179-190,341-349`.
+- **Date range** is `{from, to}` in `transactionState.chartDateRange`
+  (`js/transactions/state.js:17,126`), set via `setChartDateRange` +
+  `updateContextYearFromRange` (`js/transactions/terminal/dateUtils.js:12-20`). Existing parsers
+  understand years/quarters only (`dateUtils.js:167-343`); relative presets like "1M/6M" need new
+  date arithmetic. Initial range comes from `INITIAL_CHART_DATE_RANGE = { from: '2024-01-01',
+to: null }` — `js/config.js:167-170`, applied at `js/pages/terminal/index.js:388-390`.
+- **Touch crosshair already works**: Pointer Events with `preventDefault()` for touch —
+  `js/transactions/chart/interaction.js:868-870,954-958`; drag-to-scrub is the
+  Apple-Stocks-style interaction and needs no new code.
+- **Legend** is a DOM rebuild per series — `updateLegend`, `interaction.js:684-703`; tap-to-toggle
+  on non-stacked charts (`interaction.js:724-760`). Mobile grid styles already exist —
+  `css/terminal/chart.css:119-139`.
+- **Currency**: `#currencyToggleContainer` with 4 buttons (`terminal/index.html:114-147`),
+  managed by `js/ui/currencyToggleManager.js` (`initCurrencyToggle`, `cycleCurrency`,
+  `applyCurrencySelection`); changes dispatch `currencyChangedGlobal`, handled at
+  `js/pages/terminal/index.js:406-445` (swaps series + re-renders). **Hidden on mobile** —
+  `css/terminal/base.css:101-104` (`display: none !important` under 768px; the element also
+  carries `hide-on-mobile`).
+- **Data readiness**: chart/stats renderers read `transactionState` directly; anything that
+  renders before load settles shows stale/empty output. Await `whenTransactionDataReady()`
+  (see `docs/terminal-data-readiness.md`; pattern at `handlers/plot.js:92-95`).
+- **Mobile layout machinery**: `adjustMobilePanels` (`js/transactions/layout.js:43-68`) sizes
+  the table and chart card on ≤768px (skips `is-hidden` panels, sizes the chart card to the
+  viewport minus its top offset, subtracts legend height at `layout.js:26-41`). It runs on
+  load/resize (`js/pages/terminal/index.js:287,393,402-404`). CSS mobile block:
+  `css/terminal/responsive.css:38-195` — `.transaction-container` is a fixed-height flex column
+  (`height: calc(100dvh - 118px)`, line 74), `.terminal-output` is capped at 170px (line 91),
+  chart card and table split the remainder (lines 144-161).
 
-### 3.3 What breaks or is awkward on a phone today
+### 3.3 What Option D removes on mobile
 
-- **No path to the page**: the nav Terminal link is hidden at ≤768px on every page that
-  carries it — `index.html:88`, `calendar/index.html:104`, `position/index.html:100`;
-  rule at `css/container.css:294` and `css/main_index.css:98`.
-- **Every command requires typing**; there is no tappable way to run even `help`.
-  History (arrows) and Tab completion are unreachable on soft keyboards.
-- **Font-size conflict**: the generic mobile rule sets all inputs to
-  `font-size: 16px !important` (`css/terminal/responsive.css:1-7`) but `.terminal-input`
-  is then overridden to `12px !important` (`responsive.css:90-95`). Sub-16px input text
-  triggers iOS Safari's focus auto-zoom.
-- **Soft keyboard occlusion**: autofocus on load (`terminal.js:411`) raises the keyboard
-  over the terminal pane; the mobile output pane is only 170px tall
-  (`responsive.css:79-83`) inside a `calc(100dvh - 118px)` column (`responsive.css:57-69`).
-- `user-scalable=no` — `terminal/index.html:16-18` — blocks pinch-zoom for readability.
-- Crosshair drag on the chart conflicts conceptually with vertical scroll, though
-  `touch-action` handling and `passive:false` listeners mitigate this (interaction.js, above).
+- The `.terminal` pane (output + prompt + chips): stats `<pre>` blocks wrap badly at 375px and
+  the soft keyboard eats half the screen (claims 1-5 below).
+- The transaction table on mobile (dense, starts `is-hidden` — `terminal/index.html:190`).
+- All typing-dependent features (filters, arbitrary date ranges, numeric args) — accepted loss.
 
-### 3.4 Existing mobile handling
+## 4. Research evidence
 
-`css/terminal/responsive.css` has a full `@media (max-width: 768px)` block (mobile
-background, flex-column layout, panel sizing, table touch rules);
-`js/transactions/layout.js:43-68` (`adjustMobilePanels`) recomputes panel heights on
-load/resize (`js/pages/terminal/index.js:287,393,402-404`). So the page is _laid out_ for
-mobile — only the _interaction model_ (typed commands) is not.
-
-## 4. Research evidence (Part 2)
-
-Each claim: **claim** — source URL — _source quality_.
+Each claim: **claim** — source — _quality_. Claims 1-18 are from the first research pass
+(2026-08-27) and justify removing typing/stats from mobile; chart-specific pattern evidence
+(range selectors, mobile legends, glanceability) is being gathered into
+`docs/research/mobile-chart-ux-sources.md` and folded into §4.6 when it lands.
 
 ### 4.1 Why typing-heavy UIs fail on phones
 
 - **Claim 1**: **Average mobile typing is 36.2 WPM with 2.3% uncorrected errors, ~70% of desktop
   keyboard speed, in a 37,370-volunteer study.**
-  <https://userinterfaces.aalto.fi/typing37k/> (Palin et al., MobileHCI'19) —
-  _peer-reviewed; project page fetched, abstract verified._
+  <https://userinterfaces.aalto.fi/typing37k/> (Palin et al., MobileHCI'19) — _peer-reviewed;
+  project page fetched, abstract verified._
 - **Claim 2**: **Touchscreen entry runs ~15–30 WPM vs ~40 WPM on physical keyboards, with high error
-  rates.** <https://arxiv.org/pdf/2409.03044v1> (survey of password entry on non-desktop
-  devices) — _peer-reviewed survey preprint; verified via search snippet, not full read._
+  rates.** <https://arxiv.org/pdf/2409.03044v1> — _peer-reviewed survey preprint; snippet-level._
 - **Claim 3**: **Touchscreen typing error rates are 7–10.8% vs 0.47–0.76% on physical keyboards.**
   <https://pure-oai.bham.ac.uk/ws/portalfiles/portal/156384598/3411764.3445483.pdf> —
-  _peer-reviewed (CHI-format paper); snippet-level verification only._
+  _peer-reviewed; snippet-level._
 - **Claim 4**: **Speech input was 3.0× faster than the smartphone keyboard with a 20.4% lower error
-  rate (English).** <https://hci.stanford.edu/research/speech/> (Ruan et al., Stanford/UW/
-  Baidu) — _peer-reviewed study page; fetched._ (Not a recommendation to add voice here;
-  it bounds how costly typing is.)
+  rate (English).** <https://hci.stanford.edu/research/speech/> (Ruan et al.) — _peer-reviewed
+  study page; fetched._ (Bounds how costly typing is; not a voice recommendation.)
 - **Claim 5**: **Virtual keyboards "can occupy a substantial portion of the screen — often nearly
-  half."** <https://arxiv.org/pdf/2504.12690> (mobile accessibility recommendations) —
-  _arXiv preprint; snippet-level._ Matches what `responsive.css` implies: the keyboard
-  plus a 170px output pane leaves almost nothing for charts/tables.
+  half."** <https://arxiv.org/pdf/2504.12690> — _arXiv preprint; snippet-level._
 
-### 4.2 Recognition vs recall; command palettes as the bridge
+### 4.2 Recognition vs recall
 
-- **Claim 6**: **"Command-line interfaces are based on recall"; menus and visible options convert the
-  task to recognition, which is easier.** NN/g also notes search _suggestions_ "partly
-  transform the query-generation task from one of recall to one of recognition" — the
-  exact mechanism a suggestion-chip row exploits.
-  <https://www.nngroup.com/articles/recognition-and-recall/> — _NN/g guideline article;
+- **Claim 6**: **"Command-line interfaces are based on recall"; visible options convert the task to
+  recognition, which is easier.** <https://www.nngroup.com/articles/recognition-and-recall/> —
+  _NN/g guideline article; fetched in full._ A chart picker + range selector is the extreme
+  case: zero recall, everything visible.
+- **Claim 7**: **"Recognition rather than recall" is Nielsen heuristic #6.**
+  <https://www.nngroup.com/articles/ten-usability-heuristics/> — _NN/g canonical guideline._
+- **Claim 8**: **Heuristic #7 (flexibility/efficiency): keep accelerators for experts** — i.e. the
+  desktop REPL stays; mobile gets the visible path.
+  <https://www.nngroup.com/articles/flexibility-efficiency-heuristic/> — _NN/g; snippet-level._
+
+### 4.3 Conversational / NL querying (rejected direction)
+
+- **Claim 9**: **V-NLI survey (Shen et al., IEEE TVCG): NL interfaces work best as "a complementary
+  input modality to direct manipulation," not a replacement.** <https://arxiv.org/abs/2109.03506> —
+  _peer-reviewed survey; abstract fetched._
+- **Claim 10**: **Nielsen's caveat on chat UIs**: prose prompting has "deep-rooted usability
+  problems"; he predicts hybrid UIs. <https://www.nngroup.com/articles/ai-paradigm/> — _NN/g
+  essay; fetched in full._
+
+### 4.4 Touch targets, progressive disclosure
+
+- **Claim 11**: **WCAG 2.2 SC 2.5.8 (AA): pointer targets ≥ 24×24 CSS px.**
+  <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html> — _W3C normative;
+  w3.org returned 403 to fetch; corroborated by multiple independent references._
+- **Claim 12**: **WCAG SC 2.5.5 (AAA): targets ≥ 44×44 CSS px**, matching Apple's 44pt HIG minimum.
+  Text verified via <https://accessibility.build/wcag/2-5-5> — _secondary explainer quoting
+  normative text; fetched in full._
+- **Claim 13**: **Material Design: touch targets ≥ 48×48 dp.**
+  <https://m2.material.io/develop/web/supporting/touch-target> — _platform guideline; snippet._
+- **Claim 14**: **Apple HIG explicitly recommends progressive disclosure.**
+  <https://developer.apple.com/design/human-interface-guidelines/layout> — _platform guideline;
   fetched in full._
-- **Claim 7**: **"Recognition rather than recall" is Nielsen heuristic #6: make elements, actions and
-  options visible.** <https://www.nngroup.com/articles/ten-usability-heuristics/> —
-  _NN/g canonical guideline; cited, not re-fetched this session._
-- **Claim 8**: **Heuristic #7 (flexibility/efficiency): provide accelerators for experts while keeping
-  the visible path for novices — i.e., don't drop the CLI, augment it.**
-  <https://www.nngroup.com/articles/flexibility-efficiency-heuristic/> — _NN/g guideline;
-  snippet-level._
-- **Claim 9**: **Command palettes are the established industry bridge**: a single keyboard-first
-  surface to "find and run commands, destinations, and recent items."
-  <https://uxpatterns.dev/patterns/advanced/command-palette> — _pattern-library (secondary)._
-  Mobbin's glossary similarly defines the pattern around "navigation and search,
-  shortcuts and quick actions." <https://mobbin.com/glossary/command-palette> —
-  _pattern-library (secondary)._ No dedicated NN/g command-palette article exists (searched).
 
-### 4.3 Conversational / NL querying of data
+### 4.5 How real mobile terminals solve CLI input (why option A looked right)
 
-- **Claim 10**: **V-NLI survey (Shen et al., IEEE TVCG): NL interfaces work best as "a complementary
-  input modality to direct manipulation," not a replacement.**
-  <https://arxiv.org/abs/2109.03506> — _peer-reviewed survey; abstract fetched._
-- **Claim 11**: **NL interfaces for tabular data querying/visualization are an active, maturing
-  research area.** <https://arxiv.org/html/2310.17894v3> — _peer-reviewed survey;
-  snippet-level._
-- **Claim 12**: **Eviza (Setlur et al., UIST 2016) demonstrated NL-driven visual analysis with a
-  "conversation" over data.** DOI: <https://dl.acm.org/doi/10.1145/2984511.2984588> —
-  _peer-reviewed (UIST); citation verified via two independent survey reference lists;
-  paper itself not fetched._
-- **Claim 13**: **Nielsen's caveat on chat UIs**: prose prompting has "deep-rooted usability problems";
-  "half the population in rich countries is not articulate enough" to get good results;
-  he predicts **hybrid UIs** combining intent-based and command-based interaction.
-  <https://www.nngroup.com/articles/ai-paradigm/> — _NN/g essay; fetched in full._
+- **Claim 15**: Termius / Blink Shell / Termux / a-Shell all add an app-defined tappable key/chip
+  row above the soft keyboard plus history-driven suggestions.
+  <https://support.termius.com/hc/en-us/articles/12482919487385-Mobile-Terminal>,
+  <https://docs.blink.sh/>, <https://wiki.termux.com/wiki/Touch_Keyboard> (bot-blocked; corroborated
+  via <https://github.com/termux/termux-app/issues/4589>), <https://github.com/holzschu/a-shell> —
+  _official vendor/project docs; fetched except Termux._ This pattern was implemented (option A)
+  and rejected on visual grounds — a valid pattern for _terminals_, but this page's value is the
+  charts, not the shell.
 
-### 4.4 Touch targets, progressive disclosure, hover
+### 4.6 Mobile chart UX patterns (Apple Stocks / Google Finance / ChatGPT inline charts)
 
-- **Claim 14**: **WCAG 2.2 SC 2.5.8 (AA): pointer targets ≥ 24×24 CSS px (with a spacing exception).**
-  <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html> — _W3C normative
-  guideline; w3.org returned 403 to fetch; text corroborated by multiple independent
-  accessibility references._
-- **Claim 15**: **WCAG SC 2.5.5 (AAA): targets ≥ 44×44 CSS px.** Full criterion text verified via
-  <https://accessibility.build/wcag/2-5-5> — _secondary explainer quoting the normative
-  text; fetched in full._
-- **Claim 16**: **Apple HIG: 44×44 pt minimum touch target.** The HIG pages are JS-rendered and could
-  not be fetched (nav shell only). Cited URL:
-  <https://developer.apple.com/design/human-interface-guidelines/inputs> — _platform
-  guideline; could not verify text directly; universally corroborated (incl. by the
-  accessibility.build WCAG page above: "matches Apple's 44pt")._
-- **Claim 17**: **Material Design: touch targets ≥ 48×48 dp ≈ 9 mm physical.**
-  <https://m2.material.io/develop/web/supporting/touch-target> (spec page, snippet) and
-  the figure quoted in <https://github.com/material-components/material-components-android/issues/1279>
-  — _platform guideline; m3 page fetch returned a nav shell, m2 spec confirmed via
-  snippet + official repo issue._
-- **Claim 18**: **Apple HIG explicitly recommends progressive disclosure** ("Take advantage of
-  progressive disclosure to help people discover content that's currently hidden") and
-  spacing controls apart. <https://developer.apple.com/design/human-interface-guidelines/layout>
-  — _platform guideline; fetched in full._
+_Pending: see `docs/research/mobile-chart-ux-sources.md` (in flight at revision time). Key
+questions: range-preset sets and placement, touch scrub behavior, mobile legend density,
+segmented-control conventions. Fold verified claims here when it lands._
 
-### 4.5 How real mobile terminals solve CLI input
+## 5. Design options — decision record
 
-- **Claim 19**: **Termius**: an extended-keyboard row (arrows, Ctrl/Alt modifiers, function keys);
-  "Terminal Touch" mode mapping swipes to arrow keys; autocomplete suggested "based on
-  commands you've used and your snippets"; pinch-to-zoom; one-tap password autofill.
-  <https://support.termius.com/hc/en-us/articles/12482919487385-Mobile-Terminal> —
-  _official vendor docs; fetched in full._
-- **Claim 20**: **Blink Shell**: a "Smart Keys" bar (CTRL/ALT/ESC modifiers, arrows, scrollable extra
-  keys) shown **only when the on-screen keyboard is up**; gestures for shell management
-  (two-finger tap = new shell, pinch = resize, swipe = switch).
-  <https://docs.blink.sh/> — _official vendor docs; fetched in full._
-- **Claim 21**: **Termux**: a configurable extra-keys row (`~/.termux/termux.properties`,
-  `extra-keys = ...`) and Volume-Down-as-Ctrl emulation.
-  <https://wiki.termux.com/wiki/Touch_Keyboard> — _official project wiki; blocked by Anubis
-  bot protection at fetch time; existence and config surface corroborated via the
-  project's own issue tracker
-  (<https://github.com/termux/termux-app/issues/4589>, which links the wiki pages)._
-- **Claim 22**: **a-Shell**: per-window history and a user-configurable toolbar (`config -t`).
-  <https://github.com/holzschu/a-shell> — _official repo README; fetched in full._
-- **Claim 23**: **What transfers / what doesn't**: every one of these apps adds an app-defined row of
-  tappable keys/chips above the soft keyboard plus history/snippet-driven suggestions.
-  That pattern transfers directly. Modifier emulation (Ctrl/Alt), SSH session gestures,
-  and pinch-to-zoom do not — this repo's terminal has no modal editing, no remote
-  sessions, and its charts already handle touch.
-
-### 4.6 Mobile finance apps
-
-No credible primary-source UX research specific to mobile trading/finance app command
-surfaces was found; industry observation (Bloomberg/Terminal-style apps, brokerage
-search bars) consistently uses search+chips over free typing, but I found nothing
-citable at primary-source quality. See Open Questions.
-
-## 5. Design options, ranked (Part 3)
-
-### (a) Assisted terminal — suggestion chips + kept REPL — RECOMMENDED
-
-**What**: keep the terminal as-is; add a horizontally scrollable chip row docked above the
-keyboard/prompt area, visible only at ≤768px. Chips are generated from
-`COMMAND_ALIASES`/`STATS_SUBCOMMANDS`/`PLOT_SUBCOMMANDS` (constants.js) and filtered by
-the same prefix logic as `autocomplete.js`. Tapping a complete command (`summary`,
-`stats cagr`) executes it through `executeCommand` (commands.js:26); tapping an
-incomplete one (`stats`, `plot`, `type:`) inserts the text into the input for completion.
-A second row of filter chips (`type:buy`, `type:sell`, `stock`, `etf`, `from:2024`,
-`2023q1`…) covers the filter mini-language from `help.js:38-42`.
-
-**Why it fits**: it maps 1:1 onto the enumerated surface — commands, subcommands, filters,
-aliases — with zero changes to the command engine. It converts recall to recognition
-(claims 6-8), sidesteps mobile typing cost (claims 1-5), and is the exact pattern used by
-Termius/Blink/Termux/a-Shell (claims 19-22). Chips must be ≥44×44 CSS px (claims 14-17).
-
-**Trade-offs**: chips expose breadth, not depth — long-tailed numeric filters
-(`min:1000`) still need typing. Row takes ~48px of scarce vertical space; mitigate with
-horizontal scroll and contextual filtering (show subcommand chips only after `stats` is
-tapped). **Effort: low-medium** (one new module + CSS in `css/terminal/`, jest tests).
-
-### (b) Full command-palette / menu-driven UI
-
-**What**: a tappable launcher button opening a full-screen, grouped menu of every
-command/subcommand/filter with search.
-
-**Why**: maximum discoverability (claims 6, 9); scales to the whole command surface;
-familiar from VS Code/kbar.
-
-**Trade-offs**: replaces the terminal metaphor on mobile rather than assisting it;
-duplicates the command taxonomy in a second UI (maintenance burden when
-`constants.js` changes — though it could be generated from the same registry);
-full-screen overlay competes with chart/table visibility. **Effort: medium-high.**
-Good eventual home for rarely used commands; overkill as step one.
-
-### (c) Chat-style guided / NL interface
-
-**What**: free-text "ask about your portfolio" box mapping NL to the existing commands.
-
-**Why**: lowest recall burden in theory (claims 10-12).
-
-**Trade-offs**: worst fit here. The command surface is already small and enumerable —
-recognition (chips) beats probabilistic NL parsing. No backend/LLM exists in this static
-site; NL parsing would be a new dependency or a fragile hand-written parser. NN/g's
-literacy caveat and "hybrid UI" conclusion (claim 13) argue against chat-first. **Effort:
-high, risk: high. Not recommended.**
-
-### (d) Curated read-only mobile view
-
-**What**: on mobile, skip the REPL: show the default chart + table with a row of tappable
-chart/stats buttons (a degenerate form of (a) without the input).
-
-**Why**: matches current reality — the nav already hides Terminal on mobile
-(`index.html:88` etc.), so a curated view is arguably the _de facto_ current design
-decision. Zero typing. Cheapest to ship.
-
-**Trade-offs**: abandons the exploration loop that makes the terminal valuable; date and
-numeric filters become impossible; the page's identity is lost. **Effort: low.** A
-reasonable interim, or the graceful-degradation tier of option (a).
+- **(a) Assisted terminal (chips + REPL)** — IMPLEMENTED, THEN REJECTED. Stats output is
+  unreadable at phone widths and the owner doesn't consume stats on mobile. Chip bar becomes
+  dead code under D (removal: action item 1).
+- **(b) Full command palette** — superseded; a picker of ~5 charts needs no palette.
+- **(c) Chat / NL interface** — rejected (claims 9-10; no backend on a static site).
+- **(d) Chart-first curated mobile view — SELECTED.** Mobile shows: chart picker (curated few),
+  timeline range selector (Apple Stocks / Google Finance style), the chart (touch crosshair
+  already works), an adapted legend, and a currency switcher. Terminal pane and transaction
+  table are hidden at ≤768px; desktop is untouched.
 
 ### Repo constraints honored
 
-- Page-scoped: all new CSS goes in `css/terminal/responsive.css` (or a new
-  `css/terminal/chips.css` imported only by `terminal/index.html`), gated behind the
-  existing ≤768px media query — no leak to `position/`, `calendar/`, or `index/`.
-- `data/` untouched: chips are generated from `js/transactions/terminal/constants.js`,
-  not from generated data.
-- Diff-coverage gate: the chip module needs jest tests (see Action items).
+- Page-scoped: new CSS in `css/terminal/responsive.css` (≤768px block) and any new module
+  gated by the same breakpoint / `UI_BREAKPOINTS.MOBILE` (`js/config.js:172-174`) — no leak to
+  `position/`, `calendar/`, `index/`.
+- `data/` untouched: everything derives from existing state and renderers.
+- Diff-coverage gate: every new JS module ships with jest tests.
 
-## 6. Action items
+## 6. Action items (Option D)
 
-Ranked, concrete, anchor-verified.
+Ranked, anchor-verified. Items 1-2 first (subtract before adding). **Item 8 (nav re-enable) is
+gated on the owner's explicit approval — do not do it unprompted.**
 
-1. **Fix the mobile input font-size conflict.** Find: `css/terminal/responsive.css:90-95`
-   sets `.terminal-input { font-size: 12px !important; }` under `max-width: 768px`,
-   overriding the `16px !important` anti-zoom rule at `responsive.css:1-7`. Change:
-   set `.terminal-input` to `16px` in the mobile block (keep 12px on desktop via
-   `css/terminal/terminal.css:89-102`). Verify: computed font-size of `#terminalInput`
-   is 16px at 375px viewport width; add/adjust a jest test if one covers this CSS,
-   otherwise verify via `make screenshot URL=/terminal/` at mobile emulation.
-2. **Reconsider `autofocus`/auto-`.focus()` on touch devices.** Find:
-   `js/transactions/terminal.js:410-412` focuses the input on init; combined with
-   `terminal/index.html:167` (`autofocus`) this raises the soft keyboard over the page
-   on load. Change: skip programmatic focus when `window.matchMedia('(pointer: coarse)').matches`
-   (add to the `if (terminalInput)` block). Verify: new jest test asserting no focus call
-   under coarse-pointer matchMedia mock; existing terminal tests still pass
-   (`npx jest tests/js/transactions/terminal`).
-3. **Add a chip-bar module.** Find: command taxonomy in
-   `js/transactions/terminal/constants.js:1-76`; prefix matchers in
-   `autocomplete.js:20-64`; dispatcher in `commands.js:26-140`; insertion point inside
-   `.terminal` in `terminal/index.html:151-171` (between `#terminalOutput` and
-   `.terminal-prompt`). Change: new `js/transactions/terminal/chips.js` rendering
-   contextual chips (top-level commands → subcommand chips after `stats`/`plot`; a static
-   filter-chip row) that either calls the terminal's `processCommand` (returned from
-   `initTerminal`, terminal.js:447-449) or inserts text into `#terminalInput`. Wire it in
-   `initTerminal` behind a `max-width: 768px` / coarse-pointer check. Verify: jest tests
-   under `tests/js/transactions/terminal/` covering chip rendering, tap-to-execute vs
-   tap-to-insert, and desktop inertness; `make precommit-fix` green.
-4. **Chip styling, page-scoped.** Find: mobile media block at
-   `css/terminal/responsive.css:38-148`. Change: add `.terminal-chips` styles there
-   (horizontal scroll, ≥44×44px chip hit areas per WCAG 2.5.5, theme variables from
-   `css/terminal/base.css:1-18`). Verify: `npx stylelint css/terminal/responsive.css`;
-   measure chip boxes in a `make screenshot URL=/terminal/` mobile render.
-5. **Make the Terminal nav link reachable on mobile** (product decision first — it is
-   deliberately hidden today). Find: `index.html:88`, `calendar/index.html:104`,
-   `position/index.html:100` (`hide-on-mobile` on the terminal `<li>`). Change: remove the
-   class only after items 1-4 land, or the hidden link stays the graceful-degradation
-   answer (option d). Verify: visual check on all four pages at ≤768px.
-6. **Update help copy for touch.** Find: `js/transactions/terminal/handlers/help.js:31`
-   ("Press Tab to auto-complete"). Change: mention chips/tapping when on coarse pointers
-   (or make the hint input-agnostic). Verify: existing help tests in
-   `tests/js/transactions/terminal/` updated accordingly.
-7. **Defer**: command palette (option b) and NL/chat (option c). Revisit only if chip
-   usage data or user feedback shows the chip row's breadth limit bites.
+1. **Remove the mobile chip bar** (dead under D). Delete `js/transactions/terminal/chips.js` and
+   `tests/js/transactions/terminal/chips.test.js`; remove the import and the coarse-pointer
+   `initChips` block at `js/transactions/terminal.js:25` and `:451-454`; remove the
+   `.terminal-chips`/`.terminal-chip` rules at `css/terminal/responsive.css:108-142`; revert the
+   chips mention in the help hint (`js/transactions/terminal/handlers/help.js`, commit
+   `dfadf680`). Keep the earlier focus/font-size fixes (`513ef695`, `1a530c54`) — harmless and
+   still correct if the pane is ever shown. Verify: `npx jest tests/js/transactions/terminal`
+   green; `npx stylelint css/terminal/responsive.css`.
+2. **Hide the terminal pane and table on mobile; always show the chart.** CSS
+   (`css/terminal/responsive.css` ≤768px block): `.terminal { display: none; }` and
+   `.table-responsive-container { display: none !important; }`; let `.chart-card` take the full
+   column height (it is already `flex: 1` at line 153). JS: in the mobile path, remove
+   `is-hidden` from `#runningAmountSection` (`terminal/index.html:175`) after
+   `whenTransactionDataReady()` resolves, then `chartManager.update()` (data-readiness pattern at
+   `handlers/plot.js:92-95`). Verify: mobile screenshot shows the default chart with no terminal
+   pane; desktop unchanged. Add a jest test asserting the mobile init path un-hides the section
+   (breakpoint mocked) and leaves it hidden on desktop.
+3. **Mobile control bar module** — new `js/pages/terminal/mobileControls.js`, wired from
+   `initialize()` (`js/pages/terminal/index.js:298-394`) behind
+   `window.matchMedia('(max-width: 768px)')`, rendering a bar into `.transaction-container`
+   directly above `#runningAmountSection` (`terminal/index.html:173-188`). The **chart picker**
+   is a row of tappable buttons for a curated subset — proposal: Balance → `contribution`,
+   Performance → `performance`, Drawdown → `drawdown`, Composition → `composition`, Sectors →
+   `sectors` (keys from `js/transactions/chart.js:104-161`; final set is the owner's call).
+   Tap handler: `setActiveChart(key)` (`js/transactions/state.js:118`), ensure the section is
+   un-hidden, `chartManager.update()`; mark the active button with `aria-pressed`. Verify: jest
+   tests for rendering at mocked mobile width, tap → state + update called, desktop renders
+   nothing; `make precommit-fix` green.
+4. **Timeline range selector** (Apple-Stocks-style presets) in the same bar: `1M 3M 6M YTD 1Y
+All`. A small pure helper maps a preset to `{from, to}` relative to today (`All` →
+   `{from: null, to: null}`; `YTD` → Jan 1 of the current year); existing parsers
+   (`dateUtils.js:167-343`) handle only years/quarters, so month-offset math is new — keep it in
+   the new module, not `dateUtils.js`. Apply via `setChartDateRange` +
+   `updateContextYearFromRange(range)` + `chartManager.update()`. Default selection should match
+   `INITIAL_CHART_DATE_RANGE` (`js/config.js:167-170`: `from: '2024-01-01'` — i.e. none of the
+   presets; represent it as "All"-unselected/custom or add a `2Y` preset — owner's call). Verify:
+   unit tests for the preset math — remember the suite runs TZ=UTC (`docs/testing-notes.md`), so
+   compute from an injected `now`, not `Date.now()`, in tests.
+5. **Currency switcher on mobile.** Un-hide `#currencyToggleContainer` at ≤768px (override
+   `css/terminal/base.css:101-104` and drop `hide-on-mobile` at `terminal/index.html:114`) and
+   reposition it: today it is `position: fixed; top: 15px; left: 15px`
+   (`css/terminal/base.css:95-99`), which collides with the mobile layout — move it into the
+   control bar in flow, or to a fixed corner that clears the nav. No JS changes:
+   `currencyToggleManager.js` binds by id and the `currencyChangedGlobal` handler
+   (`js/pages/terminal/index.js:406-445`) already re-renders the chart. Keep ≥44×44px targets
+   (claims 11-13). Verify: `tests/js/ui/currencyToggleManager.test.js` still green; jest test
+   that the container is visible at mocked mobile width; tap switches the rendered currency.
+6. **Legend adaptation for mobile.** Base rules exist (`css/terminal/chart.css:119-139`: grid,
+   11px labels, truncation). Adapt: tappable legend items (non-stacked charts —
+   `interaction.js:724-760`) need ≥44px-tall hit areas (claims 11-13); consider a single
+   horizontally scrollable row if the grid wraps past two lines. **Visual — human review
+   required.** Verify: `npx stylelint css/terminal/chart.css`; mobile screenshot per chart type.
+7. **Layout machinery check.** With the terminal pane and table hidden, confirm
+   `adjustMobilePanels` (`js/transactions/layout.js:43-68`) still sizes the chart card correctly
+   (it skips `is-hidden` panels and subtracts the legend height, lines 26-41) — the new control
+   bar consumes vertical space, so the `bottomSpacing = 16` constant (line 55) and the
+   `calc(100dvh - 118px)` container height (`responsive.css:74`) may need adjusting. Verify:
+   mobile screenshot shows the chart filling the viewport without overflow; `npx jest
+tests/js/pages/terminal` green.
+8. **[GATED — owner approval required] Re-enable the Terminal nav link on mobile.** Remove
+   `hide-on-mobile` from the terminal `<li>` at `index.html:88`, `calendar/index.html:104`,
+   `position/index.html:100` (i.e. redo `edc303d0`, reverted in `d2fedb2b`). Only after items
+   1-7 land and the owner reviews the live page on a real phone. Verify: visual check on all
+   four pages at ≤768px.
+9. **Defer**: stats-on-mobile in any form (rejected by owner), command palette (b), NL/chat (c).
 
 ## 7. Open questions / what I couldn't verify
 
-- **WCAG/Apple/Material primary texts**: w3.org returned 403 and Apple's/Material's
-  guideline pages are JS-rendered (fetch returned nav shells). The 24px/44px/48dp figures
-  were corroborated by multiple independent sources, but the normative pages were not read
-  directly this session. Termux's wiki was bot-blocked; its extra-keys feature was
-  corroborated via the project's GitHub issues.
-- **Lines 1001-1143 of `js/transactions/chart/interaction.js`** (pointerup/pointercancel
-  finalization and `attachCrosshairEvents` binding) were read by the orchestrating agent,
-  not by me; I verified lines 1-1000 directly. Their report (Pointer Events only,
-  `passive: false`, dblclick-to-clear) is consistent with everything in 1-1000.
-- **Whether the terminal page is intentionally mobile-hidden as a product decision**:
-  `hide-on-mobile` on the nav link may reflect "terminal is desktop-only by design."
-  Action item 5 gates on that decision.
-- **Mobile finance-app UX**: no primary-source material found; the analogy rests on the
-  terminal-app evidence (claims 19-22), which is strong and directly on-point.
-- **Real-device behavior unverified**: everything in §3.3 (iOS auto-zoom, keyboard
-  occlusion, chip ergonomics) is inferred from code + cited research, not from a physical
-  device session. A human should verify on an actual phone before shipping.
+- **Chart-UX pattern research in flight**: `docs/research/mobile-chart-ux-sources.md` (Apple
+  Stocks range presets and scrub behavior, Google Finance mobile, ChatGPT inline charts, mobile
+  legend conventions). §4.6 is a placeholder until it lands; items 3-6 may need adjustment.
+- **Final chart-picker set and default range preset** (items 3-4) are product decisions — the
+  owner picks the chart list and whether the default range stays `from 2024-01-01`.
+- **WCAG/Apple/Material primary texts**: w3.org returned 403 and Apple's/Material's guideline
+  pages are JS-rendered; the 24px/44px/48dp figures are corroborated by multiple independent
+  sources but the normative pages were not read directly.
+- **Real-device behavior unverified**: keyboard occlusion, tap ergonomics, and chart legibility
+  are inferred from code + cited research. A human must verify on an actual phone before item 8.
