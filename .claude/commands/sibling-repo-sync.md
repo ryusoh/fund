@@ -6,8 +6,14 @@ argument-hint: "[what to sync, e.g. 'the complexity gate' or 'depcheck']"
 Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 
 - `~/dev/ryusoh.github.io` — JS-only static site (plain `<script>` tags, no ES
-  modules, no Python pipeline); CI-parity gate = `make precommit-fix` (runs
-  `.pre-commit-config.yaml` hooks, sync-check, Jest + coverage, etc.); Makefile
+  modules, no Python **data** pipeline — but it DOES have Python tooling:
+  `tools/sync_commands.py` plus a pytest suite `tools/__tests__/test_skills.py`
+  mirroring the Jest skill tests; no repo-local `venv/` — pytest resolves to
+  the user-level `/Users/lz/dev/.venv`, and the pytest tests are NOT wired
+  into the Makefile gates); CI-parity gate = `make precommit-fix` (runs
+  `.pre-commit-config.yaml` hooks, sync-check, Jest + coverage, etc.) —
+  `make gate` is the same parity check WITHOUT the trailing `git add -u`,
+  prefer it when the tree holds uncommitted work; Makefile
   `lint-js` uses `--max-warnings=0`; default branch is **`master`**, not `main`;
   `package-lock.json` is authoritative, `pnpm-lock.yaml` drifts by convention
   (regenerated out-of-band) — don't regenerate it; its sync generator is
@@ -15,7 +21,8 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   via `git add -u` — uncommitted work may get staged; its `ship` skill has no
   Mode A/B split (single numbered flow on `master`, gates `make check` +
   `make test`, asks for acknowledgement before pushing); run prettier there
-  via `./scripts/run-npx.sh prettier`.
+  via `./scripts/run-npx.sh prettier`; NO screenshot/smoke/serve make targets
+  (unlike fund).
 - `~/dev/anki` — JS + Python (Anki addons); **no** `.pre-commit-config.yaml`;
   CI gate = `make precommit SKIP=1` (fmt-check lint typecheck-js quality-py
   check sync-check); aliases via package.json `imports` (`#js/*`, `#ui/*`);
@@ -23,7 +30,13 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   works here; its sync generator is `tools/sync_commands.py` and its
   frontmatter parser is naive (single-line `description`/`argument-hint` only);
   `precommit-fix` has a `YOLO=1`/`MSG=` mode that runs `git add -A` — hazard
-  for uncommitted work.
+  for uncommitted work. It HAS a generated `data/` dir with a "never hand-edit"
+  rule (AGENTS.md non-negotiable #4, stats generators under `data/anki/`) and
+  it uses Conventional Commits — fund's `data/` guardrail and commit-message
+  rules propagate unchanged. Jest only runs under `review_heatmap/tests/`;
+  scoped Python verification is `make test-py SUITE=<addon>/tests` /
+  `make test-addon ADDON=<dir>`, and pytest must run from the repo root (the
+  root `conftest.py` mocks `aqt`/`anki`).
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
   `make precommit` (on macOS the parity gate is `make precommit-docker` —
   raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
@@ -36,7 +49,12 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   frontmatter parser — a `---` horizontal rule in a skill body would be
   mangled); its `ship` skill uses `<primary-branch>`/`<branch_name>`
   placeholders (deliberately no hardcoded `main`), has an audience check and
-  asks for acknowledgement before pushing.
+  asks for acknowledgement before pushing. Its AGENTS.md is STALE on
+  subproject names (checked 2026-08): it says `clean_adblock/` and
+  `tianditu_bypass/` but the real dirs are `adblock/` and `gov_bypass/` —
+  trust `ls` over the doc. No stylelint — prettier covers CSS. Generated
+  output not to hand-edit/commit: `coverage/`, `adblock/dist/`,
+  `nas_proxy/out/`, command logs.
 
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
