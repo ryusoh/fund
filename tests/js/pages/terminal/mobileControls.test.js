@@ -43,32 +43,22 @@ describe('mobileControls', () => {
         adjustMobilePanels = require('../../../../js/transactions/layout.js').adjustMobilePanels;
     });
 
-    test('renders a menu button labeled Balance ▾ with role="menu" containing 5 items', () => {
+    test('renders a single row containing range presets and overflow button', () => {
         const bar = initMobileControls({ chartManager: { update: jest.fn() } });
         expect(bar).not.toBeNull();
-        const menuButton = bar.querySelector('.mobile-menu-button');
-        expect(menuButton).not.toBeNull();
-        expect(menuButton.textContent).toBe('Balance ▾');
-        expect(menuButton.getAttribute('aria-haspopup')).toBe('menu');
-        expect(menuButton.getAttribute('aria-expanded')).toBe('false');
 
-        const menu = bar.querySelector('.mobile-chart-menu');
-        expect(menu).not.toBeNull();
-        expect(menu.getAttribute('role')).toBe('menu');
-        expect(menu.hidden).toBe(true);
+        const row = bar.querySelector('.mobile-controls-row');
+        expect(row).not.toBeNull();
 
-        const items = menu.querySelectorAll('.mobile-chart-menu-item');
-        expect(items.length).toBe(5);
-        expect([...items].map((i) => i.textContent)).toEqual([
-            'Balance',
-            'Performance',
-            'Drawdown',
-            'Composition',
-            'Sectors',
-        ]);
-        expect(items[0].getAttribute('role')).toBe('menuitemradio');
-        expect(items[0].getAttribute('aria-checked')).toBe('true');
-        expect(items[1].getAttribute('aria-checked')).toBe('false');
+        const rangePicker = row.querySelector('.mobile-range-picker');
+        const overflowBtn = row.querySelector('.mobile-overflow-button');
+        expect(rangePicker).not.toBeNull();
+        expect(overflowBtn).not.toBeNull();
+
+        // No chart title or selector elements exist
+        expect(bar.querySelector('.mobile-chart-title')).toBeNull();
+        expect(bar.querySelector('.mobile-chart-menu')).toBeNull();
+        expect(bar.querySelector('.mobile-menu-button')).toBeNull();
         expect(bar.nextElementSibling.id).toBe('runningAmountSection');
     });
 
@@ -77,52 +67,76 @@ describe('mobileControls', () => {
         expect(initMobileControls({ chartManager: { update: jest.fn() } })).toBeNull();
     });
 
-    test('clicking the menu button opens the menu and clicking an item switches the active chart', async () => {
+    test('swiping left on the chart section switches to next chart and swiping right to previous chart (cycles through 19 charts)', async () => {
         const chartManager = { update: jest.fn() };
         initMobileControls({ chartManager });
-        const menuButton = document.querySelector('.mobile-menu-button');
-        const menu = document.querySelector('.mobile-chart-menu');
 
-        menuButton.click();
-        expect(menu.hidden).toBe(false);
-        expect(menuButton.getAttribute('aria-expanded')).toBe('true');
+        const section = document.getElementById('runningAmountSection');
 
-        const performanceItem = document.querySelector('[data-chart="performance"]');
-        performanceItem.click();
+        // Swipe left (deltaX = -60px) -> switches from Balance (0) to Performance (1)
+        const touchStart = new Event('touchstart', { bubbles: true });
+        touchStart.touches = [{ clientX: 150, clientY: 100 }];
+        section.dispatchEvent(touchStart);
+
+        const touchEnd = new Event('touchend', { bubbles: true });
+        touchEnd.changedTouches = [{ clientX: 90, clientY: 102 }];
+        section.dispatchEvent(touchEnd);
+
         await Promise.resolve();
         await Promise.resolve();
 
         expect(setActiveChart).toHaveBeenCalledWith('performance');
-        expect(
-            document.getElementById('runningAmountSection').classList.contains('is-hidden')
-        ).toBe(false);
         expect(chartManager.update).toHaveBeenCalledTimes(1);
         expect(adjustMobilePanels).toHaveBeenCalled();
-        expect(menuButton.textContent).toBe('Performance ▾');
-        expect(menu.hidden).toBe(true);
-        expect(performanceItem.getAttribute('aria-checked')).toBe('true');
-        expect(
-            document.querySelector('[data-chart="contribution"]').getAttribute('aria-checked')
-        ).toBe('false');
+
+        // Swipe right (deltaX = +60px) -> switches back to Balance (0)
+        const touchStart2 = new Event('touchstart', { bubbles: true });
+        touchStart2.touches = [{ clientX: 90, clientY: 100 }];
+        section.dispatchEvent(touchStart2);
+
+        const touchEnd2 = new Event('touchend', { bubbles: true });
+        touchEnd2.changedTouches = [{ clientX: 160, clientY: 98 }];
+        section.dispatchEvent(touchEnd2);
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(setActiveChart).toHaveBeenCalledWith('contribution');
+
+        // Swipe right again -> wraps to last chart (FX Rate)
+        const touchStart3 = new Event('touchstart', { bubbles: true });
+        touchStart3.touches = [{ clientX: 90, clientY: 100 }];
+        section.dispatchEvent(touchStart3);
+
+        const touchEnd3 = new Event('touchend', { bubbles: true });
+        touchEnd3.changedTouches = [{ clientX: 160, clientY: 98 }];
+        section.dispatchEvent(touchEnd3);
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(setActiveChart).toHaveBeenCalledWith('fx');
     });
 
-    test('Escape and clicking outside close the menu', () => {
+    test('vertical swipe or small gestures do not switch charts', async () => {
         const chartManager = { update: jest.fn() };
         initMobileControls({ chartManager });
-        const menuButton = document.querySelector('.mobile-menu-button');
-        const menu = document.querySelector('.mobile-chart-menu');
 
-        menuButton.click();
-        expect(menu.hidden).toBe(false);
+        const section = document.getElementById('runningAmountSection');
 
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-        expect(menu.hidden).toBe(true);
+        // Vertical scroll (deltaY = 80, deltaX = 10)
+        const touchStart = new Event('touchstart', { bubbles: true });
+        touchStart.touches = [{ clientX: 100, clientY: 100 }];
+        section.dispatchEvent(touchStart);
 
-        menuButton.click();
-        expect(menu.hidden).toBe(false);
+        const touchEnd = new Event('touchend', { bubbles: true });
+        touchEnd.changedTouches = [{ clientX: 110, clientY: 180 }];
+        section.dispatchEvent(touchEnd);
 
-        document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        expect(menu.hidden).toBe(true);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(setActiveChart).not.toHaveBeenCalled();
     });
 
     test('renders overflow button and toggles bottom sheet with currency container', () => {
