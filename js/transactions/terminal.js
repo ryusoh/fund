@@ -22,7 +22,6 @@ const getCrosshairDateFormatter = (() => {
 
 import { executeCommand } from './terminal/commands.js';
 import { autocompleteCommand, resetAutocompleteState } from './terminal/autocomplete.js';
-import { initChips } from './terminal/chips.js';
 
 import { initFade, requestFadeUpdate } from './fade.js';
 import { cycleCurrency } from '@ui/currencyToggleManager.js';
@@ -446,11 +445,6 @@ export function initTerminal({
     if (outputContainer) {
         // Initialize scroll fading
         initFade(outputContainer);
-    }
-
-    const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-    if (isCoarsePointer) {
-        initChips({ terminalInput, processCommand });
     }
 
     return {

@@ -28,7 +28,7 @@ export function handleHelpCommand(args, { appendMessage }) {
             '  clear              - Clear the terminal screen\n' +
             '  help (h)           - Show this help message\n' +
             '                       Use "help filter" for filter commands\n\n' +
-            'Hint: Press Tab to auto-complete command names and subcommands, or tap a suggestion chip on touch devices.\n\n' +
+            'Hint: Press Tab to auto-complete command names and subcommands\n\n' +
             'Any other input is treated as a filter for the transaction table\n' +
             "When a chart is active, you can use simplified date commands like '2023', '2023q1', 'from:2023q2' (or 'f:2023q2'), '2022:2023'";
         appendMessage(result);
