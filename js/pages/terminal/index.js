@@ -96,6 +96,7 @@ import { createUiController } from '@js/transactions/ui.js';
 import { initTerminal, updateTerminalCrosshair } from '@js/transactions/terminal.js';
 import { adjustMobilePanels } from '@js/transactions/layout.js';
 import { initCurrencyToggle, cycleCurrency, getStoredCurrency } from '@ui/currencyToggleManager.js';
+import { initMobileControls } from './mobileControls.js';
 
 let chartManager;
 let tableController;
@@ -403,6 +404,7 @@ function initialize() {
     // Mobile (chart-first view): CSS hides the terminal pane and table, so the
     // chart is the whole page — reveal it once the data has loaded.
     if (isMobileViewport()) {
+        initMobileControls({ chartManager });
         whenTransactionDataReady().then(() => {
             const section = document.getElementById('runningAmountSection');
             if (section) {

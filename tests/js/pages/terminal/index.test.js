@@ -35,6 +35,7 @@ describe('Terminal index page', () => {
             setRunningAmountSeries: jest.fn(),
             setPerformanceSeries: jest.fn(),
             setChartDateRange: jest.fn(),
+            setActiveChart: jest.fn(),
             cycleCurrency: jest.fn(),
             trackTransactionDataLoad: jest.fn(),
             whenTransactionDataReady: jest.fn(() => Promise.resolve()),
@@ -79,7 +80,9 @@ describe('Terminal index page', () => {
             jest.resetModules();
             document.body.insertAdjacentHTML(
                 'beforeend',
-                '<section id="runningAmountSection" class="is-hidden"></section>'
+                '<div class="transaction-container">' +
+                    '<section id="runningAmountSection" class="is-hidden"></section>' +
+                    '</div>'
             );
             await import('@pages/terminal/index.js');
             // flush the whenTransactionDataReady().then(...) callback
@@ -95,12 +98,24 @@ describe('Terminal index page', () => {
             ).toBe(false);
         });
 
+        it('renders the mobile control bar on mobile', async () => {
+            setupMatchMedia(true);
+            await importFresh();
+            expect(document.querySelector('.mobile-controls')).not.toBeNull();
+        });
+
         it('keeps the chart section hidden on desktop', async () => {
             setupMatchMedia(false);
             await importFresh();
             expect(
                 document.getElementById('runningAmountSection').classList.contains('is-hidden')
             ).toBe(true);
+        });
+
+        it('renders no mobile control bar on desktop', async () => {
+            setupMatchMedia(false);
+            await importFresh();
+            expect(document.querySelector('.mobile-controls')).toBeNull();
         });
     });
 
