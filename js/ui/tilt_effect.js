@@ -10,9 +10,7 @@ export function initTiltEffect() {
     if (isTouchOnly) {
         return;
     }
-    const tiltContainers = document.querySelectorAll(
-        'nav.container, .quantum-widget, .marquee-container'
-    );
+    const tiltContainers = document.querySelectorAll('nav.container, .quantum-widget');
     tiltContainers.forEach((container) => {
         window.gsap.set(container, { transformPerspective: 1000, transformStyle: 'preserve-3d' });
         container.addEventListener('mousemove', (e) => {

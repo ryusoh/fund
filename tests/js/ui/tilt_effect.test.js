@@ -12,7 +12,6 @@ describe('tilt_effect', () => {
         document.body.innerHTML = `
             <nav class="container"></nav>
             <div class="quantum-widget"></div>
-            <div class="marquee-container"></div>
         `;
         window.gsap = {
             set: jest.fn(),

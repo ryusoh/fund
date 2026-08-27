@@ -35,9 +35,10 @@ runs; no network fetches.
    layers every animation frame, even when idle** (no visibility/idle gating) —
    `js/ui/tableGlassEffect.js:507-514,578-615`; instantiated at
    `js/pages/terminal/index.js:356-362`.
-6. **The index-page marquee does one `getBoundingClientRect()` per character
-   span per frame and writes layout-affecting margins per char per frame** —
-   `js/ui/marquee.js:100-155`.
+6. ~~The index-page marquee does one `getBoundingClientRect()` per character
+   span per frame~~ — resolved by deletion: the marquee was dead code
+   (`enabled: false`), so `js/ui/marquee.js`, `css/marquee.css`, the markup,
+   and `MARQUEE_CONFIG` were removed.
 7. **While the calendar is zoomed, `WebGLCaustics` re-measures every calendar
    cell with `getBoundingClientRect()` once per second and runs a 20-iteration
    Jacobi fluid solve every frame** — `js/ui/webglCaustics.js:358,492-496,617`.
@@ -52,19 +53,19 @@ All findings except F6 were implemented on `main` in the commits below. The
 original, line-numbered work orders lived in `docs/performance-action-items.md`;
 that doc has been consolidated into this file now that the work is done.
 
-| Finding                                              | Commit     | Scope                                                                                                          |
-| :--------------------------------------------------- | :--------- | :------------------------------------------------------------------------------------------------------------- |
-| F4 — compact chart JSONs                             | `d2ead8dc` | `scripts/generate_composition_data.py`, `generate_geography_data.py`, `generate_marketcap_from_composition.py` |
-| F9 — share `balance_series.json` fetch               | `436489ca` | `js/transactions/dataLoader.js`                                                                                |
-| F3 — `forward_pe.json` sidecar                       | `3c365328` | `scripts/generate_pe_data.py`, `js/services/dataService.js`                                                    |
-| F1 — drop timestamp cache-busting                    | `328cfcf4` | `js/services/dataService.js`, `js/transactions/realtimeData.js`, `js/transactions/terminal/stats/financial.js` |
-| F2 — single-flight `fetchRealTimeData` + PE cache    | `111fe831` | `js/transactions/realtimeData.js`, `js/services/dataService.js`                                                |
-| F10 — batch yfinance downloads                       | `28489ccf` | `scripts/pnl/update_daily_pnl.py`                                                                              |
-| F11 — `groupby('symbol')` in `prepare_frontend_data` | `46619aea` | `scripts/prepare_frontend_data.py`                                                                             |
-| F5 — idle-gate `TableGlassEffect`                    | `2f79530c` | `js/ui/tableGlassEffect.js`                                                                                    |
-| F8 — `toBlob()` + debounced resize rebuilds          | `22d9330f` | `js/ui/liquidGlassRefraction.js`                                                                               |
-| F7 — event-driven caustics + idle sim pause          | `33b8e962` | `js/ui/webglCaustics.js`                                                                                       |
-| F6 — marquee per-char culling                        | **Closed** | Measured 0 `.mq-char` spans at runtime because `MARQUEE_CONFIG.enabled` is `false`; not implemented.           |
+| Finding                                              | Commit      | Scope                                                                                                                |
+| :--------------------------------------------------- | :---------- | :------------------------------------------------------------------------------------------------------------------- |
+| F4 — compact chart JSONs                             | `d2ead8dc`  | `scripts/generate_composition_data.py`, `generate_geography_data.py`, `generate_marketcap_from_composition.py`       |
+| F9 — share `balance_series.json` fetch               | `436489ca`  | `js/transactions/dataLoader.js`                                                                                      |
+| F3 — `forward_pe.json` sidecar                       | `3c365328`  | `scripts/generate_pe_data.py`, `js/services/dataService.js`                                                          |
+| F1 — drop timestamp cache-busting                    | `328cfcf4`  | `js/services/dataService.js`, `js/transactions/realtimeData.js`, `js/transactions/terminal/stats/financial.js`       |
+| F2 — single-flight `fetchRealTimeData` + PE cache    | `111fe831`  | `js/transactions/realtimeData.js`, `js/services/dataService.js`                                                      |
+| F10 — batch yfinance downloads                       | `28489ccf`  | `scripts/pnl/update_daily_pnl.py`                                                                                    |
+| F11 — `groupby('symbol')` in `prepare_frontend_data` | `46619aea`  | `scripts/prepare_frontend_data.py`                                                                                   |
+| F5 — idle-gate `TableGlassEffect`                    | `2f79530c`  | `js/ui/tableGlassEffect.js`                                                                                          |
+| F8 — `toBlob()` + debounced resize rebuilds          | `22d9330f`  | `js/ui/liquidGlassRefraction.js`                                                                                     |
+| F7 — event-driven caustics + idle sim pause          | `33b8e962`  | `js/ui/webglCaustics.js`                                                                                             |
+| F6 — marquee per-char culling                        | **Removed** | Dead code (`MARQUEE_CONFIG.enabled` was `false`); `js/ui/marquee.js`, `css/marquee.css`, markup, and config deleted. |
 
 Additional commits shipped with this batch:
 
@@ -190,6 +191,10 @@ config-disabled; or gate ambient layers behind a slow `setInterval`-driven
 smoothing is changing.
 
 ### F6. Marquee does per-char layout reads and margin writes every frame
+
+**Resolved by deletion** — the marquee was disabled (`MARQUEE_CONFIG.enabled:
+false`) and has been removed entirely (markup, `js/ui/marquee.js`,
+`css/marquee.css`, config). The original finding is kept below for the record.
 
 **What/where.** `initGravitationalDistortion` (`js/ui/marquee.js:95-157`) adds
 a `gsap.ticker` callback that, each frame, calls `getBoundingClientRect()` on
@@ -343,7 +348,6 @@ line 22), so impact is low; the fix is a one-liner.
   Memoizing assumes live prices don't materially change within one page load;
   if intra-load refresh is intentional, single-flight dedup (not full memo) is
   the safe version of F2.
-- **Marquee char count** at runtime was not measured; F6's severity scales with
-  the number of `.mq-char` spans.
+- ~~Marquee char count~~ — moot: the marquee was removed as dead code (see F6).
 - **Benchmark representativeness.** Both `performance/` benchmarks run on
   synthetic data; I ran them as-is and did not profile the real pipeline inputs.

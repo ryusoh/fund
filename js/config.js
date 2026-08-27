@@ -739,15 +739,6 @@ export const CALENDAR_ZOOM_REFRACTION = {
     rampMs: 550, // Match the 0.55s CSS transform duration so it thickens *during* the zoom
 };
 
-export const MARQUEE_CONFIG = {
-    enabled: false,
-    // Size multiplier for marquee content (1 = normal, 2 = twice as large)
-    sizeMultiplier: 2,
-    animationDuration: 20, // seconds for one full loop
-    // Direction: 1 = right-to-left (default), -1 = left-to-right
-    direction: -1,
-};
-
 export const TILT_EFFECT = {
     enabled: false,
 };

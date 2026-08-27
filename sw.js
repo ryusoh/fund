@@ -24,7 +24,6 @@ const CORE_ASSETS = [
     './css/calendar.css',
     './css/perf.css',
     './css/cursor.css',
-    './css/marquee.css',
     './css/terminal/base.css',
     './css/terminal/terminal.css',
     './css/terminal/table.css',

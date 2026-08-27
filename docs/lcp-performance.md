@@ -36,7 +36,7 @@ Two eligibility facts shape everything on this site:
 
 So on these pages LCP is almost always a **text block** (nav icons, currency
 toggles, calendar labels, terminal prompt) or the small banner `<img>` — and the
-bottlenecks are the things that delay *text paint*: render-blocking CSS chains,
+bottlenecks are the things that delay _text paint_: render-blocking CSS chains,
 web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
 
 ## The answer (per-page bottleneck summary)
@@ -64,7 +64,7 @@ web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
   (calendar/index.html:182), then a **data waterfall**: `getCalendarData` →
   `fetchData` (js/services/dataService.js:527-534) fetches the 136 KB
   historical CSV, `fx_data.json`, and `fetchPortfolioData()`, which is
-  **internally serial**: `holdings_details.json` first, *then* a cross-origin
+  **internally serial**: `holdings_details.json` first, _then_ a cross-origin
   Cloudflare Worker call with no preconnect (js/services/dataService.js:60-83;
   `CF_WORKER_URL` at js/config.js:37). Only after `cal.paint()` and a rAF does
   `.calendar-ready` land (js/pages/calendar/index.js:962, 976-987), starting a
@@ -76,7 +76,7 @@ web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
   currency toggles) — the pie chart is `<canvas id="fundPieChart">`
   (position/index.html:113-118), not LCP-eligible, and the holdings table
   starts hidden (`.content-block hidden`, position/index.html:155-157). So the
-  *metric* is probably fine while the *perceived* main content arrives very
+  _metric_ is probably fine while the _perceived_ main content arrives very
   late through the longest script waterfall: an inline loader
   (position/index.html:200-241) `await`s `assets/vendor/js/chart.umd.js`
   (**398,875 B — the non-minified build**; the min build is 205,749 B) then
@@ -139,7 +139,7 @@ web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
   Files are small (1.2–15 KB each; Font Awesome 31 KB), but each is a separate
   render-blocking request.
 - Full-viewport body background images, excluded from LCP but competing for
-  bandwidth and delaying *perceived* completeness: `main_background.avif`
+  bandwidth and delaying _perceived_ completeness: `main_background.avif`
   597 KB (css/main_index.css:22-27), `calendar_background.avif` 641 KB
   (css/calendar.css:15-20), `position_background.avif` 626 KB (css/base.css
   `body` rule at ~95-100 — applies to the position page's un-classed body),
@@ -164,10 +164,10 @@ web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
   (css/main_index.css:31-33) and full-viewport on mobile
   (css/main_index.css:74-88) — excluded from LCP either way (not rendered on
   desktop; full-viewport on mobile).
-- The marquee text is statically in the HTML (index.html:72-83) but
-  `js/ui/marquee.js:13-19` sets `display: none` when `MARQUEE_CONFIG.enabled`
-  is `false` — and it is (js/config.js:742-744). Module scripts run before
-  first paint in practice, so the marquee is very unlikely to be the LCP.
+- The marquee text was statically in the HTML and hidden by `marquee.js` when
+  `MARQUEE_CONFIG.enabled` was `false` — it has since been removed entirely
+  (`index.html`, `js/ui/marquee.js`, `css/marquee.css`, `MARQUEE_CONFIG`
+  deleted), so it can no longer factor into LCP.
 - `.mobile-banner` (index.html:120-129) starts `opacity: 0; visibility: hidden`
   (css/main_index.css:45-47, 100-101) and is revealed only when
   `js/loader/imageFallback.js` observes the image's load and adds
@@ -261,7 +261,7 @@ the visual ones, human review of the rendered page.
 1. **Calendar: stop render-blocking on 355 KB of head JS.** Move
    `d3.v7.min.js` and `cal-heatmap.js` out of `<head>` (calendar/index.html:82-83)
    — e.g. `defer` them (defer scripts execute before the module entry) or
-   preload them and keep them off the critical path. This unblocks *all* first
+   preload them and keep them off the critical path. This unblocks _all_ first
    paint on the worst page. Also drop the duplicated Font Awesome link
    (calendar/index.html:81).
 2. **Terminal: fix the font block period.** Add `font-display: swap` to the
@@ -296,7 +296,7 @@ the visual ones, human review of the rendered page.
 7. **Index: reveal the banner without the JS gate.** `.mobile-banner` waits for
    deferred `imageFallback.js` to add `is-fallback-ready`
    (css/main_index.css:45-51, 100-108). Make the no-JS default visible and let
-   the fallback script only *swap* the source on error, so the
+   the fallback script only _swap_ the source on error, so the
    `fetchpriority="high"` image paints as soon as it decodes. (Small absolute
    win; the page's LCP is already a 20.7 KB PNG.)
 8. **All pages: consolidate or defer non-critical CSS.** 8-10 separate
@@ -314,12 +314,11 @@ the visual ones, human review of the rendered page.
   eligibility rules — no Lighthouse/WebPageTest run, no `PerformanceObserver`
   capture was performed (this was a read-only analysis; `performance/` only
   contains two Python benchmarks and a Plotly demo page, no LCP tooling).
-  A DevTools trace would also settle how the stroke-only marquee text and the
-  half-transparent panes are scored.
-- **Whether the marquee ever paints before being hidden.** `marquee.js` hides
-  it when disabled (js/ui/marquee.js:13-19; js/config.js:742-744), and module
-  scripts normally run before first paint — but if it ever painted first, its
-  huge text would dominate index's LCP.
+  A DevTools trace would also settle how the half-transparent panes are
+  scored.
+- ~~Whether the marquee ever paints before being hidden~~ — moot: the marquee
+  markup, `js/ui/marquee.js`, `css/marquee.css`, and `MARQUEE_CONFIG` have been
+  removed as dead code.
 - **Real network timing.** GitHub Pages response headers, HTTP/2 behaviour,
   and the Cloudflare Worker's latency were not measured; all waterfall costs
   are structural (which requests wait on which), not quantified in
