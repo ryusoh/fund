@@ -250,7 +250,7 @@ Standard model weights do not know your private business rules or custom algorit
 
 - **Mathematical Reference Sheets**: If the repo uses Fermat-Pascal-Kelly, we store the formula derivations, hyperparameter limits, and scaling criteria under `docs/fermat-pascal-kelly-system.md`.
 - **API contracts**: We maintain `/schemas` (like OpenAPI or JSON Schema) so the agent knows the exact payload formats without looking at the backend code.
-- **Architecture manuals**: A short `docs/architecture.md` outlining the data flow (e.g., how the Service Worker intercepts fetches, or how `sync_configs.py` populates UI assets).
+- **Architecture manuals**: A short `docs/overview.md` outlining the data flow (e.g., how the Service Worker intercepts fetches, or how `sync_configs.py` populates UI assets).
 
 ### C. Skills (What the Agent Can Do)
 
