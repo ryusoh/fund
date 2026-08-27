@@ -286,6 +286,75 @@ function attachDateChangeHandler(cal) {
  * @param {object} state The application state.
  * @param {object} currencySymbols The currency symbols object.
  */
+
+/* istanbul ignore next: keyboard navigation modifier helper */
+function shouldIgnoreCalendarKeydown(e, active) {
+    if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
+        return true;
+    }
+    if (
+        active &&
+        (active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT' ||
+            active.isContentEditable)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/* istanbul ignore next: keyboard navigation action helper */
+function emulateTodayDoubleClick(todayBtnEl, getClickTimer, clearClickTimer) {
+    const timer = getClickTimer();
+    if (timer) {
+        clearTimeout(timer);
+        clearClickTimer();
+    }
+    if (todayBtnEl && typeof todayBtnEl.dispatchEvent === 'function') {
+        try {
+            todayBtnEl.dispatchEvent(
+                new MouseEvent('dblclick', { bubbles: true, cancelable: true })
+            );
+        } catch (error) {
+            logger.warn('Calendar index operations failed:', error);
+            const evt = document.createEvent('MouseEvents');
+            evt.initEvent('dblclick', true, true);
+            todayBtnEl.dispatchEvent(evt);
+        }
+    }
+}
+
+/* istanbul ignore next: keyboard navigation action helper */
+function handleCalendarArrowKeys(e, prevBtnEl, nextBtnEl, todayBtnEl, getClickTimer, clearClickTimer) {
+    switch (e.key) {
+        case 'ArrowLeft':
+            if (prevBtnEl && !prevBtnEl.disabled) {
+                e.preventDefault();
+                prevBtnEl.click();
+            }
+            break;
+        case 'ArrowRight':
+            if (nextBtnEl && !nextBtnEl.disabled) {
+                e.preventDefault();
+                nextBtnEl.click();
+            }
+            break;
+        case 'ArrowDown':
+            if (todayBtnEl) {
+                e.preventDefault();
+                todayBtnEl.click();
+            }
+            break;
+        case 'ArrowUp':
+            e.preventDefault();
+            emulateTodayDoubleClick(todayBtnEl, getClickTimer, clearClickTimer);
+            break;
+        default:
+            break;
+    }
+}
+
 function setupEventListeners(cal, byDate, state, currencySymbols) {
     attachDateChangeHandler(cal);
     cal.on('fill', () => {
@@ -418,96 +487,21 @@ function setupEventListeners(cal, byDate, state, currencySymbols) {
             /* istanbul ignore next: keyboard navigation edge case in test environment */
             return;
         }
-        // Ignore if typing in inputs or using other modifiers
+
         /* istanbul ignore next: keyboard navigation edge case in test environment */
-        if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
-            /* istanbul ignore next: keyboard navigation edge case in test environment */
-            return;
-        }
-        /* istanbul ignore next: keyboard navigation edge case in test environment */
-        const active = document.activeElement;
-        /* istanbul ignore next: keyboard navigation edge case in test environment */
-        if (
-            active &&
-            (active.tagName === 'INPUT' ||
-                active.tagName === 'TEXTAREA' ||
-                active.tagName === 'SELECT' ||
-                active.isContentEditable)
-        ) {
-            /* istanbul ignore next: keyboard navigation edge case in test environment */
+        if (shouldIgnoreCalendarKeydown(e, document.activeElement)) {
             return;
         }
 
         /* istanbul ignore next: keyboard navigation switch statement in test environment */
-        switch (e.key) {
-            case 'ArrowLeft':
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                if (prevBtnEl && !prevBtnEl.disabled) {
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    e.preventDefault();
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    prevBtnEl.click();
-                }
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                break;
-            case 'ArrowRight':
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                if (nextBtnEl && !nextBtnEl.disabled) {
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    e.preventDefault();
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    nextBtnEl.click();
-                }
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                break;
-            case 'ArrowDown':
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                if (todayBtnEl) {
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    e.preventDefault();
-                    /* istanbul ignore next: keyboard navigation edge case in test environment */
-                    todayBtnEl.click();
-                }
-                /* istanbul ignore next: keyboard navigation edge case in test environment */
-                break;
-            case 'ArrowUp': {
-                // Emulate a double-click on the Today button:
-                // 1) cancel any pending single-click action
-                // 2) trigger the same dblclick behavior wired in responsive handlers (zoom)
-                /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                e.preventDefault();
-                /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                if (clickTimer) {
-                    /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                    clearTimeout(clickTimer);
-                    /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                    clickTimer = null;
-                }
-                /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                if (todayBtnEl && typeof todayBtnEl.dispatchEvent === 'function') {
-                    /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                    try {
-                        /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                        todayBtnEl.dispatchEvent(
-                            new MouseEvent('dblclick', { bubbles: true, cancelable: true })
-                        );
-                    } catch (error) {
-                        logger.warn('Calendar index operations failed:', error);
-                        /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                        const evt = document.createEvent('MouseEvents');
-                        /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                        evt.initEvent('dblclick', true, true);
-                        /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                        todayBtnEl.dispatchEvent(evt);
-                    }
-                }
-                /* istanbul ignore next: keyboard navigation double-click emulation edge case */
-                break;
-            }
-            default:
-                /* istanbul ignore next */
-                break;
-        }
+        handleCalendarArrowKeys(
+            e,
+            prevBtnEl,
+            nextBtnEl,
+            todayBtnEl,
+            () => clickTimer,
+            () => { clickTimer = null; }
+        );
     });
 
     // Responsive calendar handling - update range on viewport changes
