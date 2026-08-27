@@ -250,83 +250,504 @@ revises items 3-6.
 - `data/` untouched: everything derives from existing state and renderers.
 - Diff-coverage gate: every new JS module ships with jest tests.
 
-## 6. Action items (Option D)
+## 6. Action items
 
-Ranked, anchor-verified. Items 1-2 first (subtract before adding). **Item 8 (nav re-enable) is
-gated on the owner's explicit approval — do not do it unprompted.**
+### 6.0 Completed (first pass, 2026-08-27)
 
-1. **Remove the mobile chip bar** (dead under D). Delete `js/transactions/terminal/chips.js` and
-   `tests/js/transactions/terminal/chips.test.js`; remove the import and the coarse-pointer
-   `initChips` block at `js/transactions/terminal.js:25` and `:451-454`; remove the
-   `.terminal-chips`/`.terminal-chip` rules at `css/terminal/responsive.css:108-142`; revert the
-   chips mention in the help hint (`js/transactions/terminal/handlers/help.js`, commit
-   `dfadf680`). Keep the earlier focus/font-size fixes (`513ef695`, `1a530c54`) — harmless and
-   still correct if the pane is ever shown. Verify: `npx jest tests/js/transactions/terminal`
-   green; `npx stylelint css/terminal/responsive.css`.
-2. **Hide the terminal pane and table on mobile; always show the chart.** CSS
-   (`css/terminal/responsive.css` ≤768px block): `.terminal { display: none; }` and
-   `.table-responsive-container { display: none !important; }`; let `.chart-card` take the full
-   column height (it is already `flex: 1` at line 153). JS: in the mobile path, remove
-   `is-hidden` from `#runningAmountSection` (`terminal/index.html:175`) after
-   `whenTransactionDataReady()` resolves, then `chartManager.update()` (data-readiness pattern at
-   `handlers/plot.js:92-95`). Verify: mobile screenshot shows the default chart with no terminal
-   pane; desktop unchanged. Add a jest test asserting the mobile init path un-hides the section
-   (breakpoint mocked) and leaves it hidden on desktop.
-3. **Mobile control bar module** — new `js/pages/terminal/mobileControls.js`, wired from
-   `initialize()` (`js/pages/terminal/index.js:298-394`) behind
-   `window.matchMedia('(max-width: 768px)')`, rendering a bar into `.transaction-container`
-   directly above `#runningAmountSection` (`terminal/index.html:173-188`). The **chart picker**
-   is a row of tappable buttons for a curated subset — proposal: Balance → `contribution`,
-   Performance → `performance`, Drawdown → `drawdown`, Composition → `composition`, Sectors →
-   `sectors` (keys from `js/transactions/chart.js:104-161`; final set is the owner's call).
-   Tap handler: `setActiveChart(key)` (`js/transactions/state.js:118`), ensure the section is
-   un-hidden, `chartManager.update()`; mark the active button with `aria-pressed`. Keep the
-   picker to ~5 entries where possible (claim 17); Material's swipe-pagination pattern is a
-   sanctioned alternative if the set grows (claim 21). Default to a single line chart
-   (claim 21). Verify: jest tests for rendering at mocked mobile width, tap → state + update
-   called, desktop renders nothing; `make precommit-fix` green.
-4. **Timeline range selector** (Apple-Stocks-style presets) in the same bar: `1M 3M 6M YTD 1Y
-All` (preset sets and placement per claim 16; use `aria-selected` on the active preset like
-   Google Finance's tab row). A small pure helper maps a preset to `{from, to}` relative to
-   today (`All` → `{from: null, to: null}`; `YTD` → Jan 1 of the current year); existing parsers
-   (`dateUtils.js:167-343`) handle only years/quarters, so month-offset math is new — keep it in
-   the new module, not `dateUtils.js`. Apply via `setChartDateRange` +
-   `updateContextYearFromRange(range)` + `chartManager.update()`. Default selection should match
-   `INITIAL_CHART_DATE_RANGE` (`js/config.js:167-170`: `from: '2024-01-01'` — i.e. none of the
-   presets; represent it as "All"-unselected/custom or add a `2Y` preset — owner's call). Verify:
-   unit tests for the preset math — remember the suite runs TZ=UTC (`docs/testing-notes.md`), so
-   compute from an injected `now`, not `Date.now()`, in tests.
-5. **Currency switcher on mobile.** Un-hide `#currencyToggleContainer` at ≤768px (override
-   `css/terminal/base.css:101-104` and drop `hide-on-mobile` at `terminal/index.html:114`) and
-   reposition it: today it is `position: fixed; top: 15px; left: 15px`
-   (`css/terminal/base.css:95-99`), which collides with the mobile layout — move it into the
-   control bar in flow, or to a fixed corner that clears the nav. No JS changes:
-   `currencyToggleManager.js` binds by id and the `currencyChangedGlobal` handler
-   (`js/pages/terminal/index.js:406-445`) already re-renders the chart. Keep ≥44×44px targets
-   (claims 11-13). Verify: `tests/js/ui/currencyToggleManager.test.js` still green; jest test
-   that the container is visible at mocked mobile width; tap switches the rendered currency.
-6. **Legend adaptation for mobile.** Base rules exist (`css/terminal/chart.css:119-139`: grid,
-   11px labels, truncation). Adapt: (a) move the legend _above_ the chart on mobile — Material's
-   explicit mobile guidance (claim 19); `.chart-card` is already `display: flex; flex-direction:
-column` (`css/terminal/chart.css:1-11`), so `order: -1` on `.chart-legend` in the ≤768px
-   block suffices, but check `adjustMobilePanels`'s legend-height math still holds
-   (`js/transactions/layout.js:26-41`); (b) tappable legend items (non-stacked charts —
-   `interaction.js:724-760`) need ≥44px-tall hit areas (claims 11-13, 20); (c) consider a single
-   horizontally scrollable row if the grid wraps past two lines. **Visual — human review
-   required.** Verify: `npx stylelint css/terminal/chart.css`; mobile screenshot per chart type.
-7. **Layout machinery check.** With the terminal pane and table hidden, confirm
-   `adjustMobilePanels` (`js/transactions/layout.js:43-68`) still sizes the chart card correctly
-   (it skips `is-hidden` panels and subtracts the legend height, lines 26-41) — the new control
-   bar consumes vertical space, so the `bottomSpacing = 16` constant (line 55) and the
-   `calc(100dvh - 118px)` container height (`responsive.css:74`) may need adjusting. Verify:
-   mobile screenshot shows the chart filling the viewport without overflow; `npx jest
-tests/js/pages/terminal` green.
-8. **[GATED — owner approval required] Re-enable the Terminal nav link on mobile.** Remove
-   `hide-on-mobile` from the terminal `<li>` at `index.html:88`, `calendar/index.html:104`,
-   `position/index.html:100` (i.e. redo `edc303d0`, reverted in `d2fedb2b`). Only after items
-   1-7 land and the owner reviews the live page on a real phone. Verify: visual check on all
-   four pages at ≤768px.
-9. **Defer**: stats-on-mobile in any form (rejected by owner), command palette (b), NL/chat (c).
+Option-D build items 1-7 landed: `d66b06c6` (chip bar removed), `7d1482c1` (chart-only mobile
+view), `eb0a24be` (chart picker bar), `1f171ec9` (range selector), `403645a0` (currency
+switcher un-hidden), `adc9b907` (legend above chart), `7cb003d6` (legend margin fix). The nav
+re-enable remains **gated on owner approval** — do not re-enable unprompted. Owner verdict on
+the result: functional but extremely cluttered. The work orders below implement the declutter
+redesign — **proposal 1 (consolidate)** from §4.7, evidence in
+`docs/research/mobile-chart-declutter.md`.
+
+### 6.1 Work orders: declutter pass (proposal 1)
+
+**Preamble — rules for the implementer.** One work order per change, in order; commit after
+each verified item, never push. `Find` strings are unique anchors from the current file — if
+one doesn't match exactly, STOP and report; don't improvise a new anchor. Line numbers drift;
+trust the anchors. Run each item's Verify commands (scoped), not the full gate; WO5 runs the
+full gate. Never edit `data/`. Desktop (>768px) must stay pixel-identical: new CSS goes in the
+`@media screen and (max-width: 768px)` block of the named file, new JS stays behind the
+existing `isMobileViewport()` gate in `js/pages/terminal/index.js`. `[visual]` = a human must
+review the rendered page afterwards.
+
+---
+
+**WO1** `[low]` `[visual]` — Chart picker row → pop-up button + menu (claims 24-25)
+
+Files: `js/pages/terminal/mobileControls.js`, `css/terminal/responsive.css`,
+`tests/js/pages/terminal/mobileControls.test.js`.
+
+Find (mobileControls.js, lines ~65-95):
+
+```js
+const picker = document.createElement('div');
+picker.className = 'mobile-chart-picker';
+```
+
+…through the picker click listener's closing `});` (the block ending just before the
+`const rangePicker = document.createElement('div');` line). Change: replace that whole block
+with a menu-button + hidden menu (paste-ready):
+
+```js
+const menuWrap = document.createElement('div');
+menuWrap.className = 'mobile-chart-menu-wrap';
+
+const menuButton = document.createElement('button');
+menuButton.type = 'button';
+menuButton.className = 'mobile-menu-button';
+menuButton.setAttribute('aria-haspopup', 'menu');
+menuButton.setAttribute('aria-expanded', 'false');
+
+const menu = document.createElement('div');
+menu.className = 'mobile-chart-menu';
+menu.setAttribute('role', 'menu');
+menu.hidden = true;
+
+const menuItems = MOBILE_CHARTS.map((chart, index) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'mobile-chart-menu-item';
+    item.setAttribute('role', 'menuitemradio');
+    item.dataset.chart = chart.key;
+    item.textContent = chart.label;
+    item.setAttribute('aria-checked', index === 0 ? 'true' : 'false');
+    menu.appendChild(item);
+    return item;
+});
+
+menuButton.textContent = `${MOBILE_CHARTS[0].label} ▾`;
+
+function setMenuOpen(open) {
+    menu.hidden = !open;
+    menuButton.setAttribute('aria-expanded', String(open));
+    if (open) {
+        const checked = menu.querySelector('[aria-checked="true"]');
+        if (checked) {
+            checked.focus();
+        }
+    }
+}
+
+function selectChart(key, label) {
+    menuItems.forEach((item) => {
+        item.setAttribute('aria-checked', item.dataset.chart === key ? 'true' : 'false');
+    });
+    menuButton.textContent = `${label} ▾`;
+    whenTransactionDataReady().then(() => {
+        setActiveChart(key);
+        section.classList.remove('is-hidden');
+        chartManager.update();
+        adjustMobilePanels();
+    });
+}
+
+menuButton.addEventListener('click', () => setMenuOpen(menu.hidden));
+menu.addEventListener('click', (event) => {
+    const item = event.target.closest('.mobile-chart-menu-item');
+    if (!item) {
+        return;
+    }
+    setMenuOpen(false);
+    menuButton.focus();
+    selectChart(item.dataset.chart, item.textContent);
+});
+menu.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+        return;
+    }
+    event.preventDefault();
+    const current = menuItems.indexOf(document.activeElement);
+    const next =
+        event.key === 'ArrowDown'
+            ? (current + 1) % menuItems.length
+            : (current - 1 + menuItems.length) % menuItems.length;
+    menuItems[next].focus();
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !menu.hidden) {
+        setMenuOpen(false);
+        menuButton.focus();
+    }
+});
+document.addEventListener('click', (event) => {
+    if (!menu.hidden && !menuWrap.contains(event.target)) {
+        setMenuOpen(false);
+    }
+});
+
+menuWrap.appendChild(menuButton);
+menuWrap.appendChild(menu);
+```
+
+Then wrap the bar's top row. Find:
+
+```js
+bar.appendChild(picker);
+bar.appendChild(rangePicker);
+```
+
+Change to:
+
+```js
+const controlRow = document.createElement('div');
+controlRow.className = 'mobile-controls-row';
+controlRow.appendChild(menuWrap);
+bar.appendChild(controlRow);
+bar.appendChild(rangePicker);
+```
+
+(WO2 appends the overflow button to `controlRow`.)
+
+CSS (responsive.css, ≤768px block). Find:
+
+```css
+    .mobile-chart-picker,
+    .mobile-range-picker {
+```
+
+Change: delete `.mobile-chart-picker,` from that selector list and from the
+`::-webkit-scrollbar` rule below it. Find:
+
+```css
+    .mobile-chart-button,
+    .mobile-range-button {
+```
+
+Change to:
+
+```css
+    .mobile-menu-button,
+    .mobile-overflow-button,
+    .mobile-range-button {
+```
+
+Find:
+
+```css
+    .mobile-chart-button[aria-pressed='true'],
+    .mobile-range-button[aria-selected='true'] {
+```
+
+Change to:
+
+```css
+    .mobile-range-button[aria-selected='true'] {
+```
+
+Then add after that rule (paste-ready):
+
+```css
+.mobile-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.mobile-chart-menu-wrap {
+    position: relative;
+}
+
+.mobile-chart-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 2000;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    backdrop-filter: blur(20px);
+}
+
+.mobile-chart-menu[hidden] {
+    display: none;
+}
+
+.mobile-chart-menu-item {
+    min-height: 44px;
+    padding: 8px 12px;
+    text-align: left;
+    font-family: var(--font-family-mono);
+    font-size: 12px;
+    color: var(--text-color);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.mobile-chart-menu-item[aria-checked='true'] {
+    background: var(--hover-bg);
+    color: var(--primary-color);
+}
+```
+
+Tests (mobileControls.test.js): replace the three chart-picker tests ('renders the chart
+picker directly above the chart section', 'tapping a chart button switches the active chart',
+'tapping outside a button does nothing') with:
+
+- renders a menu button labeled `Balance ▾` with `aria-haspopup="menu"`,
+  `aria-expanded="false"`, and a hidden `role="menu"` with 5 `menuitemradio` items;
+- clicking the button opens the menu (`aria-expanded="true"`); clicking the Performance item
+  → `setActiveChart` called with `'performance'`, section un-hidden, `chartManager.update()`
+  called once, button label becomes `Performance ▾`, menu hidden again;
+- Escape closes the menu; a document click outside `.mobile-chart-menu-wrap` closes it.
+
+Keep the `returns null` test, the range tests, and the `resolveRangePreset` describe
+unchanged. Guardrail: the document-level click listener fires on any click in later tests —
+assert menu-closed state, not listener absence. Verify: `npx jest tests/js/pages/terminal`
+green; `npx stylelint css/terminal/responsive.css`.
+
+---
+
+**WO2** `[low]` `[visual]` — Overflow button + modal bottom sheet; currency moves into the sheet
+(claims 23-24, 27)
+
+Files: `js/pages/terminal/mobileControls.js`, `css/terminal/responsive.css`,
+`js/pages/terminal/index.js`, `tests/js/pages/terminal/mobileControls.test.js`,
+`tests/js/pages/terminal/index.test.js`, `tests/js/css/terminal_mobile_currency.test.js`.
+
+JS (mobileControls.js). Find:
+
+```js
+controlRow.appendChild(menuWrap);
+bar.appendChild(controlRow);
+```
+
+Change to (paste-ready):
+
+```js
+const overflowButton = document.createElement('button');
+overflowButton.type = 'button';
+overflowButton.className = 'mobile-overflow-button';
+overflowButton.setAttribute('aria-haspopup', 'dialog');
+overflowButton.setAttribute('aria-expanded', 'false');
+overflowButton.setAttribute('aria-label', 'Display settings');
+overflowButton.textContent = '⋯';
+
+const sheetBackdrop = document.createElement('div');
+sheetBackdrop.className = 'mobile-sheet-backdrop';
+sheetBackdrop.hidden = true;
+
+const sheet = document.createElement('div');
+sheet.className = 'mobile-sheet';
+sheet.setAttribute('role', 'dialog');
+sheet.setAttribute('aria-modal', 'true');
+sheet.setAttribute('aria-label', 'Display settings');
+sheet.hidden = true;
+
+const currencyToggle = document.getElementById('currencyToggleContainer');
+if (currencyToggle) {
+    sheet.appendChild(currencyToggle);
+}
+
+function setSheetOpen(open) {
+    sheet.hidden = !open;
+    sheetBackdrop.hidden = !open;
+    overflowButton.setAttribute('aria-expanded', String(open));
+    if (open) {
+        const first = sheet.querySelector('button');
+        if (first) {
+            first.focus();
+        }
+    }
+}
+
+overflowButton.addEventListener('click', () => setSheetOpen(sheet.hidden));
+sheetBackdrop.addEventListener('click', () => setSheetOpen(false));
+
+controlRow.appendChild(menuWrap);
+controlRow.appendChild(overflowButton);
+bar.appendChild(controlRow);
+document.body.appendChild(sheetBackdrop);
+document.body.appendChild(sheet);
+```
+
+Also extend WO1's Escape keydown listener to close the sheet
+(`if (event.key === 'Escape' && !sheet.hidden) { setSheetOpen(false); }`). Guardrails: the
+sheet/backdrop MUST be appended to `document.body`, not the bar — `position: fixed` breaks
+inside any ancestor with transform/filter, and body-level placement makes that impossible by
+construction. Reparenting `#currencyToggleContainer` is safe: `currencyToggleManager.js`
+binds by id and its `ensureToggleElements` only re-queries when the node leaves
+`document.body` (`js/ui/currencyToggleManager.js:46-58`); `initCurrencyToggle()` runs before
+`initMobileControls` in `initialize()` and its delegated click listener survives the move.
+
+index.js. Find:
+
+```js
+            adjustMobilePanels();
+            // Reveal the currency switcher with the same slide-in the other
+            // pages use on mobile (css/toggle.css `.chart-loaded`).
+            const toggleContainer = document.getElementById('currencyToggleContainer');
+            if (toggleContainer) {
+                toggleContainer.classList.add('chart-loaded');
+            }
+        });
+```
+
+Change to:
+
+```js
+            adjustMobilePanels();
+        });
+```
+
+CSS (responsive.css, ≤768px block). Find:
+
+```css
+/* base.css's desktop `top: 15px` (id+class) outranks toggle.css's mobile
+       `top: 50%` (plain id) — restate the vertical centering at equal
+       specificity so the right-edge pill actually centers. */
+.body-terminal #currencyToggleContainer {
+    top: 50%;
+}
+```
+
+Change: delete that block (the pill no longer floats). Keep the 44px
+`.body-terminal .currency-toggle` rule. Add after it (paste-ready):
+
+```css
+.mobile-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2001;
+}
+
+.mobile-sheet-backdrop[hidden],
+.mobile-sheet[hidden] {
+    display: none;
+}
+
+.mobile-sheet {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2002;
+    display: flex;
+    justify-content: center;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    background: var(--panel-bg);
+    border-top: 1px solid var(--border-color);
+    border-radius: 16px 16px 0 0;
+    backdrop-filter: blur(20px);
+}
+
+/* toggle.css's floating-pill mobile rules target
+       `body:not(.body-calendar) #currencyToggleContainer` (specificity 1,1,1) with
+       !important and load AFTER this file — this selector must stay more specific
+       (1,2,1) AND keep its !important flags. */
+body.body-terminal .mobile-sheet #currencyToggleContainer {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    flex-direction: row;
+    border-radius: 6px;
+}
+```
+
+Tests. index.test.js: replace the two `chart-loaded` tests with — mobile: after
+`importFresh()`, `document.querySelector('.mobile-sheet #currencyToggleContainer')` is not
+null; desktop: `.mobile-sheet` is null and `#currencyToggleContainer`'s parent is
+`document.body`. mobileControls.test.js: add — overflow button renders with
+`aria-haspopup="dialog"`; clicking it un-hides the sheet and backdrop; clicking the backdrop
+hides both; the currency container lands inside `.mobile-sheet`.
+terminal_mobile_currency.test.js: keep the not-hidden and 44px tests; replace the
+'restates the mobile vertical centering' test with one asserting responsive.css contains a
+`body.body-terminal .mobile-sheet #currencyToggleContainer` rule with `position: static` and
+`transform: none`. Verify: `npx jest tests/js/pages/terminal tests/js/ui/currencyToggleManager.test.js tests/js/css/`
+green; `npx stylelint css/terminal/responsive.css`; mobile screenshot with the sheet open
+(confirms the pill no longer floats over the chart).
+
+---
+
+**WO3** `[trivial]` `[visual]` — Legend: single horizontally-scrolling row (claims 23, 26)
+
+File: `css/terminal/chart.css` (mobile block). Find:
+
+```css
+.chart-legend {
+    /* Material data-viz mobile guidance: legend above the chart so it
+           stays visible during touch interaction (docs/mobile-terminal-ux.md) */
+    order: -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+    justify-items: start;
+    gap: 8px 10px;
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.legend-item {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+}
+```
+
+Change to:
+
+```css
+.chart-legend {
+    /* Material data-viz mobile guidance: legend above the chart so it
+           stays visible during touch interaction (docs/mobile-terminal-ux.md) */
+    order: -1;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;
+    margin-top: 0;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+
+.chart-legend::-webkit-scrollbar {
+    display: none;
+}
+
+.legend-item {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+}
+```
+
+Verify: `npx stylelint css/terminal/chart.css`;
+`npx jest tests/js/css/terminal_mobile_legend.test.js` (existing order/min-height assertions
+still hold); mobile screenshots of Balance AND Composition (dense legend stays one row).
+
+---
+
+**WO4** `[skip]` — Direct data labels on ≤3-series charts** (claim 26). Drawing canvas end-labels
+on the contribution/performance/drawdown renderers (collision-aware placement, per-renderer
+plumbing, visual judgment) — route to a stronger model with human visual review. Pointer:
+`js/transactions/chart/renderers/contribution.js` and the M2 direct-labels guidance in
+`docs/research/mobile-chart-declutter.md` §3.
+
+---
+
+**WO5** `[trivial]` — Final gate + cleanup sweep.** Confirm no dead references:
+`grep -rn "mobile-chart-picker\|mobile-chart-button\|chart-loaded" js/ css/terminal/ tests/ terminal/`
+(`chart-loaded` may legitimately remain in `js/pages/position/index.js`,
+`js/pages/calendar/index.js`, `css/toggle.css` — those are other pages; flag only
+terminal-page references). Then `make precommit-fix` green, mobile screenshots (default, menu
+open, sheet open), and report for human visual review.
 
 ## 7. Open questions / what I couldn't verify
 
@@ -341,4 +762,5 @@ tests/js/pages/terminal` green.
   pages are JS-rendered; the 24px/44px/48dp figures are corroborated by multiple independent
   sources but the normative pages were not read directly.
 - **Real-device behavior unverified**: keyboard occlusion, tap ergonomics, and chart legibility
-  are inferred from code + cited research. A human must verify on an actual phone before item 8.
+  are inferred from code + cited research. A human must verify on an actual phone before the
+  nav re-enable (§6.0, gated).
