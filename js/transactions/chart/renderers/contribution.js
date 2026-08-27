@@ -58,392 +58,636 @@ import { smoothFinancialData } from '../../../utils/smoothing.js';
 import { logger } from '../../../utils/logger.js';
 import { toLocalIsoDate } from '../../../utils/date.js';
 
+const pipelineCache = {
+    key: null,
+    data: null,
+};
+
+export function __resetContributionPipelineCache() {
+    pipelineCache.key = null;
+    pipelineCache.data = null;
+}
+
+function buildPipelineCacheKey(options) {
+    const { drawdownMode = false } = options;
+    const { chartVisibility } = transactionState;
+    return {
+        filteredTransactions: transactionState.filteredTransactions,
+        allTransactions: transactionState.allTransactions,
+        portfolioSeries: transactionState.portfolioSeries,
+        portfolioSeriesByCurrency: transactionState.portfolioSeriesByCurrency,
+        runningAmountSeries: transactionState.runningAmountSeries,
+        runningAmountSeriesByCurrency: transactionState.runningAmountSeriesByCurrency,
+        selectedCurrency: transactionState.selectedCurrency,
+        chartDateRange: transactionState.chartDateRange,
+        activeFilterTerm: transactionState.activeFilterTerm,
+        filtersActive:
+            hasActiveTransactionFilters() &&
+            transactionState.activeFilterTerm &&
+            transactionState.activeFilterTerm.trim().length > 0,
+        drawdownMode,
+        showContribution: chartVisibility?.contribution !== false,
+        showBalance: chartVisibility?.balance !== false,
+        showAppreciation: chartVisibility?.appreciation !== false,
+        showBuy: chartVisibility?.buy !== false,
+        showSell: chartVisibility?.sell !== false,
+        historicalPrices: transactionState.historicalPrices,
+        splitHistory: transactionState.splitHistory,
+        yieldData: getCachedYieldData(),
+    };
+}
+
+function pipelineCacheKeysMatch(a, b) {
+    if (!a || !b) {
+        return false;
+    }
+    const refs = [
+        'filteredTransactions',
+        'allTransactions',
+        'portfolioSeries',
+        'portfolioSeriesByCurrency',
+        'runningAmountSeries',
+        'runningAmountSeriesByCurrency',
+        'historicalPrices',
+        'splitHistory',
+        'yieldData',
+        'chartDateRange',
+    ];
+    for (const key of refs) {
+        if (a[key] !== b[key]) {
+            return false;
+        }
+    }
+    const primitives = [
+        'selectedCurrency',
+        'activeFilterTerm',
+        'filtersActive',
+        'drawdownMode',
+        'showContribution',
+        'showBalance',
+        'showAppreciation',
+        'showBuy',
+        'showSell',
+    ];
+    for (const key of primitives) {
+        if (a[key] !== b[key]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export async function drawContributionChart(ctx, chartManager, timestamp, options = {}) {
     const { drawdownMode = false } = options;
     stopPerformanceAnimation();
     stopFxAnimation();
 
-    const runningAmountSeries = Array.isArray(transactionState.runningAmountSeries)
-        ? transactionState.runningAmountSeries
-        : [];
-    const portfolioSeries = Array.isArray(transactionState.portfolioSeries)
-        ? transactionState.portfolioSeries
-        : [];
-    const filteredTransactions = Array.isArray(transactionState.filteredTransactions)
-        ? transactionState.filteredTransactions
-        : [];
-    const allTransactions = Array.isArray(transactionState.allTransactions)
-        ? transactionState.allTransactions
-        : [];
-
-    const filtersActive =
-        hasActiveTransactionFilters() &&
-        transactionState.activeFilterTerm &&
-        transactionState.activeFilterTerm.trim().length > 0;
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
-    const contributionTransactions = filtersActive ? filteredTransactions : allTransactions;
-    let contributionSource = [];
-    let contributionFromTransactions = false;
-
-    if (contributionTransactions.length > 0) {
-        const today = parseLocalDate(new Date());
-        const rangeTo = transactionState.chartDateRange?.to
-            ? parseLocalDate(transactionState.chartDateRange.to)
-            : null;
-        let padToDate;
-        if (rangeTo && today) {
-            padToDate = Math.min(rangeTo.getTime(), today.getTime());
-        } else if (today) {
-            padToDate = today.getTime();
-        } else {
-            padToDate = rangeTo?.getTime() ?? Date.now();
-        }
-        contributionSource = getContributionSeriesForTransactions(contributionTransactions, {
-            includeSyntheticStart: true,
-            padToDate,
-            currency: null,
-        });
-        contributionFromTransactions =
-            filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
-        if (!filtersActive && contributionSource !== runningAmountSeries) {
-            setRunningAmountSeries(contributionSource);
-        }
-    } else {
-        const mappedSeries =
-            transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
-
-        if (mappedSeries && mappedSeries === runningAmountSeries) {
-            contributionSource = runningAmountSeries;
-        } else if (mappedSeries) {
-            contributionSource = mappedSeries;
-            setRunningAmountSeries(mappedSeries);
-        } else {
-            contributionSource = runningAmountSeries;
-        }
+    const cacheKey = buildPipelineCacheKey(options);
+    let cachedPipeline = null;
+    if (pipelineCache.key && pipelineCacheKeysMatch(pipelineCache.key, cacheKey)) {
+        cachedPipeline = pipelineCache.data;
     }
 
-    // Load yield data and merge dividends into contribution series
-    let yieldData = getCachedYieldData();
-    if (!yieldData) {
-        yieldData = await loadYieldData();
-    }
-    if (yieldData && contributionSource.length > 0) {
-        let activeTickers = null;
-        if (filtersActive && Array.isArray(filteredTransactions)) {
-            const tickerSet = new Set();
-            for (let i = 0; i < filteredTransactions.length; i++) {
-                const t = filteredTransactions[i];
-                if (t.security) {
-                    tickerSet.add(t.security);
-                }
-            }
-            activeTickers = Array.from(tickerSet);
-        }
+    if (!cachedPipeline) {
+        const runningAmountSeries = Array.isArray(transactionState.runningAmountSeries)
+            ? transactionState.runningAmountSeries
+            : [];
+        const portfolioSeries = Array.isArray(transactionState.portfolioSeries)
+            ? transactionState.portfolioSeries
+            : [];
+        const filteredTransactions = Array.isArray(transactionState.filteredTransactions)
+            ? transactionState.filteredTransactions
+            : [];
+        const allTransactions = Array.isArray(transactionState.allTransactions)
+            ? transactionState.allTransactions
+            : [];
 
-        contributionSource = mergeDividendsIntoContribution(
-            contributionSource,
-            yieldData,
-            selectedCurrency,
-            activeTickers
-        );
-    }
+        const filtersActive =
+            hasActiveTransactionFilters() &&
+            transactionState.activeFilterTerm &&
+            transactionState.activeFilterTerm.trim().length > 0;
+        const selectedCurrency = transactionState.selectedCurrency || 'USD';
 
-    let historicalPrices = transactionState.historicalPrices;
-    if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
-        try {
-            const response = await fetch('../data/historical_prices.json');
-            if (response.ok) {
-                historicalPrices = await response.json();
-                // Cache the fetched data to prevent repeated async fetches
-                setHistoricalPrices(historicalPrices);
+        const contributionTransactions = filtersActive ? filteredTransactions : allTransactions;
+        let contributionSource = [];
+        let contributionFromTransactions = false;
+
+        if (contributionTransactions.length > 0) {
+            const today = parseLocalDate(new Date());
+            const rangeTo = transactionState.chartDateRange?.to
+                ? parseLocalDate(transactionState.chartDateRange.to)
+                : null;
+            let padToDate;
+            if (rangeTo && today) {
+                padToDate = Math.min(rangeTo.getTime(), today.getTime());
+            } else if (today) {
+                padToDate = today.getTime();
             } else {
+                padToDate = rangeTo?.getTime() ?? Date.now();
+            }
+            contributionSource = getContributionSeriesForTransactions(contributionTransactions, {
+                includeSyntheticStart: true,
+                padToDate,
+                currency: null,
+            });
+            contributionFromTransactions =
+                filtersActive && Array.isArray(contributionSource) && contributionSource.length > 0;
+            if (!filtersActive && contributionSource !== runningAmountSeries) {
+                setRunningAmountSeries(contributionSource);
+            }
+        } else {
+            const mappedSeries =
+                transactionState.runningAmountSeriesByCurrency?.[selectedCurrency] || null;
+
+            if (mappedSeries && mappedSeries === runningAmountSeries) {
+                contributionSource = runningAmountSeries;
+            } else if (mappedSeries) {
+                contributionSource = mappedSeries;
+                setRunningAmountSeries(mappedSeries);
+            } else {
+                contributionSource = runningAmountSeries;
+            }
+        }
+
+        // Load yield data and merge dividends into contribution series
+        let yieldData = getCachedYieldData();
+        if (!yieldData) {
+            yieldData = await loadYieldData();
+        }
+        if (yieldData && contributionSource.length > 0) {
+            let activeTickers = null;
+            if (filtersActive && Array.isArray(filteredTransactions)) {
+                const tickerSet = new Set();
+                for (let i = 0; i < filteredTransactions.length; i++) {
+                    const t = filteredTransactions[i];
+                    if (t.security) {
+                        tickerSet.add(t.security);
+                    }
+                }
+                activeTickers = Array.from(tickerSet);
+            }
+
+            contributionSource = mergeDividendsIntoContribution(
+                contributionSource,
+                yieldData,
+                selectedCurrency,
+                activeTickers
+            );
+        }
+
+        let historicalPrices = transactionState.historicalPrices;
+        if (filtersActive && (!historicalPrices || Object.keys(historicalPrices).length === 0)) {
+            try {
+                const response = await fetch('../data/historical_prices.json');
+                if (response.ok) {
+                    historicalPrices = await response.json();
+                    // Cache the fetched data to prevent repeated async fetches
+                    setHistoricalPrices(historicalPrices);
+                } else {
+                    historicalPrices = {};
+                }
+            } catch (error) {
+                logger.warn('Contribution chart rendering failed:', error);
                 historicalPrices = {};
             }
-        } catch (error) {
-            logger.warn('Contribution chart rendering failed:', error);
-            historicalPrices = {};
+        } else {
+            historicalPrices = historicalPrices || {};
         }
-    } else {
-        historicalPrices = historicalPrices || {};
-    }
-    // For non-filter mode, use currency-specific portfolio series if available
-    const currencyPortfolioSeries =
-        transactionState.portfolioSeriesByCurrency?.[selectedCurrency] || portfolioSeries;
+        // For non-filter mode, use currency-specific portfolio series if available
+        const currencyPortfolioSeries =
+            transactionState.portfolioSeriesByCurrency?.[selectedCurrency] || portfolioSeries;
 
-    let balanceSource = filtersActive
-        ? buildFilteredBalanceSeries(
-              filteredTransactions,
-              historicalPrices,
-              transactionState.splitHistory
-          )
-        : currencyPortfolioSeries;
+        let balanceSource = filtersActive
+            ? buildFilteredBalanceSeries(
+                  filteredTransactions,
+                  historicalPrices,
+                  transactionState.splitHistory
+              )
+            : currencyPortfolioSeries;
 
-    // For filtered data, convert to target currency before any other transformations
-    // (including drawdown which should calculate HWM in the target currency)
-    if (selectedCurrency !== 'USD' && Array.isArray(balanceSource) && filtersActive) {
-        balanceSource = [...balanceSource]
-            .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-            .map((entry) => ({
-                ...entry,
-                value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
-            }));
-    }
-    const hasBalanceSeries = Array.isArray(balanceSource) && balanceSource.length > 0;
+        // For filtered data, convert to target currency before any other transformations
+        // (including drawdown which should calculate HWM in the target currency)
+        if (selectedCurrency !== 'USD' && Array.isArray(balanceSource) && filtersActive) {
+            balanceSource = [...balanceSource]
+                .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+                .map((entry) => ({
+                    ...entry,
+                    value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+                }));
+        }
+        const hasBalanceSeries = Array.isArray(balanceSource) && balanceSource.length > 0;
 
-    const { chartVisibility } = transactionState;
-    const visibility = chartVisibility || {};
-    const showContribution = visibility.contribution !== false;
-    const showBalance = visibility.balance !== false && hasBalanceSeries;
-    const showAppreciation = visibility.appreciation !== false && hasBalanceSeries;
-    const showBuy = visibility.buy !== false;
-    const showSell = visibility.sell !== false;
+        const { chartVisibility } = transactionState;
+        const visibility = chartVisibility || {};
+        const showContribution = visibility.contribution !== false;
+        const showBalance = visibility.balance !== false && hasBalanceSeries;
+        const showAppreciation = visibility.appreciation !== false && hasBalanceSeries;
+        const showBuy = visibility.buy !== false;
+        const showSell = visibility.sell !== false;
 
-    const canvas = ctx.canvas;
-    const emptyState = document.getElementById('runningAmountEmpty');
+        const { chartDateRange } = transactionState;
+        const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
+        const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
+        const filterFromTime =
+            filterFrom && Number.isFinite(filterFrom.getTime()) ? filterFrom.getTime() : null;
+        const filterToTime =
+            filterTo && Number.isFinite(filterTo.getTime()) ? filterTo.getTime() : null;
 
-    const { chartDateRange } = transactionState;
-    const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
-    const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
-    const filterFromTime =
-        filterFrom && Number.isFinite(filterFrom.getTime()) ? filterFrom.getTime() : null;
-    const filterToTime =
-        filterTo && Number.isFinite(filterTo.getTime()) ? filterTo.getTime() : null;
+        const filterFromStr = filterFrom ? toLocalIsoDate(filterFrom) : null;
+        const filterToStr = filterTo ? toLocalIsoDate(filterTo) : null;
 
-    const filterFromStr = filterFrom ? toLocalIsoDate(filterFrom) : null;
-    const filterToStr = filterTo ? toLocalIsoDate(filterTo) : null;
+        const filterDataByDateRange = (data) => {
+            return data.filter((item) => {
+                const itemDate = item.date instanceof Date ? item.date : parseLocalDate(item.date);
+                if (!itemDate) {
+                    return false;
+                }
 
-    const filterDataByDateRange = (data) => {
-        return data.filter((item) => {
-            const itemDate = item.date instanceof Date ? item.date : parseLocalDate(item.date);
-            if (!itemDate) {
-                return false;
+                // All three are local-midnight Dates, so format with local
+                // components — toISOString() shifts them to the previous day in
+                // UTC+ timezones.
+                const itemDateStr = toLocalIsoDate(itemDate);
+
+                // Check if item is within the filter range
+                const withinStart = !filterFromStr || itemDateStr >= filterFromStr;
+                const withinEnd = !filterToStr || itemDateStr <= filterToStr;
+
+                // Preserve padding points that extend the series to the filter endpoint
+                const isPadding = item.orderType && item.orderType.toLowerCase() === 'padding';
+                if (isPadding && filterToStr) {
+                    // If it's a padding point, allow it if it matches the filter end
+                    // or if it's within the valid range (which is covered by withinStart && withinEnd)
+                    if (itemDateStr === filterToStr) {
+                        return withinStart;
+                    }
+                }
+
+                return withinStart && withinEnd;
+            });
+        };
+
+        const shouldCalculateBalance = showBalance || showAppreciation;
+
+        const mappedBalanceSource = shouldCalculateBalance
+            ? (balanceSource || [])
+                  .map((item) => ({ ...item, date: parseLocalDate(item.date) }))
+                  .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
+            : [];
+
+        const rawBalanceData = shouldCalculateBalance
+            ? injectSyntheticStartPoint(
+                  filterDataByDateRange(mappedBalanceSource),
+                  balanceSource,
+                  filterFrom
+              )
+            : [];
+
+        // Map contribution data to use 'value' key for compatibility with helper functions
+        const mappedContributionSource = (contributionSource || []).map((item) => ({
+            ...item,
+            date: item.tradeDate || item.date,
+            value: item.amount,
+        }));
+
+        // Use injectCarryForwardStartPoint to carry forward cumulative contribution value at filter start
+        const filteredContributionData = filterDataByDateRange(mappedContributionSource);
+        const rawContributionData = injectCarryForwardStartPoint(
+            filteredContributionData,
+            mappedContributionSource,
+            filterFrom,
+            'value'
+        ).map((item) => ({ ...item, date: parseLocalDate(item.date), amount: item.value }));
+
+        const balanceDataWithinRange =
+            (filterFrom || filterTo) && rawBalanceData.length > 0
+                ? constrainSeriesToRange(rawBalanceData, filterFrom, filterTo)
+                : rawBalanceData;
+
+        // Apply smoothing to contribution and balance data
+        const contributionSmoothingConfig = getSmoothingConfig('contribution');
+        const balanceSmoothingConfig = getSmoothingConfig('balance') || contributionSmoothingConfig;
+        const rangeActive = Boolean(filterFrom || filterTo);
+        const shouldSmoothContribution =
+            !rangeActive &&
+            !contributionFromTransactions &&
+            rawContributionData.length > 2 &&
+            contributionSmoothingConfig;
+        const contributionData = shouldSmoothContribution
+            ? smoothFinancialData(
+                  rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
+                  contributionSmoothingConfig,
+                  true // preserveEnd - keep the last point unchanged
+              ).map((p) => ({ date: new Date(p.x), amount: p.y }))
+            : rawContributionData;
+
+        const shouldSmoothBalance =
+            !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
+        const balanceData = shouldSmoothBalance
+            ? smoothFinancialData(
+                  balanceDataWithinRange.map((item) => ({ x: item.date.getTime(), y: item.value })),
+                  balanceSmoothingConfig,
+                  true // preserveEnd - keep the last point unchanged
+              ).map((p) => ({ date: new Date(p.x), value: p.y }))
+            : balanceDataWithinRange;
+
+        if (contributionData.length === 0 && balanceData.length === 0) {
+            cachedPipeline = { empty: true };
+        } else {
+            const allTimes = new Array(contributionData.length + balanceData.length);
+            let allTimesIndex = 0;
+            let allTimesMin = Infinity;
+            let allTimesMax = -Infinity;
+            for (let i = 0; i < contributionData.length; i++) {
+                const t = contributionData[i].date.getTime();
+                allTimes[allTimesIndex++] = t;
+                if (t < allTimesMin) {
+                    allTimesMin = t;
+                }
+                if (t > allTimesMax) {
+                    allTimesMax = t;
+                }
             }
-
-            // All three are local-midnight Dates, so format with local
-            // components — toISOString() shifts them to the previous day in
-            // UTC+ timezones.
-            const itemDateStr = toLocalIsoDate(itemDate);
-
-            // Check if item is within the filter range
-            const withinStart = !filterFromStr || itemDateStr >= filterFromStr;
-            const withinEnd = !filterToStr || itemDateStr <= filterToStr;
-
-            // Preserve padding points that extend the series to the filter endpoint
-            const isPadding = item.orderType && item.orderType.toLowerCase() === 'padding';
-            if (isPadding && filterToStr) {
-                // If it's a padding point, allow it if it matches the filter end
-                // or if it's within the valid range (which is covered by withinStart && withinEnd)
-                if (itemDateStr === filterToStr) {
-                    return withinStart;
+            for (let i = 0; i < balanceData.length; i++) {
+                const t = balanceData[i].date.getTime();
+                allTimes[allTimesIndex++] = t;
+                if (t < allTimesMin) {
+                    allTimesMin = t;
+                }
+                if (t > allTimesMax) {
+                    allTimesMax = t;
                 }
             }
 
-            return withinStart && withinEnd;
-        });
-    };
+            // Calculate effective min times based on actual data within filter range
+            let minEffectiveTime = Infinity;
+            let hasEffectiveTime = false;
+            if (rawContributionData.length > 0) {
+                // Use the first point (including synthetic start point) for consistency with balance data
+                const t = rawContributionData[0].date.getTime();
+                if (t < minEffectiveTime) {
+                    minEffectiveTime = t;
+                }
+                hasEffectiveTime = true;
+            }
 
-    const shouldCalculateBalance = showBalance || showAppreciation;
+            if (showBalance && rawBalanceData.length > 0) {
+                const t = rawBalanceData[0].date.getTime();
+                if (t < minEffectiveTime) {
+                    minEffectiveTime = t;
+                }
+                hasEffectiveTime = true;
+            }
 
-    const mappedBalanceSource = shouldCalculateBalance
-        ? (balanceSource || [])
-              .map((item) => ({ ...item, date: parseLocalDate(item.date) }))
-              .filter((item) => item.date && !Number.isNaN(item.date.getTime()))
-        : [];
+            const fallbackMinTime = allTimes.length > 0 ? allTimesMin : Date.now();
+            let minTime = hasEffectiveTime ? minEffectiveTime : fallbackMinTime;
 
-    const rawBalanceData = shouldCalculateBalance
-        ? injectSyntheticStartPoint(
-              filterDataByDateRange(mappedBalanceSource),
-              balanceSource,
-              filterFrom
-          )
-        : [];
+            if (Number.isFinite(filterFromTime)) {
+                // Ensure minTime is at least the filter start time, but don't extend before actual data
+                minTime = Math.max(minTime, filterFromTime);
+            }
+            // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
+            let maxTime;
+            if (Number.isFinite(filterToTime)) {
+                // When filter is active, extend to min(filterEnd, today)
+                // This handles both past periods (stops at filter end) and current periods (stops at today)
+                maxTime = Math.min(filterToTime, Date.now());
+            } else if (allTimes.length > 0) {
+                // No filter: use the maximum time from the data (including padding points)
+                maxTime = allTimesMax;
+            } else {
+                maxTime = Date.now();
+            }
 
-    // Map contribution data to use 'value' key for compatibility with helper functions
-    const mappedContributionSource = (contributionSource || []).map((item) => ({
-        ...item,
-        date: item.tradeDate || item.date,
-        value: item.amount,
-    }));
+            // Force-extend series to maxTime to ensure the line reaches the right edge of the chart
+            // This fixes issues where the line stops at the last transaction date instead of the filter end/today
+            if (contributionData.length > 0) {
+                const lastPoint = contributionData[contributionData.length - 1];
+                if (lastPoint.date.getTime() < maxTime) {
+                    contributionData.push({
+                        date: new Date(maxTime),
+                        amount: lastPoint.amount,
+                    });
+                }
+            }
 
-    // Use injectCarryForwardStartPoint to carry forward cumulative contribution value at filter start
-    const filteredContributionData = filterDataByDateRange(mappedContributionSource);
-    const rawContributionData = injectCarryForwardStartPoint(
-        filteredContributionData,
-        mappedContributionSource,
-        filterFrom,
-        'value'
-    ).map((item) => ({ ...item, date: parseLocalDate(item.date), amount: item.value }));
+            if (balanceData.length > 0) {
+                const lastPoint = balanceData[balanceData.length - 1];
+                if (lastPoint.date.getTime() < maxTime) {
+                    balanceData.push({
+                        date: new Date(maxTime),
+                        value: lastPoint.value,
+                    });
+                }
+            }
 
-    const balanceDataWithinRange =
-        (filterFrom || filterTo) && rawBalanceData.length > 0
-            ? constrainSeriesToRange(rawBalanceData, filterFrom, filterTo)
-            : rawBalanceData;
+            // Apply drawdown transformation if in drawdown mode
+            let finalContributionData = contributionData;
+            let finalBalanceData = balanceData;
 
-    // Apply smoothing to contribution and balance data
-    const contributionSmoothingConfig = getSmoothingConfig('contribution');
-    const balanceSmoothingConfig = getSmoothingConfig('balance') || contributionSmoothingConfig;
-    const rangeActive = Boolean(filterFrom || filterTo);
-    const shouldSmoothContribution =
-        !rangeActive &&
-        !contributionFromTransactions &&
-        rawContributionData.length > 2 &&
-        contributionSmoothingConfig;
-    const contributionData = shouldSmoothContribution
-        ? smoothFinancialData(
-              rawContributionData.map((item) => ({ x: item.date.getTime(), y: item.amount })),
-              contributionSmoothingConfig,
-              true // preserveEnd - keep the last point unchanged
-          ).map((p) => ({ date: new Date(p.x), amount: p.y }))
-        : rawContributionData;
+            if (drawdownMode) {
+                // Calculate historical peak from full series (before filter) for accurate drawdown
+                let contributionHistoricalPeak = -Infinity;
+                let balanceHistoricalPeak = -Infinity;
 
-    const shouldSmoothBalance =
-        !filtersActive && balanceDataWithinRange.length > 2 && balanceSmoothingConfig;
-    const balanceData = shouldSmoothBalance
-        ? smoothFinancialData(
-              balanceDataWithinRange.map((item) => ({ x: item.date.getTime(), y: item.value })),
-              balanceSmoothingConfig,
-              true // preserveEnd - keep the last point unchanged
-          ).map((p) => ({ date: new Date(p.x), value: p.y }))
-        : balanceDataWithinRange;
+                if (filterFrom) {
+                    const filterFromTime = filterFrom.getTime();
+                    // Find peak in contribution data before filter start
+                    const cSrc = mappedContributionSource || [];
+                    for (let i = 0; i < cSrc.length; i++) {
+                        const item = cSrc[i];
+                        const itemDate = new Date(item.date);
+                        if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
+                            contributionHistoricalPeak = Math.max(
+                                contributionHistoricalPeak,
+                                item.value
+                            );
+                        }
+                    }
+                    // Find peak in balance data before filter start
+                    const bSrc = mappedBalanceSource || [];
+                    for (let i = 0; i < bSrc.length; i++) {
+                        const item = bSrc[i];
+                        const itemDate =
+                            item.date instanceof Date ? item.date : new Date(item.date);
+                        if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
+                            balanceHistoricalPeak = Math.max(balanceHistoricalPeak, item.value);
+                        }
+                    }
+                }
 
-    if (contributionData.length === 0 && balanceData.length === 0) {
-        stopContributionAnimation();
+                finalContributionData = applyDrawdownToSeries(
+                    contributionData,
+                    'amount',
+                    contributionHistoricalPeak
+                );
+                finalBalanceData = applyDrawdownToSeries(
+                    balanceData,
+                    'value',
+                    balanceHistoricalPeak
+                );
+            }
+
+            // Compute appreciation data: balance − contribution at aligned timestamps
+            const appreciationData =
+                !drawdownMode && showAppreciation
+                    ? computeAppreciationSeries(finalBalanceData, finalContributionData)
+                    : [];
+
+            // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
+            const combinedValues = [];
+            let rawMin = Infinity;
+            let rawMax = -Infinity;
+
+            for (let i = 0; i < finalContributionData.length; i++) {
+                const val = finalContributionData[i].amount;
+                if (Number.isFinite(val)) {
+                    combinedValues.push(val);
+                    if (val < rawMin) {
+                        rawMin = val;
+                    }
+                    if (val > rawMax) {
+                        rawMax = val;
+                    }
+                }
+            }
+            for (let i = 0; i < finalBalanceData.length; i++) {
+                const val = finalBalanceData[i].value;
+                if (Number.isFinite(val)) {
+                    combinedValues.push(val);
+                    if (val < rawMin) {
+                        rawMin = val;
+                    }
+                    if (val > rawMax) {
+                        rawMax = val;
+                    }
+                }
+            }
+            for (let i = 0; i < appreciationData.length; i++) {
+                const val = appreciationData[i].value;
+                if (Number.isFinite(val)) {
+                    combinedValues.push(val);
+                    if (val < rawMin) {
+                        rawMin = val;
+                    }
+                    if (val > rawMax) {
+                        rawMax = val;
+                    }
+                }
+            }
+
+            const hasValues = combinedValues.length > 0;
+            if (!hasValues) {
+                rawMin = 0;
+                rawMax = 0;
+            }
+
+            const {
+                startYAxisAtZero = true,
+                paddingRatio: configuredPaddingRatio = 0.05,
+                minPaddingValue: configuredMinPadding = 0,
+            } = CONTRIBUTION_CHART_SETTINGS || {};
+
+            const paddingRatio = Number.isFinite(configuredPaddingRatio)
+                ? Math.max(configuredPaddingRatio, 0)
+                : 0.05;
+            const minPaddingValue = Number.isFinite(configuredMinPadding)
+                ? Math.max(configuredMinPadding, 0)
+                : 0;
+
+            let yMin = startYAxisAtZero ? Math.min(0, rawMin) : rawMin;
+            let yMax = startYAxisAtZero ? Math.max(rawMax, 0) : rawMax;
+
+            // In drawdown mode, force yMax to 0 and yMin to include all negative values
+            if (drawdownMode) {
+                yMax = 0;
+                yMin = Math.min(rawMin, 0);
+            }
+
+            if (!hasValues) {
+                yMin = startYAxisAtZero || drawdownMode ? 0 : 0;
+                yMax = drawdownMode ? 0 : 1;
+                if (drawdownMode) {
+                    yMin = -1;
+                }
+            }
+
+            const range = yMax - yMin;
+            const paddingDelta =
+                range > 0
+                    ? Math.max(range * paddingRatio, minPaddingValue)
+                    : Math.max(Math.abs(yMax || yMin) * paddingRatio, minPaddingValue || 1);
+
+            if (startYAxisAtZero) {
+                yMax += paddingDelta;
+            } else {
+                yMin -= paddingDelta;
+                yMax += paddingDelta;
+            }
+
+            if (yMax <= yMin) {
+                const fallbackSpan = paddingDelta || 1;
+                yMax = yMin + fallbackSpan;
+            }
+
+            cachedPipeline = {
+                empty: false,
+                hasBalanceSeries,
+                finalContributionData,
+                finalBalanceData,
+                rawContributionData,
+                rawBalanceData,
+                appreciationData,
+                minTime,
+                maxTime,
+                yMin,
+                yMax,
+                filterFromTime,
+                selectedCurrency,
+                showContribution,
+                showBalance,
+                showAppreciation,
+                showBuy,
+                showSell,
+                drawdownMode,
+            };
+        }
+    }
+
+    pipelineCache.key = cacheKey;
+    pipelineCache.data = cachedPipeline;
+
+    const emptyState = document.getElementById('runningAmountEmpty');
+    if (cachedPipeline.empty) {
         if (emptyState) {
             emptyState.style.display = '';
         }
+        stopContributionAnimation();
         return;
     }
-
-    const allTimes = new Array(contributionData.length + balanceData.length);
-    let allTimesIndex = 0;
-    let allTimesMin = Infinity;
-    let allTimesMax = -Infinity;
-    for (let i = 0; i < contributionData.length; i++) {
-        const t = contributionData[i].date.getTime();
-        allTimes[allTimesIndex++] = t;
-        if (t < allTimesMin) {
-            allTimesMin = t;
-        }
-        if (t > allTimesMax) {
-            allTimesMax = t;
-        }
-    }
-    for (let i = 0; i < balanceData.length; i++) {
-        const t = balanceData[i].date.getTime();
-        allTimes[allTimesIndex++] = t;
-        if (t < allTimesMin) {
-            allTimesMin = t;
-        }
-        if (t > allTimesMax) {
-            allTimesMax = t;
-        }
-    }
-
-    // Calculate effective min times based on actual data within filter range
-    let minEffectiveTime = Infinity;
-    let hasEffectiveTime = false;
-    if (rawContributionData.length > 0) {
-        // Use the first point (including synthetic start point) for consistency with balance data
-        const t = rawContributionData[0].date.getTime();
-        if (t < minEffectiveTime) {
-            minEffectiveTime = t;
-        }
-        hasEffectiveTime = true;
-    }
-
-    if (showBalance && rawBalanceData.length > 0) {
-        const t = rawBalanceData[0].date.getTime();
-        if (t < minEffectiveTime) {
-            minEffectiveTime = t;
-        }
-        hasEffectiveTime = true;
-    }
-
-    const fallbackMinTime = allTimes.length > 0 ? allTimesMin : Date.now();
-    let minTime = hasEffectiveTime ? minEffectiveTime : fallbackMinTime;
-
-    if (Number.isFinite(filterFromTime)) {
-        // Ensure minTime is at least the filter start time, but don't extend before actual data
-        minTime = Math.max(minTime, filterFromTime);
-    }
-    // Calculate maxTime - use filter end if specified (clamped to today), otherwise use data max
-    let maxTime;
-    if (Number.isFinite(filterToTime)) {
-        // When filter is active, extend to min(filterEnd, today)
-        // This handles both past periods (stops at filter end) and current periods (stops at today)
-        maxTime = Math.min(filterToTime, Date.now());
-    } else if (allTimes.length > 0) {
-        // No filter: use the maximum time from the data (including padding points)
-        maxTime = allTimesMax;
-    } else {
-        maxTime = Date.now();
-    }
-
-    // Force-extend series to maxTime to ensure the line reaches the right edge of the chart
-    // This fixes issues where the line stops at the last transaction date instead of the filter end/today
-    if (contributionData.length > 0) {
-        const lastPoint = contributionData[contributionData.length - 1];
-        if (lastPoint.date.getTime() < maxTime) {
-            contributionData.push({
-                date: new Date(maxTime),
-                amount: lastPoint.amount,
-            });
-        }
-    }
-
-    if (balanceData.length > 0) {
-        const lastPoint = balanceData[balanceData.length - 1];
-        if (lastPoint.date.getTime() < maxTime) {
-            balanceData.push({
-                date: new Date(maxTime),
-                value: lastPoint.value,
-            });
-        }
-    }
-
-    // Apply drawdown transformation if in drawdown mode
-    let finalContributionData = contributionData;
-    let finalBalanceData = balanceData;
-
-    if (drawdownMode) {
-        // Calculate historical peak from full series (before filter) for accurate drawdown
-        let contributionHistoricalPeak = -Infinity;
-        let balanceHistoricalPeak = -Infinity;
-
-        if (filterFrom) {
-            const filterFromTime = filterFrom.getTime();
-            // Find peak in contribution data before filter start
-            const cSrc = mappedContributionSource || [];
-            for (let i = 0; i < cSrc.length; i++) {
-                const item = cSrc[i];
-                const itemDate = new Date(item.date);
-                if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
-                    contributionHistoricalPeak = Math.max(contributionHistoricalPeak, item.value);
-                }
-            }
-            // Find peak in balance data before filter start
-            const bSrc = mappedBalanceSource || [];
-            for (let i = 0; i < bSrc.length; i++) {
-                const item = bSrc[i];
-                const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
-                if (itemDate.getTime() < filterFromTime && Number.isFinite(item.value)) {
-                    balanceHistoricalPeak = Math.max(balanceHistoricalPeak, item.value);
-                }
-            }
-        }
-
-        finalContributionData = applyDrawdownToSeries(
-            contributionData,
-            'amount',
-            contributionHistoricalPeak
-        );
-        finalBalanceData = applyDrawdownToSeries(balanceData, 'value', balanceHistoricalPeak);
-    }
-
     if (emptyState) {
         emptyState.style.display = 'none';
     }
+
+    const canvas = ctx.canvas;
+    const {
+        hasBalanceSeries,
+        finalContributionData,
+        finalBalanceData,
+        rawContributionData,
+        rawBalanceData,
+        appreciationData,
+        minTime,
+        maxTime,
+        yMin,
+        yMax,
+        filterFromTime,
+        selectedCurrency,
+        showContribution,
+        showBalance,
+        showAppreciation,
+        showBuy,
+        showSell,
+    } = cachedPipeline;
 
     const isMobile = window.innerWidth <= 768;
     const padding = isMobile
@@ -482,108 +726,6 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         delete window.DEBUG_CHART;
     }
 
-    // Compute appreciation data: balance − contribution at aligned timestamps
-    const appreciationData =
-        !drawdownMode && showAppreciation
-            ? computeAppreciationSeries(finalBalanceData, finalContributionData)
-            : [];
-
-    // Bolt: Use explicit O(N) loop instead of chained .map() and Math.max(...spread) to eliminate GC overhead and avoid call stack limits
-    const combinedValues = [];
-    let rawMin = Infinity;
-    let rawMax = -Infinity;
-
-    for (let i = 0; i < finalContributionData.length; i++) {
-        const val = finalContributionData[i].amount;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-    for (let i = 0; i < finalBalanceData.length; i++) {
-        const val = finalBalanceData[i].value;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-    for (let i = 0; i < appreciationData.length; i++) {
-        const val = appreciationData[i].value;
-        if (Number.isFinite(val)) {
-            combinedValues.push(val);
-            if (val < rawMin) {
-                rawMin = val;
-            }
-            if (val > rawMax) {
-                rawMax = val;
-            }
-        }
-    }
-
-    const hasValues = combinedValues.length > 0;
-    if (!hasValues) {
-        rawMin = 0;
-        rawMax = 0;
-    }
-
-    const {
-        startYAxisAtZero = true,
-        paddingRatio: configuredPaddingRatio = 0.05,
-        minPaddingValue: configuredMinPadding = 0,
-    } = CONTRIBUTION_CHART_SETTINGS || {};
-
-    const paddingRatio = Number.isFinite(configuredPaddingRatio)
-        ? Math.max(configuredPaddingRatio, 0)
-        : 0.05;
-    const minPaddingValue = Number.isFinite(configuredMinPadding)
-        ? Math.max(configuredMinPadding, 0)
-        : 0;
-
-    let yMin = startYAxisAtZero ? Math.min(0, rawMin) : rawMin;
-    let yMax = startYAxisAtZero ? Math.max(rawMax, 0) : rawMax;
-
-    // In drawdown mode, force yMax to 0 and yMin to include all negative values
-    if (drawdownMode) {
-        yMax = 0;
-        yMin = Math.min(rawMin, 0);
-    }
-
-    if (!hasValues) {
-        yMin = startYAxisAtZero || drawdownMode ? 0 : 0;
-        yMax = drawdownMode ? 0 : 1;
-        if (drawdownMode) {
-            yMin = -1;
-        }
-    }
-
-    const range = yMax - yMin;
-    const paddingDelta =
-        range > 0
-            ? Math.max(range * paddingRatio, minPaddingValue)
-            : Math.max(Math.abs(yMax || yMin) * paddingRatio, minPaddingValue || 1);
-
-    if (startYAxisAtZero) {
-        yMax += paddingDelta;
-    } else {
-        yMin -= paddingDelta;
-        yMax += paddingDelta;
-    }
-
-    if (yMax <= yMin) {
-        const fallbackSpan = paddingDelta || 1;
-        yMax = yMin + fallbackSpan;
-    }
-
     const xScale = (t) =>
         padding.left +
         (maxTime === minTime ? plotWidth / 2 : ((t - minTime) / (maxTime - minTime)) * plotWidth);
@@ -603,7 +745,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         formatCurrencyCompact,
         false, // isPerformanceChart
         volumeHeight > 0 ? { drawXAxis: false } : {},
-        transactionState.selectedCurrency || 'USD'
+        selectedCurrency
     );
 
     const rootStyles = window.getComputedStyle(document.documentElement);
@@ -615,14 +757,14 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
     const filterStartTime = Number.isFinite(filterFromTime) ? filterFromTime : null;
 
     const formatBalanceValue = (value) =>
-        formatCurrencyCompact(value, { currency: transactionState.selectedCurrency || 'USD' });
+        formatCurrencyCompact(value, { currency: selectedCurrency });
 
     const formatContributionAnnotationValue = (value) => {
         const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
         if (Math.abs(amount) < 1) {
             return formatBalanceValue(amount);
         }
-        const currency = transactionState.selectedCurrency || 'USD';
+        const currency = selectedCurrency;
         return formatCurrencyCompact(amount, { currency });
     };
 
@@ -736,7 +878,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         plotWidth,
         xScale,
         formatCurrencyCompact,
-        selectedCurrency: transactionState.selectedCurrency || 'USD',
+        selectedCurrency: selectedCurrency,
         volumeGap,
     });
 
