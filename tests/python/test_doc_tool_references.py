@@ -20,6 +20,9 @@ SCRIPT_PATH_PATTERN = re.compile(
 # Regex pattern to extract python -m module references (e.g. python3 -m scripts.agents.gate_guard)
 PYTHON_MODULE_PATTERN = re.compile(r"python3\s+-m\s+(scripts\.[a-zA-Z0-9_\.]+)")
 
+# Regex pattern to extract docs/ markdown paths (e.g. docs/fermat-pascal-kelly-system.md)
+DOC_PATH_PATTERN = re.compile(r"(?<!/)\bdocs/([a-zA-Z0-9_\-/\.]+\.md)\b")
+
 
 def _collect_markdown_files() -> list[Path]:
     """Collect AGENTS.md, .jules persona docs, and agent skill definitions."""
@@ -91,3 +94,27 @@ def test_core_infrastructure_tools_exist() -> None:
 
     missing = [tool for tool in core_tools if not (REPO_ROOT / tool).exists()]
     assert not missing, f"Core infrastructure tools missing: {missing}"
+
+
+def test_documented_doc_files_exist() -> None:
+    """All docs/*.md paths referenced by agent docs and skills must exist on disk."""
+    md_files = _collect_markdown_files()
+    assert md_files, "No markdown documentation files found to validate."
+
+    missing_refs: list[str] = []
+
+    for md_file in md_files:
+        content = md_file.read_text(encoding="utf-8")
+
+        for doc_match in DOC_PATH_PATTERN.findall(content):
+            doc_path = REPO_ROOT / "docs" / doc_match
+            if not doc_path.exists():
+                missing_refs.append(
+                    f"{md_file.relative_to(REPO_ROOT)} references missing doc: docs/{doc_match}"
+                )
+
+    assert (
+        not missing_refs
+    ), f"Found {len(missing_refs)} missing doc reference(s) in documentation:\n" + "\n".join(
+        missing_refs
+    )

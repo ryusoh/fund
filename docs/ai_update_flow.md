@@ -152,7 +152,7 @@ When new source material arrives (earnings, trade articles, whitepapers, intervi
 
 ### 9.3 Prompt template
 
-Save this prompt (or a variant) somewhere easy to copy, e.g. `docs/ai/ThesisUpdatePrompt.md`.
+Save this prompt (or a variant) somewhere easy to copy, e.g. `docs/thesis_update_prompt.md`.
 
 When you have new material, fill in `<TICKER>`, `mode`, and the concrete paths, then send it to the AI:
 
