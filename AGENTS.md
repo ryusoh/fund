@@ -56,6 +56,12 @@ ES modules via an import map.
    Enforced deterministically by `make thinking-check`
    (`scripts/check_thinking_comments.py`, part of `make verify` and the
    `precommit-fix` CI gate) over all tracked py/js/ts/css sources.
+10. **Never open an empty PR.** If the run produces no diff (zero changed
+    files), end the run with no PR — an empty PR can't be merged and costs the
+    reviewer a manual close. This includes when your task's goal turns out to be
+    already satisfied by the current repo state (e.g. a stale task description):
+    a satisfied goal is a no-op, not a PR. (Six Typist PRs closed 2026-08 for
+    exactly this.)
 
 ## You cannot see the rendered page
 

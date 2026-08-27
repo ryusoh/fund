@@ -15,6 +15,12 @@ implement, verify, and open the PR in one pass — the reviewer accepts or close
 `npx tsc -p jsconfig.json` is blocking in `make verify`. Each run, do exactly one
 of the following, checked in order. **No runtime behavior change, ever.**
 
+0. **Early exit** — if your run's driving goal is already satisfied by the
+   current repo state (e.g. the task says "enable strict JS type-checking" and
+   `strict: true` with a blocking gate is already in place), that is a no-op:
+   **end the run with no PR** (AGENTS.md non-negotiable #10). A no-op summary
+   belongs in the run log, not in a PR.
+
 1. **Fix** — if `npx tsc -p jsconfig.json` reports errors, TARGET = the included
    file with the fewest errors (ties → smallest line count). Bring TARGET to zero
    strict errors via JSDoc.

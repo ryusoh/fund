@@ -23,6 +23,14 @@ That's the whole prompt for every routine — `architect`, `bolt`, `janitor`,
 `sentinel`, `testpilot`, `typist`. Lane, constraints, verification gate, and known
 pitfalls all come from the persona file. (`palette` is deprecated and retired.)
 
+**Keep the UI prompt generic.** A stale task-specific prompt is worse than the
+generic one: Typist's schedule once kept an old "enable strict JS type-checking"
+goal after it was done, and produced six zero-file PRs the owner had to close by
+hand (2026-08; visible via `prior_prs --stats`). With the generic invocation the
+persona decides what work exists; with a stale goal the routine satisfies it
+vacuously and Jules still publishes the empty PR. If a lane is finished, pause
+its schedule — don't leave a satisfied goal running.
+
 ## Operational settings (this is what actually cuts human interaction)
 
 - **Required status check** = `make verify` (CI) on every routine's PR. A red PR
