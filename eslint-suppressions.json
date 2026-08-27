@@ -1,9 +1,4 @@
 {
-    "js/pages/calendar/index.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/plugins/imagePlugin.js": {
         "complexity": {
             "count": 1

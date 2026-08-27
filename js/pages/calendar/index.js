@@ -742,6 +742,289 @@ function handleViewportChange() {
     }
 }
 
+// --- INITIALIZATION HELPERS ---
+
+/**
+ * Synchronizes currency toggle state with stored user preferences.
+ */
+function initCalendarCurrency() {
+    initCurrencyToggle();
+    const storedCurrency = getStoredCurrency();
+    if (storedCurrency) {
+        appState.selectedCurrency = storedCurrency;
+    }
+    applyCurrencySelection(appState.selectedCurrency, { emitEvent: false });
+}
+
+/**
+ * Parses a YYYY-MM-DD date string into a local Date object.
+ *
+ * @param {string} dateString
+ * @returns {Date|null}
+ */
+function parseDataDate(dateString) {
+    if (typeof dateString !== 'string') {
+        return null;
+    }
+    const parts = dateString.split('-');
+    if (parts.length !== 3) {
+        return null;
+    }
+    const [yearStr, monthStr, dayStr] = parts;
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+        return null;
+    }
+    return new Date(year, month - 1, day);
+}
+
+/**
+ * Determines boundary dates and the earliest month containing active data labels.
+ *
+ * @param {Array<{date: string, dailyChange?: number}>} processedData
+ * @returns {{firstDataDate: Date, lastDataDate: Date, firstMonthWithLabels: Date}}
+ */
+function computeDataBounds(processedData) {
+    /* istanbul ignore next: defensive data parsing fallback in calendar init */
+    const firstDataDate =
+        (processedData.length > 0 && parseDataDate(processedData[0].date)) || new Date();
+    /* istanbul ignore next: defensive data parsing fallback in calendar init */
+    const rawLastDate =
+        (processedData.length > 0 && parseDataDate(processedData[processedData.length - 1].date)) ||
+        firstDataDate;
+    /* istanbul ignore next: defensive data parsing fallback in calendar init */
+    const lastDataDate = Number.isFinite(rawLastDate.getTime()) ? rawLastDate : firstDataDate;
+
+    // Domain convention: paintConfig declares timezone:'utc', and
+    // formatMonthKey/dateToMonthIndex read UTC getters — so every month
+    // Date below is UTC-constructed, bridging from local-domain sources
+    // (getNyDate wall time, parseDataDate) via their LOCAL components.
+    // Mixing the domains shifts a month at either side of UTC
+    // (see docs/testing-notes.md § Timezone).
+    let firstMonthWithLabels = null;
+    for (const entry of processedData) {
+        if (typeof entry.dailyChange === 'number' && entry.dailyChange !== 0) {
+            const key = entry.date.slice(0, 7);
+            const [yearStr, monthStr] = key.split('-');
+            const year = Number(yearStr);
+            const monthIndex = Number(monthStr) - 1;
+            if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
+                firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
+                break;
+            }
+        }
+    }
+
+    /* istanbul ignore next: fallback for missing month labels edge case */
+    if (!firstMonthWithLabels) {
+        /* istanbul ignore next: fallback for missing month labels edge case */
+        firstMonthWithLabels = new Date(
+            Date.UTC(firstDataDate.getFullYear(), firstDataDate.getMonth(), 1)
+        );
+    }
+
+    return { firstDataDate, lastDataDate, firstMonthWithLabels };
+}
+
+/**
+ * Calculates visible month bounds and effective display range.
+ *
+ * @param {Date} firstMonthWithLabels
+ * @param {Date} lastDataDate
+ * @param {Date} todayNy
+ * @returns {{lastVisibleMonth: Date, effectiveRange: number, calendarStartDate: Date}}
+ */
+function computeCalendarRangeConfig(firstMonthWithLabels, lastDataDate, todayNy) {
+    const currentMonthStart = new Date(Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), 1));
+    const lastDataMonthStart = new Date(
+        Date.UTC(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1)
+    );
+    const lastVisibleMonth = new Date(
+        Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
+    );
+
+    /* istanbul ignore next: calendar range configuration calculation */
+    const configuredRange = Math.max(1, getCalendarRange() || 1);
+    /* istanbul ignore next: calendar range configuration calculation */
+    const firstLabelIndex = dateToMonthIndex(firstMonthWithLabels);
+    /* istanbul ignore next: calendar range configuration calculation */
+    const lastVisibleIndex = dateToMonthIndex(lastVisibleMonth);
+    /* istanbul ignore next: calendar range configuration calculation */
+    const maxAvailableSpan = Math.max(1, lastVisibleIndex - firstLabelIndex + 1);
+    /* istanbul ignore next: calendar range configuration calculation */
+    const effectiveRange = Math.min(configuredRange, maxAvailableSpan);
+
+    /* istanbul ignore next: calendar range configuration calculation */
+    let startIndex = lastVisibleIndex - (effectiveRange - 1);
+    /* istanbul ignore next: calendar range configuration calculation */
+    if (startIndex < firstLabelIndex) {
+        /* istanbul ignore next: mathematical edge case for very constrained date ranges */
+        startIndex = firstLabelIndex;
+    }
+
+    /* istanbul ignore next: calendar range configuration calculation */
+    const calendarStartDate = new Date(Date.UTC(Math.floor(startIndex / 12), startIndex % 12, 1));
+
+    return { lastVisibleMonth, effectiveRange, calendarStartDate };
+}
+
+/**
+ * Builds CalHeatmap tooltip configuration.
+ *
+ * @param {Array<Object>} processedData
+ * @returns {{text: Function}}
+ */
+function createCalendarTooltip(processedData) {
+    /* istanbul ignore next: tooltip configuration object creation */
+    return {
+        /* istanbul ignore next: tooltip function implementation */
+        text: function (date, value, dayjsDate) {
+            /* istanbul ignore next: tooltip function implementation */
+            const entry = processedData.find((d) => d.date === dayjsDate.format('YYYY-MM-DD'));
+            /* istanbul ignore next: tooltip function implementation */
+            const pnlPercent = (value * 100).toFixed(2);
+            /* istanbul ignore next: tooltip function implementation */
+            const totalValue = entry
+                ? getNumberFormatter('en-US', 2, 2, {
+                      style: 'currency',
+                      currency: 'USD',
+                  }).format(entry.total)
+                : 'N/A';
+            /* istanbul ignore next: tooltip function implementation */
+            const sign = value > 0 ? '+' : '';
+            /* istanbul ignore next: tooltip function implementation */
+            const pnlClass = value > 0 ? 'pnl-positive' : value < 0 ? 'pnl-negative' : '';
+
+            /* istanbul ignore next: tooltip function implementation */
+            return (
+                `${dayjsDate.format('MMMM D, YYYY')}<br>` +
+                `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
+                `Value: ${totalValue}`
+            );
+        },
+    };
+}
+
+/**
+ * Builds paint configuration object for CalHeatmap renderer.
+ *
+ * @param {Object} params
+ * @returns {Object}
+ */
+function buildCalendarPaintConfig({
+    processedData,
+    effectiveRange,
+    valueField,
+    calendarStartDate,
+    firstMonthWithLabels,
+    todayNy,
+    lastDataDate,
+}) {
+    /* istanbul ignore next: mathematical calculation for max date in calendar config */
+    const endOfCurrentMonth = new Date(Date.UTC(todayNy.getFullYear(), todayNy.getMonth() + 1, 0));
+    /* istanbul ignore next: mathematical calculation for max date in calendar config */
+    const maxDate = new Date(
+        Math.max(
+            endOfCurrentMonth.getTime(),
+            Date.UTC(lastDataDate.getFullYear(), lastDataDate.getMonth(), lastDataDate.getDate())
+        )
+    );
+
+    return {
+        ...CALENDAR_CONFIG,
+        range: effectiveRange,
+        data: {
+            source: processedData,
+            x: 'date',
+            y: valueField,
+            groupY: 'max',
+        },
+        date: {
+            start: calendarStartDate,
+            min: firstMonthWithLabels,
+            // Allow viewing through the current month even if data isn't present yet
+            max: maxDate,
+            highlight: [
+                new Date(Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), todayNy.getDate())),
+            ],
+            timezone: 'utc',
+        },
+        tooltip: createCalendarTooltip(processedData),
+        /* istanbul ignore next: calendar domain navigation callback in test environment */
+        onMinDomainReached: (isMin) => {
+            /* istanbul ignore next: calendar domain navigation callback in test environment */
+            const el = document.querySelector(CALENDAR_SELECTORS.prevButton);
+            if (el) {
+                el.disabled = isMin;
+            }
+        },
+        /* istanbul ignore next: calendar domain navigation callback in test environment */
+        onMaxDomainReached: (isMax) => {
+            /* istanbul ignore next: calendar domain navigation callback in test environment */
+            const el = document.querySelector(CALENDAR_SELECTORS.nextButton);
+            if (el) {
+                el.disabled = isMax;
+            }
+        },
+    };
+}
+
+/**
+ * Renders error message in calendar container upon initialization failure.
+ *
+ * @param {Error} error
+ */
+function renderCalendarInitError(error) {
+    logger.error('Error initializing calendar:', error);
+    logger.log(error);
+    const container = document.querySelector(CALENDAR_SELECTORS.container);
+    if (container) {
+        const p = document.createElement('p');
+        p.textContent = error.message;
+        if (typeof container.replaceChildren === 'function') {
+            container.replaceChildren(p);
+        } else {
+            // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
+            container.textContent = '';
+            if (typeof container.appendChild === 'function') {
+                container.appendChild(p);
+            } else {
+                container.textContent = error.message;
+            }
+        }
+    }
+}
+
+/**
+ * Handles chart-loaded visibility class and entrance animations.
+ */
+function triggerCalendarEntrance() {
+    const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
+    if (toggleContainer) {
+        const activate = () => toggleContainer.classList.add('chart-loaded');
+        if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
+            window.setTimeout(activate, 200);
+        } else {
+            activate();
+        }
+    }
+
+    // Trigger entrance animation
+    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+        window.requestAnimationFrame(() => {
+            const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
+            if (wrapper) {
+                wrapper.classList.add('calendar-ready');
+            }
+            isInitialLoad = false;
+        });
+    } else {
+        isInitialLoad = false;
+    }
+}
+
 // --- INITIALIZATION ---
 
 /**
@@ -750,13 +1033,7 @@ function handleViewportChange() {
 export async function initCalendar() {
     try {
         // d3 and CalHeatmap are now loaded globally via script tags
-
-        initCurrencyToggle();
-        const storedCurrency = getStoredCurrency();
-        if (storedCurrency) {
-            appState.selectedCurrency = storedCurrency;
-        }
-        applyCurrencySelection(appState.selectedCurrency, { emitEvent: false });
+        initCalendarCurrency();
 
         const { processedData, byDate, rates, monthlyPnl } = await getCalendarData(DATA_PATHS);
         appState.rates = rates;
@@ -766,196 +1043,35 @@ export async function initCalendar() {
         const latestMonthlyKey = getLatestMonthlyKey(appState.monthlyPnl);
         calendarByDate = byDate; // Store globally for resize handling
 
-        const parseDataDate = (dateString) => {
-            const parts = dateString.split('-');
-            if (parts.length !== 3) {
-                return null;
-            }
-            const [yearStr, monthStr, dayStr] = parts;
-            const year = Number(yearStr);
-            const month = Number(monthStr);
-            const day = Number(dayStr);
-            if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-                return null;
-            }
-            return new Date(year, month - 1, day);
-        };
-
-        /* istanbul ignore next: defensive data parsing fallback in calendar init */
-        const firstDataDate = parseDataDate(processedData[0].date) || new Date();
-        /* istanbul ignore next: defensive data parsing fallback in calendar init */
-        const rawLastDate =
-            parseDataDate(processedData[processedData.length - 1].date) || firstDataDate;
-        /* istanbul ignore next: defensive data parsing fallback in calendar init */
-        const lastDataDate = Number.isFinite(rawLastDate.getTime()) ? rawLastDate : firstDataDate;
-
-        const monthHasLabels = new Map();
-        for (const entry of processedData) {
-            const key = entry.date.slice(0, 7);
-            if (!monthHasLabels.has(key)) {
-                monthHasLabels.set(key, false);
-            }
-            if (typeof entry.dailyChange === 'number' && entry.dailyChange !== 0) {
-                monthHasLabels.set(key, true);
-            }
-        }
-
-        // Domain convention: paintConfig declares timezone:'utc', and
-        // formatMonthKey/dateToMonthIndex read UTC getters — so every month
-        // Date below is UTC-constructed, bridging from local-domain sources
-        // (getNyDate wall time, parseDataDate) via their LOCAL components.
-        // Mixing the domains shifts a month at either side of UTC
-        // (see docs/testing-notes.md § Timezone).
-        let firstMonthWithLabels = null;
-        for (const [key, hasLabel] of monthHasLabels.entries()) {
-            if (hasLabel) {
-                const [yearStr, monthStr] = key.split('-');
-                const year = Number(yearStr);
-                const monthIndex = Number(monthStr) - 1;
-                if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
-                    firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
-                }
-                break;
-            }
-        }
-
-        /* istanbul ignore next: fallback for missing month labels edge case */
-        if (!firstMonthWithLabels) {
-            /* istanbul ignore next: fallback for missing month labels edge case */
-            firstMonthWithLabels = new Date(
-                Date.UTC(firstDataDate.getFullYear(), firstDataDate.getMonth(), 1)
-            );
-        }
-
-        // Determine the range of months to display so the right-most month is always the latest available.
+        const { firstMonthWithLabels, lastDataDate } = computeDataBounds(processedData);
         const todayNy = getNyDate();
-        const currentMonthStart = new Date(Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), 1));
-        const lastDataMonthStart = new Date(
-            Date.UTC(lastDataDate.getFullYear(), lastDataDate.getMonth(), 1)
+        const { lastVisibleMonth, effectiveRange, calendarStartDate } = computeCalendarRangeConfig(
+            firstMonthWithLabels,
+            lastDataDate,
+            todayNy
         );
-        const lastVisibleMonth = new Date(
-            Math.max(currentMonthStart.getTime(), lastDataMonthStart.getTime())
-        );
+
         if (typeof latestMonthlyKey === 'string') {
             appState.highlightMonthKey = latestMonthlyKey;
         } else {
             appState.highlightMonthKey = formatMonthKey(lastVisibleMonth);
         }
 
-        /* istanbul ignore next: mathematical utility function for date calculations */
-        const monthToIndex = dateToMonthIndex;
-        /* istanbul ignore next: mathematical utility function for date calculations */
-        const indexToMonthDate = (index) =>
-            new Date(Date.UTC(Math.floor(index / 12), index % 12, 1));
-
-        /* istanbul ignore next: calendar range configuration calculation */
-        const configuredRange = Math.max(1, getCalendarRange() || 1);
-        /* istanbul ignore next: calendar range configuration calculation */
-        const firstLabelIndex = monthToIndex(firstMonthWithLabels);
-        /* istanbul ignore next: calendar range configuration calculation */
-        const lastVisibleIndex = monthToIndex(lastVisibleMonth);
-        /* istanbul ignore next: calendar range configuration calculation */
-        const maxAvailableSpan = Math.max(1, lastVisibleIndex - firstLabelIndex + 1);
-        /* istanbul ignore next: calendar range configuration calculation */
-        const effectiveRange = Math.min(configuredRange, maxAvailableSpan);
-
-        /* istanbul ignore next: calendar range configuration calculation */
-        let startIndex = lastVisibleIndex - (effectiveRange - 1);
-        /* istanbul ignore next: calendar range configuration calculation */
-        if (startIndex < firstLabelIndex) {
-            /* istanbul ignore next: mathematical edge case for very constrained date ranges */
-            startIndex = firstLabelIndex;
-        }
-
-        /* istanbul ignore next: calendar range configuration calculation */
-        const calendarStartDate = indexToMonthDate(startIndex);
-
         const cal = createCalendarRenderer();
         calendarInstance = cal; // Store for resize handling
 
         setupEventListeners(cal, byDate, appState, CURRENCY_SYMBOLS);
 
-        /* istanbul ignore next: tooltip configuration object creation */
-        const tooltip = {
-            /* istanbul ignore next: tooltip function implementation */
-            text: function (date, value, dayjsDate) {
-                /* istanbul ignore next: tooltip function implementation */
-                const entry = processedData.find((d) => d.date === dayjsDate.format('YYYY-MM-DD'));
-                /* istanbul ignore next: tooltip function implementation */
-                const pnlPercent = (value * 100).toFixed(2);
-                /* istanbul ignore next: tooltip function implementation */
-                const totalValue = entry
-                    ? getNumberFormatter('en-US', 2, 2, {
-                          style: 'currency',
-                          currency: 'USD',
-                      }).format(entry.total)
-                    : 'N/A';
-                /* istanbul ignore next: tooltip function implementation */
-                const sign = value > 0 ? '+' : '';
-                /* istanbul ignore next: tooltip function implementation */
-                const pnlClass = value > 0 ? 'pnl-positive' : value < 0 ? 'pnl-negative' : '';
-
-                /* istanbul ignore next: tooltip function implementation */
-                return (
-                    `${dayjsDate.format('MMMM D, YYYY')}<br>` +
-                    `<span class="${pnlClass}">P/L: ${sign}${pnlPercent}%</span><br>` +
-                    `Value: ${totalValue}`
-                );
-            },
-        };
-
         const valueField = getValueFieldForCurrency(appState.selectedCurrency);
-
-        const paintConfig = {
-            ...CALENDAR_CONFIG,
-            range: effectiveRange,
-            data: {
-                source: processedData,
-                x: 'date',
-                y: valueField,
-                groupY: 'max',
-            },
-            date: {
-                start: calendarStartDate,
-                min: firstMonthWithLabels,
-                // Allow viewing through the current month even if data isn't present yet
-                /* istanbul ignore next: mathematical calculation for max date in calendar config */
-                max: (function () {
-                    /* istanbul ignore next: mathematical calculation for max date in calendar config */
-                    const endOfCurrentMonth = new Date(
-                        Date.UTC(todayNy.getFullYear(), todayNy.getMonth() + 1, 0)
-                    );
-                    /* istanbul ignore next: mathematical calculation for max date in calendar config */
-                    return new Date(
-                        Math.max(
-                            endOfCurrentMonth.getTime(),
-                            Date.UTC(
-                                lastDataDate.getFullYear(),
-                                lastDataDate.getMonth(),
-                                lastDataDate.getDate()
-                            )
-                        )
-                    );
-                })(),
-                highlight: [
-                    new Date(
-                        Date.UTC(todayNy.getFullYear(), todayNy.getMonth(), todayNy.getDate())
-                    ),
-                ],
-                timezone: 'utc',
-            },
-            tooltip,
-            /* istanbul ignore next: calendar domain navigation callback in test environment */
-            onMinDomainReached: (isMin) => {
-                /* istanbul ignore next: calendar domain navigation callback in test environment */
-                document.querySelector(CALENDAR_SELECTORS.prevButton).disabled = isMin;
-            },
-            /* istanbul ignore next: calendar domain navigation callback in test environment */
-            onMaxDomainReached: (isMax) => {
-                /* istanbul ignore next: calendar domain navigation callback in test environment */
-                document.querySelector(CALENDAR_SELECTORS.nextButton).disabled = isMax;
-            },
-        };
+        const paintConfig = buildCalendarPaintConfig({
+            processedData,
+            effectiveRange,
+            valueField,
+            calendarStartDate,
+            firstMonthWithLabels,
+            todayNy,
+            lastDataDate,
+        });
 
         // Store the base configuration for resize handling
         basePaintConfig = { ...paintConfig };
@@ -964,47 +1080,9 @@ export async function initCalendar() {
         lastFetchedAt = Date.now();
         schedulePostPaintUpdates(cal, calendarByDate, appState, CURRENCY_SYMBOLS);
         initCalendarResponsiveHandlers();
-        const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
-        if (toggleContainer) {
-            const activate = () => toggleContainer.classList.add('chart-loaded');
-            if (window.innerWidth <= UI_BREAKPOINTS.MOBILE) {
-                window.setTimeout(activate, 200);
-            } else {
-                activate();
-            }
-        }
-
-        // Trigger entrance animation
-        if (typeof window !== 'undefined' && window.requestAnimationFrame) {
-            window.requestAnimationFrame(() => {
-                const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
-                if (wrapper) {
-                    wrapper.classList.add('calendar-ready');
-                }
-                isInitialLoad = false;
-            });
-        } else {
-            isInitialLoad = false;
-        }
+        triggerCalendarEntrance();
     } catch (error) {
-        logger.error('Error initializing calendar:', error);
-        logger.log(error);
-        const container = document.querySelector(CALENDAR_SELECTORS.container);
-        if (container) {
-            const p = document.createElement('p');
-            p.textContent = error.message;
-            if (typeof container.replaceChildren === 'function') {
-                container.replaceChildren(p);
-            } else {
-                // Fallback for extreme environments (like partial JSDOM mocks in some test setups)
-                container.textContent = '';
-                if (typeof container.appendChild === 'function') {
-                    container.appendChild(p);
-                } else {
-                    container.textContent = error.message;
-                }
-            }
-        }
+        renderCalendarInitError(error);
     }
 }
 
