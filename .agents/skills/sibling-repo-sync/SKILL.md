@@ -11,7 +11,9 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   `tools/sync_commands.py` plus a pytest suite `tools/__tests__/test_skills.py`
   mirroring the Jest skill tests; no repo-local `venv/` — pytest resolves to
   the user-level `/Users/lz/dev/.venv`, and the pytest tests are NOT wired
-  into the Makefile gates); CI-parity gate = `make precommit-fix` (runs
+  into the Makefile gates — but they ARE wired into a **pre-push** pre-commit
+  hook (`pytest -q || [ $? -eq 5 ]`); a mypy hook scoped to
+  `^scripts/|^tests/python/` currently matches nothing); CI-parity gate = `make precommit-fix` (runs
   `.pre-commit-config.yaml` hooks, sync-check, Jest + coverage, etc.) —
   `make gate` is the same parity check WITHOUT the trailing `git add -u`,
   prefer it when the tree holds uncommitted work; Makefile
@@ -53,7 +55,10 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   asks for acknowledgement before pushing. Its AGENTS.md is STALE on
   subproject names (checked 2026-08): it says `clean_adblock/` and
   `tianditu_bypass/` but the real dirs are `adblock/` and `gov_bypass/` —
-  trust `ls` over the doc. No stylelint — prettier covers CSS. Generated
+  trust `ls` over the doc. Also stale: its Lanes table lists Sentinel but
+  `.jules/` has no sentinel persona. Its `ci.yml` already has a "Reject empty
+  pull request" step that hard-fails empty PRs (fund lacked this until
+  2026-08). No stylelint — prettier covers CSS. Generated
   output not to hand-edit/commit: `coverage/`, `adblock/dist/`,
   `nas_proxy/out/`, command logs.
 
