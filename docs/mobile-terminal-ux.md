@@ -8,18 +8,20 @@ The site hides the Terminal nav link on mobile (`hide-on-mobile`). **What is the
 grounded in HCI research and current industry practice, to expose this page's functionality
 to mobile/touch users?**
 
-## 2. Short answer — DECIDED: Option D, chart-first mobile view
+## 2. Short answer — DECIDED: Option E, pure-swipe zero-chrome chart view
 
-**On mobile, drop the terminal pane entirely and show a chart-first view**: a tappable chart
-picker (a few curated charts), an Apple-Stocks-style timeline range selector, the chart with
-its existing touch crosshair, an adapted legend, and a compact currency switcher. No stats
-tables, no typed commands — on a phone screen the `<pre>` stats output wraps out of shape and
-is not worth the space (product decision by the owner after seeing option A rendered).
+**On mobile, drop the terminal pane and all UI chrome entirely**: the entire mobile viewport
+is dedicated purely to the chart canvas with zero distraction or clutter. No chart picker, no
+range selector, no currency toggle, no legend. Switching across **all 19 available charts** is
+performed purely via horizontal swipe gestures (`touchstart`/`touchend` on the chart section).
 
-History: Option A (assisted terminal with suggestion chips) was implemented and enabled
-(`513ef695`, `1a530c54`, `b2d7368b`, `63991795`, `dfadf680`, `edc303d0`), then rejected on
-visual review; the nav re-enable was reverted (`d2fedb2b`). **Do not re-enable the mobile nav
-link until the Option D items below land and the owner explicitly approves.**
+History:
+
+- Option A (assisted terminal with suggestion chips) was implemented and rejected on visual review.
+- Option D (multi-tiered controls: chart picker + range selector + bottom sheet + scrolling legend) was implemented and rejected as cluttered.
+- Option E (pure zero-chrome chart with 19-chart swipe gesture navigation) was selected, implemented, and verified.
+
+**Do not re-enable the mobile nav link until the owner explicitly approves.**
 
 ## 3. Current interaction surface (repo facts)
 
@@ -237,10 +239,13 @@ revises items 3-6.
   dead code under D (removal: action item 1).
 - **(b) Full command palette** — superseded; a picker of ~5 charts needs no palette.
 - **(c) Chat / NL interface** — rejected (claims 9-10; no backend on a static site).
-- **(d) Chart-first curated mobile view — SELECTED.** Mobile shows: chart picker (curated few),
-  timeline range selector (Apple Stocks / Google Finance style), the chart (touch crosshair
-  already works), an adapted legend, and a currency switcher. Terminal pane and transaction
-  table are hidden at ≤768px; desktop is untouched.
+- **(d) Chart-first curated mobile view (multi-tiered controls)** — IMPLEMENTED, THEN REJECTED.
+  Included a pop-up chart picker, date range buttons, overflow bottom sheet for currency, and
+  a scrolling legend. Rejected on visual review due to excessive control clutter.
+- **(e) Pure zero-chrome chart with 19-chart swipe navigation — SELECTED & IMPLEMENTED.**
+  Mobile shows 100% chart canvas with no control rows, no time range buttons, no currency toggle,
+  and no legends. Swiping horizontally left/right transitions between all 19 available charts.
+  Terminal pane and transaction table remain hidden at ≤768px; desktop is untouched.
 
 ### Repo constraints honored
 
