@@ -768,9 +768,49 @@ describe('dataService', () => {
             await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
 
             expect(chartDrawnBeforeRatiosResolved).toBe(true);
-            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe(
-                '18.50/15.20'
+            const perCell = document.querySelector('tr[data-ticker="AAPL"] td.per');
+            expect(perCell.textContent).toBe('18.50/15.20');
+        });
+
+        it('should use responsive glass opacity for pie chart slice background colors', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ tickers: [] }),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            // Set global window.pieChartGlassEffect with desktop opacity = 0.4
+            window.pieChartGlassEffect = { opacity: 0.4 };
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(chartManager.updatePieChart).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    datasets: [
+                        expect.objectContaining({
+                            backgroundColor: ['rgba(#color-0, 0.4)'],
+                        }),
+                    ],
+                })
             );
+
+            // Clean up
+            delete window.pieChartGlassEffect;
         });
     });
 

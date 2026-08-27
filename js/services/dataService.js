@@ -11,6 +11,7 @@ import {
     CF_WORKER_URL,
     COLORS,
     CHART_DEFAULTS,
+    PIE_CHART_GLASS_EFFECT,
     TICKER_TO_LOGO_MAP,
     BASE_URL,
     POSITION_PNL_HIGHLIGHT,
@@ -502,9 +503,13 @@ function updateTableAndPrepareChartData(
         chartData.labels.push(holding.ticker);
         chartData.datasets[0].data.push(allocationPercentage);
         const baseColor = getBlueColorForSlice(index, sortedHoldings.length);
-        chartData.datasets[0].backgroundColor.push(
-            hexToRgba(baseColor, CHART_DEFAULTS.BACKGROUND_ALPHA)
-        );
+        const sliceAlpha =
+            typeof window !== 'undefined' &&
+            window.pieChartGlassEffect &&
+            typeof window.pieChartGlassEffect.opacity === 'number'
+                ? window.pieChartGlassEffect.opacity
+                : (PIE_CHART_GLASS_EFFECT.opacity ?? CHART_DEFAULTS.BACKGROUND_ALPHA);
+        chartData.datasets[0].backgroundColor.push(hexToRgba(baseColor, sliceAlpha));
 
         const originalLogoInfo = TICKER_TO_LOGO_MAP[holding.ticker] || {
             src: '/assets/logos/vt.png',

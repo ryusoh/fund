@@ -44,7 +44,7 @@ export const COLORS = {
 export const CHART_DEFAULTS = {
     BORDER_COLOR: 'rgba(84, 84, 88, 0.5)',
     BORDER_WIDTH: 0.5,
-    BACKGROUND_ALPHA: 0.9, // Used for pie slice background
+    BACKGROUND_ALPHA: 0.4, // Used for pie slice background, matches glass effect opacity
     // For chart datalabels and general text
     DATALABELS_COLOR: 'rgba(235, 235, 245, 0.6)',
     DEFAULT_FONT_FAMILY:

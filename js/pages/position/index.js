@@ -26,6 +26,7 @@ import {
 } from '@js/config.js';
 import { triggerCenterToggle, hoverSliceByTicker } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll, alignToggleWithChartMobile } from '@ui/responsive.js';
+import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { logger } from '@utils/logger.js';
 import { TABLE_GLASS_EFFECT, DONUT_REFRACTION } from '@js/config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
@@ -71,6 +72,30 @@ function applyResponsiveGlassOpacity(targetConfig = window.pieChartGlassEffect) 
     const resolvedOpacity = computeGlassOpacity(targetConfig);
     targetConfig.opacity =
         typeof resolvedOpacity === 'number' ? resolvedOpacity : targetConfig.opacity;
+
+    if (
+        typeof window !== 'undefined' &&
+        typeof Chart !== 'undefined' &&
+        typeof Chart.getChart === 'function'
+    ) {
+        const canvas = document.getElementById('fundPieChart');
+        if (canvas) {
+            const chart = Chart.getChart(canvas);
+            const dataset = chart?.data?.datasets?.[0];
+            if (
+                dataset &&
+                Array.isArray(dataset.backgroundColor) &&
+                typeof targetConfig.opacity === 'number'
+            ) {
+                const len = dataset.backgroundColor.length;
+                dataset.backgroundColor = dataset.backgroundColor.map((_, index) => {
+                    const baseColor = getBlueColorForSlice(index, len);
+                    return hexToRgba(baseColor, targetConfig.opacity);
+                });
+                chart.update();
+            }
+        }
+    }
 }
 
 if (

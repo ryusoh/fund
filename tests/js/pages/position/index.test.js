@@ -201,11 +201,31 @@ describe('position page entry point', () => {
             PIE_CHART_GLASS_EFFECT.responsiveOpacity.desktop
         );
 
+        // Mock Chart.getChart with a chart canvas
+        const mockChart = {
+            data: {
+                datasets: [
+                    {
+                        backgroundColor: ['rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.4)'],
+                    },
+                ],
+            },
+            update: jest.fn(),
+        };
+        const canvas = document.createElement('canvas');
+        canvas.id = 'fundPieChart';
+        document.body.appendChild(canvas);
+        global.Chart.getChart = jest.fn((c) => (c === canvas ? mockChart : null));
+
         window.innerWidth = UI_BREAKPOINTS.MOBILE - 1;
         windowEventListeners.resize();
 
         expect(window.pieChartGlassEffect.opacity).toBe(
             PIE_CHART_GLASS_EFFECT.responsiveOpacity.mobile
+        );
+        expect(mockChart.update).toHaveBeenCalled();
+        expect(mockChart.data.datasets[0].backgroundColor[0]).toContain(
+            String(PIE_CHART_GLASS_EFFECT.responsiveOpacity.mobile)
         );
     });
 
