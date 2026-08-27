@@ -153,6 +153,19 @@
         border-color: var(--primary-color);
     }
 
+    /* 44px touch targets for the currency switcher (WCAG 2.5.5 / Apple HIG) */
+    .body-terminal .currency-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* base.css's desktop `top: 15px` (id+class) outranks toggle.css's mobile
+       `top: 50%` (plain id) — restate the vertical centering at equal
+       specificity so the right-edge pill actually centers. */
+    .body-terminal #currencyToggleContainer {
+        top: 50%;
+    }
+
     .chart-card,
     .table-responsive-container {
         flex: 1;

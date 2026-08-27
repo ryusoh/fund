@@ -99,10 +99,6 @@ body {
 }
 
 @media (max-width: 768px) {
-    .body-terminal #currencyToggleContainer {
-        display: none !important;
-    }
-
     .hide-on-mobile {
         display: none !important;
     }

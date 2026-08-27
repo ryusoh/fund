@@ -80,7 +80,8 @@ describe('Terminal index page', () => {
             jest.resetModules();
             document.body.insertAdjacentHTML(
                 'beforeend',
-                '<div class="transaction-container">' +
+                '<div id="currencyToggleContainer"></div>' +
+                    '<div class="transaction-container">' +
                     '<section id="runningAmountSection" class="is-hidden"></section>' +
                     '</div>'
             );
@@ -104,6 +105,16 @@ describe('Terminal index page', () => {
             expect(document.querySelector('.mobile-controls')).not.toBeNull();
         });
 
+        it('marks the currency switcher chart-loaded on mobile', async () => {
+            setupMatchMedia(true);
+            await importFresh();
+            expect(
+                document
+                    .getElementById('currencyToggleContainer')
+                    .classList.contains('chart-loaded')
+            ).toBe(true);
+        });
+
         it('keeps the chart section hidden on desktop', async () => {
             setupMatchMedia(false);
             await importFresh();
@@ -116,6 +127,16 @@ describe('Terminal index page', () => {
             setupMatchMedia(false);
             await importFresh();
             expect(document.querySelector('.mobile-controls')).toBeNull();
+        });
+
+        it('does not mark the currency switcher chart-loaded on desktop', async () => {
+            setupMatchMedia(false);
+            await importFresh();
+            expect(
+                document
+                    .getElementById('currencyToggleContainer')
+                    .classList.contains('chart-loaded')
+            ).toBe(false);
         });
     });
 

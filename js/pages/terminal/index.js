@@ -414,6 +414,12 @@ function initialize() {
                 chartManager.update();
             }
             adjustMobilePanels();
+            // Reveal the currency switcher with the same slide-in the other
+            // pages use on mobile (css/toggle.css `.chart-loaded`).
+            const toggleContainer = document.getElementById('currencyToggleContainer');
+            if (toggleContainer) {
+                toggleContainer.classList.add('chart-loaded');
+            }
         });
     }
 
