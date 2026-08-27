@@ -268,8 +268,8 @@ Workflows are **structured, file-based task sheets** and verification pipelines 
 - **Step-by-Step Checklists**: For common procedures (e.g., "Adding a new asset class"), we write a recipe file:
     1. Add asset symbol in `holdings_details.json`.
     2. Map currency in `sync_configs.py`.
-    3. Run `make sync` to populate data.
-    4. Run `npm test` and `pytest`.
+    3. Run `bin/update-all` to populate data.
+    4. Run `make test` (JS + Python).
 - **Pre-commit Verifications**: Git hooks that enforce that the agent runs linting and formatting scripts before asking for commit confirmation. This prevents "lazy commits" with syntax errors.
 
 ### E. Harness Config: Committed vs Local (`.claude/`)
