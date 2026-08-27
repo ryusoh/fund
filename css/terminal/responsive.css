@@ -80,11 +80,7 @@
     }
 
     .terminal {
-        width: 100%;
-        margin-left: 0;
-        margin-right: 0;
-        box-sizing: border-box;
-        flex-shrink: 0;
+        display: none;
     }
 
     .terminal-output {
@@ -119,6 +115,7 @@
     }
 
     .table-responsive-container {
+        display: none !important;
         -webkit-overflow-scrolling: touch !important;
         padding: 0 0 10px 0 !important;
         width: 100% !important;

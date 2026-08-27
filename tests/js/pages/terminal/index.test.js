@@ -37,6 +37,7 @@ describe('Terminal index page', () => {
             setChartDateRange: jest.fn(),
             cycleCurrency: jest.fn(),
             trackTransactionDataLoad: jest.fn(),
+            whenTransactionDataReady: jest.fn(() => Promise.resolve()),
             transactionState: {
                 runningAmountSeriesByCurrency: {},
                 portfolioSeriesByCurrency: {},
@@ -60,6 +61,47 @@ describe('Terminal index page', () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
+        delete window.matchMedia;
+    });
+
+    describe('mobile chart-first view', () => {
+        function setupMatchMedia(matches) {
+            window.matchMedia = jest.fn().mockImplementation((query) => ({
+                matches,
+                media: query,
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+        }
+
+        async function importFresh() {
+            jest.resetModules();
+            document.body.insertAdjacentHTML(
+                'beforeend',
+                '<section id="runningAmountSection" class="is-hidden"></section>'
+            );
+            await import('@pages/terminal/index.js');
+            // flush the whenTransactionDataReady().then(...) callback
+            await Promise.resolve();
+            await Promise.resolve();
+        }
+
+        it('reveals the chart section on mobile once data is ready', async () => {
+            setupMatchMedia(true);
+            await importFresh();
+            expect(
+                document.getElementById('runningAmountSection').classList.contains('is-hidden')
+            ).toBe(false);
+        });
+
+        it('keeps the chart section hidden on desktop', async () => {
+            setupMatchMedia(false);
+            await importFresh();
+            expect(
+                document.getElementById('runningAmountSection').classList.contains('is-hidden')
+            ).toBe(true);
+        });
     });
 
     describe('initial data load registration', () => {

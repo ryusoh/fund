@@ -15,6 +15,7 @@ import {
     getActiveFilterTerm,
     setChartDateRange,
     trackTransactionDataLoad,
+    whenTransactionDataReady,
 } from '@js/transactions/state.js';
 import { convertValueToCurrency } from '@js/transactions/utils.js';
 import {
@@ -22,6 +23,7 @@ import {
     TERMINAL_BACKGROUND_EFFECT,
     TERMINAL_GLASS_MAGNIFICATION,
     INITIAL_CHART_DATE_RANGE,
+    UI_BREAKPOINTS,
 } from '../../config.js';
 import { TableGlassEffect } from '@ui/tableGlassEffect.js';
 import { initBackgroundSweepEffect } from '@ui/backgroundSweep.js';
@@ -295,6 +297,13 @@ async function loadTransactions() {
     }
 }
 
+function isMobileViewport() {
+    return (
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia(`(max-width: ${UI_BREAKPOINTS.MOBILE}px)`).matches
+    );
+}
+
 function initialize() {
     // Initialize glass effects for terminal pane, chart card, and transaction table.
     // Each pane gets backdrop refraction with a lighter frost than the stylesheet
@@ -390,6 +399,22 @@ function initialize() {
     }
 
     trackTransactionDataLoad(loadTransactions());
+
+    // Mobile (chart-first view): CSS hides the terminal pane and table, so the
+    // chart is the whole page — reveal it once the data has loaded.
+    if (isMobileViewport()) {
+        whenTransactionDataReady().then(() => {
+            const section = document.getElementById('runningAmountSection');
+            if (section) {
+                section.classList.remove('is-hidden');
+            }
+            if (chartManager && typeof chartManager.update === 'function') {
+                chartManager.update();
+            }
+            adjustMobilePanels();
+        });
+    }
+
     adjustMobilePanels();
 }
 
