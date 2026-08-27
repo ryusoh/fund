@@ -58,6 +58,14 @@ named "github-pages"` — every attempt uploads another artifact into the
   deploy step once automatically; if both attempts fail, re-dispatch before
   digging.
 
+## Workflow conventions (match these when editing/adding workflows)
+
+- Action pins: `actions/checkout@v7`, `actions/setup-node@v7`,
+  `actions/setup-python@v7`, `actions/github-script@v9` (verified 2026-08-27;
+  every workflow uses these majors — don't introduce a different one).
+- Runtimes: Node 24, Python 3.12 (`ci.yml` carries them as env vars; a few
+  data workflows pin `'3.x'` instead — that drift is tolerated there).
+
 ## Debugging Actions without `gh` auth
 
 `gh` is typically unauthenticated on this machine; the repo is public, so
