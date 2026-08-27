@@ -87,6 +87,21 @@ All in `js/config.js`:
    photo with no thrown error. Always derive slice alpha from `window.pieChartGlassEffect.opacity`
    and keep active chart dataset colors synced on resize.
 
+7. **Donut slice dividers come from `customArcBordersPlugin`, not the dataset border.**
+   Chart.js strokes each arc (outer ring + radial seams + inner ring) in a single
+   `borderColor`/`borderWidth` style, so "restoring" a dataset border to bring back
+   slice dividers also paints a uniform bright ring around the cutout and outer edge,
+   breaking glass coherence. Keep the dataset at `borderColor: 'transparent',
+   borderWidth: 0` (`updateTableAndPrepareChartData` in `dataService.js`) and style
+   the two parts separately via `options.plugins.customArcBorders` in
+   `allocationChartManager.js`: `width`/`color` paint subtle inner/outer rings
+   (`PIE_CHART_GLASS_EFFECT.borders.arcWidth`/`arcColor`), while
+   `dividerWidth`/`dividerColor` draw the radial seam lines
+   (`CHART_DEFAULTS.BORDER_WIDTH`/`BORDER_COLOR`).
+   Pinned by: `should keep dataset arc borders transparent…` (dataService.test.js),
+   `should overdraw the inner/outer arc rings…` (allocationChartManager.test.js),
+   `should draw a radial divider line at each slice seam…` (customArcBordersPlugin.test.js).
+
 ## How to change it safely
 
 1. Edit the math in `liquidGlassRefraction.js` (pure functions: `buildDisplacementMap`, `refractionShift`, `dispersionRatios`, …).

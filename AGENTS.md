@@ -222,7 +222,7 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 
 ## Subsystem landmines (read the doc before touching)
 
-- **Liquid-glass effects** (terminal panes) → `docs/liquid-glass.md`. Layered
+- **Liquid-glass effects** (terminal panes, position donut) → `docs/liquid-glass.md`. Layered
   Canvas/WebGL/SVG; Chromium-only and visual. Unit tests can't see it — visual,
   human-reviewed only. Interactive agents: verify in Chrome (`make serve`, open
   `/terminal/`); the doc has a gotcha checklist that saves a debugging round-trip.
