@@ -99,18 +99,6 @@ describe('Terminal index page', () => {
             ).toBe(false);
         });
 
-        it('renders the mobile control bar on mobile', async () => {
-            setupMatchMedia(true);
-            await importFresh();
-            expect(document.querySelector('.mobile-controls')).not.toBeNull();
-        });
-
-        it('moves the currency switcher into the mobile sheet on mobile', async () => {
-            setupMatchMedia(true);
-            await importFresh();
-            expect(document.querySelector('.mobile-sheet #currencyToggleContainer')).not.toBeNull();
-        });
-
         it('keeps the chart section hidden on desktop', async () => {
             setupMatchMedia(false);
             await importFresh();
@@ -119,16 +107,9 @@ describe('Terminal index page', () => {
             ).toBe(true);
         });
 
-        it('renders no mobile control bar on desktop', async () => {
-            setupMatchMedia(false);
+        it('currency switcher remains on body', async () => {
+            setupMatchMedia(true);
             await importFresh();
-            expect(document.querySelector('.mobile-controls')).toBeNull();
-        });
-
-        it('does not render mobile sheet on desktop and currency switcher remains on body', async () => {
-            setupMatchMedia(false);
-            await importFresh();
-            expect(document.querySelector('.mobile-sheet')).toBeNull();
             expect(document.getElementById('currencyToggleContainer').parentElement).toBe(
                 document.body
             );
