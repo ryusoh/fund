@@ -109,9 +109,13 @@
         flex-shrink: 0;
         width: 100%;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
-    .mobile-chart-picker {
+    .mobile-chart-picker,
+    .mobile-range-picker {
         display: flex;
         gap: 8px;
         overflow-x: auto;
@@ -121,11 +125,13 @@
         white-space: nowrap;
     }
 
-    .mobile-chart-picker::-webkit-scrollbar {
+    .mobile-chart-picker::-webkit-scrollbar,
+    .mobile-range-picker::-webkit-scrollbar {
         display: none;
     }
 
-    .mobile-chart-button {
+    .mobile-chart-button,
+    .mobile-range-button {
         flex: 0 0 auto;
         min-width: 44px;
         min-height: 44px;
@@ -141,7 +147,8 @@
         -webkit-tap-highlight-color: transparent;
     }
 
-    .mobile-chart-button[aria-pressed='true'] {
+    .mobile-chart-button[aria-pressed='true'],
+    .mobile-range-button[aria-selected='true'] {
         background: var(--hover-bg);
         border-color: var(--primary-color);
     }
