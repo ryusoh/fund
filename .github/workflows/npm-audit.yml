@@ -27,5 +27,15 @@ jobs:
               # Check for production vulnerabilities only (dev deps like test-exclude use vulnerable minimatch)
               # This is acceptable since it's dev-only tooling, not exposed in production
               run: npm audit --omit=dev --audit-level=high
+            - name: Setup Python
+              uses: actions/setup-python@v7
+              with:
+                  python-version: '3.12'
+            - name: Run pip-audit
+              # Baseline verified clean locally (pip-audit 2.9.0); fails the job on
+              # any known vulnerability in requirements.txt / requirements-dev.txt.
+              run: |
+                  pip install pip-audit
+                  pip-audit -r requirements.txt -r requirements-dev.txt
             - name: Run tests
               run: npm test

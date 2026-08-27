@@ -225,21 +225,19 @@ bridge.
 Only one item clears the bar for "implement now": the `pip-audit` gap found
 under item 7. Smallest-first:
 
-1. **Add pip-audit to the audit workflow** (mirrors the existing JS side):
-    - In `.github/workflows/npm-audit.yml`, after the "Run npm audit" step, add:
-      set up Python 3.12 (`actions/setup-python@v7`), `pip install pip-audit`,
-      then `pip-audit` (no `--strict` initially, to see the baseline).
-    - Consider renaming the workflow/file to `dependency-audit` since it would
-      cover both ecosystems.
-    - Verify: run `pip install pip-audit && pip-audit` locally once to see
-      current findings before gating on them; confirm the workflow file parses
-      (it will be exercised on the next push/PR).
-2. **(Optional, only if step 1 finds the tool useful) add `pip-audit` to
+1. **[done] Add pip-audit to the audit workflow** (mirrors the existing JS
+   side): implemented in `.github/workflows/npm-audit.yml` — after the "Run
+   npm audit" step, the job sets up Python 3.12 (`actions/setup-python@v7`),
+   runs `pip install pip-audit`, then
+   `pip-audit -r requirements.txt -r requirements-dev.txt`. Baseline verified
+   clean locally (pip-audit 2.9.0, both files, exit 0); workflow file passes
+   prettier and YAML parse. The workflow rename to `dependency-audit` was
+   skipped (cosmetic churn for no behavioural gain).
+2. **(Optional, only if the new CI step proves useful) add `pip-audit` to
    `requirements-dev.txt`** and replace the echo-only note at `Makefile:175`
-   with a real `$(PY) -m pip_audit` call inside `make sec`. Defer this until
-   step 1 shows findings are actionable — `make sec` is part of `make
-verify`, the required status check, so a network-dependent audit there can
-   flake routine PRs.
+   with a real `$(PY) -m pip_audit` call inside `make sec`. Deferred — `make
+sec` is part of `make verify`, the required status check, so a
+   network-dependent audit there can flake routine PRs.
 
 No action items for items 4, 5, 6, 8, 9, 10 — each has a concrete revisit
 trigger stated in its section above.
