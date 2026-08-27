@@ -841,8 +841,8 @@ describe('dataService', () => {
                 expect.objectContaining({
                     datasets: [
                         expect.objectContaining({
-                            borderColor: 'rgba(84, 84, 88, 0.5)',
-                            borderWidth: 0.5,
+                            borderColor: 'rgba(120, 120, 128, 0.8)',
+                            borderWidth: 1,
                         }),
                     ],
                 })
