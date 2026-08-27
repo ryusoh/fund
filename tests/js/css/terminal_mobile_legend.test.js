@@ -14,16 +14,9 @@ describe('terminal mobile legend', () => {
         expect(mobileBlockMatch).not.toBeNull();
     });
 
-    it('places the legend above the chart on mobile', () => {
+    it('hides the chart legend on mobile', () => {
         const legendRule = mobileBlockMatch[1].match(/\.chart-legend\s*\{[\s\S]*?\}/);
         expect(legendRule).not.toBeNull();
-        expect(legendRule[0]).toMatch(/order:\s*-1/);
-        expect(legendRule[0]).toMatch(/margin-top:\s*0/);
-    });
-
-    it('gives legend items 44px-tall tap targets on mobile', () => {
-        const itemRule = mobileBlockMatch[1].match(/\.legend-item\s*\{[\s\S]*?\}/);
-        expect(itemRule).not.toBeNull();
-        expect(itemRule[0]).toMatch(/min-height:\s*44px/);
+        expect(legendRule[0]).toMatch(/display:\s*none\s*!important/);
     });
 });
