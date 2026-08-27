@@ -40,3 +40,11 @@ List each work order as done / skipped ([skip] tag) / failed (anchor mismatch
 or red verification), with the commit hash for each done item and the failing
 command's output for each failed item. Do not claim anything you didn't
 verify this run.
+
+## Unattended runs
+
+For a hands-off sweep, the user may wrap this skill in a goal-mode session
+(e.g. a `/goal` whose completion criterion is "all non-`[skip]` items
+committed, each item's Verify commands green"). That wrapping is the user's
+choice per run — this skill itself stays harness-agnostic and must not require
+goal tooling.
