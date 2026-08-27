@@ -186,6 +186,50 @@ Verified highlights (claim numbers continue from §4.5):
 - **Claim 22**: **Sparse axis labels on small screens**: when interactive inspection exists,
   HIG advises fewer grid lines and light label colors; Material says don't overload axis labels.
 
+### 4.7 Decluttering the control stack (follow-up, 2026-08-28)
+
+The implemented control stack (chart-picker row + range row + legend grid + floating
+currency pill) works but the owner finds it extremely cluttered. Full evidence and three
+ranked layout proposals: `docs/research/mobile-chart-declutter.md` (Google Finance mobile
+web live-verified; HIG via DocC JSON; M2/M3 via Playwright). Verified highlights (claim
+numbers continue from §4.6):
+
+- **Claim 23**: **No primary source shows four control groups at once on a phone.** Apple
+  Stocks exposes only a range selector + scrub (currency is settings-level: "Tap ⋯, tap
+  Watchlist Shows, then tap Show Currency"); Google Finance mobile web shows exactly three
+  compact menu buttons above the plot (chart type has `aria-haspopup="menu"`) + the range
+  tab row. No persistent legend, no floating overlays in either.
+- **Claim 24**: **The sanctioned declutter shape is "combo": keep the primary control
+  visible, collapse the rest.** HIG pop-up buttons: "a space-efficient way to present a wide
+  array of choices" when "space is limited", with the button label showing the current
+  selection; M3 modal bottom sheets hold "supplementary content and actions". NN/g measured
+  combo navigation used 1.5× more than fully hidden (site-nav study — extrapolation to
+  in-page controls, flagged in the research doc).
+- **Claim 25**: **The wheel/drum picker is the wrong component for a 5-item chart list, per
+  HIG itself**: wheels fit "medium-to-long lists"; for short lists "consider using a
+  pull-down button instead of a picker" — a picker "may add too much visual weight to a
+  short list of items", hides values before interaction, and requires "predictable and
+  logically ordered" values. The HIG-sanctioned form of the same instinct is a pop-up
+  button labeled with the current chart.
+- **Claim 26**: **Legend preference order is direct labels > legend**: M2 says direct data
+  labels eliminate "the need for a legend" in simple charts (Balance/Performance/Drawdown
+  have 1–3 series); dense charts (Composition/Sectors) keep the above-chart legend or fold
+  values into the scrub tooltip ("On mobile, a touch and hold gesture displays a tooltip
+  placed above the chart").
+- **Claim 27**: **The floating currency pill matches no sanctioned pattern** — M3 reserves
+  floating overlays for the single primary constructive action and says cards shouldn't
+  have their own FAB. Currency belongs in-flow or in a sheet.
+- **Claim 28**: **Swipe-between-charts is M2-sanctioned** ("pagination… by swiping right or
+  left") but no source resolves the swipe-vs-scrub conflict when both live on one canvas —
+  adopt only alongside a visible path (HIG Accessibility: gestures need onscreen
+  equivalents).
+
+**Layout decision pending owner pick** — proposals in `docs/research/mobile-chart-declutter.md`:
+(1) consolidate: chart-name pop-up + overflow bottom sheet holding currency [recommended],
+(2) gesture-first: swipe + chart-name title with chevrons, (3) wheel picker [rejected by
+claim 25]. Action items below stay valid until the pick; the pop-up/sheet redesign then
+revises items 3-6.
+
 ## 5. Design options — decision record
 
 - **(a) Assisted terminal (chips + REPL)** — IMPLEMENTED, THEN REJECTED. Stats output is
