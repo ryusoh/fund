@@ -80,6 +80,13 @@ All in `js/config.js`:
    it to fit the folded bulge leaves the rim refraction and chromatic dispersion
    numerically unchanged — folding magnification in is safe by construction.
 
+6. **Position donut slices must remain translucent (`≤ 0.45`, synced with `pieChartGlassEffect.opacity`).**
+   The `DONUT_REFRACTION` lens sits under the pie chart canvas (`fundPieChart`).
+   If slice background colors use high alpha (e.g. `0.9`), the slices render
+   opaque dark grey and completely occlude the underlying refraction lens and background
+   photo with no thrown error. Always derive slice alpha from `window.pieChartGlassEffect.opacity`
+   and keep active chart dataset colors synced on resize.
+
 ## How to change it safely
 
 1. Edit the math in `liquidGlassRefraction.js` (pure functions: `buildDisplacementMap`, `refractionShift`, `dispersionRatios`, …).
@@ -90,16 +97,17 @@ All in `js/config.js`:
 
     ```sh
     make screenshot URL=/terminal/
+    make screenshot URL=/position/
     ```
 
-    It prints the PNG path (under `screenshots/`, gitignored). The **chart and
-    table panes are hidden until a terminal command runs**, so reveal them first
-    with `--type` (commands per the terminal's own `help`):
+    It prints the PNG path (under `screenshots/`, gitignored). The **terminal panes
+    and position table are hidden until triggered**, so reveal them first:
 
     ```sh
     make screenshot URL=/terminal/ ARGS='--type transaction'    # reveals the table (toggle)
     make screenshot URL=/terminal/ ARGS='--type "plot balance"' # reveals the chart (plot needs a subcommand)
     make screenshot URL=/terminal/ ARGS='--type reset'          # reveals both
+    make screenshot URL=/position/ ARGS='--click "#fundPieChart"' # reveals position table
     ```
 
     Note: `--type` runs a real terminal command, so use the actual command names
