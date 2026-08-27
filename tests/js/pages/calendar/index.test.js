@@ -1225,4 +1225,48 @@ describe('calendar page', () => {
         // Clean up
         document.body.removeChild(calendarContainer);
     });
+
+    it('restores stored currency selection if available', async () => {
+        const { getStoredCurrency, applyCurrencySelection } =
+            await import('@ui/currencyToggleManager.js');
+        getStoredCurrency.mockReturnValueOnce('CNY');
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                dailyChange: 5,
+            },
+        ]);
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        expect(applyCurrencySelection).toHaveBeenCalledWith('CNY', { emitEvent: false });
+    });
+
+    it('renders error via fallback methods when container lacks replaceChildren', async () => {
+        const calendarContainer = document.querySelector('#calendar-container');
+        delete calendarContainer.replaceChildren;
+        getCalendarData.mockRejectedValueOnce(new Error('Test initialization error'));
+
+        await initCalendar();
+
+        expect(calendarContainer.textContent).toContain('Test initialization error');
+    });
+
+    it('falls back when requestAnimationFrame is not available', async () => {
+        const originalRaf = window.requestAnimationFrame;
+        delete window.requestAnimationFrame;
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                dailyChange: 5,
+            },
+        ]);
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        expect(mockCalHeatmapInstance.paint).toHaveBeenCalled();
+        window.requestAnimationFrame = originalRaf;
+    });
 });

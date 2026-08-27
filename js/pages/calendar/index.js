@@ -763,6 +763,7 @@ function initCalendarCurrency() {
  * @returns {Date|null}
  */
 function parseDataDate(dateString) {
+    /* istanbul ignore next: defensive check for non-string input */
     if (typeof dateString !== 'string') {
         return null;
     }
@@ -991,6 +992,7 @@ function renderCalendarInitError(error) {
             if (typeof container.appendChild === 'function') {
                 container.appendChild(p);
             } else {
+                /* istanbul ignore next: fallback for DOM lacking appendChild */
                 container.textContent = error.message;
             }
         }
