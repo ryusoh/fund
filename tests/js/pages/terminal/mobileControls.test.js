@@ -42,19 +42,32 @@ describe('mobileControls', () => {
         adjustMobilePanels = require('../../../../js/transactions/layout.js').adjustMobilePanels;
     });
 
-    test('renders the chart picker directly above the chart section', () => {
+    test('renders a menu button labeled Balance ▾ with role="menu" containing 5 items', () => {
         const bar = initMobileControls({ chartManager: { update: jest.fn() } });
         expect(bar).not.toBeNull();
-        const buttons = bar.querySelectorAll('.mobile-chart-button');
-        expect(buttons.length).toBe(5);
-        expect([...buttons].map((b) => b.textContent)).toEqual([
+        const menuButton = bar.querySelector('.mobile-menu-button');
+        expect(menuButton).not.toBeNull();
+        expect(menuButton.textContent).toBe('Balance ▾');
+        expect(menuButton.getAttribute('aria-haspopup')).toBe('menu');
+        expect(menuButton.getAttribute('aria-expanded')).toBe('false');
+
+        const menu = bar.querySelector('.mobile-chart-menu');
+        expect(menu).not.toBeNull();
+        expect(menu.getAttribute('role')).toBe('menu');
+        expect(menu.hidden).toBe(true);
+
+        const items = menu.querySelectorAll('.mobile-chart-menu-item');
+        expect(items.length).toBe(5);
+        expect([...items].map((i) => i.textContent)).toEqual([
             'Balance',
             'Performance',
             'Drawdown',
             'Composition',
             'Sectors',
         ]);
-        expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+        expect(items[0].getAttribute('role')).toBe('menuitemradio');
+        expect(items[0].getAttribute('aria-checked')).toBe('true');
+        expect(items[1].getAttribute('aria-checked')).toBe('false');
         expect(bar.nextElementSibling.id).toBe('runningAmountSection');
     });
 
@@ -63,33 +76,52 @@ describe('mobileControls', () => {
         expect(initMobileControls({ chartManager: { update: jest.fn() } })).toBeNull();
     });
 
-    test('tapping a chart button switches the active chart', async () => {
+    test('clicking the menu button opens the menu and clicking an item switches the active chart', async () => {
         const chartManager = { update: jest.fn() };
         initMobileControls({ chartManager });
-        const performanceButton = document.querySelector('[data-chart="performance"]');
-        performanceButton.click();
+        const menuButton = document.querySelector('.mobile-menu-button');
+        const menu = document.querySelector('.mobile-chart-menu');
+
+        menuButton.click();
+        expect(menu.hidden).toBe(false);
+        expect(menuButton.getAttribute('aria-expanded')).toBe('true');
+
+        const performanceItem = document.querySelector('[data-chart="performance"]');
+        performanceItem.click();
         await Promise.resolve();
         await Promise.resolve();
+
         expect(setActiveChart).toHaveBeenCalledWith('performance');
         expect(
             document.getElementById('runningAmountSection').classList.contains('is-hidden')
         ).toBe(false);
         expect(chartManager.update).toHaveBeenCalledTimes(1);
         expect(adjustMobilePanels).toHaveBeenCalled();
-        expect(performanceButton.getAttribute('aria-pressed')).toBe('true');
+        expect(menuButton.textContent).toBe('Performance ▾');
+        expect(menu.hidden).toBe(true);
+        expect(performanceItem.getAttribute('aria-checked')).toBe('true');
         expect(
-            document.querySelector('[data-chart="contribution"]').getAttribute('aria-pressed')
+            document.querySelector('[data-chart="contribution"]').getAttribute('aria-checked')
         ).toBe('false');
     });
 
-    test('tapping outside a button does nothing', async () => {
+    test('Escape and clicking outside close the menu', () => {
         const chartManager = { update: jest.fn() };
         initMobileControls({ chartManager });
-        document.querySelector('.mobile-chart-picker').click();
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(setActiveChart).not.toHaveBeenCalled();
-        expect(chartManager.update).not.toHaveBeenCalled();
+        const menuButton = document.querySelector('.mobile-menu-button');
+        const menu = document.querySelector('.mobile-chart-menu');
+
+        menuButton.click();
+        expect(menu.hidden).toBe(false);
+
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(menu.hidden).toBe(true);
+
+        menuButton.click();
+        expect(menu.hidden).toBe(false);
+
+        document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(menu.hidden).toBe(true);
     });
 
     test('renders the range presets unselected', () => {

@@ -62,37 +62,94 @@ export function initMobileControls({ chartManager } = {}) {
     const bar = document.createElement('div');
     bar.className = 'mobile-controls';
 
-    const picker = document.createElement('div');
-    picker.className = 'mobile-chart-picker';
-    picker.setAttribute('role', 'group');
-    picker.setAttribute('aria-label', 'Chart selection');
+    const menuWrap = document.createElement('div');
+    menuWrap.className = 'mobile-chart-menu-wrap';
 
-    const buttons = MOBILE_CHARTS.map((chart, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'mobile-chart-button';
-        button.dataset.chart = chart.key;
-        button.textContent = chart.label;
-        button.setAttribute('aria-pressed', index === 0 ? 'true' : 'false');
-        picker.appendChild(button);
-        return button;
+    const menuButton = document.createElement('button');
+    menuButton.type = 'button';
+    menuButton.className = 'mobile-menu-button';
+    menuButton.setAttribute('aria-haspopup', 'menu');
+    menuButton.setAttribute('aria-expanded', 'false');
+
+    const menu = document.createElement('div');
+    menu.className = 'mobile-chart-menu';
+    menu.setAttribute('role', 'menu');
+    menu.hidden = true;
+
+    const menuItems = MOBILE_CHARTS.map((chart, index) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'mobile-chart-menu-item';
+        item.setAttribute('role', 'menuitemradio');
+        item.dataset.chart = chart.key;
+        item.textContent = chart.label;
+        item.setAttribute('aria-checked', index === 0 ? 'true' : 'false');
+        menu.appendChild(item);
+        return item;
     });
 
-    picker.addEventListener('click', (event) => {
-        const button = event.target.closest('.mobile-chart-button');
-        if (!button) {
-            return;
+    menuButton.textContent = `${MOBILE_CHARTS[0].label} ▾`;
+
+    function setMenuOpen(open) {
+        menu.hidden = !open;
+        menuButton.setAttribute('aria-expanded', String(open));
+        if (open) {
+            const checked = menu.querySelector('[aria-checked="true"]');
+            if (checked) {
+                checked.focus();
+            }
         }
-        buttons.forEach((btn) => {
-            btn.setAttribute('aria-pressed', btn === button ? 'true' : 'false');
+    }
+
+    function selectChart(key, label) {
+        menuItems.forEach((item) => {
+            item.setAttribute('aria-checked', item.dataset.chart === key ? 'true' : 'false');
         });
+        menuButton.textContent = `${label} ▾`;
         whenTransactionDataReady().then(() => {
-            setActiveChart(button.dataset.chart);
+            setActiveChart(key);
             section.classList.remove('is-hidden');
             chartManager.update();
             adjustMobilePanels();
         });
+    }
+
+    menuButton.addEventListener('click', () => setMenuOpen(menu.hidden));
+    menu.addEventListener('click', (event) => {
+        const item = event.target.closest('.mobile-chart-menu-item');
+        if (!item) {
+            return;
+        }
+        setMenuOpen(false);
+        menuButton.focus();
+        selectChart(item.dataset.chart, item.textContent);
     });
+    menu.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+            return;
+        }
+        event.preventDefault();
+        const current = menuItems.indexOf(document.activeElement);
+        const next =
+            event.key === 'ArrowDown'
+                ? (current + 1) % menuItems.length
+                : (current - 1 + menuItems.length) % menuItems.length;
+        menuItems[next].focus();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !menu.hidden) {
+            setMenuOpen(false);
+            menuButton.focus();
+        }
+    });
+    document.addEventListener('click', (event) => {
+        if (!menu.hidden && !menuWrap.contains(event.target)) {
+            setMenuOpen(false);
+        }
+    });
+
+    menuWrap.appendChild(menuButton);
+    menuWrap.appendChild(menu);
 
     const rangePicker = document.createElement('div');
     rangePicker.className = 'mobile-range-picker';
@@ -133,7 +190,10 @@ export function initMobileControls({ chartManager } = {}) {
         });
     });
 
-    bar.appendChild(picker);
+    const controlRow = document.createElement('div');
+    controlRow.className = 'mobile-controls-row';
+    controlRow.appendChild(menuWrap);
+    bar.appendChild(controlRow);
     bar.appendChild(rangePicker);
     container.insertBefore(bar, section);
     return bar;
