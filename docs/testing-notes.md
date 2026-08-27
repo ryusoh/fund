@@ -22,9 +22,28 @@ expect(errSpy.mock.calls.map((c) => String(c[1]?.stack))).toBe('DBG');
 ```
 
 (Don't try to "turn on" console for one test — just dump via a failing matcher,
-then remove it.)
+then remove it. `process.stderr.write` also bypasses the silent console and
+prints to stderr during Jest runs, which is handy for quick pipeline/cache
+debugging.)
 
-## `jest.spyOn(<a jest.mock factory fn>, m).mockRestore()` leaves it returning `undefined`
+## Module-level caches leak across tests in the same file
+
+If a module keeps a module-level cache (e.g. a render pipeline cache, a WeakMap
+of derived series), `jest.clearAllMocks()` in `beforeEach` does **not** clear
+it. A second test that draws the same state will silently reuse the previous
+test's cached output, making new mocks look "not called."
+
+Fix pattern: export a `__resetXxxCache()` function from the module and call it
+in `beforeEach` before `jest.clearAllMocks()`:
+
+```js
+beforeEach(() => {
+    __resetContributionPipelineCache();
+    jest.clearAllMocks();
+});
+```
+
+(Example: `tests/js/transactions/chart/renderers/contribution.test.js`.)
 
 When a module is replaced with `jest.mock('mod', () => ({ fn: jest.fn(() => X) }))`,
 the exported `fn` is a mock with a default implementation. If a test then does

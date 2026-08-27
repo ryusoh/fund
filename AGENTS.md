@@ -169,7 +169,11 @@ instantly identifiable.
   (`docs/agentic-quality-gates.md`): ESLint `complexity` errors above 20 with
   `eslint-suppressions.json` baselining the legacy violations (any NEW or
   worsened one fails; shrink the baseline with `npx eslint
---prune-suppressions`), and `xenon` freezes Python's complexity ranks. Never
+--prune-suppressions`), and `xenon` freezes Python's complexity ranks. The
+  baseline is **per-file**, not per-function: splitting a legacy >20 function
+  into two new >20 functions creates a new violation and fails the gate. Split
+  only after reducing each extracted function below 20, or use inline caching /
+  targeted extraction that keeps one high-complexity function. Never
   raise the ceilings or hand-edit the suppressions file.
 - **Jest runs silent** — `console.log` prints nothing. The suite is TZ=UTC while
   browsers here are UTC+8, so a date-off-by-one can be wrong in the browser but

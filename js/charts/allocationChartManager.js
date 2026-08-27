@@ -57,7 +57,13 @@ function updateGlassPointer(chart, mouseX, mouseY, firstArc) {
     return false;
 }
 
-function _showTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, unhideAllRows) {
+function _showTableElements(
+    contentBlock,
+    tableElement,
+    footerWrapperElement,
+    allDataRows,
+    unhideAllRows
+) {
     if (contentBlock) {
         contentBlock.classList.remove('hidden');
     }
@@ -99,7 +105,13 @@ function setTableVisibilityState(isVisible, chart, unhideAllRows = false) {
     const contentBlock = document.querySelector('.content-block');
 
     if (isVisible) {
-        _showTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, unhideAllRows);
+        _showTableElements(
+            contentBlock,
+            tableElement,
+            footerWrapperElement,
+            allDataRows,
+            unhideAllRows
+        );
     } else {
         _hideTableElements(contentBlock, tableElement, footerWrapperElement, allDataRows, chart);
     }

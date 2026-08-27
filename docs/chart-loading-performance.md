@@ -328,6 +328,29 @@ chartDateRange, filtersActive, drawdownMode)`; the per-frame path only
 - **Expected:** the entire ~7 ms/frame JS compute load (findings 1, 2, 3, 5, 6) drops to ~0 on steady-state frames — the glow keeps animating at 60 fps,
   but each frame only rescales and draws.
 
+## Implementation notes (post-implementation)
+
+- **AI-7 was implemented as an inline state-keyed cache, not a function
+  split.** Splitting `drawContributionChart` into separate compute/draw
+  functions would have created two new functions with cyclomatic complexity
+  above 20, which the ESLint complexity ratchet (`eslint-suppressions.json`)
+  treats as new violations and fails. The per-file baseline only covers the
+  single original function, so the cache is inlined inside
+  `drawContributionChart` instead.
+- **Cache key:** the pipeline output is keyed by object identity for refs
+  (`filteredTransactions`, `allTransactions`, `portfolioSeries`,
+  `portfolioSeriesByCurrency`, `runningAmountSeries`,
+  `runningAmountSeriesByCurrency`, `historicalPrices`, `splitHistory`,
+  `yieldData`, `chartDateRange`) plus primitives (`selectedCurrency`,
+  `activeFilterTerm`, `filtersActive`, `drawdownMode`, and the five
+  `chartVisibility` show flags). Any change recomputes the pipeline; identical
+  state reuses it and the frame only rescales to pixels and draws.
+- **Test hook:** the module exports `__resetContributionPipelineCache()` so
+  tests can clear the cache in `beforeEach`; without it the module-level cache
+  leaks across tests in the same file.
+- **Glow stays always-on:** the animation scheduling and `drawSeriesGlow` calls
+  are untouched — only the per-frame data rebuild is skipped.
+
 ## Open questions / what I couldn't verify
 
 - **Real frame times in Chromium.** All numbers above are Node
