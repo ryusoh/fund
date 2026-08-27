@@ -121,15 +121,23 @@
         /* Material data-viz mobile guidance: legend above the chart so it
            stays visible during touch interaction (docs/mobile-terminal-ux.md) */
         order: -1;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
-        justify-items: start;
-        gap: 8px 10px;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 16px;
         margin-top: 0;
         margin-bottom: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        white-space: nowrap;
+    }
+
+    .chart-legend::-webkit-scrollbar {
+        display: none;
     }
 
     .legend-item {
+        flex: 0 0 auto;
         justify-content: flex-start;
         align-items: center;
         gap: 6px;
