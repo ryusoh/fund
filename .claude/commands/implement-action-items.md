@@ -10,6 +10,11 @@ mechanically, one at a time, in order. You are an implementer, not a designer:
 the doc's anchors and snippets were verified by the authoring agent — follow
 them literally.
 
+**Pre-authorization:** Invoking this skill (including via `/goal`) explicitly
+authorizes staging and committing each verified work order locally as part of
+its workflow without pausing to ask for acknowledgement on each commit. Pushing
+to remote remains strictly forbidden without explicit instruction.
+
 ## Per work order
 
 1. **Read the tags.** `[skip]` → skip the item entirely and record it as

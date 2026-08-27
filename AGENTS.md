@@ -307,12 +307,18 @@ files as the only source of truth.
   make a direct commit. The async PR flow squash-merges and diverges local `main`;
   if a `git pull --rebase` then cascades into per-commit conflicts, the fix is
   `git reset --hard origin/main` (never keep rebasing) — see `docs/git-sync-notes.md`.
-- **The user commits reviewed changes themselves.** Their work pattern is: chat
-  back-and-forth → they review the diff in VSCode → they commit accepted work
-  themselves and move on. If your edits vanish from `git status` between turns,
-  run `git log --oneline -3` FIRST — a fresh user commit containing them means
+- **The user commits reviewed changes themselves in normal chat sessions.** Their
+  work pattern is: chat back-and-forth → they review the diff in VSCode → they commit
+  accepted work themselves and move on. If your edits vanish from `git status` between
+  turns, run `git log --oneline -3` FIRST — a fresh user commit containing them means
   the work was accepted. Don't re-verify, re-explain, or dig into "where did my
   changes go"; check the log once and continue from HEAD.
+- **Automated skills and unattended runs are pre-authorized to commit locally:**
+  When executing automated workflow skills (e.g. `/implement-action-items`,
+  `/ship`, `/tdd`) or running unattended sessions (`/goal`), the invocation
+  itself serves as explicit authorization to stage and commit each verified
+  item/step locally without interrupting for acknowledgement. Pushing to remote
+  (`git push`) still requires explicit user direction (or the `/ship` command).
 - Verifying a **visual** change means looking at the rendered page, not just green
   tests (§17C of `docs/ai_native_repo_structure.md`). Use
   `make screenshot URL=/<page>/` and read the PNG it prints. But a screenshot only
