@@ -141,6 +141,9 @@ export function initMobileControls({ chartManager } = {}) {
             setMenuOpen(false);
             menuButton.focus();
         }
+        if (event.key === 'Escape' && !sheet.hidden) {
+            setSheetOpen(false);
+        }
     });
     document.addEventListener('click', (event) => {
         if (!menu.hidden && !menuWrap.contains(event.target)) {
@@ -192,8 +195,51 @@ export function initMobileControls({ chartManager } = {}) {
 
     const controlRow = document.createElement('div');
     controlRow.className = 'mobile-controls-row';
+
+    const overflowButton = document.createElement('button');
+    overflowButton.type = 'button';
+    overflowButton.className = 'mobile-overflow-button';
+    overflowButton.setAttribute('aria-haspopup', 'dialog');
+    overflowButton.setAttribute('aria-expanded', 'false');
+    overflowButton.setAttribute('aria-label', 'Display settings');
+    overflowButton.textContent = '⋯';
+
+    const sheetBackdrop = document.createElement('div');
+    sheetBackdrop.className = 'mobile-sheet-backdrop';
+    sheetBackdrop.hidden = true;
+
+    const sheet = document.createElement('div');
+    sheet.className = 'mobile-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-label', 'Display settings');
+    sheet.hidden = true;
+
+    const currencyToggle = document.getElementById('currencyToggleContainer');
+    if (currencyToggle) {
+        sheet.appendChild(currencyToggle);
+    }
+
+    function setSheetOpen(open) {
+        sheet.hidden = !open;
+        sheetBackdrop.hidden = !open;
+        overflowButton.setAttribute('aria-expanded', String(open));
+        if (open) {
+            const first = sheet.querySelector('button');
+            if (first) {
+                first.focus();
+            }
+        }
+    }
+
+    overflowButton.addEventListener('click', () => setSheetOpen(sheet.hidden));
+    sheetBackdrop.addEventListener('click', () => setSheetOpen(false));
+
     controlRow.appendChild(menuWrap);
+    controlRow.appendChild(overflowButton);
     bar.appendChild(controlRow);
+    document.body.appendChild(sheetBackdrop);
+    document.body.appendChild(sheet);
     bar.appendChild(rangePicker);
     container.insertBefore(bar, section);
     return bar;

@@ -105,14 +105,10 @@ describe('Terminal index page', () => {
             expect(document.querySelector('.mobile-controls')).not.toBeNull();
         });
 
-        it('marks the currency switcher chart-loaded on mobile', async () => {
+        it('moves the currency switcher into the mobile sheet on mobile', async () => {
             setupMatchMedia(true);
             await importFresh();
-            expect(
-                document
-                    .getElementById('currencyToggleContainer')
-                    .classList.contains('chart-loaded')
-            ).toBe(true);
+            expect(document.querySelector('.mobile-sheet #currencyToggleContainer')).not.toBeNull();
         });
 
         it('keeps the chart section hidden on desktop', async () => {
@@ -129,14 +125,13 @@ describe('Terminal index page', () => {
             expect(document.querySelector('.mobile-controls')).toBeNull();
         });
 
-        it('does not mark the currency switcher chart-loaded on desktop', async () => {
+        it('does not render mobile sheet on desktop and currency switcher remains on body', async () => {
             setupMatchMedia(false);
             await importFresh();
-            expect(
-                document
-                    .getElementById('currencyToggleContainer')
-                    .classList.contains('chart-loaded')
-            ).toBe(false);
+            expect(document.querySelector('.mobile-sheet')).toBeNull();
+            expect(document.getElementById('currencyToggleContainer').parentElement).toBe(
+                document.body
+            );
         });
     });
 

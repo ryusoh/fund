@@ -25,19 +25,17 @@ describe('terminal mobile currency switcher', () => {
         expect(ruleMatch[0]).toMatch(/height:\s*44px/);
     });
 
-    it('restates the mobile vertical centering at winning specificity', () => {
-        // base.css `.body-terminal #currencyToggleContainer { top: 15px }` (id+class)
-        // outranks toggle.css's mobile `top: 50%` (plain id); responsive.css must
-        // restate it inside the mobile block.
+    it('styles the currency switcher inside the mobile sheet at winning specificity', () => {
         const responsiveCss = readRepoFile('css/terminal/responsive.css');
         const mobileBlockMatch = responsiveCss.match(
             /@media[^{]*\(\s*max-width:\s*768px\s*\)[^{]*\{([\s\S]*)\}(?=\s*@media|\s*$)/
         );
         expect(mobileBlockMatch).not.toBeNull();
         const ruleMatch = mobileBlockMatch[1].match(
-            /\.body-terminal\s+#currencyToggleContainer\s*\{[\s\S]*?\}/
+            /body\.body-terminal\s+\.mobile-sheet\s+#currencyToggleContainer\s*\{[\s\S]*?\}/
         );
         expect(ruleMatch).not.toBeNull();
-        expect(ruleMatch[0]).toMatch(/top:\s*50%/);
+        expect(ruleMatch[0]).toMatch(/position:\s*static/);
+        expect(ruleMatch[0]).toMatch(/transform:\s*none/);
     });
 });

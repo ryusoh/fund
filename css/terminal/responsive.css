@@ -205,11 +205,46 @@
         height: 44px;
     }
 
-    /* base.css's desktop `top: 15px` (id+class) outranks toggle.css's mobile
-       `top: 50%` (plain id) — restate the vertical centering at equal
-       specificity so the right-edge pill actually centers. */
-    .body-terminal #currencyToggleContainer {
-        top: 50%;
+    .mobile-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2001;
+    }
+
+    .mobile-sheet-backdrop[hidden],
+    .mobile-sheet[hidden] {
+        display: none;
+    }
+
+    .mobile-sheet {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 2002;
+        display: flex;
+        justify-content: center;
+        padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+        background: var(--panel-bg);
+        border-top: 1px solid var(--border-color);
+        border-radius: 16px 16px 0 0;
+        backdrop-filter: blur(20px);
+    }
+
+    /* toggle.css's floating-pill mobile rules target
+       `body:not(.body-calendar) #currencyToggleContainer` (specificity 1,1,1) with
+       !important and load AFTER this file — this selector must stay more specific
+       (1,2,1) AND keep its !important flags. */
+    body.body-terminal .mobile-sheet #currencyToggleContainer {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+        transform: none !important;
+        opacity: 1 !important;
+        flex-direction: row;
+        border-radius: 6px;
     }
 
     .chart-card,

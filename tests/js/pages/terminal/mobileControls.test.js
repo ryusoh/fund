@@ -16,6 +16,7 @@ jest.mock('../../../../js/transactions/layout.js', () => ({
 
 function setupDom() {
     document.body.innerHTML = `
+        <div id="currencyToggleContainer"></div>
         <div class="transaction-container">
             <section id="runningAmountSection" class="is-hidden"></section>
         </div>
@@ -122,6 +123,36 @@ describe('mobileControls', () => {
 
         document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(menu.hidden).toBe(true);
+    });
+
+    test('renders overflow button and toggles bottom sheet with currency container', () => {
+        const bar = initMobileControls({ chartManager: { update: jest.fn() } });
+        expect(bar).not.toBeNull();
+
+        const overflowBtn = bar.querySelector('.mobile-overflow-button');
+        expect(overflowBtn).not.toBeNull();
+        expect(overflowBtn.getAttribute('aria-haspopup')).toBe('dialog');
+        expect(overflowBtn.getAttribute('aria-expanded')).toBe('false');
+
+        const backdrop = document.querySelector('.mobile-sheet-backdrop');
+        const sheet = document.querySelector('.mobile-sheet');
+        expect(backdrop).not.toBeNull();
+        expect(sheet).not.toBeNull();
+        expect(backdrop.hidden).toBe(true);
+        expect(sheet.hidden).toBe(true);
+
+        const currencyInSheet = sheet.querySelector('#currencyToggleContainer');
+        expect(currencyInSheet).not.toBeNull();
+
+        overflowBtn.click();
+        expect(backdrop.hidden).toBe(false);
+        expect(sheet.hidden).toBe(false);
+        expect(overflowBtn.getAttribute('aria-expanded')).toBe('true');
+
+        backdrop.click();
+        expect(backdrop.hidden).toBe(true);
+        expect(sheet.hidden).toBe(true);
+        expect(overflowBtn.getAttribute('aria-expanded')).toBe('false');
     });
 
     test('renders the range presets unselected', () => {
