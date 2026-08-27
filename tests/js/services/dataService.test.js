@@ -813,7 +813,7 @@ describe('dataService', () => {
             delete window.pieChartGlassEffect;
         });
 
-        it('should draw visible divider lines between pie chart slices', async () => {
+        it('should keep dataset arc borders transparent so slice dividers are drawn only by the plugin', async () => {
             const mockHoldings = {
                 AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
             };
@@ -841,8 +841,8 @@ describe('dataService', () => {
                 expect.objectContaining({
                     datasets: [
                         expect.objectContaining({
-                            borderColor: 'rgba(120, 120, 128, 0.8)',
-                            borderWidth: 1,
+                            borderColor: 'transparent',
+                            borderWidth: 0,
                         }),
                     ],
                 })

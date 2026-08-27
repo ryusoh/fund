@@ -1083,6 +1083,23 @@ describe('chartManager', () => {
             expect(firstInstance.destroy).not.toHaveBeenCalled(); // Should not destroy on update
         });
     });
+
+    describe('customArcBorders configuration', () => {
+        it('should overdraw the inner/outer arc rings with subtle glass-coherent borders', () => {
+            chartManager.updatePieChart(data);
+
+            const chartConfig = global.Chart.mock.calls[0][1];
+
+            // Slice dividers come from the plugin's radial seam lines; the
+            // rings are repainted subtly so they don't read as a bright outline.
+            expect(chartConfig.options.plugins.customArcBorders).toEqual({
+                width: 1.5,
+                color: 'rgba(0, 0, 0, 0.15)',
+                dividerWidth: 1,
+                dividerColor: 'rgba(120, 120, 128, 0.8)',
+            });
+        });
+    });
 });
 
 // Test chart instances tracking for proper cleanup

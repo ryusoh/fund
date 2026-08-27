@@ -1,6 +1,6 @@
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
-import { CHART_DEFAULTS, UI_BREAKPOINTS } from '@js/config.js';
+import { CHART_DEFAULTS, UI_BREAKPOINTS, PIE_CHART_GLASS_EFFECT } from '@js/config.js';
 import { imagePlugin } from '@plugins/imagePlugin.js';
 import { customArcBordersPlugin } from '@plugins/customArcBordersPlugin.js';
 import { waveAnimationPlugin } from '@plugins/waveAnimationPlugin.js';
@@ -326,8 +326,10 @@ function buildChartConfig(data, baseRotation) {
                     font: {},
                 },
                 customArcBorders: {
-                    width: 0,
-                    color: 'transparent',
+                    width: PIE_CHART_GLASS_EFFECT.borders.arcWidth,
+                    color: PIE_CHART_GLASS_EFFECT.borders.arcColor,
+                    dividerWidth: CHART_DEFAULTS.BORDER_WIDTH,
+                    dividerColor: CHART_DEFAULTS.BORDER_COLOR,
                 },
                 glass3d: {
                     enabled: !!(window.pieChartGlassEffect?.threeD?.enabled ?? true),
