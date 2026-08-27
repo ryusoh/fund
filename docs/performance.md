@@ -8,7 +8,7 @@ its own code? Findings cover both the per-page-load / per-frame frontend cost
 and the per-run pipeline cost, prioritized by how often the cost is paid.
 
 Method: read-only code inspection plus the two existing benchmark scripts
-(`performance/benchmark_fx_json.py`, `performance/benchmark_composition_data.py`,
+(`tests/python/benchmark_fx_json.py`, `tests/python/benchmark_composition_data.py`,
 run under `venv/bin/python` on synthetic data) and JSON payload size
 measurements on the generated files in `data/`. No full test suite or pipeline
 runs; no network fetches.
@@ -304,7 +304,7 @@ line 22), so impact is low; the fix is a one-liner.
 
 ## Existing performance mechanisms (gaps only flagged above)
 
-- `performance/benchmark_composition_data.py` and `benchmark_fx_json.py`
+- `tests/python/benchmark_composition_data.py` and `benchmark_fx_json.py`
   benchmark the two historical hot spots. Measured this session: composition
   calc runs 0.28 s on 5000 days × 50 tickers synthetic data (the O(N) date scan
   is already replaced by `bisect` at `scripts/generate_composition_data.py:78`);
@@ -349,5 +349,5 @@ line 22), so impact is low; the fix is a one-liner.
   if intra-load refresh is intentional, single-flight dedup (not full memo) is
   the safe version of F2.
 - ~~Marquee char count~~ — moot: the marquee was removed as dead code (see F6).
-- **Benchmark representativeness.** Both `performance/` benchmarks run on
+- **Benchmark representativeness.** Both `tests/python/` benchmarks run on
   synthetic data; I ran them as-is and did not profile the real pipeline inputs.

@@ -92,7 +92,7 @@ All in `js/config.js`:
    `borderColor`/`borderWidth` style, so "restoring" a dataset border to bring back
    slice dividers also paints a uniform bright ring around the cutout and outer edge,
    breaking glass coherence. Keep the dataset at `borderColor: 'transparent',
-   borderWidth: 0` (`updateTableAndPrepareChartData` in `dataService.js`) and style
+borderWidth: 0` (`updateTableAndPrepareChartData` in `dataService.js`) and style
    the two parts separately via `options.plugins.customArcBorders` in
    `allocationChartManager.js`: `width`/`color` paint subtle inner/outer rings
    (`PIE_CHART_GLASS_EFFECT.borders.arcWidth`/`arcColor`), while

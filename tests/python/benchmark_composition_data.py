@@ -1,3 +1,4 @@
+import random
 import sys
 import time
 from datetime import datetime, timedelta
@@ -5,9 +6,10 @@ from pathlib import Path
 
 import pandas as pd
 
-# Add scripts directory to path to import generate_composition_data
-sys.path.append(str(Path(__file__).parent.parent / "scripts"))
-from generate_composition_data import calculate_daily_composition
+# Add project root to path so we can import scripts
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(PROJECT_ROOT))
+from scripts.generate_composition_data import calculate_daily_composition  # noqa: E402
 
 
 def generate_benchmark_data(num_dates=5000, num_tickers=50, price_sparsity=0.9):
@@ -34,8 +36,6 @@ def generate_benchmark_data(num_dates=5000, num_tickers=50, price_sparsity=0.9):
 
     # Generate prices_data
     # For every ticker, only generate prices for a subset of dates based on sparsity
-    import random
-
     random.seed(42)  # For reproducible benchmarks
 
     prices_data = {}

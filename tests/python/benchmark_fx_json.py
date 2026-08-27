@@ -2,8 +2,9 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, cast
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 # Add project root to path so we can import scripts
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
