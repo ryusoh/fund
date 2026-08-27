@@ -95,4 +95,16 @@ describe('terminal focus on mobile', () => {
         const { input } = initTerminalSession();
         expect(document.activeElement).toBe(input);
     });
+
+    test('renders chip bar on coarse pointer', () => {
+        setupMatchMedia(true);
+        initTerminalSession();
+        expect(document.querySelector('.terminal-chips')).not.toBeNull();
+    });
+
+    test('does not render chip bar on fine pointer', () => {
+        setupMatchMedia(false);
+        initTerminalSession();
+        expect(document.querySelector('.terminal-chips')).toBeNull();
+    });
 });
