@@ -252,60 +252,142 @@ web fonts, JS-gated reveals, and (on calendar) a long data waterfall.
   holdings→Worker chain plus `fetchMarketRatiosForTickers` — again,
   TTI/perceived-readiness cost, not LCP.
 
-## Ranked action items
+## Ranked action items (work orders)
 
-Ordered by expected LCP impact; each is tied to the evidence above. Per AGENTS.md
-conventions, visual/behavioural changes need `make precommit-fix` green and, for
-the visual ones, human review of the rendered page.
+Ranked by expected LCP impact. Written for mechanical execution by an
+implementation agent. Tags: **[trivial]** = markup/attribute edit only ·
+**[low]** = small logic change · **[visual]** = human must review the rendered
+page (`make screenshot URL=/<page>/`) · **[skip]** = behavioural change gated
+by the diff-coverage CI rule — do NOT attempt without a test that fails before
+and passes after; assign to a stronger model.
 
-1. **Calendar: stop render-blocking on 355 KB of head JS.** Move
-   `d3.v7.min.js` and `cal-heatmap.js` out of `<head>` (calendar/index.html:82-83)
-   — e.g. `defer` them (defer scripts execute before the module entry) or
-   preload them and keep them off the critical path. This unblocks _all_ first
-   paint on the worst page. Also drop the duplicated Font Awesome link
-   (calendar/index.html:81).
-2. **Terminal: fix the font block period.** Add `font-display: swap` to the
-   `@font-face` at css/terminal/base.css:24-29 and add a
-   `<link rel="preload" as="font" crossorigin>` for
-   `JetBrainsMono-Regular.woff2` in terminal/index.html — the prompt text is
-   the likely LCP and can currently sit invisible until the 92 KB font arrives.
-3. **Position: break the script waterfall.** Point the loader at the minified
-   Chart.js (`js/vendor/chart.umd.min.js`, 206 KB vs 399 KB), load Chart.js and
-   datalabels **in parallel** instead of sequential `await`s
-   (position/index.html:225-234), and add `<link rel="modulepreload">` for
-   `../js/pages/position/index.js` so the module graph downloads during the
-   vendor fetch instead of after it (currently injected at :235-238).
-4. **Position: don't let the PER column gate the chart.** In
-   `loadAndDisplayPortfolioData` (js/services/dataService.js:1016-1065), render
-   the pie as soon as holdings+prices land and fill PER cells when
-   `fetchMarketRatiosForTickers` resolves — the chart needs none of that data.
-   (Perceived-main-content win; LCP-neutral since the chart is canvas.)
-5. **Break the serial holdings→Worker leg in `fetchPortfolioData`**
-   (js/services/dataService.js:60-83): fire the Worker price call without
-   awaiting `holdings_details.json` first (derive the symbol list from a static
-   file or request in parallel), and add
-   `<link rel="preconnect" href="https://api.lyeutsaon.com">` to the three
-   pages that hit it. This shortens calendar's LCP chain and position's
-   chart-paint chain by one round-trip plus TLS setup.
-6. **Calendar: paint before the entrance fade finishes.** The
-   `opacity: 0` → `calendar-ready` gate (css/calendar.css:337-352 +
-   js/pages/calendar/index.js:976-987) postpones LCP by the data wait plus up
-   to ~0.5 s of fade. Consider rendering the pane visible-but-empty immediately
-   (its skeleton is static HTML) or dropping the opacity gate on first load.
-   Visual — human review required.
-7. **Index: reveal the banner without the JS gate.** `.mobile-banner` waits for
-   deferred `imageFallback.js` to add `is-fallback-ready`
-   (css/main_index.css:45-51, 100-108). Make the no-JS default visible and let
-   the fallback script only _swap_ the source on error, so the
-   `fetchpriority="high"` image paints as soon as it decodes. (Small absolute
-   win; the page's LCP is already a 20.7 KB PNG.)
-8. **All pages: consolidate or defer non-critical CSS.** 8-10 separate
-   render-blocking stylesheets per page (evidence above) stretch the
-   pre-first-paint phase; merging the always-needed ones (or inlining critical
-   rules) removes several request round-trips from every LCP chain at once.
-9. **Position: drop or down-prioritize the seven logo preloads**
-   (position/index.html:70-76) — the images are canvas-only, never LCP
-   candidates, and compete with the critical path.
+Rules for the implementer (apply to every item):
+
+- One work order per change. Do not fix unrelated things.
+- **Find** strings are unique anchors — if one does not match, STOP and report;
+  do not improvise. (Line numbers are from 2026-08-27 and may drift.)
+- After editing: `npx prettier --write <files>`, plus `npx eslint <file>` for
+  JS and `npx stylelint <file>` for CSS. Run the item's **Verify** commands and
+  paste their output into the commit/PR body.
+- Never edit anything under `data/`.
+
+### 1. [trivial] [visual] Calendar: stop render-blocking on 355 KB of head JS
+
+- **File:** `calendar/index.html`
+- **Find:** the SECOND `<link rel="stylesheet" href="../assets/vendor/css/font-awesome-4.7.0.min.css" />`
+  (~:81 — keep the first one at :49), immediately followed by
+  `<script src="../js/vendor/d3.v7.min.js"></script>` and
+  `<script src="../js/vendor/cal-heatmap.js"></script>`
+- **Change:** delete that duplicate FA link; add `defer` to both scripts:
+  `<script defer src="../js/vendor/d3.v7.min.js"></script>` and
+  `<script defer src="../js/vendor/cal-heatmap.js"></script>`.
+- **Why safe:** deferred classic scripts execute in order before module
+  scripts, and the page module (`../js/pages/calendar/index.js`) is the only
+  consumer of the `d3`/`CalHeatmap` globals.
+- **Verify:** `npx jest tests/js/pages/calendar` — if any test or a browser
+  console shows `d3 is not defined`, revert and instead MOVE both script tags
+  (no `defer`) to just above `<script type="module" src="../js/pages/calendar/index.js"></script>`.
+
+### 2. [trivial] Terminal: fix the font block period
+
+- **File:** `css/terminal/base.css`
+- **Find:** the `@font-face` block at :24-29 (`font-family: 'JetBrains Mono';`)
+- **Change:** add one line inside it: `font-display: swap;`
+- **File:** `terminal/index.html`
+- **Find:** the Font Awesome preload `<link rel="preload"` block at :72-78
+- **Change:** insert immediately after it:
+  `<link rel="preload" href="../assets/fonts/webfonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin />`
+- **Verify:** `npx stylelint css/terminal/base.css`
+
+### 3. [low] [visual] Position: break the script waterfall
+
+- **File:** `position/index.html`, inline loader at :200-241.
+- **Change A (bytes):** in the two `loadLocalOrCdn` calls (:227-234), point the
+  primary URLs at the minified twins that exist in the SAME directory:
+  `../assets/vendor/js/chart.umd.min.js` (206 KB vs 399 KB) and
+  `../assets/vendor/js/chartjs-plugin-datalabels.min.js` (13 KB vs 25 KB).
+  Also fix the broken chart fallback `'./js/vendor/chart.umd.min.js'` →
+  `'../js/vendor/chart.umd.min.js'`.
+- **Change B (parallel):** inside `loadScript`, add `s.async = false;` after
+  `s.src = src;` (keeps execution in insertion order — datalabels needs the
+  `Chart` global at exec time), then replace the two sequential `await`s with
+  one `await Promise.all([loadLocalOrCdn(...), loadLocalOrCdn(...)]);`.
+  Caveat: if the local chart script ever 404s, its fallback is appended after
+  datalabels and the plugin may not register — acceptable, the file ships in
+  the repo. If unsure, do Change A only.
+- **Change C (optional):** add `<link rel="modulepreload" href="../js/pages/position/index.js" />`
+  next to the other preloads (~:70) so the module graph downloads during the
+  vendor fetch.
+- **Verify:** `npx jest tests/js/pages/position` · visual check of the pie chart.
+
+### 4. [trivial] Position: drop the seven canvas-only logo preloads
+
+- **File:** `position/index.html`
+- **Find:** the seven consecutive lines `<link rel="preload" href="../assets/logos/...`
+  at :70-76 (`geo.png`, `anet.png`, `goog.png`, `pdd.png`, `oxy.png`, `brk.png`, `vt.png`)
+- **Change:** delete all seven lines. The images are drawn into `<canvas>`
+  (never LCP) and are fetched again on demand by the chart plugin.
+- **Verify:** `npx jest tests/js/pages/position`
+
+### 5. [trivial] Preconnect to the price Worker (calendar, position, terminal)
+
+- **Files:** `calendar/index.html`, `position/index.html`, `terminal/index.html`
+  (NOT `index.html` — the landing page never calls the Worker)
+- **Find:** the Font Awesome preload block (ends with `crossorigin\n        />`)
+- **Change:** insert after it:
+  `<link rel="preconnect" href="https://api.lyeutsaon.com" crossorigin />`
+- **Also:** if the file contains the comment
+  `<!-- Preconnect removed: using local assets only -->` (calendar/index.html:23),
+  delete it — it is stale once this line exists.
+- **Verify:** `npx prettier --check` on the three files.
+- **Not included** [skip]: de-serializing the holdings→Worker chain in
+  `fetchPortfolioData` (js/services/dataService.js:60-83) needs a design
+  decision (the Worker URL is built from `holdings_details.json` keys) plus
+  tests — assign to a stronger model.
+
+### 6. [low] [visual] Calendar: don't gate LCP on the entrance fade
+
+- **Files/anchors:** `.page-center-wrapper` rule with `opacity: 0` at
+  css/calendar.css:337-354; the `requestAnimationFrame` block adding
+  `calendar-ready` at js/pages/calendar/index.js:975-985.
+- **Change (minimal variant):** in the base rule remove `opacity: 0;` and drop
+  `opacity 0.5s ...` from the `transition` list (keep the transform parts);
+  leave the JS and the `.calendar-ready` rule untouched so the zoom transition
+  still works. The pane then paints as soon as SVG labels render instead of
+  after a 0.5 s fade.
+- **Verify:** `npx stylelint css/calendar.css` · `npx jest tests/js/pages/calendar`
+  · human visual review of `/calendar/`.
+
+### 7. [low] [visual] Index: reveal the banner without the JS gate
+
+- **File:** `css/main_index.css` — two `.mobile-banner` rules start with
+  `opacity: 0; visibility: hidden;` (:45-47 desktop block, :100-101 in the
+  `max-width: 768px` query), each followed by a `.mobile-banner.is-fallback-ready`
+  rule (:50-53, :107-108).
+- **Change:** in each base rule set the ready values directly (`opacity: 0.2;`
+  desktop, `opacity: 0.5;` mobile, `visibility: visible;`) and delete both
+  `.is-fallback-ready` rules.
+- **File:** `js/loader/imageFallback.js` — delete the three places that toggle
+  the class: `el.classList.remove('is-fallback-ready');` (:20),
+  `el.classList.add('is-fallback-ready');` (:29), and the
+  `else if (el.complete && ...)` branch (:37-39). Keep the error-fallback logic.
+- **Verify:** `npx stylelint css/main_index.css` · `npx eslint js/loader/imageFallback.js`
+  · `make screenshot URL=/` for human review.
+
+### 8. [skip] Position: don't let the PER column gate the chart
+
+`loadAndDisplayPortfolioData` (js/services/dataService.js:1016-1065) awaits
+`fetchMarketRatiosForTickers` (anchor:
+`const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);`)
+before `updatePieChart`, though the pie needs none of it. Splitting it requires
+a two-phase render (chart first, PER cells later) plus new tests — assign to a
+stronger model.
+
+### 9. [skip] Consolidate the 8–11 render-blocking stylesheets per page
+
+No build step exists, so this means hand-merging CSS files and editing every
+`<link>` plus the `CORE_ASSETS` list in `sw.js`. Wide blast radius for a
+stylistic win; do only with human direction.
 
 ## Open questions / what I couldn't verify
 
