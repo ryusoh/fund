@@ -503,3 +503,103 @@ The steady state is agents writing most of the code while humans write **specifi
 | **4. Self-Improving** | The compounding loop runs: failures patch the repo, standards become ratchets, docs are tested, ergonomics are measured (§10) and trend upward. |
 
 Sections 1–16 get a repo to Level 2 and enable Level 3. Level 4 is not a structure you install — it is a habit the team (human and agent) keeps. That habit, not the directory tree, is the extreme frontier.
+
+---
+
+## 18. Action Items (Work Orders)
+
+### Preamble — rules for the implementer
+
+- Work **one work order at a time**, top to bottom. **Commit after each item;
+  never push.** Per-item commits keep each change reviewable and revertible;
+  pushing stays a human decision. Use Conventional Commits (`docs: ...`).
+- `Find` strings are **unique anchors copied verbatim** from the current file.
+  If one does not match exactly, **STOP and report** — do not improvise a
+  replacement. Line numbers are dated and may drift; match on the `Find` text,
+  not the number.
+- Each `Find` anchor also appears **quoted inside its work order below** — the
+  file will contain two matches. The edit target is always the occurrence in
+  the doc body (the first match, above this §18), never the quoted copy.
+- After each edit to this doc, run:
+  `npx prettier --write docs/ai_native_repo_structure.md` then
+  `npm exec -- markdownlint-cli2 "docs/ai_native_repo_structure.md"` — both
+  must exit 0.
+- Never edit `data/`.
+- Items tagged `[skip]` are **not for you** — they need design judgment or new
+  tests. Leave them alone.
+
+### Work orders
+
+#### 1. `[trivial]` Fix nonexistent `make sync` / `npm test` in the §7D recipe
+
+- **File**: `docs/ai_native_repo_structure.md`
+- **Find**: ``3. Run `make sync` to populate data.``
+- **Change**: replace with ``3. Run `bin/update-all` to populate data.``
+- **Find**: ``4. Run `npm test` and `pytest`.``
+- **Change**: replace with ``4. Run `make test` (JS + Python).``
+- **Verify**: `npm exec -- markdownlint-cli2 "docs/ai_native_repo_structure.md"`
+- **Guardrail**: there is no `make sync` target in the Makefile (data pipeline
+  entry is `bin/update-all`); `npm test` runs jest only — the repo's combined
+  JS+Python gate is `make test`.
+
+#### 2. `[trivial]` Fix deprecated `.cursorrules` reference in §6 Strategy 1
+
+- **File**: `docs/ai_native_repo_structure.md`
+- **Find**: ``3. **Agent Rules (`.cursorrules` or `.geminiprompt`)**: Provide prompt-level rules to guide the agent through the codebase structure.``
+- **Change**: replace with ``3. **Agent Rules (`AGENTS.md` + `.agents/skills/`)**: Provide prompt-level rules to guide the agent through the codebase structure.``
+- **Verify**: `npm exec -- markdownlint-cli2 "docs/ai_native_repo_structure.md"`
+- **Guardrail**: `.cursorrules` is deprecated by this doc's own §4.3, and
+  neither `.cursorrules` nor `.geminiprompt` exists in this repo; the real
+  rule layers are `AGENTS.md` (auto-loaded) and `.agents/skills/`.
+
+#### 3. `[trivial]` Fix nonexistent `docs/architecture.md` reference in §7B
+
+- **File**: `docs/ai_native_repo_structure.md`
+- **Find**: ``A short `docs/architecture.md` outlining the data flow``
+- **Change**: replace with ``A short `docs/overview.md` outlining the data flow``
+- **Verify**: `npm exec -- markdownlint-cli2 "docs/ai_native_repo_structure.md"`
+- **Guardrail**: `docs/architecture.md` does not exist; `docs/overview.md` is
+  the real data-flow doc.
+
+#### 4. `[skip]` Root `REPO_MAP.md` (§4.3, §6 Strategy 1)
+
+`AGENTS.md` §Layout already maps every top-level path to its functional area
+and is auto-loaded, so a separate map would duplicate it. Revisit only if the
+Layout section outgrows its bullet list; then create `REPO_MAP.md` and link it
+from `AGENTS.md`.
+
+#### 5. `[skip]` First-class agent evals suite (§10)
+
+Needs an eval runner (`scripts/evals/run_suite.py`), seeded-bug fixtures, and a
+gating workflow (`.github/workflows/agent-evals.yml`). Design decision on
+agent harness + budget thresholds; route to a stronger model.
+
+#### 6. `[skip]` Hermetic sandboxing: `.devcontainer/` or `flake.nix` (§8)
+
+New environment infra; needs a decision on which (devcontainer vs Nix) and
+validation that `make install-dev` / `make verify` behave identically inside
+it. Not mechanical.
+
+#### 7. `[skip]` AST auditing / Semgrep dependency lockdown (§9)
+
+New CI security gates (Semgrep ruleset, `npm audit`/`pip-audit` enforcement).
+Requires rule curation to avoid false-positive noise; overlaps the Sentinel
+lane. Not mechanical.
+
+#### 8. `[skip]` Shared `/schemas` typed contracts (§4.5)
+
+Frontend reads generated `data/*.json` with no schema validation today.
+Adding JSON-Schema generation to the Python pipeline plus a JS-side check is
+a design task (generator choice, where validation runs). Not mechanical.
+
+#### 9. `[skip]` Subagent team definitions under `.claude/agents/` (§16)
+
+`.claude/agents/` does not exist yet. Defining scoped subagents (roles,
+allowed tools) is a persona-design task; see the `jules-persona` skill for
+house conventions before authoring.
+
+#### 10. `[skip]` Semantic layer + agent telemetry (§12, §14)
+
+LSP-bridge tools, vector index, symbol maps, and trace logging are external
+infrastructure with no in-repo anchor today. Evaluate only after the
+compounding loop (§17) shows search cost is actually the bottleneck.
