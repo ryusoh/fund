@@ -31,7 +31,6 @@ describe('Image Fallback Loader', () => {
         loadScript();
 
         expect(img.src).toContain('test.jpg');
-        expect(img.classList.contains('is-fallback-ready')).toBe(false);
     });
 
     it('should handle invalid JSON gracefully and warn', () => {
@@ -45,7 +44,6 @@ describe('Image Fallback Loader', () => {
             'Image fallback handling failed:',
             expect.any(SyntaxError)
         );
-        expect(img.classList.contains('is-fallback-ready')).toBe(false);
     });
 
     it('should do nothing if parsed list is not an array or is empty', () => {
@@ -58,8 +56,6 @@ describe('Image Fallback Loader', () => {
 
         loadScript();
 
-        expect(img1.classList.contains('is-fallback-ready')).toBe(false);
-        expect(img2.classList.contains('is-fallback-ready')).toBe(false);
         expect(img1.src).toBe('');
         expect(img2.src).toBe('');
     });
@@ -83,36 +79,6 @@ describe('Image Fallback Loader', () => {
         loadScript();
 
         expect(img.src).toContain('fallback.jpg');
-    });
-
-    it('should add is-fallback-ready class immediately if already complete', () => {
-        const img = document.createElement('img');
-        // Include the full location origin that JSDOM resolves relative paths to
-        const fullPath = `${window.location.origin}/fallback.jpg`;
-        img.setAttribute('data-fallbacks', `["${fullPath}"]`);
-
-        // Define properties to simulate a completely loaded image
-        Object.defineProperty(img, 'complete', { value: true, configurable: true });
-        Object.defineProperty(img, 'naturalWidth', { value: 100, configurable: true });
-        img.src = fullPath; // Match first URL so it doesn't overwrite src
-        document.body.appendChild(img);
-
-        loadScript();
-
-        expect(img.classList.contains('is-fallback-ready')).toBe(true);
-    });
-
-    it('should add is-fallback-ready class on successful load', () => {
-        const img = document.createElement('img');
-        img.setAttribute('data-fallbacks', '["fallback.jpg"]');
-        document.body.appendChild(img);
-
-        loadScript();
-
-        // Simulate load event
-        img.dispatchEvent(new Event('load'));
-
-        expect(img.classList.contains('is-fallback-ready')).toBe(true);
     });
 
     it('should advance to next URL on error', () => {

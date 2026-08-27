@@ -335,11 +335,7 @@ body.body-calendar {
    shadows) lives on ::after and only fades, which keeps the GPU from
    re-rasterizing large shadow layers every frame of the zoom. */
 .page-center-wrapper {
-    /* Entrance animation: hide until JS signals ready */
-    opacity: 0;
-    transition:
-        opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-        transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform 0.55s cubic-bezier(0.32, 0.72, 0, 1);
     width: 100%;
     position: relative;
     transform-origin: center center;
