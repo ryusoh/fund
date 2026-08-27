@@ -29,8 +29,12 @@ function adjustChartContainerHeight(plotSection, chartContainer, legend, cardHei
         const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
         const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
         const legendHeight = legend ? legend.offsetHeight : 0;
-        const legendMargin = legend
-            ? parseFloat(window.getComputedStyle(legend).marginTop) || 0
+        // The legend sits below the chart on desktop (margin-top) and above it
+        // on mobile (margin-bottom) — both consume card height.
+        const legendStyles = legend ? window.getComputedStyle(legend) : null;
+        const legendMargin = legendStyles
+            ? (parseFloat(legendStyles.marginTop) || 0) +
+              (parseFloat(legendStyles.marginBottom) || 0)
             : 0;
         const innerAvailable = Math.max(
             160,

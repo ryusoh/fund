@@ -123,6 +123,19 @@ describe('adjustMobilePanels', () => {
         expect(chartContainer.style.height).toBe('656px');
     });
 
+    it('subtracts legend margin-bottom (legend above chart on mobile)', () => {
+        window.getComputedStyle = jest.fn().mockImplementation((el) => {
+            if (el === legend) {
+                return { marginTop: '0px', marginBottom: '12px' };
+            }
+            return { paddingTop: '10px', paddingBottom: '10px' };
+        });
+        adjustMobilePanels();
+        // cardHeight = 684, paddings = 20, legend height = 20, margin = 0 + 12
+        // inner = 684 - 20 - 20 - 12 - 8 = 624
+        expect(chartContainer.style.height).toBe('624px');
+    });
+
     it('handles hidden plotSection and clears chart container height', () => {
         plotSection.classList.add('is-hidden');
         chartContainer.style.height = '400px';
