@@ -189,7 +189,7 @@ For codebases where physical file movement is too risky, we can construct a virt
 
 1. **Create `REPO_MAP.md` at the Root**: Map current paths to functional areas (e.g. `scripts/analysis/` -> backend engine, `js/pages/` -> page logic).
 2. **Unified `Makefile`**: Bind all testing, formatting, and linting commands under a root `Makefile` so the agent has a single command interface.
-3. **Agent Rules (`.cursorrules` or `.geminiprompt`)**: Provide prompt-level rules to guide the agent through the codebase structure.
+3. **Agent Rules (`AGENTS.md` + `.agents/skills/`)**: Provide prompt-level rules to guide the agent through the codebase structure.
 
 - **Impact**: Zero downtime, zero code changes, 90% of the developer experience benefits for AI agents.
 
