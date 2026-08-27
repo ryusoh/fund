@@ -88,10 +88,10 @@ to: null }` — `js/config.js:167-170`, applied at `js/pages/terminal/index.js:3
 
 ## 4. Research evidence
 
-Each claim: **claim** — source — _quality_. Claims 1-18 are from the first research pass
-(2026-08-27) and justify removing typing/stats from mobile; chart-specific pattern evidence
-(range selectors, mobile legends, glanceability) is being gathered into
-`docs/research/mobile-chart-ux-sources.md` and folded into §4.6 when it lands.
+Each claim: **claim** — source — _quality_. Claims 1-15 are from the first research pass
+(2026-08-27) and justify removing typing/stats from mobile; claims 16-22 in §4.6 are the
+chart-specific patterns (range selectors, touch scrub, mobile legends, glanceability) from
+`docs/research/mobile-chart-ux-sources.md`.
 
 ### 4.1 Why typing-heavy UIs fail on phones
 
@@ -156,11 +156,35 @@ Each claim: **claim** — source — _quality_. Claims 1-18 are from the first r
   and rejected on visual grounds — a valid pattern for _terminals_, but this page's value is the
   charts, not the shell.
 
-### 4.6 Mobile chart UX patterns (Apple Stocks / Google Finance / ChatGPT inline charts)
+### 4.6 Mobile chart UX patterns (Apple Stocks / Google Finance / Material)
 
-_Pending: see `docs/research/mobile-chart-ux-sources.md` (in flight at revision time). Key
-questions: range-preset sets and placement, touch scrub behavior, mobile legend density,
-segmented-control conventions. Fold verified claims here when it lands._
+Full claim-by-claim evidence with citations: `docs/research/mobile-chart-ux-sources.md`
+(gathered 2026-08-27; Google Finance mobile web verified live via Playwright at 390×844).
+Verified highlights (claim numbers continue from §4.5):
+
+- **Claim 16**: **The range selector is a single-select segmented row adjacent to the chart** —
+  Apple Stocks puts it _above_ the chart ("Tap an option from the time range selections at the
+  top of the chart", iPhone User Guide); Google Finance mobile web puts a `role="tab"` row
+  (1D/5D/1M/6M/YTD/1Y/5Y/MAX, `aria-selected` for state, 1D default) _below_ it. Apple's
+  documented range list (Mac guide): 1D/1W/1M/3M/6M/YTD/1Y/2Y/5Y/10Y/ALL, highlighted on
+  selection, persistent across symbols.
+- **Claim 17**: **HIG caps iPhone segmented controls at ~5 segments; Material 3 at 2–5** — both
+  reference apps exceed this with short, equal-importance labels; the pattern still holds.
+- **Claim 18**: **Touch-and-hold scrub is the canonical mobile chart gesture** (Apple documents
+  one-finger hold = value at point, two-finger = difference); HIG recommends making the _entire
+  plot area_ the hit target. Our Pointer-Events crosshair already implements this (§3.2).
+- **Claim 19**: **On mobile, Material says place the legend _above_ the chart** so it stays
+  visible during touch interaction, and prefer direct data labels over a legend where possible
+  (M2 data-visualization, Style → Legends).
+- **Claim 20**: **Touch-target minimums converge**: WCAG 2.5.8 AA 24×24px floor, WCAG 2.5.5 AAA
+  44×44px, Apple 44×44pt, Material 48×48dp, NN/g 1cm×1cm. A 2–4 option currency switch fits a
+  segmented control comfortably within HIG/M3 segment limits.
+- **Claim 21**: **Default view = one key number + one line chart** (Apple Stocks layout; NN/g
+  glanceability/progressive-disclosure; line/bar encodings are preattentive — avoid pie/donut
+  for at-a-glance reading). Material also sanctions **swipe pagination between charts** on
+  mobile as an alternative to a picker row.
+- **Claim 22**: **Sparse axis labels on small screens**: when interactive inspection exists,
+  HIG advises fewer grid lines and light label colors; Material says don't overload axis labels.
 
 ## 5. Design options — decision record
 
@@ -212,12 +236,15 @@ gated on the owner's explicit approval — do not do it unprompted.**
    Performance → `performance`, Drawdown → `drawdown`, Composition → `composition`, Sectors →
    `sectors` (keys from `js/transactions/chart.js:104-161`; final set is the owner's call).
    Tap handler: `setActiveChart(key)` (`js/transactions/state.js:118`), ensure the section is
-   un-hidden, `chartManager.update()`; mark the active button with `aria-pressed`. Verify: jest
-   tests for rendering at mocked mobile width, tap → state + update called, desktop renders
-   nothing; `make precommit-fix` green.
+   un-hidden, `chartManager.update()`; mark the active button with `aria-pressed`. Keep the
+   picker to ~5 entries where possible (claim 17); Material's swipe-pagination pattern is a
+   sanctioned alternative if the set grows (claim 21). Default to a single line chart
+   (claim 21). Verify: jest tests for rendering at mocked mobile width, tap → state + update
+   called, desktop renders nothing; `make precommit-fix` green.
 4. **Timeline range selector** (Apple-Stocks-style presets) in the same bar: `1M 3M 6M YTD 1Y
-All`. A small pure helper maps a preset to `{from, to}` relative to today (`All` →
-   `{from: null, to: null}`; `YTD` → Jan 1 of the current year); existing parsers
+All` (preset sets and placement per claim 16; use `aria-selected` on the active preset like
+   Google Finance's tab row). A small pure helper maps a preset to `{from, to}` relative to
+   today (`All` → `{from: null, to: null}`; `YTD` → Jan 1 of the current year); existing parsers
    (`dateUtils.js:167-343`) handle only years/quarters, so month-offset math is new — keep it in
    the new module, not `dateUtils.js`. Apply via `setChartDateRange` +
    `updateContextYearFromRange(range)` + `chartManager.update()`. Default selection should match
@@ -235,8 +262,12 @@ All`. A small pure helper maps a preset to `{from, to}` relative to today (`All`
    (claims 11-13). Verify: `tests/js/ui/currencyToggleManager.test.js` still green; jest test
    that the container is visible at mocked mobile width; tap switches the rendered currency.
 6. **Legend adaptation for mobile.** Base rules exist (`css/terminal/chart.css:119-139`: grid,
-   11px labels, truncation). Adapt: tappable legend items (non-stacked charts —
-   `interaction.js:724-760`) need ≥44px-tall hit areas (claims 11-13); consider a single
+   11px labels, truncation). Adapt: (a) move the legend _above_ the chart on mobile — Material's
+   explicit mobile guidance (claim 19); `.chart-card` is already `display: flex; flex-direction:
+column` (`css/terminal/chart.css:1-11`), so `order: -1` on `.chart-legend` in the ≤768px
+   block suffices, but check `adjustMobilePanels`'s legend-height math still holds
+   (`js/transactions/layout.js:26-41`); (b) tappable legend items (non-stacked charts —
+   `interaction.js:724-760`) need ≥44px-tall hit areas (claims 11-13, 20); (c) consider a single
    horizontally scrollable row if the grid wraps past two lines. **Visual — human review
    required.** Verify: `npx stylelint css/terminal/chart.css`; mobile screenshot per chart type.
 7. **Layout machinery check.** With the terminal pane and table hidden, confirm
@@ -255,9 +286,11 @@ tests/js/pages/terminal` green.
 
 ## 7. Open questions / what I couldn't verify
 
-- **Chart-UX pattern research in flight**: `docs/research/mobile-chart-ux-sources.md` (Apple
-  Stocks range presets and scrub behavior, Google Finance mobile, ChatGPT inline charts, mobile
-  legend conventions). §4.6 is a placeholder until it lands; items 3-6 may need adjustment.
+- **Chart-UX pattern research landed**: `docs/research/mobile-chart-ux-sources.md` (claims 16-22
+  in §4.6). Couldn't verify there: ChatGPT's embedded stock chart has no official spec; the exact
+  iPhone Stocks range list (Apple enumerates it only in the Mac guide); any official
+  currency-switcher precedent; legend tap-to-toggle has no primary-guideline endorsement
+  (library convention only); Google Finance native app behavior (only mobile web was checked).
 - **Final chart-picker set and default range preset** (items 3-4) are product decisions — the
   owner picks the chart list and whether the default range stays `from 2024-01-01`.
 - **WCAG/Apple/Material primary texts**: w3.org returned 403 and Apple's/Material's guideline
