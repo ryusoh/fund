@@ -62,6 +62,16 @@ ES modules via an import map.
     already satisfied by the current repo state (e.g. a stale task description):
     a satisfied goal is a no-op, not a PR. (Six Typist PRs closed 2026-08 for
     exactly this.)
+    **The same holds mid-PR: never push an empty or no-op commit** — including
+    add-then-remove placeholder files (`dummy_file.txt`). Before every push,
+    `git show --stat HEAD` must show a real diff that matches the commit
+    message and, when responding to review feedback, actually addresses it.
+    If you have nothing real to push, push nothing. Machine-enforced for
+    bot-authored commits by `scripts/agents/check_bot_pr_hygiene.py`
+    (`make bot-pr-check`, part of `make verify` and the `precommit-fix` CI
+    gate, plus a dedicated step in `.github/workflows/ci.yml`): it fails on bot
+    commits that are empty, add zero-content files, or delete lines from test
+    files (bot lanes are append-only in `tests/`).
 
 ## You cannot see the rendered page
 
@@ -159,6 +169,7 @@ instantly identifiable.
 | One CSS file lint                       | `npx stylelint <path.css>`                              |
 | Generated-commands freshness check      | `make sync-check`                                       |
 | Stream-of-consciousness scan            | `make thinking-check`                                   |
+| Bot PR hygiene gate (bot commits)       | `make bot-pr-check`                                     |
 | Dependency-structure gate (JS)          | `make depcheck`                                         |
 | JS mutation test (scoped, manual only)  | `make mutate-js MUTATE=js/utils/host.js`                |
 | Py mutation test (scoped, manual only)  | `make mutate-py SCOPE='scripts.utils.security_utils.*'` |

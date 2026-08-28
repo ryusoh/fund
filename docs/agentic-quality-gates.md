@@ -342,8 +342,16 @@ The workflow-level machinery also already matches the philosophy:
   Architect (complexity), Sentinel (security/error-handling), Janitor (dead
   code), Bolt (perf). These are, in effect, Uncle Bob's "refactor agent" and
   "architecture-review agent" instantiated as scheduled lanes.
-- CI — `web-ci` (runs `make precommit-fix`, rejects empty PRs), `diff-coverage`,
-  `commit-lint`, plus two Claude AI-review workflows.
+- CI — `web-ci` (runs `make precommit-fix`, rejects empty PRs and bot-commit
+  hygiene violations), `diff-coverage`, `commit-lint`, plus two Claude AI-review
+  workflows.
+- Bot PR hygiene — `make bot-pr-check`
+  (`python3 -m scripts.agents.check_bot_pr_hygiene`, in `make verify`,
+  `precommit-fix`, and a dedicated PR step in `.github/workflows/ci.yml`)
+  deterministically fails bot-authored commits in `origin/main..HEAD` that are
+  empty, add zero-content placeholder files, or delete lines from test files
+  (AGENTS.md non-negotiable #10). Human commits are skipped — interactive
+  agents may legitimately rewrite tests on request.
 
 ## Evidence, claim by claim
 

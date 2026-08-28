@@ -23,6 +23,9 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
               with:
+                  # Full history: the bot-PR-hygiene step inspects individual
+                  # commits in origin/<base>..HEAD; a shallow checkout hides the
+                  # branch commits behind the merge commit.
                   fetch-depth: 0
                   submodules: 'false'
 
@@ -37,6 +40,18 @@ jobs:
                     echo "::error::PR contains no changes. Empty PRs are not allowed."
                     exit 1
                   fi
+
+            # Machine enforcement of AGENTS.md non-negotiable #10 for bot-authored
+            # commits (wording alone did not stop the 2026-08 zero-file Typist PRs
+            # or sibling-repo anki#494's empty churn commits): fails on empty
+            # commits, zero-content placeholder files, and test deletions in any
+            # commit by google-labs-jules[bot]. Stdlib-only, so it runs on the
+            # runner's system python3 before Setup Python.
+            - name: Reject bot PR hygiene violations
+              if: ${{ github.event_name == 'pull_request' }}
+              run: |
+                  git fetch --no-tags origin ${{ github.base_ref }}
+                  python3 -m scripts.agents.check_bot_pr_hygiene --base "origin/${{ github.base_ref }}"
 
             - name: Setup Node.js
               uses: actions/setup-node@v7

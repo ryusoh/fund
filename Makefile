@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -56,6 +56,7 @@ help:
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
 	@echo "  thinking-check Stream-of-consciousness scan (thinking comments, abandoned test bodies)"
+	@echo "  bot-pr-check  Fail on empty/placeholder commits or test deletions in bot PR commits"
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
@@ -102,6 +103,7 @@ precommit-fix:
 	@# Timezone pass: UTC-only jest can't fire the TZ regression tests
 	@$(MAKE) test-tz
 	@# Phase 4: Final verification
+	@$(MAKE) bot-pr-check
 	@$(MAKE) thinking-check
 	@$(MAKE) precommit; \
 	STATUS=$$?; \
@@ -205,7 +207,7 @@ test-tz:
 test: js-test
 	$(PY) -m pytest --cov=scripts --cov-report=term-missing
 
-verify: lint type sec test sync-check thinking-check
+verify: lint type sec test sync-check thinking-check bot-pr-check
 
 # .claude/commands/ is generated from .agents/skills/ (the canonical source) by
 # scripts/sync_commands.py. Fail if regeneration is not a no-op (content hash of
@@ -229,6 +231,15 @@ sync-check:
 thinking-check:
 	@echo "🧠 Stream-of-consciousness scan (py/js/ts/css)..."
 	@$(PY) scripts/check_thinking_comments.py
+
+# Bot PR hygiene gate (AGENTS.md non-negotiable #10): deterministic scan of
+# commits authored by google-labs-jules[bot] in origin/main..HEAD — fails on
+# empty commits, zero-content placeholder files, and test deletions (bot lanes
+# are append-only in tests). Human commits are skipped. Implementation:
+# scripts/agents/check_bot_pr_hygiene.py. Also runs as a dedicated CI step on
+# every PR (.github/workflows/ci.yml).
+bot-pr-check:
+	@$(PY) -m scripts.agents.check_bot_pr_hygiene
 
 # Mutation testing (docs/agentic-quality-gates.md §2) — manual/scheduled only.
 # NEVER part of verify/precommit-fix: a full run multiplies test-suite time by
