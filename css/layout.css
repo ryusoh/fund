@@ -11,15 +11,6 @@
     z-index: 100; /* Ensure table/footer sit above chart canvas */
 }
 
-/* iOS web app safe area support for content block */
-@media (max-width: 768px) {
-    @supports (margin-top: env(safe-area-inset-top)) {
-        .content-block {
-            margin-top: calc(60px + env(safe-area-inset-top));
-        }
-    }
-}
-
 body:not(.body-calendar) .content-block {
     /* iOS Fluid Glass Effect with Volumetric 3D Depth */
     background-color: rgba(30, 30, 33, 0.4); /* Subtle dark base */
@@ -67,12 +58,16 @@ body:not(.body-calendar) .content-block {
     }
 }
 
-/* iOS web app safe area support for pie chart container */
 @media (max-width: 768px) {
-    @supports (margin-top: env(safe-area-inset-top)) {
-        #fundPieChartContainer {
-            margin-top: calc(60px + env(safe-area-inset-top));
-        }
+    #fundPieChartContainer {
+        width: 90%;
+        max-width: min(80vw, 320px, calc(100dvh - 170px));
+        max-height: min(80vw, 320px, calc(100dvh - 170px));
+        margin: calc(85px + env(safe-area-inset-top, 0px)) auto
+            calc(60px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
 
@@ -173,13 +168,8 @@ a.nav-back {
         width: 95%; /* Wider for mobile */
         display: block; /* Reset from table to block for mobile scrolling */
         max-width: none; /* Reset max-width */
-        margin: 8px auto 10px auto; /* Reduced top margin keeps content near chart */
-    }
-    #fundPieChartContainer {
-        width: 90%; /* Allow chart to take full width */
-        max-width: 90%; /* Max width for mobile */
-        margin: -25px auto -15px; /* Tighter gap above the table on mobile */
-        /* position: relative; is inherited from the global style, which is fine */
+        margin: calc(85px + env(safe-area-inset-top, 0px)) auto
+            calc(55px + env(safe-area-inset-bottom, 0px));
     }
     footer {
         width: 95%; /* Match .content-block's mobile width */

@@ -63,17 +63,10 @@ body.body-calendar {
 /* Mobile layout (up to 768px) */
 @media (max-width: 768px) {
     .cal-heatmap-container {
-        margin-top: 70px;
+        margin-top: 0;
         /* Allow horizontal swipe gestures for navigation */
         touch-action: pan-y;
         /* Allow vertical scroll but capture horizontal swipes */
-    }
-
-    /* iOS web app safe area support for calendar container on mobile */
-    @supports (margin-top: env(safe-area-inset-top)) {
-        .cal-heatmap-container {
-            margin-top: calc(25px + env(safe-area-inset-top));
-        }
     }
 
     /* Completely disable hover effects on mobile to prevent shimmer */
@@ -429,12 +422,21 @@ body.body-calendar {
         background-color: transparent !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        margin: 0 !important;
-        padding: 20px !important;
+        margin: calc(85px + env(safe-area-inset-top, 0px)) auto
+            calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 0 10px !important;
         position: relative !important;
         width: 100% !important;
+        max-height: calc(
+            100dvh - 150px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+        ) !important;
         overflow: visible !important;
         z-index: 100;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
     }
 
     .body-calendar .page-center-wrapper.zoomed {
