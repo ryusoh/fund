@@ -81,7 +81,7 @@ describe('mobileControls', () => {
 
         expect(setActiveChart).toHaveBeenCalledWith('contribution');
 
-        // Swipe right again -> wraps to last chart (FX Rate)
+        // Swipe right again -> wraps to last chart (Beta)
         const touchStart3 = new Event('touchstart', { bubbles: true });
         touchStart3.touches = [{ clientX: 90, clientY: 100 }];
         section.dispatchEvent(touchStart3);
@@ -93,7 +93,7 @@ describe('mobileControls', () => {
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(setActiveChart).toHaveBeenCalledWith('fx');
+        expect(setActiveChart).toHaveBeenCalledWith('beta');
     });
 
     test('vertical swipe or small gestures do not switch charts', async () => {

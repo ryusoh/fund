@@ -9,6 +9,10 @@ export const ALL_CHARTS = [
     { key: 'drawdownAbs', label: 'Drawdown ($)' },
     { key: 'composition', label: 'Composition' },
     { key: 'compositionAbs', label: 'Composition ($)' },
+    { key: 'pe', label: 'P/E Ratio' },
+    { key: 'fx', label: 'FX Rate' },
+    { key: 'yield', label: 'Yield' },
+    { key: 'rolling', label: 'Rolling Returns' },
     { key: 'sectors', label: 'Sectors' },
     { key: 'sectorsAbs', label: 'Sectors ($)' },
     { key: 'geography', label: 'Geography' },
@@ -16,12 +20,8 @@ export const ALL_CHARTS = [
     { key: 'marketcap', label: 'Market Cap' },
     { key: 'marketcapAbs', label: 'Market Cap ($)' },
     { key: 'concentration', label: 'Concentration' },
-    { key: 'pe', label: 'P/E Ratio' },
-    { key: 'yield', label: 'Yield' },
-    { key: 'rolling', label: 'Rolling Returns' },
     { key: 'volatility', label: 'Volatility' },
     { key: 'beta', label: 'Beta' },
-    { key: 'fx', label: 'FX Rate' },
 ];
 
 export function initMobileControls({ chartManager } = {}) {
