@@ -77,6 +77,10 @@ appear — the algorithm correctly drops 60k and keeps 50k instead.
 For the canonical range `[-110k, +110k]` on an 80px pane, the algorithm
 produces exactly:
 
+```text
+[-110k, -50k, -10k, 0, 10k, 50k, 110k]   (7 labels)
+```
+
 ### Cross-pane collision avoidance (`avoidY`)
 
 In multi-pane charts (e.g. contribution or absolute drawdown with a volume/cashflow pane below), the lowest tick of the main pane and the highest tick of the lower pane can collide across the `volumeGap` (10px on mobile).
