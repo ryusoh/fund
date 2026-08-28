@@ -113,10 +113,6 @@ function initControls(container, surface, state, uniforms, onStateChange) {
     const processPointerMove = () => {
         pointerMoveRafId = null;
         const event = pendingPointerMoveEvent;
-        if (!event) {
-            return;
-        }
-
         if (!pointerActive) {
             updatePointerUniform(event.clientX, event.clientY);
             return;

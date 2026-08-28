@@ -197,6 +197,7 @@ describe('quantum_shader coverage', () => {
         // Trigger pointer move
         let event = new MouseEvent('pointermove', { clientX: 50, clientY: 50 });
         container.dispatchEvent(event);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
 
         // Trigger pointer down
         event = new MouseEvent('pointerdown', { clientX: 50, clientY: 50 });
@@ -216,11 +217,13 @@ describe('quantum_shader coverage', () => {
         event = new MouseEvent('pointermove', { clientX: 100, clientY: 100 });
         event.pointerId = 2;
         container.dispatchEvent(event);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
 
         // Different pointer ID
         event = new MouseEvent('pointermove', { clientX: 100, clientY: 100 });
         event.pointerId = 1;
         container.dispatchEvent(event);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
 
         // Trigger pointer up
         event = new MouseEvent('pointerup');
