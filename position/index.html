@@ -104,47 +104,47 @@
                 </li>
             </ul>
         </nav>
+        <div id="currencyToggleContainer">
+            <button
+                class="currency-toggle active"
+                data-currency="USD"
+                aria-label="US Dollar"
+                aria-pressed="true"
+            >
+                $
+            </button>
+            <button
+                class="currency-toggle"
+                data-currency="CNY"
+                aria-label="Chinese Yuan"
+                aria-pressed="false"
+            >
+                ¥
+            </button>
+            <button
+                class="currency-toggle"
+                data-currency="JPY"
+                aria-label="Japanese Yen"
+                aria-pressed="false"
+            >
+                ¥
+            </button>
+            <button
+                class="currency-toggle"
+                data-currency="KRW"
+                aria-label="South Korean Won"
+                aria-pressed="false"
+            >
+                ₩
+            </button>
+        </div>
+        <script src="../js/ui/currencyBootstrap.js"></script>
         <div id="fundPieChartContainer">
             <canvas
                 id="fundPieChart"
                 role="img"
                 aria-label="Portfolio allocation pie chart"
             ></canvas>
-            <div id="currencyToggleContainer">
-                <button
-                    class="currency-toggle active"
-                    data-currency="USD"
-                    aria-label="US Dollar"
-                    aria-pressed="true"
-                >
-                    $
-                </button>
-                <button
-                    class="currency-toggle"
-                    data-currency="CNY"
-                    aria-label="Chinese Yuan"
-                    aria-pressed="false"
-                >
-                    ¥
-                </button>
-                <button
-                    class="currency-toggle"
-                    data-currency="JPY"
-                    aria-label="Japanese Yen"
-                    aria-pressed="false"
-                >
-                    ¥
-                </button>
-                <button
-                    class="currency-toggle"
-                    data-currency="KRW"
-                    aria-label="South Korean Won"
-                    aria-pressed="false"
-                >
-                    ₩
-                </button>
-            </div>
-            <script src="../js/ui/currencyBootstrap.js"></script>
         </div>
         <div class="content-block hidden">
             <div class="table-responsive-container" tabindex="0" aria-live="polite">

@@ -3,6 +3,7 @@
     top: 15px;
     left: 15px;
     display: flex;
+    flex-direction: row;
     background-color: rgba(50, 50, 50, 0.4); /* Dark grey, half-transparent for dark theme */
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); /* Adjusted shadow for dark background */
@@ -14,12 +15,21 @@
 }
 
 /* iOS web app safe area support for currency toggle */
-@media (max-width: 768px) {
-    @supports (top: env(safe-area-inset-top)) {
-        #currencyToggleContainer {
-            top: calc(15px + env(safe-area-inset-top));
-        }
+@supports (top: env(safe-area-inset-top)) {
+    #currencyToggleContainer {
+        top: calc(15px + env(safe-area-inset-top));
     }
+}
+
+@supports (left: env(safe-area-inset-left)) {
+    #currencyToggleContainer {
+        left: calc(15px + env(safe-area-inset-left));
+    }
+}
+
+/* Adjust for Calendar page background brightness to match perceived transparency */
+.body-calendar #currencyToggleContainer {
+    background-color: rgba(40, 40, 40, 0.6);
 }
 
 .currency-toggle {
@@ -57,61 +67,4 @@
     color: rgba(255, 255, 255, 0.85); /* 80% white active text */
     border-radius: 4px; /* Slightly rounded corners for the active button */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Stronger shadow */
-}
-
-/* For mobile devices - adjust breakpoint as needed */
-@media (max-width: 768px) {
-    #currencyToggleContainer {
-        position: absolute !important; /* Position relative to chart container for vertical centering */
-        top: 50%; /* JS will refine actual alignment */
-        transform: translateY(-50%);
-        right: calc(-1 * (50vw - 50%)) !important; /* Stick to viewport right edge */
-        left: auto !important; /* Override any left positioning */
-        width: auto !important; /* Don't inherit parent width */
-        flex-direction: column; /* Stack buttons vertically */
-        padding: 3px;
-        z-index: 1000; /* Keep on top on mobile too */
-        /* Remove right-side radius for flush appearance */
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    .currency-toggle {
-        width: 30px; /* Set an explicit width. Adjust as needed. */
-        padding: 6px 0; /* Adjust padding to be vertical only if width is fixed */
-        box-sizing: border-box; /* Ensures padding doesn't add to the explicit width */
-    }
-
-    /* Calendar page specific positioning - align with calendar center */
-    .body-calendar #currencyToggleContainer {
-        position: fixed !important; /* Use fixed positioning relative to viewport */
-        bottom: auto !important;
-        left: auto !important;
-        right: calc(-1 * (50vw - 50%)) !important;
-        transform: translateY(-50%) translateX(110%);
-        opacity: 0;
-        transition:
-            transform 0.6s cubic-bezier(0.23, 1, 0.32, 1),
-            opacity 0.4s ease;
-    }
-
-    .body-calendar #currencyToggleContainer.chart-loaded {
-        transform: translateY(-50%) translateX(0);
-        opacity: 1;
-    }
-
-    /* Position page animation - initially hide toggle until pie chart loads */
-    body:not(.body-calendar) #currencyToggleContainer {
-        transform: translateY(-50%) translateX(100%) !important; /* Initially hide off-screen to the right */
-        opacity: 0 !important; /* Initially invisible */
-        transition:
-            transform 0.6s cubic-bezier(0.23, 1, 0.32, 1),
-            opacity 0.4s ease !important;
-    }
-
-    /* Show toggle after pie chart loads with slide-in animation */
-    body:not(.body-calendar) #currencyToggleContainer.chart-loaded {
-        transform: translateY(-50%) translateX(0) !important; /* Slide into final position */
-        opacity: 1 !important; /* Fade in */
-    }
 }
