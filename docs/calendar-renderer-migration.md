@@ -197,7 +197,15 @@ Fixes applied (keep them):
    week-column then across (rows = weekday). The spike matched this with
    `grid-template-rows: repeat(7, …); grid-auto-flow: column;` + leading blank
    cells for the first weekday offset.
-4. **Don't let changes leak to other pages** (terminal glass, etc.).
+4. **Calendar height invariance across months (7 days/week $\implies$ constant height).**
+   There are always 7 days in a week, so the vertical row count is constant across
+   all months. While the number of week columns varies between 4, 5, or 6 weeks
+   (changing rendered width between 218px, 269px, and 320px), the vertical height
+   of `#cal-heatmap` / the calendar container must strictly remain constant
+   (`height: 396px; width: auto; max-width: 100%; object-fit: contain`). Tying
+   height to width or variable bounding boxes causes vertical shifts and nav-dock
+   displacement during month navigation.
+5. **Don't let changes leak to other pages** (terminal glass, etc.).
 
 ## Spike reference
 

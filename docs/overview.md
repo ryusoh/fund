@@ -61,6 +61,15 @@ Run hooks manually anytime with `pre-commit run --all-files`.
   If you move or add scripts that are used by workflows, update
   `.github/workflows/*.yml` accordingly.
 
+## Personal brand & footer parity (`ryusoh.github.io`)
+
+The home page (`index.html`) shares unified personal brand assets and footer geometry with `ryusoh.github.io`:
+
+- Banner image: `assets/banners/banner.png` (338x94px, 3.6:1 aspect ratio).
+- Footer: fixed flex column (`bottom: 10px; align-items: center; justify-content: flex-end; gap: 0px; pointer-events: none; width: 100%;`).
+- Banner element: `.mobile-banner` inside `<footer>` with `height: var(--mobile-banner-height)` (`30px`) and `width: auto; margin: 0 auto; opacity: 0.5;`.
+- Sibling sync guidelines live in `.agents/skills/sibling-repo-sync/SKILL.md`.
+
 ## See also
 
 - [polyrepo-sharing-strategy.md](polyrepo-sharing-strategy.md) — forward-looking
