@@ -33,9 +33,15 @@ describe('Position page pie chart stability & table mobile bounds (TDD)', () => 
         );
         // Table must have smooth momentum vertical scrolling
         expect(layoutCss).toMatch(/\.table-responsive-container\s*\{[\s\S]*?overflow-y:\s*auto/);
-        // Content block margin must be positioned immediately below chart and above footer
+        // Table margin and width must align with currency toggle (left 15px) and nav container (right 15px)
         expect(layoutCss).toMatch(
-            /\.content-block\s*\{[\s\S]*?margin:\s*10px\s*auto\s*calc\(55px\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\)/
+            /\.content-block\s*\{[\s\S]*?margin-left:\s*calc\(15px\s*\+\s*env\(safe-area-inset-left,\s*0px\)\)/
+        );
+        expect(layoutCss).toMatch(
+            /\.content-block\s*\{[\s\S]*?margin-right:\s*calc\(15px\s*\+\s*env\(safe-area-inset-right,\s*0px\)\)/
+        );
+        expect(layoutCss).toMatch(
+            /\.content-block\s*\{[\s\S]*?width:\s*calc\([\s\S]*?100%\s*-\s*30px/
         );
     });
 });
