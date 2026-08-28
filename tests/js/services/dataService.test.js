@@ -2,6 +2,7 @@ import {
     loadAndDisplayPortfolioData,
     getCalendarData,
     fetchMarketRatiosForTickers,
+    fetchPortfolioData,
     _calculateDynamicPeValues,
     __testables,
 } from '@services/dataService.js';
@@ -2188,6 +2189,34 @@ describe('fetchPortfolioData — Cloudflare Worker integration', () => {
 
         const fallbackCall = fetch.mock.calls.find(([url]) => url.includes('fund_data.json'));
         expect(fallbackCall).toBeDefined();
+    });
+
+    it('backfills missing tickers from fund_data.json when the Worker omits them', async () => {
+        // The Worker can return HTTP 200 with a partial price map (e.g. one
+        // upstream source failed for a single symbol). A held ticker missing
+        // from the response must not render as price 0 — the static snapshot
+        // fills the gap.
+        fetch.mockImplementation((url) => {
+            if (url.includes('holdings_details.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+            }
+            if (url.includes('workers.dev') || url.includes('lyeutsaon.com')) {
+                // 200 OK but VT silently missing
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ ANET: 136.99 }),
+                });
+            }
+            if (url.includes('fund_data.json')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+            }
+            return Promise.reject(new Error(`Unexpected URL: ${url}`));
+        });
+
+        const { prices } = await fetchPortfolioData();
+
+        expect(prices.VT).toBe(mockPrices.VT);
+        expect(prices.ANET).toBe(136.99); // live Worker value still wins
     });
 
     it('uses fund_data.json directly when on localhost', async () => {

@@ -71,6 +71,18 @@ export async function fetchPortfolioData() {
                 `${CF_WORKER_URL}/prices?symbols=${encodeURIComponent(symbols)}`,
                 { cacheBust: true }
             );
+            // The Worker can answer HTTP 200 with a partial price map (an
+            // upstream source failed for some symbols only). Backfill gaps
+            // from the static snapshot so a held ticker never renders as 0.
+            const gaps = Object.keys(holdingsDetails || {}).filter((t) => !(prices[t] > 0));
+            if (gaps.length > 0) {
+                const staticPrices = await fetchJSON(FUND_DATA_URL);
+                for (const t of gaps) {
+                    if (staticPrices[t] > 0) {
+                        prices[t] = staticPrices[t];
+                    }
+                }
+            }
         } catch (err) {
             logger.warn(
                 'Cloudflare Worker unavailable, falling back to static fund_data.json',
