@@ -731,7 +731,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         (maxTime === minTime ? plotWidth / 2 : ((t - minTime) / (maxTime - minTime)) * plotWidth);
     const yScale = (v) => padding.top + plotHeight - ((v - yMin) / (yMax - yMin)) * plotHeight;
 
-    drawAxes(
+    const mainAxesResult = drawAxes(
         ctx,
         padding,
         plotWidth,
@@ -880,6 +880,7 @@ export async function drawContributionChart(ctx, chartManager, timestamp, option
         formatCurrencyCompact,
         selectedCurrency: selectedCurrency,
         volumeGap,
+        avoidY: mainAxesResult?.selectedTicks?.map((t) => t.y) || [],
     });
 
     const chartBounds = {

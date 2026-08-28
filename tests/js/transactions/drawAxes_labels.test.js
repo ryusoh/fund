@@ -58,4 +58,61 @@ describe('Y-axis label generation', () => {
             expect(distance).toBeGreaterThanOrEqual(7); // math distance is ~7.9 for 25k and 50k, our threshold is fontSize * 0.7 (7)
         }
     });
+
+    test('should mathematically prevent cross-pane label collision when avoidY is passed', () => {
+        const padding = { top: 100, left: 0 };
+        const volumeHeight = 80;
+        const volumeYMax = 110000;
+        const volumeYMin = -110000;
+
+        const sqrtTop = Math.sqrt(volumeYMax);
+        const sqrtRange = sqrtTop - -Math.sqrt(Math.abs(volumeYMin));
+        const sqrtTransform = (value) => Math.sign(value) * Math.sqrt(Math.abs(value));
+        const sqYScale = (value) =>
+            padding.top + ((sqrtTop - sqrtTransform(value)) / sqrtRange) * volumeHeight;
+        const dummyXScale = () => 0;
+
+        const fillTextCalls = [];
+        const mockCtx = {
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(),
+            fillText: jest.fn((text, x, y) => {
+                fillTextCalls.push({ text, y });
+            }),
+            setLineDash: jest.fn(),
+            measureText: jest.fn(() => ({ width: 20 })),
+        };
+
+        // Upper chart has its lowest tick at y = 96px (4px away from volume top at 100px)
+        const upperLowestTickY = 96;
+
+        drawAxes(
+            mockCtx,
+            padding,
+            100,
+            volumeHeight,
+            0,
+            100,
+            volumeYMin,
+            volumeYMax,
+            dummyXScale,
+            sqYScale,
+            (v) => String(v),
+            false,
+            {
+                drawXAxis: false,
+                drawYAxis: true,
+                maxTicks: 14,
+                avoidY: [upperLowestTickY],
+            }
+        );
+
+        // Verify that NO label was placed within minSpacingPixels (11px / 9px) of upperLowestTickY
+        for (const call of fillTextCalls) {
+            const distance = Math.abs(call.y - upperLowestTickY);
+            expect(distance).toBeGreaterThanOrEqual(9);
+        }
+    });
 });

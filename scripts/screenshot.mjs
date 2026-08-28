@@ -42,6 +42,7 @@ function parseArgs(argv) {
         type: null,
         into: '#terminalInput',
         click: null,
+        eval: null,
     };
     const positional = [];
     for (let i = 0; i < argv.length; i++) {
@@ -64,6 +65,8 @@ function parseArgs(argv) {
             opts.into = argv[++i];
         } else if (a === '--click') {
             opts.click = argv[++i];
+        } else if (a === '--eval') {
+            opts.eval = argv[++i];
         } else {
             positional.push(a);
         }
@@ -138,9 +141,17 @@ async function main() {
         // Optionally drive the page first (e.g. type a terminal command or click a chart
         // to reveal panes that are hidden until then), so the resulting state is captured.
         if (opts.type) {
-            const input = page.locator(opts.into);
-            await input.fill(opts.type, { timeout: 5000 });
-            await input.press('Enter');
+            await page.evaluate((cmd) => {
+                const input = document.querySelector('#terminalInput');
+                if (input) {
+                    input.value = cmd;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+                }
+            }, opts.type);
+        }
+        if (opts.eval) {
+            await page.evaluate(opts.eval);
         }
         if (opts.click) {
             await page.locator(opts.click).click({ force: true, timeout: 5000 });

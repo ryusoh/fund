@@ -235,6 +235,7 @@ export function drawVolumeChart(ctx, rawContributionData, options = {}) {
             {
                 drawYAxis: hasAnyVolume,
                 maxTicks: CONTRIBUTION_CHART_SETTINGS.volumePane?.axisMaxTicks ?? 14,
+                avoidY: options.avoidY || [],
             },
             selectedCurrency || 'USD'
         );

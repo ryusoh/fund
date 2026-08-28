@@ -363,7 +363,8 @@ export function drawAxes(
 ) {
     const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const monoFont = getMonoFontFamily();
-    const { drawXAxis = true, drawYAxis = true, maxTicks = null } = axisOptions;
+    const { drawXAxis = true, drawYAxis = true, maxTicks = null, avoidY = [] } = axisOptions;
+    const selectedTicks = [];
 
     // Generate concrete tick values
     const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency, {
@@ -413,7 +414,6 @@ export function drawAxes(
         filteredTicks.sort((a, b) => b.abs - a.abs);
 
         // Resolve collisions by keeping highest priority items
-        const selectedTicks = [];
         for (let p = 0; p <= 2; p++) {
             for (let i = 0; i < filteredTicks.length; i++) {
                 const tick = filteredTicks[i];
@@ -423,6 +423,14 @@ export function drawAxes(
                         if (Math.abs(tick.y - selected.y) < minSpacingPixels) {
                             collides = true;
                             break;
+                        }
+                    }
+                    if (!collides && Array.isArray(avoidY)) {
+                        for (let a = 0; a < avoidY.length; a++) {
+                            if (Math.abs(tick.y - avoidY[a]) < minSpacingPixels) {
+                                collides = true;
+                                break;
+                            }
                         }
                     }
                     if (!collides) {
@@ -539,6 +547,7 @@ export function drawAxes(
             }
         }
     }
+    return { selectedTicks };
 }
 
 export function drawMountainFill(ctx, coords, baselineY, options) {
