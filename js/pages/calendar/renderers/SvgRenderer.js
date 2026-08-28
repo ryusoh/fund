@@ -37,11 +37,10 @@ export class SvgRenderer extends CalendarRenderer {
             typeof svg.getAttribute === 'function' &&
             typeof svg.setAttribute === 'function'
         ) {
-            const w = svg.getAttribute('width');
-            const h = svg.getAttribute('height');
-            if (w && h) {
-                svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-            }
+            const rawW = parseFloat(svg.getAttribute('width')) || 320;
+            const rawH = parseFloat(svg.getAttribute('height')) || 396;
+            svg.setAttribute('viewBox', `0 0 ${rawW} ${rawH}`);
+            svg.setAttribute('height', `${rawH}`);
         }
     }
 
