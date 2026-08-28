@@ -426,8 +426,9 @@ export function drawAxes(
                         }
                     }
                     if (!collides && Array.isArray(avoidY)) {
+                        const minAvoidSpacing = fontSize + (isMobile ? 4 : 6);
                         for (let a = 0; a < avoidY.length; a++) {
-                            if (Math.abs(tick.y - avoidY[a]) < minSpacingPixels) {
+                            if (Math.abs(tick.y - avoidY[a]) < minAvoidSpacing) {
                                 collides = true;
                                 break;
                             }

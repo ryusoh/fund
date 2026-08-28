@@ -109,10 +109,10 @@ describe('Y-axis label generation', () => {
             }
         );
 
-        // Verify that NO label was placed within minSpacingPixels (11px / 9px) of upperLowestTickY
+        // Verify that NO label was placed within minAvoidSpacing (13px mobile / 17px desktop) of upperLowestTickY
         for (const call of fillTextCalls) {
             const distance = Math.abs(call.y - upperLowestTickY);
-            expect(distance).toBeGreaterThanOrEqual(9);
+            expect(distance).toBeGreaterThanOrEqual(13);
         }
     });
 });
