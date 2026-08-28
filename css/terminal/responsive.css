@@ -70,10 +70,11 @@
     }
 
     .transaction-container {
-        max-width: 100%;
-        width: 100%;
-        margin: 0 auto;
-        padding: 0 12px;
+        max-width: none;
+        width: calc(100% - 30px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+        margin-left: calc(15px + env(safe-area-inset-left, 0px));
+        margin-right: calc(15px + env(safe-area-inset-right, 0px));
+        padding: 0;
         margin-top: calc(75px + env(safe-area-inset-top, 0px));
         margin-bottom: calc(55px + env(safe-area-inset-bottom, 0px));
         height: calc(
