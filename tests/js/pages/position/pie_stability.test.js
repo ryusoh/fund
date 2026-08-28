@@ -29,7 +29,7 @@ describe('Position page pie chart stability & table mobile bounds (TDD)', () => 
     it('ensures holdings table is bounded within viewport and clears footer on mobile', () => {
         // Table container must have max-height clamped to fit below chart (top ~325px) and above footer (bottom ~55px)
         expect(layoutCss).toMatch(
-            /\.table-responsive-container\s*\{[\s\S]*?max-height:\s*calc\([\s\S]*?100dvh\s*-\s*390px/
+            /\.table-responsive-container\s*\{[\s\S]*?max-height:\s*calc\([\s\S]*?100dvh\s*-\s*140px\s*-\s*min\(80vw,\s*360px\)/
         );
         // Table must have smooth momentum vertical scrolling
         expect(layoutCss).toMatch(/\.table-responsive-container\s*\{[\s\S]*?overflow-y:\s*auto/);

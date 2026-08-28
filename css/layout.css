@@ -162,7 +162,8 @@ a.nav-back {
     }
     .table-responsive-container {
         max-height: calc(
-            100dvh - 390px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+            100dvh - 140px - min(80vw, 360px) - env(safe-area-inset-top, 0px) -
+                env(safe-area-inset-bottom, 0px)
         );
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
