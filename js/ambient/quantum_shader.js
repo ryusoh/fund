@@ -107,7 +107,16 @@ function initControls(container, surface, state, uniforms, onStateChange) {
         container.classList.add('is-dragging');
     };
 
-    const onPointerMove = (event) => {
+    let pointerMoveRafId = null;
+    let pendingPointerMoveEvent = null;
+
+    const processPointerMove = () => {
+        pointerMoveRafId = null;
+        const event = pendingPointerMoveEvent;
+        if (!event) {
+            return;
+        }
+
         if (!pointerActive) {
             updatePointerUniform(event.clientX, event.clientY);
             return;
@@ -133,6 +142,13 @@ function initControls(container, surface, state, uniforms, onStateChange) {
         }
 
         updatePointerUniform(event.clientX, event.clientY);
+    };
+
+    const onPointerMove = (event) => {
+        pendingPointerMoveEvent = event;
+        if (!pointerMoveRafId) {
+            pointerMoveRafId = requestAnimationFrame(processPointerMove);
+        }
     };
 
     const releasePointer = (event) => {
