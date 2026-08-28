@@ -20,7 +20,7 @@ import worker from '../../../worker/src/index.js';
 
 const CACHED_CRUMB = JSON.stringify({ crumb: 'test-crumb', cookie: 'A=B' });
 
-function makeEnv({ cacheGet = null } = {}) {
+function makeEnv({ cacheGet = null, lkgGet = null } = {}) {
     return {
         ALPACA_API_KEY: 'test-key',
         ALPACA_API_SECRET: 'test-secret',
@@ -30,6 +30,9 @@ function makeEnv({ cacheGet = null } = {}) {
                 // the fc.yahoo.com + getcrumb round-trip.
                 if (key === 'yahoo:crumb:v1') {
                     return Promise.resolve(CACHED_CRUMB);
+                }
+                if (key.endsWith(':lkg')) {
+                    return Promise.resolve(lkgGet);
                 }
                 return Promise.resolve(cacheGet);
             }),
@@ -334,6 +337,40 @@ describe('KV cache', () => {
         expect(mockFetch).toHaveBeenCalledTimes(1);
         expect(res.headers.get('X-Cache')).toBe('MISS');
         expect(ctx.waitUntil).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Partial upstream data — last-known-good backfill
+// ---------------------------------------------------------------------------
+
+describe('partial upstream data — LKG backfill', () => {
+    it('backfills missing symbols from the LKG entry instead of omitting them', async () => {
+        // Alpaca has 3 of 4 tickers; Yahoo (the gap-fill) is rate-limited.
+        mockFetch
+            .mockResolvedValueOnce(alpacaOk({ ANET: 199.98, GOOG: 337.91, PDD: 84.65 }))
+            .mockResolvedValueOnce({ ok: false, status: 429, statusText: 'Too Many Requests' });
+        const env = makeEnv({ lkgGet: { VT: 161.17, ANET: 199.0, GOOG: 337.0, PDD: 84.0 } });
+
+        const res = await worker.fetch(makeReq('VT,ANET,GOOG,PDD'), env, makeCtx());
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.VT).toBe(161.17); // stale last-known-good, not missing
+        expect(json.ANET).toBe(199.98); // fresh Alpaca value still wins
+    });
+
+    it('does not cache a still-incomplete map as if complete', async () => {
+        mockFetch
+            .mockResolvedValueOnce(alpacaOk({ ANET: 199.98 }))
+            .mockResolvedValueOnce({ ok: false, status: 429, statusText: 'Too Many Requests' });
+        const ctx = makeCtx();
+
+        const res = await worker.fetch(makeReq('VT,ANET'), makeEnv(), ctx);
+
+        expect(res.status).toBe(200);
+        expect((await res.json()).VT).toBeUndefined(); // genuinely unknown
+        expect(ctx.waitUntil).not.toHaveBeenCalled(); // partial map not cached
     });
 });
 

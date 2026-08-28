@@ -375,23 +375,44 @@ export default {
             return jsonResponse(resolvedResult, 502, origin);
         }
 
-        const prices = resolvedResult;
+        let prices = resolvedResult;
 
-        // 4. Write to KV after response is sent
-        const pricesJson = JSON.stringify(prices);
-        const lkgKey = `${cacheKey}:lkg`;
-        ctx.waitUntil(
-            Promise.all([
-                // Short-lived cache entry (respects market-hours TTL)
-                env.PRICE_CACHE.put(cacheKey, pricesJson, { expirationTtl: ttl }),
-                // Last-known-good: only write when expired (1h TTL) — at most 24 writes/key/day
-                env.PRICE_CACHE.get(lkgKey).then((existing) => {
-                    if (!existing) {
-                        return env.PRICE_CACHE.put(lkgKey, pricesJson, { expirationTtl: 3600 });
+        // 3. Partial map: a requested symbol missing here renders as 0
+        //    downstream. Backfill gaps from the last-known-good entry —
+        //    a stale real price beats an absent one.
+        let complete = symbols.every((s) => prices[s] > 0);
+        if (!complete) {
+            const lkg = await env.PRICE_CACHE.get(`${cacheKey}:lkg`, { type: 'json' });
+            if (lkg) {
+                prices = { ...prices };
+                for (const s of symbols) {
+                    if (!(prices[s] > 0) && lkg[s] > 0) {
+                        prices[s] = lkg[s];
                     }
-                }),
-            ])
-        );
+                }
+                complete = symbols.every((s) => prices[s] > 0);
+            }
+        }
+
+        // 4. Write to KV after response is sent — only when every requested
+        //    symbol has a real price; a partial map must not poison the cache
+        //    or the LKG entry.
+        if (complete) {
+            const pricesJson = JSON.stringify(prices);
+            const lkgKey = `${cacheKey}:lkg`;
+            ctx.waitUntil(
+                Promise.all([
+                    // Short-lived cache entry (respects market-hours TTL)
+                    env.PRICE_CACHE.put(cacheKey, pricesJson, { expirationTtl: ttl }),
+                    // Last-known-good: only write when expired (1h TTL) — at most 24 writes/key/day
+                    env.PRICE_CACHE.get(lkgKey).then((existing) => {
+                        if (!existing) {
+                            return env.PRICE_CACHE.put(lkgKey, pricesJson, { expirationTtl: 3600 });
+                        }
+                    }),
+                ])
+            );
+        }
 
         return jsonResponse(prices, 200, origin, { 'X-Cache': 'MISS' });
     },
