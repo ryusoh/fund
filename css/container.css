@@ -1,6 +1,7 @@
 /* =========================================
    The Obsidian Monolith
-   Modern Floating Glass Dock for Terminal Interface
+   Modern Floating Glass Dock for Terminal & Fund Interface
+   Matches ryusoh.github.io top-right dock layout
    ========================================= */
 
 /* Reset & Base */
@@ -8,18 +9,61 @@
 .nav-container {
     position: fixed;
     z-index: 1000;
+    top: 15px;
+    right: 15px;
     margin: 0;
     line-height: 1;
     box-sizing: border-box;
+
+    /* Shape: Compact Horizontal Bar */
+    width: auto;
+    padding: 3px;
+    border-radius: 6px;
+
+    /* Material: Half-transparent Glass (Matches Currency Toggle & ryusoh.github.io) */
+    background: rgba(50, 50, 50, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+@supports (top: env(safe-area-inset-top)) {
+    .container,
+    .nav-container {
+        top: calc(15px + env(safe-area-inset-top));
+    }
+}
+
+@supports (right: env(safe-area-inset-right)) {
+    .container,
+    .nav-container {
+        right: calc(15px + env(safe-area-inset-right));
+    }
+}
+
+/* Adjust for Calendar page background brightness to match perceived transparency */
+.body-calendar .container,
+.body-calendar .nav-container {
+    background: rgba(40, 40, 40, 0.6);
 }
 
 .container ul,
 .nav-container ul {
     list-style: none;
     display: flex;
+    flex-direction: row;
     padding: 0;
     margin: 0;
     gap: 0;
+    width: auto;
+}
+
+/* Move the Chevron (first item) to the visual end */
+.container ul li:first-child,
+.nav-container ul li:first-child {
+    order: 1;
 }
 
 .container li,
@@ -29,6 +73,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: auto;
 }
 
 .container a,
@@ -38,13 +84,18 @@
     justify-content: center;
     text-decoration: none;
     position: relative;
-    /* Match Currency Toggle Transition */
+    color: rgba(200, 200, 200, 0.85);
+    font-size: 12px;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    outline: none;
     transition:
         background-color 0.3s ease-in-out,
         border-radius 0.3s ease-in-out,
         box-shadow 0.3s ease-in-out,
         color 0.2s ease;
-    outline: none;
 }
 
 .container a:focus-visible,
@@ -54,243 +105,33 @@
     border-radius: 4px;
 }
 
-/* =========================================
-   Desktop Styles (Min-Width: 769px)
-   The Floating Vertical Glass Dock
-   ========================================= */
-@media (min-width: 769px) {
-    .container,
-    .nav-container {
-        /* Position: Top-Right, aligned with currency toggle */
-        top: 15px;
-        right: 15px;
-        /* Match currency toggle left margin */
-        transform: none;
-
-        /* Shape: Compact Vertical Bar */
-        width: auto;
-        padding: 3px;
-        /* Match currency toggle padding */
-        border-radius: 6px;
-        /* Match currency toggle radius */
-
-        /* Material: Half-transparent Glass (Matches Currency Toggle) */
-        background: rgba(50, 50, 50, 0.4);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-
-        /* Border: Subtle rim lighting */
-        border: none;
-        /* Currency toggle has no border usually, or handled by shadow */
-
-        /* Depth */
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    }
-
-    @supports (top: env(safe-area-inset-top)) {
-        .container,
-        .nav-container {
-            top: calc(15px + env(safe-area-inset-top));
-        }
-    }
-
-    /* Adjust for Calendar page background brightness to match perceived transparency */
-    .body-calendar .container,
-    .body-calendar .nav-container {
-        background: rgba(40, 40, 40, 0.6);
-    }
-
-    .container ul,
-    .nav-container ul {
-        flex-direction: row;
-        /* Standard order for inner items */
-        width: auto;
-        gap: 0;
-        /* No large gaps, just padding */
-    }
-
-    /* Move the Chevron (first item) to the visual end */
-    .container ul li:first-child,
-    .nav-container ul li:first-child {
-        order: 1;
-    }
-
-    .container li,
-    .nav-container li {
-        width: 100%;
-        height: auto;
-    }
-
-    .container a,
-    .nav-container a {
-        color: rgba(200, 200, 200, 0.85);
-        /* Match currency toggle text color */
-        font-size: 12px;
-        /* Match currency toggle font size */
-        padding: 0;
-        /* Remove padding to enforce fixed square size */
-        width: 30px;
-        /* Fixed width for square */
-        height: 30px;
-        /* Fixed height for square */
-        display: flex;
-        /* Ensure centering */
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        /* Slight rounding for hover state */
-    }
-
-    /* Hover Interaction */
-    .container a:hover,
-    .nav-container a:hover {
-        color: rgba(200, 200, 200, 0.85);
-        transform: none;
-        /* Remove scale */
-        text-shadow: none;
-        background-color: transparent;
-        /* Toggle buttons don't have hover bg unless active usually? Toggle css says: background-color: transparent default. Hover not explicit in toggle.css shared. */
-    }
-
-    /* Active State: Pure White */
-    .container li.is-current-page a,
-    .nav-container li.is-current-page a {
-        background-color: rgba(0, 0, 0, 0.5);
-        /* Slightly more transparent (was 0.6) */
-        color: rgba(255, 255, 255, 0.85) !important;
-        /* 80% white active text */
-        text-shadow: none;
-        border-radius: 4px;
-        /* Ensure radius matches */
-
-        cursor: pointer;
-        pointer-events: auto;
-
-        opacity: 1 !important;
-        /* Force full opacity */
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        /* Slightly stronger shadow */
-    }
-
-    /* Active Indicator: Removed per user request */
-    .container li.is-current-page::before,
-    .nav-container li.is-current-page::before {
-        display: none;
-    }
+.container a:hover,
+.nav-container a:hover {
+    color: rgba(200, 200, 200, 0.85);
+    transform: none;
+    text-shadow: none;
+    background-color: transparent;
 }
 
-/* =========================================
-   Mobile Styles (Max-Width: 768px)
-   Original Top-Attached Design
-   ========================================= */
+/* Active State: Pure White */
+.container li.is-current-page a,
+.nav-container li.is-current-page a {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.85) !important;
+    text-shadow: none;
+    border-radius: 4px;
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: 1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.container li.is-current-page::before,
+.nav-container li.is-current-page::before {
+    display: none;
+}
+
 @media (max-width: 768px) {
-    .container,
-    .nav-container {
-        top: 0;
-        left: 50%;
-        right: auto;
-        bottom: auto;
-        /* Reset bottom from previous overwrite */
-        transform: translateX(-50%);
-
-        border: none;
-        padding: 5px 11px;
-        width: auto;
-        min-width: 0;
-        border-radius: 0 0 12px 12px;
-
-        background: rgba(50, 50, 50, 0.7);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        overflow: hidden;
-        color: #fff;
-    }
-
-    .container ul,
-    .nav-container ul {
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-    }
-
-    .container li,
-    .nav-container li {
-        width: auto;
-        height: auto;
-    }
-
-    .container a,
-    .nav-container a {
-        color: rgba(200, 200, 200, 0.85);
-        opacity: 1;
-        padding: 7px 13px 13px;
-        border-radius: 6px;
-        font-size: 1rem;
-        width: auto;
-        height: auto;
-        transition:
-            color 0.3s ease,
-            transform 0.2s ease;
-    }
-
-    .container a:hover,
-    .nav-container a:hover {
-        opacity: 1;
-        color: #fff;
-        transform: none;
-        /* No scale on mobile */
-        text-shadow: none;
-    }
-
-    .container .fa-chevron-right::before,
-    .nav-container .fa-chevron-right::before {
-        content: '\f053';
-    }
-
-    /* Active indicator for mobile */
-    .container li.is-current-page a::after,
-    .nav-container li.is-current-page a::after {
-        content: '';
-        position: absolute;
-        bottom: 2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60%;
-        height: 2px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.65);
-    }
-
-    /* Reset Desktop Specific Styles for Mobile */
-    .container li.is-current-page a,
-    .nav-container li.is-current-page a {
-        color: rgba(200, 200, 200, 0.85);
-        /* Reset from gold */
-        text-shadow: none;
-        cursor: default;
-    }
-
-    .container li.is-current-page::before,
-    .nav-container li.is-current-page::before {
-        display: none;
-        /* Hide desktop orb */
-    }
-
-    /* Mobile Safe Area */
-    @supports (padding-top: env(safe-area-inset-top)) {
-        .container,
-        .nav-container {
-            top: env(safe-area-inset-top);
-        }
-    }
-
-    body,
-    body.body-main {
-        padding-top: 64px !important;
-    }
-
     .hide-on-mobile {
         display: none !important;
     }
