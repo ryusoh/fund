@@ -13,10 +13,10 @@ describe('Position page pie chart stability & table mobile bounds (TDD)', () => 
             /#fundPieChartContainer\s*\{[\s\S]*?margin:\s*calc\(\s*75px\s*\+\s*env\(safe-area-inset-top,\s*0px\)\)\s*auto\s*10px/
         );
         expect(layoutCss).toMatch(
-            /#fundPieChartContainer\s*\{[\s\S]*?max-width:\s*min\(90vw,\s*360px\)/
+            /#fundPieChartContainer\s*\{[\s\S]*?max-width:\s*min\(80vw,\s*360px\)/
         );
         expect(layoutCss).toMatch(
-            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\(90vw,\s*360px\)/
+            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\(80vw,\s*360px\)/
         );
 
         // Must NOT mutate pie chart size or margin when table is active

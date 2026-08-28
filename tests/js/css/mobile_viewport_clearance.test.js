@@ -9,7 +9,7 @@ describe('mobile viewport vertical clearance', () => {
         const css = readRepoFile('css/layout.css');
         expect(css).toMatch(/#fundPieChartContainer\s*\{[\s\S]*?margin:\s*calc\(\s*75px/);
         expect(css).toMatch(
-            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\(90vw,\s*360px\)/
+            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\(80vw,\s*360px\)/
         );
     });
 
