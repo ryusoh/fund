@@ -76,7 +76,7 @@
     },
     "js/transactions/chart/renderers/pe.js": {
         "complexity": {
-            "count": 2
+            "count": 1
         }
     },
     "js/transactions/chart/renderers/performance.js": {
