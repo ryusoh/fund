@@ -1,3 +1,7 @@
+:root {
+    --mobile-banner-height: 30px;
+}
+
 html {
     height: 100%;
 }
@@ -16,7 +20,7 @@ body.body-main {
     scrollbar-width: none; /* Firefox */
 }
 
-/* Set a different background for the calendar page ONLY on desktop screens */
+/* Set a different background for the main page ONLY on desktop screens */
 @media (min-width: 769px) {
     body.body-main {
         background: #000 url(../assets/backgrounds/main_background.jpg) center center no-repeat !important;
@@ -30,20 +34,6 @@ body.body-main {
 
     .video-background {
         display: none;
-    }
-
-    .mobile-banner {
-        display: block;
-        position: fixed;
-        bottom: 0px;
-        left: 50%;
-        transform: translateX(-50%);
-        height: 200px;
-        width: auto;
-        z-index: 1000;
-        mix-blend-mode: difference;
-        opacity: 0.2;
-        visibility: visible;
     }
 }
 
@@ -82,22 +72,63 @@ h1 {
         object-fit: cover;
     }
 
-    .mobile-banner {
-        display: block;
-        position: fixed;
-        left: 52%;
-        bottom: 1%;
-        transform: translateX(-50%);
-        width: 80vw; /* Use viewport width for responsiveness */
-        max-width: 300px; /* Adjust as needed */
-        z-index: 2; /* Above video (-1) and below container (3) */
-        opacity: 0.5;
-        visibility: visible;
-    }
-
     .hide-on-mobile {
         display: none;
     }
+}
+
+body.body-main footer {
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0px;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    font-size: 12px;
+    text-align: center;
+    padding: 0;
+    pointer-events: none;
+}
+
+body.body-main footer a {
+    pointer-events: auto;
+    color: rgba(255, 255, 255, 0.5);
+    transition:
+        opacity 0.5s ease,
+        color 0.5s ease;
+    text-decoration: none;
+}
+
+body.body-main footer a:hover,
+body.body-main footer a:focus {
+    opacity: 1;
+    color: #fff;
+}
+
+body.body-main footer .mobile-banner {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    display: block;
+    height: var(--mobile-banner-height);
+    width: auto;
+    margin: 0 auto;
+    z-index: auto;
+    opacity: 0.5;
+    visibility: visible;
+    pointer-events: none;
+    mix-blend-mode: normal;
+    transition:
+        opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+        visibility 0s linear 0.3s;
 }
 
 footer .fa-github {
@@ -108,10 +139,6 @@ footer .fa-github {
 @supports (bottom: env(safe-area-inset-bottom)) {
     body.body-main footer {
         bottom: calc(10px + env(safe-area-inset-bottom));
-    }
-
-    body.body-main .mobile-banner {
-        bottom: calc(1% + env(safe-area-inset-bottom));
     }
 }
 

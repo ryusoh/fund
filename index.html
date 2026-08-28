@@ -104,25 +104,23 @@
                 webkit-playsinline
             ></video>
         </div>
-        <img
-            class="mobile-banner"
-            alt="Banner"
-            aria-hidden="true"
-            src="./assets/banners/banner.png"
-            fetchpriority="high"
-            data-fallbacks='[
-                "./assets/banners/banner.png"
-            ]'
-        />
         <footer>
-            <a
-                href="https://github.com/ryusoh"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub Profile"
-            >
-                <i class="fa fa-github" style="color: #aaa; opacity: 0.5" aria-hidden="true"></i>
-            </a>
+            <img
+                class="mobile-banner"
+                alt="Banner"
+                aria-hidden="true"
+                src="./assets/banners/banner.png"
+                fetchpriority="high"
+                decoding="async"
+                width="338"
+                height="94"
+                data-fallbacks='[
+                    "./assets/banners/banner.png"
+                ]'
+            />
+            <!-- prettier-ignore -->
+            <a href="https://github.com/ryusoh" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile (opens in a new tab)"><i
+                class="fa fa-github" aria-hidden="true"></i></a>
         </footer>
         <!-- Image fallback and Ambient via CDN fallback loader -->
         <script defer src="./js/loader/imageFallback.js"></script>
