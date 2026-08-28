@@ -22,9 +22,9 @@ describe('CSS Layout Regression Tests', () => {
     });
 
     describe('Mobile Content Block', () => {
-        it('should enforce display: block and width: 95% for .content-block on mobile', () => {
+        it('should enforce display: block and dock-aligned width for .content-block on mobile', () => {
             const expectedRuleRegex =
-                /\.content-block\s*\{[^}]*width:\s*95%;[^}]*display:\s*block;[^}]*max-width:\s*none;[^}]*\}/s;
+                /\.content-block\s*\{[^}]*width:\s*calc\([^}]*100%\s*-\s*30px[^}]*\);[^}]*display:\s*block;[^}]*max-width:\s*none;[^}]*\}/s;
 
             expect(layoutCssContent).toMatch(expectedRuleRegex);
 
