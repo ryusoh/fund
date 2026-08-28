@@ -27,20 +27,46 @@ export class SvgRenderer extends CalendarRenderer {
         this.engine = new CalHeatmap();
     }
 
-    paint(config) {
-        return this.engine.paint(config);
+    _syncViewBox() {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        const svg = document.querySelector('#cal-heatmap svg');
+        if (
+            svg &&
+            typeof svg.getAttribute === 'function' &&
+            typeof svg.setAttribute === 'function'
+        ) {
+            const w = svg.getAttribute('width');
+            const h = svg.getAttribute('height');
+            if (w && h) {
+                svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            }
+        }
     }
 
-    next(n) {
-        return this.engine.next(n);
+    async paint(config) {
+        const res = await this.engine.paint(config);
+        this._syncViewBox();
+        return res;
     }
 
-    previous(n) {
-        return this.engine.previous(n);
+    async next(n) {
+        const res = await this.engine.next(n);
+        this._syncViewBox();
+        return res;
     }
 
-    jumpTo(date, reset) {
-        return this.engine.jumpTo(date, reset);
+    async previous(n) {
+        const res = await this.engine.previous(n);
+        this._syncViewBox();
+        return res;
+    }
+
+    async jumpTo(date, reset) {
+        const res = await this.engine.jumpTo(date, reset);
+        this._syncViewBox();
+        return res;
     }
 
     on(name, fn) {
@@ -53,6 +79,7 @@ export class SvgRenderer extends CalendarRenderer {
      * subsequent updates they run together to avoid flicker.
      */
     renderState({ byDate, state, currencySymbols, isInitialLoad }) {
+        this._syncViewBox();
         if (isInitialLoad) {
             applyCurrencyColors(d3, state, byDate);
             nextFrame(() => {
