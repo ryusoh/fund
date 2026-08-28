@@ -328,9 +328,12 @@ export class DomRenderer extends CalendarRenderer {
      * Recolour cells for the active currency and render/clear per-cell labels.
      * The DOM backend needs no staggering, so `isInitialLoad` is ignored.
      */
-    renderState({ byDate, state, currencySymbols }) {
+    renderState({ byDate, state, currencySymbols, onComplete }) {
         const root = this.#root();
         if (!root || !state) {
+            if (typeof onComplete === 'function') {
+                onComplete();
+            }
             return;
         }
         const colorOf = makeColorScale(this.config?.scale?.color);
@@ -343,6 +346,10 @@ export class DomRenderer extends CalendarRenderer {
             cell.style.backgroundImage = cellBackground(colorOf(value));
             this.#renderCellLabel(cell, entry, state, currencySymbols);
         });
+
+        if (typeof onComplete === 'function') {
+            onComplete();
+        }
     }
 
     #renderCellLabel(cell, entry, state, currencySymbols) {

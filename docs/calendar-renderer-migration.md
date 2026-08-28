@@ -59,11 +59,13 @@ rolling back) is a one-line change in the factory + the query flag.**
   **`'date-change'`** (on navigation, with `{ domain: { start, end } }`); the page
   drives data refetch + post-paint off these. See `setupEventListeners` and
   `attachDateChangeHandler` in `index.js`.
-- `renderState({ byDate, state, currencySymbols, isInitialLoad })` — **(added Step 3)**
-  paints data-derived visual state: per-currency cell colours, bevel/glass, and
-  (when `state.labelsVisible`) per-cell labels. The page calls this after each
+- `renderState({ byDate, state, currencySymbols, isInitialLoad, onComplete })` — **(added Step 3;
+  `onComplete` added later)** paints data-derived visual state: per-currency cell colours,
+  bevel/glass, and (when `state.labelsVisible`) per-cell labels. The page calls this after each
   paint/fill and on currency change via `schedulePostPaintUpdates`; it no longer
-  touches d3/SVG itself. Each backend implements it for its own DOM:
+  touches d3/SVG itself. `onComplete` (optional) fires once all passes — staggered
+  ones included — have run; the page uses it to hold the entrance animation until
+  the initial render has fully settled. Each backend implements it for its own DOM:
     - `SvgRenderer.renderState` runs `applyCurrencyColors` + `applyBevelGlass` +
       `renderLabels` (the SVG label code now lives in `renderers/svgLabels.js`), and
       **owns the first-paint stagger** (colour → frame → bevel → frame → labels).

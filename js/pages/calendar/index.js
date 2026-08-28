@@ -66,9 +66,22 @@ let pendingPostPaintFrame = null;
 let latestPostPaintArgs = null;
 let pendingPostPaintAfterTransition = false;
 let pendingDataRefresh = null;
+// Set when a scheduled render should fire a callback on completion (used to
+// defer the entrance animation until the initial render has fully settled).
+// Stored apart from latestPostPaintArgs so it survives the args being
+// overwritten by a later schedule call before the queued frame runs.
+let pendingRenderCompleteCallback = null;
 const fetchedMonthKeys = new Set();
 const cachedMonthRange = { min: null, max: null };
 let isInitialLoad = true;
+
+function consumeRenderCompleteCallback() {
+    const cb = pendingRenderCompleteCallback;
+    pendingRenderCompleteCallback = null;
+    if (typeof cb === 'function') {
+        cb();
+    }
+}
 
 function queuePostPaintFrame() {
     if (pendingPostPaintFrame !== null) {
@@ -89,17 +102,27 @@ function queuePostPaintFrame() {
         // The active renderer decides how to paint colours/labels/bevel for its
         // backend (and whether to stagger on first load). The page stays
         // backend-agnostic — it no longer touches d3/SVG directly.
-        args.cal.renderState({
-            byDate: args.byDate,
-            state: args.state,
-            currencySymbols: args.currencySymbols,
-            isInitialLoad,
-        });
+        try {
+            args.cal.renderState({
+                byDate: args.byDate,
+                state: args.state,
+                currencySymbols: args.currencySymbols,
+                isInitialLoad,
+                onComplete: consumeRenderCompleteCallback,
+            });
+        } catch (error) {
+            // A failed render must not strand the entrance animation.
+            logger.error('Post-paint render failed:', error);
+            consumeRenderCompleteCallback();
+        }
     });
 }
 
-function schedulePostPaintUpdates(cal, byDate, state, currencySymbols) {
+function schedulePostPaintUpdates(cal, byDate, state, currencySymbols, onComplete) {
     latestPostPaintArgs = { cal, byDate, state, currencySymbols };
+    if (typeof onComplete === 'function') {
+        pendingRenderCompleteCallback = onComplete;
+    }
 
     if (state?.isCalendarTransition) {
         pendingPostPaintAfterTransition = true;
@@ -1080,9 +1103,17 @@ export async function initCalendar() {
 
         await cal.paint(paintConfig);
         lastFetchedAt = Date.now();
-        schedulePostPaintUpdates(cal, calendarByDate, appState, CURRENCY_SYMBOLS);
+        // The entrance (wrapper slide + nav fade-in) starts only once the
+        // initial render — including its staggered passes — has completed, so
+        // the CSS transition plays against a settled layout.
+        schedulePostPaintUpdates(
+            cal,
+            calendarByDate,
+            appState,
+            CURRENCY_SYMBOLS,
+            triggerCalendarEntrance
+        );
         initCalendarResponsiveHandlers();
-        triggerCalendarEntrance();
     } catch (error) {
         renderCalendarInitError(error);
     }

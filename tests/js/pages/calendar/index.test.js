@@ -1,6 +1,6 @@
 import 'd3';
 import { getCalendarData } from '@services/dataService.js';
-import { initCalendar, autoInitCalendar } from '@pages/calendar/index.js';
+import { initCalendar, autoInitCalendar, __testables } from '@pages/calendar/index.js';
 import { renderLabels } from '@pages/calendar/renderers/svgLabels.js';
 import * as dateUtils from '@utils/date.js';
 import { getCalendarRange } from '../../../../js/config.js';
@@ -1268,5 +1268,45 @@ describe('calendar page', () => {
 
         expect(mockCalHeatmapInstance.paint).toHaveBeenCalled();
         window.requestAnimationFrame = originalRaf;
+    });
+
+    it('defers the calendar-ready reveal until the initial render completes', async () => {
+        const mockData = createCalendarData([
+            {
+                date: '2025-01-01',
+                dailyChange: 5,
+            },
+        ]);
+        getCalendarData.mockResolvedValue(mockData);
+
+        await initCalendar();
+
+        const wrapper = document.querySelector('.page-center-wrapper');
+        // The entrance class is not applied right after paint — it waits for
+        // the staggered render passes to finish first.
+        expect(wrapper.classList.add).not.toHaveBeenCalledWith('calendar-ready');
+
+        // Flush the queued post-paint frame, the staggered render passes, and
+        // the entrance rAF (jsdom drives rAF off ~16ms timers).
+        for (let i = 0; i < 8; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+        }
+        expect(wrapper.classList.add).toHaveBeenCalledWith('calendar-ready');
+    });
+
+    it('fires the render-complete callback even when renderState throws', async () => {
+        const onComplete = jest.fn();
+        const throwingCal = {
+            renderState: jest.fn(() => {
+                throw new Error('boom');
+            }),
+        };
+
+        __testables.schedulePostPaintUpdates(throwingCal, new Map(), {}, {}, onComplete);
+        // Flush the queued post-paint frame (jsdom drives rAF off ~16ms timers).
+        await new Promise((resolve) => setTimeout(resolve, 60));
+
+        expect(throwingCal.renderState).toHaveBeenCalledTimes(1);
+        expect(onComplete).toHaveBeenCalledTimes(1);
     });
 });

@@ -74,4 +74,24 @@ describe('SvgRenderer.renderState staggering', () => {
         expect(svgLabels.renderLabels).toHaveBeenCalledTimes(1);
         expect(rAFCallbacks.length).toBe(0);
     });
+
+    it('calls onComplete only after the final staggered pass on initial load', () => {
+        const renderer = new SvgRenderer();
+        const onComplete = jest.fn();
+        renderer.renderState({ ...ctx, isInitialLoad: true, onComplete });
+
+        expect(onComplete).not.toHaveBeenCalled();
+        rAFCallbacks.shift()(); // bevel frame
+        expect(onComplete).not.toHaveBeenCalled();
+        rAFCallbacks.shift()(); // labels frame
+        expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls onComplete synchronously on subsequent loads', () => {
+        const renderer = new SvgRenderer();
+        const onComplete = jest.fn();
+        renderer.renderState({ ...ctx, isInitialLoad: false, onComplete });
+
+        expect(onComplete).toHaveBeenCalledTimes(1);
+    });
 });

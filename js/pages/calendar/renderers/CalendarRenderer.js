@@ -76,6 +76,8 @@ export class CalendarRenderer {
      * @param {object} _context.currencySymbols
      * @param {boolean} _context.isInitialLoad        First paint — backends may
      *   stagger work to reduce jank.
+     * @param {() => void} [_context.onComplete]      Called once all passes
+     *   (including any staggered ones) have run.
      * @returns {void}
      */
     renderState(_context) {

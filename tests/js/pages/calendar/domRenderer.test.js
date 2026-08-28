@@ -121,6 +121,29 @@ describe('DomRenderer', () => {
         expect(cell.style.backgroundImage).toContain(RED); // CNY negative
     });
 
+    it('invokes onComplete after renderState, including the no-state early return', async () => {
+        const r = new DomRenderer();
+        await r.paint(makeConfig());
+
+        const onComplete = jest.fn();
+        r.renderState({
+            byDate: new Map(),
+            state: { selectedCurrency: 'USD' },
+            currencySymbols: {},
+            onComplete,
+        });
+        expect(onComplete).toHaveBeenCalledTimes(1);
+
+        const onEarlyReturn = jest.fn();
+        r.renderState({
+            byDate: new Map(),
+            state: null,
+            currencySymbols: {},
+            onComplete: onEarlyReturn,
+        });
+        expect(onEarlyReturn).toHaveBeenCalledTimes(1);
+    });
+
     it('renders and clears per-cell labels via renderState', async () => {
         const r = new DomRenderer();
         await r.paint(makeConfig());

@@ -22,6 +22,8 @@ function nextFrame(cb) {
  * `CalHeatmap` is a global provided by a <script> tag on the calendar page.
  */
 export class SvgRenderer extends CalendarRenderer {
+    #hasPainted = false;
+
     constructor() {
         super();
         this.engine = new CalHeatmap();
@@ -45,7 +47,21 @@ export class SvgRenderer extends CalendarRenderer {
     }
 
     async paint(config) {
-        const res = await this.engine.paint(config);
+        // First paint skips the engine's elastic width/height enter transition
+        // (~500ms of layout churn under the CSS entrance animation). The
+        // configured/default duration is restored right after so month
+        // navigation and later repaints keep animating.
+        const skipAnimation = !this.#hasPainted && config?.animationDuration === undefined;
+        const restoreTo = skipAnimation
+            ? this.engine.options?.options?.animationDuration
+            : undefined;
+        const res = await this.engine.paint(
+            skipAnimation ? { ...config, animationDuration: 0 } : config
+        );
+        this.#hasPainted = true;
+        if (restoreTo !== undefined) {
+            this.engine.options?.set?.('animationDuration', restoreTo);
+        }
         this._syncViewBox();
         return res;
     }
@@ -77,18 +93,26 @@ export class SvgRenderer extends CalendarRenderer {
      * three passes are staggered across animation frames to reduce jank; on
      * subsequent updates they run together to avoid flicker.
      */
-    renderState({ byDate, state, currencySymbols, isInitialLoad }) {
+    renderState({ byDate, state, currencySymbols, isInitialLoad, onComplete }) {
         this._syncViewBox();
         if (isInitialLoad) {
             applyCurrencyColors(d3, state, byDate);
             nextFrame(() => {
                 applyBevelGlass(d3);
-                nextFrame(() => renderLabels(byDate, state, currencySymbols));
+                nextFrame(() => {
+                    renderLabels(byDate, state, currencySymbols);
+                    if (typeof onComplete === 'function') {
+                        onComplete();
+                    }
+                });
             });
         } else {
             applyCurrencyColors(d3, state, byDate);
             applyBevelGlass(d3);
             renderLabels(byDate, state, currencySymbols);
+            if (typeof onComplete === 'function') {
+                onComplete();
+            }
         }
     }
 
