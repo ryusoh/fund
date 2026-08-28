@@ -399,14 +399,16 @@ function drawRimHighlight(ctx, centerX, centerY, outerRadius, innerRadius, optio
 
     for (let i = 0; i < channels.length; i++) {
         const { color, offset, opacityScale } = channels[i];
-        const outerR = outerRadius + offset;
+        const outerR = Math.max(0, outerRadius + offset);
+        const innerGradR = Math.max(0, outerR - bandWidth);
+        const outerGradR = Math.max(innerGradR + 0.001, outerR + width);
         const gradient = ctx.createRadialGradient(
             centerX + px,
             centerY + py,
-            outerR - bandWidth,
+            innerGradR,
             centerX + px,
             centerY + py,
-            outerR + width
+            outerGradR
         );
         const [r, g, b] = color;
         const peakOpacity = opacity * opacityScale;

@@ -7,19 +7,22 @@ const readRepoFile = (relativePath) => readFileSync(join(ROOT_DIR, relativePath)
 describe('mobile viewport vertical clearance', () => {
     it('guarantees position pie chart clears top docks and footer', () => {
         const css = readRepoFile('css/layout.css');
-        expect(css).toMatch(/#fundPieChartContainer\s*\{[\s\S]*?margin:\s*calc\(\s*85px/);
+        expect(css).toMatch(/#fundPieChartContainer\s*\{[\s\S]*?margin:\s*calc\(\s*75px/);
         expect(css).toMatch(
-            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\([\s\S]*?calc\(100dvh - 170px\)/
+            /#fundPieChartContainer\s*\{[\s\S]*?max-height:\s*min\(90vw,\s*360px\)/
         );
     });
 
-    it('guarantees calendar wrapper clears top docks and footer', () => {
+    it('guarantees calendar wrapper and nav buttons clear top docks and footer', () => {
         const css = readRepoFile('css/calendar.css');
         expect(css).toMatch(
-            /\.body-calendar\s+\.page-center-wrapper\s*\{[\s\S]*?margin:\s*calc\(\s*85px/
+            /\.body-calendar\s+\.page-center-wrapper\s*\{[\s\S]*?margin:\s*calc\(\s*75px/
         );
         expect(css).toMatch(
-            /\.body-calendar\s+\.page-center-wrapper\s*\{[\s\S]*?max-height:\s*calc\([\s\S]*?100dvh - 150px/
+            /\.body-calendar\s+\.page-center-wrapper\s*\{[\s\S]*?max-height:\s*calc\([\s\S]*?100dvh - 140px/
+        );
+        expect(css).toMatch(
+            /#cal-heatmap\s+svg\s*\{[\s\S]*?max-height:\s*calc\([\s\S]*?100dvh - 200px/
         );
     });
 
