@@ -1,6 +1,6 @@
 import { niceNumber, getMonoFontFamily, colorWithAlpha, clamp01 } from './helpers.js';
 
-export function computePercentTickInfo(yMin, yMax) {
+function sanitizeRange(yMin, yMax) {
     const safeMin = Number.isFinite(yMin) ? Number(yMin) : 0;
     const safeMax = Number.isFinite(yMax) ? Number(yMax) : safeMin;
     let minValue = Math.min(safeMin, safeMax);
@@ -8,18 +8,13 @@ export function computePercentTickInfo(yMin, yMax) {
     if (!Number.isFinite(minValue)) {
         minValue = 0;
     }
-    if (!Number.isFinite(maxValue)) {
+    if (!Number.isFinite(maxValue) || maxValue - minValue < 1e-6) {
         maxValue = minValue + 1;
     }
-    if (maxValue - minValue < 1e-6) {
-        maxValue = minValue + 1;
-    }
-    const range = maxValue - minValue;
+    return { minValue, maxValue, range: maxValue - minValue };
+}
 
-    // Use dynamic spacing instead of hardcoded thresholds
-    const desiredTicks = 6;
-    const targetSegments = Math.max(1, desiredTicks - 1);
-
+function calculatePercentSpacing(range, targetSegments) {
     const niceRange = niceNumber(range, false);
     let tickSpacing = Math.abs(niceNumber(niceRange / targetSegments, true));
 
@@ -29,57 +24,51 @@ export function computePercentTickInfo(yMin, yMax) {
     if (!Number.isFinite(tickSpacing) || tickSpacing === 0) {
         tickSpacing = range / targetSegments;
     }
-    // Ensure we don't get microscopic spacing for percentages (e.g. 0.0001%)
-    // But allowing down to 0.01 or 0.1 is fine for small ranges.
-    tickSpacing = Math.max(tickSpacing, 1e-2);
+    return Math.max(tickSpacing, 1e-2);
+}
+
+function generatePercentTicksForSpacing(minValue, maxValue, tickSpacing) {
+    const startTick = Math.floor(minValue / tickSpacing) * tickSpacing;
+    const endTick = Math.ceil(maxValue / tickSpacing) * tickSpacing;
+    const ticks = [];
+    for (let tick = startTick; tick <= endTick + tickSpacing * 0.001; tick += tickSpacing) {
+        const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
+        ticks.push(rounded);
+    }
+    return { ticks, startTick, endTick };
+}
+
+export function computePercentTickInfo(yMin, yMax) {
+    const { minValue, maxValue, range } = sanitizeRange(yMin, yMax);
+    const desiredTicks = 6;
+    const targetSegments = Math.max(1, desiredTicks - 1);
+    let tickSpacing = calculatePercentSpacing(range, targetSegments);
 
     const minRequiredTicks = 5;
     const maxRetries = 6;
-    let finalTicks = [];
-    let finalStartTick = 0;
-    let finalEndTick = 0;
+    let result = { ticks: [], startTick: 0, endTick: 0 };
 
     for (let retry = 0; retry < maxRetries; retry++) {
-        const startTick = Math.floor(minValue / tickSpacing) * tickSpacing;
-        const endTick = Math.ceil(maxValue / tickSpacing) * tickSpacing;
-
-        const ticks = [];
-        for (let tick = startTick; tick <= endTick + tickSpacing * 0.001; tick += tickSpacing) {
-            const rounded = Number((Math.round(tick / tickSpacing) * tickSpacing).toFixed(6));
-            ticks.push(rounded);
-        }
-
-        const viewTicks = ticks.filter(
+        result = generatePercentTicksForSpacing(minValue, maxValue, tickSpacing);
+        const viewTicks = result.ticks.filter(
             (t) => t >= minValue - tickSpacing * 0.25 && t <= maxValue + tickSpacing * 0.25
         );
 
         if (viewTicks.length >= minRequiredTicks) {
-            finalTicks = ticks;
-            finalStartTick = startTick;
-            finalEndTick = endTick;
             break;
         }
 
         tickSpacing /= 2;
         if (tickSpacing < 1e-2) {
-            finalTicks = ticks;
-            finalStartTick = startTick;
-            finalEndTick = endTick;
             break;
-        }
-
-        if (retry === maxRetries - 1) {
-            finalTicks = ticks;
-            finalStartTick = startTick;
-            finalEndTick = endTick;
         }
     }
 
     return {
-        ticks: finalTicks,
+        ticks: result.ticks,
         tickSpacing,
-        startTick: finalStartTick,
-        endTick: finalEndTick,
+        startTick: result.startTick,
+        endTick: result.endTick,
     };
 }
 
@@ -190,99 +179,72 @@ export function generateConcreteTicks(yMin, yMax, isPerformanceChart, currency, 
     return generateTickSequence(adjustedMin, adjustedMax, tickSpacing, maxTicks);
 }
 
-export function generateYearBasedTicks(minTime, maxTime) {
+function getPrimaryYearForSingleYear(startDate, endDate) {
+    if (startDate.getFullYear() === endDate.getFullYear()) {
+        return startDate.getFullYear();
+    }
+    const endOfStartYear = new Date(startDate.getFullYear(), 11, 31);
+    const startOfEndYear = new Date(endDate.getFullYear(), 0, 1);
+    const timeInStartYear = endOfStartYear.getTime() - startDate.getTime();
+    const timeInEndYear = endDate.getTime() - startOfEndYear.getTime();
+    return timeInEndYear > timeInStartYear ? endDate.getFullYear() : startDate.getFullYear();
+}
+
+function generateSingleYearTicks(startDate, endDate, minTime, maxTime, formatYear) {
     const ticks = [];
-    const startDate = new Date(minTime);
-    const endDate = new Date(maxTime);
-    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const year = getPrimaryYearForSingleYear(startDate, endDate);
+    const formattedYear = formatYear(year);
+    const quarters = [
+        { month: 0, label: `${formattedYear}`, isYearStart: true },
+        { month: 3, label: 'Apr', isYearStart: false },
+        { month: 6, label: 'Jul', isYearStart: false },
+        { month: 9, label: 'Oct', isYearStart: false },
+    ];
 
-    const formatYear = (year) => {
-        return isMobile ? `'${String(year).slice(2)}` : year;
-    };
-
-    // Calculate data span in months
-    const dataSpanMonths =
-        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-        (endDate.getMonth() - startDate.getMonth()) +
-        1;
-
-    // Check if data is within a single year (same year OR spans \u226415 months)
-    const isSingleYear = startDate.getFullYear() === endDate.getFullYear() || dataSpanMonths <= 15;
-
-    if (isSingleYear) {
-        // Single year: show quarterly ticks for the year
-        let year;
-        if (startDate.getFullYear() !== endDate.getFullYear()) {
-            const endOfStartYear = new Date(startDate.getFullYear(), 11, 31);
-            const startOfEndYear = new Date(endDate.getFullYear(), 0, 1);
-            const timeInStartYear = endOfStartYear.getTime() - startDate.getTime();
-            const timeInEndYear = endDate.getTime() - startOfEndYear.getTime();
-            if (timeInEndYear > timeInStartYear) {
-                year = endDate.getFullYear();
-            } else {
-                year = startDate.getFullYear();
-            }
-        } else {
-            year = startDate.getFullYear();
-        }
-        const formattedYear = formatYear(year);
-        // User request: Jan -> Year, Others -> Month only
-        const quarters = [
-            { month: 0, label: `${formattedYear}`, isYearStart: true },
-            { month: 3, label: 'Apr', isYearStart: false },
-            { month: 6, label: 'Jul', isYearStart: false },
-            { month: 9, label: 'Oct', isYearStart: false },
-        ];
-
-        for (let i = 0; i < quarters.length; i++) {
-            const q = quarters[i];
-            const quarterDate = new Date(year, q.month, 1).getTime();
-            // Always include quarterly ticks for the year, even if slightly outside the range
-            if (
-                quarterDate >= minTime - 30 * 24 * 60 * 60 * 1000 &&
-                quarterDate <= maxTime + 30 * 24 * 60 * 60 * 1000
-            ) {
-                ticks.push({
-                    time: quarterDate,
-                    label: q.label,
-                    isYearStart: q.isYearStart,
-                });
-            }
-        }
-
-        // If data spans into a new year and primary year is the start year,
-        // add a tick at Jan 1 of the new year so the year label appears at the year boundary
-        if (startDate.getFullYear() !== endDate.getFullYear() && year === startDate.getFullYear()) {
-            const newYearJan1 = new Date(endDate.getFullYear(), 0, 1).getTime();
-            if (newYearJan1 >= minTime && newYearJan1 <= maxTime) {
-                ticks.push({
-                    time: newYearJan1,
-                    label: `${formatYear(endDate.getFullYear())}`,
-                    isYearStart: true,
-                });
-            }
-        }
-    } else {
-        // Multi-year: show Jan for each year
-        for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
-            const jan1 = new Date(year, 0, 1).getTime();
-            if (jan1 >= minTime && jan1 <= maxTime) {
-                ticks.push({
-                    time: jan1,
-                    label: `${formatYear(year)}`,
-                    isYearStart: true,
-                });
-            }
+    const marginMs = 30 * 24 * 60 * 60 * 1000;
+    for (let i = 0; i < quarters.length; i++) {
+        const q = quarters[i];
+        const quarterDate = new Date(year, q.month, 1).getTime();
+        if (quarterDate >= minTime - marginMs && quarterDate <= maxTime + marginMs) {
+            ticks.push({
+                time: quarterDate,
+                label: q.label,
+                isYearStart: q.isYearStart,
+            });
         }
     }
 
-    // Add end date
+    if (startDate.getFullYear() !== endDate.getFullYear() && year === startDate.getFullYear()) {
+        const newYearJan1 = new Date(endDate.getFullYear(), 0, 1).getTime();
+        if (newYearJan1 >= minTime && newYearJan1 <= maxTime) {
+            ticks.push({
+                time: newYearJan1,
+                label: `${formatYear(endDate.getFullYear())}`,
+                isYearStart: true,
+            });
+        }
+    }
+    return ticks;
+}
+
+function generateMultiYearTicks(startDate, endDate, minTime, maxTime, formatYear) {
+    const ticks = [];
+    for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
+        const jan1 = new Date(year, 0, 1).getTime();
+        if (jan1 >= minTime && jan1 <= maxTime) {
+            ticks.push({
+                time: jan1,
+                label: `${formatYear(year)}`,
+                isYearStart: true,
+            });
+        }
+    }
+    return ticks;
+}
+
+function createEndTick(endDate, maxTime, ticks, formatYear) {
     const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
     const endYear = endDate.getFullYear();
-
-    // Check if we already have a start-of-year tick for this year
-    // This helps us decide if we should label the end tick as "Jan" (if we already have "2026")
-    // or "2026" (if this is the only tick for the year)
     const hasYearTick = ticks.some(
         (t) => t.isYearStart && new Date(t.time).getFullYear() === endYear
     );
@@ -294,54 +256,257 @@ export function generateYearBasedTicks(minTime, maxTime) {
         endLabel = endMonth === 'Jan' ? `${formatYear(endYear)}` : endMonth;
     }
 
-    ticks.push({
+    return {
         time: maxTime,
         label: endLabel,
-        isYearStart: endMonth === 'Jan' && !hasYearTick, // Only treat as year start if it's the primary label for the year
-    });
+        isYearStart: endMonth === 'Jan' && !hasYearTick,
+    };
+}
 
-    // Add beginning tick - for single-year mode, always add year label at start
-    // For multi-year mode, only add start tick on desktop
+function createStartTick(startDate, endDate, minTime, isSingleYear, isMobile, formatYear) {
     const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
     const startYear = startDate.getFullYear();
 
-    // In single-year mode, show the year as the first label (industry standard)
-    // This matches financial charting conventions (Bloomberg, TradingView, etc.)
-    let startLabel;
-    let shouldAddStartTick = false;
-
     if (isSingleYear) {
-        // For single-year filtered data, always show the year as the first label
         const displayYear =
             startDate.getFullYear() === endDate.getFullYear()
                 ? startDate.getFullYear()
                 : startDate.getMonth() >= 6
                   ? endDate.getFullYear()
                   : startDate.getFullYear();
-        startLabel = `${formatYear(displayYear)}`;
-        shouldAddStartTick = true; // Always add for single-year mode (mobile and desktop)
-    } else if (!isMobile) {
-        // Multi-year: only add start tick on desktop
-        startLabel = startMonth === 'Jan' ? `${formatYear(startYear)}` : startMonth;
-        shouldAddStartTick = true;
+        return {
+            time: minTime,
+            label: `${formatYear(displayYear)}`,
+            isYearStart: true,
+        };
     }
 
-    if (shouldAddStartTick) {
-        // Check if we already have a tick for the start date
-        const hasStartTick = ticks.some((tick) => tick.time === minTime);
-        if (!hasStartTick) {
-            ticks.push({
-                time: minTime,
-                label: startLabel,
-                isYearStart: isSingleYear || startMonth === 'Jan',
-            });
+    if (!isMobile) {
+        return {
+            time: minTime,
+            label: startMonth === 'Jan' ? `${formatYear(startYear)}` : startMonth,
+            isYearStart: startMonth === 'Jan',
+        };
+    }
+
+    return null;
+}
+
+export function generateYearBasedTicks(minTime, maxTime) {
+    const startDate = new Date(minTime);
+    const endDate = new Date(maxTime);
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const formatYear = (year) => (isMobile ? `'${String(year).slice(2)}` : year);
+
+    const dataSpanMonths =
+        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (endDate.getMonth() - startDate.getMonth()) +
+        1;
+    const isSingleYear = startDate.getFullYear() === endDate.getFullYear() || dataSpanMonths <= 15;
+
+    const ticks = isSingleYear
+        ? generateSingleYearTicks(startDate, endDate, minTime, maxTime, formatYear)
+        : generateMultiYearTicks(startDate, endDate, minTime, maxTime, formatYear);
+
+    ticks.push(createEndTick(endDate, maxTime, ticks, formatYear));
+
+    const startTick = createStartTick(
+        startDate,
+        endDate,
+        minTime,
+        isSingleYear,
+        isMobile,
+        formatYear
+    );
+    if (startTick && !ticks.some((tick) => tick.time === minTime)) {
+        ticks.push(startTick);
+    }
+
+    ticks.sort((a, b) => a.time - b.time);
+    return ticks;
+}
+
+function preparePrioritizedTicks(ticks, yScale, yMin, yMax) {
+    let ticksMax = -Infinity;
+    let ticksMin = Infinity;
+    for (let i = 0; i < ticks.length; i++) {
+        const v = ticks[i];
+        if (v > ticksMax) {
+            ticksMax = v;
+        }
+        if (v < ticksMin) {
+            ticksMin = v;
         }
     }
 
-    // Sort ticks by time
-    ticks.sort((a, b) => a.time - b.time);
+    const filteredTicks = new Array(ticks.length);
+    for (let i = 0; i < ticks.length; i++) {
+        const value = ticks[i];
+        let priority = 2;
+        const absVal = Math.abs(value);
+        if (absVal < 1e-9) {
+            priority = 0;
+        } else if (value === yMax || value === yMin || value === ticksMax || value === ticksMin) {
+            priority = 1;
+        }
+        filteredTicks[i] = { value, y: yScale(value), priority, abs: absVal };
+    }
 
-    return ticks;
+    filteredTicks.sort((a, b) => b.abs - a.abs);
+    return filteredTicks;
+}
+
+function checkTickCollision(tickY, selectedTicks, minSpacingPixels, avoidY, minAvoidSpacing) {
+    for (let s = 0; s < selectedTicks.length; s++) {
+        if (Math.abs(tickY - selectedTicks[s].y) < minSpacingPixels) {
+            return true;
+        }
+    }
+    if (Array.isArray(avoidY) && avoidY.length > 0) {
+        for (let a = 0; a < avoidY.length; a++) {
+            if (Math.abs(tickY - avoidY[a]) < minAvoidSpacing) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function selectYAxisTicks(ticks, yScale, fontSize, isMobile, yMin, yMax, avoidY) {
+    const minSpacingPixels = Math.floor(fontSize);
+    const minAvoidSpacing = fontSize + (isMobile ? 4 : 6);
+    const prioritizedTicks = preparePrioritizedTicks(ticks, yScale, yMin, yMax);
+    const selectedTicks = [];
+
+    for (let p = 0; p <= 2; p++) {
+        for (let i = 0; i < prioritizedTicks.length; i++) {
+            const tick = prioritizedTicks[i];
+            if (tick.priority !== p) {
+                continue;
+            }
+
+            if (
+                !checkTickCollision(
+                    tick.y,
+                    selectedTicks,
+                    minSpacingPixels,
+                    avoidY,
+                    minAvoidSpacing
+                )
+            ) {
+                selectedTicks.push(tick);
+            }
+        }
+    }
+    return selectedTicks;
+}
+
+function renderYAxis(
+    ctx,
+    selectedTicks,
+    padding,
+    plotWidth,
+    fontSize,
+    monoFont,
+    isMobile,
+    yLabelFormatter
+) {
+    const halfTextHeight = fontSize / 2;
+    for (let i = 0; i < selectedTicks.length; i++) {
+        const { value, y } = selectedTicks[i];
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + plotWidth, y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.stroke();
+        ctx.fillStyle = '#8b949e';
+        ctx.font = `${fontSize}px ${monoFont}`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = y - halfTextHeight < 2 ? 'top' : 'middle';
+        ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
+    }
+}
+
+function renderXAxisGrid(ctx, tick, x, padding, plotHeight, plotWidth) {
+    if (x <= padding.left + 5 || x >= padding.left + plotWidth - 5) {
+        return;
+    }
+    if (tick.isYearStart) {
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, padding.top + plotHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.stroke();
+        ctx.setLineDash([]);
+    } else if (
+        tick.label.includes('Apr') ||
+        tick.label.includes('Jul') ||
+        tick.label.includes('Oct')
+    ) {
+        ctx.beginPath();
+        ctx.setLineDash([2, 2]);
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, padding.top + plotHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+function renderXAxis(
+    ctx,
+    yearTicks,
+    xScale,
+    padding,
+    plotWidth,
+    plotHeight,
+    isMobile,
+    monoFont,
+    drawXAxis
+) {
+    if (drawXAxis) {
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top + plotHeight);
+        ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
+    }
+
+    const minSpacing = isMobile ? 30 : 40;
+    for (let index = 0; index < yearTicks.length; index++) {
+        const tick = yearTicks[index];
+        const x = xScale(tick.time);
+
+        let shouldDrawLabel = true;
+        if (index > 0) {
+            const prevTickX = xScale(yearTicks[index - 1].time);
+            if (x - prevTickX < minSpacing) {
+                shouldDrawLabel = false;
+            }
+        }
+
+        if (drawXAxis && shouldDrawLabel) {
+            if (isMobile && index === yearTicks.length - 1) {
+                ctx.textAlign = 'right';
+            } else {
+                ctx.textAlign = 'center';
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(x, padding.top + plotHeight);
+            ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
+            ctx.stroke();
+
+            ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
+        }
+
+        renderXAxisGrid(ctx, tick, x, padding, plotHeight, plotWidth);
+    }
 }
 
 export function drawAxes(
@@ -364,230 +529,44 @@ export function drawAxes(
     const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const monoFont = getMonoFontFamily();
     const { drawXAxis = true, drawYAxis = true, maxTicks = null, avoidY = [] } = axisOptions;
-    const selectedTicks = [];
 
-    // Generate concrete tick values
     const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency, {
         maxTicks,
     });
 
-    // Y-axis grid lines and labels
+    let selectedTicks = [];
     if (drawYAxis) {
         const fontSize = isMobile ? 9 : 11;
-        const halfTextHeight = fontSize / 2;
-        // Prevent physical overlap: labels must be separated by exactly their fontSize (1em)
-        const minSpacingPixels = Math.floor(fontSize);
-
-        // Map ticks to objects with y coordinate, compute priority inline
-        let ticksMax = -Infinity;
-        let ticksMin = Infinity;
-        for (let i = 0; i < ticks.length; i++) {
-            const v = ticks[i];
-            if (v > ticksMax) {
-                ticksMax = v;
-            }
-            if (v < ticksMin) {
-                ticksMin = v;
-            }
-        }
-
-        const filteredTicks = new Array(ticks.length);
-        for (let i = 0; i < ticks.length; i++) {
-            const value = ticks[i];
-            let priority = 2; // Default lowest priority
-            const absVal = Math.abs(value);
-            if (absVal < 1e-9) {
-                priority = 0; // Highest priority for zero line
-            } else if (
-                value === yMax ||
-                value === yMin ||
-                value === ticksMax ||
-                value === ticksMin
-            ) {
-                priority = 1; // High priority for outer bounds
-            }
-            filteredTicks[i] = { value, y: yScale(value), priority, abs: absVal };
-        }
-
-        // Sort by absolute value DESCENDING so we start packing from the outer edges (max values) inwards.
-        // This guarantees we keep the outer boundaries and pack as many non-overlapping ticks as mathematically possible.
-        filteredTicks.sort((a, b) => b.abs - a.abs);
-
-        // Resolve collisions by keeping highest priority items
-        for (let p = 0; p <= 2; p++) {
-            for (let i = 0; i < filteredTicks.length; i++) {
-                const tick = filteredTicks[i];
-                if (tick.priority === p) {
-                    let collides = false;
-                    for (const selected of selectedTicks) {
-                        if (Math.abs(tick.y - selected.y) < minSpacingPixels) {
-                            collides = true;
-                            break;
-                        }
-                    }
-                    if (!collides && Array.isArray(avoidY)) {
-                        const minAvoidSpacing = fontSize + (isMobile ? 4 : 6);
-                        for (let a = 0; a < avoidY.length; a++) {
-                            if (Math.abs(tick.y - avoidY[a]) < minAvoidSpacing) {
-                                collides = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!collides) {
-                        selectedTicks.push(tick);
-                    }
-                }
-            }
-        }
-
-        for (let i = 0; i < selectedTicks.length; i++) {
-            const { value, y } = selectedTicks[i];
-            ctx.beginPath();
-            ctx.moveTo(padding.left, y);
-            ctx.lineTo(padding.left + plotWidth, y);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.stroke();
-            ctx.fillStyle = '#8b949e';
-            ctx.font = `${fontSize}px ${monoFont}`;
-            ctx.textAlign = 'right';
-            // Use 'top' baseline only when label would be clipped at canvas top
-            const wouldClipTop = y - halfTextHeight < 2;
-            ctx.textBaseline = wouldClipTop ? 'top' : 'middle';
-            ctx.fillText(yLabelFormatter(value), padding.left - (isMobile ? 8 : 10), y);
-        }
+        selectedTicks = selectYAxisTicks(ticks, yScale, fontSize, isMobile, yMin, yMax, avoidY);
+        renderYAxis(
+            ctx,
+            selectedTicks,
+            padding,
+            plotWidth,
+            fontSize,
+            monoFont,
+            isMobile,
+            yLabelFormatter
+        );
     }
 
-    // X-axis line
-    if (drawXAxis) {
-        ctx.beginPath();
-        ctx.moveTo(padding.left, padding.top + plotHeight);
-        ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    }
-
-    // Generate year-based x-axis ticks
     const yearTicks = generateYearBasedTicks(minTime, maxTime);
+    renderXAxis(
+        ctx,
+        yearTicks,
+        xScale,
+        padding,
+        plotWidth,
+        plotHeight,
+        isMobile,
+        monoFont,
+        drawXAxis
+    );
 
-    if (drawXAxis) {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
-    }
-
-    for (let index = 0; index < yearTicks.length; index++) {
-        const tick = yearTicks[index];
-        const x = xScale(tick.time);
-
-        // Check for label collision (Desktop & Mobile)
-        let shouldDrawLabel = true;
-        if (index > 0) {
-            const prevTickX = xScale(yearTicks[index - 1].time);
-            // Minimum spacing threshold (pixels)
-            const minSpacing = isMobile ? 30 : 40;
-
-            if (x - prevTickX < minSpacing) {
-                shouldDrawLabel = false;
-            }
-        }
-
-        if (drawXAxis && shouldDrawLabel) {
-            // Set text alignment based on tick position and layout
-            if (isMobile) {
-                // Mobile: center-align first tick, right-align last tick, center-align others
-                if (index === 0) {
-                    ctx.textAlign = 'center';
-                } else if (index === yearTicks.length - 1) {
-                    ctx.textAlign = 'right';
-                } else {
-                    ctx.textAlign = 'center';
-                }
-            } else {
-                // Desktop: center-align all ticks
-                ctx.textAlign = 'center';
-            }
-
-            // Draw tick mark
-            ctx.beginPath();
-            ctx.moveTo(x, padding.top + plotHeight);
-            ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
-            ctx.stroke();
-
-            // Draw label
-            ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
-        }
-
-        // Draw vertical dashed line for year/quarter boundaries (but not at chart boundaries)
-        // Note: This is drawn even if the label was skipped due to collision
-        if (tick.isYearStart && x > padding.left + 5 && x < padding.left + plotWidth - 5) {
-            ctx.beginPath();
-            ctx.setLineDash([3, 3]); // Dashed line
-            ctx.moveTo(x, padding.top);
-            ctx.lineTo(x, padding.top + plotHeight);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset to solid line
-        }
-
-        // Draw dashed lines for quarterly boundaries (Apr, Jul, Oct)
-        if (x > padding.left + 5 && x < padding.left + plotWidth - 5) {
-            if (
-                tick.label.includes('Apr') ||
-                tick.label.includes('Jul') ||
-                tick.label.includes('Oct')
-            ) {
-                ctx.beginPath();
-                ctx.setLineDash([2, 2]); // Shorter dashes for quarters
-                ctx.moveTo(x, padding.top);
-                ctx.lineTo(x, padding.top + plotHeight);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; // Lighter for quarters
-                ctx.stroke();
-                ctx.setLineDash([]); // Reset to solid line
-            }
-        }
-    }
     return { selectedTicks };
 }
 
-export function drawMountainFill(ctx, coords, baselineY, options) {
-    if (!Array.isArray(coords) || coords.length === 0) {
-        return;
-    }
-
-    const { color, colorStops, opacityTop = 0.35, opacityBottom = 0, bounds } = options || {};
-
-    if (!bounds) {
-        return;
-    }
-
-    if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) {
-        return;
-    }
-
-    if (typeof document === 'undefined') {
-        return;
-    }
-
-    let clampedBaselineY = baselineY;
-    if (!Number.isFinite(clampedBaselineY)) {
-        return;
-    }
-    clampedBaselineY = Math.min(Math.max(clampedBaselineY, bounds.top), bounds.bottom);
-
-    const baseCoords = coords.length === 1 ? [coords[0], coords[0]] : coords;
-    const areaCoords = new Array(baseCoords.length);
-    for (let i = 0; i < baseCoords.length; i++) {
-        areaCoords[i] = {
-            x: baseCoords[i].x,
-            y: baseCoords[i].y,
-        };
-    }
-
-    const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
-    const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));
-
+function getSharedCanvas(width, height) {
     if (!drawMountainFill._sharedCanvas && typeof document !== 'undefined') {
         drawMountainFill._sharedCanvas = document.createElement('canvas');
         drawMountainFill._sharedCtx = drawMountainFill._sharedCanvas.getContext('2d');
@@ -597,12 +576,9 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     const offCtx = drawMountainFill._sharedCtx;
 
     if (!offscreen || !offCtx) {
-        return;
+        return null;
     }
 
-    // Resizing the canvas implicitly clears it for the new frame; when the
-    // size is unchanged, clear it explicitly instead of reallocating the
-    // backing store.
     if (offscreen.width !== width) {
         offscreen.width = width;
     }
@@ -610,36 +586,35 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
         offscreen.height = height;
     }
     offCtx.clearRect(0, 0, width, height);
+    return { offscreen, offCtx };
+}
 
-    offCtx.beginPath();
-    offCtx.moveTo(areaCoords[0].x - bounds.left, areaCoords[0].y - bounds.top);
-    for (let i = 1; i < areaCoords.length; i += 1) {
-        offCtx.lineTo(areaCoords[i].x - bounds.left, areaCoords[i].y - bounds.top);
-    }
-    offCtx.lineTo(areaCoords[areaCoords.length - 1].x - bounds.left, clampedBaselineY - bounds.top);
-    offCtx.lineTo(areaCoords[0].x - bounds.left, clampedBaselineY - bounds.top);
-    offCtx.closePath();
-
-    let horizontalGradient = null;
+function applyMountainFillColor(offCtx, width, color, colorStops) {
     if (Array.isArray(colorStops) && colorStops.length > 0) {
-        horizontalGradient = offCtx.createLinearGradient(0, 0, width, 0);
+        const horizontalGradient = offCtx.createLinearGradient(0, 0, width, 0);
         const stopCount = colorStops.length;
         for (let index = 0; index < stopCount; index++) {
             const stopColor = colorStops[index];
             const offset = stopCount === 1 ? 0 : index / (stopCount - 1);
             horizontalGradient.addColorStop(offset, colorWithAlpha(stopColor, 1));
         }
-    }
-
-    if (horizontalGradient) {
         offCtx.fillStyle = horizontalGradient;
     } else {
         offCtx.fillStyle = colorWithAlpha(color, 1);
     }
     offCtx.fill();
+}
 
-    // Optimize performance: use a single loop instead of map and spread
-    // to avoid array allocations and maximum call stack size exceeded errors
+function applyMountainFillAlphaGradient(
+    offCtx,
+    width,
+    height,
+    areaCoords,
+    clampedBaselineY,
+    bounds,
+    opacityTop,
+    opacityBottom
+) {
     let minYRel = clampedBaselineY - bounds.top;
     let maxYRel = clampedBaselineY - bounds.top;
     for (let i = 0; i < areaCoords.length; i += 1) {
@@ -661,6 +636,62 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     offCtx.fillStyle = alphaGradient;
     offCtx.fillRect(0, 0, width, height);
     offCtx.globalCompositeOperation = 'source-over';
+}
+
+export function drawMountainFill(ctx, coords, baselineY, options) {
+    if (!Array.isArray(coords) || coords.length === 0) {
+        return;
+    }
+
+    const { color, colorStops, opacityTop = 0.35, opacityBottom = 0, bounds } = options || {};
+
+    if (!bounds || bounds.right <= bounds.left || bounds.bottom <= bounds.top) {
+        return;
+    }
+
+    if (typeof document === 'undefined' || !Number.isFinite(baselineY)) {
+        return;
+    }
+
+    const clampedBaselineY = Math.min(Math.max(baselineY, bounds.top), bounds.bottom);
+    const baseCoords = coords.length === 1 ? [coords[0], coords[0]] : coords;
+    const areaCoords = new Array(baseCoords.length);
+    for (let i = 0; i < baseCoords.length; i++) {
+        areaCoords[i] = {
+            x: baseCoords[i].x,
+            y: baseCoords[i].y,
+        };
+    }
+
+    const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
+    const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));
+
+    const shared = getSharedCanvas(width, height);
+    if (!shared) {
+        return;
+    }
+    const { offscreen, offCtx } = shared;
+
+    offCtx.beginPath();
+    offCtx.moveTo(areaCoords[0].x - bounds.left, areaCoords[0].y - bounds.top);
+    for (let i = 1; i < areaCoords.length; i += 1) {
+        offCtx.lineTo(areaCoords[i].x - bounds.left, areaCoords[i].y - bounds.top);
+    }
+    offCtx.lineTo(areaCoords[areaCoords.length - 1].x - bounds.left, clampedBaselineY - bounds.top);
+    offCtx.lineTo(areaCoords[0].x - bounds.left, clampedBaselineY - bounds.top);
+    offCtx.closePath();
+
+    applyMountainFillColor(offCtx, width, color, colorStops);
+    applyMountainFillAlphaGradient(
+        offCtx,
+        width,
+        height,
+        areaCoords,
+        clampedBaselineY,
+        bounds,
+        opacityTop,
+        opacityBottom
+    );
 
     ctx.drawImage(offscreen, bounds.left, bounds.top);
 }
@@ -767,6 +798,52 @@ export function nudgeLabelPosition(
     return Math.max(minY, Math.min(targetY, maxY));
 }
 
+function calculateEndValuePosition(
+    x,
+    y,
+    textWidth,
+    textHeight,
+    isMobile,
+    padding,
+    plotWidth,
+    plotHeight
+) {
+    if (isMobile) {
+        return {
+            textX: padding.left + plotWidth - textWidth - 5,
+            textY: Math.max(
+                padding.top + textHeight / 2,
+                Math.min(y, padding.top + plotHeight - textHeight / 2)
+            ),
+        };
+    }
+
+    const spaceAbove = y - padding.top;
+    const spaceBelow = padding.top + plotHeight - y;
+    let textX;
+    let textY;
+
+    if (spaceAbove > textHeight + 8) {
+        textX = x + 3;
+        textY = y - 3;
+    } else if (spaceBelow > textHeight + 8) {
+        textX = x + 3;
+        textY = y + textHeight + 3;
+    } else {
+        textX = padding.left + plotWidth - textWidth - 5;
+        textY = Math.max(
+            padding.top + textHeight / 2,
+            Math.min(y, padding.top + plotHeight - textHeight / 2)
+        );
+    }
+
+    if (textX + textWidth > padding.left + plotWidth - 5) {
+        textX = padding.left + plotWidth - textWidth - 5;
+    }
+
+    return { textX, textY };
+}
+
 export function drawEndValue(
     context,
     x,
@@ -794,43 +871,24 @@ export function drawEndValue(
     const textHeight = fontSize;
     const bgPadding = 4;
 
-    let textX, textY;
+    const rawPos = calculateEndValuePosition(
+        x,
+        y,
+        textWidth,
+        textHeight,
+        isMobile,
+        padding,
+        plotWidth,
+        plotHeight
+    );
 
-    if (isMobile) {
-        textX = padding.left + plotWidth - textWidth - 5;
-        textY = Math.max(
-            padding.top + textHeight / 2,
-            Math.min(y, padding.top + plotHeight - textHeight / 2)
-        );
-    } else {
-        const spaceAbove = y - padding.top;
-        const spaceBelow = padding.top + plotHeight - y;
-
-        if (spaceAbove > textHeight + 8) {
-            textX = x + 3;
-            textY = y - 3;
-            if (textX + textWidth > padding.left + plotWidth - 5) {
-                textX = padding.left + plotWidth - textWidth - 5;
-            }
-        } else if (spaceBelow > textHeight + 8) {
-            textX = x + 3;
-            textY = y + textHeight + 3;
-            if (textX + textWidth > padding.left + plotWidth - 5) {
-                textX = padding.left + plotWidth - textWidth - 5;
-            }
-        } else {
-            textX = padding.left + plotWidth - textWidth - 5;
-            textY = Math.max(
-                padding.top + textHeight / 2,
-                Math.min(y, padding.top + plotHeight - textHeight / 2)
-            );
-        }
-    }
-
-    textX = Math.max(padding.left + 2, Math.min(textX, padding.left + plotWidth - textWidth - 2));
-    textY = Math.max(
+    const textX = Math.max(
+        padding.left + 2,
+        Math.min(rawPos.textX, padding.left + plotWidth - textWidth - 2)
+    );
+    let textY = Math.max(
         padding.top + textHeight / 2,
-        Math.min(textY, padding.top + plotHeight - textHeight / 2)
+        Math.min(rawPos.textY, padding.top + plotHeight - textHeight / 2)
     );
 
     // Nudge away from any previously drawn labels

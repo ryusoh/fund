@@ -14,11 +14,6 @@
             "count": 1
         }
     },
-    "js/transactions/chart/core.js": {
-        "complexity": {
-            "count": 3
-        }
-    },
     "js/transactions/chart/data/contribution.js": {
         "complexity": {
             "count": 3
