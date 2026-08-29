@@ -301,7 +301,7 @@ describe('imagePlugin', () => {
             innerRadius: 50,
             outerRadius: 100,
             x: 100,
-            y: 100
+            y: 100,
         };
         mockChart.getDatasetMeta.mockReturnValue({ data: [arc] });
 
@@ -338,7 +338,7 @@ describe('imagePlugin', () => {
             innerRadius: 50,
             outerRadius: 100,
             x: 100,
-            y: 100
+            y: 100,
         };
         mockChart.getDatasetMeta.mockReturnValue({ data: [arc] });
 
@@ -355,7 +355,7 @@ describe('imagePlugin', () => {
         const midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) / 2;
         mockChart._cursorPos = {
             x: arc.x + Math.cos(sliceAngle) * midR,
-            y: arc.y + Math.sin(sliceAngle) * midR
+            y: arc.y + Math.sin(sliceAngle) * midR,
         };
         imagePlugin.afterDatasetsDraw(mockChart, {}, {});
 
