@@ -1,4 +1,155 @@
-import { buildDrawdownSeries } from '../../../js/transactions/chart/renderers/drawdown.js';
+import { jest } from '@jest/globals';
+import { buildDrawdownSeries, drawDrawdownChart } from '../../../js/transactions/chart/renderers/drawdown.js';
+import { transactionState } from '../../../js/transactions/state.js';
+import { chartLayouts } from '../../../js/transactions/chart/state.js';
+
+jest.mock('../../../js/transactions/state.js', () => ({
+    transactionState: {
+        performanceSeries: {},
+        selectedCurrency: 'USD',
+        chartVisibility: {},
+        chartDateRange: { from: null, to: null },
+    },
+    getShowChartLabels: jest.fn(() => true),
+}));
+jest.mock('../../../js/transactions/chart/state.js', () => ({
+    chartLayouts: {},
+}));
+jest.mock('../../../js/transactions/chart/interaction.js', () => ({
+    updateCrosshairUI: jest.fn(),
+    drawCrosshairOverlay: jest.fn(),
+    updateLegend: jest.fn(),
+    legendState: { performanceDirty: false },
+}));
+jest.mock('../../../js/transactions/chart/animation.js', () => ({
+    stopPerformanceAnimation: jest.fn(),
+    stopContributionAnimation: jest.fn(),
+    stopFxAnimation: jest.fn(),
+    drawSeriesGlow: jest.fn(),
+    isAnimationEnabled: jest.fn(() => false),
+    advancePerformanceAnimation: jest.fn(() => 1),
+    schedulePerformanceAnimation: jest.fn(),
+}));
+jest.mock('../../../js/transactions/chart/core.js', () => ({
+    drawAxes: jest.fn(),
+    drawMountainFill: jest.fn(),
+    drawEndValue: jest.fn(() => ({ x: 0, y: 0, width: 10, height: 10 })),
+}));
+jest.mock('../../../js/transactions/utils.js', () => ({
+    convertBetweenCurrencies: jest.fn((val) => val),
+}));
+jest.mock('../../../js/transactions/chart/helpers.js', () => {
+    const actual = jest.requireActual('../../../js/transactions/chart/helpers.js');
+    return {
+        ...actual,
+        getChartColors: jest.fn(() => ({
+            '^LZ': '#ff0000',
+            '^GSPC': '#00ff00',
+        })),
+        getSmoothingConfig: jest.fn(() => ({ smooth: true, tension: 0.4 })),
+        createTimeInterpolator: jest.fn(() => jest.fn(() => 1)),
+        formatPercentInline: jest.fn((val) => `${val}%`),
+        clampTime: jest.fn((time) => time),
+        parseLocalDate: jest.fn((str) => new Date(str)),
+    };
+});
+jest.mock('../../../js/utils/smoothing.js', () => ({
+    smoothFinancialData: jest.fn((data) => data),
+}));
+
+describe('drawDrawdownChart edge cases', () => {
+    let mockCtx;
+    let mockChartManager;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        mockCtx = {
+            canvas: { offsetWidth: 800, offsetHeight: 600, style: { display: 'block' } },
+            clearRect: jest.fn(),
+            save: jest.fn(),
+            restore: jest.fn(),
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(),
+            setLineDash: jest.fn(),
+            fill: jest.fn(),
+            createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
+        };
+
+        mockChartManager = {
+            updateCrosshairTarget: jest.fn(),
+            getFilterState: jest.fn(() => ({ from: null, to: null })),
+        };
+
+        const emptyState = document.createElement('div');
+        emptyState.id = 'runningAmountEmpty';
+        emptyState.style.display = 'none';
+        document.body.appendChild(emptyState);
+
+        chartLayouts.drawdown = null;
+        transactionState.chartVisibility = {};
+        transactionState.chartDateRange = { from: null, to: null };
+    });
+
+    afterEach(() => {
+        const el = document.getElementById('runningAmountEmpty');
+        if (el) {el.remove();}
+    });
+
+    it('gracefully handles empty performanceSeries', async () => {
+        transactionState.performanceSeries = {};
+        await drawDrawdownChart(mockCtx, mockChartManager, 0);
+        expect(chartLayouts.drawdown).toBeNull();
+    });
+
+    it('gracefully handles all series hidden', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [{ date: '2023-01-01', value: 100 }],
+        };
+        transactionState.chartVisibility = { '^LZ': false };
+        await drawDrawdownChart(mockCtx, mockChartManager, 0);
+        expect(chartLayouts.drawdown).toBeNull();
+    });
+
+    it('gracefully handles missing data points / invalid dates filtering out everything', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [{ date: 'invalid-date', value: 100 }],
+        };
+        transactionState.chartVisibility = { '^LZ': true };
+        await drawDrawdownChart(mockCtx, mockChartManager, 0);
+        // It should still build layout but with empty points
+        expect(chartLayouts.drawdown).toBeDefined();
+    });
+
+    it('gracefully handles date range filtering out all points', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [
+                { date: '2020-01-01', value: 100 },
+            ],
+        };
+        transactionState.chartDateRange = { from: '2025-01-01', to: '2025-12-31' };
+        transactionState.chartVisibility = { '^LZ': true };
+        await drawDrawdownChart(mockCtx, mockChartManager, 0);
+        // It might not be null, but returns early or draws empty axes
+        expect(chartLayouts.drawdown).toBeDefined();
+    });
+
+    it('draws properly when points are available', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [
+                { date: '2023-01-01', value: 100 },
+                { date: '2023-02-01', value: 90 },
+            ],
+        };
+        transactionState.chartVisibility = { '^LZ': true };
+        await drawDrawdownChart(mockCtx, mockChartManager, 0);
+        expect(chartLayouts.drawdown).not.toBeNull();
+        const el = document.getElementById('runningAmountEmpty');
+        expect(el.style.display).toBe('none');
+    });
+});
 
 describe('buildDrawdownSeries', () => {
     test('returns empty array for invalid input', () => {

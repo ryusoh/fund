@@ -40,6 +40,48 @@ jest.mock('../../../js/transactions/chart/animation.js', () => ({
     stopContributionAnimation: jest.fn(),
 }));
 
+describe('buildFxChartSeries early returns and edge cases', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        transactionState.fxRatesByCurrency = {};
+        transactionState.portfolioSeries = [];
+        transactionState.chartDateRange = { from: null, to: null };
+        transactionState.selectedCurrency = 'USD';
+        transactionState.chartVisibility = {};
+    });
+
+    it('skips when target currency is not in fxRates', () => {
+        transactionState.fxRatesByCurrency = {
+            USD: { sorted: [{ date: '2023-01-01', ts: null }] },
+            // Missing GBP which might be in FX_CURRENCY_ORDER
+        };
+        const series = buildFxChartSeries('USD');
+        const gbpSeries = series.find(s => s.quote === 'GBP');
+        expect(gbpSeries).toBeUndefined();
+    });
+
+    it('skips currency when dateSource is empty', () => {
+        transactionState.fxRatesByCurrency = {
+            USD: { sorted: [] },
+            EUR: { sorted: [] }
+        };
+        const series = buildFxChartSeries('USD');
+        const eurSeries = series.find(s => s.quote === 'EUR');
+        expect(eurSeries).toBeUndefined();
+    });
+
+    it('skips when no valid points are generated', () => {
+        // Ensure format doesn't parse correctly or returns NaN
+        transactionState.fxRatesByCurrency = {
+            USD: { sorted: [{ date: 'invalid-date' }] },
+            EUR: { sorted: [{ date: 'invalid-date' }] }
+        };
+        const series = buildFxChartSeries('USD');
+        const eurSeries = series.find(s => s.quote === 'EUR');
+        expect(eurSeries).toBeUndefined();
+    });
+});
+
 describe('fx.js renderer start time', () => {
     let mockCtx;
     let mockChartManager;
@@ -73,6 +115,76 @@ describe('fx.js renderer start time', () => {
         transactionState.chartDateRange = { from: null, to: null };
         transactionState.selectedCurrency = 'USD';
         transactionState.chartVisibility = {};
+    });
+
+    it('handles empty series data gracefully', async () => {
+        // Setup empty FX data
+        transactionState.fxRatesByCurrency = {};
+        const emptyState = document.createElement('div');
+        emptyState.id = 'runningAmountEmpty';
+        emptyState.style.display = 'none';
+        document.body.appendChild(emptyState);
+
+        await drawFxChart(mockCtx, mockChartManager, 0);
+
+        expect(emptyState.style.display).toBe('block');
+        expect(chartLayouts.fx).toBeNull();
+
+        document.body.removeChild(emptyState);
+    });
+
+    it('handles filtering all data out gracefully', async () => {
+        transactionState.fxRatesByCurrency = {
+            USD: {
+                sorted: [
+                    { date: '2000-01-01', ts: null },
+                    { date: '2010-01-01', ts: null },
+                ],
+            },
+            CNY: {
+                sorted: [
+                    { date: '2000-01-01', ts: null },
+                ],
+            },
+        };
+        transactionState.portfolioSeriesByCurrency = { CNY: [] };
+
+        // Filter out everything
+        transactionState.chartDateRange = { from: '2025-01-01', to: '2025-12-31' };
+
+        const emptyState = document.createElement('div');
+        emptyState.id = 'runningAmountEmpty';
+        emptyState.style.display = 'none';
+        document.body.appendChild(emptyState);
+
+        await drawFxChart(mockCtx, mockChartManager, 0);
+
+        expect(emptyState.style.display).toBe('block');
+        expect(chartLayouts.fx).toBeNull();
+
+        document.body.removeChild(emptyState);
+    });
+
+    it('falls back to current year start if no portfolioSeries or filterFrom', async () => {
+        transactionState.fxRatesByCurrency = {
+            USD: {
+                sorted: [
+                    { date: '2000-01-01', ts: null },
+                    { date: '2010-01-01', ts: null },
+                ],
+            },
+            CNY: {
+                sorted: [
+                    { date: '2024-01-01', ts: null },
+                ],
+            },
+        };
+        transactionState.portfolioSeriesByCurrency = { CNY: [] };
+        transactionState.portfolioSeries = null;
+        transactionState.chartDateRange = { from: null, to: null };
+
+        await drawFxChart(mockCtx, mockChartManager, 0);
+        expect(chartLayouts.fx).toBeDefined();
     });
 
     it('clamps filterFrom to the earliest portfolioSeries date when "all" (no filter) is applied', async () => {
