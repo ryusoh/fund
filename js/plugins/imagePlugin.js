@@ -1,10 +1,120 @@
 import { drawImage } from '@charts/imageDrawer.js';
 import { logger } from '../utils/logger.js';
 
+function _getPreloadLimit() {
+    const conn = typeof navigator !== 'undefined' ? navigator.connection : undefined;
+    const saveData = !!(conn && conn.saveData);
+    const is2g = !!(conn && /(^|\b)2g\b/i.test(String(conn.effectiveType || '')));
+    return saveData || is2g ? 0 : 10;
+}
+
+function _loadSingleImage(imageUrl, loadedImages, pendingLoads) {
+    if (loadedImages[imageUrl] || pendingLoads.has(imageUrl)) {
+        return;
+    }
+    pendingLoads.add(imageUrl);
+    const img = new Image();
+    try {
+        img.decoding = 'async';
+    } catch (error) {
+        logger.warn('Image plugin processing failed:', error);
+    }
+    img.onload = () => {
+        loadedImages[imageUrl] = img;
+        pendingLoads.delete(imageUrl);
+    };
+    img.onerror = () => {
+        pendingLoads.delete(imageUrl);
+    };
+    img.src = imageUrl;
+}
+
+function _preloadImages(images, loadedImages, pendingLoads) {
+    try {
+        const preloadLimit = _getPreloadLimit();
+        for (let i = 0; i < Math.min(images.length, preloadLimit); i++) {
+            const info = images[i];
+            const imageUrl = info && info.src;
+            if (!imageUrl) {
+                continue;
+            }
+            _loadSingleImage(imageUrl, loadedImages, pendingLoads);
+        }
+    } catch (error) {
+        logger.warn('Image plugin processing failed:', error);
+    }
+}
+
+function _calculateMagneticOffset(cursor, arc) {
+    if (!cursor) {
+        return null;
+    }
+    const MAGNETIC_RADIUS = 80;
+    const MAGNETIC_STRENGTH = 0.35;
+    const sliceAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
+    const midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) / 2;
+    const logoX = arc.x + Math.cos(sliceAngle) * midR;
+    const logoY = arc.y + Math.sin(sliceAngle) * midR;
+    const dx = cursor.x - logoX;
+    const dy = cursor.y - logoY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < MAGNETIC_RADIUS && dist > 0) {
+        const t = 1 - dist / MAGNETIC_RADIUS;
+        const pull = t * t * MAGNETIC_STRENGTH;
+        return { dx: dx * pull, dy: dy * pull };
+    }
+    return null;
+}
+
+function _drawOrLoadImage(chart, ctx, arc, index, hoveredSliceIndex, logoInfo, loadedImages) {
+    if (!logoInfo || !logoInfo.src) {
+        return;
+    }
+    const imageUrl = logoInfo.src;
+    const magneticOffset = _calculateMagneticOffset(chart._cursorPos, arc);
+
+    if (loadedImages[imageUrl]) {
+        const isHovered = index === hoveredSliceIndex;
+        drawImage(ctx, arc, loadedImages[imageUrl], logoInfo, magneticOffset, isHovered);
+    } else {
+        const img = new Image();
+        img.src = imageUrl;
+        img.onload = () => {
+            loadedImages[imageUrl] = img;
+            chart.draw();
+        };
+    }
+}
+
+function _initializeCaches(chart) {
+    if (!chart.imagePlugin_loadedImages) {
+        chart.imagePlugin_loadedImages = {};
+    }
+    if (!chart.imagePlugin_pendingLoads) {
+        chart.imagePlugin_pendingLoads = new Set();
+    }
+}
+
+function _drawLogosForDataset(chart, meta, images, showLogos, hoveredSliceIndex, loadedImages) {
+    for (let index = 0; index < meta.data.length; index++) {
+        const arc = meta.data[index];
+        if (showLogos || index === hoveredSliceIndex) {
+            _drawOrLoadImage(
+                chart,
+                chart.ctx,
+                arc,
+                index,
+                hoveredSliceIndex,
+                images[index],
+                loadedImages
+            );
+        }
+    }
+}
+
 export const imagePlugin = {
     id: 'imagePlugin',
     afterDatasetsDraw(chart) {
-        const ctx = chart.ctx;
         const dataset = chart.data.datasets[0];
         const images = dataset.images;
 
@@ -15,113 +125,18 @@ export const imagePlugin = {
         const showLogos = chart.showLogos || false;
         const hoveredSliceIndex = chart.hoveredSliceIndex;
 
-        // Initialize caches once
-        if (!chart.imagePlugin_loadedImages) {
-            chart.imagePlugin_loadedImages = {};
-        }
-        if (!chart.imagePlugin_pendingLoads) {
-            chart.imagePlugin_pendingLoads = new Set();
-        }
+        _initializeCaches(chart);
         const loadedImages = chart.imagePlugin_loadedImages;
         const pendingLoads = chart.imagePlugin_pendingLoads;
 
-        // Background preload when logos are not requested yet
-        // - Start only after first render (this hook) and when data/meta exist
-        // - Respect connection constraints; cap number of preloads
         const meta = chart.getDatasetMeta(0);
         if (meta.data.length > 0 && !showLogos && hoveredSliceIndex === undefined) {
-            try {
-                const conn = typeof navigator !== 'undefined' ? navigator.connection : undefined;
-                const saveData = !!(conn && conn.saveData);
-                const is2g = !!(conn && /(^|\b)2g\b/i.test(String(conn.effectiveType || '')));
-                const PRELOAD_LIMIT = saveData || is2g ? 0 : 10; // preload up to 10 on decent networks
-                for (let i = 0; i < Math.min(images.length, PRELOAD_LIMIT); i++) {
-                    const info = images[i];
-                    const imageUrl = info && info.src;
-                    if (!imageUrl) {
-                        continue;
-                    }
-                    if (loadedImages[imageUrl] || pendingLoads.has(imageUrl)) {
-                        continue;
-                    }
-                    pendingLoads.add(imageUrl);
-                    const img = new Image();
-                    // Hint decode scheduling; avoid blocking the main thread
-                    try {
-                        img.decoding = 'async';
-                    } catch (error) {
-                        logger.warn('Image plugin processing failed:', error);
-                    }
-                    img.onload = () => {
-                        loadedImages[imageUrl] = img;
-                        pendingLoads.delete(imageUrl);
-                        // Do not trigger chart.draw() here; drawing waits for user toggle/hover
-                    };
-                    img.onerror = () => {
-                        pendingLoads.delete(imageUrl);
-                    };
-                    img.src = imageUrl;
-                }
-            } catch (error) {
-                logger.warn('Image plugin processing failed:', error);
-            }
-            // Do not draw yet; exit early since logos aren't visible
+            _preloadImages(images, loadedImages, pendingLoads);
             return;
         }
 
-        if (meta.data.length === 0) {
-            return;
-        }
-
-        const cursor = chart._cursorPos;
-        const MAGNETIC_RADIUS = 80;
-        const MAGNETIC_STRENGTH = 0.35;
-
-        for (let index = 0; index < meta.data.length; index++) {
-            const arc = meta.data[index];
-            if (showLogos || index === hoveredSliceIndex) {
-                const logoInfo = images[index];
-                if (logoInfo && logoInfo.src) {
-                    const imageUrl = logoInfo.src;
-
-                    // Calculate magnetic pull toward cursor
-                    let magneticOffset = null;
-                    if (cursor) {
-                        const sliceAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
-                        const midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) / 2;
-                        const logoX = arc.x + Math.cos(sliceAngle) * midR;
-                        const logoY = arc.y + Math.sin(sliceAngle) * midR;
-                        const dx = cursor.x - logoX;
-                        const dy = cursor.y - logoY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < MAGNETIC_RADIUS && dist > 0) {
-                            const t = 1 - dist / MAGNETIC_RADIUS;
-                            const pull = t * t * MAGNETIC_STRENGTH;
-                            magneticOffset = { dx: dx * pull, dy: dy * pull };
-                        }
-                    }
-
-                    if (loadedImages[imageUrl]) {
-                        const isHovered = index === hoveredSliceIndex;
-                        drawImage(
-                            ctx,
-                            arc,
-                            loadedImages[imageUrl],
-                            logoInfo,
-                            magneticOffset,
-                            isHovered
-                        );
-                    } else {
-                        // Image is not loaded yet, start loading
-                        const img = new Image();
-                        img.src = imageUrl;
-                        img.onload = () => {
-                            loadedImages[imageUrl] = img;
-                            chart.draw();
-                        };
-                    }
-                }
-            }
+        if (meta.data.length > 0) {
+            _drawLogosForDataset(chart, meta, images, showLogos, hoveredSliceIndex, loadedImages);
         }
     },
 };
