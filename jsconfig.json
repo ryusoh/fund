@@ -19,6 +19,12 @@
             "@utils/*": ["./js/utils/*"]
         }
     },
-    "include": ["js/types/*.d.ts", "js/config.js", "js/config/**/*.js", "js/utils/**/*.js"],
+    "include": [
+        "js/types/*.d.ts",
+        "js/config.js",
+        "js/config/**/*.js",
+        "js/utils/**/*.js",
+        "js/ui/reduced_motion.js"
+    ],
     "exclude": ["node_modules"]
 }
