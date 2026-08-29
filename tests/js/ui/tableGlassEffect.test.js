@@ -1187,7 +1187,7 @@ describe('TableGlassEffect', () => {
             HTMLCanvasElement.prototype.getContext = originalGetContext;
         });
 
-        it('should handle touchstart and touchmove events by mapping them to handleMouseMove', () => {
+        it('should handle touchstart and touchmove events by mapping them to handleMouseMove', async () => {
             const effect = new TableGlassEffect('.table-responsive-container');
             const moveSpy = jest.spyOn(effect, 'handleMouseMove');
 
@@ -1206,7 +1206,7 @@ describe('TableGlassEffect', () => {
                 value: [{ clientX: 300, clientY: 150 }],
             });
             container.dispatchEvent(touchMoveEvt);
-
+            await new Promise((resolve) => window.requestAnimationFrame(resolve));
             expect(moveSpy).toHaveBeenLastCalledWith(touchMoveEvt.touches[0]);
 
             effect.dispose();
@@ -1276,7 +1276,7 @@ describe('TableGlassEffect', () => {
             effect.dispose();
         });
 
-        it('should handle pointer events for Chrome mobile compatibility', () => {
+        it('should handle pointer events for Chrome mobile compatibility', async () => {
             const effect = new TableGlassEffect('.table-responsive-container');
             const moveSpy = jest.spyOn(effect, 'handleMouseMove');
 
@@ -1295,7 +1295,7 @@ describe('TableGlassEffect', () => {
             Object.defineProperty(pointerMoveEvt, 'clientX', { value: 300 });
             Object.defineProperty(pointerMoveEvt, 'clientY', { value: 150 });
             container.dispatchEvent(pointerMoveEvt);
-
+            await new Promise((resolve) => window.requestAnimationFrame(resolve));
             expect(moveSpy).toHaveBeenLastCalledWith(pointerMoveEvt);
 
             effect.dispose();

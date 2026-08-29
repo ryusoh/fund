@@ -194,12 +194,26 @@ export class TableGlassEffect {
             this.mutationObserver.observe(tbody, { childList: true });
         }
 
+        // Throttled mouse move for performance
+        this._pendingMouseMove = null;
+        this._latestMoveEvent = null;
+        this._throttledMouseMove = (e) => {
+            this._latestMoveEvent = e;
+            if (this._pendingMouseMove) {
+                return;
+            }
+            this._pendingMouseMove = requestAnimationFrame(() => {
+                this.handleMouseMove(this._latestMoveEvent);
+                this._pendingMouseMove = null;
+            });
+        };
+
         this.initParticles();
         this.resize();
         this.startLoop();
 
         // Mouse/Touch movement for parallax/interaction
-        this._mouseMoveHandler = (e) => this.handleMouseMove(e);
+        this._mouseMoveHandler = (e) => this._throttledMouseMove(e);
         this._mouseLeaveHandler = () => this.handleMouseLeave();
         this._touchStartHandler = (e) => {
             if (e.touches && e.touches[0]) {
@@ -208,7 +222,7 @@ export class TableGlassEffect {
         };
         this._touchMoveHandler = (e) => {
             if (e.touches && e.touches[0]) {
-                this.handleMouseMove(e.touches[0]);
+                this._throttledMouseMove(e.touches[0]);
             }
         };
         // On mobile, touchend preserves the hover state so the pie chart
@@ -231,7 +245,7 @@ export class TableGlassEffect {
         };
         this._pointerMoveHandler = (e) => {
             if (e.pointerType === 'touch') {
-                this.handleMouseMove(e);
+                this._throttledMouseMove(e);
             }
         };
         this._pointerUpHandler = (e) => {
@@ -979,6 +993,11 @@ export class TableGlassEffect {
     }
 
     dispose() {
+        if (this._pendingMouseMove) {
+            cancelAnimationFrame(this._pendingMouseMove);
+            this._pendingMouseMove = null;
+        }
+
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
