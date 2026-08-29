@@ -179,19 +179,11 @@ instantly identifiable.
 | Run TWRR data pipeline locally          | `make twrr-refresh`                                     |
 | Regenerate AVIF/WebP background tiers   | `make images`                                           |
 
-- Don't reach for raw `npx jest`/`eslint` for whole-repo runs — use the `make`
-  targets so you match CI. Use scoped `npx jest <file>` only for the tight
-  edit→verify loop; use `make verify` before opening the PR.
-- **Complexity ratchet** — `make lint` also gates cyclomatic complexity
-  (`docs/agentic-quality-gates.md`): ESLint `complexity` errors above 20 with
-  `eslint-suppressions.json` baselining the legacy violations (any NEW or
-  worsened one fails; shrink the baseline with `npx eslint
---prune-suppressions`), and `xenon` freezes Python's complexity ranks. The
-  baseline is **per-file**, not per-function: splitting a legacy >20 function
-  into two new >20 functions creates a new violation and fails the gate. Split
-  only after reducing each extracted function below 20, or use inline caching /
-  targeted extraction that keeps one high-complexity function. Never
-  raise the ceilings or hand-edit the suppressions file.
+- Use `make` targets for whole-repo runs so you match CI. Use scoped `npx jest
+<file>` only for the tight edit→verify loop; run `make precommit-fix` before
+  opening a PR.
+- Gate internals (complexity ratchet, mutation testing, dependency structure,
+  `thinking-check`, `bot-pr-check`) live in `docs/agentic-quality-gates.md`.
 - **Jest runs silent** — `console.log` prints nothing. The suite is TZ=UTC while
   browsers here are UTC+8, so a date-off-by-one can be wrong in the browser but
   green under tests. Before debugging an odd or flaky JS test, read
