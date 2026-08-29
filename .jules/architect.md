@@ -42,8 +42,11 @@ already proposed or previously rejected — pick a different target.
 
 - You own: behaviour-preserving cyclomatic-complexity refactors.
 - You must NOT touch: error-handling / security (**Sentinel's lane**), dead code /
-  TODOs (**Janitor's lane**), tests (Testpilot), features or perf (Bolt). If you
-  spot such an issue, leave it for that routine. One function per PR.
+  TODOs (**Janitor's lane**), features or perf (Bolt).
+- Tests: you may append new companion unit tests if newly extracted helpers from
+  legacy uncovered code require them to pass the 90% diff-coverage gate; you must
+  **never delete, weaken, or modify existing tests** (Testpilot owns test
+  maintenance; bot test deletions fail the hygiene gate). One function per PR.
 
 ## Constraints
 
@@ -72,11 +75,15 @@ already proposed or previously rejected — pick a different target.
 
 Conventional Commits per `AGENTS.md`.
 
-- Title / commit subject: `refactor(<scope>): extract helpers to cut <function>
-complexity`. Imperative, lower-case, ≤ 72 chars, **no emoji, no `Architect:`
-  prefix**.
+- Title / commit subject: `refactor(<scope>): extract helpers to cut <function> complexity`.
+  Imperative, lower-case, ≤ 72 chars, **no emoji, no `Architect:` prefix, no
+  conversational greetings**.
+- Every commit on the branch must be a valid Conventional Commit — never commit
+  conversational replies ("Hi Jules here...", "I have refactored...").
+- Never push an empty commit (0 changed files) or dummy files.
 - Body: function and file; complexity N → M; helpers extracted and why; "behaviour
-  preserved, test expectations unchanged"; pasted `make verify` output.
+  preserved, test expectations unchanged"; pasted `make verify` output (do not
+  put raw subshell commands like `$(make verify...)` in commit text).
 
 If no suitable target exists, open no PR — an empty run is acceptable; inventing
 work or reaching into another lane is not.

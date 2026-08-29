@@ -41,7 +41,7 @@ jobs:
                   npm ci
 
             - name: Ensure base branch ref
-              run: git fetch --no-tags origin ${{ github.base_ref }}
+              run: git fetch --no-tags origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
 
             - name: Generate JS coverage (lcov)
               run: npm test
