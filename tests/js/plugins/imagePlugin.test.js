@@ -263,4 +263,103 @@ describe('imagePlugin', () => {
         // Should not throw, and one image created
         expect(createdImages.length).toBe(1);
     });
+
+    it('catches and logs errors during preload process', () => {
+        // Trigger an error in _preloadImages (e.g., by making Math.min throw via a bad property access)
+        const loggerWarnSpy = jest.spyOn(require('../../../js/utils/logger.js').logger, 'warn');
+        const minSpy = jest.spyOn(Math, 'min').mockImplementation(() => {
+            throw new Error('simulated preload error');
+        });
+
+        try {
+            mockChart.data.datasets[0].images = [{ src: 'http://example.com/a.png' }];
+            mockChart.getDatasetMeta.mockReturnValue({ data: [{}] });
+
+            imagePlugin.afterDatasetsDraw(mockChart, {}, {});
+
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                'Image plugin processing failed:',
+                expect.any(Error)
+            );
+        } finally {
+            minSpy.mockRestore();
+            loggerWarnSpy.mockRestore();
+        }
+    });
+
+    it('calculates magnetic offset when cursor is near the arc', async () => {
+        const { drawImage } = await import('@charts/imageDrawer.js');
+        drawImage.mockClear();
+
+        mockChart.showLogos = true;
+        mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
+
+        // Setup arc metadata for magnetic calculation
+        const arc = {
+            startAngle: 0,
+            endAngle: Math.PI / 2, // 90 degrees
+            innerRadius: 50,
+            outerRadius: 100,
+            x: 100,
+            y: 100,
+        };
+        mockChart.getDatasetMeta.mockReturnValue({ data: [arc] });
+
+        // Calculate expected logo position:
+        // sliceAngle = (0 + PI/2) / 2 = PI/4 (45 degrees)
+        // midR = 50 + (100 - 50)/2 = 75
+        // logoX = 100 + cos(PI/4) * 75 ≈ 100 + 0.707 * 75 ≈ 153.03
+        // logoY = 100 + sin(PI/4) * 75 ≈ 153.03
+
+        // Set cursor exactly near the logo to trigger magnetic pull (< 80 distance)
+        mockChart._cursorPos = { x: 160, y: 160 };
+
+        imagePlugin.afterDatasetsDraw(mockChart, {}, {});
+
+        expect(drawImage).toHaveBeenCalled();
+        const callArgs = drawImage.mock.calls[0];
+        // The magneticOffset is the 5th argument
+        const offset = callArgs[4];
+        expect(offset).not.toBeNull();
+        expect(offset.dx).toBeDefined();
+        expect(offset.dy).toBeDefined();
+    });
+
+    it('returns null magnetic offset when cursor is exactly at logo or far away', async () => {
+        const { drawImage } = await import('@charts/imageDrawer.js');
+        drawImage.mockClear();
+
+        mockChart.showLogos = true;
+        mockChart.imagePlugin_loadedImages = { 'http://example.com/logo.png': {} };
+
+        const arc = {
+            startAngle: 0,
+            endAngle: Math.PI / 2,
+            innerRadius: 50,
+            outerRadius: 100,
+            x: 100,
+            y: 100,
+        };
+        mockChart.getDatasetMeta.mockReturnValue({ data: [arc] });
+
+        // Cursor far away (> 80 distance)
+        mockChart._cursorPos = { x: 500, y: 500 };
+        imagePlugin.afterDatasetsDraw(mockChart, {}, {});
+
+        let callArgs = drawImage.mock.calls[0];
+        expect(callArgs[4]).toBeNull(); // magneticOffset
+
+        // Cursor exactly at logo (distance 0)
+        drawImage.mockClear();
+        const sliceAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
+        const midR = arc.innerRadius + (arc.outerRadius - arc.innerRadius) / 2;
+        mockChart._cursorPos = {
+            x: arc.x + Math.cos(sliceAngle) * midR,
+            y: arc.y + Math.sin(sliceAngle) * midR,
+        };
+        imagePlugin.afterDatasetsDraw(mockChart, {}, {});
+
+        callArgs = drawImage.mock.calls[0];
+        expect(callArgs[4]).toBeNull();
+    });
 });
