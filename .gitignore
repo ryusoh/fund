@@ -41,10 +41,11 @@ reports/
 !.claude/launch.json
 # (still ignored by .claude/*: settings.local.json — personal; worktrees/ — transient)
 
-# Transient agent artifacts / PR details
+# Transient agent artifacts / PR details / task state
 pr_body.txt
 pr_title.txt
 commit_message.txt
+.agents/state/
 
 # TWRR pipeline execution log (regenerated on every run)
 data/changelog.json
