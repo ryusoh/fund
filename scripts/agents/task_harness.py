@@ -44,6 +44,24 @@ class TaskState:
     total_gates: int
     current_gate_index: int
     gates: list[GateItem]
+    mounts: dict[str, list[str]] | None = None
+
+
+def extract_mounts(gates: list[GateItem]) -> dict[str, list[str]]:
+    """Group unique gate target files by top-level category."""
+    mount_map: dict[str, set[str]] = {}
+    for gate in gates:
+        if not gate.file:
+            continue
+        # Support comma-separated files
+        for raw_path in gate.file.split(","):
+            p = raw_path.strip()
+            if not p:
+                continue
+            parts = Path(p).parts
+            category = parts[0] if parts else "root"
+            mount_map.setdefault(category, set()).add(p)
+    return {k: sorted(v) for k, v in sorted(mount_map.items())}
 
 
 def parse_work_orders(markdown_content: str, source_doc: str = "") -> TaskState:
@@ -64,8 +82,14 @@ def parse_work_orders(markdown_content: str, source_doc: str = "") -> TaskState:
         tag_match = re.search(r"\[(trivial|low|visual|skip|docs)\]", body, re.IGNORECASE)
         tag = tag_match.group(1).lower() if tag_match else "standard"
 
-        # Extract file: - **File**: `path` or - **File**: path or **Files**: path1, path2
-        file_match = re.search(r"-\s+\*\*Files?\*\*:\s*`?([^\n`]+)`?", body, re.IGNORECASE)
+        # Extract file: - **File**: `path`, - **Files**: path1, path2, or in `path`
+        file_match = re.search(
+            r"-\s+\*\*(?:Files?|Targets?)\*\*:\s*`?([^\n`]+)`?", body, re.IGNORECASE
+        )
+        if not file_match:
+            file_match = re.search(
+                r"-\s+\*\*Find(?:\s+Anchor)?:\*\*.*?in\s+`?([^\n`]+)`?", body, re.IGNORECASE
+            )
         target_file = file_match.group(1).strip() if file_match else ""
 
         # Extract verify command
@@ -87,12 +111,14 @@ def parse_work_orders(markdown_content: str, source_doc: str = "") -> TaskState:
         )
 
     task_name = Path(source_doc).stem if source_doc else "task-workflow"
+    mounts = extract_mounts(gates)
     return TaskState(
         task_id=task_name,
         source_doc=source_doc,
         total_gates=len(gates),
         current_gate_index=0,
         gates=gates,
+        mounts=mounts,
     )
 
 
@@ -111,6 +137,7 @@ def save_state(state: TaskState, state_file: Path) -> None:
         "source_doc": state.source_doc,
         "total_gates": state.total_gates,
         "current_gate_index": state.current_gate_index,
+        "mounts": state.mounts or {},
         "gates": [asdict(g) for g in state.gates],
     }
     state_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -128,6 +155,7 @@ def load_state(state_file: Path) -> TaskState:
         total_gates=data.get("total_gates", len(gates)),
         current_gate_index=data.get("current_gate_index", 0),
         gates=gates,
+        mounts=data.get("mounts", {}),
     )
 
 

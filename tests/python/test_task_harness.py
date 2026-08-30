@@ -54,6 +54,9 @@ def test_parse_work_orders() -> None:
     assert state.gates[1].number == 2
     assert state.gates[1].tag == "skip"
     assert state.gates[1].status == "SKIPPED"
+    assert state.mounts is not None
+    assert "src" in state.mounts
+    assert "src/first.py" in state.mounts["src"]
 
 
 def test_save_and_load_state(tmp_path: Path) -> None:
@@ -73,6 +76,7 @@ def test_save_and_load_state(tmp_path: Path) -> None:
                 status="PENDING",
             )
         ],
+        mounts={"root": ["test.py"]},
     )
     save_state(state, state_file)
     assert state_file.is_file()
@@ -81,6 +85,7 @@ def test_save_and_load_state(tmp_path: Path) -> None:
     assert loaded.task_id == "test-task"
     assert len(loaded.gates) == 1
     assert loaded.gates[0].title == "Title"
+    assert loaded.mounts == {"root": ["test.py"]}
 
 
 def test_cli_lifecycle(tmp_path: Path, capsys) -> None:
