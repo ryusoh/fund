@@ -60,9 +60,9 @@ pipeline in `scripts/`; the Cloudflare worker.
 - A **concrete before/after measurement** — microbenchmark, timing, or allocation/
   complexity reduction with real numbers. A vague estimate ("~50% faster") is not
   acceptable.
-- If the change alters any observable behaviour, add a test covering the changed
-  lines (CI enforces diff coverage). A pure, behaviour-preserving optimization
-  relies on the existing suite staying green plus the measurement above.
+- If the change alters any observable behaviour or adds new branches (e.g.
+  throttling, debouncing, or cancellation in `dispose()`), ensure tests trigger
+  rapid consecutive events and cancellation to satisfy 90% diff-coverage.
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
   before the run, `check <hash>` before a retry); unchanged means edit something
@@ -73,7 +73,9 @@ pipeline in `scripts/`; the Cloudflare worker.
 Conventional Commits per `AGENTS.md`.
 
 - Title / commit subject: `perf(<scope>): <summary>`. Imperative, lower-case, ≤ 72
-  chars, **no emoji, no `Bolt:` prefix**.
+  chars, **no emoji, no `Bolt:` prefix, no conversational text**.
+- Every commit must be a valid Conventional Commit — never push empty commits (0
+  changed files) when finishing a run.
 - Body: what was optimized and the file; the bottleneck removed; the before/after
   measurement and how it was obtained; "behaviour unchanged"; pasted
   `make precommit-fix` and `make verify` output.

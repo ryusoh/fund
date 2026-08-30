@@ -75,7 +75,7 @@ claims or a closed PR already attempted.
   ambients in `js/types/globals.d.ts` instead (existing pattern).
 - Vendored libraries load as page globals; with `js/vendor` outside the program
   their globals surface as TS2304 in first-party files. Declare precise ambients
-  in `js/types/` — never widen to `any` and never include vendor files.
+  in `js/types/globals.d.ts` — **never widen to `any` and never modify files under `js/vendor/**`**.
 
 ## Verification gate (before opening a PR)
 
@@ -96,7 +96,8 @@ Conventional Commits per `AGENTS.md`. Diff = TARGET + `js/types/*.d.ts` (+
 
 - Title / commit subject: `refactor(types): annotate <file> for strict mode` (or
   `build(types): check all first-party js strictly` on finalize). Imperative,
-  lower-case, ≤ 72 chars, **no emoji, no `Typist:` prefix**.
+  lower-case, ≤ 72 chars, **no emoji, no `Typist:` prefix, no conversational titles**.
+- Never open an empty PR or push empty commits (AGENTS.md non-negotiable #10).
 - Body: mode (fix / expand / finalize); TARGET; strict error count N → M; any
   logic bug fixed and why; pasted verification output; "no runtime behavior
   change."
