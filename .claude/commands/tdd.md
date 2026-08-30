@@ -76,3 +76,12 @@ complex logic. Ask: "What's the public interface, and which seams should we test
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **Refactoring is not part of the loop.** It belongs to review — run `/code-review`
   after the red → green cycle, not during it.
+
+## Resume protocol
+
+When resuming an in-progress TDD loop or recovering from context compaction:
+1. **Never trust conversation memory** for slice progress.
+2. **Inspect authoritative state**:
+    - Run `git status --short` and `git log -n 3 --oneline`.
+    - Run the scoped test suite to observe red/green status directly.
+3. **Re-anchor the loop**: State the current slice, active failing test assertion, and minimal implementation target before editing code.
