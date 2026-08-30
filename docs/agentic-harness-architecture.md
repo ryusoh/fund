@@ -450,29 +450,29 @@ graph TD
 ## 10. Master Reference & Command Cheat Sheet
 
 ```text
-+---------------------------------------------------------------------------------------+
-|                              AGENTIC HARNESS COMMAND CHEAT SHEET                       |
-+---------------------------------------------------------------------------------------+
-| WORKFLOW COMMAND                   | PURPOSE & INVOCATION                             |
-+------------------------------------+--------------------------------------------------+
-| make verify                        | Full checks: lint + types + sec + tests          |
-| make precommit-fix                 | CI parity gate (web-ci: --max-warnings=0)        |
-| make thinking-check                | Scan for stream-of-consciousness comments        |
-| make bot-pr-check                  | Verify Jules bot PR commit hygiene               |
-| make depcheck                      | Verify JS modular dependency boundaries          |
-| make sync-check                    | Check generated Claude commands freshness        |
-| make mutate-js / mutate-py         | Run Stryker / Mutmut mutation test ratchets      |
-| /action-items <doc>                | Compile findings doc into tagged work orders     |
-| /implement-action-items <doc>      | Execute work orders sequentially with commits    |
-| /tdd                               | Test-driven red-green-refactor loop              |
-| /ship                              | Final verify, squash-merge, push gate            |
-| /research                          | Deep primary source investigation                |
-| /retro                             | Friction-to-improvement compounding loop         |
-| /sibling-repo-sync                 | Propagate tooling across cluster repos           |
-| python3 -m ...task_harness init    | Initialize JSON state ledger from doc            |
-| python3 -m ...task_harness reconcile | Reconcile state against git ground truth      |
-| python3 -m ...task_harness current | Print active Program Counter gate                |
-+---------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|                              AGENTIC HARNESS COMMAND CHEAT SHEET                        |
++-----------------------------------------------------------------------------------------+
+| WORKFLOW COMMAND                     | PURPOSE & INVOCATION                             |
++--------------------------------------+--------------------------------------------------+
+| make verify                          | Full checks: lint + types + sec + tests          |
+| make precommit-fix                   | CI parity gate (web-ci: --max-warnings=0)        |
+| make thinking-check                  | Scan for stream-of-consciousness comments        |
+| make bot-pr-check                    | Verify Jules bot PR commit hygiene               |
+| make depcheck                        | Verify JS modular dependency boundaries          |
+| make sync-check                      | Check generated Claude commands freshness        |
+| make mutate-js / mutate-py           | Run Stryker / Mutmut mutation test ratchets      |
+| /action-items <doc>                  | Compile findings doc into tagged work orders     |
+| /implement-action-items <doc>        | Execute work orders sequentially with commits    |
+| /tdd                                 | Test-driven red-green-refactor loop              |
+| /ship                                | Final verify, squash-merge, push gate            |
+| /research                            | Deep primary source investigation                |
+| /retro                               | Friction-to-improvement compounding loop         |
+| /sibling-repo-sync                   | Propagate tooling across cluster repos           |
+| python3 -m ...task_harness init      | Initialize JSON state ledger from doc            |
+| python3 -m ...task_harness reconcile | Reconcile state against git ground truth         |
+| python3 -m ...task_harness current   | Print active Program Counter gate                |
++-----------------------------------------------------------------------------------------+
 ```
 
 ---
