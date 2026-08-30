@@ -258,3 +258,69 @@ describe('computeScenarioOutcome new branches coverage', () => {
         expect(result.earningsCagr).toBe(0);
     });
 });
+
+describe('fetchText & fetchJson explicit coverage', () => {
+    let fetchText, fetchJson;
+    beforeAll(async () => {
+        global.DATA_CACHE_BUST = 'testbust';
+        const module = await import('@pages/analysis/lab.js');
+        fetchText = module.fetchText;
+        fetchJson = module.fetchJson;
+    });
+
+    afterAll(() => {
+        delete global.DATA_CACHE_BUST;
+    });
+
+    it('fetchText returns text on success', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: true,
+                text: () => Promise.resolve('test content'),
+            })
+        );
+        const text = await fetchText('test.md');
+        expect(text).toBe('test content');
+    });
+
+    it('fetchText throws error on failure', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: false,
+            })
+        );
+        await expect(fetchText('test.md')).rejects.toThrow('Failed to load test.md');
+    });
+
+    it('fetchJson throws error on failure', async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: false,
+            })
+        );
+        await expect(fetchJson('test.json')).rejects.toThrow('Failed to load test.json');
+    });
+});
+
+describe('fetchThesisScenarioTitles coverage', () => {
+    let extractScenarioTitles;
+    beforeAll(async () => {
+        const module = await import('@pages/analysis/lab.js');
+        extractScenarioTitles = module.__analysisLabTesting.extractScenarioTitles;
+    });
+
+    it('extractScenarioTitles handles bad input', () => {
+        expect(extractScenarioTitles(null)).toBeNull();
+        expect(extractScenarioTitles('')).toBeNull();
+    });
+
+    it('extractScenarioTitles parses titles with quotes correctly', () => {
+        const markdown = `
+### Bull Case - "Everything goes right"
+### Bear Case - 'Everything goes wrong'
+`;
+        const result = extractScenarioTitles(markdown);
+        expect(result.bull).toBe('Everything goes right');
+        expect(result.bear).toBe('Everything goes wrong');
+    });
+});

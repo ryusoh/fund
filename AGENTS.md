@@ -341,13 +341,16 @@ files as the only source of truth.
   `js/transactions/terminal/handlers/help.js`: `transaction` toggles the table,
   `plot` needs a subcommand, `all` only clears filters.) Guessing here has twice
   cost a correction round-trip.
-- **Externalized state & transaction boundaries.** On multi-step workflows (action-item
-  sweeps, TDD loops, bug diagnosis), never rely on conversation memory as an execution
-  ledger. Track task progress in disk-backed state files (`.agents/state/` via
-  `scripts/agents/task_harness.py`) or in the governing findings document. At each
-  transaction boundary (after commits or gate checks) and on session resumption,
-  follow the skill's `## Resume protocol`: re-anchor working memory directly from
-  authoritative ground truth (`git status`, `git log`, state file) before dispatching tools.
+- **Externalized state & transaction boundaries (State-Oriented Architecture & SDN Control Plane).**
+  On multi-step workflows (action-item sweeps, TDD loops, bug diagnosis), never rely on
+  conversation memory as an execution ledger ($P = p^N$ failure). Follow Arista EOS's
+  SysDB design and Google Orion's SDN control plane: the disk-backed state ledger
+  (`.agents/state/` via `task_harness.py` or governing findings doc) is the single source
+  of truth; worker agents are ephemeral, stateless transforms ($O(1)$ context) reading
+  only their active gate slice with dynamically routed toolsets (Jupiter OCS model). At each
+  transaction boundary (after commits or gate checks) and on session resumption, follow
+  the skill's `## Resume protocol`: re-anchor working memory directly from authoritative
+  ground truth (`git status`, `git log`, state file) before dispatching tools.
 - **Concurrent agents sharing one worktree.** When you run parallel subagents
   (swarms, background agents) in this checkout: stage only files you changed
   (`git add <specific-files>`, never `git add -A`), never `git stash`,
