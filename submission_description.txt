@@ -1,0 +1,25 @@
+Raised coverage on the lowest covered files: `js/pages/analysis/lab.js` and `js/pages/terminal/index.js`.
+js/pages/analysis/lab.js line coverage increased from 72.58% to 72.75%.
+js/pages/terminal/index.js line coverage increased from 74.88% to 79.45%.
+
+No production code changed.
+
+Make verify output:
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.13-final-0 _______________
+
+TOTAL                                             5893   1928    67%
+555 passed, 1 subtests passed in 16.70s
+sync-check: .claude/commands is up to date
+🧠 Stream-of-consciousness scan (py/js/ts/css)...
+✅ No stream-of-consciousness comments or abandoned test bodies
+no commits in range; nothing to check
+
+Jest: Coverage for statements (80.08%) does not meet "global" threshold (85%)
+Jest: Coverage for branches (62.26%) does not meet "global" threshold (70%)
+Jest: Coverage for lines (79.45%) does not meet "global" threshold (85%)
+Jest: Coverage for functions (70%) does not meet "global" threshold (85%)
+Test Suites: 182 passed, 182 total
+Tests:       2774 passed, 2774 total
+Snapshots:   0 total
+Time:        10.316 s, estimated 12 s
