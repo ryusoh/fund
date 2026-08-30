@@ -1,8 +1,8 @@
 # Research: Eliminating Attention Degradation in Agent Harnesses via Externalized State & Gated Dispatch
 
-**Status:** Proposed  
-**Date:** 2026-08-30  
-**Authors:** Antigravity (Pair Programming Agent)  
+**Status:** Proposed
+**Date:** 2026-08-30
+**Authors:** Antigravity (Pair Programming Agent)
 **Primary References:**
 
 - Autoregressive Attention Dynamics: Context Dilution & "Lost in the Middle" attention degradation in long-context Transformers.
