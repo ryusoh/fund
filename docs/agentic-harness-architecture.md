@@ -1,7 +1,7 @@
 # Architecture of the Agentic Harness System
 
-**Repository:** `ryusoh/fund`  
-**Status:** Canonical Master Reference Architecture  
+**Repository:** `ryusoh/fund`
+**Status:** Canonical Master Reference Architecture
 **Domain:** AI-Native Engineering, Software-Defined Agent Control Planes, Autonomous Workflows, Deterministic Quality Gates
 
 ---
