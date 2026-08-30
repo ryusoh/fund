@@ -48,6 +48,7 @@ verify this run.
 ## Resume protocol
 
 When resumed, invoked on an in-progress task, or recovering from context compaction:
+
 1. **Never trust conversation memory** for progress tracking.
 2. **Inspect authoritative ground truth**:
     - Run `git status --short` and `git log -n 5 --oneline`.

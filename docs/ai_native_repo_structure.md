@@ -50,7 +50,7 @@ An AI-Native Repository is optimized for a machine-in-the-loop workflow. It shou
 2. **Deterministic Interface (Unified Task Runner)**: The agent should not need to inspect `package.json` to find frontend commands and `pyproject.toml`/`Makefile` to find backend commands. There should be a single, unified command interface (e.g., `Makefile`).
 3. **Low Context Footprint & Strict Boundaries**: Code should be highly modular. Interfaces between modules should be typed so that an agent editing module `A` does not need to read the implementation of module `B`—only its types/interfaces.
 4. **Fast, Scoped Verification**: This is the highest-leverage property of all. Agents iterate edit→verify far more often than humans, and they verify _honestly_ only when verification is cheap: a single test file runnable in seconds (`make test FILE=...`), per-file lint, incremental type-checking, and machine-readable errors with paths and line numbers. A repo where the only check is "run everything for 10 minutes" trains agents (and humans) to skip checking.
-5. **Explicit Agent State & Memory**: The repo should reserve directories for agents to store their execution states, tasks, and rules.
+5. **Explicit Agent State & Memory (Disk-Backed Working Memory & Gated Dispatch)**: The repo should reserve directories for agents to store their execution states, tasks, and rules (`.agents/state/`). Multi-step agent workflows should never rely on conversation token memory across transaction boundaries; progress should be persisted to disk-backed state ledgers, and large workflows should be partitioned into isolated gated subagent micro-contexts to eliminate autoregressive attention degradation.
 
 ---
 

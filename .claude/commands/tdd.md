@@ -80,6 +80,7 @@ complex logic. Ask: "What's the public interface, and which seams should we test
 ## Resume protocol
 
 When resuming an in-progress TDD loop or recovering from context compaction:
+
 1. **Never trust conversation memory** for slice progress.
 2. **Inspect authoritative state**:
     - Run `git status --short` and `git log -n 3 --oneline`.

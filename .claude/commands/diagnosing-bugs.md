@@ -145,6 +145,7 @@ line — hand off to `/retro` with the specifics, **after** the fix is in.
 ## Resume protocol
 
 When resuming an interrupted bug investigation or recovering from context compaction:
+
 1. **Never trust conversation memory** for diagnosis progress.
 2. **Inspect authoritative ground truth**:
     - Run `git status --short` and `git diff` to locate active probes/instrumentation.
