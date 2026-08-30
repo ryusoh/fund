@@ -45,6 +45,18 @@ or red verification), with the commit hash for each done item and the failing
 command's output for each failed item. Do not claim anything you didn't
 verify this run.
 
+## Resume protocol
+
+When resumed, invoked on an in-progress task, or recovering from context compaction:
+1. **Never trust conversation memory** for progress tracking.
+2. **Inspect authoritative ground truth**:
+    - Run `git status --short` and `git log -n 5 --oneline`.
+    - Read the external task state artifact or findings doc.
+3. **Locate the Program Counter**:
+    - Identify the first work order where the corresponding commit/verification is missing.
+4. **Re-anchor working memory**:
+    - State the current work order number, target file, and entry verification command explicitly before calling tools.
+
 ## Unattended runs
 
 For a hands-off sweep, the user may wrap this skill in a goal-mode session
