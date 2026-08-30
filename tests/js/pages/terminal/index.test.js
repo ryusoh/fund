@@ -233,3 +233,145 @@ describe('Terminal index page', () => {
         });
     });
 });
+
+describe('convertCurrencySeries explicit coverage', () => {
+    let convertCurrencySeries;
+    beforeAll(async () => {
+        const module = await import('@pages/terminal/index.js');
+        convertCurrencySeries = module.__terminalTesting.convertCurrencySeries;
+    });
+
+    it('returns early if not array', () => {
+        const result = convertCurrencySeries({}, 'CAD');
+        expect(result).toEqual({});
+    });
+
+    it('returns early if target is USD', () => {
+        const result = convertCurrencySeries([{ amount: 100 }], 'USD');
+        expect(result).toEqual([{ amount: 100 }]);
+    });
+});
+
+describe('ensureSyntheticStart additional coverage', () => {
+    let ensureSyntheticStart;
+    beforeAll(async () => {
+        const module = await import('@pages/terminal/index.js');
+        ensureSyntheticStart = module.__terminalTesting.ensureSyntheticStart;
+    });
+
+    it('handles series as an object mapping keys to arrays', () => {
+        const series = {
+            a: [{ date: '2023-01-02', value: 100 }],
+            b: [{ date: '2023-01-02', value: 200 }],
+        };
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' });
+        expect(result.a[0].synthetic).toBe(true);
+        expect(result.a[0].date).toBe('2023-01-01');
+        expect(result.b[0].synthetic).toBe(true);
+        expect(result.b[0].date).toBe('2023-01-01');
+    });
+
+    it('returns empty array if series is falsy or empty', () => {
+        expect(ensureSyntheticStart(null, { dateKey: 'date', valueKey: 'value' })).toEqual([]);
+        expect(ensureSyntheticStart([], { dateKey: 'date', valueKey: 'value' })).toEqual([]);
+    });
+
+    it('returns series if first value is not finite', () => {
+        const series = [{ date: '2023-01-01', value: NaN }];
+        expect(ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' })).toBe(series);
+    });
+
+    it('preserves Date objects properly when zeroing', () => {
+        const firstDate = new Date('2023-01-02T00:00:00Z');
+        const series = [{ date: firstDate, value: 0 }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' });
+        expect(result[0].date).toEqual(firstDate);
+        expect(result[0].synthetic).toBe(true);
+    });
+
+    it('returns original series if already synthetic start and value is 0', () => {
+        const series = [{ date: '2023-01-01', value: 0, synthetic: true }];
+        expect(ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' })).toBe(series);
+    });
+
+    it('handles valueKey != amount and base has amount', () => {
+        const series = [{ date: '2023-01-02', otherValue: 100, amount: 50 }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'otherValue' });
+        expect(result[0].otherValue).toBe(0);
+        expect(result[0].amount).toBe(0);
+    });
+
+    it('handles valueKey == amount', () => {
+        const series = [{ date: '2023-01-02', amount: 100 }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'amount' });
+        expect(result[0].amount).toBe(0);
+    });
+
+    it('handles valueKey != value and base has value', () => {
+        const series = [{ date: '2023-01-02', otherValue: 100, value: 50 }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'otherValue' });
+        expect(result[0].otherValue).toBe(0);
+        expect(result[0].value).toBe(0);
+    });
+
+    it('handles valueKey == value', () => {
+        const series = [{ date: '2023-01-02', value: 100 }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' });
+        expect(result[0].value).toBe(0);
+    });
+
+    it('removes transactionId if present', () => {
+        const series = [{ date: '2023-01-02', value: 100, transactionId: 'foo' }];
+        const result = ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' });
+        expect(result[0].transactionId).toBeUndefined();
+    });
+
+    it('returns series if firstDate is invalid', () => {
+        const series = [{ date: 'invalid', value: 100 }];
+        expect(ensureSyntheticStart(series, { dateKey: 'date', valueKey: 'value' })).toBe(series);
+    });
+});
+
+describe('buildFxRateMaps coverage', () => {
+    let buildFxRateMaps;
+    beforeAll(async () => {
+        const module = await import('@pages/terminal/index.js');
+        buildFxRateMaps = module.__terminalTesting.buildFxRateMaps;
+    });
+
+    it('returns empty object if no payload', () => {
+        expect(buildFxRateMaps(null)).toEqual({});
+        expect(buildFxRateMaps('invalid')).toEqual({});
+        expect(buildFxRateMaps({})).toEqual({});
+    });
+
+    it('buildFxRateMaps skips empty dates or invalid rate values', () => {
+        const payload = {
+            rates: {
+                '2023-01-01': null, // covered: if (!rateMap) continue
+                '2023-01-02': {
+                    EUR: 'invalid', // covered: if (!Number.isFinite(rateNumber)) continue
+                    CAD: 1.3,
+                },
+            },
+        };
+        const result = buildFxRateMaps(payload);
+        expect(result.CAD.map.get('2023-01-02')).toBe(1.3);
+        expect(result.EUR).toBeUndefined();
+    });
+
+    it('buildFxRateMaps handles multiple entries and dates', () => {
+        const payload = {
+            rates: {
+                '2023-01-02': { CAD: 1.3 },
+                '2023-01-01': { CAD: 1.2, USD: 1.0 },
+                'invalid-date': { CAD: 1.4 }, // handles Number.isNaN(timestamp)
+            },
+        };
+        const result = buildFxRateMaps(payload);
+        expect(result.CAD.sorted.length).toBe(3);
+        expect(result.CAD.map.has('invalid-date')).toBe(true);
+        expect(result.CAD.map.get('invalid-date')).toBe(1.4);
+        expect(result.USD.map.get('2023-01-01')).toBe(1.0);
+    });
+});
