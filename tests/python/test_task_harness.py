@@ -160,6 +160,8 @@ def test_render_worker_prompt(tmp_path: Path, capsys) -> None:
     assert "Work Order Execution Task: Gate 1" in prompt
     assert "src/first.py" in prompt
     assert "pytest tests/test_first.py" in prompt
+    assert "Scoped Toolset (OCS Routing)" in prompt
+    assert "ruff (lint)" in prompt
 
 
 def test_reconcile_state(tmp_path: Path, capsys) -> None:

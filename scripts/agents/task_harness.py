@@ -173,6 +173,20 @@ def validate_commit(repo_root: Path, commit_sha: str) -> bool:
         return False
 
 
+def derive_scoped_tools(target_file: str) -> list[str]:
+    """Derive minimal required toolset based on target file type (Jupiter OCS routing)."""
+    p = target_file.lower().strip()
+    if p.endswith(".py"):
+        return ["ruff (lint)", "mypy (types)", "pytest (test)", "view_file", "replace_file_content"]
+    if p.endswith((".js", ".mjs", ".jsx")):
+        return ["eslint (lint)", "tsc (types)", "jest (test)", "view_file", "replace_file_content"]
+    if p.endswith(".css"):
+        return ["stylelint (lint)", "screenshot (visual)", "view_file", "replace_file_content"]
+    if p.endswith(".md"):
+        return ["markdownlint", "prettier", "thinking-check", "view_file", "replace_file_content"]
+    return ["view_file", "replace_file_content", "scoped verify command"]
+
+
 def render_worker_prompt(state: TaskState, gate_query: str) -> str:
     """Render a hermetic, zero-tacit-context prompt for an ephemeral worker agent."""
     query = str(gate_query).strip().lower()
@@ -186,6 +200,8 @@ def render_worker_prompt(state: TaskState, gate_query: str) -> str:
 
     target_file_str = target.file if target.file else "(see work order)"
     verify_str = target.verification if target.verification else "make verify"
+    scoped_tools = derive_scoped_tools(target_file_str)
+    tools_str = ", ".join(f"`{t}`" for t in scoped_tools)
 
     return f"""# Work Order Execution Task: Gate {target.number}
 
@@ -200,6 +216,7 @@ Do not assume any conversational history from previous steps. All state is exter
 - **Target File**: `{target_file_str}`
 - **Tag**: `[{target.tag}]`
 - **Verify Command**: `{verify_str}`
+- **Scoped Toolset (OCS Routing)**: {tools_str}
 
 ## Execution Instructions
 1. **Locate & Read**: Inspect the target file `{target_file_str}`.
