@@ -86,13 +86,13 @@ $$C_{\text{monolithic}}(N) = \sum_{k=1}^N \mathcal{O}(k \cdot \bar{L}_{\text{tur
 
 ### 2.3 Declarative State Convergence Function
 
-Let $S_{\text{declared}}$ be the target intent specified in an action items document, $S_{\text{git}}$ be the ground truth git DAG, and $S_{\text{disk}}$ be the externalized JSON state ledger. The control plane implements a continuous reconciliation operator $\mathcal{R}$:
+Let $S_{\mathrm{declared}}$ be the target intent specified in an action items document, $S_{\mathrm{git}}$ be the ground truth git DAG, and $S_{\mathrm{disk}}$ be the externalized JSON state ledger. The control plane implements a continuous reconciliation operator $\mathcal{R}$:
 
-$$\mathcal{R} : S_{\text{git}} \times S_{\text{disk}} \times S_{\text{declared}} \longrightarrow S_{\text{disk}}'$$
+$$\mathcal{R} : S_{\mathrm{git}} \times S_{\mathrm{disk}} \times S_{\mathrm{declared}} \longrightarrow S_{\mathrm{disk}}'$$
 
 The Program Counter ($PC$) identifies the exact minimal unresolved gate:
 
-$$PC = \min \Big( \{i \in \{1, \dots, N\} \mid \text{Status}(g_i) \in \{\text{PENDING}, \text{IN\_PROGRESS}, \text{FAILED}\}\} \cup \{\infty\} \Big)$$
+$$PC = \min \Big( \{i \in \{1, \dots, N\} \mid \text{Status}(g_i) \notin \{\text{DONE}, \text{SKIPPED}\}\} \cup \{\infty\} \Big)$$
 
 Convergence is achieved when $PC = \infty$ (all gates $\in \{\text{DONE}, \text{SKIPPED}\}$ with verified git commit SHAs).
 
@@ -480,11 +480,11 @@ graph TD
 ## 11. Architectural Axioms Summary
 
 $$ \begin{aligned}
-\text{State Ledger} &\implies \text{Externalized Disk JSON File } (\text{Arista SysDB Model}) \\
-\text{Orchestration Control} &\implies \text{Centralized Declarative SDN Engine } (\text{Google Orion Model}) \\
-\text{Subagent Execution} &\implies \mathcal{O}(1) \text{ Ephemeral Single-Gate Lifetime } (\text{Merchant Silicon Clos}) \\
-\text{Tool Provisioning} &\implies \text{Dynamic Adaptive Slicing } (\text{Google Jupiter OCS}) \\
-\text{Quality Assurance} &\implies \text{Automated Layered Gates } (\text{Measure, Don't Read}) \\
-\text{Verification Authority} &\implies \text{Strict Deterministic CI Parity } (\text{make precommit-fix})
+\text{State Ledger} &\implies \text{Externalized Disk JSON File (Arista SysDB Model)} \\
+\text{Orchestration Control} &\implies \text{Centralized Declarative SDN Engine (Google Orion Model)} \\
+\text{Subagent Execution} &\implies \mathcal{O}(1) \text{ Ephemeral Single-Gate Lifetime (Merchant Silicon Clos)} \\
+\text{Tool Provisioning} &\implies \text{Dynamic Adaptive Slicing (Google Jupiter OCS)} \\
+\text{Quality Assurance} &\implies \text{Automated Layered Gates (Measure, Don't Read)} \\
+\text{Verification Authority} &\implies \text{Strict Deterministic CI Parity (make precommit-fix)}
 \end{aligned}$$
 $$

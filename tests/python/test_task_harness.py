@@ -178,5 +178,3 @@ def test_reconcile_state(tmp_path: Path, capsys) -> None:
     summary = capsys.readouterr().out
     assert "0/3 DONE, 1 SKIPPED, 2 PENDING" in summary
     assert "Program Counter -> Gate 1" in summary
-
-
