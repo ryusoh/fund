@@ -100,6 +100,48 @@ describe('Rolling Chart Renderer', () => {
         transactionState.chartDateRange = { from: null, to: null };
     });
 
+    it('gracefully handles missing visible series', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [
+                { date: '2024-01-01', value: 100 },
+                { date: '2025-01-01', value: 105 },
+            ],
+        };
+        transactionState.chartVisibility = { '^LZ': false };
+
+        await drawRollingChart(mockCtx, mockChartManager, 0);
+
+        // Chart layouts should be null
+        expect(chartLayouts.rolling).toBeNull();
+    });
+
+    it('gracefully handles when series have empty data after parsing', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [{ date: 'invalid-date', value: 100 }],
+        };
+        transactionState.chartVisibility = { '^LZ': true };
+
+        await drawRollingChart(mockCtx, mockChartManager, 0);
+
+        // Date fails to parse -> rollingData is empty -> validSeries length is 0 -> stops everything
+        expect(chartLayouts.rolling).toBeNull();
+    });
+
+    it('gracefully handles empty filtered series (e.g. all points out of date range)', async () => {
+        transactionState.performanceSeries = {
+            '^LZ': [
+                { date: '2020-01-01', value: 100 },
+                { date: '2021-01-01', value: 105 },
+            ],
+        };
+        transactionState.chartVisibility = { '^LZ': true };
+        transactionState.chartDateRange = { from: '2025-01-01', to: '2025-12-31' };
+
+        await drawRollingChart(mockCtx, mockChartManager, 0);
+
+        expect(chartLayouts.rolling).toBeNull();
+    });
+
     it('handles empty performanceSeries gracefully', async () => {
         transactionState.performanceSeries = {};
         await drawRollingChart(mockCtx, mockChartManager, 0);
