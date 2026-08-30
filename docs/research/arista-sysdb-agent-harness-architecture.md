@@ -232,21 +232,34 @@ When resumed, invoked on an in-progress task, or recovering from context compact
 
 ---
 
-## 5. Action Items & Verification Plan
+## 5. Action Items & Work Orders
 
-### Ranked Action Items
+### Work Order 1: Schema-Enforced State Mounts & Tracking in `scripts/agents/task_harness.py`
 
-- [ ] **Item 1 (Immediate - High Leverage): Schema-Enforced State Mounts in `task_harness.py`**
-      Extend [scripts/agents/task_harness.py](file:///Users/lz/dev/fund/scripts/agents/task_harness.py) to support `--mounts` validation, ensuring that work orders cannot modify files outside their declared target set.
-      _Verify_: `venv/bin/pytest tests/python/test_task_harness.py`
+- **Find Anchor:**
+  `def parse_work_orders(doc_path: Path) -> List[Gate]:` in `scripts/agents/task_harness.py`
+- **Change:**
+  Extract all unique target files and directories across gates to populate a top-level `"mounts"` dictionary in the task ledger, and validate that gate operations stay bounded within declared mount paths.
+- **Verify:**
+  `venv/bin/pytest tests/python/test_task_harness.py`
 
-- [ ] **Item 2 (High Leverage): Stateless Subagent Dispatch Prompt Generator**
-      Add a helper `python3 -m scripts.agents.task_harness render-worker-prompt <task-id> <gate-id>` that generates a hermetic, zero-history prompt for single-gate execution.
-      _Verify_: `python3 -m scripts.agents.task_harness render-worker-prompt --help`
+### Work Order 2: Stateless Subagent Prompt Generator in `scripts/agents/task_harness.py`
 
-- [ ] **Item 3 (Medium Leverage): Codify State-Oriented Rules in AGENTS.md**
-      Add the "State-Oriented Architecture & Zero Tacit Context" principle to [AGENTS.md](file:///Users/lz/dev/fund/AGENTS.md) and [docs/ai_native_repo_structure.md](file:///Users/lz/dev/fund/docs/ai_native_repo_structure.md).
-      _Verify_: `make thinking-check && make lint`
+- **Find Anchor:**
+  `def main() -> None:` in `scripts/agents/task_harness.py`
+- **Change:**
+  Add a `render-worker-prompt` CLI subcommand to `task_harness.py` that formats a hermetic, zero-tacit-context prompt for an ephemeral subagent targeting a specific gate.
+- **Verify:**
+  `venv/bin/pytest tests/python/test_task_harness.py`
+
+### Work Order 3: Codify State-Oriented Architecture & Zero Tacit Context in `AGENTS.md` and `docs/`
+
+- **Find Anchor:**
+  `- **Externalized state & transaction boundaries.**` in `AGENTS.md`
+- **Change:**
+  Document the State-Oriented Architecture principle (SysDB single source of truth, stateless worker agents, zero tacit context across gates) in `AGENTS.md` and expand Principle 5 in `docs/ai_native_repo_structure.md`.
+- **Verify:**
+  `make thinking-check && make lint`
 
 ---
 
