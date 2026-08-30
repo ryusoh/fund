@@ -173,6 +173,42 @@ def validate_commit(repo_root: Path, commit_sha: str) -> bool:
         return False
 
 
+def render_worker_prompt(state: TaskState, gate_query: str) -> str:
+    """Render a hermetic, zero-tacit-context prompt for an ephemeral worker agent."""
+    query = str(gate_query).strip().lower()
+    target = None
+    for g in state.gates:
+        if str(g.number) == query or g.id.lower() == query:
+            target = g
+            break
+    if not target:
+        raise ValueError(f"Gate '{gate_query}' not found in task '{state.task_id}'.")
+
+    target_file_str = target.file if target.file else "(see work order)"
+    verify_str = target.verification if target.verification else "make verify"
+
+    return f"""# Work Order Execution Task: Gate {target.number}
+
+You are an ephemeral, stateless worker agent executing a single discrete work order.
+Do not assume any conversational history from previous steps. All state is externalized.
+
+## Work Order Specification
+- **Task ID**: {state.task_id}
+- **Source Document**: {state.source_doc}
+- **Gate ID**: {target.id} (Gate {target.number})
+- **Title**: {target.title}
+- **Target File**: `{target_file_str}`
+- **Tag**: `[{target.tag}]`
+- **Verify Command**: `{verify_str}`
+
+## Execution Instructions
+1. **Locate & Read**: Inspect the target file `{target_file_str}`.
+2. **Atomic Modification**: Make only the minimal changes required for this work order. Never perform drive-by edits.
+3. **Verify**: Execute the verification command `{verify_str}` and ensure all checks pass.
+4. **Report**: Return a concise summary of modified files and verification results.
+"""
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Task harness state ledger for autonomous agent gate management."
@@ -191,6 +227,13 @@ def main(argv: list[str] | None = None) -> int:
 
     # current
     sub.add_parser("current", help="Print current active gate as JSON.")
+
+    # render-worker-prompt <gate>
+    prompt_parser = sub.add_parser(
+        "render-worker-prompt",
+        help="Render a stateless, zero-tacit-context prompt for a specific gate.",
+    )
+    prompt_parser.add_argument("gate", help="Gate number or ID (e.g. 1 or gate-1)")
 
     # record-commit <gate_num> <commit_sha>
     record_parser = sub.add_parser("record-commit", help="Record commit for gate.")
@@ -256,6 +299,15 @@ def main(argv: list[str] | None = None) -> int:
         current_gate = pending_gates[0]
         print(json.dumps(asdict(current_gate), indent=2))
         return 0
+
+    if args.command == "render-worker-prompt":
+        try:
+            prompt = render_worker_prompt(state, args.gate)
+            print(prompt)
+            return 0
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
 
     if args.command == "record-commit":
         gate_query = str(args.gate).strip().lower()

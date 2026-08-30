@@ -142,3 +142,22 @@ def test_cli_lifecycle(tmp_path: Path, capsys) -> None:
     assert ret == 0
     status_out = capsys.readouterr().out
     assert "2/3 done, 1 skipped, 0 pending" in status_out
+
+
+def test_render_worker_prompt(tmp_path: Path, capsys) -> None:
+    doc_path = tmp_path / "orders.md"
+    doc_path.write_text(SAMPLE_MARKDOWN, encoding="utf-8")
+    state_file = tmp_path / "state.json"
+
+    main(["--repo", str(tmp_path), "--state-file", str(state_file), "init", str(doc_path)])
+    capsys.readouterr()
+
+    ret = main(
+        ["--repo", str(tmp_path), "--state-file", str(state_file), "render-worker-prompt", "1"]
+    )
+    assert ret == 0
+    prompt = capsys.readouterr().out
+    assert "Work Order Execution Task: Gate 1" in prompt
+    assert "src/first.py" in prompt
+    assert "pytest tests/test_first.py" in prompt
+
