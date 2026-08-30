@@ -20,6 +20,7 @@ legitimately delete or rewrite tests when the user asks.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +38,31 @@ def _git(repo: Path, *args: str) -> str:
         text=True,
     )
     return result.stdout
+
+
+TEST_PATTERNS = (
+    re.compile(r"^\s*(?:it|test)\s*\(", re.MULTILINE),
+    re.compile(r"^\s*def\s+test_\w+", re.MULTILINE),
+)
+ASSERT_PATTERNS = (
+    re.compile(r"\bexpect\s*\(", re.MULTILINE),
+    re.compile(r"^\s*assert\b", re.MULTILINE),
+)
+
+
+def _count_tests_and_asserts(content: str) -> tuple[int, int]:
+    """Count test cases and assertions in a file's content."""
+    tests = sum(len(p.findall(content)) for p in TEST_PATTERNS)
+    asserts = sum(len(p.findall(content)) for p in ASSERT_PATTERNS)
+    return tests, asserts
+
+
+def _file_content(repo: Path, rev: str, path: str) -> str | None:
+    """Return text content of path at rev, or None if file does not exist."""
+    try:
+        return _git(repo, "show", f"{rev}:{path}")
+    except subprocess.CalledProcessError:
+        return None
 
 
 def _is_test_path(path: str) -> bool:
@@ -72,11 +98,40 @@ def find_violations(repo: Path, base: str) -> list[str]:
         for added, deleted, path in rows:
             if added == "0" and deleted == "0":
                 violations.append(f"{sha[:8]} placeholder change: {path} has zero content lines")
-            if deleted not in ("0", "-") and _is_test_path(path):
-                violations.append(
-                    f"{sha[:8]} test deletion: {path} loses {deleted} line(s)"
-                    " — bot lanes are append-only in tests"
-                )
+            if _is_test_path(path) and deleted not in ("0", "-"):
+                parent = f"{sha}~1"
+                before_content = _file_content(repo, parent, path)
+                after_content = _file_content(repo, sha, path)
+
+                if after_content is None:
+                    violations.append(
+                        f"{sha[:8]} test deletion: {path} was deleted"
+                        " — bot lanes are append-only in tests"
+                    )
+                    continue
+
+                if before_content is not None:
+                    before_tests, before_asserts = _count_tests_and_asserts(before_content)
+                    after_tests, after_asserts = _count_tests_and_asserts(after_content)
+
+                    if before_tests > 0 and after_tests < before_tests:
+                        violations.append(
+                            f"{sha[:8]} test deletion: {path} reduces test cases ({before_tests} -> {after_tests})"
+                            " — bot lanes are append-only in tests"
+                        )
+                    elif before_asserts > 0 and after_asserts < before_asserts:
+                        violations.append(
+                            f"{sha[:8]} test deletion: {path} reduces assertions ({before_asserts} -> {after_asserts})"
+                            " — bot lanes are append-only in tests"
+                        )
+                    elif before_tests == 0 and before_asserts == 0:
+                        before_lines = len(before_content.splitlines())
+                        after_lines = len(after_content.splitlines())
+                        if after_lines < before_lines:
+                            violations.append(
+                                f"{sha[:8]} test deletion: {path} loses {before_lines - after_lines} line(s)"
+                                " — bot lanes are append-only in tests"
+                            )
     return violations
 
 

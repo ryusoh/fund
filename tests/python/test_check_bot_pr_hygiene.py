@@ -83,6 +83,57 @@ def test_bot_production_deletion_not_flagged(repo: Path) -> None:
     assert find_violations(repo, "main") == []
 
 
+def test_bot_test_import_and_async_adaptation_allowed(repo: Path) -> None:
+    initial = (
+        "import { oldHelper } from './helper.js';\n"
+        "it('works', () => {\n"
+        "    expect(oldHelper()).toBe(1);\n"
+        "});\n"
+    )
+    updated = (
+        "import { newHelper, other } from './helper.js';\n"
+        "it('works', async () => {\n"
+        "    expect(await newHelper()).toBe(1);\n"
+        "});\n"
+    )
+    _write_and_commit(repo, "tests/js/async_widget.test.js", initial, "add test")
+    _write_and_commit(repo, "tests/js/async_widget.test.js", updated, "update to async")
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_test_case_reduction_flagged(repo: Path) -> None:
+    initial = (
+        "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
+        "it('case 2', () => {\n    expect(2).toBe(2);\n});\n"
+    )
+    reduced = "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
+    _write_and_commit(repo, "tests/js/cases.test.js", initial, "add 2 cases")
+    _write_and_commit(repo, "tests/js/cases.test.js", reduced, "drop 1 case")
+    violations = find_violations(repo, "main")
+    assert any("reduces test cases (2 -> 1)" in v for v in violations)
+
+
+def test_bot_test_assertion_reduction_flagged(repo: Path) -> None:
+    initial = "it('case 1', () => {\n    expect(1).toBe(1);\n    expect(2).toBe(2);\n});\n"
+    reduced = "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
+    _write_and_commit(repo, "tests/js/asserts.test.js", initial, "add 2 asserts")
+    _write_and_commit(repo, "tests/js/asserts.test.js", reduced, "drop 1 assert")
+    violations = find_violations(repo, "main")
+    assert any("reduces assertions (2 -> 1)" in v for v in violations)
+
+
+def test_bot_test_file_removal_flagged(repo: Path) -> None:
+    _write_and_commit(
+        repo, "tests/js/temp.test.js", "it('temp', () => expect(1).toBe(1));\n", "add temp test"
+    )
+    target = repo / "tests/js/temp.test.js"
+    target.unlink()
+    _git(repo, "rm", "tests/js/temp.test.js")
+    _commit(repo, "remove test file")
+    violations = find_violations(repo, "main")
+    assert any("test deletion" in v and "temp.test.js was deleted" in v for v in violations)
+
+
 def test_bot_empty_commit_flagged(repo: Path) -> None:
     _commit(repo, "responding to feedback", allow_empty=True)
     violations = find_violations(repo, "main")
