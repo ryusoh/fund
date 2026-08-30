@@ -209,6 +209,37 @@ Do not assume any conversational history from previous steps. All state is exter
 """
 
 
+def reconcile_state(state: TaskState, repo_root: Path) -> tuple[bool, GateItem | None, str]:
+    """Reconcile state against git repository ground truth (Orion state convergence)."""
+    # 1. Verify recorded commits
+    for g in state.gates:
+        if g.commit and g.status != "SKIPPED":
+            if validate_commit(repo_root, g.commit):
+                g.status = "DONE"
+
+    # 2. Find Program Counter (first uncompleted gate)
+    pending_gates = [g for g in state.gates if g.status in ("PENDING", "IN_PROGRESS")]
+    pc = pending_gates[0] if pending_gates else None
+    converged = pc is None
+
+    done_count = sum(1 for g in state.gates if g.status == "DONE")
+    skipped_count = sum(1 for g in state.gates if g.status == "SKIPPED")
+    pending_count = len(pending_gates)
+
+    lines = [
+        f"Reconciled task '{state.task_id}': {done_count}/{state.total_gates} DONE, {skipped_count} SKIPPED, {pending_count} PENDING."
+    ]
+    if pc:
+        lines.append(f"Program Counter -> Gate {pc.number} ({pc.id}): {pc.title}")
+        lines.append(
+            f"  Target File: {pc.file or '(unspecified)'} | Verify: {pc.verification or 'make verify'}"
+        )
+    else:
+        lines.append("Status: Fully converged to declared intent (100% complete).")
+
+    return converged, pc, "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Task harness state ledger for autonomous agent gate management."
@@ -227,6 +258,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # current
     sub.add_parser("current", help="Print current active gate as JSON.")
+
+    # reconcile
+    sub.add_parser(
+        "reconcile", help="Reconcile state ledger against git ground truth and advance PC."
+    )
 
     # render-worker-prompt <gate>
     prompt_parser = sub.add_parser(
@@ -299,6 +335,12 @@ def main(argv: list[str] | None = None) -> int:
         current_gate = pending_gates[0]
         print(json.dumps(asdict(current_gate), indent=2))
         return 0
+
+    if args.command == "reconcile":
+        converged, pc, summary = reconcile_state(state, repo)
+        save_state(state, state_file)
+        print(summary)
+        return 0 if converged else 0
 
     if args.command == "render-worker-prompt":
         try:

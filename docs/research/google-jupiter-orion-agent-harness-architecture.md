@@ -34,12 +34,12 @@ Google solved identical problems in physical datacenter infrastructure by abando
 
 ### 2.1 Google Jupiter: Scale-Out Clos & Dynamic Optical Switching
 
-#### Primary Citations:
+#### Primary Citations
 
 1. Singh, A., et al. (2015). _"Jupiter Rising: A Decade of Clos Topologies and Centralized Control in Google's Datacenter Network."_ ACM SIGCOMM 2015.
 2. Poutievski, L., et al. (2022). _"Jupiter Evolving: Transforming Google's Datacenter Network via Optical Circuit Switches and Software-Defined Networking."_ ACM SIGCOMM 2022.
 
-#### Core Architectural Tenets:
+#### Jupiter Architectural Tenets
 
 1. **Multi-Stage Clos Fabrics from Commodity Silicon**:
     - Rather than relying on expensive, proprietary chassis switches with custom ASICs, Google constructed massive, non-blocking fabrics using thousands of small, identical merchant silicon switching chips organized in hierarchical Clos stages (Top of Rack $\rightarrow$ Aggregation Blocks $\rightarrow$ Spine Blocks).
@@ -55,11 +55,11 @@ Google solved identical problems in physical datacenter infrastructure by abando
 
 ### 2.2 Google Orion: Distributed SDN Control Plane
 
-#### Primary Citation:
+#### Primary Citation
 
 1. Ferguson, A. D., et al. (2021). _"Orion: Google's Software-Defined Networking Control Plane."_ USENIX NSDI 2021.
 
-#### Core Architectural Tenets:
+#### Orion Architectural Tenets
 
 1. **Declarative Intent vs. Imperative Execution**:
     - High-level intent (e.g., "connect service A to service B with bandwidth constraint X") is declared at the top of the control hierarchy. Orion translates this intent into lower-level forwarding state across layers of specialized micro-controllers.
@@ -75,7 +75,7 @@ Google solved identical problems in physical datacenter infrastructure by abando
 
 ## 3. The Isomorphism: Datacenter Fabric vs. AI Agent Harness
 
-```
+```text
 +-----------------------------------------------------------------------------------+
 |               GOOGLE JUPITER / ORION INFRASTRUCTURE PARADIGM                      |
 |                                                                                   |
@@ -118,7 +118,7 @@ In Orion, operators declare desired state; controllers compute deltas and drive 
 
 In our repository harness, multi-step workflows (action-item sweeps, TDD feature additions, bug diagnoses) operate as a declarative convergence loop:
 
-```
+```text
                   +-----------------------------------+
                   |  Declared Intent (Action Items)   |
                   +-----------------+-----------------+
@@ -185,7 +185,7 @@ Jupiter 2022 uses MEMS OCS (Apollo) to dynamically direct optical bandwidth to a
 
 In our agentic harness, **Adaptive Context & Tool Routing (Agent OCS)** dynamically mounts only the required tools and file context for the active gate:
 
-```
+```text
 +--------------------------------------------------------------------+
 |               DYNAMIC AGENT OCS ROUTING (GATE-SPECIFIC)             |
 |                                                                    |

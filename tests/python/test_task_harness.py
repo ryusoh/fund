@@ -161,3 +161,20 @@ def test_render_worker_prompt(tmp_path: Path, capsys) -> None:
     assert "src/first.py" in prompt
     assert "pytest tests/test_first.py" in prompt
 
+
+def test_reconcile_state(tmp_path: Path, capsys) -> None:
+    doc_path = tmp_path / "orders.md"
+    doc_path.write_text(SAMPLE_MARKDOWN, encoding="utf-8")
+    state_file = tmp_path / "state.json"
+
+    main(["--repo", str(tmp_path), "--state-file", str(state_file), "init", str(doc_path)])
+    capsys.readouterr()
+
+    # Reconcile when uncommitted
+    ret = main(["--repo", str(tmp_path), "--state-file", str(state_file), "reconcile"])
+    assert ret == 0
+    summary = capsys.readouterr().out
+    assert "0/3 DONE, 1 SKIPPED, 2 PENDING" in summary
+    assert "Program Counter -> Gate 1" in summary
+
+
