@@ -156,223 +156,141 @@ function parseDateSafe(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = false } = {}) {
-    const activeChart = transactionState.activeChart;
-    // Allow when explicitly requested as absolute OR when chart is drawdownAbs
-    const isAbsoluteMode = isAbsolute || activeChart === 'drawdownAbs';
-
-    if (activeChart !== 'drawdown' && activeChart !== 'drawdownAbs') {
-        return null;
+function _getPortfolioSeriesForDrawdown(selectedCurrency, filtersActive) {
+    if (!filtersActive) {
+        return (
+            transactionState.portfolioSeriesByCurrency?.[selectedCurrency] ||
+            transactionState.portfolioSeries ||
+            []
+        );
     }
-
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
-
-    if (isAbsoluteMode) {
-        // ABSOLUTE MODE: Use portfolioSeries (balance data)
-
-        // --- DYNAMIC DRAWDOWN CALCULATION ---
-
-        // Helper to consolidate data to end-of-day values and sort
-        const consolidateAndSort = (data, dateKey, valueKey) => {
-            const sorted = [...data].sort((a, b) => {
-                // Bolt: Use direct string/primitive comparison instead of new Date()
-                // Parsing YYYY-MM-DD strings inside a sort loop is a massive O(N log N) bottleneck.
-                // Lexicographical string comparison is completely safe and ~10x faster here.
-                const da = a[dateKey] || a.date;
-                const db = b[dateKey] || b.date;
-                return da < db ? -1 : da > db ? 1 : 0;
-            });
-
-            // Consolidate by day (keep last value)
-            const dailyMap = new Map();
-            for (let i = 0; i < sorted.length; i++) {
-                const item = sorted[i];
-                const d = new Date(item[dateKey] || item.date);
-                if (Number.isNaN(d.getTime())) {
-                    continue;
-                }
-                // eslint-disable-next-line no-restricted-syntax -- UTC-domain: series dates are YYYY-MM-DD strings, parsed as UTC midnight
-                const dayStr = d.toISOString().split('T')[0];
-                dailyMap.set(dayStr, item);
-            }
-
-            const result = new Array(dailyMap.size);
-            let idx = 0;
-            for (const item of dailyMap.values()) {
-                result[idx++] = {
-                    date: new Date(item[dateKey] || item.date),
-                    value: Number(item[valueKey] || item.value),
-                };
-            }
-            return result;
-        };
-
-        // Check if filters are active
-        const filtersActive =
-            hasActiveTransactionFilters() &&
-            transactionState.activeFilterTerm &&
-            transactionState.activeFilterTerm.trim().length > 0;
-
-        // 1. Balance (Portfolio Series)
-        // Use filtered balance when filters active, otherwise use currency-specific portfolio series
-        let portfolioSeries;
-        if (filtersActive) {
-            // Build filtered balance series from filtered transactions
-            const historicalPrices = transactionState.historicalPrices || {};
-            const rawBalanceSeries = buildFilteredBalanceSeries(
-                transactionState.filteredTransactions || [],
-                historicalPrices,
-                transactionState.splitHistory
-            );
-            // Convert to selected currency if needed
-            if (selectedCurrency !== 'USD' && rawBalanceSeries.length > 0) {
-                // convertValueToCurrency is already imported at top of file
-                portfolioSeries = rawBalanceSeries.map((entry) => ({
-                    ...entry,
-                    value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
-                }));
-            } else {
-                portfolioSeries = rawBalanceSeries;
-            }
-        } else {
-            portfolioSeries =
-                transactionState.portfolioSeriesByCurrency?.[selectedCurrency] ||
-                transactionState.portfolioSeries ||
-                [];
-        }
-
-        if (portfolioSeries.length === 0) {
-            return null;
-        }
-
-        // Ensure balance data is sorted and strictly daily (taking last value of day)
-        const consolidatedBalance = consolidateAndSort(portfolioSeries, 'date', 'value');
-
-        let runningPeak = -Infinity;
-        const balanceDrawdownData = consolidatedBalance.map((p) => {
-            const val = p.value;
-            if (val > runningPeak) {
-                runningPeak = val;
-            }
-            return { date: p.date, value: val - runningPeak };
-        });
-
-        // 2. Contribution (Running Amount Series)
-        // Re-calculate using the chart's logic to ensure consistency and proper daily consolidation
-        // (filtersActive was already defined above for balance series calculation)
-        const contributionTransactions = filtersActive
-            ? transactionState.filteredTransactions
-            : transactionState.allTransactions;
-
-        // Use the chart's generator which handles daily consolidation and currency conversion
-        // We request the selected currency to ensure we calculate based on real value in that currency
-        const calculatedContributionSeries = getContributionSeriesForTransactions(
-            contributionTransactions,
-            {
-                includeSyntheticStart: true,
-                padToDate: Date.now(), // Pad to now for consistent end
-                currency: selectedCurrency,
-            }
-        );
-
-        // The series returned by chart.js is already daily consolidated.
-        // We just need to ensure it's sorted by date for the drawdown calc.
-        const consolidatedContribution = consolidateAndSort(
-            calculatedContributionSeries,
-            'tradeDate', // buildContributionSeriesFromTransactions returns 'tradeDate' property
-            'amount' // and 'amount' property
-        );
-
-        let contribPeak = -Infinity;
-        const contributionDrawdownData = consolidatedContribution.map((p) => {
-            const val = p.value; // value is amount from consolidateAndSort
-            if (val > contribPeak) {
-                contribPeak = val;
-            }
-            return { date: p.date, value: val - contribPeak };
-        });
-
-        // Filter by date range
-        const relevantBalance = balanceDrawdownData.filter(
-            (p) => (!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)
-        );
-        const relevantContribution = contributionDrawdownData.filter(
-            (p) => (!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)
-        );
-
-        if (relevantBalance.length === 0 && relevantContribution.length === 0) {
-            return null;
-        }
-
-        const getStats = (points) => {
-            if (points.length === 0) {
-                return { current: 0, max: 0 };
-            }
-            const current = points[points.length - 1].value;
-            let min = 0;
-            for (const p of points) {
-                if (p.value < min) {
-                    min = p.value;
-                }
-            }
-            return { current, max: min };
-        };
-
-        const balanceStats = getStats(relevantBalance);
-        const contribStats = getStats(relevantContribution);
-
-        const balCur = formatCurrencyInline(balanceStats.current);
-        const balMax = formatCurrencyInline(balanceStats.max);
-        const conCur = formatCurrencyInline(contribStats.current);
-        const conMax = formatCurrencyInline(contribStats.max);
-
-        const header = `Absolute Drawdown (base ${selectedCurrency}):`;
-        const hint = "(Hint: use 'per' for percentages)";
-
-        const balanceLine = `Balance      ${balCur} (Max: ${balMax})`;
-        const contribLine = `Contribution ${conCur} (Max: ${conMax})`;
-
-        return `${header}\n${balanceLine}\n${contribLine}\n${hint}`;
+    const historicalPrices = transactionState.historicalPrices || {};
+    const rawBalanceSeries = buildFilteredBalanceSeries(
+        transactionState.filteredTransactions || [],
+        historicalPrices,
+        transactionState.splitHistory
+    );
+    if (selectedCurrency !== 'USD' && rawBalanceSeries.length > 0) {
+        return rawBalanceSeries.map((entry) => ({
+            ...entry,
+            value: convertValueToCurrency(entry.value, entry.date, selectedCurrency),
+        }));
     }
+    return rawBalanceSeries;
+}
 
-    // PERCENTAGE MODE: Use performanceSeries
-    const performanceSeries = transactionState.performanceSeries || {};
-    const seriesKeys = Object.keys(performanceSeries);
-    if (seriesKeys.length === 0) {
-        return null;
-    }
-    const visibility = transactionState.chartVisibility || {};
-
-    const orderedKeys = [...seriesKeys].sort((a, b) => {
-        if (a === '^LZ') {
-            return -1;
-        }
-        if (b === '^LZ') {
-            return 1;
-        }
-        return a.localeCompare(b);
+function _consolidateAndSortDrawdown(data, dateKey, valueKey) {
+    const sorted = [...data].sort((a, b) => {
+        const da = a[dateKey] || a.date;
+        const db = b[dateKey] || b.date;
+        return da < db ? -1 : da > db ? 1 : 0;
     });
 
-    const snapshots = [];
-    for (const key of orderedKeys) {
-        if (!includeHidden && visibility[key] === false) {
-            continue;
+    const dailyMap = new Map();
+    for (let i = 0; i < sorted.length; i++) {
+        const item = sorted[i];
+        const d = new Date(item[dateKey] || item.date);
+        if (!Number.isNaN(d.getTime())) {
+            // eslint-disable-next-line no-restricted-syntax -- UTC-domain: series dates are YYYY-MM-DD strings, parsed as UTC midnight
+            const dayStr = d.toISOString().split('T')[0];
+            dailyMap.set(dayStr, item);
         }
-        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
-        if (rawPoints.length === 0) {
-            continue;
-        }
+    }
 
-        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
-        const convertedPoints = [];
-        for (const point of rawPoints) {
-            const dateObj = parseDateSafe(point.date);
-            if (!dateObj) {
-                continue;
-            }
+    const result = new Array(dailyMap.size);
+    let idx = 0;
+    for (const item of dailyMap.values()) {
+        result[idx++] = {
+            date: new Date(item[dateKey] || item.date),
+            value: Number(item[valueKey] || item.value),
+        };
+    }
+    return result;
+}
+
+function _calculateDrawdownData(consolidatedData) {
+    let runningPeak = -Infinity;
+    return consolidatedData.map((p) => {
+        const val = p.value;
+        if (val > runningPeak) {
+            runningPeak = val;
+        }
+        return { date: p.date, value: val - runningPeak };
+    });
+}
+
+function _getDrawdownStats(points) {
+    if (points.length === 0) {
+        return { current: 0, max: 0 };
+    }
+    const current = points[points.length - 1].value;
+    let min = 0;
+    for (const p of points) {
+        if (p.value < min) {
+            min = p.value;
+        }
+    }
+    return { current, max: min };
+}
+
+function _getAbsoluteDrawdownSnapshot(selectedCurrency, filterFrom, filterTo) {
+    const filtersActive =
+        hasActiveTransactionFilters() &&
+        transactionState.activeFilterTerm &&
+        transactionState.activeFilterTerm.trim().length > 0;
+
+    const portfolioSeries = _getPortfolioSeriesForDrawdown(selectedCurrency, filtersActive);
+    if (portfolioSeries.length === 0) {
+        return null;
+    }
+
+    const balanceDrawdownData = _calculateDrawdownData(
+        _consolidateAndSortDrawdown(portfolioSeries, 'date', 'value')
+    );
+
+    const contributionTransactions = filtersActive
+        ? transactionState.filteredTransactions
+        : transactionState.allTransactions;
+
+    const calculatedContributionSeries = getContributionSeriesForTransactions(
+        contributionTransactions,
+        {
+            includeSyntheticStart: true,
+            padToDate: Date.now(),
+            currency: selectedCurrency,
+        }
+    );
+
+    const contributionDrawdownData = _calculateDrawdownData(
+        _consolidateAndSortDrawdown(calculatedContributionSeries, 'tradeDate', 'amount')
+    );
+
+    const filterFn = (p) =>
+        (!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo);
+    const relevantBalance = balanceDrawdownData.filter(filterFn);
+    const relevantContribution = contributionDrawdownData.filter(filterFn);
+
+    if (relevantBalance.length === 0 && relevantContribution.length === 0) {
+        return null;
+    }
+
+    const balStats = _getDrawdownStats(relevantBalance);
+    const conStats = _getDrawdownStats(relevantContribution);
+
+    const balCur = formatCurrencyInline(balStats.current);
+    const balMax = formatCurrencyInline(balStats.max);
+    const conCur = formatCurrencyInline(conStats.current);
+    const conMax = formatCurrencyInline(conStats.max);
+
+    return `Absolute Drawdown (base ${selectedCurrency}):\nBalance      ${balCur} (Max: ${balMax})\nContribution ${conCur} (Max: ${conMax})\n(Hint: use 'per' for percentages)`;
+}
+
+function _convertPerformancePoints(rawPoints, key, selectedCurrency) {
+    const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+    const convertedPoints = [];
+    for (const point of rawPoints) {
+        const dateObj = parseDateSafe(point.date);
+        if (dateObj) {
             const convertedValue = convertBetweenCurrencies(
                 point.value,
                 sourceCurrency,
@@ -383,46 +301,141 @@ export function getDrawdownSnapshotLine({ includeHidden = false, isAbsolute = fa
                 convertedPoints.push({ date: dateObj, value: convertedValue });
             }
         }
-
-        if (convertedPoints.length === 0) {
-            continue;
-        }
-
-        const drawdownSeries = buildDrawdownSeries(convertedPoints);
-        const relevantPoints = [];
-        for (const p of drawdownSeries) {
-            if ((!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)) {
-                relevantPoints.push(p);
-            }
-        }
-
-        if (relevantPoints.length === 0) {
-            continue;
-        }
-
-        const currentDrawdown = relevantPoints[relevantPoints.length - 1].value;
-        let minDrawdown = 0;
-        for (const p of relevantPoints) {
-            if (p.value < minDrawdown) {
-                minDrawdown = p.value;
-            }
-        }
-
-        const currentFormatted = `${currentDrawdown.toFixed(2)}%`;
-        const maxFormatted = `${minDrawdown.toFixed(2)}%`;
-        snapshots.push(`${key} ${currentFormatted} (Max: ${maxFormatted})`);
     }
+    return convertedPoints;
+}
+
+function _filterDrawdownPoints(drawdownSeries, filterFrom, filterTo) {
+    const relevantPoints = [];
+    for (const p of drawdownSeries) {
+        if ((!filterFrom || p.date >= filterFrom) && (!filterTo || p.date <= filterTo)) {
+            relevantPoints.push(p);
+        }
+    }
+    return relevantPoints;
+}
+
+function _processPercentageDrawdownSeries(key, rawPoints, selectedCurrency, filterFrom, filterTo) {
+    const convertedPoints = _convertPerformancePoints(rawPoints, key, selectedCurrency);
+    if (convertedPoints.length === 0) {
+        return null;
+    }
+
+    const drawdownSeries = buildDrawdownSeries(convertedPoints);
+    const relevantPoints = _filterDrawdownPoints(drawdownSeries, filterFrom, filterTo);
+
+    if (relevantPoints.length === 0) {
+        return null;
+    }
+
+    let minDrawdown = 0;
+    for (const p of relevantPoints) {
+        if (p.value < minDrawdown) {
+            minDrawdown = p.value;
+        }
+    }
+
+    const currentDrawdown = relevantPoints[relevantPoints.length - 1].value;
+    return `${key} ${currentDrawdown.toFixed(2)}% (Max: ${minDrawdown.toFixed(2)}%)`;
+}
+
+function _orderSeriesKeys(seriesKeys) {
+    return [...seriesKeys].sort((a, b) => {
+        if (a === '^LZ') {
+            return -1;
+        }
+        if (b === '^LZ') {
+            return 1;
+        }
+        return a.localeCompare(b);
+    });
+}
+
+function _processAllPercentageSeries(
+    orderedKeys,
+    performanceSeries,
+    visibility,
+    includeHidden,
+    selectedCurrency,
+    filterFrom,
+    filterTo
+) {
+    const snapshots = [];
+    for (const key of orderedKeys) {
+        if (!includeHidden && visibility[key] === false) {
+            continue;
+        }
+
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        if (rawPoints.length > 0) {
+            const line = _processPercentageDrawdownSeries(
+                key,
+                rawPoints,
+                selectedCurrency,
+                filterFrom,
+                filterTo
+            );
+            if (line) {
+                snapshots.push(line);
+            }
+        }
+    }
+    return snapshots;
+}
+
+function _getPercentageDrawdownSnapshot(selectedCurrency, filterFrom, filterTo, includeHidden) {
+    const performanceSeries = transactionState.performanceSeries || {};
+    const seriesKeys = Object.keys(performanceSeries);
+    if (seriesKeys.length === 0) {
+        return null;
+    }
+
+    const orderedKeys = _orderSeriesKeys(seriesKeys);
+    const visibility = transactionState.chartVisibility || {};
+
+    const snapshots = _processAllPercentageSeries(
+        orderedKeys,
+        performanceSeries,
+        visibility,
+        includeHidden,
+        selectedCurrency,
+        filterFrom,
+        filterTo
+    );
 
     if (!snapshots.length) {
         return null;
     }
-    const header = `Drawdown (base ${selectedCurrency}):`;
+
     const lines = [];
     for (let i = 0; i < snapshots.length; i += 2) {
         lines.push(snapshots.slice(i, i + 2).join('   '));
     }
-    const hint = "\n(Hint: use 'abs' for absolute values)";
-    return `${header}\n${lines.join('\n')}${hint}`;
+    return `Drawdown (base ${selectedCurrency}):\n${lines.join('\n')}\n(Hint: use 'abs' for absolute values)`;
+}
+
+export function getDrawdownSnapshotLine(options = {}) {
+    const activeChart = transactionState.activeChart;
+    const isAbs = options.isAbsolute === true;
+    if (activeChart !== 'drawdown' && activeChart !== 'drawdownAbs') {
+        return null;
+    }
+
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    const chartDateRange = transactionState.chartDateRange || {};
+    const filterFrom = parseDateSafe(chartDateRange.from);
+    const filterTo = parseDateSafe(chartDateRange.to);
+
+    if (isAbs || activeChart === 'drawdownAbs') {
+        return _getAbsoluteDrawdownSnapshot(selectedCurrency, filterFrom, filterTo);
+    }
+
+    return _getPercentageDrawdownSnapshot(
+        selectedCurrency,
+        filterFrom,
+        filterTo,
+        options.includeHidden === true
+    );
 }
 
 export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
