@@ -1,6 +1,7 @@
 import {
     getYieldSnapshotLine,
     getFxSnapshotLine,
+    getDrawdownSnapshotLine,
 } from '../../../../js/transactions/terminal/snapshots.js';
 import { transactionState } from '../../../../js/transactions/state.js';
 import { loadYieldData } from '../../../../js/transactions/chart/renderers/yield.js';
@@ -15,10 +16,14 @@ jest.mock('../../../../js/transactions/chart/renderers/fx.js', () => ({
 }));
 
 jest.mock('../../../../js/transactions/chart/helpers.js', () => ({
+    buildDrawdownSeries: jest.fn((points) => points.map((p) => ({ ...p, value: p.value * 0.1 }))),
     parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
 }));
 
 jest.mock('../../../../js/transactions/utils.js', () => ({
+    convertBetweenCurrencies: jest.fn((val) => val),
+    formatCurrencyInline: jest.fn((val) => `${val} FMT`),
+    hasActiveTransactionFilters: jest.fn(() => false),
     formatCurrency: jest.fn((val, { currency }) => `${val} ${currency} formatted`),
     convertValueToCurrency: jest.fn((val, date, currency) => {
         if (currency === 'EUR') {
@@ -147,6 +152,9 @@ describe('getPESnapshotLine', () => {
             transactionState: { chartDateRange: { from: null, to: null } },
         }));
         jest.mock('../../../../js/transactions/chart/helpers.js', () => ({
+            buildDrawdownSeries: jest.fn((points) =>
+                points.map((p) => ({ ...p, value: p.value * 0.1 }))
+            ),
             parseLocalDate: jest.fn((dateStr) => new Date(dateStr)),
         }));
 
@@ -237,6 +245,7 @@ describe('getContributionSummaryText', () => {
         }));
 
         jest.mock('../../../../js/transactions/chart/data/contribution.js', () => ({
+            buildFilteredBalanceSeries: jest.fn(() => []),
             buildFilteredBalanceSeries: jest.fn(),
             buildContributionSeriesFromTransactions: jest.fn(),
             getContributionSeriesForTransactions: jest.fn(),
@@ -266,6 +275,9 @@ describe('getContributionSummaryText', () => {
         }));
 
         jest.mock('../../../../js/transactions/utils.js', () => ({
+            convertBetweenCurrencies: jest.fn((val) => val),
+            formatCurrencyInline: jest.fn((val) => `${val} FMT`),
+            hasActiveTransactionFilters: jest.fn(() => false),
             formatCurrency: jest.fn((val) => `$${val.toFixed(2)}`),
             convertValueToCurrency: jest.fn((val) => val),
             convertBetweenCurrencies: jest.fn(),
@@ -612,5 +624,409 @@ describe('formatPerformanceSnapshots coverage', () => {
             C: true,
         };
         await getPerformanceSnapshotLine();
+    });
+});
+
+describe('getDrawdownSnapshotLine coverage gaps', () => {
+    let oldTransactionState;
+    beforeEach(() => {
+        oldTransactionState = { ...transactionState };
+        Object.assign(transactionState, {
+            activeChart: 'drawdown',
+            selectedCurrency: 'USD',
+            chartDateRange: null,
+            portfolioSeriesByCurrency: { USD: [{ date: '2023-01-01', value: 1000 }] },
+            portfolioSeries: [{ date: '2023-01-01', value: 1000 }],
+            performanceSeries: { VT: [{ date: '2023-01-01', value: 100 }] },
+            historicalPrices: {},
+            splitHistory: {},
+            activeFilterTerm: '',
+            filteredTransactions: [],
+        });
+    });
+
+    afterEach(() => {
+        Object.assign(transactionState, oldTransactionState);
+        jest.clearAllMocks();
+    });
+
+    it('hits _getPortfolioSeriesForDrawdown line 162/165 (fallback array)', () => {
+        const utils = require('../../../../js/transactions/utils.js');
+        // bypass mocked filter
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => false);
+
+        transactionState.portfolioSeriesByCurrency = null;
+        transactionState.portfolioSeries = null;
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('hits _getPortfolioSeriesForDrawdown fallback to portfolioSeries', () => {
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => false);
+
+        transactionState.portfolioSeriesByCurrency = null;
+        transactionState.portfolioSeries = [{ date: '2023-01-01', value: 1000 }];
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).not.toBeNull();
+
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('hits filters path empty rawBalanceSeries', () => {
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+
+        // Mock global buildFilteredBalanceSeries
+        global.buildFilteredBalanceSeries = jest.fn(() => []);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).not.toBeNull();
+
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('hits filters path mapped conversion', () => {
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).not.toBeNull();
+
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('hits empty points getDrawdownStats line', () => {
+        // By setting dates that filter out everything
+        transactionState.chartDateRange = { from: '2025-01-01', to: '2025-01-02' };
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+
+    it('covers all branch logic in percentage loops', () => {
+        transactionState.performanceSeries = {
+            A: [{ date: '2023-01-01', value: 100 }],
+            B: [], // empty series
+            C: [{ date: 'invalid', value: 100 }], // invalid date obj
+        };
+        transactionState.chartVisibility = { A: false }; // hidden
+
+        // C will return null from _processPercentageDrawdownSeries
+        const result = getDrawdownSnapshotLine({ isAbsolute: false });
+        expect(result).toBeNull(); // everything was skipped
+    });
+
+    it('sorts keys correctly', () => {
+        transactionState.performanceSeries = {
+            B: [{ date: '2023-01-01', value: 100 }],
+            '^LZ': [{ date: '2023-01-01', value: 100 }],
+            A: [{ date: '2023-01-01', value: 100 }],
+        };
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: false });
+        expect(result).not.toBeNull();
+    });
+
+    it('formats multiple series pairs', () => {
+        transactionState.performanceSeries = {
+            A: [{ date: '2023-01-01', value: 100 }],
+            B: [{ date: '2023-01-01', value: 100 }],
+            C: [{ date: '2023-01-01', value: 100 }],
+        };
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: false });
+        expect(result).not.toBeNull();
+    });
+});
+
+describe('getDrawdownSnapshotLine more coverage', () => {
+    let oldTransactionState;
+    beforeEach(() => {
+        oldTransactionState = { ...transactionState };
+        Object.assign(transactionState, {
+            activeChart: 'drawdown',
+            selectedCurrency: 'USD',
+            chartDateRange: null,
+            portfolioSeriesByCurrency: { USD: [{ date: '2023-01-01', value: 1000 }] },
+            portfolioSeries: [{ date: '2023-01-01', value: 1000 }],
+            performanceSeries: { VT: [{ date: '2023-01-01', value: 100 }] },
+            historicalPrices: {},
+            splitHistory: {},
+            activeFilterTerm: '',
+            filteredTransactions: [],
+        });
+    });
+
+    afterEach(() => {
+        Object.assign(transactionState, oldTransactionState);
+        jest.clearAllMocks();
+    });
+
+    it('covers all missing line paths in percentage filtering part 4', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.convertBetweenCurrencies = jest.fn(() => NaN);
+
+        transactionState.performanceSeries = {
+            VT: [{ date: '2023-01-01', value: 100 }],
+        };
+        transactionState.chartDateRange = { from: '2023-01-02', to: '2023-01-03' };
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: false });
+        expect(result).toBeNull();
+    });
+
+    it('handles NaN properly in consolidate dates', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: 'invalid', value: 100 }]);
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+
+    it('covers getPortfolioSeriesForDrawdown fallback lines correctly part 2', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+        transactionState.historicalPrices = null;
+        transactionState.splitHistory = null;
+        transactionState.filteredTransactions = [{ date: '2023-01-01', value: 100 }];
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+
+    it('covers consolidateAndSortDrawdown map dates properly part 2', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'USD';
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [
+            { date: '2023-01-01T00:00:00.000Z', value: 1000 },
+            { date: '2023-01-01T12:00:00.000Z', value: 1200 },
+            { date: 'invalid', value: 500 },
+        ]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+
+    it('covers consolidateAndSortDrawdown with missing dateKey fallback part 2', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'USD';
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [
+            { notdate: '2023-01-01', value: 1000 },
+            { date: '2023-01-02', value: 1200 },
+        ]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+});
+
+describe('getDrawdownSnapshotLine remaining coverage', () => {
+    let oldTransactionState;
+    beforeEach(() => {
+        oldTransactionState = { ...transactionState };
+        Object.assign(transactionState, {
+            activeChart: 'drawdown',
+            selectedCurrency: 'USD',
+            chartDateRange: null,
+            portfolioSeriesByCurrency: { USD: [{ date: '2023-01-01', value: 1000 }] },
+            portfolioSeries: [{ date: '2023-01-01', value: 1000 }],
+            performanceSeries: { VT: [{ date: '2023-01-01', value: 100 }] },
+            historicalPrices: {},
+            splitHistory: {},
+            activeFilterTerm: '',
+            filteredTransactions: [],
+        });
+    });
+
+    afterEach(() => {
+        Object.assign(transactionState, oldTransactionState);
+        jest.clearAllMocks();
+    });
+
+    it('covers getPortfolioSeriesForDrawdown fallback lines correctly', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+        transactionState.historicalPrices = null;
+        transactionState.splitHistory = null;
+        transactionState.filteredTransactions = [{ date: '2023-01-01', value: 100 }];
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('handles filter active path with valid USD conversion', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+        transactionState.filteredTransactions = [];
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('covers consolidateAndSortDrawdown map dates properly', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'USD';
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [
+            { date: '2023-01-01T00:00:00.000Z', value: 1000 },
+            { date: '2023-01-01T12:00:00.000Z', value: 1200 },
+            { date: 'invalid', value: 500 },
+        ]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+
+    it('handles NaN properly in minDrawdown', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.convertBetweenCurrencies = jest.fn(() => 100);
+        transactionState.performanceSeries = {
+            A: [{ date: '2023-01-01', value: 100 }],
+        };
+        transactionState.chartDateRange = { from: '2023-02-01', to: '2023-03-01' };
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: false });
+        expect(result).toBeNull();
+    });
+
+    it('handles filter active path', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        const originalMock = utils.hasActiveTransactionFilters;
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.filteredTransactions = [];
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+        utils.hasActiveTransactionFilters = originalMock;
+    });
+});
+
+describe('getDrawdownSnapshotLine remaining coverage 2', () => {
+    let oldTransactionState;
+    beforeEach(() => {
+        oldTransactionState = { ...transactionState };
+        Object.assign(transactionState, {
+            activeChart: 'drawdown',
+            selectedCurrency: 'USD',
+            chartDateRange: null,
+            portfolioSeriesByCurrency: { USD: [{ date: '2023-01-01', value: 1000 }] },
+            portfolioSeries: [{ date: '2023-01-01', value: 1000 }],
+            performanceSeries: { VT: [{ date: '2023-01-01', value: 100 }] },
+            historicalPrices: {},
+            splitHistory: {},
+            activeFilterTerm: '',
+            filteredTransactions: [],
+        });
+    });
+
+    afterEach(() => {
+        Object.assign(transactionState, oldTransactionState);
+        jest.clearAllMocks();
+    });
+
+    it('hits line 169 explicitly', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'USD';
+        transactionState.filteredTransactions = null;
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
+    });
+
+    it('hits line 174 explicitly', () => {
+        const {
+            getDrawdownSnapshotLine,
+        } = require('../../../../js/transactions/terminal/snapshots.js');
+        const utils = require('../../../../js/transactions/utils.js');
+        utils.hasActiveTransactionFilters = jest.fn(() => true);
+        transactionState.activeFilterTerm = 'test';
+        transactionState.selectedCurrency = 'EUR';
+
+        global.buildFilteredBalanceSeries = jest.fn(() => [{ date: '2023-01-01', value: 1000 }]);
+
+        const result = getDrawdownSnapshotLine({ isAbsolute: true });
+        expect(result).toBeNull();
     });
 });

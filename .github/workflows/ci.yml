@@ -35,7 +35,7 @@ jobs:
             - name: Reject empty pull request
               if: ${{ github.event_name == 'pull_request' }}
               run: |
-                  git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }} --depth=1
+                  git fetch --no-tags origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
                   if git diff --quiet origin/${{ github.base_ref }}; then
                     echo "::error::PR contains no changes. Empty PRs are not allowed."
                     exit 1
@@ -50,7 +50,6 @@ jobs:
             - name: Reject bot PR hygiene violations
               if: ${{ github.event_name == 'pull_request' }}
               run: |
-                  git fetch --no-tags origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
                   python3 -m scripts.agents.check_bot_pr_hygiene --base "origin/${{ github.base_ref }}"
 
             - name: Setup Node.js
