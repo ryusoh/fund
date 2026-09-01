@@ -114,11 +114,6 @@
             "count": 2
         }
     },
-    "js/ui/calendarMonthLabelManager.js": {
-        "complexity": {
-            "count": 2
-        }
-    },
     "js/ui/tableGlassEffect.js": {
         "complexity": {
             "count": 1

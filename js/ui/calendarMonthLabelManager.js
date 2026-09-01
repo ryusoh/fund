@@ -224,6 +224,404 @@ function ensureFrostedFilter(d3Instance) {
 }
 
 /* istanbul ignore next: defensive main function for month label updates */
+
+/* istanbul ignore next: utility function to get current label text */
+function getLabelText(el, currentTextRaw) {
+    const candidate = el && typeof el.text === 'function' ? el.text() : '';
+    const current = typeof candidate === 'string' ? candidate : currentTextRaw;
+    const currentText = current.trim();
+    const baseAttrValue = el && typeof el.attr === 'function' ? el.attr('data-base-label') : null;
+    const baseText =
+        typeof baseAttrValue === 'string' && baseAttrValue.trim() ? baseAttrValue : currentText;
+    return { current, currentText, baseText };
+}
+
+/* istanbul ignore next: utility function for background rect transition */
+function hideBackgroundRect(d3Instance, existing, transitionDuration) {
+    if (!existing.empty()) {
+        existing
+            .interrupt()
+            .transition()
+            .duration(transitionDuration)
+            .ease(d3Instance.easeCubicInOut)
+            .attr('opacity', 0);
+    }
+    return existing.empty() ? null : existing;
+}
+
+/* istanbul ignore next: utility function for background rect setup */
+function setupBackgroundRect(
+    d3Instance,
+    self,
+    parent,
+    shouldShowBackground,
+    filterId,
+    transitionDuration
+) {
+    if (!parent) {
+        return null;
+    }
+    const existing = parent.select('rect.domain-label-bg');
+    if (!shouldShowBackground) {
+        return hideBackgroundRect(d3Instance, existing, transitionDuration);
+    }
+
+    let backgroundRect = existing;
+    if (backgroundRect.empty()) {
+        backgroundRect = parent
+            .insert('rect', () => self)
+            .attr('class', 'domain-label-bg')
+            .attr('rx', CALENDAR_MONTH_LABEL_BACKGROUND.radius || 0)
+            .attr('ry', CALENDAR_MONTH_LABEL_BACKGROUND.radius || 0)
+            .attr('fill', CALENDAR_MONTH_LABEL_BACKGROUND.fill || 'transparent')
+            .attr('stroke', CALENDAR_MONTH_LABEL_BACKGROUND.stroke || 'none')
+            .attr('stroke-width', CALENDAR_MONTH_LABEL_BACKGROUND.strokeWidth || 0)
+            .attr('opacity', 0)
+            .style('pointer-events', 'none');
+    }
+    if (filterId) {
+        backgroundRect.attr('filter', `url(#${filterId})`);
+    }
+    backgroundRect.lower();
+    return backgroundRect;
+}
+
+/* istanbul ignore next: utility function for pnl color extraction */
+function getPnlColor(info, currency) {
+    if (!info) {
+        return null;
+    }
+    const absoluteChange = getAbsoluteChangeForCurrency(info, currency);
+    if (!Number.isFinite(absoluteChange)) {
+        return null;
+    }
+    if (absoluteChange > 0) {
+        return COLORS.POSITIVE_PNL;
+    }
+    if (absoluteChange < 0) {
+        return COLORS.NEGATIVE_PNL;
+    }
+    return null;
+}
+
+/* istanbul ignore next: utility function to layout background rect */
+function layoutBackgroundRect(
+    d3Instance,
+    el,
+    backgroundRect,
+    bbox,
+    paddingX,
+    paddingY,
+    baseOpacity,
+    showDetailed,
+    transitionDuration
+) {
+    if (!backgroundRect) {
+        return;
+    }
+    let storedWidth = Number(el.attr('data-bg-width')) || 0;
+    let storedHeight = Number(el.attr('data-bg-height')) || 0;
+    if (showDetailed || storedWidth === 0 || storedHeight === 0) {
+        storedWidth = bbox.width;
+        storedHeight = bbox.height;
+        el.attr('data-bg-width', storedWidth);
+        el.attr('data-bg-height', storedHeight);
+    }
+    const targetWidth = Math.max(storedWidth, bbox.width);
+    const targetHeight = Math.max(storedHeight, bbox.height);
+    const extraWidth = targetWidth - bbox.width;
+    const extraHeight = targetHeight - bbox.height;
+    const x = bbox.x - paddingX / 2 - extraWidth / 2;
+    const y = bbox.y - paddingY / 2 - extraHeight / 2;
+
+    backgroundRect
+        .attr('x', x)
+        .attr('y', y)
+        .attr('width', Math.max(0, targetWidth + paddingX))
+        .attr('height', Math.max(0, targetHeight + paddingY));
+    /* istanbul ignore next: defensive programming for background rect detailed transitions */
+    backgroundRect
+        .interrupt()
+        .transition()
+        .duration(transitionDuration)
+        .ease(d3Instance.easeCubicOut)
+        .attr('opacity', baseOpacity);
+}
+
+/* istanbul ignore next: utility function for applying text mode */
+function applyTextMode(
+    d3Instance,
+    baseSpan,
+    shouldShowBackground,
+    backgroundRect,
+    bbox,
+    transitionDuration,
+    shouldHighlightMonth,
+    thinkingOptions
+) {
+    if (backgroundRect) {
+        backgroundRect.interrupt();
+        if (shouldShowBackground) {
+            const paddingX = CALENDAR_MONTH_LABEL_BACKGROUND.paddingX ?? 0;
+            const paddingY = CALENDAR_MONTH_LABEL_BACKGROUND.paddingY ?? 0;
+            const baseOpacity = CALENDAR_MONTH_LABEL_BACKGROUND.opacity ?? 1;
+            backgroundRect
+                .attr('x', bbox.x - paddingX / 2)
+                .attr('y', bbox.y - paddingY / 2)
+                .attr('width', Math.max(0, bbox.width + paddingX))
+                .attr('height', Math.max(0, bbox.height + paddingY));
+            /* istanbul ignore next: defensive programming for background rect transitions */
+            backgroundRect
+                .transition()
+                .duration(transitionDuration)
+                .ease(d3Instance.easeCubicOut)
+                .attr('opacity', baseOpacity);
+        } else {
+            /* istanbul ignore next: defensive programming for background rect alternative path */
+            backgroundRect
+                .transition()
+                .duration(transitionDuration)
+                .ease(d3Instance.easeCubicInOut)
+                .attr('opacity', 0);
+        }
+    }
+    setThinkingHighlight(baseSpan, shouldHighlightMonth, thinkingOptions);
+}
+
+/* istanbul ignore next: utility function for simple fallback mode */
+function applySimpleMode(
+    d3Instance,
+    el,
+    baseText,
+    shouldShowBackground,
+    backgroundRect,
+    bbox,
+    transitionDuration,
+    shouldHighlightMonth,
+    thinkingOptions
+) {
+    el.text('');
+    const baseSpan = el.append('tspan').attr('class', 'domain-label-base').text(baseText);
+    applyTextMode(
+        d3Instance,
+        baseSpan,
+        shouldShowBackground,
+        backgroundRect,
+        bbox,
+        transitionDuration,
+        shouldHighlightMonth,
+        thinkingOptions
+    );
+}
+
+/* istanbul ignore next: utility to apply text visibility */
+function applyDetailedTextVisibility(spans, showDetailed, color) {
+    const { percentSpan, changeSpan, openSpan, separatorSpan, closeSpan } = spans;
+    if (showDetailed) {
+        if (color) {
+            percentSpan.attr('fill', color);
+            changeSpan.attr('fill', color);
+        } else {
+            /* istanbul ignore next: defensive programming for null color case */
+            percentSpan.attr('fill', null);
+            /* istanbul ignore next: defensive programming for null color case */
+            changeSpan.attr('fill', null);
+        }
+        openSpan.attr('opacity', 1);
+        percentSpan.attr('opacity', 1);
+        separatorSpan.attr('opacity', 1);
+        changeSpan.attr('opacity', 1);
+        closeSpan.attr('opacity', 1);
+    } else {
+        percentSpan.attr('fill', null);
+        changeSpan.attr('fill', null);
+        openSpan.attr('opacity', 0);
+        percentSpan.attr('opacity', 0);
+        separatorSpan.attr('opacity', 0);
+        changeSpan.attr('opacity', 0);
+        closeSpan.attr('opacity', 0);
+    }
+}
+
+/* istanbul ignore next: utility function to create spans */
+function createDetailedSpans(el, baseText, percentText, changeText) {
+    el.text('');
+    el.append('tspan').attr('class', 'domain-label-base').text(baseText);
+    const openSpan = el.append('tspan').attr('class', 'domain-label-open-bracket').text(' (');
+    const percentSpan = el
+        .append('tspan')
+        .attr('class', 'domain-label-percent')
+        .text(percentText ?? '');
+    const separatorSpan = el.append('tspan').attr('class', 'domain-label-separator').text(', ');
+    const changeSpan = el
+        .append('tspan')
+        .attr('class', 'domain-label-pnl')
+        .text(changeText ?? '');
+    const closeSpan = el.append('tspan').attr('class', 'domain-label-close-bracket').text(')');
+    return { percentSpan, changeSpan, openSpan, separatorSpan, closeSpan };
+}
+
+/* istanbul ignore next: utility function for finalizing background and highlights */
+function finalizeDetailedMode(
+    d3Instance,
+    el,
+    backgroundRect,
+    shouldShowBackground,
+    showDetailed,
+    transitionDuration,
+    shouldHighlightMonth,
+    thinkingOptions,
+    highlightTargets
+) {
+    if (backgroundRect && shouldShowBackground) {
+        const paddingX = CALENDAR_MONTH_LABEL_BACKGROUND.paddingX ?? 0;
+        const paddingY = CALENDAR_MONTH_LABEL_BACKGROUND.paddingY ?? 0;
+        const baseOpacity = CALENDAR_MONTH_LABEL_BACKGROUND.opacity ?? 1;
+        layoutBackgroundRect(
+            d3Instance,
+            el,
+            backgroundRect,
+            el.node().getBBox(),
+            paddingX,
+            paddingY,
+            baseOpacity,
+            showDetailed,
+            transitionDuration
+        );
+    } else if (backgroundRect) {
+        /* istanbul ignore next: defensive programming for background rect cleanup */
+        backgroundRect
+            .interrupt()
+            .transition()
+            .duration(transitionDuration)
+            .ease(d3Instance.easeCubicInOut)
+            .attr('opacity', 0);
+    }
+
+    setThinkingHighlight(
+        highlightTargets,
+        showDetailed && shouldHighlightMonth,
+        showDetailed && shouldHighlightMonth ? thinkingOptions : undefined
+    );
+}
+
+/* istanbul ignore next: utility to extract domain label context */
+function getDomainLabelContext(
+    state,
+    baseText,
+    intervalMs,
+    waveSize,
+    baseWaveColor,
+    neutralWaveColor,
+    pnlLightenFactor,
+    pnlLightAlpha
+) {
+    const monthKey = getMonthKeyFromLabel(baseText);
+    const info =
+        monthKey && state.monthlyPnl instanceof Map ? state.monthlyPnl.get(monthKey) : null;
+    const highlightMonthKey =
+        typeof state.highlightMonthKey === 'string' ? state.highlightMonthKey : null;
+    const shouldHighlightMonth = Boolean(highlightMonthKey && monthKey === highlightMonthKey);
+    const currency = state.selectedCurrency || 'USD';
+    const color = getPnlColor(info, currency);
+    const lightenedColor = color ? lightenHexToRgba(color, pnlLightenFactor, pnlLightAlpha) : null;
+    const thinkingOptions = {
+        intervalMs,
+        waveSize,
+        baseColor: baseWaveColor,
+        dimColor: lightenedColor || neutralWaveColor,
+    };
+    return { info, currency, color, shouldHighlightMonth, thinkingOptions };
+}
+
+/* istanbul ignore next: utility to clean previous text and read base */
+function readAndCleanPrevious(d3Instance, self) {
+    const el = d3Instance.select(self);
+    el.attr('dominant-baseline', 'middle');
+    const previousBaseSpan =
+        el && typeof el.select === 'function' ? el.select('tspan.domain-label-base') : null;
+    if (
+        previousBaseSpan &&
+        typeof previousBaseSpan.empty === 'function' &&
+        !previousBaseSpan.empty()
+    ) {
+        setThinkingHighlight(previousBaseSpan, false);
+    }
+    const { baseText } = getLabelText(el, '');
+    if (baseText) {
+        el.attr('data-base-label', baseText);
+    }
+    return { el, baseText };
+}
+
+/* istanbul ignore next: helper to extract numeric config values */
+function getNumericConfigValue(value, defaultValue, minVal, maxVal, isInt) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return defaultValue;
+    }
+    if (minVal !== undefined && num < minVal) {
+        return defaultValue;
+    }
+    if (maxVal !== undefined && num > maxVal) {
+        return defaultValue;
+    }
+    return isInt ? Math.floor(num) : num;
+}
+
+/* istanbul ignore next: utility to extract highlight config */
+function getHighlightConfigValues(config) {
+    const highlightConfig = config || {};
+    const intervalMs = getNumericConfigValue(highlightConfig.intervalMs, 140, 1, undefined, false);
+    const waveSize = getNumericConfigValue(highlightConfig.waveSize, 2, 1, undefined, true);
+
+    const baseWaveColor =
+        typeof highlightConfig.baseColor === 'string'
+            ? highlightConfig.baseColor
+            : 'rgba(255, 255, 255, 0.95)';
+    const neutralWaveColor =
+        typeof highlightConfig.neutralDimColor === 'string'
+            ? highlightConfig.neutralDimColor
+            : 'rgba(150, 150, 150, 0.65)';
+
+    const waveAlpha = getNumericConfigValue(highlightConfig.waveAlpha, 0.85, 0, 1, false);
+    const pnlLightenFactor = getNumericConfigValue(
+        highlightConfig.pnlLightenFactor,
+        0.55,
+        0,
+        1,
+        false
+    );
+    const pnlLightAlpha = getNumericConfigValue(
+        highlightConfig.pnlLightAlpha,
+        waveAlpha,
+        0,
+        1,
+        false
+    );
+
+    return {
+        intervalMs,
+        waveSize,
+        baseWaveColor,
+        neutralWaveColor,
+        pnlLightenFactor,
+        pnlLightAlpha,
+    };
+}
+
+/* istanbul ignore next: utility to determine if background should show */
+function checkShouldShowBackground(viewportThreshold, pageWrapper) {
+    const isMobileViewport = window.innerWidth <= viewportThreshold;
+    const classList =
+        pageWrapper && typeof pageWrapper.classList === 'object' ? pageWrapper.classList : null;
+    const isZoomed = Boolean(
+        classList && typeof classList.contains === 'function' && classList.contains('zoomed')
+    );
+    const backgroundsEnabled = CALENDAR_MONTH_LABEL_BACKGROUND.enabled !== false;
+    return backgroundsEnabled && (isMobileViewport || (!isMobileViewport && !isZoomed));
+}
+
 export function updateMonthLabels(d3Instance, state, currencySymbols) {
     /* istanbul ignore next: defensive programming for missing d3 instance */
     if (!d3Instance) {
@@ -233,22 +631,8 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
 
     /* istanbul ignore next: defensive programming for UI state calculation */
     const viewportThreshold = CALENDAR_MONTH_LABEL_BACKGROUND.maxWidth ?? UI_BREAKPOINTS.MOBILE;
-    /* istanbul ignore next: defensive programming for UI state calculation */
-    const isMobileViewport = window.innerWidth <= viewportThreshold;
-    /* istanbul ignore next: defensive programming for UI state calculation */
     const pageWrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
-    /* istanbul ignore next: defensive programming for UI state calculation */
-    const classList =
-        pageWrapper && typeof pageWrapper.classList === 'object' ? pageWrapper.classList : null;
-    /* istanbul ignore next: defensive programming for UI state calculation */
-    const isZoomed = Boolean(
-        classList && typeof classList.contains === 'function' && classList.contains('zoomed')
-    );
-    /* istanbul ignore next: defensive programming for UI state calculation */
-    const backgroundsEnabled = CALENDAR_MONTH_LABEL_BACKGROUND.enabled !== false;
-    /* istanbul ignore next: defensive programming for UI state calculation */
-    const shouldShowBackground =
-        backgroundsEnabled && (isMobileViewport || (!isMobileViewport && !isZoomed));
+    const shouldShowBackground = checkShouldShowBackground(viewportThreshold, pageWrapper);
     /* istanbul ignore next: defensive programming for UI state calculation */
     const filterId = shouldShowBackground ? ensureFrostedFilter(d3Instance) : null;
     /* istanbul ignore next: defensive programming for UI state calculation */
@@ -259,254 +643,70 @@ export function updateMonthLabels(d3Instance, state, currencySymbols) {
         .select(CALENDAR_SELECTORS.heatmap)
         .selectAll('text.ch-domain-text');
 
-    const highlightConfig = CALENDAR_MONTH_LABEL_HIGHLIGHT || {};
-    const intervalValue = Number(highlightConfig.intervalMs);
-    const intervalMs = Number.isFinite(intervalValue) && intervalValue > 0 ? intervalValue : 140;
-    const waveSizeValue = Number(highlightConfig.waveSize);
-    const waveSize = Math.max(1, Number.isFinite(waveSizeValue) ? Math.floor(waveSizeValue) : 2);
-    const baseWaveColor =
-        typeof highlightConfig.baseColor === 'string'
-            ? highlightConfig.baseColor
-            : 'rgba(255, 255, 255, 0.95)';
-    const neutralWaveColor =
-        typeof highlightConfig.neutralDimColor === 'string'
-            ? highlightConfig.neutralDimColor
-            : 'rgba(150, 150, 150, 0.65)';
-    const alphaValue = Number(highlightConfig.waveAlpha);
-    const waveAlpha =
-        Number.isFinite(alphaValue) && alphaValue >= 0 && alphaValue <= 1 ? alphaValue : 0.85;
-    const lightenFactorValue = Number(highlightConfig.pnlLightenFactor);
-    const pnlLightenFactor =
-        Number.isFinite(lightenFactorValue) && lightenFactorValue >= 0 && lightenFactorValue <= 1
-            ? lightenFactorValue
-            : 0.55;
-    const pnlAlphaValue = Number(highlightConfig.pnlLightAlpha);
-    const pnlLightAlpha =
-        Number.isFinite(pnlAlphaValue) && pnlAlphaValue >= 0 && pnlAlphaValue <= 1
-            ? pnlAlphaValue
-            : waveAlpha;
+    const hl = getHighlightConfigValues(CALENDAR_MONTH_LABEL_HIGHLIGHT);
 
     selection.each(function handleDomainLabel() {
-        const el = d3Instance.select(this);
-        el.attr('dominant-baseline', 'middle');
-        const previousBaseSpan =
-            el && typeof el.select === 'function' ? el.select('tspan.domain-label-base') : null;
-        if (
-            previousBaseSpan &&
-            typeof previousBaseSpan.empty === 'function' &&
-            !previousBaseSpan.empty()
-        ) {
-            setThinkingHighlight(previousBaseSpan, false);
-        }
-        let currentTextRaw = '';
-        if (el && typeof el.text === 'function') {
-            const candidate = el.text();
-            if (typeof candidate === 'string') {
-                currentTextRaw = candidate;
-            }
-        }
-        const currentText = currentTextRaw.trim();
-        const baseAttrValue =
-            el && typeof el.attr === 'function' ? el.attr('data-base-label') : null;
-        const baseText =
-            typeof baseAttrValue === 'string' && baseAttrValue.trim() ? baseAttrValue : currentText;
-
-        if (baseText) {
-            el.attr('data-base-label', baseText);
-        }
-
+        const { el, baseText } = readAndCleanPrevious(d3Instance, this);
         if (!baseText) {
             /* istanbul ignore next: defensive programming for missing text */
             return;
         }
 
         const parent = this.parentNode ? d3Instance.select(this.parentNode) : null;
-        let backgroundRect = null;
-        if (parent) {
-            const existing = parent.select('rect.domain-label-bg');
-            if (shouldShowBackground) {
-                backgroundRect = existing;
-                if (backgroundRect.empty()) {
-                    backgroundRect = parent
-                        .insert('rect', () => this)
-                        .attr('class', 'domain-label-bg')
-                        .attr('rx', CALENDAR_MONTH_LABEL_BACKGROUND.radius || 0)
-                        .attr('ry', CALENDAR_MONTH_LABEL_BACKGROUND.radius || 0)
-                        .attr('fill', CALENDAR_MONTH_LABEL_BACKGROUND.fill || 'transparent')
-                        .attr('stroke', CALENDAR_MONTH_LABEL_BACKGROUND.stroke || 'none')
-                        .attr('stroke-width', CALENDAR_MONTH_LABEL_BACKGROUND.strokeWidth || 0)
-                        .attr('opacity', 0)
-                        .style('pointer-events', 'none');
-                }
-                if (filterId) {
-                    backgroundRect.attr('filter', `url(#${filterId})`);
-                }
-                backgroundRect.lower();
-            } else if (!existing.empty()) {
-                existing
-                    .interrupt()
-                    .transition()
-                    .duration(transitionDuration)
-                    .ease(d3Instance.easeCubicInOut)
-                    .attr('opacity', 0);
-            }
-        }
+        const backgroundRect = setupBackgroundRect(
+            d3Instance,
+            this,
+            parent,
+            shouldShowBackground,
+            filterId,
+            transitionDuration
+        );
 
-        const monthKey = getMonthKeyFromLabel(baseText);
-        const info =
-            monthKey && state.monthlyPnl instanceof Map ? state.monthlyPnl.get(monthKey) : null;
-        const highlightMonthKey =
-            typeof state.highlightMonthKey === 'string' ? state.highlightMonthKey : null;
-        const shouldHighlightMonth = Boolean(highlightMonthKey && monthKey === highlightMonthKey);
-        let color = null;
-        if (info) {
-            const currency = state.selectedCurrency || 'USD';
-            const absoluteChange = getAbsoluteChangeForCurrency(info, currency);
-            if (Number.isFinite(absoluteChange)) {
-                if (absoluteChange > 0) {
-                    color = COLORS.POSITIVE_PNL;
-                } else if (absoluteChange < 0) {
-                    color = COLORS.NEGATIVE_PNL;
-                }
-            }
-        }
-        const lightenedColor = color
-            ? lightenHexToRgba(color, pnlLightenFactor, pnlLightAlpha)
-            : null;
-        const waveDimColor = lightenedColor || neutralWaveColor;
-        const thinkingOptions = {
-            intervalMs,
-            waveSize,
-            baseColor: baseWaveColor,
-            dimColor: waveDimColor,
-        };
+        const ctx = getDomainLabelContext(
+            state,
+            baseText,
+            hl.intervalMs,
+            hl.waveSize,
+            hl.baseWaveColor,
+            hl.neutralWaveColor,
+            hl.pnlLightenFactor,
+            hl.pnlLightAlpha
+        );
 
-        if (!info) {
-            el.text('');
-            const baseSpan = el.append('tspan').attr('class', 'domain-label-base').text(baseText);
-            if (backgroundRect) {
-                backgroundRect.interrupt();
-                if (shouldShowBackground) {
-                    const paddingX = CALENDAR_MONTH_LABEL_BACKGROUND.paddingX ?? 0;
-                    const paddingY = CALENDAR_MONTH_LABEL_BACKGROUND.paddingY ?? 0;
-                    const baseOpacity = CALENDAR_MONTH_LABEL_BACKGROUND.opacity ?? 1;
-                    const bbox = this.getBBox();
-                    backgroundRect
-                        .attr('x', bbox.x - paddingX / 2)
-                        .attr('y', bbox.y - paddingY / 2)
-                        .attr('width', Math.max(0, bbox.width + paddingX))
-                        .attr('height', Math.max(0, bbox.height + paddingY));
-                    /* istanbul ignore next: defensive programming for background rect transitions */
-                    backgroundRect
-                        .transition()
-                        .duration(transitionDuration)
-                        .ease(d3Instance.easeCubicOut)
-                        .attr('opacity', baseOpacity);
-                } else {
-                    /* istanbul ignore next: defensive programming for background rect alternative path */
-                    backgroundRect
-                        .transition()
-                        .duration(transitionDuration)
-                        .ease(d3Instance.easeCubicInOut)
-                        .attr('opacity', 0);
-                }
-            }
-            setThinkingHighlight(baseSpan, shouldHighlightMonth, thinkingOptions);
+        if (!ctx.info) {
+            applySimpleMode(
+                d3Instance,
+                el,
+                baseText,
+                shouldShowBackground,
+                backgroundRect,
+                this.getBBox(),
+                transitionDuration,
+                ctx.shouldHighlightMonth,
+                ctx.thinkingOptions
+            );
             return;
         }
 
-        const changeText = formatMonthlyChange(state, currencySymbols, info);
-        const currency = state.selectedCurrency || 'USD';
-        const percentChange = getPercentChangeForCurrency(info, currency);
+        const changeText = formatMonthlyChange(state, currencySymbols, ctx.info);
+        const percentChange = getPercentChangeForCurrency(ctx.info, ctx.currency);
         const percentText = formatMonthlyPercent(percentChange);
         const showDetailed = Boolean(state.labelsVisible && changeText);
 
-        el.text('');
-        el.append('tspan').attr('class', 'domain-label-base').text(baseText);
-        const openSpan = el.append('tspan').attr('class', 'domain-label-open-bracket').text(' (');
-        const percentSpan = el
-            .append('tspan')
-            .attr('class', 'domain-label-percent')
-            .text(percentText ?? '');
-        const separatorSpan = el.append('tspan').attr('class', 'domain-label-separator').text(', ');
-        const changeSpan = el
-            .append('tspan')
-            .attr('class', 'domain-label-pnl')
-            .text(changeText ?? '');
-        const closeSpan = el.append('tspan').attr('class', 'domain-label-close-bracket').text(')');
+        const spans = createDetailedSpans(el, baseText, percentText, changeText);
+        applyDetailedTextVisibility(spans, showDetailed, ctx.color);
 
-        if (showDetailed) {
-            if (color) {
-                percentSpan.attr('fill', color);
-                changeSpan.attr('fill', color);
-            } else {
-                /* istanbul ignore next: defensive programming for null color case */
-                percentSpan.attr('fill', null);
-                /* istanbul ignore next: defensive programming for null color case */
-                changeSpan.attr('fill', null);
-            }
-            openSpan.attr('opacity', 1);
-            percentSpan.attr('opacity', 1);
-            separatorSpan.attr('opacity', 1);
-            changeSpan.attr('opacity', 1);
-            closeSpan.attr('opacity', 1);
-        } else {
-            percentSpan.attr('fill', null);
-            changeSpan.attr('fill', null);
-            openSpan.attr('opacity', 0);
-            percentSpan.attr('opacity', 0);
-            separatorSpan.attr('opacity', 0);
-            changeSpan.attr('opacity', 0);
-            closeSpan.attr('opacity', 0);
-        }
-
-        if (backgroundRect && shouldShowBackground) {
-            const paddingX = CALENDAR_MONTH_LABEL_BACKGROUND.paddingX ?? 0;
-            const paddingY = CALENDAR_MONTH_LABEL_BACKGROUND.paddingY ?? 0;
-            const baseOpacity = CALENDAR_MONTH_LABEL_BACKGROUND.opacity ?? 1;
-            const bbox = this.getBBox();
-            let storedWidth = Number(el.attr('data-bg-width')) || 0;
-            let storedHeight = Number(el.attr('data-bg-height')) || 0;
-            if (showDetailed || storedWidth === 0 || storedHeight === 0) {
-                storedWidth = bbox.width;
-                storedHeight = bbox.height;
-                el.attr('data-bg-width', storedWidth);
-                el.attr('data-bg-height', storedHeight);
-            }
-            const targetWidth = Math.max(storedWidth, bbox.width);
-            const targetHeight = Math.max(storedHeight, bbox.height);
-            const extraWidth = targetWidth - bbox.width;
-            const extraHeight = targetHeight - bbox.height;
-            const x = bbox.x - paddingX / 2 - extraWidth / 2;
-            const y = bbox.y - paddingY / 2 - extraHeight / 2;
-
-            backgroundRect
-                .attr('x', x)
-                .attr('y', y)
-                .attr('width', Math.max(0, targetWidth + paddingX))
-                .attr('height', Math.max(0, targetHeight + paddingY));
-            /* istanbul ignore next: defensive programming for background rect detailed transitions */
-            backgroundRect
-                .interrupt()
-                .transition()
-                .duration(transitionDuration)
-                .ease(d3Instance.easeCubicOut)
-                .attr('opacity', baseOpacity);
-        } else if (backgroundRect) {
-            /* istanbul ignore next: defensive programming for background rect cleanup */
-            backgroundRect
-                .interrupt()
-                .transition()
-                .duration(transitionDuration)
-                .ease(d3Instance.easeCubicInOut)
-                .attr('opacity', 0);
-        }
-
-        const highlightTargets = [percentSpan, changeSpan];
-        if (showDetailed && shouldHighlightMonth) {
-            setThinkingHighlight(highlightTargets, true, thinkingOptions);
-        } else {
-            setThinkingHighlight(highlightTargets, false);
-        }
+        const highlightTargets = [spans.percentSpan, spans.changeSpan];
+        finalizeDetailedMode(
+            d3Instance,
+            el,
+            backgroundRect,
+            shouldShowBackground,
+            showDetailed,
+            transitionDuration,
+            ctx.shouldHighlightMonth,
+            ctx.thinkingOptions,
+            highlightTargets
+        );
     });
 }
