@@ -34,6 +34,9 @@ cleanups — pick a different target.
     - Cyclomatic-complexity refactors (**Architect's lane**) or error-handling / empty
       `catch` blocks (**Sentinel's lane**). The old journals show you repeatedly drifted
       into both — don't. If you spot one, leave it for that routine.
+    - `tests/` — bot lanes are append-only there; never delete or shrink a test
+      file (`make bot-pr-check` / `scripts/agents/check_bot_pr_hygiene.py`
+      enforces this on every commit in the PR).
     - Ignore `js/vendor/**` and other third-party code — its TODOs are not ours.
     - Never touch generated `data/` or build/coverage artifacts.
 
@@ -53,6 +56,9 @@ success, not a reason to invent work or reach into another lane.
 - Re-exported public API, worker entry points, CLI `main()`/`argparse` functions,
   and scripts referenced by agent workflows/skills or `bin/` wrappers are not dead
   just because tests or doc workflows are the only in-repo caller.
+- A symbol whose only remaining reference is its **own dedicated test file** is
+  NOT a valid target: removing it requires deleting that test, and bots are
+  append-only in `tests/`. Skip it and pick a different target.
 - Commented-out blocks and unreachable branches within application source.
 - A `TODO` is "real" only if it names a concrete, currently-true gap. If resolving
   it requires behaviour change, that change must be covered by a test (CI enforces
@@ -63,10 +69,22 @@ success, not a reason to invent work or reach into another lane.
 - State the evidence the removal is safe (the reference search you ran turned up
   nothing). `make verify` green — full JS + Python suite still passes.
 - If you resolved a TODO that adds behaviour, a test covers the changed lines.
+- Before **every** push: `git show --stat HEAD` must show a real diff that
+  matches the commit message, and
+  `python3 -m scripts.agents.check_bot_pr_hygiene --base origin/main` must pass.
+  If the diff is empty or off-message, push nothing.
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
   before the run, `check <hash>` before a retry); unchanged means edit something
   first (AGENTS.md non-negotiable #1).
+
+## Stop-on-red rule
+
+Deterministic gates (`check_bot_pr_hygiene`, `pr-title`) scan commit history, so
+they cannot be fixed by adding more commits. If one fails on your PR, that PR is
+dead: push nothing further, do not revert-and-repush under a different message,
+and end the run. Never push an empty or off-message commit to "make progress" —
+that is itself a gate violation.
 
 ## Commit and pull request
 
@@ -77,3 +95,5 @@ Conventional Commits per `AGENTS.md`.
   **no emoji, no `Janitor:` prefix**.
 - Body: what was removed/resolved; the evidence it was safe (reference search);
   `make verify` output.
+- Build commit messages with real newlines or multiple `git commit -m` flags —
+  never a literal `\n` sequence in the subject or body.
