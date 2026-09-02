@@ -191,17 +191,17 @@ describe('Composition Chart Feature Parity', () => {
             });
         });
 
-        test('all composition charts must be in getActiveChartKey', () => {
+        test('all composition charts must be in getActiveChartKey or VALID_CHART_KEYS', () => {
             const getActiveChartKeySection = interactionContent.substring(
-                interactionContent.indexOf('function getActiveChartKey'),
+                interactionContent.indexOf('const VALID_CHART_KEYS'),
                 interactionContent.indexOf('function getActiveChartKey') + 1000
             );
 
             COMPOSITION_CHARTS.forEach((chartKey) => {
                 const jsName = CHART_NAME_MAPPING[chartKey];
                 expect(getActiveChartKeySection).toContain(
-                    `active === '${jsName}'`,
-                    `Chart "${chartKey}" (${jsName}) is missing from getActiveChartKey`
+                    `'${jsName}'`,
+                    `Chart "${chartKey}" (${jsName}) is missing from getActiveChartKey or VALID_CHART_KEYS`
                 );
             });
         });
@@ -292,7 +292,7 @@ describe('Composition Chart Feature Parity', () => {
                 { name: 'range skip (2)', pattern: /handlePointerDown[\s\S]{0,2000}/ },
                 { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,2500}/ },
                 { name: 'legend click skip', pattern: /Skip click events[\s\S]{0,1000}/ },
-                { name: 'getActiveChartKey', pattern: /function getActiveChartKey[\s\S]{0,1500}/ },
+                { name: 'getActiveChartKey', pattern: /VALID_CHART_KEYS = new Set[\s\S]{0,1500}/ },
             ];
 
             baseCharts.forEach((baseChart) => {

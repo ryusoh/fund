@@ -798,32 +798,31 @@ let pointerEventsAttached = false;
 let containerPointerBound = false;
 let crosshairChartManager = null;
 
+const VALID_CHART_KEYS = new Set([
+    'performance',
+    'composition',
+    'compositionAbs',
+    'sectors',
+    'sectorsAbs',
+    'geography',
+    'geographyAbs',
+    'marketcap',
+    'marketcapAbs',
+    'concentration',
+    'pe',
+    'contribution',
+    'fx',
+    'drawdown',
+    'drawdownAbs',
+    'rolling',
+    'volatility',
+    'beta',
+    'yield',
+]);
+
 function getActiveChartKey() {
     const active = transactionState.activeChart || 'contribution';
-    if (
-        active === 'performance' ||
-        active === 'composition' ||
-        active === 'compositionAbs' ||
-        active === 'sectors' ||
-        active === 'sectorsAbs' ||
-        active === 'geography' ||
-        active === 'geographyAbs' ||
-        active === 'marketcap' ||
-        active === 'marketcapAbs' ||
-        active === 'concentration' ||
-        active === 'pe' ||
-        active === 'contribution' ||
-        active === 'fx' ||
-        active === 'drawdown' ||
-        active === 'drawdownAbs' ||
-        active === 'rolling' ||
-        active === 'volatility' ||
-        active === 'beta' ||
-        active === 'yield'
-    ) {
-        return active;
-    }
-    return 'contribution';
+    return VALID_CHART_KEYS.has(active) ? active : 'contribution';
 }
 
 function getActiveLayout() {
