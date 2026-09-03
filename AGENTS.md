@@ -276,6 +276,12 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   `make sync-check` fails the gate when the generated copy is stale. Read before
   adding/editing a slash-command.
 - Data flow / pipeline → `docs/overview.md`, `docs/ai_update_flow.md`.
+- **TWRR price pipeline silent data regressions** → `docs/twrr-data-pipeline.md`.
+  `step03` fetch failures and `step04`'s `fillna(0.0)` turn missing prices into
+  $0 valuations across all of history with no error (the 2026-09-02 ANET wipe
+  understated the balance chart ~45% at the real-time seam). `make twrr-validate`
+  gates the bot's auto-commit on coverage/regression/seam invariants. Read
+  before touching `scripts/twrr/` or debugging balance/history mismatches.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
 ## Lanes (keep PRs disjoint to avoid collisions)
