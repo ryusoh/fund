@@ -203,6 +203,36 @@ def test_bot_suppressions_prune_allowed(repo: Path) -> None:
     assert find_violations(repo, "main") == []
 
 
+def test_bot_suppressions_revert_to_base_allowed(repo: Path) -> None:
+    _git(repo, "checkout", "main")
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 5}}}\n',
+        "init suppressions",
+        bot=False,
+    )
+    _git(repo, "checkout", "bot-branch")
+    _git(repo, "merge", "main")
+    # Commit 1: bot mistakenly decrements count 5 -> 4
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 4}}}\n',
+        "refactor(terminal): cut complexity",
+        bot=True,
+    )
+    # Commit 2: bot reverts count 4 -> 5 back to baseline
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 5}}}\n',
+        "refactor(terminal): restore baseline suppressions",
+        bot=True,
+    )
+    assert find_violations(repo, "main") == []
+
+
 def test_bot_non_architect_suppression_touch_flagged(repo: Path) -> None:
     _write_and_commit(
         repo,

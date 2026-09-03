@@ -19,8 +19,11 @@ The repo has an automated complexity gate (`docs/agentic-quality-gates.md`):
   count). **The suppressions file is your backlog list** — every entry is a
   function over 20 that needs refactoring. For candidates between 10 and 20,
   run `npx eslint . --ext .js --rule '{"complexity": ["warn", 10]}'` and read
-  the warnings. Never add a new violation or raise a suppressed count — the
-  gate fails on it.
+  the warnings. Functions with complexity between 10 and 20 are NOT in
+  `eslint-suppressions.json` (the backlog only holds functions over 20);
+  refactoring a function ≤ 20 does not and must not alter
+  `eslint-suppressions.json`. Never add a new violation or raise a suppressed
+  count — the gate fails on it.
 - **Python:** `venv/bin/radon cc scripts tests -s -n B` lists every block rated
   B or worse (complexity ≥ 6); `make lint` freezes the xenon ceilings
   (`--max-average C --max-modules F --max-absolute F`). Never let a refactor
@@ -61,11 +64,12 @@ already proposed or previously rejected — pick a different target.
 
 - Target function's complexity now ≤ 10 (state before → after, measured with
   the commands above — not eyeballed).
-- If you removed a JS violation from the suppressions backlog, run
-  `npx eslint --prune-suppressions` and include the shrunk
-  `eslint-suppressions.json` in the PR — the baseline only ratchets down.
-- `make verify` green — lint, types, security, full JS + Python suite, with
-  **coverage preserved**.
+- **Never hand-edit `eslint-suppressions.json`**. If you refactored a function
+  from the suppressions backlog (> 20), run `npx eslint --prune-suppressions`
+  to automatically shrink the file. If `--prune-suppressions` produces no diff,
+  the target was not in the >20 backlog; do not touch `eslint-suppressions.json`.
+- `make precommit-fix` green (matches the CI gate; verify `bot-pr-check` and
+  all pre-commit hooks pass locally), with **coverage preserved**.
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
   before the run, `check <hash>` before a retry); unchanged means edit something

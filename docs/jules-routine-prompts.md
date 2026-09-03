@@ -15,7 +15,7 @@ friction disappears.
 
 > Read `AGENTS.md` and `.jules/<name>.md`, then act as that persona. Run
 > `make install-dev` first. Work only in your lane, smallest single-purpose diff.
-> Open a PR **only if `make verify` is green**, and paste the verification output
+> Open a PR **only if `make precommit-fix` is green** (the CI gate), and paste the verification output
 > in the PR body. **Never modify any file under `.jules/`.** If a finding belongs
 > to another lane, skip it.
 

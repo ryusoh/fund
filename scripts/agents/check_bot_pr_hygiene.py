@@ -101,32 +101,55 @@ def _read_json_at(repo: Path, ref: str, path: str) -> dict:
     return {}
 
 
-def _suppressions_violation(repo: Path, sha: str, path: str) -> str | None:
-    """Check if a commit added new suppressions or increased counts in eslint-suppressions.json."""
+def _suppressions_violation(repo: Path, sha: str, path: str, base: str = "main") -> str | None:
+    """Check if a commit added new suppressions or increased counts in eslint-suppressions.json.
+
+    A commit that increases counts relative to its parent commit is only a ratchet
+    violation if it also increases counts beyond the base ref (e.g. restoring
+    counts back up to baseline to fix an erroneous decrement is allowed).
+    """
     before = _read_json_at(repo, f"{sha}~1", path)
     after = _read_json_at(repo, sha, path)
+    base_data = _read_json_at(repo, base, path)
 
     for file_path, file_rules in after.items():
-        if file_path not in before:
+        if file_path not in before and file_path not in base_data:
             return f"added suppression for new file {file_path}"
         if not isinstance(file_rules, dict):
             continue
-        before_rules = before[file_path] if isinstance(before[file_path], dict) else {}
+        before_rules = before[file_path] if isinstance(before.get(file_path), dict) else {}
+        base_rules = base_data[file_path] if isinstance(base_data.get(file_path), dict) else {}
         for rule_name, rule_data in file_rules.items():
-            if rule_name not in before_rules:
+            if rule_name not in before_rules and rule_name not in base_rules:
                 return f"added suppression for new rule {rule_name} in {file_path}"
             after_count = (
                 rule_data.get("count", 1)
                 if isinstance(rule_data, dict)
                 else (rule_data if isinstance(rule_data, int) else 1)
             )
-            before_rule_data = before_rules[rule_name]
+            before_rule_data = before_rules.get(rule_name, {})
             before_count = (
-                before_rule_data.get("count", 1)
-                if isinstance(before_rule_data, dict)
-                else (before_rule_data if isinstance(before_rule_data, int) else 1)
+                (
+                    before_rule_data.get("count", 1)
+                    if isinstance(before_rule_data, dict)
+                    else (before_rule_data if isinstance(before_rule_data, int) else 1)
+                )
+                if rule_name in before_rules
+                else 0
             )
-            if after_count > before_count:
+
+            base_rule_data = base_rules.get(rule_name, {})
+            base_count = (
+                (
+                    base_rule_data.get("count", 1)
+                    if isinstance(base_rule_data, dict)
+                    else (base_rule_data if isinstance(base_rule_data, int) else 1)
+                )
+                if rule_name in base_rules
+                else 0
+            )
+
+            if after_count > before_count and after_count > base_count:
                 return (
                     f"increased suppression count for {rule_name} in {file_path} "
                     f"({before_count} -> {after_count})"
@@ -202,7 +225,7 @@ def find_violations(repo: Path, base: str, head: str = "HEAD") -> list[str]:
                     violations.append(
                         f"{sha[:8]} lane violation: only Architect (refactor) may touch {path}"
                     )
-                err = _suppressions_violation(repo, sha, path)
+                err = _suppressions_violation(repo, sha, path, base)
                 if err:
                     violations.append(f"{sha[:8]} complexity ratchet violation: {path} {err}")
     return violations
