@@ -564,30 +564,21 @@ export async function getBetaSnapshotLine() {
     return `6M Rolling Beta (vs S&P 500) as of ${dateLabel}:\n${snapshots.join('   ')}`;
 }
 
-export async function getYieldSnapshotLine() {
-    const data = await loadYieldData();
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        return null;
-    }
-
-    const { chartDateRange } = transactionState;
+function _filterYieldData(data, chartDateRange) {
     const filterFrom = chartDateRange.from ? parseLocalDate(chartDateRange.from) : null;
     const filterTo = chartDateRange.to ? parseLocalDate(chartDateRange.to) : null;
 
-    const filtered = data.filter((d) => {
+    return data.filter((d) => {
         const date = parseLocalDate(d.date);
         return (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo);
     });
+}
 
-    if (filtered.length === 0) {
-        return 'No dividend data in range';
-    }
-
-    const last = filtered[filtered.length - 1];
+function _calculateYieldRange(filteredData) {
     let minYield = Infinity;
     let maxYield = -Infinity;
-    for (let i = 0; i < filtered.length; i++) {
-        const y = filtered[i].forward_yield;
+    for (let i = 0; i < filteredData.length; i++) {
+        const y = filteredData[i].forward_yield;
         if (y < minYield) {
             minYield = y;
         }
@@ -595,6 +586,23 @@ export async function getYieldSnapshotLine() {
             maxYield = y;
         }
     }
+    return { minYield, maxYield };
+}
+
+export async function getYieldSnapshotLine() {
+    const data = await loadYieldData();
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        return null;
+    }
+
+    const filtered = _filterYieldData(data, transactionState.chartDateRange);
+
+    if (filtered.length === 0) {
+        return 'No dividend data in range';
+    }
+
+    const { minYield, maxYield } = _calculateYieldRange(filtered);
+    const last = filtered[filtered.length - 1];
 
     const selectedCurrency = transactionState.selectedCurrency || 'USD';
     const convertedIncome = convertValueToCurrency(last.ttm_income, last.date, selectedCurrency);
