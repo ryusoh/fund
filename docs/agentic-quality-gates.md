@@ -352,6 +352,15 @@ The workflow-level machinery also already matches the philosophy:
   empty, add zero-content placeholder files, or delete lines from test files
   (AGENTS.md non-negotiable #10). Human commits are skipped — interactive
   agents may legitimately rewrite tests on request.
+- Generated-data validation — `make twrr-validate`
+  (`scripts/twrr/step_validate.py`, a step in `twrr-refresh.yaml` between the
+  pipeline run and the bot's auto-commit) fails the run when regenerated data
+  violates invariants: every held ticker must have a price within the last 7
+  days, no ticker's non-null price count may drop vs the committed parquet,
+  `delisted_tickers.csv` ∩ current holdings must be empty, and the historical
+  series' tail must match the real-time balance within 10%. Motivated by the
+  2026-09-02 incident where a flaky yfinance batch returned an all-NaN ANET
+  column, silently zeroing the position in every historical series.
 
 ## Evidence, claim by claim
 

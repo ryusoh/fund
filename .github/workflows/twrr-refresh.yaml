@@ -53,6 +53,13 @@ jobs:
               run: |
                   make twrr-refresh
 
+            # Gate the commit: a regenerated dataset that violates basic
+            # invariants (e.g. a held ticker's price history wiped by a flaky
+            # fetch — ANET, 2026-09-02) must fail the run, not be committed.
+            - name: Validate generated data
+              run: |
+                  make twrr-validate
+
             - name: Commit outputs if changed
               id: autocommit
               run: |

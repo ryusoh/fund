@@ -177,6 +177,7 @@ instantly identifiable.
 | Headless screenshot (visual verify)     | `make screenshot URL=/terminal/`                        |
 | Page smoke (console/CSP errors)         | `make smoke`                                            |
 | Run TWRR data pipeline locally          | `make twrr-refresh`                                     |
+| Validate regenerated TWRR data (gate)   | `make twrr-validate`                                    |
 | Regenerate AVIF/WebP background tiers   | `make images`                                           |
 
 - Use `make` targets for whole-repo runs so you match CI. Use scoped `npx jest

@@ -17,7 +17,7 @@ else
 endif
 PIP := $(PY) -m pip
 
-.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
+.PHONY: help install-dev hooks precommit precommit-fix perms check-perms lint depcheck fmt fmt-check lint-fix markdownlint-fix type sec test test-js test-tz verify sync-check thinking-check bot-pr-check js-lint js-test vendor-fetch vendor-verify vendor-clean verify-calendar-build serve screenshot smoke fund fix check completion update-hooks twrr-refresh twrr-validate deploy-worker ci-parity mutate-js mutate-py mutate-ratchet-update images _fmt-black _fmt-prettier _lintfix-eslint _lintfix-stylelint _lintfix-markdown _lintfix-ruff _pytest
 
 PYTHON_BIN := $(PY)
 TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
@@ -353,3 +353,9 @@ twrr-refresh:
 		echo "Running $$step"; \
 		$(PYTHON_BIN) $$step || exit $$?; \
 	done
+
+twrr-validate:
+	@# Pre-commit data gate: fails when regenerated data violates invariants
+	@# (held ticker without recent prices, coverage regression vs HEAD,
+	@# historical/real-time seam gap). Run after twrr-refresh, before committing.
+	$(PYTHON_BIN) scripts/twrr/step_validate.py
