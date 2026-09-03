@@ -162,7 +162,12 @@ def fetch_yfinance_prices(tickers: List[str], date_index: pd.DatetimeIndex):
             use_close = norm.endswith('X')
             series = pick_series(fetch_symbol, use_close)
 
-            if series is None or series.empty:
+            if series is None or series.empty or not series.notna().any():
+                # An all-NaN column is a failed fetch in disguise: yfinance
+                # sometimes returns the ticker column with no values at all
+                # (rate limit, transient upstream gap). Count it as a failure
+                # so fallbacks run — otherwise one flaky batch wipes that
+                # ticker's entire price history.
                 failures.append(norm)
                 continue
 
