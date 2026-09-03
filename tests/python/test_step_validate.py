@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 spec = importlib.util.spec_from_file_location(
     'step_validate_under_test', PROJECT_ROOT / 'scripts' / 'twrr' / 'step_validate.py'
 )
+assert spec is not None and spec.loader is not None
 step_validate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(step_validate)
 

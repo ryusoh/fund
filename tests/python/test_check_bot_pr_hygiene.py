@@ -146,9 +146,93 @@ def test_bot_zero_content_file_flagged(repo: Path) -> None:
     assert any("placeholder" in v and "dummy_file.txt" in v for v in violations)
 
 
+def test_bot_stray_artifact_flagged(repo: Path) -> None:
+    _write_and_commit(repo, "pr_body.txt", "Some PR body text\n", "perf(transactions): test")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "pr_body.txt" in v for v in violations)
+
+
+def test_bot_suppressions_addition_flagged(repo: Path) -> None:
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 1}}}\n',
+        "refactor(transactions): add suppression",
+    )
+    violations = find_violations(repo, "main")
+    assert any("complexity ratchet violation" in v and "added suppression" in v for v in violations)
+
+
+def test_bot_suppressions_increase_flagged(repo: Path) -> None:
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 1}}}\n',
+        "init suppressions",
+        bot=False,
+    )
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 2}}}\n',
+        "refactor(transactions): increase count",
+        bot=True,
+    )
+    violations = find_violations(repo, "main")
+    assert any(
+        "complexity ratchet violation" in v and "increased suppression count" in v
+        for v in violations
+    )
+
+
+def test_bot_suppressions_prune_allowed(repo: Path) -> None:
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 1}}}\n',
+        "init suppressions",
+        bot=False,
+    )
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        "{}\n",
+        "refactor(transactions): cut complexity",
+        bot=True,
+    )
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_non_architect_suppression_touch_flagged(repo: Path) -> None:
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 1}}}\n',
+        "init suppressions",
+        bot=False,
+    )
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        "{}\n",
+        "perf(transactions): optimize loops",
+        bot=True,
+    )
+    violations = find_violations(repo, "main")
+    assert any("lane violation: only Architect (refactor) may touch" in v for v in violations)
+
+
 def test_human_test_deletion_and_empty_commit_ignored(repo: Path) -> None:
     _write_and_commit(repo, "tests/python/test_new.py", "a = 1\nb = 2\n", "add tests", bot=False)
     _write_and_commit(repo, "tests/python/test_new.py", "a = 1\n", "rewrite tests", bot=False)
+    _write_and_commit(repo, "pr_body.txt", "notes\n", "add notes", bot=False)
+    _write_and_commit(
+        repo,
+        "eslint-suppressions.json",
+        '{"js/foo.js": {"complexity": {"count": 1}}}\n',
+        "human suppression",
+        bot=False,
+    )
     _commit(repo, "human empty commit", bot=False, allow_empty=True)
     assert find_violations(repo, "main") == []
 

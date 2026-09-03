@@ -43,6 +43,7 @@ reports/
 
 # Transient agent artifacts / PR details / task state
 pr_body.txt
+pr_description.txt
 pr_title.txt
 commit_message.txt
 .agents/state/

@@ -266,6 +266,8 @@ graph TD
     - Rejects empty commits (zero changed files).
     - Rejects placeholder files (e.g. `dummy_file.txt` added and deleted).
     - Rejects line deletions in test files (bot lanes are strictly append-only in `tests/`).
+    - Rejects stray bot artifacts (`pr_body.txt`, `pr_description.txt`, scratch files).
+    - Enforces complexity ratchet integrity on `eslint-suppressions.json` (rejects new suppressions / count increases; lane-restricted to Architect `refactor` commits).
 
 #### 3. Gate Guard Idempotency (`scripts/agents/gate_guard.py`)
 

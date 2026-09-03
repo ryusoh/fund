@@ -56,7 +56,7 @@ help:
 	@echo "  check         Run fmt-check + lint (quick CI parity)"
 	@echo "  fix           Run fmt + lint-fix"
 	@echo "  thinking-check Stream-of-consciousness scan (thinking comments, abandoned test bodies)"
-	@echo "  bot-pr-check  Fail on empty/placeholder commits or test deletions in bot PR commits"
+	@echo "  bot-pr-check  Fail on empty/placeholder commits, test deletions, stray artifacts, or ratchet violations in bot PR commits"
 	@echo "  vendor-*      Manage vendor assets"
 	@echo "  serve         Start dev server"
 	@echo "  screenshot    Headless PNG of a page (URL=/terminal/) for visual checks"
@@ -234,8 +234,9 @@ thinking-check:
 
 # Bot PR hygiene gate (AGENTS.md non-negotiable #10): deterministic scan of
 # commits authored by google-labs-jules[bot] in origin/main..HEAD — fails on
-# empty commits, zero-content placeholder files, and test deletions (bot lanes
-# are append-only in tests). Human commits are skipped. Implementation:
+# empty commits, zero-content placeholder files, test deletions (bot lanes
+# are append-only in tests), stray artifacts, and complexity ratchet violations
+# in eslint-suppressions.json. Human commits are skipped. Implementation:
 # scripts/agents/check_bot_pr_hygiene.py. Also runs as a dedicated CI step on
 # every PR (.github/workflows/ci.yml).
 bot-pr-check:

@@ -11,7 +11,10 @@ questions). This check fails the gate on any bot-authored commit in
 1. changes no files (empty commit),
 2. adds or changes a file with zero content lines (placeholder/dummy pattern),
 3. deletes lines from a test file — bot lanes are append-only in tests
-   (Testpilot owns ``tests/``; no other bot lane may touch tests at all).
+   (Testpilot owns ``tests/``; no other bot lane may touch tests at all),
+4. commits stray bot artifacts (e.g. ``pr_body.txt``, scratch/temp files),
+5. touches ``eslint-suppressions.json`` from a non-refactor lane or increases
+   suppressions (complexity ratchet violation).
 
 Human-authored commits are out of scope and skipped: interactive agents may
 legitimately delete or rewrite tests when the user asks.
@@ -20,6 +23,7 @@ legitimately delete or rewrite tests when the user asks.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -72,6 +76,64 @@ def _is_test_path(path: str) -> bool:
     return "tests" in parts or name.startswith("test_") or ".test." in name
 
 
+def _is_stray_artifact(path: str) -> bool:
+    """Detect stray PR draft files, scratch logs, or temporary artifacts."""
+    parts = path.split("/")
+    name = parts[-1].lower()
+    if name in {"pr_body.txt", "pr_description.txt", "pr_title.txt", "commit_message.txt"}:
+        return True
+    if name.endswith((".tmp", ".scratch", ".swp")):
+        return True
+    if name.startswith(("temp_", "dummy_")):
+        return True
+    return False
+
+
+def _read_json_at(repo: Path, ref: str, path: str) -> dict:
+    """Read and parse a JSON file at a given git revision."""
+    try:
+        content = _git(repo, "show", f"{ref}:{path}")
+        data = json.loads(content)
+        if isinstance(data, dict):
+            return data
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        pass
+    return {}
+
+
+def _suppressions_violation(repo: Path, sha: str, path: str) -> str | None:
+    """Check if a commit added new suppressions or increased counts in eslint-suppressions.json."""
+    before = _read_json_at(repo, f"{sha}~1", path)
+    after = _read_json_at(repo, sha, path)
+
+    for file_path, file_rules in after.items():
+        if file_path not in before:
+            return f"added suppression for new file {file_path}"
+        if not isinstance(file_rules, dict):
+            continue
+        before_rules = before[file_path] if isinstance(before[file_path], dict) else {}
+        for rule_name, rule_data in file_rules.items():
+            if rule_name not in before_rules:
+                return f"added suppression for new rule {rule_name} in {file_path}"
+            after_count = (
+                rule_data.get("count", 1)
+                if isinstance(rule_data, dict)
+                else (rule_data if isinstance(rule_data, int) else 1)
+            )
+            before_rule_data = before_rules[rule_name]
+            before_count = (
+                before_rule_data.get("count", 1)
+                if isinstance(before_rule_data, dict)
+                else (before_rule_data if isinstance(before_rule_data, int) else 1)
+            )
+            if after_count > before_count:
+                return (
+                    f"increased suppression count for {rule_name} in {file_path} "
+                    f"({before_count} -> {after_count})"
+                )
+    return None
+
+
 def _numstat(repo: Path, sha: str) -> list[tuple[str, str, str]]:
     """Return (added, deleted, path) rows for one commit ('-' for binary)."""
     out = _git(repo, "show", "--numstat", "--format=", sha)
@@ -83,14 +145,15 @@ def _numstat(repo: Path, sha: str) -> list[tuple[str, str, str]]:
     return rows
 
 
-def find_violations(repo: Path, base: str) -> list[str]:
-    """Inspect bot-authored commits in ``base..HEAD``; return violation strings."""
-    revs = _git(repo, "rev-list", "--no-merges", f"{base}..HEAD").split()
+def find_violations(repo: Path, base: str, head: str = "HEAD") -> list[str]:
+    """Inspect bot-authored commits in ``base..head``; return violation strings."""
+    revs = _git(repo, "rev-list", "--no-merges", f"{base}..{head}").split()
     violations = []
     for sha in reversed(revs):
         author = _git(repo, "show", "-s", "--format=%ae %an", sha)
         if BOT_AUTHOR_MARKER not in author:
             continue
+        subject = _git(repo, "show", "-s", "--format=%s", sha).strip()
         rows = _numstat(repo, sha)
         if not rows:
             violations.append(f"{sha[:8]} empty commit: changes no files")
@@ -132,12 +195,22 @@ def find_violations(repo: Path, base: str) -> list[str]:
                                 f"{sha[:8]} test deletion: {path} loses {before_lines - after_lines} line(s)"
                                 " — bot lanes are append-only in tests"
                             )
+            if _is_stray_artifact(path):
+                violations.append(f"{sha[:8]} stray artifact: {path} must not be committed")
+            if path == "eslint-suppressions.json" or path.endswith("/eslint-suppressions.json"):
+                if not subject.startswith("refactor"):
+                    violations.append(
+                        f"{sha[:8]} lane violation: only Architect (refactor) may touch {path}"
+                    )
+                err = _suppressions_violation(repo, sha, path)
+                if err:
+                    violations.append(f"{sha[:8]} complexity ratchet violation: {path} {err}")
     return violations
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Fail on empty commits, placeholder files, or test deletions in bot-authored commits.",
+        description="Fail on empty commits, placeholder files, test deletions, stray artifacts, or ratchet violations in bot-authored commits.",
     )
     parser.add_argument(
         "--base",

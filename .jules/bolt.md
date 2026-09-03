@@ -36,8 +36,24 @@ pipeline in `scripts/`; the Cloudflare worker.
 - You must NOT do: complexity-only refactors (Architect), security/error-handling
   (Sentinel), dead-code removal (Janitor), or feature work.
 - **Hard bans:** no new dependencies; no edits to `package.json`, `jsconfig.json`,
-  or build config; no architectural changes; no breaking changes; never trade
-  readability for a micro-optimization. If a win requires any of these, skip it.
+  `eslint-suppressions.json`, or build config; no architectural changes; no
+  breaking changes; never trade readability for a micro-optimization; never
+  suppress complexity or lint rules. If a win requires any of these, skip it.
+
+## Anti-patterns to avoid
+
+- **Inlining `.forEach` into `for` loops in monolithic functions:** In JavaScript,
+  arrow functions passed to `.forEach(...)` have their own cyclomatic complexity
+  scope. Inlining them into indexed `for` loops within a parent function aggregates
+  all loop and branch conditions into that single function, frequently blowing past
+  the complexity ratchet threshold (> 20). If replacing `.forEach` trips the
+  complexity ratchet, either decompose the function into clean, single-purpose
+  helpers or skip the change. Never touch or add to `eslint-suppressions.json`.
+- **Micro-optimizing tiny DOM collections:** Collections returned by
+  `querySelectorAll` for overlays/modals typically have 0–5 elements. Loop
+  traversal micro-optimizations here yield fractions of a microsecond while
+  degrading readability. Focus on high-frequency hot paths or caching DOM/regex
+  lookups instead.
 
 ## Proven patterns for this repo
 

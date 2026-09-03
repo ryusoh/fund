@@ -349,9 +349,12 @@ The workflow-level machinery also already matches the philosophy:
   (`python3 -m scripts.agents.check_bot_pr_hygiene`, in `make verify`,
   `precommit-fix`, and a dedicated PR step in `.github/workflows/ci.yml`)
   deterministically fails bot-authored commits in `origin/main..HEAD` that are
-  empty, add zero-content placeholder files, or delete lines from test files
-  (AGENTS.md non-negotiable #10). Human commits are skipped — interactive
-  agents may legitimately rewrite tests on request.
+  empty, add zero-content placeholder files, delete lines from test files
+  (AGENTS.md non-negotiable #10), commit stray bot artifacts (`pr_body.txt`,
+  `pr_description.txt`, scratch files), or touch `eslint-suppressions.json`
+  from a non-refactor lane or increase suppressions (complexity ratchet
+  violation). Human commits are skipped — interactive agents may legitimately
+  rewrite tests on request.
 - Generated-data validation — `make twrr-validate`
   (`scripts/twrr/step_validate.py`, a step in `twrr-refresh.yaml` between the
   pipeline run and the bot's auto-commit) fails the run when regenerated data
