@@ -3,6 +3,19 @@
 Small, hard-won facts about this repo's Jest setup. Read before debugging a
 flaky/odd JS test so you don't re-derive them.
 
+## Ordered fetch mocks: `fetchPortfolioData`'s call order is load-bearing
+
+`tests/js/transactions/dataLoader.test.js` (and similar suites) mock
+`global.fetch` with **ordered** `mockResolvedValueOnce` queues — matched by call
+position, not URL. Adding a new fetch inside `fetchPortfolioData` shifts every
+later response by one slot; the symptom is downstream weirdness ("real-time
+point not appended", wrong payload shapes), not a fetch error.
+
+Rule: a new fetch goes **last** in `fetchPortfolioData` (after the prices fetch
+resolves), and the call-order comment in `dataLoader.test.js` gets updated to
+match. (Added 2026-09 when the `prev_close.json` sidecar fetch cost a full
+red-suite cycle + a stash A/B to diagnose.)
+
 ## Jest runs **silent** — `console.log` won't print
 
 `package.json` → `jest` config sets **`"silent": true`** and

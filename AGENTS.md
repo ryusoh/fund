@@ -84,6 +84,11 @@ Therefore:
 
 - **Never claim visual parity, "matches/exceeds," or that something "looks good."**
   You have no eyes. Aesthetic quality is the human's call, not yours.
+- **Screenshot once or twice to confirm it rendered — then stop.** Verifying a
+  visual fix means: code change → green tests → one screenshot showing the
+  element exists/aligned, then hand off. Do not loop on screenshot → tweak →
+  screenshot chasing pixel polish you cannot judge; that burns the session for
+  zero verifiable gain.
 - For any change whose payoff is visual (glass, lighting, spacing, color, calendar
   rendering), either (a) restrict yourself to **objectively verifiable** facts
   (e.g. `aria-label` present, contrast ratio, a DOM attribute, a passing test), or
@@ -266,6 +271,15 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   that reads `transactionState` series without awaiting `whenTransactionDataReady()`
   renders a silent **"(no data)"**, not an error. Read before adding/editing a
   terminal command that prints portfolio numbers.
+- **Position table starts hidden (display:none)** — the holdings table on
+  `/position/` is only revealed by the donut-center toggle
+  (`setTableVisibilityState` in `js/charts/allocationChartManager.js`). Any
+  layout measurement (`scrollWidth`, `getBoundingClientRect`) taken during the
+  initial render returns **0**; baking that into inline styles produces
+  collapsed/overlapping content on first reveal (it self-heals on the next
+  refresh, which is what makes it look intermittent). Skip measurement while
+  hidden and re-measure on reveal (e.g. ResizeObserver) — see
+  `alignDayChangeStacks` in `js/services/dataService.js`.
 - **Command / skill sync** → `docs/command-skill-sync.md`. Skills are authored in
   `.agents/skills/<name>/SKILL.md` (canonical) and **generated** into
   `.claude/commands/` by `scripts/sync_commands.py` (the `/sync-commands` skill),
