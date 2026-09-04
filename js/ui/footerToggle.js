@@ -1,58 +1,42 @@
 import { UI_BREAKPOINTS } from '@js/config.js';
 
+// Mobile footer: the total value and the intraday day-change stack are always
+// visible; only the all-time PnL bracket (.pnl-all-time) is collapsed until
+// tapped. State rides on a class of the persistent #table-footer-summary
+// container because the PnL children are re-created on every data refresh.
 export function initFooterToggle() {
+    const pnlContainer = document.getElementById('table-footer-summary');
     const totalValueElement = document.getElementById('total-portfolio-value-in-table');
     const pnlElement = document.querySelector('.total-pnl');
 
-    if (!totalValueElement || !pnlElement) {
+    if (!pnlContainer || !totalValueElement || !pnlElement) {
         return;
     }
 
     const state = {
         isMobileMode: undefined,
-        onTotalClick: null,
-        onPnlClick: null,
+        onToggleClick: null,
     };
 
     function attachMobileHandlers() {
-        // Initial mobile state: show total, hide pnl
-        totalValueElement.style.display = 'inline';
-        pnlElement.style.display = 'none';
+        // Initial mobile state: all-time PnL bracket collapsed
+        pnlContainer.classList.remove('pnl-expanded');
 
-        state.onTotalClick = () => {
-            totalValueElement.style.display = 'none';
-            pnlElement.style.display = 'inline';
-        };
-        state.onPnlClick = () => {
-            pnlElement.style.display = 'none';
-            totalValueElement.style.display = 'inline';
+        state.onToggleClick = () => {
+            pnlContainer.classList.toggle('pnl-expanded');
         };
 
-        totalValueElement.addEventListener('click', state.onTotalClick);
-        pnlElement.addEventListener('click', state.onPnlClick);
+        totalValueElement.addEventListener('click', state.onToggleClick);
+        pnlElement.addEventListener('click', state.onToggleClick);
     }
 
     function detachMobileHandlers() {
-        if (state.onTotalClick) {
-            totalValueElement.removeEventListener('click', state.onTotalClick);
-            state.onTotalClick = null;
+        if (state.onToggleClick) {
+            totalValueElement.removeEventListener('click', state.onToggleClick);
+            pnlElement.removeEventListener('click', state.onToggleClick);
+            state.onToggleClick = null;
         }
-        if (state.onPnlClick) {
-            pnlElement.removeEventListener('click', state.onPnlClick);
-            state.onPnlClick = null;
-        }
-    }
-
-    function applyDesktopMode() {
-        // Always show both on desktop
-        totalValueElement.style.display = 'inline';
-        pnlElement.style.display = 'inline';
-    }
-
-    function applyMobileMode() {
-        // Ensure mobile initial visibility
-        totalValueElement.style.display = 'inline';
-        pnlElement.style.display = 'none';
+        pnlContainer.classList.remove('pnl-expanded');
     }
 
     function updateMode() {
@@ -64,10 +48,8 @@ export function initFooterToggle() {
 
         if (isMobile) {
             attachMobileHandlers();
-            applyMobileMode();
         } else {
             detachMobileHandlers();
-            applyDesktopMode();
         }
     }
 

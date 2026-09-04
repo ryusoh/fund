@@ -1117,11 +1117,16 @@ function _renderPnlSummary(
     separator.style.color = footerTextColor;
     closeBracket.style.color = footerTextColor;
 
-    pnlElement.appendChild(openBracket);
-    pnlElement.appendChild(pnlAmount);
-    pnlElement.appendChild(separator);
-    pnlElement.appendChild(pnlPercent);
-    pnlElement.appendChild(closeBracket);
+    // The all-time bracket gets its own wrapper so the mobile footer toggle
+    // can hide just it while the day-change stack stays visible by default.
+    const allTimeGroup = document.createElement('span');
+    allTimeGroup.className = 'pnl-all-time';
+    allTimeGroup.appendChild(openBracket);
+    allTimeGroup.appendChild(pnlAmount);
+    allTimeGroup.appendChild(separator);
+    allTimeGroup.appendChild(pnlPercent);
+    allTimeGroup.appendChild(closeBracket);
+    pnlElement.appendChild(allTimeGroup);
 
     // Intraday change as a half-size two-line stack (pct over $) trailing the
     // all-time bracket — same idiom as the day-change tags in the table cells,

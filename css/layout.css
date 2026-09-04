@@ -185,9 +185,8 @@ a.nav-back {
     .total-pnl {
         cursor: pointer;
     }
-    #table-footer-summary .total-pnl {
-        display: none; /* Hidden by default on mobile; toggled via JS */
-    }
+    /* .total-pnl stays visible on mobile (it carries the day-change stack);
+       only the all-time bracket collapses — see .pnl-all-time in table.css */
 }
 
 footer a:focus-visible {

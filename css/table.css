@@ -242,6 +242,21 @@ tbody tr:hover {
         color: rgba(130, 130, 130, 1);
     }
 
+    /* Mobile footer: all-time PnL bracket collapsed until tap; the intraday
+       day-change stack stays visible (see js/ui/footerToggle.js) */
+    #table-footer-summary .pnl-all-time {
+        display: none;
+    }
+
+    #table-footer-summary.pnl-expanded .pnl-all-time {
+        display: inline;
+    }
+
+    /* Expanded state swaps the total value out for the all-time bracket */
+    #table-footer-summary.pnl-expanded #total-portfolio-value-in-table {
+        display: none;
+    }
+
     table {
         width: 100%;
         min-width: 650px;

@@ -1,139 +1,81 @@
 import { initFooterToggle } from '@ui/footerToggle.js';
 
 describe('initFooterToggle', () => {
+    let pnlContainer;
     let totalValueElement;
     let pnlElement;
 
     beforeEach(() => {
         document.body.innerHTML = `
-      <div id="total-portfolio-value-in-table"></div>
-      <div class="total-pnl"></div>
+      <div id="table-footer-summary">
+        <span id="total-portfolio-value-in-table"></span>
+        <span class="total-pnl"></span>
+      </div>
     `;
+        pnlContainer = document.getElementById('table-footer-summary');
         totalValueElement = document.getElementById('total-portfolio-value-in-table');
         pnlElement = document.querySelector('.total-pnl');
         jest.clearAllMocks();
     });
 
-    // Test case 1: Mobile mode toggles between total and PnL
-    it('should toggle on mobile (<=768px)', () => {
+    const setViewportWidth = (width) => {
         Object.defineProperty(window, 'innerWidth', {
             writable: true,
             configurable: true,
-            value: 500,
+            value: width,
         });
+    };
+
+    // Mobile: all-time PnL bracket starts collapsed, tap swaps it for the total
+    it('should toggle pnl-expanded class on mobile (<=768px)', () => {
+        setViewportWidth(500);
         initFooterToggle();
 
-        // Initial state (default display is usually block or inline-block)
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('none');
+        // Initial state: collapsed
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
 
-        // Simulate click on totalValueElement
+        // Tap on the total value expands
         totalValueElement.click();
-        expect(totalValueElement.style.display).toBe('none');
-        expect(pnlElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(true);
 
-        // Simulate click on pnlElement
+        // Tap on the pnl collapses again
         pnlElement.click();
-        expect(pnlElement.style.display).toBe('none');
-        expect(totalValueElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
     });
 
-    // Test case 1b: Desktop mode shows both and does not toggle
-    it('should show both on desktop (>768px) and ignore clicks', () => {
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: 1024,
-        });
+    // Desktop: no toggle, no collapsed state
+    it('should not toggle on desktop (>768px)', () => {
+        setViewportWidth(1024);
         initFooterToggle();
 
-        // Both visible
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
 
-        // Clicks should not change visibility
         totalValueElement.click();
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('inline');
-
         pnlElement.click();
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
     });
 
-    // Test case 1c: Switching from mobile to desktop detaches handlers and shows both
+    // Switching from mobile to desktop detaches handlers and clears state
     it('should detach mobile handlers on resize to desktop', () => {
-        // Start in mobile
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: 500,
-        });
+        setViewportWidth(500);
         initFooterToggle();
 
-        // Verify mobile starts with only total visible
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('none');
+        totalValueElement.click();
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(true);
 
-        // Switch to desktop and trigger resize
-        Object.defineProperty(window, 'innerWidth', {
-            writable: true,
-            configurable: true,
-            value: 1024,
-        });
+        setViewportWidth(1024);
         window.dispatchEvent(new Event('resize'));
 
-        // Both should be visible and clicks should not toggle anymore
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
 
+        // Clicks no longer toggle
         totalValueElement.click();
         pnlElement.click();
-        expect(totalValueElement.style.display).toBe('inline');
-        expect(pnlElement.style.display).toBe('inline');
+        expect(pnlContainer.classList.contains('pnl-expanded')).toBe(false);
     });
 
-    // Test case 2: totalValueElement does not exist
-    it('should not set up listeners if totalValueElement does not exist', () => {
-        document.body.innerHTML = `
-      <div class="total-pnl"></div>
-    `;
-        totalValueElement = document.getElementById('total-portfolio-value-in-table'); // This will be null
-        pnlElement = document.querySelector('.total-pnl');
-
-        // Spy on addEventListener to ensure it's not called
-        const addEventListenerSpy = jest.spyOn(Element.prototype, 'addEventListener');
-
-        initFooterToggle();
-
-        expect(addEventListenerSpy).not.toHaveBeenCalled();
-
-        addEventListenerSpy.mockRestore(); // Clean up the spy
-    });
-
-    // Test case 3: pnlElement does not exist
-    it('should not set up listeners if pnlElement does not exist', () => {
-        document.body.innerHTML = `
-      <div id="total-portfolio-value-in-table"></div>
-    `;
-        totalValueElement = document.getElementById('total-portfolio-value-in-table');
-        pnlElement = document.querySelector('.total-pnl'); // This will be null
-
-        const addEventListenerSpy = jest.spyOn(Element.prototype, 'addEventListener');
-
-        initFooterToggle();
-
-        expect(addEventListenerSpy).not.toHaveBeenCalled();
-
-        addEventListenerSpy.mockRestore();
-    });
-
-    // Test case 4: Neither element exists
-    it('should not set up listeners if neither element exists', () => {
-        document.body.innerHTML = ''; // Empty body
-        totalValueElement = document.getElementById('total-portfolio-value-in-table'); // Null
-        pnlElement = document.querySelector('.total-pnl'); // Null
-
+    it('should not set up listeners if the container does not exist', () => {
+        document.body.innerHTML = '';
         const addEventListenerSpy = jest.spyOn(Element.prototype, 'addEventListener');
 
         initFooterToggle();
