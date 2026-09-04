@@ -434,6 +434,7 @@ describe('dataLoader real-time integration', () => {
             // 2. holdings_details.json (fetchPortfolioData, sync)
             // 3. fx_data.json          (fetchRealTimeData, parallel/sync with holdings)
             // 4. fund_data.json        (fetchPortfolioData, async after holdings resolves)
+            // 5. prev_close.json       (fetchPortfolioData, last; exhausts the mock queue)
             mockFetch
                 .mockResolvedValueOnce(
                     createMockResponse({

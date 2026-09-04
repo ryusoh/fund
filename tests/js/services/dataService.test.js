@@ -605,13 +605,11 @@ describe('dataService', () => {
 
             // Assert
             const pnlElement = document.querySelector('.total-pnl');
-            const pnlAmount = pnlElement.querySelector('.pnl-amount');
+            const pnlAmount = document.querySelector('.pnl-amount');
+            expect(pnlElement).toBeTruthy();
             expect(pnlAmount).toBeTruthy();
-            // Check that thinking highlight is applied (element should have data-thinking-active)
-            expect(pnlAmount.getAttribute('data-thinking-active')).toBe('true');
-            // Check that character spans are created with thinking effect
-            const charSpans = pnlAmount.querySelectorAll('.text-thinking-char');
-            expect(charSpans.length).toBeGreaterThan(0);
+            expect(pnlAmount.textContent).toBe('+$100.00');
+            expect(pnlAmount.style.color).toBe('rgb(52, 168, 83)'); // COLORS.POSITIVE_PNL
         });
 
         it('should handle negative PnL formatting', async () => {
@@ -636,13 +634,11 @@ describe('dataService', () => {
 
             // Assert
             const pnlElement = document.querySelector('.total-pnl');
-            const pnlAmount = pnlElement.querySelector('.pnl-amount');
+            const pnlAmount = document.querySelector('.pnl-amount');
+            expect(pnlElement).toBeTruthy();
             expect(pnlAmount).toBeTruthy();
-            // Check that thinking highlight is applied (element should have data-thinking-active)
-            expect(pnlAmount.getAttribute('data-thinking-active')).toBe('true');
-            // Check that character spans are created with thinking effect
-            const charSpans = pnlAmount.querySelectorAll('.text-thinking-char');
-            expect(charSpans.length).toBeGreaterThan(0);
+            expect(pnlAmount.textContent).toBe('-$100.00');
+            expect(pnlAmount.style.color).toBe('rgb(234, 67, 53)'); // COLORS.NEGATIVE_PNL
         });
 
         it('should handle missing name in holdings data', async () => {
@@ -848,6 +844,119 @@ describe('dataService', () => {
                     ],
                 })
             );
+        });
+    });
+
+    describe('intraday day-change', () => {
+        const mockHoldings = {
+            AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+        };
+        const mockPrices = { AAPL: '160.00' };
+        const mockPrevClose = { AAPL: { date: '2024-01-12', close: 155.0 } };
+
+        const mockFetches = (prevClosePayload) => {
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockHoldings),
+                    });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('prev_close.json')) {
+                    if (prevClosePayload instanceof Error) {
+                        return Promise.reject(prevClosePayload);
+                    }
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(prevClosePayload),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+        };
+
+        it('renders the day-change stack in price cell, value cell, and footer', async () => {
+            mockFetches(mockPrevClose);
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            // (160 - 155) / 155 = +3.2258...%; per-share change +$5.00
+            const priceStack = document.querySelector('td.price .day-change-stack');
+            expect(priceStack).not.toBeNull();
+            expect(priceStack.querySelector('.day-change-pct').textContent).toBe('+3.23%');
+            expect(priceStack.querySelector('.day-change-abs').textContent).toBe('+$5.00');
+            expect(priceStack.querySelector('.day-change-pct').style.color).toBe(
+                'rgb(52, 168, 83)'
+            );
+
+            // Position total day change: (160 - 155) * 10 = +$50
+            const valueStack = document.querySelector('td.value .day-change-stack');
+            expect(valueStack).not.toBeNull();
+            expect(valueStack.querySelector('.day-change-pct').textContent).toBe('+3.23%');
+            expect(valueStack.querySelector('.day-change-abs').textContent).toBe('+$50.00');
+
+            // Footer: half-size stack (pct over $) trailing the total.
+            // Day change $50 on a $1550 previous total = +3.23%
+            const dayPercent = document.querySelector('.day-pnl-stack .day-pnl-percent');
+            const dayAmount = document.querySelector('.day-pnl-stack .day-pnl-amount');
+            expect(dayPercent.textContent).toBe('+3.23%');
+            expect(dayAmount.textContent).toBe('+$50.00');
+        });
+
+        it('hides day-change on non-trading days', async () => {
+            isTradingDay.mockReturnValue(false);
+            mockFetches(mockPrevClose);
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(document.querySelector('td.price .day-change-stack')).toBeNull();
+            expect(document.querySelector('td.value .day-change-stack')).toBeNull();
+            expect(document.querySelector('.day-pnl-amount')).toBeNull();
+        });
+
+        it('hides day-change when the sidecar is unavailable', async () => {
+            mockFetches(new Error('404'));
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            expect(document.querySelector('td.price .day-change-stack')).toBeNull();
+            expect(document.querySelector('.day-pnl-amount')).toBeNull();
+            // Table still renders
+            expect(document.querySelector('td.price').textContent).toBe('$160.00');
+        });
+
+        it('snaps sub-cent day changes to flat without color', async () => {
+            mockFetches({ AAPL: { date: '2024-01-12', close: 159.9995 } });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            const priceStack = document.querySelector('td.price .day-change-stack');
+            expect(priceStack).not.toBeNull();
+            expect(priceStack.querySelector('.day-change-pct').textContent).toBe('0.00%');
+            expect(priceStack.querySelector('.day-change-pct').style.color).toBe('');
+        });
+
+        it('colors negative day-change red', async () => {
+            mockFetches({ AAPL: { date: '2024-01-12', close: 170.0 } });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            // (160 - 170) / 170 = -5.882...%
+            const priceStack = document.querySelector('td.price .day-change-stack');
+            expect(priceStack.querySelector('.day-change-pct').textContent).toBe('-5.88%');
+            expect(priceStack.querySelector('.day-change-abs').textContent).toBe('-$10.00');
+            expect(priceStack.querySelector('.day-change-pct').style.color).toBe(
+                'rgb(234, 67, 53)'
+            ); // COLORS.NEGATIVE_PNL
+
+            const valueStack = document.querySelector('td.value .day-change-stack');
+            expect(valueStack.querySelector('.day-change-abs').textContent).toBe('-$100.00');
+
+            const dayAmount = document.querySelector('.day-pnl-amount');
+            expect(dayAmount.textContent).toBe('-$100.00');
         });
     });
 

@@ -131,6 +131,34 @@ td {
     /* Default for data cells */
 }
 
+/* Intraday day change: half-size two-line stack (pct over $) trailing the
+   price/value figure — right-aligned, and short enough not to grow the row.
+   Stack widths are equalized per column in JS (alignDayChangeStacks) so the
+   main figure's right edge stays aligned across rows in any currency. */
+td .day-change-stack {
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: middle;
+    /* 1em at the stack's half-size font ≈ a full-size space, same as footer */
+    margin-left: 1em;
+    font-size: 0.5em;
+    line-height: 1.1;
+    text-align: right;
+}
+
+/* Footer day change: half-size two-line stack (pct over $) trailing the total,
+   tall as one footer line so the footer height never changes */
+#table-footer-summary .day-pnl-stack {
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: middle;
+    /* 1em at the stack's half-size font ≈ the full-size space before " (" */
+    margin-left: 1em;
+    font-size: 0.5em;
+    line-height: 1.1;
+    text-align: right;
+}
+
 tbody {
     /* Embedded Recessed Well Effect */
     background-color: rgba(0, 0, 0, 0.15); /* Darkens the well to look carved out */

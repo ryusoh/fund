@@ -249,3 +249,33 @@ def test_main_with_and_without_args(
     custom_output = tmp_path / "custom_output.json"
     main(holdings_path=custom_holdings, output_path=custom_output)
     mock_get_tickers.assert_called_with(custom_holdings)
+
+
+def test_write_prev_close_sidecar(tmp_path):
+    import json
+
+    from scripts.data.update_fund_data import write_prev_close_sidecar
+
+    historical = {
+        "AAPL": {"2026-08-31": 150.0, "2026-09-01": 152.5},
+        "TSLA": {"2026-09-01": 210.0},
+    }
+    (tmp_path / "historical_prices.json").write_text(json.dumps(historical))
+
+    sidecar = write_prev_close_sidecar(["AAPL", "TSLA", "MSFT"], tmp_path)
+
+    assert sidecar == {
+        "AAPL": {"date": "2026-09-01", "close": 152.5},
+        "TSLA": {"date": "2026-09-01", "close": 210.0},
+    }
+    written = json.loads((tmp_path / "prev_close.json").read_text())
+    assert written == sidecar
+
+
+def test_write_prev_close_sidecar_missing_historical(tmp_path):
+    from scripts.data.update_fund_data import write_prev_close_sidecar
+
+    sidecar = write_prev_close_sidecar(["AAPL"], tmp_path)
+
+    assert sidecar == {}
+    assert not (tmp_path / "prev_close.json").exists()

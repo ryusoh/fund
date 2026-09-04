@@ -3,18 +3,17 @@ import { formatCurrency } from '@utils/formatting.js';
 import { getBlueColorForSlice, hexToRgba } from '@utils/colors.js';
 import { updatePieChart } from '@charts/allocationChartManager.js';
 import { checkAndToggleVerticalScroll } from '@ui/responsive.js';
-import { setThinkingHighlight } from '@ui/textHighlightManager.js';
 import { isLocalhost } from '@utils/host.js';
 import {
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
+    PREV_CLOSE_URL,
     CF_WORKER_URL,
     COLORS,
     CHART_DEFAULTS,
     PIE_CHART_GLASS_EFFECT,
     TICKER_TO_LOGO_MAP,
     BASE_URL,
-    POSITION_PNL_HIGHLIGHT,
 } from '@js/config.js';
 import { logger } from '@utils/logger.js';
 
@@ -24,26 +23,6 @@ const TICKER_METADATA_URL = '../data/ticker_metadata.json';
 let analysisTickerPathCache = null;
 let tickerMetadataCache = null;
 let peRatioDataCache = null;
-
-function lightenHexToRgba(hex, lightenFactor, alpha) {
-    /* istanbul ignore next: defensive parameter validation */
-    if (typeof hex !== 'string' || !/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(hex)) {
-        /* istanbul ignore next: defensive parameter validation */
-        return null;
-    }
-    /* istanbul ignore next: defensive handling of short hex format */
-    const normalized =
-        hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
-    const r = parseInt(normalized.substring(1, 3), 16);
-    const g = parseInt(normalized.substring(3, 5), 16);
-    const b = parseInt(normalized.substring(5, 7), 16);
-    /* istanbul ignore next: defensive parameter validation */
-    const light = Math.max(0, Math.min(1, Number.isFinite(lightenFactor) ? lightenFactor : 0.5));
-    /* istanbul ignore next: defensive parameter validation */
-    const targetAlpha = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 1;
-    const lighten = (channel) => Math.round(channel + (255 - channel) * light);
-    return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, ${targetAlpha})`;
-}
 
 // --- Private Functions ---
 
@@ -93,7 +72,14 @@ export async function fetchPortfolioData() {
     } else {
         prices = await fetchJSON(FUND_DATA_URL);
     }
-    return { holdingsDetails, prices };
+    // Fetched last and fail-open: without the sidecar the intraday day-change
+    // is simply hidden. (Keeping this fetch last preserves the call order that
+    // tests/js/transactions/dataLoader.test.js documents.)
+    const prevClose = await fetchJSON(PREV_CLOSE_URL).catch((err) => {
+        logger.warn('Prev-close sidecar unavailable; intraday day-change hidden:', err);
+        return null;
+    });
+    return { holdingsDetails, prices, prevClose };
 }
 
 function normalizeTickerSymbol(value) {
@@ -267,9 +253,10 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
     }
 }
 
-function processAndEnrichHoldings(holdingsDetails, prices) {
+function processAndEnrichHoldings(holdingsDetails, prices, prevCloseMap = null) {
     let totalPortfolioValue = 0;
     let totalPnl = 0;
+    let totalDayChange = null;
     const enrichedHoldings = Object.entries(holdingsDetails).map(([ticker, details]) => {
         const shares = parseFloat(details.shares) || 0;
         const cost = parseFloat(details.average_price) || 0;
@@ -291,6 +278,29 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
             }
         }
 
+        // Intraday change vs the previous close sidecar. Sub-cent deltas are
+        // price-precision residue (2-decimal live quotes vs full-precision
+        // closes), not real PnL — snap to flat, same as calculateRealtimePnl.
+        let dayChangePrice = null;
+        let dayChangeValue = null;
+        let dayChangePercentage = null;
+        const prevCloseEntry = prevCloseMap ? prevCloseMap[ticker] : null;
+        const prevClosePrice =
+            prevCloseEntry && Number.isFinite(prevCloseEntry.close) && prevCloseEntry.close > 0
+                ? prevCloseEntry.close
+                : null;
+        if (prevClosePrice !== null && currentPrice > 0) {
+            dayChangePrice = currentPrice - prevClosePrice;
+            dayChangeValue = dayChangePrice * shares;
+            dayChangePercentage = (dayChangePrice / prevClosePrice) * 100;
+            if (Math.abs(dayChangeValue) < 0.01) {
+                dayChangePrice = 0;
+                dayChangeValue = 0;
+                dayChangePercentage = 0;
+            }
+            totalDayChange = (totalDayChange || 0) + dayChangeValue;
+        }
+
         totalPortfolioValue += currentValue;
         totalPnl += pnlValue;
 
@@ -303,12 +313,15 @@ function processAndEnrichHoldings(holdingsDetails, prices) {
             currentValue,
             pnlValue,
             pnlPercentage,
+            dayChangePrice,
+            dayChangeValue,
+            dayChangePercentage,
         };
     });
 
     const sortedHoldings = enrichedHoldings.sort((a, b) => b.currentValue - a.currentValue);
 
-    return { sortedHoldings, totalPortfolioValue, totalPnl };
+    return { sortedHoldings, totalPortfolioValue, totalPnl, totalDayChange };
 }
 
 export function _calculateDynamicPeValues(ratioSnapshot, currentPrice) {
@@ -437,6 +450,59 @@ function createHoldingRow(
     const pnlCell = row.querySelector('td.pnl');
     const pnlPercentageCell = row.querySelector('td.pnl-percentage');
 
+    // Day change renders as a half-size two-line stack (pct over $) trailing
+    // the main figure — same idiom in the price cell, value cell, and footer.
+    // Price cell shows the per-share change; value cell the position's total.
+    const makeDayChangeStack = (pctText, absText, color) => {
+        const stack = document.createElement('span');
+        stack.className = 'day-change-stack';
+        const pct = document.createElement('span');
+        pct.className = 'day-change-pct';
+        pct.textContent = pctText;
+        const abs = document.createElement('span');
+        abs.className = 'day-change-abs';
+        abs.textContent = absText;
+        if (color) {
+            pct.style.color = color;
+            abs.style.color = color;
+        }
+        stack.appendChild(pct);
+        stack.appendChild(abs);
+        return stack;
+    };
+
+    if (Number.isFinite(holding.dayChangePercentage)) {
+        const dayColor =
+            holding.dayChangeValue > 0
+                ? COLORS.POSITIVE_PNL
+                : holding.dayChangeValue < 0
+                  ? COLORS.NEGATIVE_PNL
+                  : null;
+        const pctText = `${holding.dayChangePercentage > 0 ? '+' : ''}${holding.dayChangePercentage.toFixed(2)}%`;
+
+        const priceCell = row.querySelector('td.price');
+        if (priceCell && Number.isFinite(holding.dayChangePrice)) {
+            const priceAbsText = `${holding.dayChangePrice >= 0 ? '+' : '-'}${formatCurrency(
+                Math.abs(holding.dayChangePrice),
+                currentCurrency,
+                exchangeRates,
+                currencySymbols
+            )}`;
+            priceCell.appendChild(makeDayChangeStack(pctText, priceAbsText, dayColor));
+        }
+
+        const valueCell = row.querySelector('td.value');
+        if (valueCell) {
+            const valueAbsText = `${holding.dayChangeValue >= 0 ? '+' : '-'}${formatCurrency(
+                Math.abs(holding.dayChangeValue),
+                currentCurrency,
+                exchangeRates,
+                currencySymbols
+            )}`;
+            valueCell.appendChild(makeDayChangeStack(pctText, valueAbsText, dayColor));
+        }
+    }
+
     if (pnlCell && pnlPercentageCell) {
         const formattedAbsolutePnlValueWithSymbol = formatCurrency(
             holding.pnlValue,
@@ -468,6 +534,47 @@ function createHoldingRow(
         }
     }
     return row;
+}
+
+// Equalize the day-change stack widths within each column so the main
+// figure's right edge stays aligned across rows, whatever the currency —
+// fixed ch widths break for JPY/KRW amounts, so measure the widest stack.
+function alignDayChangeStacks() {
+    ['td.price', 'td.value'].forEach((cellSelector) => {
+        const stacks = document.querySelectorAll(`${cellSelector} .day-change-stack`);
+        if (stacks.length < 2) {
+            return;
+        }
+        let maxWidth = 0;
+        stacks.forEach((stack) => {
+            stack.style.width = '';
+            maxWidth = Math.max(maxWidth, stack.scrollWidth);
+        });
+        // The first render happens while the table is still display:none (it
+        // is revealed by the donut-center toggle), so every stack measures 0.
+        // Baking 0px in would make the right-aligned stack text overflow
+        // leftward over the main figure — skip instead; the ResizeObserver
+        // below re-aligns once the table is actually visible.
+        if (maxWidth === 0) {
+            return;
+        }
+        stacks.forEach((stack) => {
+            stack.style.width = `${maxWidth}px`;
+        });
+    });
+}
+
+// Re-align when the table transitions from hidden to visible (tbody goes
+// from 0-size to laid out). Currency switches re-render and re-measure on
+// their own; this covers the initial reveal and window resizes.
+let dayStackObserver = null;
+function observeTableForStackAlignment(tbody) {
+    if (dayStackObserver || typeof ResizeObserver === 'undefined') {
+        return;
+    }
+    // eslint-disable-next-line no-undef
+    dayStackObserver = new ResizeObserver(() => alignDayChangeStacks());
+    dayStackObserver.observe(tbody);
 }
 
 function updateTableAndPrepareChartData(
@@ -537,6 +644,8 @@ function updateTableAndPrepareChartData(
 
     // Append all rows at once
     tbody.appendChild(fragment);
+    alignDayChangeStacks();
+    observeTableForStackAlignment(tbody);
 
     return chartData;
 }
@@ -958,7 +1067,8 @@ function _renderPnlSummary(
     totalPortfolioValueUSD,
     currentCurrency,
     exchangeRates,
-    currencySymbols
+    currencySymbols,
+    totalDayChangeUSD = null
 ) {
     const totalPortfolioCostUSD = totalPortfolioValueUSD - totalPnlUSD;
     const totalPnlPercentage =
@@ -976,7 +1086,6 @@ function _renderPnlSummary(
     const pnlSign = totalPnlUSD >= 0 ? '+' : '-';
     const pnlPercentageSign = totalPnlPercentage >= 0 ? '+' : '';
 
-    setThinkingHighlight(pnlElement, false);
     pnlElement.replaceChildren();
 
     const openBracket = document.createElement('span');
@@ -1014,20 +1123,42 @@ function _renderPnlSummary(
     pnlElement.appendChild(pnlPercent);
     pnlElement.appendChild(closeBracket);
 
-    /* istanbul ignore next: defensive fallback for null case */
-    const lightenedPnlColor =
-        lightenHexToRgba(
-            pnlColor,
-            POSITION_PNL_HIGHLIGHT.pnlLightenFactor,
-            POSITION_PNL_HIGHLIGHT.pnlLightAlpha
-        ) || POSITION_PNL_HIGHLIGHT.neutralDimColor;
-    const thinkingOptions = {
-        intervalMs: POSITION_PNL_HIGHLIGHT.intervalMs,
-        waveSize: POSITION_PNL_HIGHLIGHT.waveSize,
-        baseColor: POSITION_PNL_HIGHLIGHT.baseColor,
-        dimColor: lightenedPnlColor,
-    };
-    setThinkingHighlight([pnlAmount, pnlPercent], true, thinkingOptions);
+    // Intraday change as a half-size two-line stack (pct over $) trailing the
+    // all-time bracket — same idiom as the day-change tags in the table cells,
+    // and small enough that the footer stays one line tall.
+    if (Number.isFinite(totalDayChangeUSD)) {
+        const previousTotalUSD = totalPortfolioValueUSD - totalDayChangeUSD;
+        const dayChangePct =
+            previousTotalUSD !== 0 ? (totalDayChangeUSD / previousTotalUSD) * 100 : 0;
+        const dayColor =
+            totalDayChangeUSD > 0
+                ? COLORS.POSITIVE_PNL
+                : totalDayChangeUSD < 0
+                  ? COLORS.NEGATIVE_PNL
+                  : footerTextColor;
+
+        const dayStack = document.createElement('span');
+        dayStack.className = 'day-pnl-stack';
+
+        const dayPercent = document.createElement('span');
+        dayPercent.className = 'day-pnl-percent';
+        dayPercent.textContent = `${dayChangePct >= 0 ? '+' : ''}${dayChangePct.toFixed(2)}%`;
+        dayPercent.style.color = dayColor;
+
+        const dayAmount = document.createElement('span');
+        dayAmount.className = 'day-pnl-amount';
+        dayAmount.textContent = `${totalDayChangeUSD >= 0 ? '+' : '-'}${formatCurrency(
+            Math.abs(totalDayChangeUSD),
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        )}`;
+        dayAmount.style.color = dayColor;
+
+        dayStack.appendChild(dayPercent);
+        dayStack.appendChild(dayAmount);
+        pnlElement.appendChild(dayStack);
+    }
 }
 
 function _updatePerColumn(marketRatiosByTicker, sortedHoldings) {
@@ -1056,7 +1187,7 @@ function _updatePerColumn(marketRatiosByTicker, sortedHoldings) {
 
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
-        const { holdingsDetails, prices } = await fetchPortfolioData();
+        const { holdingsDetails, prices, prevClose } = await fetchPortfolioData();
 
         if (!holdingsDetails || !prices) {
             logger.error(
@@ -1071,11 +1202,19 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             return;
         }
 
+        // Intraday day-change is only meaningful while the market trades; on
+        // weekends/holidays the live quote just restates the previous close.
+        const showIntraday =
+            isTradingDay(getNyDate()) && prevClose && typeof prevClose === 'object'
+                ? prevClose
+                : null;
+
         const {
             sortedHoldings,
             totalPortfolioValue: totalPortfolioValueUSD,
             totalPnl: totalPnlUSD,
-        } = processAndEnrichHoldings(holdingsDetails, prices);
+            totalDayChange: totalDayChangeUSD,
+        } = processAndEnrichHoldings(holdingsDetails, prices, showIntraday);
         const tickerSymbols = sortedHoldings.map((holding) => holding.ticker);
         const chartData = updateTableAndPrepareChartData(
             sortedHoldings,
@@ -1097,7 +1236,8 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
-            currencySymbols
+            currencySymbols,
+            totalDayChangeUSD
         );
 
         updatePieChart(chartData);

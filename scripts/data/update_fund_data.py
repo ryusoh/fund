@@ -31,6 +31,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_HOLDINGS_PATH = BASE_DIR / "data" / "holdings_details.json"
 DEFAULT_OUTPUT_PATH = BASE_DIR / "data" / "fund_data.json"
+PREV_CLOSE_FILENAME = "prev_close.json"
+HISTORICAL_PRICES_FILENAME = "historical_prices.json"
 
 
 def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
@@ -223,6 +225,37 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     return data
 
 
+def write_prev_close_sidecar(tickers: List[str], output_dir: Path) -> Dict[str, Dict[str, Any]]:
+    """Writes {ticker: {date, close}} with each ticker's latest close from
+    historical_prices.json. The position page diffs live prices against this
+    sidecar to show intraday PnL. Best-effort: on any failure the existing
+    sidecar is left untouched.
+    """
+    historical_path = output_dir / HISTORICAL_PRICES_FILENAME
+    sidecar_path = output_dir / PREV_CLOSE_FILENAME
+    if not historical_path.exists():
+        logging.warning(f"{historical_path} not found. Skipping prev-close sidecar update.")
+        return {}
+    try:
+        with historical_path.open("r", encoding="utf-8") as f:
+            historical = json.load(f)
+        sidecar: Dict[str, Dict[str, Any]] = {}
+        for ticker in tickers:
+            series = historical.get(ticker)
+            if not isinstance(series, dict) or not series:
+                continue
+            last_date = max(series)  # ISO dates sort lexicographically
+            sidecar[ticker] = {"date": last_date, "close": series[last_date]}
+        with sidecar_path.open("w", encoding="utf-8") as f:
+            json.dump(sidecar, f, indent=4, ensure_ascii=False)
+            f.write("\n")
+        logging.info(f"Prev-close sidecar written to {sidecar_path}")
+        return sidecar
+    except (json.JSONDecodeError, OSError) as e:
+        logging.error(f"Could not write prev-close sidecar to {sidecar_path}: {e}")
+        return {}
+
+
 def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = None) -> None:
     """Main function to fetch tickers and their prices, then save to a file."""
     holdings_path = holdings_path or DEFAULT_HOLDINGS_PATH
@@ -284,6 +317,8 @@ def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = Non
         logging.error(f"Could not write data to {output_path}: {e}")
     except Exception as e:
         logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
+
+    write_prev_close_sidecar(tickers_to_fetch, output_path.parent)
 
 
 if __name__ == "__main__":
