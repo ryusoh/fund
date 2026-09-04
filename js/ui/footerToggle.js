@@ -1,9 +1,13 @@
 import { UI_BREAKPOINTS } from '@js/config.js';
 
-// Mobile footer: the total value and the intraday day-change stack are always
-// visible; only the all-time PnL bracket (.pnl-all-time) is collapsed until
-// tapped. State rides on a class of the persistent #table-footer-summary
-// container because the PnL children are re-created on every data refresh.
+// Mobile footer toggle — a SWAP, not a show/hide. Default: total value +
+// intraday day-change stack visible, all-time PnL bracket (.pnl-all-time)
+// collapsed. Expanded (tapped): total value hidden, all-time bracket shown,
+// day stack stays. The swap rules live in the mobile media query in
+// css/table.css; state rides on a class of the persistent
+// #table-footer-summary container because the PnL children are re-created on
+// every data refresh. NOTE: footer visibility rules are split across
+// css/layout.css AND css/table.css — check both before changing behavior.
 export function initFooterToggle() {
     const pnlContainer = document.getElementById('table-footer-summary');
     const totalValueElement = document.getElementById('total-portfolio-value-in-table');

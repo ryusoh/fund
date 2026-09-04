@@ -16,7 +16,18 @@ resolves), and the call-order comment in `dataLoader.test.js` gets updated to
 match. (Added 2026-09 when the `prev_close.json` sidecar fetch cost a full
 red-suite cycle + a stash A/B to diagnose.)
 
-## Jest runs **silent** — `console.log` won't print
+## Position footer visibility rules are split across TWO stylesheets
+
+The `/position/` mobile footer toggle has rules in **both** `css/layout.css`
+(cursor, legacy display rules) and `css/table.css` (`.pnl-all-time` collapse,
+`.pnl-expanded` swap). Editing one without checking the other shipped a "still
+no show" bug (stale `.total-pnl { display: none }` in layout.css) and a "broke
+the swap" regression (total value must hide when expanded) in the same session.
+
+Rule: before changing any toggle/visibility behavior, `rg '<selector>' css/`
+across ALL stylesheets — not just the page-scoped one. And when rewriting a
+toggle, state the full state matrix (default/expanded × each element) in the
+test names so a dropped branch fails loudly, not silently.
 
 `package.json` → `jest` config sets **`"silent": true`** and
 **`testEnvironmentOptions.console: "off"`**. So `console.log` / `console.error`
