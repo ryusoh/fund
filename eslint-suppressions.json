@@ -4,11 +4,6 @@
             "count": 1
         }
     },
-    "js/transactions/chart.js": {
-        "complexity": {
-            "count": 1
-        }
-    },
     "js/transactions/chart/data/contribution.js": {
         "complexity": {
             "count": 3
