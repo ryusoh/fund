@@ -121,7 +121,7 @@ describe('Composition Chart Feature Parity', () => {
             COMPOSITION_CHARTS.forEach((chartKey) => {
                 const jsName = CHART_NAME_MAPPING[chartKey];
                 expect(chartContent).toContain(
-                    `transactionState.activeChart === '${jsName}'`,
+                    `activeChart === '${jsName}'`,
                     `Chart "${jsName}" not handled in chart.js render frame`
                 );
             });
@@ -454,7 +454,7 @@ describe('Composition Chart Feature Parity', () => {
 
                 // Check usage in render frame
                 expect(chartContent).toContain(
-                    `transactionState.activeChart === '${jsName}'`,
+                    `activeChart === '${jsName}'`,
                     `Chart "${chartKey}" not handled in render frame`
                 );
             });
