@@ -667,6 +667,11 @@ export const TABLE_GLASS_EFFECT = {
         radius: 400, // 2x increased range for WebGL oil film (from 200)
         boostMultiplier: 1.2, // Native iridescence boost factor under mouse
         blueMixFactor: 0.7, // Native blue mix factor under mouse
+        rimThickness: 30, // px inward caustic band along the table rim
+        // Mobile rows are ~30px tall: a 30px rim swallows a whole row, and a
+        // finger needs a bigger spotlight footprint than a mouse cursor.
+        mobileRadius: 560,
+        mobileRimThickness: 14,
     },
     chromaticAberration: {
         enabled: true, // Disabled for cleaner look

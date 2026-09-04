@@ -213,6 +213,66 @@ describe('TableGlassWebGL', () => {
         expect(webgl.gl.drawArrays).toHaveBeenCalledWith(webgl.gl.TRIANGLES, 0, 6);
     });
 
+    test('uses mobile rim/spotlight variants at mobile viewport', () => {
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 390,
+        });
+        const webgl = new TableGlassWebGL(mockParentEffect);
+        const state = {
+            spotlightAlpha: 1.0,
+            hoveredRowIndex: 0,
+            pointerSmoothed: { x: 0, y: 0 },
+            continuousPhase: 1,
+        };
+        const options = {
+            rowHoverEffect: { enabled: true },
+            oilSpotlight: {
+                radius: 400,
+                mobileRadius: 560,
+                rimThickness: 30,
+                mobileRimThickness: 14,
+            },
+        };
+        const rows = [{ top: 10, height: 20, left: 5, width: 100 }];
+
+        webgl.draw(state, options, 800, 600, 1, rows);
+
+        expect(webgl.gl.uniform1f).toHaveBeenCalledWith(webgl.uniforms.spotlightRadius, 560);
+        expect(webgl.gl.uniform1f).toHaveBeenCalledWith(webgl.uniforms.rimThickness, 14);
+    });
+
+    test('uses desktop rim/spotlight values at desktop viewport', () => {
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 1440,
+        });
+        const webgl = new TableGlassWebGL(mockParentEffect);
+        const state = {
+            spotlightAlpha: 1.0,
+            hoveredRowIndex: 0,
+            pointerSmoothed: { x: 0, y: 0 },
+            continuousPhase: 1,
+        };
+        const options = {
+            rowHoverEffect: { enabled: true },
+            oilSpotlight: {
+                radius: 400,
+                mobileRadius: 560,
+                rimThickness: 30,
+                mobileRimThickness: 14,
+            },
+        };
+        const rows = [{ top: 10, height: 20, left: 5, width: 100 }];
+
+        webgl.draw(state, options, 800, 600, 1, rows);
+
+        expect(webgl.gl.uniform1f).toHaveBeenCalledWith(webgl.uniforms.spotlightRadius, 400);
+        expect(webgl.gl.uniform1f).toHaveBeenCalledWith(webgl.uniforms.rimThickness, 30);
+    });
+
     test('dispose removes canvas and loses context', () => {
         const webgl = new TableGlassWebGL(mockParentEffect);
 

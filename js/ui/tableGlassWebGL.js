@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger.js';
+import { UI_BREAKPOINTS } from '@js/config.js';
 
 const VERTEX_SRC = `
 attribute vec2 a_position;
@@ -26,6 +27,7 @@ uniform float u_pointerVelocity;
 uniform float u_oilBoostMultiplier;
 uniform float u_oilBlueMixFactor;
 uniform float u_spotlightAlpha;
+uniform float u_rimThickness;
 
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
@@ -162,8 +164,10 @@ void main() {
     // Distance to the absolute closest edge
     float minRimDist = min(min(leftDist, rightDist), min(topDist, bottomDist));
 
-    // The inward rim effect area (thickness of the glowing rim zone)
-    float rimThickness = 30.0;
+    // The inward rim effect area (thickness of the glowing rim zone).
+    // Uniform-driven: mobile rows are ~30px tall, so the desktop-width rim
+    // would read as a full row band there — the caller passes a narrower one.
+    float rimThickness = u_rimThickness;
 
     // Optimization & Clipping: only render if we are near the rim
     if (minRimDist > rimThickness) {
@@ -367,6 +371,7 @@ export class TableGlassWebGL {
             oilBoostMultiplier: gl.getUniformLocation(this.program, 'u_oilBoostMultiplier'),
             oilBlueMixFactor: gl.getUniformLocation(this.program, 'u_oilBlueMixFactor'),
             spotlightAlpha: gl.getUniformLocation(this.program, 'u_spotlightAlpha'),
+            rimThickness: gl.getUniformLocation(this.program, 'u_rimThickness'),
         };
 
         // Blend mode for glowing effects
@@ -391,13 +396,31 @@ export class TableGlassWebGL {
         const mouseX = ((state.pointerSmoothed.x + 1) / 2) * width;
         const mouseY = ((state.pointerSmoothed.y + 1) / 2) * height;
 
+        // Mobile: the rim band must shrink (a 30px rim is a full row tall on
+        // phone rows) while the touch spotlight grows (fat-finger target).
+        const isMobile =
+            typeof window !== 'undefined' && window.innerWidth <= UI_BREAKPOINTS.MOBILE;
+        const oil = options.oilSpotlight || {};
+
         gl.uniform2f(this.uniforms.resolution, width, height);
         // We pass logical pixels to shader, it handles its own coordinates
         gl.uniform2f(this.uniforms.pointer, mouseX, mouseY);
         gl.uniform1f(this.uniforms.time, state.continuousPhase);
         gl.uniform1f(
             this.uniforms.spotlightRadius,
-            options.oilSpotlight?.radius !== undefined ? options.oilSpotlight.radius : 400.0
+            isMobile && oil.mobileRadius !== undefined
+                ? oil.mobileRadius
+                : oil.radius !== undefined
+                  ? oil.radius
+                  : 400.0
+        );
+        gl.uniform1f(
+            this.uniforms.rimThickness,
+            isMobile && oil.mobileRimThickness !== undefined
+                ? oil.mobileRimThickness
+                : oil.rimThickness !== undefined
+                  ? oil.rimThickness
+                  : 30.0
         );
         gl.uniform1f(
             this.uniforms.oilBoostMultiplier,
