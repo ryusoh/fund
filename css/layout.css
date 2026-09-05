@@ -48,6 +48,12 @@ body:not(.body-calendar) .content-block {
 #fundPieChartContainer {
     width: 90%; /* Increased width */
     max-width: 400px; /* Increased max-width */
+    /* Square box independent of the canvas: Chart.js's responsive observer
+       measures this container, and without a fixed aspect its height comes
+       FROM the canvas — a feedback loop that leaves the donut at the canvas
+       default 300x150 (or collapsed) until some later update happens to
+       re-measure it. */
+    aspect-ratio: 1;
     margin: 10px auto 10px; /* Horizontally center, top margin 0, bottom margin 20px */
     position: relative; /* Make this a positioning context for child absolute elements */
 }
