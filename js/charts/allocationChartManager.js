@@ -238,12 +238,19 @@ function setupGlobalTouch(fundChartInstance) {
             }
             const chartContainer = document.getElementById('fundPieChartContainer');
             const contentBlock = document.querySelector('.content-block');
+            // The currency toggle lives outside both containers; tapping it must
+            // not dismiss a persisted table — the re-render alone is jarring enough.
+            const currencyToggle = document.getElementById('currencyToggleContainer');
 
             if (!chartContainer || !contentBlock) {
                 return;
             }
 
-            if (chartContainer.contains(e.target) || contentBlock.contains(e.target)) {
+            if (
+                chartContainer.contains(e.target) ||
+                contentBlock.contains(e.target) ||
+                (currencyToggle && currencyToggle.contains(e.target))
+            ) {
                 return;
             }
 

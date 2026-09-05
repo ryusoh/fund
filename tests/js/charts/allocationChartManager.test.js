@@ -744,6 +744,35 @@ describe('chartManager', () => {
             expect(contentBlock.classList.contains('hidden')).toBe(false);
         });
 
+        it('should NOT hide table on mobile when tapping the currency toggle', () => {
+            chartManager.updatePieChart(data);
+            const table = document.querySelector('table');
+            const contentBlock = document.querySelector('.content-block');
+
+            Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+            // Persist the table via a center tap
+            chartOptions.onClick({ x: 150, y: 150 }, [], mockChartInstance);
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            // Tap a currency button (outside chart container and content-block)
+            const currencyToggle = document.createElement('div');
+            currencyToggle.id = 'currencyToggleContainer';
+            const button = document.createElement('button');
+            currencyToggle.appendChild(button);
+            document.body.appendChild(currencyToggle);
+
+            const touch = new Event('touchstart', { bubbles: true });
+            Object.defineProperty(touch, 'target', { value: button });
+            document.dispatchEvent(touch);
+
+            expect(table.classList.contains('hidden')).toBe(false);
+            expect(contentBlock.classList.contains('hidden')).toBe(false);
+
+            currencyToggle.remove();
+        });
+
         describe('hoverSliceByTicker', () => {
             it('should no-op when chart not initialized', () => {
                 expect(() => {
