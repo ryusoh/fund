@@ -64,9 +64,9 @@ body:not(.body-calendar) .content-block {
         max-width: min(80vw, 360px);
         max-height: min(80vw, 360px);
         margin: calc(75px + env(safe-area-inset-top, 0px)) auto 10px auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        /* No display:flex here: a responsive Chart.js canvas as a flex item
+           feeds its size back into the container and collapses when the
+           periodic data refresh triggers a re-layout. */
     }
 }
 

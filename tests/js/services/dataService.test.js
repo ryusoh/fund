@@ -66,8 +66,17 @@ describe('dataService', () => {
         if (typeof __testables.resetAnalysisTickerCache === 'function') {
             __testables.resetAnalysisTickerCache();
         }
+        if (typeof __testables.resetTickerMetadataCache === 'function') {
+            __testables.resetTickerMetadataCache();
+        }
         if (typeof __testables.resetPeRatioDataCache === 'function') {
             __testables.resetPeRatioDataCache();
+        }
+        if (typeof __testables.resetAnalysisDetailCache === 'function') {
+            __testables.resetAnalysisDetailCache();
+        }
+        if (typeof __testables.resetLastMarketRatios === 'function') {
+            __testables.resetLastMarketRatios();
         }
 
         // Clear all mocks
@@ -769,6 +778,60 @@ describe('dataService', () => {
             expect(perCell.textContent).toBe('18.50/15.20');
         });
 
+        it('should render PER from cached ratios on subsequent loads (no placeholder flash)', async () => {
+            const mockHoldings = {
+                AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
+            };
+            const mockPrices = { AAPL: '160.00' };
+            const mockAnalysisIndex = {
+                tickers: [{ symbol: 'AAPL', path: '../data/analysis/AAPL.json' }],
+            };
+
+            fetch.mockImplementation((url) => {
+                if (url.includes('holdings_details.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHoldings) });
+                }
+                if (url.includes('fund_data.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPrices) });
+                }
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve(mockAnalysisIndex),
+                    });
+                }
+                if (url.includes('analysis/AAPL')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ market: { pe: 18.5, forwardPe: 15.2 } }),
+                    });
+                }
+                return Promise.reject(new Error('Unexpected URL'));
+            });
+
+            await loadAndDisplayPortfolioData('USD', { USD: 1.0 }, { USD: '$' });
+
+            // On the second load (e.g. a currency switch), the rebuilt rows must
+            // already carry the cached PER values when the chart updates.
+            let perAtChartUpdate = null;
+            chartManager.updatePieChart.mockImplementation(() => {
+                perAtChartUpdate = document.querySelector(
+                    'tr[data-ticker="AAPL"] td.per'
+                )?.textContent;
+            });
+
+            await loadAndDisplayPortfolioData(
+                'CNY',
+                { USD: 1.0, CNY: 7.2 },
+                { USD: '$', CNY: '¥' }
+            );
+
+            expect(perAtChartUpdate).toBe('18.50/15.20');
+            expect(document.querySelector('tr[data-ticker="AAPL"] td.per').textContent).toBe(
+                '18.50/15.20'
+            );
+        });
+
         it('should use responsive glass opacity for pie chart slice background colors', async () => {
             const mockHoldings = {
                 AAPL: { shares: '10', average_price: '150.00', name: 'Apple Inc.' },
@@ -1012,6 +1075,38 @@ describe('dataService', () => {
                 String(c[0]).includes('forward_pe.json')
             );
             expect(forwardPeFetches).toHaveLength(1);
+        });
+
+        it('caches per-ticker analysis details across calls', async () => {
+            fetch.mockImplementation((url) => {
+                if (url.includes('analysis/index')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () =>
+                            Promise.resolve({
+                                tickers: [{ symbol: 'AAPL', path: '../data/analysis/AAPL.json' }],
+                            }),
+                    });
+                }
+                if (url.includes('forward_pe.json')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+                }
+                if (url.includes('analysis/AAPL')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ market: { pe: 22.0 } }),
+                    });
+                }
+                return Promise.reject(new Error(`Unexpected URL: ${url}`));
+            });
+
+            await fetchMarketRatiosForTickers(['AAPL']);
+            await fetchMarketRatiosForTickers(['AAPL']);
+
+            const detailFetches = fetch.mock.calls.filter((c) =>
+                String(c[0]).includes('analysis/AAPL')
+            );
+            expect(detailFetches).toHaveLength(1);
         });
     });
 
@@ -2128,6 +2223,7 @@ describe('fetchMarketRatiosForTickers', () => {
     beforeEach(() => {
         __testables.resetAnalysisTickerCache();
         __testables.resetTickerMetadataCache();
+        __testables.resetAnalysisDetailCache();
     });
 
     it('tags ETFs with isEtf so realtime PE does not use price/eps', async () => {

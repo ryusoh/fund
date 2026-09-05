@@ -23,6 +23,13 @@ const TICKER_METADATA_URL = '../data/ticker_metadata.json';
 let analysisTickerPathCache = null;
 let tickerMetadataCache = null;
 let peRatioDataCache = null;
+// Per-ticker analysis details are static fundamentals (EPS/PE), refreshed daily
+// by the pipeline — within a page session they never change, so currency
+// switches and price refreshes must not refetch them.
+const analysisDetailCache = new Map();
+// Last resolved ratios, so re-renders (currency switch) can paint the PER
+// column immediately instead of flashing '—' until the fetch resolves.
+let lastMarketRatiosByTicker = null;
 
 // --- Private Functions ---
 
@@ -203,7 +210,11 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
                 return;
             }
             try {
-                const detail = await fetchJSON(analysisPath);
+                let detail = analysisDetailCache.get(analysisPath);
+                if (!detail) {
+                    detail = await fetchJSON(analysisPath);
+                    analysisDetailCache.set(analysisPath, detail);
+                }
                 const market = detail?.market || {};
                 const trailingPe = Number(market.pe);
                 let forwardPe = Number(market.forwardPe);
@@ -1060,6 +1071,12 @@ export const __testables = {
     resetPeRatioDataCache: () => {
         peRatioDataCache = null;
     },
+    resetAnalysisDetailCache: () => {
+        analysisDetailCache.clear();
+    },
+    resetLastMarketRatios: () => {
+        lastMarketRatiosByTicker = null;
+    },
 };
 
 function _renderPnlSummary(
@@ -1226,7 +1243,8 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
             totalPortfolioValueUSD,
             currentCurrency,
             exchangeRates,
-            currencySymbols
+            currencySymbols,
+            lastMarketRatiosByTicker ?? new Map()
         );
 
         document.getElementById('total-portfolio-value-in-table').textContent = formatCurrency(
@@ -1249,6 +1267,7 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         checkAndToggleVerticalScroll();
 
         const marketRatiosByTicker = await fetchMarketRatiosForTickers(tickerSymbols);
+        lastMarketRatiosByTicker = marketRatiosByTicker;
         _updatePerColumn(marketRatiosByTicker, sortedHoldings);
     } catch (error) {
         logger.error('Error fetching or processing fund data:', error);
