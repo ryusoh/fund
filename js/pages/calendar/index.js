@@ -1123,12 +1123,15 @@ export async function initCalendar() {
 // When the calendar zooms, the pane glides to the viewport center and scales
 // as one composited transform (--zoom-center-shift is measured here, in the
 // same microtask the class flips, so no intermediate frame paints). The
-// refraction lens (bezel distortion + edge caustics) attaches only after the
-// transform settles — building the displacement map and re-rasterizing the
-// backdrop mid-animation would steal frame budget from the transition — and
-// is disposed on zoom-out so the unzoomed wrapper stays untouched.
-// is disposed on zoom-out so the unzoomed wrapper stays untouched.
+// refraction lens (bezel distortion + edge caustics) attaches to an unscaled
+// overlay element sized to the zoomed bounding box after the transform settles —
+// placing backdrop-filter on the transformed wrapper causes Chromium to evaluate
+// feImage at unscaled border-box dimensions, cutting the lens off mid-pane.
+// Disposed on zoom-out so the unzoomed wrapper stays untouched.
 let zoomRefraction = null;
+let zoomRefractionTimer = null;
+let zoomLensOverlay = null;
+const ZOOM_SETTLE_MS = 600; // 0.55s CSS transition + 50ms buffer
 
 function initCalendarZoomPane() {
     const wrapper = document.querySelector(CALENDAR_SELECTORS.pageWrapper);
@@ -1150,23 +1153,77 @@ function initCalendarZoomPane() {
         wrapper.style.setProperty('--zoom-center-shift', `${shiftY}px`);
     };
 
+    const updateOverlayGeometry = () => {
+        if (!zoomLensOverlay || !wrapper.classList.contains('zoomed')) {
+            return;
+        }
+        const rect = wrapper.getBoundingClientRect();
+        zoomLensOverlay.style.left = `${Math.round(rect.left)}px`;
+        zoomLensOverlay.style.top = `${Math.round(rect.top)}px`;
+        zoomLensOverlay.style.width = `${Math.round(rect.width)}px`;
+        zoomLensOverlay.style.height = `${Math.round(rect.height)}px`;
+        if (zoomRefraction) {
+            zoomRefraction.update();
+        }
+    };
+
     const syncZoomRefraction = () => {
         const isZoomed = wrapper.classList.contains('zoomed');
-        if (isZoomed && !zoomRefraction) {
+        if (isZoomed && !zoomRefraction && !zoomRefractionTimer) {
             centerZoomedPane();
-            try {
-                zoomRefraction = new LiquidGlassRefraction(wrapper, CALENDAR_ZOOM_REFRACTION);
-            } catch (e) {
-                logger.error('Failed to initialize zoom pane effects:', e);
-                zoomRefraction = null;
-            }
+            zoomRefractionTimer = window.setTimeout(() => {
+                zoomRefractionTimer = null;
+                if (!wrapper.classList.contains('zoomed')) {
+                    return;
+                }
+                if (!zoomLensOverlay) {
+                    zoomLensOverlay = document.createElement('div');
+                    zoomLensOverlay.id = 'calendar-zoom-lens';
+                    zoomLensOverlay.setAttribute('aria-hidden', 'true');
+                    zoomLensOverlay.style.position = 'fixed';
+                    zoomLensOverlay.style.pointerEvents = 'none';
+                    zoomLensOverlay.style.borderRadius = '8px';
+                    zoomLensOverlay.style.zIndex = '99';
+                    document.body.appendChild(zoomLensOverlay);
+                }
+                const rect = wrapper.getBoundingClientRect();
+                zoomLensOverlay.style.left = `${Math.round(rect.left)}px`;
+                zoomLensOverlay.style.top = `${Math.round(rect.top)}px`;
+                zoomLensOverlay.style.width = `${Math.round(rect.width)}px`;
+                zoomLensOverlay.style.height = `${Math.round(rect.height)}px`;
+                try {
+                    zoomRefraction = new LiquidGlassRefraction(
+                        zoomLensOverlay,
+                        CALENDAR_ZOOM_REFRACTION
+                    );
+                } catch (e) {
+                    logger.error('Failed to initialize zoom pane effects:', e);
+                    zoomRefraction = null;
+                }
+            }, ZOOM_SETTLE_MS);
         } else if (!isZoomed) {
+            if (zoomRefractionTimer) {
+                window.clearTimeout(zoomRefractionTimer);
+                zoomRefractionTimer = null;
+            }
             if (zoomRefraction) {
                 zoomRefraction.dispose();
                 zoomRefraction = null;
             }
+            if (zoomLensOverlay) {
+                zoomLensOverlay.remove();
+                zoomLensOverlay = null;
+            }
         }
     };
+
+    const handleResize = () => {
+        if (wrapper.classList.contains('zoomed')) {
+            centerZoomedPane();
+            updateOverlayGeometry();
+        }
+    };
+    window.addEventListener('resize', handleResize);
 
     const observer = new window.MutationObserver(syncZoomRefraction);
     observer.observe(wrapper, {
@@ -1178,6 +1235,19 @@ function initCalendarZoomPane() {
 
     window.addEventListener('beforeunload', () => {
         observer.disconnect();
+        window.removeEventListener('resize', handleResize);
+        if (zoomRefractionTimer) {
+            window.clearTimeout(zoomRefractionTimer);
+            zoomRefractionTimer = null;
+        }
+        if (zoomRefraction) {
+            zoomRefraction.dispose();
+            zoomRefraction = null;
+        }
+        if (zoomLensOverlay) {
+            zoomLensOverlay.remove();
+            zoomLensOverlay = null;
+        }
     });
 }
 
@@ -1203,6 +1273,7 @@ export const __testables = {
     },
     queuePostPaintFrame,
     schedulePostPaintUpdates,
+    initCalendarZoomPane,
 };
 
 // Auto-initialize the calendar

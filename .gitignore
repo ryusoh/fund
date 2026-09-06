@@ -47,6 +47,7 @@ pr_description.txt
 pr_title.txt
 commit_message.txt
 .agents/state/
+scratch/
 
 # TWRR pipeline execution log (regenerated on every run)
 data/changelog.json

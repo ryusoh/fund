@@ -154,7 +154,8 @@ body.body-calendar {
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
-    /* Add space above the detached buttons */
+    margin-bottom: 24px;
+    /* Add space above and below the detached buttons */
     opacity: 0;
     transform: translateY(8px);
     transition:

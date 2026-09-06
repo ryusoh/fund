@@ -616,4 +616,72 @@ describe('LiquidGlassRefraction lifecycle', () => {
         LiquidGlassRefraction.prototype._scheduleUpdate = originalScheduleUpdate;
         jest.useRealTimers();
     });
+
+    test('sets displacement scale to zero when displacementGain is 0 while keeping caustic', () => {
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            displacementGain: 0,
+            causticGain: 0.8,
+        });
+        expect(effect.displacementNodes.r.getAttribute('scale')).toBe('0');
+        expect(effect.displacementNodes.g.getAttribute('scale')).toBe('0');
+        expect(effect.displacementNodes.b.getAttribute('scale')).toBe('0');
+        expect(effect._causticNode.getAttribute('k1')).toBe('0.8');
+        effect.dispose();
+    });
+
+    test('spectralCaustic creates chromatic dispersion nodes and sets scale/k3', () => {
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            frost: '',
+            displacementGain: 0,
+            causticGain: 0.8,
+            spectralCaustic: true,
+            spectralSpread: 12,
+        });
+        expect(effect.causticDisplacementNodes).toBeDefined();
+        expect(effect.causticDisplacementNodes.r.getAttribute('scale')).toBe('12');
+        expect(effect.causticDisplacementNodes.b.getAttribute('scale')).toBe('-12');
+        expect(effect._causticNode.getAttribute('k1')).toBe('0.8');
+        expect(parseFloat(effect._causticNode.getAttribute('k3'))).toBeCloseTo(0.4, 6);
+        effect.dispose();
+    });
+
+    test('buildDisplacementMap supports smooth causticProfile', () => {
+        const mapSlope = buildDisplacementMap({
+            width: 200,
+            height: 100,
+            radius: 8,
+            bezelWidth: 18,
+            ior: 1.52,
+            thickness: 26,
+            causticProfile: 'slope',
+        });
+        const mapSmooth = buildDisplacementMap({
+            width: 200,
+            height: 100,
+            radius: 8,
+            bezelWidth: 18,
+            ior: 1.52,
+            thickness: 26,
+            causticProfile: 'smooth',
+        });
+        // At mid-bezel (e.g. d ≈ 6), smooth profile maintains non-zero caustic mask
+        // while slope profile falls to 0.
+        const pixelAt = (map, x, y) => {
+            const i = (y * map.width + x) * 4;
+            return {
+                r: map.data[i],
+                g: map.data[i + 1],
+                b: map.data[i + 2],
+                a: map.data[i + 3],
+            };
+        };
+        // Map dimensions: width = 100, height = 50. x = 3 is d = 6px in CSS pixels (3 * 2).
+        const midSlope = pixelAt(mapSlope, 3, 25);
+        const midSmooth = pixelAt(mapSmooth, 3, 25);
+        expect(midSlope.b).toBe(0);
+        expect(midSmooth.b).toBeGreaterThan(100);
+    });
 });

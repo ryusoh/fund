@@ -144,6 +144,7 @@ export function buildDisplacementMap({
     innerRadiusRatio = 0.6,
     magnification = 0,
     magnificationPower = 6,
+    causticProfile = 'slope',
 }) {
     const mapW = Math.max(2, Math.round(width * scale));
     const mapH = Math.max(2, Math.round(height * scale));
@@ -198,13 +199,18 @@ export function buildDisplacementMap({
                         dy = (-gy / len) * shift;
                     }
                 }
-                const concentration = causticConcentration(
-                    distFromEdge,
-                    bezelWidth,
-                    ior,
-                    thickness
-                );
-                caustic = Math.min(1, Math.max(0, (concentration - 1) / CAUSTIC_NORM));
+                if (causticProfile === 'smooth') {
+                    const t = distFromEdge / bezelWidth;
+                    caustic = Math.sin(Math.PI * Math.pow(t, 0.7));
+                } else {
+                    const concentration = causticConcentration(
+                        distFromEdge,
+                        bezelWidth,
+                        ior,
+                        thickness
+                    );
+                    caustic = Math.min(1, Math.max(0, (concentration - 1) / CAUSTIC_NORM));
+                }
             }
 
             // Interior magnification: pull the backdrop sample toward the pane
@@ -282,9 +288,17 @@ export class LiquidGlassRefraction {
             ior: 1.52,
             abbeNumber: 32,
             dispersionGain: 1,
+            // Multiplier for lateral backdrop displacement (0 = keep background
+            // stationary, allowing pure caustic rim effect without image distortion).
+            displacementGain: 1,
             // Brightness boost where the bezel lens concentrates light
             // (result = refracted · (1 + causticGain · mask)).
             causticGain: 0.7,
+            // Enables prismatic chromatic aberration fringing on the caustic rim
+            // even when displacementGain is 0.
+            spectralCaustic: false,
+            // Pixel spread of the chromatic fringes on the caustic rim.
+            spectralSpread: 4,
             // Corner radius in px for the lens shape; null = read the element's
             // computed border-radius (supports % of the smaller box dimension).
             radius: null,
@@ -322,6 +336,7 @@ export class LiquidGlassRefraction {
         this._strength = this.options.rampMs > 0 ? 0 : 1;
         this._rampActive = false;
         this._baseScale = 0;
+        this.causticDisplacementNodes = null;
 
         this.filterId = `liquid-glass-refraction-${nextFilterId++}`;
         this.canvas = document.createElement('canvas');
@@ -444,13 +459,89 @@ export class LiquidGlassRefraction {
             mask.setAttribute('result', 'caustic-mask');
             this.filter.appendChild(mask);
 
+            let causticInput = 'caustic-mask';
+            if (this.options.spectralCaustic) {
+                // Displace the caustic mask per channel to create a prismatic rainbow fringe.
+                // Red shifts outward (negative scale), Blue shifts inward (positive scale),
+                // while Green remains unshifted in the center.
+                const causticDispR = document.createElementNS(SVG_NS, 'feDisplacementMap');
+                causticDispR.setAttribute('in', 'caustic-mask');
+                causticDispR.setAttribute('in2', 'map');
+                causticDispR.setAttribute('xChannelSelector', 'R');
+                causticDispR.setAttribute('yChannelSelector', 'G');
+                causticDispR.setAttribute('result', 'caustic-disp-r');
+                this.filter.appendChild(causticDispR);
+
+                const isolateR = document.createElementNS(SVG_NS, 'feColorMatrix');
+                isolateR.setAttribute('in', 'caustic-disp-r');
+                isolateR.setAttribute('type', 'matrix');
+                isolateR.setAttribute('values', CHANNEL_MATRICES.r);
+                isolateR.setAttribute('result', 'caustic-ch-r');
+                this.filter.appendChild(isolateR);
+
+                const isolateG = document.createElementNS(SVG_NS, 'feColorMatrix');
+                isolateG.setAttribute('in', 'caustic-mask');
+                isolateG.setAttribute('type', 'matrix');
+                isolateG.setAttribute('values', CHANNEL_MATRICES.g);
+                isolateG.setAttribute('result', 'caustic-ch-g');
+                this.filter.appendChild(isolateG);
+
+                const causticDispB = document.createElementNS(SVG_NS, 'feDisplacementMap');
+                causticDispB.setAttribute('in', 'caustic-mask');
+                causticDispB.setAttribute('in2', 'map');
+                causticDispB.setAttribute('xChannelSelector', 'R');
+                causticDispB.setAttribute('yChannelSelector', 'G');
+                causticDispB.setAttribute('result', 'caustic-disp-b');
+                this.filter.appendChild(causticDispB);
+
+                const isolateB = document.createElementNS(SVG_NS, 'feColorMatrix');
+                isolateB.setAttribute('in', 'caustic-disp-b');
+                isolateB.setAttribute('type', 'matrix');
+                isolateB.setAttribute('values', CHANNEL_MATRICES.b);
+                isolateB.setAttribute('result', 'caustic-ch-b');
+                this.filter.appendChild(isolateB);
+
+                const addCausticRG = document.createElementNS(SVG_NS, 'feComposite');
+                addCausticRG.setAttribute('in', 'caustic-ch-r');
+                addCausticRG.setAttribute('in2', 'caustic-ch-g');
+                addCausticRG.setAttribute('operator', 'arithmetic');
+                addCausticRG.setAttribute('k1', '0');
+                addCausticRG.setAttribute('k2', '1');
+                addCausticRG.setAttribute('k3', '1');
+                addCausticRG.setAttribute('k4', '0');
+                addCausticRG.setAttribute('result', 'caustic-ch-rg');
+                this.filter.appendChild(addCausticRG);
+
+                const addCausticRGB = document.createElementNS(SVG_NS, 'feComposite');
+                addCausticRGB.setAttribute('in', 'caustic-ch-rg');
+                addCausticRGB.setAttribute('in2', 'caustic-ch-b');
+                addCausticRGB.setAttribute('operator', 'arithmetic');
+                addCausticRGB.setAttribute('k1', '0');
+                addCausticRGB.setAttribute('k2', '1');
+                addCausticRGB.setAttribute('k3', '1');
+                addCausticRGB.setAttribute('k4', '0');
+                addCausticRGB.setAttribute('result', 'spectral-caustic');
+                this.filter.appendChild(addCausticRGB);
+
+                this.causticDisplacementNodes = {
+                    r: causticDispR,
+                    b: causticDispB,
+                };
+                causticInput = 'spectral-caustic';
+            }
+
             const caustic = document.createElementNS(SVG_NS, 'feComposite');
             caustic.setAttribute('in', 'refracted');
-            caustic.setAttribute('in2', 'caustic-mask');
+            caustic.setAttribute('in2', causticInput);
             caustic.setAttribute('operator', 'arithmetic');
             caustic.setAttribute('k1', String(this.options.causticGain));
             caustic.setAttribute('k2', '1');
-            caustic.setAttribute('k3', '0');
+            const k3 = this.options.spectralCaustic
+                ? typeof this.options.causticAmbient === 'number'
+                    ? this.options.causticAmbient
+                    : this.options.causticGain * 0.5
+                : 0;
+            caustic.setAttribute('k3', String(k3));
             caustic.setAttribute('k4', '0');
             this.filter.appendChild(caustic);
             this._causticNode = caustic;
@@ -524,6 +615,8 @@ export class LiquidGlassRefraction {
             innerRadiusRatio: innerRatio,
             magnification: this.options.magnification,
             magnificationPower: this.options.magnificationPower,
+            causticProfile:
+                this.options.causticProfile || (this.options.spectralCaustic ? 'smooth' : 'slope'),
         });
 
         this.canvas.width = map.width;
@@ -561,17 +654,30 @@ export class LiquidGlassRefraction {
     }
 
     _applyStrength() {
-        if (!this.displacementNodes || !this._baseScale) {
-            return;
+        if (this.displacementNodes && this._baseScale) {
+            const dispGain =
+                typeof this.options.displacementGain === 'number'
+                    ? this.options.displacementGain
+                    : 1;
+            const base = this._baseScale * this._strength * dispGain;
+            this.displacementNodes.r.setAttribute('scale', String(base * this._ratios.r));
+            this.displacementNodes.g.setAttribute('scale', String(base * this._ratios.g));
+            this.displacementNodes.b.setAttribute('scale', String(base * this._ratios.b));
         }
-        // Strength scales the effective slab thickness: displacement and the
-        // caustic energy term both grow linearly with it.
-        const base = this._baseScale * this._strength;
-        this.displacementNodes.r.setAttribute('scale', String(base * this._ratios.r));
-        this.displacementNodes.g.setAttribute('scale', String(base * this._ratios.g));
-        this.displacementNodes.b.setAttribute('scale', String(base * this._ratios.b));
+        if (this.causticDisplacementNodes) {
+            const spread = (this.options.spectralSpread || 4) * this._strength;
+            this.causticDisplacementNodes.r.setAttribute('scale', String(spread));
+            this.causticDisplacementNodes.b.setAttribute('scale', String(-spread));
+        }
         if (this._causticNode) {
             this._causticNode.setAttribute('k1', String(this.options.causticGain * this._strength));
+            if (this.options.spectralCaustic) {
+                const k3 =
+                    typeof this.options.causticAmbient === 'number'
+                        ? this.options.causticAmbient
+                        : this.options.causticGain * 0.5;
+                this._causticNode.setAttribute('k3', String(k3 * this._strength));
+            }
         }
     }
 
@@ -625,6 +731,7 @@ export class LiquidGlassRefraction {
         this.filter = null;
         this.feImage = null;
         this.displacementNodes = null;
+        this.causticDisplacementNodes = null;
         this._causticNode = null;
         this.canvas = null;
         this.ctx = null;

@@ -727,12 +727,16 @@ export const DONUT_REFRACTION = {
 };
 
 // Liquid-glass lens for the calendar's zoomed dark pane (.page-center-wrapper.zoomed).
-// frost stays null so the pane keeps its exact brightness — lens and caustics only.
-// The wide bezel refracts the background into the rim, feathering the
-// pane/background boundary optically.
+// frost stays null so the pane keeps its exact brightness.
+// displacementGain: 0 keeps the background photo stationary and undistorted (no broken lines),
+// while spectralCaustic produces prismatic rainbow chromatic dispersion along the caustic rim.
 export const CALENDAR_ZOOM_REFRACTION = {
     ...TABLE_GLASS_EFFECT.refraction,
     bezelWidth: 18,
     thickness: 26,
+    displacementGain: 0, // Stationary background photo: no broken lines
+    causticGain: 0.85, // Vibrant caustic highlight along the bezel
+    spectralCaustic: true, // Prismatic rainbow chromatic dispersion on caustic rim
+    spectralSpread: 12, // Pixel spread of the chromatic fringes
     rampMs: 550, // Match the 0.55s CSS transform duration so it thickens *during* the zoom
 };
