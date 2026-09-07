@@ -181,65 +181,59 @@ export function parseDateRange(args) {
     return { from: null, to: null };
 }
 
-export function formatDateRange(range) {
-    if (range.from && range.to) {
-        // Check if it's a quarter range
-        const fromParts = range.from.split('-');
-        const toParts = range.to.split('-');
+const QUARTER_DATES = {
+    '1-1': 1,
+    '3-31': 1,
+    '4-1': 2,
+    '6-30': 2,
+    '7-1': 3,
+    '9-30': 3,
+    '10-1': 4,
+    '12-31': 4,
+};
 
-        if (fromParts.length === 3 && toParts.length === 3 && fromParts[0] === toParts[0]) {
-            const year = fromParts[0];
-            const startMonth = parseInt(fromParts[1], 10);
-            const endMonth = parseInt(toParts[1], 10);
-            const endDay = parseInt(toParts[2], 10);
+function getQuarterFromDate(m, d) {
+    const key = `${m}-${d}`;
+    return QUARTER_DATES[key] || null;
+}
 
-            // Q1: 01-01 to 03-31
-            // Q2: 04-01 to 06-30
-            // Q3: 07-01 to 09-30
-            // Q4: 10-01 to 12-31
+function checkQuarterRange(fromParts, toParts, year) {
+    const startMonth = parseInt(fromParts[1], 10);
+    const startDay = parseInt(fromParts[2], 10);
+    const endMonth = parseInt(toParts[1], 10);
+    const endDay = parseInt(toParts[2], 10);
 
-            const getQuarter = (m, d) => {
-                if (m === 1 && d === 1) {
-                    return 1;
-                } // start of Q1
-                if (m === 3 && d === 31) {
-                    return 1;
-                } // end of Q1
-                if (m === 4 && d === 1) {
-                    return 2;
-                } // start of Q2
-                if (m === 6 && d === 30) {
-                    return 2;
-                } // end of Q2
-                if (m === 7 && d === 1) {
-                    return 3;
-                } // start of Q3
-                if (m === 9 && d === 30) {
-                    return 3;
-                } // end of Q3
-                if (m === 10 && d === 1) {
-                    return 4;
-                } // start of Q4
-                if (m === 12 && d === 31) {
-                    return 4;
-                } // end of Q4
-                return null;
-            };
+    const startQ = getQuarterFromDate(startMonth, startDay);
+    const endQ = getQuarterFromDate(endMonth, endDay);
 
-            const startQ = getQuarter(startMonth, parseInt(fromParts[2], 10));
-            const endQ = getQuarter(endMonth, endDay);
+    if (startQ && endQ && startQ === endQ) {
+        return `Q${startQ} ${year}`;
+    }
+    return null;
+}
 
-            if (startQ && endQ && startQ === endQ) {
-                return `Q${startQ} ${year}`;
-            }
+function formatBothDatesRange(range) {
+    const fromParts = range.from.split('-');
+    const toParts = range.to.split('-');
 
-            // Check if full year
-            if (range.from === `${year}-01-01` && range.to === `${year}-12-31`) {
-                return year;
-            }
+    if (fromParts.length === 3 && toParts.length === 3 && fromParts[0] === toParts[0]) {
+        const year = fromParts[0];
+        const quarterLabel = checkQuarterRange(fromParts, toParts, year);
+        if (quarterLabel) {
+            return quarterLabel;
         }
 
-        return `${range.from} to ${range.to}`;
+        if (range.from === `${year}-01-01` && range.to === `${year}-12-31`) {
+            return year;
+        }
+    }
+
+    return `${range.from} to ${range.to}`;
+}
+
+export function formatDateRange(range) {
+    if (range.from && range.to) {
+        return formatBothDatesRange(range);
     }
     if (range.from) {
         return `from ${range.from}`;
