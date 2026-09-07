@@ -2,7 +2,7 @@ import { setActiveChart, whenTransactionDataReady } from '@js/transactions/state
 import { adjustMobilePanels } from '@js/transactions/layout.js';
 
 // Full set of 19 available charts for mobile swipe navigation (js/transactions/chart.js).
-export const ALL_CHARTS = [
+const ALL_CHARTS = [
     { key: 'contribution', label: 'Balance' },
     { key: 'performance', label: 'Performance' },
     { key: 'drawdown', label: 'Drawdown' },
