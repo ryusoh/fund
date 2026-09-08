@@ -193,6 +193,7 @@ export class CustomCursor {
             scale: { current: 1, value: 1 },
         };
         this.persistPositionFrame = null;
+        this.lastFrameTime = null;
 
         root.appendChild(this.element);
         applyForceHideCursor();
@@ -249,19 +250,26 @@ export class CustomCursor {
         this.coords.scale.current = 1;
     }
 
-    loop() {
+    loop(timestamp) {
+        // Frame-rate independent easing: a fixed per-frame lerp alpha makes the
+        // chase speed proportional to fps, so any jank (e.g. repaint-heavy
+        // pages at high browser zoom) makes the cursor crawl. Scale the alpha
+        // by elapsed time instead.
+        const now = typeof timestamp === 'number' ? timestamp : performance.now();
+        const dt = this.lastFrameTime === null ? 1000 / 60 : Math.max(now - this.lastFrameTime, 0);
+        this.lastFrameTime = now;
+        const frameScale = dt / (1000 / 60);
+        const followAlpha = 1 - Math.pow(1 - this.followEase, frameScale);
+        const fadeAlpha = 1 - Math.pow(1 - this.fadeEase, frameScale);
+
         this.coords.opacity.value = lerp(
             this.coords.opacity.value,
             this.coords.opacity.current,
-            this.fadeEase
+            fadeAlpha
         );
-        this.coords.scale.value = lerp(
-            this.coords.scale.value,
-            this.coords.scale.current,
-            this.fadeEase
-        );
-        this.coords.x.value = lerp(this.coords.x.value, this.coords.x.current, this.followEase);
-        this.coords.y.value = lerp(this.coords.y.value, this.coords.y.current, this.followEase);
+        this.coords.scale.value = lerp(this.coords.scale.value, this.coords.scale.current, fadeAlpha);
+        this.coords.x.value = lerp(this.coords.x.value, this.coords.x.current, followAlpha);
+        this.coords.y.value = lerp(this.coords.y.value, this.coords.y.current, followAlpha);
 
         gsap.set(this.element, {
             opacity: this.coords.opacity.value,
