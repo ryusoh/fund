@@ -392,157 +392,556 @@ The custom cursor subsystem introduces five major performance and responsiveness
 
 ---
 
-## Ranked Action Items
+## Action items
 
-Ranked from immediate quick wins to architectural cleanup. Written for mechanical execution by an implementation agent.
+### Preamble for the implementer
 
-### 1. `[low]` Eliminate per-frame `sessionStorage.setItem` in `cursor.js`
-
-- **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
-- **Find:**
-
-    ```javascript
-        onMouseMove(event) {
-            this.coords.x.current = event.clientX;
-            this.coords.y.current = event.clientY;
-            this.coords.opacity.current = 1;
-            this.schedulePersistPosition();
-        }
-    ```
-
-- **Change:**
-  Delete `this.schedulePersistPosition();` from `onMouseMove`.
-  Delete `schedulePersistPosition()` method entirely (lines ~287-293).
-- **Why safe:** Lines 208-210 already bind `this.persistPosition` to `pagehide` and `beforeunload`. The cursor coordinates are preserved when navigating between pages without thrashing synchronous storage I/O on every frame.
-- **Verify:** `npx jest tests/js/cursor`
+- **Execution contract:** Work one numbered item at a time in order. Run the item's scoped verification command, then commit with a conventional commit message (`perf(cursor): ...`, `refactor(cursor): ...`). **Never push** — pushing remains a human decision.
+- **Strict anchors:** `Find` snippets are exact, unique anchors taken directly from current sources. If any `Find` block does not match verbatim, **STOP and report** instead of guessing or improvising. Line numbers in findings are dated references and will drift as edits are applied.
+- **Formatting and lint:** After modifying JS/CSS, run `npx prettier --write <file> && npx eslint <file>`.
+- **Non-negotiables:** Never hand-edit files under `data/`. Keep each commit focused strictly on its single work order.
 
 ---
 
-### 2. `[low]` Boost tracking responsiveness (`followEase: 0.75` & `pointermove`)
+### Work order 1 `[trivial]` — Eliminate per-frame `sessionStorage.setItem` in `cursor.js`
 
 - **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
 - **Find:**
-  `window.addEventListener('mousemove', this.onMouseMove);` and matching `removeEventListener`
+
+```javascript
+this.persistPositionFrame = null;
+this.lastFrameTime = null;
+```
+
 - **Change:**
-  Replace with `window.addEventListener('pointermove', this.onMouseMove, { passive: true });` and matching `removeEventListener`.
+
+```javascript
+this.lastFrameTime = null;
+```
+
+- **Find:**
+
+```javascript
+    onMouseMove(event) {
+        this.coords.x.current = event.clientX;
+        this.coords.y.current = event.clientY;
+        this.coords.opacity.current = 1;
+        this.schedulePersistPosition();
+    }
+```
+
+- **Change:**
+
+```javascript
+    onMouseMove(event) {
+        this.coords.x.current = event.clientX;
+        this.coords.y.current = event.clientY;
+        this.coords.opacity.current = 1;
+    }
+```
+
+- **Find:**
+
+```javascript
+    schedulePersistPosition() {
+        if (this.persistPositionFrame) return;
+        this.persistPositionFrame = requestAnimationFrame(() => {
+            this.persistPositionFrame = null;
+            this.persistPosition();
+        });
+    }
+
+    persistPosition() {
+        persistCursorPosition(this.coords.x.current, this.coords.y.current);
+    }
+
+    destroy() {
+        if (this.disabled || !this.element) return;
+        cancelAnimationFrame(this.rafId);
+        if (this.persistPositionFrame) {
+            cancelAnimationFrame(this.persistPositionFrame);
+            this.persistPositionFrame = null;
+        }
+        this.persistPosition();
+```
+
+- **Change:**
+
+```javascript
+    persistPosition() {
+        persistCursorPosition(this.coords.x.current, this.coords.y.current);
+    }
+
+    destroy() {
+        if (this.disabled || !this.element) return;
+        cancelAnimationFrame(this.rafId);
+        this.persistPosition();
+```
+
+- **Verify:** `npx jest tests/js/cursor`
+- **Guardrail:** Do not delete `pagehide` and `beforeunload` listeners in the constructor; they correctly save cursor position across page navigations without per-frame storage writes.
+
+---
+
+### Work order 2 `[low]` — Boost tracking responsiveness (`followEase: 0.75` & `pointermove`)
+
+- **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
+- **Find:**
+
+```javascript
+window.addEventListener('mousemove', this.onMouseMove);
+window.addEventListener('mouseout', this.onMouseOut);
+```
+
+- **Change:**
+
+```javascript
+window.addEventListener('pointermove', this.onMouseMove, { passive: true });
+window.addEventListener('mouseout', this.onMouseOut);
+```
+
+- **Find:**
+
+```javascript
+window.removeEventListener('mousemove', this.onMouseMove);
+window.removeEventListener('mouseout', this.onMouseOut);
+```
+
+- **Change:**
+
+```javascript
+window.removeEventListener('pointermove', this.onMouseMove);
+window.removeEventListener('mouseout', this.onMouseOut);
+```
+
 - **File:** [`js/cursor-init.js`](file:///Users/lz/dev/fund/js/cursor-init.js)
 - **Find:**
-  `followEase: 0.4,`
+
+```javascript
+const { cursor } = initCursor({
+    cursor: {
+        hoverTargets: 'a, button, .container li',
+        followEase: 0.4,
+        fadeEase: 0.1,
+        hoverScale: 3,
+    },
+});
+```
+
 - **Change:**
-  `followEase: 0.75,` (in [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js#L157) also update default parameter `followEase = 0.75`).
-- **Why safe:** `pointermove` is supported in all modern browsers and dispatches earlier than `mousemove`. Increasing `followEase` cuts tracking lag from 32.6ms to 12ms while preserving smooth exponential easing.
+
+```javascript
+const { cursor } = initCursor({
+    cursor: {
+        hoverTargets: 'a, button, .container li',
+        followEase: 0.75,
+        fadeEase: 0.1,
+        hoverScale: 3,
+    },
+});
+```
+
 - **Verify:** `npx jest tests/js/cursor/cursor_frame_rate.test.js`
+- **Guardrail:** Keep `followEase = 0.4` as the default parameter in `CustomCursor` constructor so existing `cursor_frame_rate.test.js:104` step test stays green; pass `0.75` explicitly via `js/cursor-init.js`.
 
 ---
 
-### 3. `[low]` Resolve CSS transition vs JS scale conflict & drop `gsap.set`
+### Work order 3 `[low]` — Resolve CSS transition vs JS scale conflict & drop `gsap.set`
 
 - **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
 - **Find:**
 
-    ```javascript
-    gsap.set(this.element, {
-        opacity: this.coords.opacity.value,
-        x: this.coords.x.value,
-        y: this.coords.y.value,
-        zIndex: 100,
-    });
-    gsap.set(this.core, {
-        scale: this.coords.scale.value,
-    });
-    ```
-
-- **Change:**
-  Replace with direct transform styles:
-
-    ```javascript
-    this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
-    this.element.style.opacity = this.coords.opacity.value;
-    ```
-
-    In `loop()` remove `this.coords.scale.value = lerp(...)`.
-    In `onMouseEnter()` / `onMouseLeave()` simply toggle `this.core.classList.add(this.hoverClass)` and `this.core.classList.remove(this.hoverClass)`.
-
-- **Why safe:** The CSS rule `.custom-cursor__core.is-hovered { transform: scale(3); }` and `transition: transform 0.15s ease` in [`css/cursor.css:44-52`](file:///Users/lz/dev/fund/css/cursor.css#L44-L52) smoothly scale the cursor core via hardware acceleration without fighting the JS loop.
-- **Verify:** `npx jest tests/js/cursor` · visual verification on `/`
-
----
-
-### 4. `[low]` Implement sleeping RAF loop during mouse idle
-
-- **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
-- **Find:** `this.rafId = requestAnimationFrame(this.loop);` in `loop()`
-- **Change:**
-  Check delta convergence before rescheduling:
-
-    ```javascript
-    const dx = Math.abs(this.coords.x.current - this.coords.x.value);
-    const dy = Math.abs(this.coords.y.current - this.coords.y.value);
-    const dAlpha = Math.abs(this.coords.opacity.current - this.coords.opacity.value);
-
-    if (dx < 0.05 && dy < 0.05 && dAlpha < 0.005) {
-        this.coords.x.value = this.coords.x.current;
-        this.coords.y.value = this.coords.y.current;
-        this.coords.opacity.value = this.coords.opacity.current;
-        this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
-        this.element.style.opacity = this.coords.opacity.value;
-        this.isLooping = false;
-        return;
+```javascript
+    onMouseEnter() {
+        this.core.classList.add(this.hoverClass);
+        this.coords.scale.current = this.hoverScale;
     }
 
-    this.rafId = requestAnimationFrame(this.loop);
-    ```
+    onMouseLeave() {
+        this.core.classList.remove(this.hoverClass);
+        this.coords.scale.current = 1;
+    }
 
-    In `onMouseMove`:
+    loop(timestamp) {
+        // Frame-rate independent easing: a fixed per-frame lerp alpha makes the
+        // chase speed proportional to fps, so any jank (e.g. repaint-heavy
+        // pages at high browser zoom) makes the cursor crawl. Scale the alpha
+        // by elapsed time instead.
+        const now = typeof timestamp === 'number' ? timestamp : performance.now();
+        const dt = this.lastFrameTime === null ? 1000 / 60 : Math.max(now - this.lastFrameTime, 0);
+        this.lastFrameTime = now;
+        const frameScale = dt / (1000 / 60);
+        const followAlpha = 1 - Math.pow(1 - this.followEase, frameScale);
+        const fadeAlpha = 1 - Math.pow(1 - this.fadeEase, frameScale);
 
-    ```javascript
-    if (!this.isLooping) {
-        this.isLooping = true;
-        this.lastFrameTime = performance.now();
+        this.coords.opacity.value = lerp(
+            this.coords.opacity.value,
+            this.coords.opacity.current,
+            fadeAlpha
+        );
+        this.coords.scale.value = lerp(this.coords.scale.value, this.coords.scale.current, fadeAlpha);
+        this.coords.x.value = lerp(this.coords.x.value, this.coords.x.current, followAlpha);
+        this.coords.y.value = lerp(this.coords.y.value, this.coords.y.current, followAlpha);
+
+        gsap.set(this.element, {
+            opacity: this.coords.opacity.value,
+            x: this.coords.x.value,
+            y: this.coords.y.value,
+            zIndex: 100,
+        });
+        gsap.set(this.core, {
+            scale: this.coords.scale.value,
+        });
+
         this.rafId = requestAnimationFrame(this.loop);
     }
-    ```
+```
 
-- **Why safe:** Once the cursor converges to the resting pointer coordinates, the loop suspends, dropping CPU utilization to 0%. Pointer movement immediately awakens the loop.
+- **Change:**
+
+```javascript
+    onMouseEnter() {
+        this.core.classList.add(this.hoverClass);
+    }
+
+    onMouseLeave() {
+        this.core.classList.remove(this.hoverClass);
+    }
+
+    loop(timestamp) {
+        // Frame-rate independent easing: a fixed per-frame lerp alpha makes the
+        // chase speed proportional to fps, so any jank (e.g. repaint-heavy
+        // pages at high browser zoom) makes the cursor crawl. Scale the alpha
+        // by elapsed time instead.
+        const now = typeof timestamp === 'number' ? timestamp : performance.now();
+        const dt = this.lastFrameTime === null ? 1000 / 60 : Math.max(now - this.lastFrameTime, 0);
+        this.lastFrameTime = now;
+        const frameScale = dt / (1000 / 60);
+        const followAlpha = 1 - Math.pow(1 - this.followEase, frameScale);
+        const fadeAlpha = 1 - Math.pow(1 - this.fadeEase, frameScale);
+
+        this.coords.opacity.value = lerp(
+            this.coords.opacity.value,
+            this.coords.opacity.current,
+            fadeAlpha
+        );
+        this.coords.x.value = lerp(this.coords.x.value, this.coords.x.current, followAlpha);
+        this.coords.y.value = lerp(this.coords.y.value, this.coords.y.current, followAlpha);
+
+        this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
+        this.element.style.opacity = this.coords.opacity.value;
+
+        this.rafId = requestAnimationFrame(this.loop);
+    }
+```
+
 - **Verify:** `npx jest tests/js/cursor`
+- **Guardrail:** Do not remove `const gsap = window.gsap;` at line 2 yet; `tests/js/cursor/cursor_init_timing.test.js:97` asserts `expect(cursorVendorContent).toContain('window.gsap')`.
 
 ---
 
-### 5. `[low]` Replace `attachHoverTargets` and `pointerEventHandler` with Event Delegation
+### Work order 4 `[low]` — Implement sleeping RAF loop during mouse idle
 
 - **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
 - **Find:**
-  `attachHoverTargets()`, `applyInlineCursorToElement()`, `bindPointerListeners()`, `pointerEventHandler()`, `overriddenElements`
+
+```javascript
+this.lastFrameTime = null;
+
+root.appendChild(this.element);
+```
+
 - **Change:**
-    1. Remove `overriddenElements` and `applyInlineCursorToElement()`.
-    2. Remove capturing listeners from `bindPointerListeners()`.
-    3. Implement event delegation in `CustomCursor`:
-       Bind a single `pointerover` and `pointerout` on `document` checking `e.target.closest(this.hoverTargets)`.
-    4. Remove per-element inline cursor style mutations (`node.style.setProperty('cursor', ...)`).
-- **Why safe:** [`css/cursor.css:7-29`](file:///Users/lz/dev/fund/css/cursor.css#L7-L29) already provides universal `cursor: none !important;` coverage. Event delegation works automatically for dynamically rendered content and eliminates the `Set` memory leak.
+
+```javascript
+this.lastFrameTime = null;
+this.isLooping = true;
+
+root.appendChild(this.element);
+```
+
+- **Find:**
+
+```javascript
+    onMouseMove(event) {
+        this.coords.x.current = event.clientX;
+        this.coords.y.current = event.clientY;
+        this.coords.opacity.current = 1;
+    }
+```
+
+- **Change:**
+
+```javascript
+    onMouseMove(event) {
+        this.coords.x.current = event.clientX;
+        this.coords.y.current = event.clientY;
+        this.coords.opacity.current = 1;
+
+        if (!this.isLooping) {
+            this.isLooping = true;
+            this.lastFrameTime = performance.now();
+            this.rafId = requestAnimationFrame(this.loop);
+        }
+    }
+```
+
+- **Find:**
+
+```javascript
+        this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
+        this.element.style.opacity = this.coords.opacity.value;
+
+        this.rafId = requestAnimationFrame(this.loop);
+    }
+```
+
+- **Change:**
+
+```javascript
+        this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
+        this.element.style.opacity = this.coords.opacity.value;
+
+        const dx = Math.abs(this.coords.x.current - this.coords.x.value);
+        const dy = Math.abs(this.coords.y.current - this.coords.y.value);
+        const dAlpha = Math.abs(this.coords.opacity.current - this.coords.opacity.value);
+
+        if (dx < 0.05 && dy < 0.05 && dAlpha < 0.005) {
+            this.coords.x.value = this.coords.x.current;
+            this.coords.y.value = this.coords.y.current;
+            this.coords.opacity.value = this.coords.opacity.current;
+            this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
+            this.element.style.opacity = this.coords.opacity.value;
+            this.isLooping = false;
+            return;
+        }
+
+        this.rafId = requestAnimationFrame(this.loop);
+    }
+```
+
+- **Find:**
+
+```javascript
+    destroy() {
+        if (this.disabled || !this.element) return;
+        cancelAnimationFrame(this.rafId);
+```
+
+- **Change:**
+
+```javascript
+    destroy() {
+        if (this.disabled || !this.element) return;
+        this.isLooping = false;
+        cancelAnimationFrame(this.rafId);
+```
+
 - **Verify:** `npx jest tests/js/cursor`
+- **Guardrail:** Reset `this.lastFrameTime = performance.now()` upon waking the loop in `onMouseMove` so the first frame delta `dt` does not jump across the idle period.
 
 ---
 
-### 6. `[skip]` Decouple `cursor.js` and `cursor-init.js` from `window.gsap`
+### Work order 5 `[low]` — Replace `attachHoverTargets` and `pointerEventHandler` with Event Delegation
 
-- **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js), [`js/cursor-init.js`](file:///Users/lz/dev/fund/js/cursor-init.js), [`tests/js/cursor/cursor_init_timing.test.js`](file:///Users/lz/dev/fund/tests/js/cursor/cursor_init_timing.test.js)
+- **File:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js)
+- **Find:**
+
+```javascript
+const overriddenElements = new Set();
+let pointerListenersBound = false;
+```
+
 - **Change:**
-  Remove `const gsap = window.gsap;` and `if (!window.gsap) return;`.
-  Update `cursor_init_timing.test.js` to assert that `cursor.js` no longer depends on GSAP.
-- **Guardrail:** `cursor_init_timing.test.js` specifically asserts that `cursor-init.js` and `cursor.js` contain `window.gsap`. Update the test suite concurrently so CI remains green.
+
+```javascript
+let pointerListenersBound = false;
+```
+
+- **Find:**
+
+```javascript
+const applyInlineCursorToElement = (element) => {
+    if (
+        !element ||
+        !element.style ||
+        overriddenElements.has(element) ||
+        element.classList?.contains('custom-cursor')
+    ) {
+        return;
+    }
+    try {
+        element.style.setProperty('cursor', HIDDEN_CURSOR_VALUE, 'important');
+        overriddenElements.add(element);
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to apply inline cursor style to element:', e);
+    }
+};
+
+const clearInlineCursorOverrides = () => {
+    overriddenElements.forEach((element) => {
+        try {
+            if (element.style?.cursor === HIDDEN_CURSOR_VALUE) {
+                element.style.removeProperty('cursor');
+            }
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to remove inline cursor style from element:', e);
+        }
+    });
+    overriddenElements.clear();
+};
+
+const pointerEventHandler = (event) => {
+    if (!htmlElement || !htmlElement.classList?.contains(FORCE_HIDE_CLASS)) return;
+    applyInlineCursorToElement(event.target);
+};
+
+const bindPointerListeners = () => {
+    if (pointerListenersBound || typeof document === 'undefined') return;
+    document.addEventListener('pointerover', pointerEventHandler, true);
+    document.addEventListener('pointerdown', pointerEventHandler, true);
+    document.addEventListener('focusin', pointerEventHandler, true);
+    pointerListenersBound = true;
+};
+
+const unbindPointerListeners = () => {
+    if (!pointerListenersBound || typeof document === 'undefined') return;
+    document.removeEventListener('pointerover', pointerEventHandler, true);
+    document.removeEventListener('pointerdown', pointerEventHandler, true);
+    document.removeEventListener('focusin', pointerEventHandler, true);
+    pointerListenersBound = false;
+};
+```
+
+- **Change:**
+
+```javascript
+const bindPointerListeners = () => {
+    pointerListenersBound = true;
+};
+
+const unbindPointerListeners = () => {
+    pointerListenersBound = false;
+};
+```
+
+- **Find:**
+
+```javascript
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseOut = this.onMouseOut.bind(this);
+        this.onMouseEnter = this.onMouseEnter.bind(this);
+        this.onMouseLeave = this.onMouseLeave.bind(this);
+        this.loop = this.loop.bind(this);
+        this.persistPosition = this.persistPosition.bind(this);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', this.persistPosition);
+            window.addEventListener('beforeunload', this.persistPosition);
+        }
+
+        window.addEventListener('pointermove', this.onMouseMove, { passive: true });
+        window.addEventListener('mouseout', this.onMouseOut);
+        this.attachHoverTargets();
+
+        this.rafId = requestAnimationFrame(this.loop);
+    }
+
+    attachHoverTargets() {
+        if (this.disabled) return;
+        const nodes = this.root.querySelectorAll(this.hoverTargets);
+        nodes.forEach((node) => {
+            node.style.setProperty('cursor', HIDDEN_CURSOR_VALUE, 'important');
+            node.addEventListener('mouseenter', this.onMouseEnter);
+            node.addEventListener('mouseleave', this.onMouseLeave);
+            node.addEventListener('click', this.onMouseLeave);
+        });
+    }
+```
+
+- **Change:**
+
+```javascript
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseOut = this.onMouseOut.bind(this);
+        this.onPointerOver = this.onPointerOver.bind(this);
+        this.onPointerOut = this.onPointerOut.bind(this);
+        this.loop = this.loop.bind(this);
+        this.persistPosition = this.persistPosition.bind(this);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', this.persistPosition);
+            window.addEventListener('beforeunload', this.persistPosition);
+        }
+
+        window.addEventListener('pointermove', this.onMouseMove, { passive: true });
+        window.addEventListener('mouseout', this.onMouseOut);
+        this.attachHoverTargets();
+
+        this.rafId = requestAnimationFrame(this.loop);
+    }
+
+    onPointerOver(event) {
+        if (event.target?.closest?.(this.hoverTargets)) {
+            this.core.classList.add(this.hoverClass);
+        }
+    }
+
+    onPointerOut(event) {
+        if (event.target?.closest?.(this.hoverTargets)) {
+            this.core.classList.remove(this.hoverClass);
+        }
+    }
+
+    attachHoverTargets() {
+        if (this.disabled || typeof document === 'undefined') return;
+        document.addEventListener('pointerover', this.onPointerOver, true);
+        document.addEventListener('pointerout', this.onPointerOut, true);
+    }
+```
+
+- **Find:**
+
+```javascript
+this.root.querySelectorAll(this.hoverTargets).forEach((node) => {
+    if (node.style?.cursor === HIDDEN_CURSOR_VALUE) {
+        node.style.removeProperty('cursor');
+    }
+    node.removeEventListener('mouseenter', this.onMouseEnter);
+    node.removeEventListener('mouseleave', this.onMouseLeave);
+    node.removeEventListener('click', this.onMouseLeave);
+});
+this.element.remove();
+releaseForceHideCursor();
+```
+
+- **Change:**
+
+```javascript
+if (typeof document !== 'undefined') {
+    document.removeEventListener('pointerover', this.onPointerOver, true);
+    document.removeEventListener('pointerout', this.onPointerOut, true);
+}
+this.element.remove();
+releaseForceHideCursor();
+```
+
 - **Verify:** `npx jest tests/js/cursor`
+- **Guardrail:** Pass `true` (capture phase) to delegated `pointerover`/`pointerout` listeners so events from nested children within interactive elements are reliably caught.
 
 ---
 
-### 7. `[skip]` Migrate `magnetic_nav.js` and `zoom.js` off GSAP & drop `gsap.min.js`
+### Work order 6 `[skip]` — Decouple `cursor.js` and `cursor-init.js` from `window.gsap`
 
-- **Files:**
-    - [`js/ui/magnetic_nav.js`](file:///Users/lz/dev/fund/js/ui/magnetic_nav.js): Replace `window.gsap.to()` with CSS transitions or Web Animations API (`el.animate()`).
-    - [`js/transactions/zoom.js`](file:///Users/lz/dev/fund/js/transactions/zoom.js): Migrate terminal zoom animation to Web Animations API or CSS transitions.
-    - HTML entries: Delete `<script src=".../js/vendor/gsap.min.js"></script>` from [`index.html:148`](file:///Users/lz/dev/fund/index.html#L148), [`calendar/index.html:176`](file:///Users/lz/dev/fund/calendar/index.html#L176), [`position/index.html:190`](file:///Users/lz/dev/fund/position/index.html#L190), [`terminal/index.html:285`](file:///Users/lz/dev/fund/terminal/index.html#L285), and [`sw.js:38`](file:///Users/lz/dev/fund/sw.js#L38).
-- **Guardrail:** Requires testing `tests/js/ui/magnetic_nav.test.js` and `tests/js/transactions/zoom.test.js`. Assign to a model for behavioral testing.
-- **Verify:** `make verify` · `make smoke`
+- **Files:** [`js/vendor/cursor.js`](file:///Users/lz/dev/fund/js/vendor/cursor.js), [`js/cursor-init.js`](file:///Users/lz/dev/fund/js/cursor-init.js), [`tests/js/cursor/cursor_init_timing.test.js`](file:///Users/lz/dev/fund/tests/js/cursor/cursor_init_timing.test.js)
+- **Why skipped:** `tests/js/cursor/cursor_init_timing.test.js:95-98` asserts `expect(cursorVendorContent).toContain('window.gsap')`. Removing GSAP references requires rewriting the test suite expectations concurrently; route to a stronger model.
+
+---
+
+### Work order 7 `[skip]` — Migrate `magnetic_nav.js` and `zoom.js` off GSAP & drop `gsap.min.js` from HTML
+
+- **Files:** [`js/ui/magnetic_nav.js`](file:///Users/lz/dev/fund/js/ui/magnetic_nav.js), [`js/transactions/zoom.js`](file:///Users/lz/dev/fund/js/transactions/zoom.js), [`index.html`](file:///Users/lz/dev/fund/index.html), [`calendar/index.html`](file:///Users/lz/dev/fund/calendar/index.html), [`position/index.html`](file:///Users/lz/dev/fund/position/index.html), [`terminal/index.html`](file:///Users/lz/dev/fund/terminal/index.html), [`sw.js`](file:///Users/lz/dev/fund/sw.js)
+- **Why skipped:** Cross-subsystem refactor requiring Web Animations API replacements for nav magnetism and terminal WebGL canvas sync on zoom (`zoom.js:87-89`). Route to a stronger model with full visual verification.
 
 ---
 
