@@ -208,7 +208,7 @@ export class CustomCursor {
             window.addEventListener('beforeunload', this.persistPosition);
         }
 
-        window.addEventListener('mousemove', this.onMouseMove);
+        window.addEventListener('pointermove', this.onMouseMove, { passive: true });
         window.addEventListener('mouseout', this.onMouseOut);
         this.attachHoverTargets();
 
@@ -294,7 +294,7 @@ export class CustomCursor {
             window.removeEventListener('pagehide', this.persistPosition);
             window.removeEventListener('beforeunload', this.persistPosition);
         }
-        window.removeEventListener('mousemove', this.onMouseMove);
+        window.removeEventListener('pointermove', this.onMouseMove);
         window.removeEventListener('mouseout', this.onMouseOut);
 
         this.root.querySelectorAll(this.hoverTargets).forEach((node) => {

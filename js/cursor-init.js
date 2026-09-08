@@ -9,7 +9,7 @@ function initCursorOnce() {
     const { cursor } = initCursor({
         cursor: {
             hoverTargets: 'a, button, .container li',
-            followEase: 0.4,
+            followEase: 0.75,
             fadeEase: 0.1,
             hoverScale: 3,
         },
