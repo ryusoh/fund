@@ -240,12 +240,10 @@ export class CustomCursor {
 
     onMouseEnter() {
         this.core.classList.add(this.hoverClass);
-        this.coords.scale.current = this.hoverScale;
     }
 
     onMouseLeave() {
         this.core.classList.remove(this.hoverClass);
-        this.coords.scale.current = 1;
     }
 
     loop(timestamp) {
@@ -265,19 +263,11 @@ export class CustomCursor {
             this.coords.opacity.current,
             fadeAlpha
         );
-        this.coords.scale.value = lerp(this.coords.scale.value, this.coords.scale.current, fadeAlpha);
         this.coords.x.value = lerp(this.coords.x.value, this.coords.x.current, followAlpha);
         this.coords.y.value = lerp(this.coords.y.value, this.coords.y.current, followAlpha);
 
-        gsap.set(this.element, {
-            opacity: this.coords.opacity.value,
-            x: this.coords.x.value,
-            y: this.coords.y.value,
-            zIndex: 100,
-        });
-        gsap.set(this.core, {
-            scale: this.coords.scale.value,
-        });
+        this.element.style.transform = `translate3d(${this.coords.x.value}px, ${this.coords.y.value}px, 0)`;
+        this.element.style.opacity = this.coords.opacity.value;
 
         this.rafId = requestAnimationFrame(this.loop);
     }
