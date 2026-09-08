@@ -192,7 +192,6 @@ export class CustomCursor {
             opacity: { current: 1, value: 1 },
             scale: { current: 1, value: 1 },
         };
-        this.persistPositionFrame = null;
         this.lastFrameTime = null;
 
         root.appendChild(this.element);
@@ -231,7 +230,6 @@ export class CustomCursor {
         this.coords.x.current = event.clientX;
         this.coords.y.current = event.clientY;
         this.coords.opacity.current = 1;
-        this.schedulePersistPosition();
     }
 
     onMouseOut(event) {
@@ -284,14 +282,6 @@ export class CustomCursor {
         this.rafId = requestAnimationFrame(this.loop);
     }
 
-    schedulePersistPosition() {
-        if (this.persistPositionFrame) return;
-        this.persistPositionFrame = requestAnimationFrame(() => {
-            this.persistPositionFrame = null;
-            this.persistPosition();
-        });
-    }
-
     persistPosition() {
         persistCursorPosition(this.coords.x.current, this.coords.y.current);
     }
@@ -299,10 +289,6 @@ export class CustomCursor {
     destroy() {
         if (this.disabled || !this.element) return;
         cancelAnimationFrame(this.rafId);
-        if (this.persistPositionFrame) {
-            cancelAnimationFrame(this.persistPositionFrame);
-            this.persistPositionFrame = null;
-        }
         this.persistPosition();
         if (typeof window !== 'undefined') {
             window.removeEventListener('pagehide', this.persistPosition);
