@@ -326,7 +326,8 @@ export class LiquidGlassRefraction {
             ...options,
         };
 
-        this.enabled = options.force === true || supportsSvgBackdropFilter();
+        this.enabled =
+            options.enabled !== false && (options.force === true || supportsSvgBackdropFilter());
         if (!this.enabled) {
             return;
         }

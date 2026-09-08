@@ -732,6 +732,7 @@ export const DONUT_REFRACTION = {
 // while spectralCaustic produces prismatic rainbow chromatic dispersion along the caustic rim.
 export const CALENDAR_ZOOM_REFRACTION = {
     ...TABLE_GLASS_EFFECT.refraction,
+    enabled: false,
     bezelWidth: 18,
     thickness: 26,
     displacementGain: 0, // Stationary background photo: no broken lines

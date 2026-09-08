@@ -684,4 +684,14 @@ describe('LiquidGlassRefraction lifecycle', () => {
         expect(midSlope.b).toBe(0);
         expect(midSmooth.b).toBeGreaterThan(100);
     });
+
+    test('does not initialize effect when options.enabled is false', () => {
+        const effect = new LiquidGlassRefraction(element, {
+            force: true,
+            enabled: false,
+        });
+        expect(effect.enabled).toBe(false);
+        expect(effect.filter).toBeUndefined();
+        effect.dispose();
+    });
 });
