@@ -299,6 +299,11 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   understated the balance chart ~45% at the real-time seam). `make twrr-validate`
   gates the bot's auto-commit on coverage/regression/seam invariants. Read
   before touching `scripts/twrr/` or debugging balance/history mismatches.
+- **Position day-change baseline (`prev_close.json`)** → the sidecar section of
+  `docs/twrr-data-pipeline.md`. `/position/` diffs live prices against the
+  sidecar; `twrr-refresh.yaml` writes it _before_ the pipeline appends today's
+  close (intentional), and US holidays legitimately leave the baseline a day or
+  more behind. A sidecar frozen for days = generated-but-not-committed artifact.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
 ## Lanes (keep PRs disjoint to avoid collisions)

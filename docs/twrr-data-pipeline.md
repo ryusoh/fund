@@ -40,6 +40,38 @@ Drift between the two shows up as a jump at the seam.
    don't use a tighter floor or dust demands live price coverage.
 6. **Bot data commits carry `[skip ci]`** — the generated-data commit bypasses
    the CI gate entirely; only `twrr-refresh.yaml`'s own steps guard it.
+7. **Generated-but-not-committed artifacts freeze silently** — a data file the
+   workflow writes but omits from its `git add` list never updates on the
+   deployed site, with no error anywhere. (2026-09-08: `data/prev_close.json`
+   froze at its first commit; /position/ day-change diffed live prices against
+   a days-old baseline.) `tests/python/test_twrr_refresh_workflow.py` guards
+   the commit list for the price artifacts.
+
+## `prev_close.json` sidecar (position day-change)
+
+The `/position/` day-change column diffs live `fund_data.json` prices against
+`data/prev_close.json` (`PREV_CLOSE_URL` in `js/config.js`, consumed in
+`js/services/dataService.js` `processAndEnrichHoldings`). The sidecar is
+`{ticker: {date, close}}` — each ticker's latest close from
+`historical_prices.json` — written by `write_prev_close_sidecar` in
+`scripts/data/update_fund_data.py`.
+
+- **Run order in `twrr-refresh.yaml` is intentional**: `update_fund_data.py`
+  runs _before_ `make twrr-refresh` appends today's close, so the sidecar is
+  always the _previous_ close. Don't reorder these steps.
+- **US market holidays produce no new close**, so the baseline legitimately
+  skips days (e.g. a Tuesday after a Monday holiday compares against Friday).
+  Check `prev_close.json`'s `date` field before assuming a bug.
+- Regenerate locally without a full fetch:
+
+    ```bash
+    venv/bin/python -c "
+    import json; from pathlib import Path
+    from scripts.data.update_fund_data import write_prev_close_sidecar
+    tickers = list(json.load(open('data/holdings_details.json')).keys())
+    write_prev_close_sidecar(tickers, Path('data'))
+    "
+    ```
 
 ## The gate
 
