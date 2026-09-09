@@ -351,6 +351,11 @@ files as the only source of truth.
   turns, run `git log --oneline -3` FIRST — a fresh user commit containing them means
   the work was accepted. Don't re-verify, re-explain, or dig into "where did my
   changes go"; check the log once and continue from HEAD.
+- **Prefer inline edits over subagent delegation for well-understood tasks in chat
+  sessions.** The user follows the work live and will interrupt a silent subagent
+  doing a task you already have full context on. Reserve subagents for genuinely
+  independent parallel investigations or tasks whose intermediate dumps would
+  flood the context.
 - **Automated skills and unattended runs are pre-authorized to commit locally:**
   When executing automated workflow skills (e.g. `/implement-action-items`,
   `/ship`, `/tdd`) or running unattended sessions (`/goal`), the invocation
