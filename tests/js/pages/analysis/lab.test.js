@@ -380,4 +380,111 @@ describe('analysis lab data loading', () => {
             global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
         });
     });
+
+    describe('normalizeConfig internal functions edge cases', () => {
+        it('normalizes legacy manual overrides', async () => {
+            const module = await import('@pages/analysis/lab.js');
+            const { normalizeConfig } = module.__analysisLabTesting;
+
+            const raw = {
+                symbol: 'TEST',
+                market: { price: 100 },
+                scenarios: [],
+                manual: {
+                    horizon: 10,
+                    kellyScale: 0.2,
+                    targetCagr: 0.15,
+                    benchmark: 5,
+                    price: 150,
+                    eps: 10,
+                    volatility: 'invalid',
+                    shares: 'invalid',
+                },
+                position: { shares: 50 },
+                model: {
+                    version: '2.0.0',
+                    engine: { type: 'fermat-pascal-kelly' },
+                    preferences: {
+                        overrides: {
+                            price: undefined,
+                            eps: 20,
+                        },
+                    },
+                },
+            };
+
+            const result = normalizeConfig(raw);
+            expect(result.model.preferences.horizon).toBe(10);
+            expect(result.model.preferences.kellyScale).toBe(0.2);
+            expect(result.model.preferences.targetCagr).toBe(0.15);
+            expect(result.model.preferences.overrides.price).toBe(150);
+            expect(result.model.preferences.overrides.eps).toBe(20);
+            expect(result.model.preferences.overrides.volatility).toBeUndefined();
+            expect(result.position.shares).toBe(50);
+        });
+
+        it('falls back to raw shares if holding details and legacy manual shares are missing', async () => {
+            const module = await import('@pages/analysis/lab.js');
+            const { normalizeConfig } = module.__analysisLabTesting;
+
+            const raw = {
+                symbol: 'TEST',
+                shares: 100,
+                scenarios: [],
+                position: {},
+            };
+
+            const result = normalizeConfig(raw);
+            expect(result.position.shares).toBe(100);
+        });
+
+        it('handles null models in normalizeConfig', async () => {
+            const module = await import('@pages/analysis/lab.js');
+            const { normalizeConfig } = module.__analysisLabTesting;
+
+            const raw = {
+                symbol: 'TEST',
+                model: null,
+                scenarios: [],
+            };
+
+            const result = normalizeConfig(raw);
+            expect(result.model.version).toBe('1.0.0');
+            expect(result.model.preferences.horizon).toBe(5);
+        });
+    });
+
+    describe('DOM manipulation fallback paths', () => {
+        it('handles replaceChildren missing and appends properly', async () => {
+            const originalSkip = global.__SKIP_ANALYSIS_AUTO_INIT__;
+            delete global.__SKIP_ANALYSIS_AUTO_INIT__;
+
+            document.body.innerHTML =
+                '<div id="summaryStats"></div><button id="btnBayesBull"></button><button id="btnBayesBear"></button><button id="btnBayesReset"></button><button id="btnRunMonteCarlo"></button>';
+            const summaryStatsEl = document.getElementById('summaryStats');
+
+            summaryStatsEl.replaceChildren = undefined;
+            // Provide a mock appendChild that won't throw
+            summaryStatsEl.appendChild = jest.fn();
+
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockRejectedValue(new Error('Test error'));
+
+            const originalConsoleError = console.error;
+            console.error = jest.fn();
+
+            jest.isolateModules(() => {
+                require('../../../../js/pages/analysis/lab.js');
+            });
+
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            global.fetch = originalFetch;
+            console.error = originalConsoleError;
+            global.__SKIP_ANALYSIS_AUTO_INIT__ = originalSkip;
+
+            // First for loading state, then for error state
+            expect(summaryStatsEl.appendChild).toHaveBeenCalledTimes(2);
+        });
+    });
 });
