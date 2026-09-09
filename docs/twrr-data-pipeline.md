@@ -44,34 +44,29 @@ Drift between the two shows up as a jump at the seam.
    workflow writes but omits from its `git add` list never updates on the
    deployed site, with no error anywhere. (2026-09-08: `data/prev_close.json`
    froze at its first commit; /position/ day-change diffed live prices against
-   a days-old baseline.) `tests/python/test_twrr_refresh_workflow.py` guards
-   the commit list for the price artifacts.
+   a days-old baseline. The sidecar was removed 2026-09-09 — the baseline is
+   now `fund_data.json` itself.) `tests/python/test_twrr_refresh_workflow.py`
+   guards the commit list for the price artifacts.
 
-## `prev_close.json` sidecar (position day-change)
+## Position day-change baseline (`fund_data.json`)
 
-The `/position/` day-change column diffs live `fund_data.json` prices against
-`data/prev_close.json` (`PREV_CLOSE_URL` in `js/config.js`, consumed in
-`js/services/dataService.js` `processAndEnrichHoldings`). The sidecar is
-`{ticker: {date, close}}` — each ticker's latest close from
-`historical_prices.json` — written by `write_prev_close_sidecar` in
-`scripts/data/update_fund_data.py`.
+The `/position/` day-change column diffs live prices (Cloudflare Worker, static
+fallback) against `data/fund_data.json` itself — the latest official
+regular-session close per held ticker, written nightly by
+`scripts/data/update_fund_data.py`. Consumed in `js/services/dataService.js`
+`processAndEnrichHoldings` as a plain `{ticker: price}` map, gated to trading
+days by `isTradingDay`.
 
-- **Run order in `twrr-refresh.yaml` is intentional**: `update_fund_data.py`
-  runs _before_ `make twrr-refresh` appends today's close, so the sidecar is
-  always the _previous_ close. Don't reorder these steps.
-- **US market holidays produce no new close**, so the baseline legitimately
-  skips days (e.g. a Tuesday after a Monday holiday compares against Friday).
-  Check `prev_close.json`'s `date` field before assuming a bug.
-- Regenerate locally without a full fetch:
-
-    ```bash
-    venv/bin/python -c "
-    import json; from pathlib import Path
-    from scripts.data.update_fund_data import write_prev_close_sidecar
-    tickers = list(json.load(open('data/holdings_details.json')).keys())
-    write_prev_close_sidecar(tickers, Path('data'))
-    "
-    ```
+- **The fetchers must return the official close, not the latest trade** — the
+  run happens at 21:15 UTC (17:15 ET, mid after-hours), so latest-trade fields
+  carry after-hours drift. yfinance uses daily bars (`interval="1d"`,
+  `auto_adjust=False`), Alpaca `dailyBar.c`, Polygon `day.close`, each falling
+  back to the latest trade when the daily bar is missing.
+- After-hours the live quote ≈ the baseline, so the day change reads ~0 / the
+  pure after-hours drift by design.
+- The previous `prev_close.json` sidecar was removed (2026-09-09): written
+  before the pipeline appended the latest close, it was always one trading
+  session stale during the following session (two after a holiday).
 
 ## The gate
 

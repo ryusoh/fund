@@ -7,7 +7,6 @@ import { isLocalhost } from '@utils/host.js';
 import {
     HOLDINGS_DETAILS_URL,
     FUND_DATA_URL,
-    PREV_CLOSE_URL,
     CF_WORKER_URL,
     COLORS,
     CHART_DEFAULTS,
@@ -48,6 +47,10 @@ export async function fetchPortfolioData() {
     const holdingsDetails = await fetchJSON(HOLDINGS_DETAILS_URL);
     const symbols = holdingsDetails ? Object.keys(holdingsDetails).join(',') : '';
 
+    // Static snapshot: latest official close per ticker, written nightly by the
+    // pipeline. Doubles as the fallback price source and the intraday
+    // day-change baseline, so it is always fetched.
+    const baselinePrices = await fetchJSON(FUND_DATA_URL);
     const isLocal = typeof window === 'undefined' || isLocalhost(window.location.hostname);
     let prices;
     if (!isLocal) {
@@ -61,12 +64,9 @@ export async function fetchPortfolioData() {
             // upstream source failed for some symbols only). Backfill gaps
             // from the static snapshot so a held ticker never renders as 0.
             const gaps = Object.keys(holdingsDetails || {}).filter((t) => !(prices[t] > 0));
-            if (gaps.length > 0) {
-                const staticPrices = await fetchJSON(FUND_DATA_URL);
-                for (const t of gaps) {
-                    if (staticPrices[t] > 0) {
-                        prices[t] = staticPrices[t];
-                    }
+            for (const t of gaps) {
+                if (baselinePrices[t] > 0) {
+                    prices[t] = baselinePrices[t];
                 }
             }
         } catch (err) {
@@ -74,19 +74,12 @@ export async function fetchPortfolioData() {
                 'Cloudflare Worker unavailable, falling back to static fund_data.json',
                 err
             );
-            prices = await fetchJSON(FUND_DATA_URL);
+            prices = baselinePrices;
         }
     } else {
-        prices = await fetchJSON(FUND_DATA_URL);
+        prices = baselinePrices;
     }
-    // Fetched last and fail-open: without the sidecar the intraday day-change
-    // is simply hidden. (Keeping this fetch last preserves the call order that
-    // tests/js/transactions/dataLoader.test.js documents.)
-    const prevClose = await fetchJSON(PREV_CLOSE_URL).catch((err) => {
-        logger.warn('Prev-close sidecar unavailable; intraday day-change hidden:', err);
-        return null;
-    });
-    return { holdingsDetails, prices, prevClose };
+    return { holdingsDetails, prices, baselinePrices };
 }
 
 function normalizeTickerSymbol(value) {
@@ -264,7 +257,7 @@ export async function fetchMarketRatiosForTickers(tickers = []) {
     }
 }
 
-function processAndEnrichHoldings(holdingsDetails, prices, prevCloseMap = null) {
+function processAndEnrichHoldings(holdingsDetails, prices, baselineMap = null) {
     let totalPortfolioValue = 0;
     let totalPnl = 0;
     let totalDayChange = null;
@@ -289,21 +282,21 @@ function processAndEnrichHoldings(holdingsDetails, prices, prevCloseMap = null) 
             }
         }
 
-        // Intraday change vs the previous close sidecar. Sub-cent deltas are
-        // price-precision residue (2-decimal live quotes vs full-precision
-        // closes), not real PnL — snap to flat, same as calculateRealtimePnl.
+        // Intraday change vs the last official close (static fund_data.json).
+        // Sub-cent deltas are price-precision residue (2-decimal live quotes vs
+        // full-precision closes), not real PnL — snap to flat, same as
+        // calculateRealtimePnl.
         let dayChangePrice = null;
         let dayChangeValue = null;
         let dayChangePercentage = null;
-        const prevCloseEntry = prevCloseMap ? prevCloseMap[ticker] : null;
-        const prevClosePrice =
-            prevCloseEntry && Number.isFinite(prevCloseEntry.close) && prevCloseEntry.close > 0
-                ? prevCloseEntry.close
+        const baselinePrice =
+            baselineMap && Number.isFinite(baselineMap[ticker]) && baselineMap[ticker] > 0
+                ? baselineMap[ticker]
                 : null;
-        if (prevClosePrice !== null && currentPrice > 0) {
-            dayChangePrice = currentPrice - prevClosePrice;
+        if (baselinePrice !== null && currentPrice > 0) {
+            dayChangePrice = currentPrice - baselinePrice;
             dayChangeValue = dayChangePrice * shares;
-            dayChangePercentage = (dayChangePrice / prevClosePrice) * 100;
+            dayChangePercentage = (dayChangePrice / baselinePrice) * 100;
             if (Math.abs(dayChangeValue) < 0.01) {
                 dayChangePrice = 0;
                 dayChangeValue = 0;
@@ -1209,7 +1202,7 @@ function _updatePerColumn(marketRatiosByTicker, sortedHoldings) {
 
 export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates, currencySymbols) {
     try {
-        const { holdingsDetails, prices, prevClose } = await fetchPortfolioData();
+        const { holdingsDetails, prices, baselinePrices } = await fetchPortfolioData();
 
         if (!holdingsDetails || !prices) {
             logger.error(
@@ -1225,10 +1218,10 @@ export async function loadAndDisplayPortfolioData(currentCurrency, exchangeRates
         }
 
         // Intraday day-change is only meaningful while the market trades; on
-        // weekends/holidays the live quote just restates the previous close.
+        // weekends/holidays the live quote just restates the last close.
         const showIntraday =
-            isTradingDay(getNyDate()) && prevClose && typeof prevClose === 'object'
-                ? prevClose
+            isTradingDay(getNyDate()) && baselinePrices && typeof baselinePrices === 'object'
+                ? baselinePrices
                 : null;
 
         const {

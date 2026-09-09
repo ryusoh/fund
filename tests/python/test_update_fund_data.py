@@ -59,16 +59,16 @@ def test_get_prices_overnight_priority(
     mock_now = datetime(2026, 3, 10, 23, 0, tzinfo=pytz.timezone("US/Eastern"))
     mock_datetime.now.return_value = mock_now
 
-    # Mock Alpaca success
+    # Mock Alpaca success: dailyBar close is preferred over the latest trade
     mock_resp = MagicMock()
-    mock_resp.json.return_value = {"AAPL": {"latestTrade": {"p": 155.0}}}
+    mock_resp.json.return_value = {"AAPL": {"dailyBar": {"c": 154.0}, "latestTrade": {"p": 155.0}}}
     mock_resp.status_code = 200
     mock_requests_get.return_value = mock_resp
 
     tickers = ["AAPL"]
     prices = get_prices(tickers)
 
-    assert prices == {"AAPL": 155.0}
+    assert prices == {"AAPL": 154.0}
     # Alpaca SHOULD be called
     assert mock_requests_get.called
     # yfinance SHOULD NOT be called initially
@@ -132,8 +132,10 @@ def test_get_prices_standard_priority(
     prices = get_prices(tickers)
 
     assert prices == {"AAPL": 150.0}
-    # yfinance SHOULD be called
-    assert mock_yf_download.called
+    # yfinance SHOULD be called, fetching daily bars (official close)
+    mock_yf_download.assert_called_with(
+        ["AAPL"], period="5d", interval="1d", auto_adjust=False, progress=False
+    )
     # Alpaca SHOULD NOT be called
     mock_requests_get.assert_not_called()
 
@@ -206,20 +208,23 @@ def test_get_prices_polygon_fallback(
 
     mock_requests_get.side_effect = mock_requests_get_side_effect
 
-    # Mock Polygon to return data
+    # Mock Polygon to return data: AAPL has a daily aggregate close (preferred),
+    # TSLA only a last trade (fallback)
     mock_client_instance = mock_rest_client.return_value.__enter__.return_value
     mock_snapshot1 = MagicMock()
     mock_snapshot1.ticker = "AAPL"
+    mock_snapshot1.day.close = 165.0
     mock_snapshot1.last_trade.price = 160.0
     mock_snapshot2 = MagicMock()
     mock_snapshot2.ticker = "TSLA"
+    mock_snapshot2.day = None
     mock_snapshot2.last_trade.price = 210.0
     mock_client_instance.get_snapshot_all.return_value = [mock_snapshot1, mock_snapshot2]
 
     tickers = ["AAPL", "TSLA"]
     prices = get_prices(tickers)
 
-    assert prices == {"AAPL": 160.0, "TSLA": 210.0}
+    assert prices == {"AAPL": 165.0, "TSLA": 210.0}
     mock_client_instance.get_snapshot_all.assert_called_once()
 
 
@@ -249,33 +254,3 @@ def test_main_with_and_without_args(
     custom_output = tmp_path / "custom_output.json"
     main(holdings_path=custom_holdings, output_path=custom_output)
     mock_get_tickers.assert_called_with(custom_holdings)
-
-
-def test_write_prev_close_sidecar(tmp_path):
-    import json
-
-    from scripts.data.update_fund_data import write_prev_close_sidecar
-
-    historical = {
-        "AAPL": {"2026-08-31": 150.0, "2026-09-01": 152.5},
-        "TSLA": {"2026-09-01": 210.0},
-    }
-    (tmp_path / "historical_prices.json").write_text(json.dumps(historical))
-
-    sidecar = write_prev_close_sidecar(["AAPL", "TSLA", "MSFT"], tmp_path)
-
-    assert sidecar == {
-        "AAPL": {"date": "2026-09-01", "close": 152.5},
-        "TSLA": {"date": "2026-09-01", "close": 210.0},
-    }
-    written = json.loads((tmp_path / "prev_close.json").read_text())
-    assert written == sidecar
-
-
-def test_write_prev_close_sidecar_missing_historical(tmp_path):
-    from scripts.data.update_fund_data import write_prev_close_sidecar
-
-    sidecar = write_prev_close_sidecar(["AAPL"], tmp_path)
-
-    assert sidecar == {}
-    assert not (tmp_path / "prev_close.json").exists()

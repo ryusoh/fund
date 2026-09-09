@@ -13,8 +13,9 @@ point not appended", wrong payload shapes), not a fetch error.
 
 Rule: a new fetch goes **last** in `fetchPortfolioData` (after the prices fetch
 resolves), and the call-order comment in `dataLoader.test.js` gets updated to
-match. (Added 2026-09 when the `prev_close.json` sidecar fetch cost a full
-red-suite cycle + a stash A/B to diagnose.)
+match. (Added 2026-09 when an extra sidecar fetch cost a full red-suite cycle
+
+- a stash A/B to diagnose.)
 
 ## Position footer visibility rules are split across TWO stylesheets
 

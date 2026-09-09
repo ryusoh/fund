@@ -31,10 +31,10 @@ export const getBaseUrl = (location) => {
 
 export const BASE_URL = typeof window !== 'undefined' ? getBaseUrl(window.location) : '';
 export const HOLDINGS_DETAILS_URL = '../data/holdings_details.json';
+// Latest official close per held ticker (written nightly by
+// scripts/data/update_fund_data.py); doubles as the intraday day-change
+// baseline on the position page.
 export const FUND_DATA_URL = '../data/fund_data.json';
-// Latest close per held ticker (written by scripts/data/update_fund_data.py);
-// the position page diffs live prices against it for intraday PnL.
-export const PREV_CLOSE_URL = '../data/prev_close.json';
 // Cloudflare Worker that serves live prices in production.
 // Falls back to the local static file in dev (see dataService.fetchPortfolioData).
 export const CF_WORKER_URL = 'https://api.lyeutsaon.com';

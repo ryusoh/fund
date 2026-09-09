@@ -31,8 +31,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_HOLDINGS_PATH = BASE_DIR / "data" / "holdings_details.json"
 DEFAULT_OUTPUT_PATH = BASE_DIR / "data" / "fund_data.json"
-PREV_CLOSE_FILENAME = "prev_close.json"
-HISTORICAL_PRICES_FILENAME = "historical_prices.json"
 
 
 def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
@@ -102,11 +100,17 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
 
         for ticker in ticker_list:
             snapshot = snapshots.get(ticker)
-            if snapshot and "latestTrade" in snapshot:
-                price = snapshot["latestTrade"].get("p")
-                if price:
-                    data[ticker] = float(price)
-                    logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
+            if not snapshot:
+                continue
+            # Prefer the completed daily bar close (the official regular-session
+            # close once the run happens after 16:00 ET); fall back to the
+            # latest trade if the daily bar is missing.
+            price = (snapshot.get("dailyBar") or {}).get("c")
+            if not price:
+                price = (snapshot.get("latestTrade") or {}).get("p")
+            if price:
+                data[ticker] = float(price)
+                logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
 
     except Exception as e:
         error_msg = str(e)
@@ -138,7 +142,12 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     def fetch_from_yfinance(tickers: List[str]):
         logging.info(f"Trying to fetch prices from yfinance for: {', '.join(tickers)}")
         try:
-            hist = yf.download(tickers, period="1d", interval="1m", prepost=True, progress=False)
+            # Daily bars, unadjusted: the last row is the official regular-session
+            # close (no pre/post-market contamination), matching the live-quote
+            # baseline semantics the position page needs.
+            hist = yf.download(
+                tickers, period="5d", interval="1d", auto_adjust=False, progress=False
+            )
             if "Close" in hist:
                 close_data = hist["Close"]
                 if isinstance(close_data, pd.DataFrame):
@@ -198,15 +207,16 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                     if snapshots:
                         for snapshot in snapshots:
                             t = snapshot.ticker
-                            if (
-                                t in tickers_for_polygon
-                                and hasattr(snapshot, "last_trade")
-                                and snapshot.last_trade
-                            ):
+                            if t not in tickers_for_polygon:
+                                continue
+                            # Prefer the daily aggregate close (official close
+                            # after 16:00 ET); fall back to the last trade.
+                            p = getattr(getattr(snapshot, "day", None), "close", None)
+                            if not p and hasattr(snapshot, "last_trade") and snapshot.last_trade:
                                 p = snapshot.last_trade.price
-                                if p:
-                                    data[t] = float(p)
-                                    logging.info(f"Fetched price for {t} from Polygon.io: {p}")
+                            if p:
+                                data[t] = float(p)
+                                logging.info(f"Fetched price for {t} from Polygon.io: {p}")
                 except Exception as e:
                     error_msg = str(e)
                     if safe_api_key:
@@ -223,37 +233,6 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             logging.error(f"An error occurred with Polygon.io: {error_msg}")
 
     return data
-
-
-def write_prev_close_sidecar(tickers: List[str], output_dir: Path) -> Dict[str, Dict[str, Any]]:
-    """Writes {ticker: {date, close}} with each ticker's latest close from
-    historical_prices.json. The position page diffs live prices against this
-    sidecar to show intraday PnL. Best-effort: on any failure the existing
-    sidecar is left untouched.
-    """
-    historical_path = output_dir / HISTORICAL_PRICES_FILENAME
-    sidecar_path = output_dir / PREV_CLOSE_FILENAME
-    if not historical_path.exists():
-        logging.warning(f"{historical_path} not found. Skipping prev-close sidecar update.")
-        return {}
-    try:
-        with historical_path.open("r", encoding="utf-8") as f:
-            historical = json.load(f)
-        sidecar: Dict[str, Dict[str, Any]] = {}
-        for ticker in tickers:
-            series = historical.get(ticker)
-            if not isinstance(series, dict) or not series:
-                continue
-            last_date = max(series)  # ISO dates sort lexicographically
-            sidecar[ticker] = {"date": last_date, "close": series[last_date]}
-        with sidecar_path.open("w", encoding="utf-8") as f:
-            json.dump(sidecar, f, indent=4, ensure_ascii=False)
-            f.write("\n")
-        logging.info(f"Prev-close sidecar written to {sidecar_path}")
-        return sidecar
-    except (json.JSONDecodeError, OSError) as e:
-        logging.error(f"Could not write prev-close sidecar to {sidecar_path}: {e}")
-        return {}
 
 
 def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = None) -> None:
@@ -317,8 +296,6 @@ def main(holdings_path: Optional[Path] = None, output_path: Optional[Path] = Non
         logging.error(f"Could not write data to {output_path}: {e}")
     except Exception as e:
         logging.error(f"An unexpected error occurred while writing to {output_path}: {e}")
-
-    write_prev_close_sidecar(tickers_to_fetch, output_path.parent)
 
 
 if __name__ == "__main__":
