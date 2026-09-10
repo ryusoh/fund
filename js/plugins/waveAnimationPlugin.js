@@ -105,6 +105,46 @@ function updateWaveState(chart, currentOuterRadiusValue) {
     });
 }
 
+function _manageAnimationState(chart, animState, outerRadius) {
+    if (!animState.animationFrameId && outerRadius > 0) {
+        _startWaveAnimation(chart);
+    } else if (animState.animationFrameId && outerRadius <= 0 && animState.waves.length === 0) {
+        _stopWaveAnimation(chart);
+    }
+}
+
+function _applyWaveClipping(ctx, width, height, centerX, centerY, outerRadius) {
+    if (outerRadius > 0 && centerX && centerY) {
+        ctx.beginPath();
+        ctx.rect(0, 0, width, height);
+        ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2, true);
+        ctx.clip('evenodd');
+    }
+}
+
+function _drawSingleWave(ctx, wave, centerX, centerY, rgb, outerRadius) {
+    if (wave.radius > outerRadius + 3 && wave.opacity > 0 && centerX && centerY) {
+        const r = wave.radius;
+        const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
+        const op = wave.opacity;
+        grad.addColorStop(0, `rgba(${rgb}, ${op.toFixed(3)})`);
+        grad.addColorStop(0.85, `rgba(${rgb}, ${op.toFixed(3)})`);
+        grad.addColorStop(0.95, `rgba(${rgb}, ${Math.min(1, op * 1.4).toFixed(3)})`);
+        grad.addColorStop(1, `rgba(${rgb}, 0)`);
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(160, 210, 255, ${(op * 0.35).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+}
+
 export const waveAnimationPlugin = {
     id: 'waveCenterAnimation',
     beforeInit: function (chart) {
@@ -132,55 +172,33 @@ export const waveAnimationPlugin = {
 
         const animState = chart.waveAnimation;
         const meta = chart.getDatasetMeta(0);
-        const outerRadius = meta?.data?.[0]?.outerRadius || 0;
-        const centerX = meta?.data?.[0]?.x || 0;
-        const centerY = meta?.data?.[0]?.y || 0;
-
-        if (!animState.animationFrameId && outerRadius > 0) {
-            _startWaveAnimation(chart);
-        } else if (animState.animationFrameId && outerRadius <= 0 && animState.waves.length === 0) {
-            _stopWaveAnimation(chart);
+        let outerRadius = 0,
+            centerX = 0,
+            centerY = 0;
+        if (meta && meta.data && meta.data[0]) {
+            outerRadius = meta.data[0].outerRadius || 0;
+            centerX = meta.data[0].x || 0;
+            centerY = meta.data[0].y || 0;
         }
+
+        _manageAnimationState(chart, animState, outerRadius);
 
         const { ctx } = chart;
         ctx.save();
-        if (outerRadius > 0 && centerX && centerY) {
-            ctx.beginPath();
-            ctx.rect(0, 0, chart.width, chart.height);
-            ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2, true);
-            ctx.clip('evenodd');
-        }
+
+        _applyWaveClipping(ctx, chart.width, chart.height, centerX, centerY, outerRadius);
+
         for (let i = 0; i < animState.waves.length; i++) {
-            const wave = animState.waves[i];
-            if (wave.radius > outerRadius + 3 && wave.opacity > 0 && centerX && centerY) {
-                const r = wave.radius;
-                const rgb = animState.config.BASE_COLOR_RGB_TRIPLET;
-
-                // Solid dark body with a bright leading-edge wavefront.
-                // The bulk of the disc is opaque black (atmosphere/grounding),
-                // with energy concentrated at the expanding outer rim.
-                const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
-                const op = wave.opacity;
-                grad.addColorStop(0, `rgba(${rgb}, ${op.toFixed(3)})`);
-                grad.addColorStop(0.85, `rgba(${rgb}, ${op.toFixed(3)})`);
-                // Leading edge: slight intensity peak at the wavefront
-                grad.addColorStop(0.95, `rgba(${rgb}, ${Math.min(1, op * 1.4).toFixed(3)})`);
-                grad.addColorStop(1, `rgba(${rgb}, 0)`);
-
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-                ctx.fillStyle = grad;
-                ctx.fill();
-
-                // Diffraction fringe: light bending around the opaque wavefront edge
-                // produces a thin blue-white rim glow, connecting to the glass palette
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(160, 210, 255, ${(op * 0.35).toFixed(3)})`;
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-            }
+            _drawSingleWave(
+                ctx,
+                animState.waves[i],
+                centerX,
+                centerY,
+                animState.config.BASE_COLOR_RGB_TRIPLET,
+                outerRadius
+            );
         }
+
         ctx.restore();
     },
 };
