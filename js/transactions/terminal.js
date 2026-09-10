@@ -131,7 +131,8 @@ function updateCrosshairDetailsList(detailsList, snapshot) {
     }
 
     if (Array.isArray(snapshot.series)) {
-        snapshot.series.forEach((series) => {
+        for (let i = 0; i < snapshot.series.length; i++) {
+            const series = snapshot.series[i];
             const formattedLines = series.formatted.split('\n');
             const mainVal = formattedLines[0];
 
@@ -163,7 +164,7 @@ function updateCrosshairDetailsList(detailsList, snapshot) {
             }
 
             detailsList.appendChild(rowDiv);
-        });
+        }
     }
 }
 
@@ -203,7 +204,8 @@ function updateCrosshairRangeDetails(rangeContainer, rangeSummary) {
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'terminal-crosshair-range-body';
 
-        rangeSummary.entries.forEach((entry) => {
+        for (let i = 0; i < rangeSummary.entries.length; i++) {
+            const entry = rangeSummary.entries[i];
             const rowDiv = document.createElement('div');
             rowDiv.className = 'terminal-crosshair-range-row';
 
@@ -226,7 +228,7 @@ function updateCrosshairRangeDetails(rangeContainer, rangeSummary) {
             rowDiv.appendChild(keySpan);
             rowDiv.appendChild(valSpan);
             bodyDiv.appendChild(rowDiv);
-        });
+        }
 
         rangeContainer.appendChild(bodyDiv);
     }

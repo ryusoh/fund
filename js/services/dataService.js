@@ -93,12 +93,13 @@ async function loadAnalysisTickerPaths() {
     const indexPayload = await fetchJSON(ANALYSIS_INDEX_URL);
     const entries = Array.isArray(indexPayload?.tickers) ? indexPayload.tickers : [];
     const tickerPathMap = new Map();
-    entries.forEach((entry) => {
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
         const normalized = normalizeTickerSymbol(entry?.symbol);
         if (normalized && typeof entry?.path === 'string' && entry.path.trim().length > 0) {
             tickerPathMap.set(normalized, entry.path);
         }
-    });
+    }
     analysisTickerPathCache = tickerPathMap;
     return analysisTickerPathCache;
 }
@@ -442,14 +443,15 @@ function createHoldingRow(
         { class: 'pnl-percentage', text: '' },
     ];
 
-    columns.forEach((col) => {
+    for (let i = 0; i < columns.length; i++) {
+        const col = columns[i];
         const td = document.createElement('td');
         if (col.class) {
             td.className = col.class;
         }
         td.textContent = col.text;
         row.appendChild(td);
-    });
+    }
 
     const pnlCell = row.querySelector('td.pnl');
     const pnlPercentageCell = row.querySelector('td.pnl-percentage');
@@ -544,28 +546,31 @@ function createHoldingRow(
 // figure's right edge stays aligned across rows, whatever the currency —
 // fixed ch widths break for JPY/KRW amounts, so measure the widest stack.
 function alignDayChangeStacks() {
-    ['td.price', 'td.value'].forEach((cellSelector) => {
+    const cellSelectors = ['td.price', 'td.value'];
+    for (let i = 0; i < cellSelectors.length; i++) {
+        const cellSelector = cellSelectors[i];
         const stacks = document.querySelectorAll(`${cellSelector} .day-change-stack`);
         if (stacks.length < 2) {
-            return;
+            continue;
         }
         let maxWidth = 0;
-        stacks.forEach((stack) => {
+        for (let j = 0; j < stacks.length; j++) {
+            const stack = stacks[j];
             stack.style.width = '';
             maxWidth = Math.max(maxWidth, stack.scrollWidth);
-        });
+        }
         // The first render happens while the table is still display:none (it
         // is revealed by the donut-center toggle), so every stack measures 0.
         // Baking 0px in would make the right-aligned stack text overflow
         // leftward over the main figure — skip instead; the ResizeObserver
         // below re-aligns once the table is actually visible.
         if (maxWidth === 0) {
-            return;
+            continue;
         }
         stacks.forEach((stack) => {
             stack.style.width = `${maxWidth}px`;
         });
-    });
+    }
 }
 
 // Re-align when the table transitions from hidden to visible (tbody goes
@@ -610,7 +615,8 @@ function updateTableAndPrepareChartData(
     // Use DocumentFragment to batch DOM insertions for better performance
     const fragment = document.createDocumentFragment();
 
-    sortedHoldings.forEach((holding, index) => {
+    for (let index = 0; index < sortedHoldings.length; index++) {
+        const holding = sortedHoldings[index];
         const row = createHoldingRow(
             holding,
             totalPortfolioValueUSD,
@@ -644,7 +650,7 @@ function updateTableAndPrepareChartData(
                 : BASE_URL + originalLogoInfo.src;
         const logoInfo = { ...originalLogoInfo, src: resolvedSrc };
         chartData.datasets[0].images.push(logoInfo);
-    });
+    }
 
     // Append all rows at once
     tbody.appendChild(fragment);
