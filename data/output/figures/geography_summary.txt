@@ -14,9 +14,9 @@ CONTINENT BREAKDOWN (Ranked)
 
 SUB-REGION BREAKDOWN (Ranked)
 ----------------------------------------------------------------------
-  Northern America           72.98%  ████████████████████████████████████
-  East Asia                  20.57%  ██████████
-  Western Europe              3.18%  █
+  Northern America           72.97%  ████████████████████████████████████
+  East Asia                  20.56%  ██████████
+  Western Europe              3.19%  █
   South Asia                  0.58%  
   Northern Europe             0.48%  
   Australasia                 0.48%  
@@ -29,12 +29,12 @@ SUB-REGION BREAKDOWN (Ranked)
 
 ALL COUNTRIES (Ranked)
 ----------------------------------------------------------------------
-   1. United States            72.10%  ████████████████████████████████████
-   2. China                    18.15%  █████████
+   1. United States            72.09%  ████████████████████████████████████
+   2. China                    18.14%  █████████
    3. Japan                     1.63%  
    4. United Kingdom            0.94%  
    5. Canada                    0.88%  
-   6. Taiwan                    0.66%  
+   6. Taiwan                    0.67%  
    7. Switzerland               0.64%  
    8. India                     0.58%  
    9. France                    0.58%  
