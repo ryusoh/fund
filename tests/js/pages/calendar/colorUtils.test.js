@@ -327,4 +327,91 @@ describe('colorUtils', () => {
         applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, byDate);
         expect(cells[0].attrCalls.length).toBe(0);
     });
+
+    it('returns early when inputs are invalid', () => {
+        const d3Stub = createD3Stub([]);
+
+        applyCurrencyColors(null, { selectedCurrency: 'USD' }, new Map());
+        applyCurrencyColors(
+            { select: jest.fn(() => ({})) },
+            { selectedCurrency: 'USD' },
+            new Map()
+        );
+        applyCurrencyColors(d3Stub, null, new Map());
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, {});
+    });
+
+    it('resolves custom scale config', () => {
+        const cells = [makeCell('2025-01-01')];
+        const d3Stub = createD3Stub(cells);
+        const byDate = new Map([['2025-01-01', { valueUSD: 0.05 }]]);
+
+        const scaleConfig = {
+            domain: [-0.1, 0.1],
+            range: ['red', 'grey', 'green'],
+        };
+
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, byDate, 'selector', scaleConfig);
+        expect(cells[0].attrCalls.length).toBeGreaterThan(0);
+    });
+
+    it('skips cells with invalid dates', () => {
+        const cells = [
+            makeCell('invalid-date'),
+            {
+                ...makeCell('2025-01-02'),
+                selection: { datum: jest.fn(() => null), attr: jest.fn(), style: jest.fn() },
+            },
+            {
+                ...makeCell('2025-01-03'),
+                selection: {
+                    datum: jest.fn(() => ({ t: null })),
+                    attr: jest.fn(),
+                    style: jest.fn(),
+                },
+            },
+            {
+                ...makeCell('2025-01-04'),
+                selection: {
+                    datum: jest.fn(() => new Date('invalid')),
+                    attr: jest.fn(),
+                    style: jest.fn(),
+                },
+            },
+        ];
+
+        const d3Stub = createD3Stub(cells);
+        const byDate = new Map([
+            ['2025-01-02', { valueUSD: 0.05 }],
+            ['2025-01-03', { valueUSD: 0.05 }],
+            ['2025-01-04', { valueUSD: 0.05 }],
+        ]);
+
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, byDate);
+    });
+
+    it('handles empty entries gracefully', () => {
+        const cells = [makeCell('2025-01-01')];
+        const d3Stub = createD3Stub(cells);
+        const byDate = new Map();
+
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, byDate);
+        expect(cells[0].attrCalls).toContain('NEU');
+    });
+
+    it('handles value as property without currency specific field', () => {
+        const cells = [makeCell('2025-01-01')];
+        const d3Stub = createD3Stub(cells);
+        const byDate = new Map([['2025-01-01', { value: 0.05 }]]);
+
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, byDate);
+        expect(cells[0].attrCalls).toContain('POS');
+    });
+
+    it('returns null for colorScale if d3Instance is invalid', () => {
+        const d3Stub = {
+            select: jest.fn(() => ({ selectAll: jest.fn(() => ({ each: jest.fn() })) })),
+        };
+        applyCurrencyColors(d3Stub, { selectedCurrency: 'USD' }, new Map());
+    });
 });
