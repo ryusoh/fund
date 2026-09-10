@@ -94,10 +94,11 @@ export function createUiController({ chartManager }) {
 
     function initLegendToggles() {
         const items = document.querySelectorAll('.chart-legend .legend-item[data-series]');
-        items.forEach((item) => {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
             const key = item.dataset.series;
             if (!key) {
-                return;
+                continue;
             }
             item.addEventListener('click', () => {
                 const disabled = item.classList.toggle('legend-disabled');
@@ -106,7 +107,7 @@ export function createUiController({ chartManager }) {
                     chartManager.redraw();
                 }
             });
-        });
+        }
     }
 
     initLegendToggles();
