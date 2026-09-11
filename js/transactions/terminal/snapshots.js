@@ -730,28 +730,7 @@ export function getVolatilitySnapshotLine({ includeHidden = false } = {}) {
     return `${header}\n${lines.join('\n')}`;
 }
 
-export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) {
-    if (
-        transactionState.activeChart !== 'composition' &&
-        transactionState.activeChart !== 'compositionAbs'
-    ) {
-        return null;
-    }
-    const data = await loadCompositionSnapshotData();
-    if (
-        !data ||
-        typeof data !== 'object' ||
-        !Array.isArray(data.dates) ||
-        data.dates.length === 0
-    ) {
-        return null;
-    }
-
-    const dates = data.dates;
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
-
+function _getCompositionTargetIndex(dates, filterFrom, filterTo) {
     const filteredIndices = [];
     for (let i = 0; i < dates.length; i++) {
         const date = parseDateSafe(dates[i]);
@@ -765,13 +744,10 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     if (!Number.isFinite(targetIndex) || targetIndex < 0) {
         targetIndex = dates.length - 1;
     }
+    return targetIndex;
+}
 
-    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
-    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
-    const dateLabel = dates[targetIndex];
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
-    const compositionSeries = data.composition || data.series || {};
+function _buildCompositionHoldings(compositionSeries, totalValueRaw, targetIndex, dateLabel, selectedCurrency) {
     const holdings = [];
     const compositionEntries = Object.entries(compositionSeries);
     for (let i = 0; i < compositionEntries.length; i += 1) {
@@ -789,18 +765,10 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
             absolute: convertedValue,
         });
     }
+    return holdings;
+}
 
-    if (!holdings.length) {
-        return null;
-    }
-
-    holdings.sort((a, b) => b.percent - a.percent);
-
-    let displayHoldings = holdings;
-    const filterTickers = getCompositionFilterTickers();
-    const assetClassFilter = getCompositionAssetClassFilter();
-
-    // Build a matcher that combines explicit tickers and asset class with OR logic
+function _applyCompositionFilters(holdings, filterTickers, assetClassFilter) {
     const explicitSet =
         Array.isArray(filterTickers) && filterTickers.length > 0
             ? new Set(
@@ -812,39 +780,46 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     const hasClassFilter = assetClassFilter === 'etf' || assetClassFilter === 'stock';
     const shouldMatchEtf = assetClassFilter === 'etf';
 
-    if (explicitSet || hasClassFilter) {
-        const selected = holdings.filter((holding) => {
-            const upperTicker = holding.ticker.toUpperCase();
-            if (explicitSet && explicitSet.has(upperTicker)) {
-                return true;
-            }
-            if (hasClassFilter) {
-                if (upperTicker === 'OTHERS') {
-                    return false;
-                }
-                const ac = getHoldingAssetClass(holding.ticker);
-                return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
-            }
-            return false;
-        });
-        if (selected.length > 0) {
-            const selectedSet = new Set(selected.map((h) => h.ticker.toUpperCase()));
-            const remainder = holdings.filter(
-                (holding) => !selectedSet.has(holding.ticker.toUpperCase())
-            );
-            if (remainder.length > 0) {
-                const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
-                const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
-                selected.push({
-                    ticker: 'Others',
-                    percent: totalPercent,
-                    absolute: totalAbsolute,
-                });
-            }
-            displayHoldings = selected;
-        }
+    if (!explicitSet && !hasClassFilter) {
+        return holdings;
     }
 
+    const selected = holdings.filter((holding) => {
+        const upperTicker = holding.ticker.toUpperCase();
+        if (explicitSet && explicitSet.has(upperTicker)) {
+            return true;
+        }
+        if (hasClassFilter) {
+            if (upperTicker === 'OTHERS') {
+                return false;
+            }
+            const ac = getHoldingAssetClass(holding.ticker);
+            return shouldMatchEtf ? ac === 'etf' : ac !== 'etf';
+        }
+        return false;
+    });
+
+    if (selected.length === 0) {
+        return holdings;
+    }
+
+    const selectedSet = new Set(selected.map((h) => h.ticker.toUpperCase()));
+    const remainder = holdings.filter(
+        (holding) => !selectedSet.has(holding.ticker.toUpperCase())
+    );
+    if (remainder.length > 0) {
+        const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
+        const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);
+        selected.push({
+            ticker: 'Others',
+            percent: totalPercent,
+            absolute: totalAbsolute,
+        });
+    }
+    return selected;
+}
+
+function _formatCompositionHoldings(displayHoldings) {
     const formatted = displayHoldings
         .filter((holding) => Number.isFinite(holding.percent) && holding.percent > 0.1)
         .map((holding) => {
@@ -862,16 +837,78 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     for (let i = 0; i < formatted.length; i += 3) {
         lines.push(formatted.slice(i, i + 3).join('   '));
     }
+    return lines;
+}
 
-    let hint = '';
+function _getCompositionHint(labelPrefix) {
     if (labelPrefix === 'Composition') {
-        hint =
-            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'sectors/geography/marketcap' to switch charts)";
-    } else if (labelPrefix === 'Composition Abs') {
-        hint =
-            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'sectors/geography/marketcap' to switch charts)";
+        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'sectors/geography/marketcap' to switch charts)";
+    }
+    if (labelPrefix === 'Composition Abs') {
+        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'sectors/geography/marketcap' to switch charts)";
+    }
+    return '';
+}
+
+function _isCompositionDataValid(data) {
+    return data && typeof data === 'object' && Array.isArray(data.dates) && data.dates.length > 0;
+}
+
+function _isActiveCompositionChart(activeChart) {
+    return activeChart === 'composition' || activeChart === 'compositionAbs';
+}
+
+function _prepareCompositionState(data, transactionState) {
+    const { chartDateRange, selectedCurrency = 'USD' } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const targetIndex = _getCompositionTargetIndex(data.dates, filterFrom, filterTo);
+
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const dateLabel = data.dates[targetIndex];
+    const compositionSeries = data.composition || data.series || {};
+    return { targetIndex, totalValueRaw, dateLabel, selectedCurrency, compositionSeries };
+}
+
+export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' } = {}) {
+    if (!_isActiveCompositionChart(transactionState.activeChart)) {
+        return null;
+    }
+    const data = await loadCompositionSnapshotData();
+    if (!_isCompositionDataValid(data)) {
+        return null;
     }
 
+    const { targetIndex, totalValueRaw, dateLabel, selectedCurrency, compositionSeries } =
+        _prepareCompositionState(data, transactionState);
+
+    const holdings = _buildCompositionHoldings(
+        compositionSeries,
+        totalValueRaw,
+        targetIndex,
+        dateLabel,
+        selectedCurrency
+    );
+
+    if (!holdings.length) {
+        return null;
+    }
+
+    holdings.sort((a, b) => b.percent - a.percent);
+
+    const displayHoldings = _applyCompositionFilters(
+        holdings,
+        getCompositionFilterTickers(),
+        getCompositionAssetClassFilter()
+    );
+
+    const lines = _formatCompositionHoldings(displayHoldings);
+    if (!lines) {
+        return null;
+    }
+
+    const hint = _getCompositionHint(labelPrefix);
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
