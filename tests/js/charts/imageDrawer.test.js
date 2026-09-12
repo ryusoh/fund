@@ -2,6 +2,7 @@ import { drawImage } from '@charts/imageDrawer.js';
 
 describe('drawImage', () => {
     let ctx;
+    let mainCanvas;
     let arc;
     let img;
     let logoInfo;
@@ -35,10 +36,7 @@ describe('drawImage', () => {
         };
 
         // Mock the main context
-        const mainCanvas = {
-            _imageDrawerSharedCanvas: undefined,
-            _imageDrawerSharedCtx: undefined,
-        };
+        mainCanvas = { _imageDrawerSharedCanvas: undefined, _imageDrawerSharedCtx: undefined };
         ctx = {
             canvas: mainCanvas,
             save: jest.fn(),
@@ -84,7 +82,8 @@ describe('drawImage', () => {
         });
 
         // Clear shared canvas before each test
-        // ctx.canvas._imageDrawerSharedCanvas = undefined;
+        drawImage._sharedCanvas = undefined;
+        drawImage._sharedCtx = undefined;
 
         // Mock window.devicePixelRatio
         global.window = { devicePixelRatio: 2 };
