@@ -70,7 +70,7 @@ describe('drawMountainFill offscreen canvas resize behavior', () => {
     });
 
     it('initializes the shared offscreen canvas on first call', () => {
-        const ctx = { drawImage: jest.fn() };
+        const ctx = { canvas: fakeCanvas, drawImage: jest.fn() };
         drawMountainFill(ctx, coords, 50, { color: '#fff', bounds });
         expect(fakeCanvas.getContext).toHaveBeenCalledWith('2d');
         expect(fakeCanvas.width).toBe(100);
@@ -78,7 +78,7 @@ describe('drawMountainFill offscreen canvas resize behavior', () => {
     });
 
     it('does not resize when dimensions are unchanged', () => {
-        const ctx = { drawImage: jest.fn() };
+        const ctx = { canvas: fakeCanvas, drawImage: jest.fn() };
         drawMountainFill(ctx, coords, 50, { color: '#fff', bounds });
         const widthSetter = jest.spyOn(fakeCanvas, 'width', 'set');
         const heightSetter = jest.spyOn(fakeCanvas, 'height', 'set');
@@ -92,7 +92,7 @@ describe('drawMountainFill offscreen canvas resize behavior', () => {
     });
 
     it('resizes the canvas when dimensions change', () => {
-        const ctx = { drawImage: jest.fn() };
+        const ctx = { canvas: fakeCanvas, drawImage: jest.fn() };
         drawMountainFill(ctx, coords, 50, { color: '#fff', bounds });
         const widthSetter = jest.spyOn(fakeCanvas, 'width', 'set');
         const heightSetter = jest.spyOn(fakeCanvas, 'height', 'set');
@@ -106,5 +106,14 @@ describe('drawMountainFill offscreen canvas resize behavior', () => {
         expect(heightSetter).toHaveBeenCalledTimes(1);
         expect(fakeCanvas.width).toBe(200);
         expect(fakeCanvas.height).toBe(100);
+    });
+
+    it('no-ops when the target context has no canvas', () => {
+        const canvaslessCtx = { drawImage: jest.fn() };
+        const createElementCalls = global.document.createElement.mock.calls.length;
+        drawMountainFill(canvaslessCtx, coords, 50, { color: '#fff', bounds });
+        drawMountainFill(null, coords, 50, { color: '#fff', bounds });
+        expect(global.document.createElement.mock.calls.length).toBe(createElementCalls);
+        expect(canvaslessCtx.drawImage).not.toHaveBeenCalled();
     });
 });
