@@ -143,6 +143,7 @@ function clampDimensions(drawW, drawH, rotationRad, arcLen, band, margin) {
 }
 
 function prepareOffscreenCanvas(
+    ctx,
     dpr,
     drawW,
     drawH,
@@ -152,15 +153,18 @@ function prepareOffscreenCanvas(
     glassRefraction,
     isHovered
 ) {
-    if (!drawImage._sharedCanvas && typeof document !== 'undefined') {
-        drawImage._sharedCanvas = document.createElement('canvas');
-        drawImage._sharedCtx = drawImage._sharedCanvas.getContext('2d', {
+    if (!ctx.canvas) {
+        return null;
+    }
+    if (!ctx.canvas._imageDrawerSharedCanvas && typeof document !== 'undefined') {
+        ctx.canvas._imageDrawerSharedCanvas = document.createElement('canvas');
+        ctx.canvas._imageDrawerSharedCtx = ctx.canvas._imageDrawerSharedCanvas.getContext('2d', {
             willReadFrequently: true,
         });
     }
 
-    const off = drawImage._sharedCanvas;
-    const offCtx = drawImage._sharedCtx;
+    const off = ctx.canvas._imageDrawerSharedCanvas;
+    const offCtx = ctx.canvas._imageDrawerSharedCtx;
 
     if (!off || !offCtx) {
         return null;
@@ -296,6 +300,7 @@ export function drawImage(ctx, arc, img, logoInfo, magneticOffset, isHovered) {
     const dpr =
         typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
     const off = prepareOffscreenCanvas(
+        ctx,
         dpr,
         drawW,
         drawH,

@@ -566,14 +566,17 @@ export function drawAxes(
     return { selectedTicks };
 }
 
-function getSharedCanvas(width, height) {
-    if (!drawMountainFill._sharedCanvas && typeof document !== 'undefined') {
-        drawMountainFill._sharedCanvas = document.createElement('canvas');
-        drawMountainFill._sharedCtx = drawMountainFill._sharedCanvas.getContext('2d');
+function getSharedCanvas(ctx, width, height) {
+    if (!ctx || !ctx.canvas) {
+        return null;
+    }
+    if (!ctx.canvas._mountainFillSharedCanvas && typeof document !== 'undefined') {
+        ctx.canvas._mountainFillSharedCanvas = document.createElement('canvas');
+        ctx.canvas._mountainFillSharedCtx = ctx.canvas._mountainFillSharedCanvas.getContext('2d');
     }
 
-    const offscreen = drawMountainFill._sharedCanvas;
-    const offCtx = drawMountainFill._sharedCtx;
+    const offscreen = ctx.canvas._mountainFillSharedCanvas;
+    const offCtx = ctx.canvas._mountainFillSharedCtx;
 
     if (!offscreen || !offCtx) {
         return null;
@@ -666,7 +669,7 @@ export function drawMountainFill(ctx, coords, baselineY, options) {
     const width = Math.max(1, Math.ceil(bounds.right - bounds.left));
     const height = Math.max(1, Math.ceil(bounds.bottom - bounds.top));
 
-    const shared = getSharedCanvas(width, height);
+    const shared = getSharedCanvas(ctx, width, height);
     if (!shared) {
         return;
     }
