@@ -65,6 +65,35 @@ function computeGlassOpacity(glassConfig) {
     return glassConfig.opacity;
 }
 
+function _getChartDataset() {
+    if (
+        typeof window === 'undefined' ||
+        typeof Chart === 'undefined' ||
+        typeof Chart.getChart !== 'function'
+    ) {
+        return { chart: null, dataset: null };
+    }
+    const canvas = document.getElementById('fundPieChart');
+    if (!canvas) {
+        return { chart: null, dataset: null };
+    }
+    const chart = Chart.getChart(canvas);
+    const dataset = chart?.data?.datasets?.[0];
+    return { chart, dataset };
+}
+
+function _updateDatasetOpacity(dataset, opacity) {
+    if (!dataset || !Array.isArray(dataset.backgroundColor) || typeof opacity !== 'number') {
+        return false;
+    }
+    const len = dataset.backgroundColor.length;
+    dataset.backgroundColor = dataset.backgroundColor.map((_, index) => {
+        const baseColor = getBlueColorForSlice(index, len);
+        return hexToRgba(baseColor, opacity);
+    });
+    return true;
+}
+
 function applyResponsiveGlassOpacity(targetConfig = window.pieChartGlassEffect) {
     if (!targetConfig) {
         return;
@@ -73,28 +102,9 @@ function applyResponsiveGlassOpacity(targetConfig = window.pieChartGlassEffect) 
     targetConfig.opacity =
         typeof resolvedOpacity === 'number' ? resolvedOpacity : targetConfig.opacity;
 
-    if (
-        typeof window !== 'undefined' &&
-        typeof Chart !== 'undefined' &&
-        typeof Chart.getChart === 'function'
-    ) {
-        const canvas = document.getElementById('fundPieChart');
-        if (canvas) {
-            const chart = Chart.getChart(canvas);
-            const dataset = chart?.data?.datasets?.[0];
-            if (
-                dataset &&
-                Array.isArray(dataset.backgroundColor) &&
-                typeof targetConfig.opacity === 'number'
-            ) {
-                const len = dataset.backgroundColor.length;
-                dataset.backgroundColor = dataset.backgroundColor.map((_, index) => {
-                    const baseColor = getBlueColorForSlice(index, len);
-                    return hexToRgba(baseColor, targetConfig.opacity);
-                });
-                chart.update();
-            }
-        }
+    const { chart, dataset } = _getChartDataset();
+    if (chart && _updateDatasetOpacity(dataset, targetConfig.opacity)) {
+        chart.update();
     }
 }
 
