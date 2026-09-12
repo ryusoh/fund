@@ -35,7 +35,12 @@ describe('drawImage', () => {
         };
 
         // Mock the main context
+        const mainCanvas = {
+            _imageDrawerSharedCanvas: undefined,
+            _imageDrawerSharedCtx: undefined,
+        };
         ctx = {
+            canvas: mainCanvas,
             save: jest.fn(),
             restore: jest.fn(),
             beginPath: jest.fn(),
@@ -79,8 +84,7 @@ describe('drawImage', () => {
         });
 
         // Clear shared canvas before each test
-        drawImage._sharedCanvas = undefined;
-        drawImage._sharedCtx = undefined;
+        // ctx.canvas._imageDrawerSharedCanvas = undefined;
 
         // Mock window.devicePixelRatio
         global.window = { devicePixelRatio: 2 };
