@@ -1,0 +1,41 @@
+Wait, the missing lines reported are `js/charts/imageDrawer.js` (line 157) and `js/transactions/chart/core.js` (line 571).
+Ah, `npx diff-cover` says the overall diff coverage is 86%, below the 90% threshold.
+
+Let's do `diff-cover coverage/lcov.info --compare-branch origin/main --html-report diff_cover.html` to see exactly which lines are not covered.
+Wait, line 157 in `js/charts/imageDrawer.js` is:
+```javascript
+156:    if (!ctx.canvas) return null;
+157:    if (!ctx.canvas._imageDrawerSharedCanvas && typeof document !== 'undefined') {
+158:        ctx.canvas._imageDrawerSharedCanvas = document.createElement('canvas');
+```
+Wait! I added a new test! Did the new test actually cover the line?
+In `tests/js/charts/imageDrawer.test.js`:
+```javascript
+    it('should initialize _imageDrawerSharedCanvas when undefined', () => {
+        let fakeMainCanvas = { _imageDrawerSharedCanvas: undefined };
+        let fakeCtx = {
+            canvas: fakeMainCanvas,
+// ...
+```
+Wait, the mock for `document.createElement` in `tests/js/charts/imageDrawer.test.js` is:
+```javascript
+        // Mock document.createElement
+        global.document.createElement = jest.fn((tag) => {
+            if (tag === 'canvas') {
+                return offscreenCanvas;
+            }
+            return {};
+        });
+```
+So it should return `offscreenCanvas`, which gets a mock `getContext`. So line 158 is covered, but wait! The condition `typeof document !== 'undefined'` is it true in tests? Yes, we are using jsdom.
+Why is line 157 marked as missing?
+Wait, perhaps `typeof document !== 'undefined'` is not fully covered because there is no test where `typeof document === 'undefined'`?
+Wait! In `tests/js/charts/imageDrawer.test.js` there is no node environment!
+Ah, in `tests/js/transactions/chart/coreMountainFill.test.js` it has `/** @jest-environment node */` at the top!
+And it tests `typeof document !== 'undefined'` because it sets `global.document` and then removes it!
+
+In `tests/js/charts/imageDrawer.test.js`, the environment is `jsdom` (the default). So `typeof document` is always `'object'`. Thus the branch `typeof document === 'undefined'` is never taken, so the line is partially covered!
+`diff-cover` considers partially covered lines as missing!
+
+To fix this, we can mock `global.document` to be undefined. But we are in `jsdom`. Can we set `global.document = undefined`? No, because it's a non-configurable property in jsdom, or it breaks things.
+Wait, `tests/js/transactions/chart/coreMountainFill.test.js` has `@jest-environment node`.

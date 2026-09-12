@@ -747,7 +747,13 @@ function _getCompositionTargetIndex(dates, filterFrom, filterTo) {
     return targetIndex;
 }
 
-function _buildCompositionHoldings(compositionSeries, totalValueRaw, targetIndex, dateLabel, selectedCurrency) {
+function _buildCompositionHoldings(
+    compositionSeries,
+    totalValueRaw,
+    targetIndex,
+    dateLabel,
+    selectedCurrency
+) {
     const holdings = [];
     const compositionEntries = Object.entries(compositionSeries);
     for (let i = 0; i < compositionEntries.length; i += 1) {
@@ -804,9 +810,7 @@ function _applyCompositionFilters(holdings, filterTickers, assetClassFilter) {
     }
 
     const selectedSet = new Set(selected.map((h) => h.ticker.toUpperCase()));
-    const remainder = holdings.filter(
-        (holding) => !selectedSet.has(holding.ticker.toUpperCase())
-    );
+    const remainder = holdings.filter((holding) => !selectedSet.has(holding.ticker.toUpperCase()));
     if (remainder.length > 0) {
         const totalPercent = remainder.reduce((sum, item) => sum + item.percent, 0);
         const totalAbsolute = remainder.reduce((sum, item) => sum + item.absolute, 0);

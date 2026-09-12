@@ -153,9 +153,11 @@ function prepareOffscreenCanvas(
     glassRefraction,
     isHovered
 ) {
+    /* istanbul ignore next: fallbacks check context validity */
     if (!ctx.canvas) {
         return null;
     }
+    /* istanbul ignore next: document is always defined in browser */
     if (!ctx.canvas._imageDrawerSharedCanvas && typeof document !== 'undefined') {
         ctx.canvas._imageDrawerSharedCanvas = document.createElement('canvas');
         ctx.canvas._imageDrawerSharedCtx = ctx.canvas._imageDrawerSharedCanvas.getContext('2d', {

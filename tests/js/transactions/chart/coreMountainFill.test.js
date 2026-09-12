@@ -107,4 +107,11 @@ describe('drawMountainFill offscreen canvas resize behavior', () => {
         expect(fakeCanvas.width).toBe(200);
         expect(fakeCanvas.height).toBe(100);
     });
+
+    it('should initialize _mountainFillSharedCanvas when undefined', () => {
+        const fakeMainCanvas = { _mountainFillSharedCanvas: undefined };
+        const fakeCtx = { canvas: fakeMainCanvas, drawImage: jest.fn() };
+        drawMountainFill(fakeCtx, coords, 50, { color: '#fff', bounds });
+        expect(fakeMainCanvas._mountainFillSharedCanvas).toBeDefined();
+    });
 });

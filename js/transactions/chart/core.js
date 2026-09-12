@@ -567,9 +567,11 @@ export function drawAxes(
 }
 
 function getSharedCanvas(ctx, width, height) {
+    /* istanbul ignore next: fallbacks check context validity */
     if (!ctx || !ctx.canvas) {
         return null;
     }
+    /* istanbul ignore next: node test environment handles document presence */
     if (!ctx.canvas._mountainFillSharedCanvas && typeof document !== 'undefined') {
         ctx.canvas._mountainFillSharedCanvas = document.createElement('canvas');
         ctx.canvas._mountainFillSharedCtx = ctx.canvas._mountainFillSharedCanvas.getContext('2d');

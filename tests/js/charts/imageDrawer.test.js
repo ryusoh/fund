@@ -552,4 +552,24 @@ describe('drawImage', () => {
         drawImage(ctx, arc, img, logoInfo);
         expect(ctx.rotate).toHaveBeenCalled();
     });
+
+    it('should initialize _imageDrawerSharedCanvas when undefined', () => {
+        const fakeMainCanvas = { _imageDrawerSharedCanvas: undefined };
+        const fakeCtx = {
+            canvas: fakeMainCanvas,
+            save: jest.fn(),
+            restore: jest.fn(),
+            beginPath: jest.fn(),
+            arc: jest.fn(),
+            closePath: jest.fn(),
+            clip: jest.fn(),
+            translate: jest.fn(),
+            rotate: jest.fn(),
+            drawImage: jest.fn(),
+            fillRect: jest.fn(),
+            scale: jest.fn(),
+        };
+        drawImage(fakeCtx, arc, img, logoInfo);
+        expect(fakeMainCanvas._imageDrawerSharedCanvas).toBeDefined();
+    });
 });
