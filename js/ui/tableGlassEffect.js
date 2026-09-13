@@ -437,6 +437,46 @@ export class TableGlassEffect {
             }
         }
     }
+    _clearHoveredRow() {
+        if (this.state.hoveredRowIndex !== -1) {
+            this.state.hoveredRowIndex = -1;
+            if (typeof this.options.onHoverRow === 'function') {
+                this.options.onHoverRow(null);
+            }
+        }
+    }
+
+    _updateHoveredRowState(foundIndex) {
+        if (this.state.hoveredRowIndex === -1) {
+            this.state.pointerSmoothed.x = this.state.pointer.x;
+            this.state.pointerSmoothed.y = this.state.pointer.y;
+        }
+        if (this.state.hoveredRowIndex !== foundIndex) {
+            this.state.hoveredRowIndex = foundIndex;
+            this.state.lastHoveredRowIndex = foundIndex;
+            if (typeof this.options.onHoverRow === 'function') {
+                const ticker = this.rows[foundIndex]?.element?.getAttribute('data-ticker');
+                this.options.onHoverRow(ticker || null);
+            }
+        }
+    }
+
+    _processHoveredRow(elementUnderMouse) {
+        const rowElement = elementUnderMouse.closest('tr');
+        if (rowElement && this.container.contains(rowElement) && isDataRow(rowElement)) {
+            let foundIndex = -1;
+            for (let i = 0; i < this.rows.length; i++) {
+                if (this.rows[i].element === rowElement) {
+                    foundIndex = i;
+                    break;
+                }
+            }
+            this._updateHoveredRowState(foundIndex);
+        } else {
+            this._clearHoveredRow();
+        }
+    }
+
     handleMouseMove(e) {
         if (!this.state.lastPointerRaw) {
             this.state.lastPointerRaw = { x: -10, y: -10 };
@@ -460,42 +500,9 @@ export class TableGlassEffect {
                     ? e.target
                     : document.elementFromPoint(e.clientX, e.clientY);
             if (elementUnderMouse) {
-                // Find the closest table row
-                const rowElement = elementUnderMouse.closest('tr');
-
-                if (rowElement && this.container.contains(rowElement) && isDataRow(rowElement)) {
-                    // Find the index of this row in our stored rows array
-                    let foundIndex = -1;
-                    for (let i = 0; i < this.rows.length; i++) {
-                        if (this.rows[i].element === rowElement) {
-                            foundIndex = i;
-                            break;
-                        }
-                    }
-                    if (this.state.hoveredRowIndex === -1) {
-                        this.state.pointerSmoothed.x = this.state.pointer.x;
-                        this.state.pointerSmoothed.y = this.state.pointer.y;
-                    }
-                    if (this.state.hoveredRowIndex !== foundIndex) {
-                        this.state.hoveredRowIndex = foundIndex;
-                        this.state.lastHoveredRowIndex = foundIndex;
-                        if (typeof this.options.onHoverRow === 'function') {
-                            const ticker =
-                                this.rows[foundIndex]?.element?.getAttribute('data-ticker');
-                            this.options.onHoverRow(ticker || null);
-                        }
-                    }
-                } else if (this.state.hoveredRowIndex !== -1) {
-                    this.state.hoveredRowIndex = -1;
-                    if (typeof this.options.onHoverRow === 'function') {
-                        this.options.onHoverRow(null);
-                    }
-                }
-            } else if (this.state.hoveredRowIndex !== -1) {
-                this.state.hoveredRowIndex = -1;
-                if (typeof this.options.onHoverRow === 'function') {
-                    this.options.onHoverRow(null);
-                }
+                this._processHoveredRow(elementUnderMouse);
+            } else {
+                this._clearHoveredRow();
             }
         }
     }
