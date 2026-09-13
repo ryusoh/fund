@@ -2,6 +2,7 @@ import { drawImage } from '@charts/imageDrawer.js';
 
 describe('drawImage', () => {
     let ctx;
+    let mainCanvas;
     let arc;
     let img;
     let logoInfo;
@@ -35,7 +36,9 @@ describe('drawImage', () => {
         };
 
         // Mock the main context
+        mainCanvas = { _imageDrawerSharedCanvas: undefined, _imageDrawerSharedCtx: undefined };
         ctx = {
+            canvas: mainCanvas,
             save: jest.fn(),
             restore: jest.fn(),
             beginPath: jest.fn(),
@@ -547,5 +550,29 @@ describe('drawImage', () => {
 
         drawImage(ctx, arc, img, logoInfo);
         expect(ctx.rotate).toHaveBeenCalled();
+    });
+
+    it('falls back to direct draw when the target context has no canvas', () => {
+        const canvaslessCtx = {
+            save: jest.fn(),
+            restore: jest.fn(),
+            beginPath: jest.fn(),
+            arc: jest.fn(),
+            closePath: jest.fn(),
+            clip: jest.fn(),
+            translate: jest.fn(),
+            rotate: jest.fn(),
+            drawImage: jest.fn(),
+            fillRect: jest.fn(),
+            scale: jest.fn(),
+        };
+        drawImage(canvaslessCtx, arc, img, logoInfo);
+        expect(canvaslessCtx.drawImage).toHaveBeenCalledWith(
+            img,
+            expect.any(Number),
+            expect.any(Number),
+            expect.any(Number),
+            expect.any(Number)
+        );
     });
 });
