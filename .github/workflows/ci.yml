@@ -86,6 +86,20 @@ jobs:
               if: ${{ env.RUN_PRECOMMIT == 'true' }}
               run: make precommit-fix
 
+            # precommit-fix is a fixer; in CI it may only verify. A mutated
+            # tree means the committed files were not gate-clean and the fixer
+            # silently masked the drift (cf. the 2026-09 phantom-reformat drift
+            # in docs/agentic-quality-gates.md).
+            - name: Fail if precommit-fix modified the tree
+              if: ${{ env.RUN_PRECOMMIT == 'true' }}
+              run: |
+                  if [ -n "$(git status --porcelain)" ]; then
+                      echo "::error::make precommit-fix modified the worktree — committed files were not gate-clean:"
+                      git status --porcelain
+                      git diff
+                      exit 1
+                  fi
+
             # Browser smoke stays out of precommit-fix because it needs the
             # Playwright Chromium binary, which local runs may not have.
             - name: Install Chromium for page smoke test

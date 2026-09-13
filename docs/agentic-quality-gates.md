@@ -354,7 +354,26 @@ The workflow-level machinery also already matches the philosophy:
   `pr_description.txt`, scratch files), or touch `eslint-suppressions.json`
   from a non-refactor lane or increase suppressions (complexity ratchet
   violation). Human commits are skipped — interactive agents may legitimately
-  rewrite tests on request.
+  rewrite tests on request. The gate is **per-commit, not net-diff**: a
+  violation reverted by a later commit still fails (PR #673, 2026-09 — a
+  phantom reformat of `eslint-suppressions.json` touched-then-reverted kept
+  the PR red). Recovery is to squash the branch into one commit and
+  force-push (`git reset --soft $(git merge-base origin/main HEAD) && git
+commit && git push --force-with-lease`); the gate's failure output prints
+  this recipe.
+- Phantom-reformat landmine (fixed 2026-09-13): the pre-commit/lint-staged
+  prettier hook only formats **staged** files, so a repo-wide
+  `prettier --write .` / `npm run format` used to dirty files the hook had
+  never checked — including `eslint-suppressions.json` (2-space eslint JSON
+  output vs the repo's 4-space prettier config), which turned any bot's
+  format run into an instant Architect-lane violation.
+  `eslint-suppressions.json`, `.import_linter_cache/`, and the vendored
+  `cal-heatmap.scss` are now in `.prettierignore`, and `snapshots.js` /
+  `screenshot.mjs` were brought in line with the pinned prettier, so
+  `npx prettier --check .` is clean on main. Bots must still never run
+  repo-wide formatters (AGENTS.md non-negotiable #10): format only files you
+  touched, and if a gate run dirties unrelated files, revert them — never
+  commit the fixer's output wholesale.
 - Generated-data validation — `make twrr-validate`
   (`scripts/twrr/step_validate.py`, a step in `twrr-refresh.yaml` between the
   pipeline run and the bot's auto-commit) fails the run when regenerated data

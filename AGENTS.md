@@ -74,7 +74,16 @@ ES modules via an import map.
     (bot lanes are append-only in `tests/`), commit stray bot artifacts
     (`pr_body.txt`, `pr_description.txt`, scratch files), or violate the
     complexity ratchet in `eslint-suppressions.json` (no added suppressions or
-    count increases; only Architect may touch it to prune).
+    count increases; only Architect may touch it to prune). The gate is
+    **per-commit, not net-diff**: a violation reverted by a later commit still
+    fails, and pushing revert commits only adds new violations. Recovery is to
+    squash the branch into one commit and force-push
+    (`git reset --soft $(git merge-base origin/main HEAD) && git commit &&
+git push --force-with-lease`). And never run repo-wide formatters
+    (`npm run format`, `prettier --write .`): format only the files you
+    touched, and if a gate/fix run dirties unrelated files, revert them —
+    don't commit the fixer's output (a phantom reformat of
+    `eslint-suppressions.json` is an instant Architect-lane violation).
 
 ## You cannot see the rendered page
 

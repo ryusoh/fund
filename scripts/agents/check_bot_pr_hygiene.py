@@ -270,6 +270,13 @@ def main(argv: list[str] | None = None) -> int:
             "Push commits whose diff matches their message and addresses review feedback — "
             "or push nothing."
         )
+        print(
+            "This gate checks each bot commit individually, not the net diff: a violation "
+            "that was later reverted still fails, and revert commits cannot fix it. "
+            "Recovery: squash the branch into a single commit and force-push — "
+            "git reset --soft $(git merge-base origin/main HEAD) && "
+            "git commit -m '<conventional subject>' && git push --force-with-lease"
+        )
         return 1
     print("no bot-commit hygiene violations in range")
     return 0

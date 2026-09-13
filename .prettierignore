@@ -19,3 +19,10 @@ js/vendor/
 docs/reference/
 **/*.min.js
 .claude/
+.import_linter_cache/
+# Machine-managed eslint complexity baseline (written by eslint JSON output,
+# not prettier-formatted) — repo-wide format runs must not touch it.
+eslint-suppressions.json
+# Vendored upstream source (ported with local modifications) — keep diffs
+# against upstream readable.
+js/ui/cal-heatmap-src/cal-heatmap.scss

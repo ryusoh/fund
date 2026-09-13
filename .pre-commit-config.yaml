@@ -18,8 +18,10 @@ repos:
       rev: v6.0.0
       hooks:
           - id: end-of-file-fixer
-            # Do not touch generated data files or AI status files
-            exclude: ^data/.*\.(csv|html|json|txt)$|^ai/status/|^js/vendor/
+            # Do not touch generated data files, AI status files, or
+            # eslint-suppressions.json (rewritten by `eslint --prune-suppressions`
+            # without a trailing newline; machine-managed, prettier-ignored).
+            exclude: ^data/.*\.(csv|html|json|txt)$|^ai/status/|^js/vendor/|^eslint-suppressions\.json$
           - id: trailing-whitespace
             # Do not touch generated data files
             exclude: ^data/.*\.(csv|html|json|txt)$|^js/vendor/

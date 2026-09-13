@@ -146,7 +146,9 @@ async function main() {
                 if (input) {
                     input.value = cmd;
                     input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+                    input.dispatchEvent(
+                        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+                    );
                 }
             }, opts.type);
         }
@@ -170,7 +172,6 @@ async function main() {
 }
 
 main().catch((err) => {
-
     console.error(err.message || err);
     process.exit(1);
 });
