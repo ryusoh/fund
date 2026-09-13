@@ -104,11 +104,6 @@
       "count": 2
     }
   },
-  "js/ui/tableGlassEffect.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "tests/js/transactions/chart_regression.test.js": {
     "complexity": {
       "count": 1
