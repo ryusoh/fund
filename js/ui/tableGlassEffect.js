@@ -455,8 +455,7 @@ export class TableGlassEffect {
             this.state.hoveredRowIndex = foundIndex;
             this.state.lastHoveredRowIndex = foundIndex;
             if (typeof this.options.onHoverRow === 'function') {
-                const ticker =
-                    this.rows[foundIndex]?.element?.getAttribute('data-ticker');
+                const ticker = this.rows[foundIndex]?.element?.getAttribute('data-ticker');
                 this.options.onHoverRow(ticker || null);
             }
         }
