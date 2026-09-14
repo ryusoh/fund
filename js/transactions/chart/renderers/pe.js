@@ -226,6 +226,36 @@ export async function loadPEData() {
  * @param {Date|null} filterTo - Optional end date filter.
  * @returns {{ date: Date, pe: number, tickerPEs: Object, tickerWeights: Object }[]}
  */
+
+export function _isValidPEDate(date, filterFrom, filterTo) {
+    if (!date || Number.isNaN(date.getTime())) {
+        return false;
+    }
+    if (filterFrom && date < filterFrom) {
+        return false;
+    }
+    if (filterTo && date > filterTo) {
+        return false;
+    }
+    return true;
+}
+
+export function _getDayTickerMetrics(metricsData, index) {
+    const dayMetrics = {};
+    if (metricsData && typeof metricsData === 'object') {
+        const keys = Object.keys(metricsData);
+        for (let k = 0; k < keys.length; k += 1) {
+            const ticker = keys[k];
+            const series = metricsData[ticker];
+            const val = series ? series[index] : null;
+            if (val !== null && val !== undefined && Number.isFinite(val)) {
+                dayMetrics[ticker] = val;
+            }
+        }
+    }
+    return dayMetrics;
+}
+
 export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filterFrom, filterTo) {
     if (!Array.isArray(dates) || dates.length === 0) {
         return [];
@@ -239,13 +269,7 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
     for (let i = 0; i < dates.length; i += 1) {
         const dateStr = dates[i];
         const date = parseLocalDate(dateStr);
-        if (!date || Number.isNaN(date.getTime())) {
-            continue;
-        }
-        if (filterFrom && date < filterFrom) {
-            continue;
-        }
-        if (filterTo && date > filterTo) {
+        if (!_isValidPEDate(date, filterFrom, filterTo)) {
             continue;
         }
 
@@ -256,29 +280,8 @@ export function buildPESeries(dates, portfolioPE, tickerPE, tickerWeights, filte
 
         // Gather per-ticker PE values and weights for crosshair
         // Bolt: Use explicit loops instead of .forEach to eliminate closure allocations and reduce GC overhead
-        const dayTickerPEs = {};
-        if (tickerPE && typeof tickerPE === 'object') {
-            const keys = Object.keys(tickerPE);
-            for (let k = 0; k < keys.length; k += 1) {
-                const ticker = keys[k];
-                const val = tickerPE[ticker][i];
-                if (val !== null && val !== undefined && Number.isFinite(val)) {
-                    dayTickerPEs[ticker] = val;
-                }
-            }
-        }
-
-        const dayTickerWeights = {};
-        if (tickerWeights && typeof tickerWeights === 'object') {
-            const keys = Object.keys(tickerWeights);
-            for (let k = 0; k < keys.length; k += 1) {
-                const ticker = keys[k];
-                const val = tickerWeights ? tickerWeights[ticker][i] : null;
-                if (val !== null && val !== undefined && Number.isFinite(val)) {
-                    dayTickerWeights[ticker] = val;
-                }
-            }
-        }
+        const dayTickerPEs = _getDayTickerMetrics(tickerPE, i);
+        const dayTickerWeights = _getDayTickerMetrics(tickerWeights, i);
 
         result.push({ date, pe, tickerPEs: dayTickerPEs, tickerWeights: dayTickerWeights });
     }
