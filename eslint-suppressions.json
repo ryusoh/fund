@@ -54,11 +54,6 @@
       "count": 1
     }
   },
-  "js/transactions/chart/renderers/pe.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "js/transactions/chart/renderers/performance.js": {
     "complexity": {
       "count": 1
