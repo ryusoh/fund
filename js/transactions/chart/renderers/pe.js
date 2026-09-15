@@ -314,14 +314,26 @@ function _computePEMinMaxTime(series, filterFrom) {
     return { minTime, maxTime };
 }
 
-function _calcPortfolioForwardPEValue(forwardPE, lastPt) {
+function _canCalculatePortfolioForwardPE(forwardPE, lastPt) {
     const msciRatio = forwardPE.msci_pe_ratio;
-    if (!(msciRatio?.ratio > 0 && lastPt?.tickerPEs?.VT > 0 && lastPt?.tickerWeights)) {
+    return Boolean(msciRatio?.ratio > 0 && lastPt?.tickerPEs?.VT > 0 && lastPt?.tickerWeights);
+}
+
+function _getTickerForwardPE(ticker, vtDerivedFwdPE, tickerFwdPE, lastPt) {
+    let fwdPe = ticker === 'VT' ? vtDerivedFwdPE : tickerFwdPE[ticker];
+    if (!Number.isFinite(fwdPe) || fwdPe <= 0) {
+        fwdPe = lastPt.tickerPEs[ticker];
+    }
+    return fwdPe;
+}
+
+function _calcPortfolioForwardPEValue(forwardPE, lastPt) {
+    if (!_canCalculatePortfolioForwardPE(forwardPE, lastPt)) {
         return forwardPE.portfolio_forward_pe;
     }
 
     const tickerFwdPE = forwardPE.ticker_forward_pe || {};
-    const vtDerivedFwdPE = lastPt.tickerPEs.VT / msciRatio.ratio;
+    const vtDerivedFwdPE = lastPt.tickerPEs.VT / forwardPE.msci_pe_ratio.ratio;
     let weightedYieldSum = 0;
     let weightSum = 0;
 
@@ -331,10 +343,7 @@ function _calcPortfolioForwardPEValue(forwardPE, lastPt) {
         if (!Number.isFinite(weight) || weight <= 0) {
             continue;
         }
-        let fwdPe = ticker === 'VT' ? vtDerivedFwdPE : tickerFwdPE[ticker];
-        if (!Number.isFinite(fwdPe) || fwdPe <= 0) {
-            fwdPe = lastPt.tickerPEs[ticker];
-        }
+        const fwdPe = _getTickerForwardPE(ticker, vtDerivedFwdPE, tickerFwdPE, lastPt);
         if (Number.isFinite(fwdPe) && fwdPe > 0) {
             weightedYieldSum += weight * (1 / fwdPe);
             weightSum += weight;
@@ -1395,3 +1404,9 @@ export function getPESnapshotText() {
 
     return `Current: ${current.toFixed(2)}x | Range: ${min.toFixed(2)}x - ${max.toFixed(2)}x | Harmonic Mean (1 / Σ(w/PE))${fwdText}`;
 }
+
+export const __test_only__ = {
+    _canCalculatePortfolioForwardPE,
+    _getTickerForwardPE,
+    _calcPortfolioForwardPEValue,
+};
