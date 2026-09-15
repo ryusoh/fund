@@ -422,3 +422,64 @@ describe('getPESnapshotText', () => {
         );
     });
 });
+
+describe('_calcPortfolioForwardPEValue & helpers', () => {
+    let __test_only__;
+
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import('../../../../../js/transactions/chart/renderers/pe.js');
+        __test_only__ = mod.__test_only__;
+    });
+
+    it('_canCalculatePortfolioForwardPE works correctly', () => {
+        expect(
+            __test_only__._canCalculatePortfolioForwardPE(
+                { msci_pe_ratio: { ratio: 1 } },
+                { tickerPEs: { VT: 10 }, tickerWeights: {} }
+            )
+        ).toBe(true);
+
+        expect(
+            __test_only__._canCalculatePortfolioForwardPE(
+                { msci_pe_ratio: { ratio: 0 } },
+                { tickerPEs: { VT: 10 }, tickerWeights: {} }
+            )
+        ).toBe(false);
+    });
+
+    it('_getTickerForwardPE works correctly', () => {
+        expect(__test_only__._getTickerForwardPE('VT', 15, {}, { tickerPEs: {} })).toBe(15);
+
+        expect(__test_only__._getTickerForwardPE('AAPL', 15, { AAPL: 20 }, { tickerPEs: {} })).toBe(
+            20
+        );
+
+        expect(__test_only__._getTickerForwardPE('MSFT', 15, {}, { tickerPEs: { MSFT: 25 } })).toBe(
+            25
+        );
+    });
+
+    it('_calcPortfolioForwardPEValue works correctly', () => {
+        const forwardPE = {
+            portfolio_forward_pe: 18,
+            msci_pe_ratio: { ratio: 2 },
+            ticker_forward_pe: { AAPL: 20 },
+        };
+        const lastPt = {
+            tickerPEs: { VT: 30, AAPL: 25, MSFT: 10 },
+            tickerWeights: { AAPL: 0.5, MSFT: 0.5 },
+        };
+
+        const result = __test_only__._calcPortfolioForwardPEValue(forwardPE, lastPt);
+
+        expect(result).toBeCloseTo(13.33333);
+
+        const badPt = { tickerPEs: { VT: 30 }, tickerWeights: { NO_PE: 1 } };
+        expect(__test_only__._calcPortfolioForwardPEValue(forwardPE, badPt)).toBe(18);
+
+        // invalid weight handling
+        const invalidWeightPt = { tickerPEs: { VT: 30, AAPL: 25 }, tickerWeights: { AAPL: -1 } };
+        expect(__test_only__._calcPortfolioForwardPEValue(forwardPE, invalidWeightPt)).toBe(18);
+    });
+});
