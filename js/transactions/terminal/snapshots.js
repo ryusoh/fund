@@ -438,6 +438,132 @@ export function getDrawdownSnapshotLine(options = {}) {
     );
 }
 
+function _normalizePerformancePointsForSnapshot(
+    rawPoints,
+    sourceCurrency,
+    selectedCurrency,
+    filterFrom,
+    filterTo
+) {
+    const normalizedPoints = [];
+    for (let i = 0; i < rawPoints.length; i++) {
+        const point = rawPoints[i];
+        const dateObj = parseDateSafe(point.date);
+        if (!dateObj) {
+            continue;
+        }
+        const convertedValue = convertBetweenCurrencies(
+            point.value,
+            sourceCurrency,
+            point.date,
+            selectedCurrency
+        );
+        const value = Number.isFinite(convertedValue) ? convertedValue : null;
+        if (
+            value !== null &&
+            Number.isFinite(value) &&
+            (!filterFrom || dateObj >= filterFrom) &&
+            (!filterTo || dateObj <= filterTo)
+        ) {
+            normalizedPoints.push({ date: dateObj, value });
+        }
+    }
+    normalizedPoints.sort((a, b) => a.date - b.date);
+    return normalizedPoints;
+}
+
+function _calculateSeriesPerformance(
+    key,
+    rawPoints,
+    sourceCurrency,
+    selectedCurrency,
+    filterFrom,
+    filterTo,
+    showAllSeries
+) {
+    if (rawPoints.length === 0) {
+        return showAllSeries ? `${key} –` : null;
+    }
+
+    const normalizedPoints = _normalizePerformancePointsForSnapshot(
+        rawPoints,
+        sourceCurrency,
+        selectedCurrency,
+        filterFrom,
+        filterTo
+    );
+
+    if (normalizedPoints.length === 0) {
+        return showAllSeries ? `${key} –` : null;
+    }
+
+    const startValue = normalizedPoints[0].value;
+    const endValue = normalizedPoints[normalizedPoints.length - 1].value;
+
+    if (!Number.isFinite(startValue) || Math.abs(startValue) < 1e-9 || !Number.isFinite(endValue)) {
+        return showAllSeries ? `${key} –` : null;
+    }
+
+    const percentChange = (endValue / startValue - 1) * 100;
+    return `${key} ${formatPercentInline(percentChange)}`;
+}
+
+function _getPerformanceSnapshotsForKeys(
+    orderedKeys,
+    performanceSeries,
+    visibility,
+    showAllSeries,
+    selectedCurrency,
+    filterFrom,
+    filterTo
+) {
+    const snapshots = [];
+    for (let i = 0; i < orderedKeys.length; i++) {
+        const key = orderedKeys[i];
+        if (!showAllSeries && visibility[key] === false) {
+            continue;
+        }
+        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
+        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
+
+        const snapshotStr = _calculateSeriesPerformance(
+            key,
+            rawPoints,
+            sourceCurrency,
+            selectedCurrency,
+            filterFrom,
+            filterTo,
+            showAllSeries
+        );
+        if (snapshotStr) {
+            snapshots.push(snapshotStr);
+        }
+    }
+    return snapshots;
+}
+
+function _formatPerformanceSnapshotOutput(snapshots, selectedCurrency) {
+    if (!snapshots.length) {
+        return null;
+    }
+    const header = `Performance (base ${selectedCurrency}):`;
+    const lines = [];
+    for (let i = 0; i < snapshots.length; i += 4) {
+        lines.push(snapshots.slice(i, i + 4).join('   '));
+    }
+    const hint = "\n(Hint: type 'rolling' to switch to rolling performance chart)";
+    return `${header}\n${lines.join('\n')}${hint}`;
+}
+
+function _getTransactionStateFilters() {
+    const visibility = transactionState.chartVisibility || {};
+    const { chartDateRange } = transactionState;
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+    return { visibility, filterFrom, filterTo, selectedCurrency };
+}
+
 export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
     if (transactionState.activeChart !== 'performance') {
         return null;
@@ -447,11 +573,11 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
     if (seriesKeys.length === 0) {
         return null;
     }
-    const visibility = transactionState.chartVisibility || {};
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const { visibility, filterFrom, filterTo, selectedCurrency } = _getTransactionStateFilters();
+
+    const filterApplied = Boolean(filterFrom || filterTo);
+    const showAllSeries = includeHidden || filterApplied;
 
     const orderedKeys = [...seriesKeys].sort((a, b) => {
         if (a === '^LZ') {
@@ -463,79 +589,17 @@ export function getPerformanceSnapshotLine({ includeHidden = false } = {}) {
         return a.localeCompare(b);
     });
 
-    const snapshots = [];
-    const filterApplied = Boolean(filterFrom || filterTo);
-    const showAllSeries = includeHidden || filterApplied;
-    for (let i = 0; i < orderedKeys.length; i++) {
-        const key = orderedKeys[i];
-        if (!showAllSeries && visibility[key] === false) {
-            continue;
-        }
-        const rawPoints = Array.isArray(performanceSeries[key]) ? performanceSeries[key] : [];
-        if (rawPoints.length === 0) {
-            if (showAllSeries) {
-                snapshots.push(`${key} –`);
-            }
-            continue;
-        }
-        const sourceCurrency = PERFORMANCE_SERIES_CURRENCY[key] || 'USD';
-        const normalizedPoints = [];
-        for (let i = 0; i < rawPoints.length; i++) {
-            const point = rawPoints[i];
-            const dateObj = parseDateSafe(point.date);
-            if (!dateObj) {
-                continue;
-            }
-            const convertedValue = convertBetweenCurrencies(
-                point.value,
-                sourceCurrency,
-                point.date,
-                selectedCurrency
-            );
-            const value = Number.isFinite(convertedValue) ? convertedValue : null;
-            if (
-                value !== null &&
-                Number.isFinite(value) &&
-                (!filterFrom || dateObj >= filterFrom) &&
-                (!filterTo || dateObj <= filterTo)
-            ) {
-                normalizedPoints.push({ date: dateObj, value });
-            }
-        }
-        normalizedPoints.sort((a, b) => a.date - b.date);
+    const snapshots = _getPerformanceSnapshotsForKeys(
+        orderedKeys,
+        performanceSeries,
+        visibility,
+        showAllSeries,
+        selectedCurrency,
+        filterFrom,
+        filterTo
+    );
 
-        if (normalizedPoints.length === 0) {
-            if (showAllSeries) {
-                snapshots.push(`${key} –`);
-            }
-            continue;
-        }
-        const startValue = normalizedPoints[0].value;
-        const endValue = normalizedPoints[normalizedPoints.length - 1].value;
-        if (
-            !Number.isFinite(startValue) ||
-            Math.abs(startValue) < 1e-9 ||
-            !Number.isFinite(endValue)
-        ) {
-            if (showAllSeries) {
-                snapshots.push(`${key} –`);
-            }
-            continue;
-        }
-        const percentChange = (endValue / startValue - 1) * 100;
-        snapshots.push(`${key} ${formatPercentInline(percentChange)}`);
-    }
-
-    if (!snapshots.length) {
-        return null;
-    }
-    const header = `Performance (base ${selectedCurrency}):`;
-    const lines = [];
-    for (let i = 0; i < snapshots.length; i += 4) {
-        lines.push(snapshots.slice(i, i + 4).join('   '));
-    }
-    const hint = "\n(Hint: type 'rolling' to switch to rolling performance chart)";
-    return `${header}\n${lines.join('\n')}${hint}`;
+    return _formatPerformanceSnapshotOutput(snapshots, selectedCurrency);
 }
 
 export async function getBetaSnapshotLine() {
