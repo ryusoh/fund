@@ -227,7 +227,7 @@ export async function loadPEData() {
  * @returns {{ date: Date, pe: number, tickerPEs: Object, tickerWeights: Object }[]}
  */
 
-export function _isValidPEDate(date, filterFrom, filterTo) {
+function _isValidPEDate(date, filterFrom, filterTo) {
     if (!date || Number.isNaN(date.getTime())) {
         return false;
     }
@@ -240,7 +240,7 @@ export function _isValidPEDate(date, filterFrom, filterTo) {
     return true;
 }
 
-export function _getDayTickerMetrics(metricsData, index) {
+function _getDayTickerMetrics(metricsData, index) {
     const dayMetrics = {};
     if (metricsData && typeof metricsData === 'object') {
         const keys = Object.keys(metricsData);
