@@ -6,7 +6,7 @@
   },
   "js/transactions/chart/interaction.js": {
     "complexity": {
-      "count": 5
+      "count": 4
     }
   },
   "js/transactions/chart/renderers/beta.js": {

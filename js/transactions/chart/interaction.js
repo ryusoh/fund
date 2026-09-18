@@ -475,11 +475,109 @@ export function drawCrosshairOverlay(ctx, layout) {
     );
 }
 
-export function buildRangeSummary(layout, rawStart, rawEnd) {
-    if (!layout || !Array.isArray(layout.series) || layout.series.length === 0) {
+function calculateRangePercent(startValue, endValue, layoutValueType) {
+    if (layoutValueType === 'percent') {
+        const startFactor = 1 + startValue / 100;
+        const endFactor = 1 + endValue / 100;
+        if (
+            Number.isFinite(startFactor) &&
+            Number.isFinite(endFactor) &&
+            Math.abs(startFactor) > 1e-9
+        ) {
+            return (endFactor / startFactor - 1) * 100;
+        }
         return null;
     }
-    if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd) || rawStart === rawEnd) {
+    if (Number.isFinite(startValue) && Math.abs(startValue) > 1e-9) {
+        return ((endValue - startValue) / Math.abs(startValue)) * 100;
+    }
+    return null;
+}
+
+function formatRangeDelta(series, delta, percent, start, end, layoutValueType) {
+    if (series.formatDelta) {
+        return series.formatDelta(delta, percent, start, end);
+    }
+    if (layoutValueType === 'percent' || layoutValueType === 'fx') {
+        return formatPercentInline(delta);
+    }
+    return formatCurrencyInline(delta);
+}
+
+function isSeriesValidForRange(series) {
+    if (!series) {
+        return false;
+    }
+    if (series.includeInRangeSummary === false) {
+        return false;
+    }
+    if (series.key === 'appreciation') {
+        return false;
+    }
+    if (typeof series.getValueAtTime !== 'function') {
+        return false;
+    }
+    return true;
+}
+
+function buildRangeSummaryEntry(series, start, end, layoutValueType) {
+    if (!isSeriesValidForRange(series)) {
+        return null;
+    }
+    const startValue = series.getValueAtTime(start);
+    const endValue = series.getValueAtTime(end);
+    if (startValue == null || endValue == null) {
+        return null;
+    }
+    const delta = endValue - startValue;
+    const percent = calculateRangePercent(startValue, endValue, layoutValueType);
+    const formattedDelta = formatRangeDelta(series, delta, percent, start, end, layoutValueType);
+    if (formattedDelta == null) {
+        return null;
+    }
+    let formattedPercent = null;
+    if (layoutValueType !== 'percent' && percent !== null && Number.isFinite(percent)) {
+        formattedPercent = formatPercentInline(percent);
+    }
+    return {
+        key: series.key,
+        label: series.label || series.key,
+        color: series.color || '#ffffff',
+        delta,
+        percent,
+        deltaFormatted: formattedDelta,
+        percentFormatted: formattedPercent,
+    };
+}
+
+function isValidLayoutForSummary(layout) {
+    if (!layout) {
+        return false;
+    }
+    if (!Array.isArray(layout.series)) {
+        return false;
+    }
+    if (layout.series.length === 0) {
+        return false;
+    }
+    return true;
+}
+
+function isValidTimeRange(rawStart, rawEnd) {
+    if (!Number.isFinite(rawStart)) {
+        return false;
+    }
+    if (!Number.isFinite(rawEnd)) {
+        return false;
+    }
+    if (rawStart === rawEnd) {
+        return false;
+    }
+    return true;
+}
+
+export function buildRangeSummary(layout, rawStart, rawEnd) {
+    if (!isValidLayoutForSummary(layout) || !isValidTimeRange(rawStart, rawEnd)) {
         return null;
     }
 
@@ -494,63 +592,10 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
     // Bolt: Use index-based loop instead of .forEach() to prevent closure allocation and reduce GC overhead during high-frequency hover events
     for (let i = 0; i < layout.series.length; i++) {
         const series = layout.series[i];
-        if (series && series.includeInRangeSummary === false) {
-            continue;
+        const entry = buildRangeSummaryEntry(series, start, end, layout.valueType);
+        if (entry) {
+            entries.push(entry);
         }
-        if (series && series.key === 'appreciation') {
-            continue;
-        }
-        if (typeof series.getValueAtTime !== 'function') {
-            continue;
-        }
-        const startValue = series.getValueAtTime(start);
-        const endValue = series.getValueAtTime(end);
-        if (
-            startValue === null ||
-            startValue === undefined ||
-            endValue === null ||
-            endValue === undefined
-        ) {
-            continue;
-        }
-        const delta = endValue - startValue;
-        let percent = null;
-        if (layout.valueType === 'percent') {
-            const startFactor = 1 + startValue / 100;
-            const endFactor = 1 + endValue / 100;
-            if (
-                Number.isFinite(startFactor) &&
-                Number.isFinite(endFactor) &&
-                Math.abs(startFactor) > 1e-9
-            ) {
-                percent = (endFactor / startFactor - 1) * 100;
-            }
-        } else if (Number.isFinite(startValue) && Math.abs(startValue) > 1e-9) {
-            percent = (delta / Math.abs(startValue)) * 100;
-        }
-        const formattedDelta = series.formatDelta
-            ? series.formatDelta(delta, percent, start, end)
-            : layout.valueType === 'percent' || layout.valueType === 'fx'
-              ? formatPercentInline(delta)
-              : formatCurrencyInline(delta);
-        if (formattedDelta === null || formattedDelta === undefined) {
-            continue;
-        }
-        let formattedPercent =
-            percent !== null && Number.isFinite(percent) ? formatPercentInline(percent) : null;
-        if (layout.valueType === 'percent') {
-            formattedPercent = null;
-        }
-
-        entries.push({
-            key: series.key,
-            label: series.label || series.key,
-            color: series.color || '#ffffff',
-            delta,
-            percent,
-            deltaFormatted: formattedDelta,
-            percentFormatted: formattedPercent,
-        });
     }
 
     if (entries.length === 0) {
