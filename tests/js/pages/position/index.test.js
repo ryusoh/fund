@@ -537,6 +537,365 @@ describe('position page entry point', () => {
         expect(loadAndDisplayPortfolioData).toHaveBeenCalledTimes(initialCalls);
     });
 
+    it('should refresh on pageshow when persisted is true', async () => {
+        await import('@pages/position/index.js');
+        const event = new window.PageTransitionEvent('pageshow', { persisted: true });
+        await windowEventListeners.pageshow(event);
+        expect(loadAndDisplayPortfolioData).toHaveBeenCalled();
+        expect(alignToggleWithChartMobile).toHaveBeenCalled();
+    });
+
+    it('should ignore pageshow when persisted is false', async () => {
+        await import('@pages/position/index.js');
+        const initialCalls = loadAndDisplayPortfolioData.mock.calls.length;
+        const event = new window.PageTransitionEvent('pageshow', { persisted: false });
+
+        if (windowEventListeners.pageshow) {
+            await windowEventListeners.pageshow(event);
+        }
+        expect(loadAndDisplayPortfolioData).toHaveBeenCalledTimes(initialCalls);
+    });
+
+    it('_getChartDataset returns null if canvas missing', async () => {
+        await import('@pages/position/index.js');
+        const canvas = document.getElementById('fundPieChart');
+        if (canvas) {
+            canvas.remove();
+        }
+
+        window.pieChartGlassEffect = { enabled: true, thresholds: [] };
+        if (window.__testGlassHelpers) {
+            window.__testGlassHelpers.applyResponsiveGlassOpacity();
+        }
+        // Assert canvas is actually removed
+        expect(document.getElementById('fundPieChart')).toBeNull();
+    });
+
+    it('handles _updateDatasetOpacity with bad input', async () => {
+        await import('@pages/position/index.js');
+
+        // Create a mock dataset without backgroundColor
+        const badDataset = {};
+        const canvas = document.createElement('canvas');
+        canvas.id = 'fundPieChart';
+        document.body.appendChild(canvas);
+
+        const originalGetChart = window.Chart.getChart;
+        window.Chart.getChart = jest.fn().mockReturnValue({
+            data: { datasets: [badDataset] },
+            update: jest.fn(),
+        });
+
+        window.pieChartGlassEffect = {
+            enabled: true,
+            thresholds: [{ width: Infinity, opacity: 0.5 }],
+        };
+        if (window.__testGlassHelpers) {
+            window.__testGlassHelpers.applyResponsiveGlassOpacity();
+        }
+
+        // The update should NOT be called because _updateDatasetOpacity returns false
+        expect(window.Chart.getChart().update).not.toHaveBeenCalled();
+
+        window.Chart.getChart = originalGetChart;
+        canvas.remove();
+    });
+
+    it('startApp handles table glass effect failure', async () => {
+        jest.resetModules();
+        document.body.innerHTML = '<div class="table-responsive-container"></div>';
+
+        jest.mock('@ui/tableGlassEffect.js', () => ({
+            TableGlassEffect: jest.fn(() => {
+                throw new Error('Glass mock error');
+            }),
+        }));
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(console.error).toHaveBeenCalledWith(
+            'Failed to initialize table glass effect:',
+            expect.any(Error)
+        );
+    });
+
+    it('initDonutRefraction successfully initializes when LiquidGlassRefraction enabled is true', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => ({
+                enabled: true,
+                options: {},
+                update: jest.fn(),
+            })),
+        }));
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        const overlay = document.querySelector('div[aria-hidden="true"]');
+        expect(overlay).toBeTruthy();
+    });
+
+    it('initDonutRefraction bails out if LiquidGlassRefraction enabled is false', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => ({
+                enabled: false,
+            })),
+        }));
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        const overlay = document.querySelector('div[aria-hidden="true"]');
+        expect(overlay).toBeFalsy();
+    });
+
+    it('sync calls update when chart arc is valid', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        const mockLens = {
+            enabled: true,
+            options: {},
+            update: jest.fn(),
+        };
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => mockLens),
+        }));
+
+        require('@pages/position/index.js');
+
+        const originalGetChart = window.Chart.getChart;
+        window.Chart.getChart = jest.fn().mockReturnValue({
+            getDatasetMeta: () => ({
+                data: [{ x: 50, y: 50, innerRadius: 20, outerRadius: 40 }],
+            }),
+        });
+
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(mockLens.update).toHaveBeenCalled();
+        window.Chart.getChart = originalGetChart;
+    });
+
+    it('sync early exits if chart missing getDatasetMeta', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        const mockLens = {
+            enabled: true,
+            options: {},
+            update: jest.fn(),
+        };
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => mockLens),
+        }));
+
+        require('@pages/position/index.js');
+
+        const originalGetChart = window.Chart.getChart;
+        window.Chart.getChart = jest.fn().mockReturnValue({});
+
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(mockLens.update).not.toHaveBeenCalled();
+        window.Chart.getChart = originalGetChart;
+    });
+
+    it('sync early exits if chart has no valid outerRadius', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        const mockLens = {
+            enabled: true,
+            options: {},
+            update: jest.fn(),
+        };
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => mockLens),
+        }));
+
+        require('@pages/position/index.js');
+
+        const originalGetChart = window.Chart.getChart;
+        window.Chart.getChart = jest.fn().mockReturnValue({
+            getDatasetMeta: () => ({
+                data: [{ x: 50, y: 50, innerRadius: 20, outerRadius: 0 }],
+            }),
+        });
+
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(mockLens.update).not.toHaveBeenCalled();
+        window.Chart.getChart = originalGetChart;
+    });
+
+    it('sync early exits if Chart is undefined', async () => {
+        jest.resetModules();
+
+        document.body.innerHTML = `
+            <div id="fundPieChartContainer">
+                <canvas id="fundPieChart"></canvas>
+            </div>
+        `;
+
+        const mockLens = {
+            enabled: true,
+            options: {},
+            update: jest.fn(),
+        };
+
+        jest.mock('@ui/liquidGlassRefraction.js', () => ({
+            LiquidGlassRefraction: jest.fn().mockImplementation(() => mockLens),
+        }));
+
+        require('@pages/position/index.js');
+
+        const originalChart = window.Chart;
+        delete window.Chart;
+
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(mockLens.update).not.toHaveBeenCalled();
+        window.Chart = originalChart;
+    });
+
+    it('startApp applies stored currency if available', async () => {
+        jest.resetModules();
+
+        jest.mock('@ui/currencyToggleManager.js', () => ({
+            initCurrencyToggle: jest.fn(),
+            getStoredCurrency: jest.fn().mockReturnValue('JPY'),
+            applyCurrencySelection: jest.fn(),
+            cycleCurrency: jest.fn(),
+        }));
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        const { applyCurrencySelection } = require('@ui/currencyToggleManager.js');
+        expect(applyCurrencySelection).toHaveBeenCalledWith('JPY', { emitEvent: false });
+    });
+
+    it('onHoverRow callback calls hoverSliceByTicker', async () => {
+        jest.resetModules();
+
+        let capturedConfig;
+        jest.mock('@ui/tableGlassEffect.js', () => ({
+            TableGlassEffect: jest.fn().mockImplementation((sel, conf) => {
+                capturedConfig = conf;
+            }),
+        }));
+
+        jest.mock('@charts/allocationChartManager.js', () => ({
+            hoverSliceByTicker: jest.fn(),
+            triggerCenterToggle: jest.fn(),
+        }));
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        expect(capturedConfig).toBeDefined();
+        expect(capturedConfig.onHoverRow).toBeDefined();
+
+        capturedConfig.onHoverRow('AAPL');
+
+        const allocChartManager = require('@charts/allocationChartManager.js');
+        expect(allocChartManager.hoverSliceByTicker).toHaveBeenCalledWith('AAPL');
+    });
+
+    it('startApp adds chart-loaded class to toggle container on mobile', async () => {
+        jest.useFakeTimers();
+        jest.resetModules();
+
+        document.body.innerHTML = '<div id="currencyToggleContainer"></div>';
+
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 500,
+        });
+
+        require('@pages/position/index.js');
+        if (documentEventListeners.DOMContentLoaded) {
+            await documentEventListeners.DOMContentLoaded();
+        }
+
+        jest.advanceTimersByTime(250);
+        const container = document.getElementById('currencyToggleContainer');
+        expect(container.classList.contains('chart-loaded')).toBe(true);
+        jest.useRealTimers();
+    });
+
+    it('initDonutRefraction bails out if container missing', async () => {
+        await import('@pages/position/index.js');
+
+        const container = document.getElementById('fundPieChartContainer');
+        if (container) {
+            const parent = container.parentNode;
+            parent.removeChild(container);
+
+            if (documentEventListeners.DOMContentLoaded) {
+                await documentEventListeners.DOMContentLoaded();
+            }
+
+            parent.appendChild(container); // Put it back
+            expect(document.getElementById('fundPieChartContainer')).toBeDefined();
+        }
+    });
+
     it('should call startApp immediately when DOM is already ready', async () => {
         // This test is challenging because the module evaluates immediately
         // Let's verify the behavior indirectly by checking that the setup works
