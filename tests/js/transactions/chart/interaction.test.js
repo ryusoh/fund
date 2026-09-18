@@ -328,7 +328,7 @@ describe('buildRangeSummary helpers logic', () => {
                 {
                     key: 'appreciation',
                     includeInRangeSummary: true,
-                    getValueAtTime: (t) => 50,
+                    getValueAtTime: () => 50,
                 },
             ],
         };
