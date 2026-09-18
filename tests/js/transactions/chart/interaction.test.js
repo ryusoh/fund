@@ -307,3 +307,127 @@ describe('Interaction logic', () => {
         });
     });
 });
+
+describe('buildRangeSummary helpers logic', () => {
+    it('calculates percentage correctly including edge cases', () => {
+        const layout = {
+            minTime: 100,
+            maxTime: 1000,
+            valueType: 'currency',
+            series: [
+                {
+                    key: 's1',
+                    includeInRangeSummary: true,
+                    getValueAtTime: (t) => (t === 100 ? 50 : t === 200 ? 100 : null),
+                },
+                {
+                    key: 's2',
+                    includeInRangeSummary: true,
+                    getValueAtTime: (t) => (t === 100 ? 0 : t === 200 ? 100 : null),
+                },
+                {
+                    key: 'appreciation',
+                    includeInRangeSummary: true,
+                    getValueAtTime: (t) => 50,
+                },
+            ],
+        };
+
+        const summary = buildRangeSummary(layout, 100, 200);
+        expect(summary).not.toBeNull();
+
+        // s1 delta = 50, percent = 100
+        const entry1 = summary.entries.find((e) => e.key === 's1');
+        expect(entry1).toBeDefined();
+        expect(entry1.delta).toBe(50);
+        expect(entry1.percent).toBe(100);
+        expect(entry1.percentFormatted).toBe('+100.00%');
+
+        // s2 start = 0, delta = 100, percent = null because start is 0
+        const entry2 = summary.entries.find((e) => e.key === 's2');
+        expect(entry2).toBeDefined();
+        expect(entry2.percent).toBeNull();
+        expect(entry2.percentFormatted).toBeNull();
+
+        // appreciation should be excluded
+        const appreciation = summary.entries.find((e) => e.key === 'appreciation');
+        expect(appreciation).toBeUndefined();
+    });
+
+    it('calculates percentage for percent layout', () => {
+        const layout = {
+            minTime: 100,
+            maxTime: 1000,
+            valueType: 'percent',
+            series: [
+                {
+                    key: 's1',
+                    getValueAtTime: (t) => (t === 100 ? 10 : t === 200 ? 20 : null),
+                },
+            ],
+        };
+
+        const summary = buildRangeSummary(layout, 100, 200);
+        expect(summary).not.toBeNull();
+
+        const entry1 = summary.entries.find((e) => e.key === 's1');
+        expect(entry1).toBeDefined();
+        // Start factor: 1 + 10/100 = 1.1
+        // End factor: 1 + 20/100 = 1.2
+        // percent = (1.2/1.1 - 1) * 100 = 9.090909
+        expect(entry1.percent).toBeCloseTo(9.0909);
+        expect(entry1.percentFormatted).toBeNull(); // formattedPercent is null for 'percent' layout type
+        expect(entry1.deltaFormatted).toBe('+10.00%'); // formatPercentInline
+    });
+
+    it('uses formatDelta if available', () => {
+        const mockFormatDelta = jest.fn().mockReturnValue('CUSTOM_FMT');
+        const layout = {
+            minTime: 100,
+            maxTime: 1000,
+            valueType: 'currency',
+            series: [
+                {
+                    key: 's1',
+                    formatDelta: mockFormatDelta,
+                    getValueAtTime: (t) => (t === 100 ? 50 : t === 200 ? 100 : null),
+                },
+            ],
+        };
+
+        const summary = buildRangeSummary(layout, 100, 200);
+        expect(summary).not.toBeNull();
+
+        const entry1 = summary.entries.find((e) => e.key === 's1');
+        expect(entry1.deltaFormatted).toBe('CUSTOM_FMT');
+        expect(mockFormatDelta).toHaveBeenCalledWith(50, 100, 100, 200);
+    });
+
+    it('handles invalid series data', () => {
+        const layout = {
+            minTime: 100,
+            maxTime: 1000,
+            valueType: 'currency',
+            series: [
+                null, // invalid
+                { key: 'noFunc' }, // no getValueAtTime
+                { key: 'skip', includeInRangeSummary: false, getValueAtTime: () => 10 }, // explicitly skipped
+                { key: 'nullVal', getValueAtTime: () => null }, // returns null
+            ],
+        };
+        const summary = buildRangeSummary(layout, 100, 200);
+        expect(summary).toBeNull();
+    });
+
+    it('handles invalid time range and layout', () => {
+        expect(buildRangeSummary(null, 100, 200)).toBeNull();
+        expect(buildRangeSummary({ series: [] }, 100, 200)).toBeNull();
+        expect(buildRangeSummary({ series: [{}] }, null, 200)).toBeNull();
+        expect(buildRangeSummary({ series: [{}] }, 100, null)).toBeNull();
+        expect(buildRangeSummary({ series: [{}] }, 100, 100)).toBeNull();
+
+        const layout = { minTime: 100, maxTime: 1000, series: [{ getValueAtTime: () => 50 }] };
+        // Clamp time bounds that lead to start === end
+        expect(buildRangeSummary(layout, 10, 20)).toBeNull(); // Both clamp to 100
+    });
+});
