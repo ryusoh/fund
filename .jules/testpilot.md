@@ -89,8 +89,24 @@ Conventional Commits per `AGENTS.md`.
   written reply — never with an empty commit, a placeholder/dummy file, or a
   commit whose message doesn't match its diff. Before pushing, check
   `git show --stat HEAD`: if it doesn't visibly address the feedback, don't
-  push. Your lane is append-only in `tests/` — never delete or rewrite existing
-  tests. Machine-enforced: `scripts/agents/check_bot_pr_hygiene.py`
-  (`make bot-pr-check`, in `make verify`, the `precommit-fix` CI gate, and a
-  dedicated PR CI step) fails on bot commits that are empty, add zero-content
-  files, or delete test lines (AGENTS.md non-negotiable #10).
+  push. Your lane is append-only in `tests/` relative to the base ref — never
+  delete or rewrite tests that exist on `main`. Machine-enforced:
+  `scripts/agents/check_bot_pr_hygiene.py` (`make bot-pr-check`, in
+  `make verify`, the `precommit-fix` CI gate, and a dedicated PR CI step) fails
+  on bot commits that are empty, add zero-content files, or drop a test file
+  below its merge-base test/assert/line counts (AGENTS.md non-negotiable #10).
+- **Reworking tests you already pushed:** if you need to replace or remove
+  tests from your own earlier commits in the same PR, do not commit a
+  deletion-and-rewrite chain — squash the branch into one commit and
+  force-push instead:
+  `git reset --soft $(git merge-base origin/main HEAD) && git commit -m '<conventional subject>' && git push --force-with-lease`.
+  Churn commits with identical messages hide what changed and trip review.
+- **No duplicated test blocks.** Before committing, check the file you edited
+  for copy-pasted `describe` blocks (fund#685 shipped the same 370-line block
+  twice). `grep -c "describe(" <file>` should match your intent.
+- **Test names state behaviour, not source line numbers.** `(line 199)`-style
+  titles rot on the first source edit. Name the condition being tested
+  (e.g. `skips rows whose detail fetch rejects`).
+- **Assert outcomes, not touchstones.** `expect(res).toContain('FINANCIAL')`
+  passes whether or not the fallback under test ran — assert the concrete
+  rendered value (a formatted number, an exact error string, a fetch count).
