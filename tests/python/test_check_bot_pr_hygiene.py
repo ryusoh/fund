@@ -34,6 +34,14 @@ def _write_and_commit(repo: Path, path: str, content: str, message: str, bot: bo
     _commit(repo, message, bot=bot)
 
 
+def _seed_file_on_main(repo: Path, path: str, content: str) -> None:
+    """Commit a file as a human on main, then fast-forward the bot branch to it."""
+    _git(repo, "checkout", "main")
+    _write_and_commit(repo, path, content, "seed", bot=False)
+    _git(repo, "checkout", "bot-branch")
+    _git(repo, "merge", "main")
+
+
 @pytest.fixture()
 def repo(tmp_path: Path) -> Path:
     """A git repo with one human commit on main and a bot branch checked out."""
@@ -53,9 +61,7 @@ def test_clean_bot_test_addition_passes(repo: Path) -> None:
 
 
 def test_bot_python_test_deletion_flagged(repo: Path) -> None:
-    _write_and_commit(
-        repo, "tests/python/test_new.py", "def test_x():\n    assert True\n", "add tests"
-    )
+    _seed_file_on_main(repo, "tests/python/test_new.py", "def test_x():\n    assert True\n")
     _write_and_commit(
         repo, "tests/python/test_new.py", "def test_x():\n    pass\n", "rewrite tests"
     )
@@ -64,14 +70,14 @@ def test_bot_python_test_deletion_flagged(repo: Path) -> None:
 
 
 def test_bot_js_test_deletion_flagged(repo: Path) -> None:
-    _write_and_commit(repo, "tests/js/widget.test.js", "a\nb\n", "add js test")
+    _seed_file_on_main(repo, "tests/js/widget.test.js", "a\nb\n")
     _write_and_commit(repo, "tests/js/widget.test.js", "a\n", "trim js test")
     violations = find_violations(repo, "main")
     assert any("test deletion" in v and "tests/js/widget.test.js" in v for v in violations)
 
 
 def test_bot_scripts_test_file_deletion_flagged(repo: Path) -> None:
-    _write_and_commit(repo, "scripts/test_widget.py", "a = 1\nb = 2\n", "add scraper test")
+    _seed_file_on_main(repo, "scripts/test_widget.py", "a = 1\nb = 2\n")
     _write_and_commit(repo, "scripts/test_widget.py", "a = 1\n", "trim scraper test")
     violations = find_violations(repo, "main")
     assert any("test deletion" in v for v in violations)
@@ -107,7 +113,7 @@ def test_bot_test_case_reduction_flagged(repo: Path) -> None:
         "it('case 2', () => {\n    expect(2).toBe(2);\n});\n"
     )
     reduced = "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
-    _write_and_commit(repo, "tests/js/cases.test.js", initial, "add 2 cases")
+    _seed_file_on_main(repo, "tests/js/cases.test.js", initial)
     _write_and_commit(repo, "tests/js/cases.test.js", reduced, "drop 1 case")
     violations = find_violations(repo, "main")
     assert any("reduces test cases (2 -> 1)" in v for v in violations)
@@ -116,22 +122,64 @@ def test_bot_test_case_reduction_flagged(repo: Path) -> None:
 def test_bot_test_assertion_reduction_flagged(repo: Path) -> None:
     initial = "it('case 1', () => {\n    expect(1).toBe(1);\n    expect(2).toBe(2);\n});\n"
     reduced = "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
-    _write_and_commit(repo, "tests/js/asserts.test.js", initial, "add 2 asserts")
+    _seed_file_on_main(repo, "tests/js/asserts.test.js", initial)
     _write_and_commit(repo, "tests/js/asserts.test.js", reduced, "drop 1 assert")
     violations = find_violations(repo, "main")
     assert any("reduces assertions (2 -> 1)" in v for v in violations)
 
 
 def test_bot_test_file_removal_flagged(repo: Path) -> None:
-    _write_and_commit(
-        repo, "tests/js/temp.test.js", "it('temp', () => expect(1).toBe(1));\n", "add temp test"
-    )
+    _seed_file_on_main(repo, "tests/js/temp.test.js", "it('temp', () => expect(1).toBe(1));\n")
     target = repo / "tests/js/temp.test.js"
     target.unlink()
     _git(repo, "rm", "tests/js/temp.test.js")
     _commit(repo, "remove test file")
     violations = find_violations(repo, "main")
     assert any("test deletion" in v and "temp.test.js was deleted" in v for v in violations)
+
+
+def test_bot_churn_on_own_additions_allowed(repo: Path) -> None:
+    """fund#685: deleting tests the bot added earlier in the same branch is not a
+    violation — only the net diff lands, and the base ref's tests are intact."""
+    _seed_file_on_main(repo, "tests/js/churn.test.js", "it('base', () => expect(1).toBe(1));\n")
+    grown = (
+        "it('base', () => expect(1).toBe(1));\n"
+        "it('new 1', () => expect(1).toBe(1));\n"
+        "it('new 2', () => expect(1).toBe(1));\n"
+    )
+    _write_and_commit(repo, "tests/js/churn.test.js", grown, "add tests")
+    _write_and_commit(
+        repo, "tests/js/churn.test.js", "it('base', () => expect(1).toBe(1));\n", "rework"
+    )
+    _write_and_commit(repo, "tests/js/churn.test.js", grown + "it('new 3', () => {});\n", "re-add")
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_new_test_file_added_then_removed_allowed(repo: Path) -> None:
+    _write_and_commit(
+        repo, "tests/js/temp.test.js", "it('temp', () => expect(1).toBe(1));\n", "add temp test"
+    )
+    target = repo / "tests/js/temp.test.js"
+    target.unlink()
+    _git(repo, "rm", "tests/js/temp.test.js")
+    _commit(repo, "remove temp test")
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_mid_branch_dip_below_base_flagged(repo: Path) -> None:
+    """Per-commit strictness: dipping below the base count fails even if a later
+    commit restores it — revert commits cannot fix a violation."""
+    initial = (
+        "it('case 1', () => {\n    expect(1).toBe(1);\n});\n"
+        "it('case 2', () => {\n    expect(2).toBe(2);\n});\n"
+    )
+    _seed_file_on_main(repo, "tests/js/dip.test.js", initial)
+    _write_and_commit(
+        repo, "tests/js/dip.test.js", "it('case 1', () => {\n    expect(1).toBe(1);\n});\n", "dip"
+    )
+    _write_and_commit(repo, "tests/js/dip.test.js", initial, "restore")
+    violations = find_violations(repo, "main")
+    assert any("reduces test cases (2 -> 1)" in v for v in violations)
 
 
 def test_bot_empty_commit_flagged(repo: Path) -> None:

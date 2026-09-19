@@ -10,8 +10,11 @@ questions). This check fails the gate on any bot-authored commit in
 
 1. changes no files (empty commit),
 2. adds or changes a file with zero content lines (placeholder/dummy pattern),
-3. deletes lines from a test file — bot lanes are append-only in tests
-   (Testpilot owns ``tests/``; no other bot lane may touch tests at all),
+3. drops a test file below its merge-base test/assert/line counts — bot lanes
+   are append-only in tests relative to the base ref (Testpilot owns
+   ``tests/``; no other bot lane may touch tests at all). Deleting tests the
+   bot itself added earlier in the same branch is allowed: only the net diff
+   lands, and forbidding self-churn produced false positives (fund#685),
 4. commits stray bot artifacts (e.g. ``pr_body.txt``, scratch/temp files),
 5. touches ``eslint-suppressions.json`` from a non-refactor lane or increases
    suppressions (complexity ratchet violation).
@@ -171,6 +174,7 @@ def _numstat(repo: Path, sha: str) -> list[tuple[str, str, str]]:
 def find_violations(repo: Path, base: str, head: str = "HEAD") -> list[str]:
     """Inspect bot-authored commits in ``base..head``; return violation strings."""
     revs = _git(repo, "rev-list", "--no-merges", f"{base}..{head}").split()
+    merge_base = _git(repo, "merge-base", base, head).strip()
     violations = []
     for sha in reversed(revs):
         author = _git(repo, "show", "-s", "--format=%ae %an", sha)
@@ -185,37 +189,37 @@ def find_violations(repo: Path, base: str, head: str = "HEAD") -> list[str]:
             if added == "0" and deleted == "0":
                 violations.append(f"{sha[:8]} placeholder change: {path} has zero content lines")
             if _is_test_path(path) and deleted not in ("0", "-"):
-                parent = f"{sha}~1"
-                before_content = _file_content(repo, parent, path)
+                base_content = _file_content(repo, merge_base, path)
                 after_content = _file_content(repo, sha, path)
 
                 if after_content is None:
-                    violations.append(
-                        f"{sha[:8]} test deletion: {path} was deleted"
-                        " — bot lanes are append-only in tests"
-                    )
+                    if base_content is not None:
+                        violations.append(
+                            f"{sha[:8]} test deletion: {path} was deleted"
+                            " — bot lanes are append-only in tests"
+                        )
                     continue
 
-                if before_content is not None:
-                    before_tests, before_asserts = _count_tests_and_asserts(before_content)
+                if base_content is not None:
+                    base_tests, base_asserts = _count_tests_and_asserts(base_content)
                     after_tests, after_asserts = _count_tests_and_asserts(after_content)
 
-                    if before_tests > 0 and after_tests < before_tests:
+                    if base_tests > 0 and after_tests < base_tests:
                         violations.append(
-                            f"{sha[:8]} test deletion: {path} reduces test cases ({before_tests} -> {after_tests})"
+                            f"{sha[:8]} test deletion: {path} reduces test cases ({base_tests} -> {after_tests})"
                             " — bot lanes are append-only in tests"
                         )
-                    elif before_asserts > 0 and after_asserts < before_asserts:
+                    elif base_asserts > 0 and after_asserts < base_asserts:
                         violations.append(
-                            f"{sha[:8]} test deletion: {path} reduces assertions ({before_asserts} -> {after_asserts})"
+                            f"{sha[:8]} test deletion: {path} reduces assertions ({base_asserts} -> {after_asserts})"
                             " — bot lanes are append-only in tests"
                         )
-                    elif before_tests == 0 and before_asserts == 0:
-                        before_lines = len(before_content.splitlines())
+                    elif base_tests == 0 and base_asserts == 0:
+                        base_lines = len(base_content.splitlines())
                         after_lines = len(after_content.splitlines())
-                        if after_lines < before_lines:
+                        if after_lines < base_lines:
                             violations.append(
-                                f"{sha[:8]} test deletion: {path} loses {before_lines - after_lines} line(s)"
+                                f"{sha[:8]} test deletion: {path} loses {base_lines - after_lines} line(s)"
                                 " — bot lanes are append-only in tests"
                             )
             if _is_stray_artifact(path):

@@ -70,8 +70,10 @@ ES modules via an import map.
     bot-authored commits by `scripts/agents/check_bot_pr_hygiene.py`
     (`make bot-pr-check`, part of `make verify` and the `precommit-fix` CI
     gate, plus a dedicated step in `.github/workflows/ci.yml`): it fails on bot
-    commits that are empty, add zero-content files, delete lines from test files
-    (bot lanes are append-only in `tests/`), commit stray bot artifacts
+    commits that are empty, add zero-content files, drop a test file below its
+    merge-base test/assert/line counts (bot lanes are append-only in `tests/`
+    relative to the base ref; reworking tests the bot itself added earlier in
+    the same branch is allowed), commit stray bot artifacts
     (`pr_body.txt`, `pr_description.txt`, scratch files), or violate the
     complexity ratchet in `eslint-suppressions.json` (no added suppressions or
     count increases; only Architect may touch it to prune). The gate is
