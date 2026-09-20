@@ -519,7 +519,9 @@ function _computeOpenEntry(holding, baselineDate, currentPeriodStart, lotsByTick
 
 function _buildLifespanOpenEntries(snapshot, baselineDate, currentPeriodStart, lotsByTicker) {
     return snapshot.holdings
-        .map((holding) => _computeOpenEntry(holding, baselineDate, currentPeriodStart, lotsByTicker))
+        .map((holding) =>
+            _computeOpenEntry(holding, baselineDate, currentPeriodStart, lotsByTicker)
+        )
         .filter(Boolean)
         .sort((a, b) => b.spanDays - a.spanDays);
 }
@@ -609,7 +611,10 @@ function _computeWeightedAverages(openEntries, closedEntries) {
 
 function _buildLifespanSummaryRows(snapshot, openEntries, closedEntries) {
     const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
-    const { weightedAvgOpen, weightedAvgClosed, weightedAvgAll } = _computeWeightedAverages(openEntries, closedEntries);
+    const { weightedAvgOpen, weightedAvgClosed, weightedAvgAll } = _computeWeightedAverages(
+        openEntries,
+        closedEntries
+    );
 
     if (Number.isFinite(weightedAvgOpen)) {
         summaryRows.push([
@@ -666,7 +671,12 @@ export async function getLifespanStatsText() {
     }
 
     const baselineDate = parseDateStrict(snapshot.dateLabel) || new Date();
-    const openEntries = _buildLifespanOpenEntries(snapshot, baselineDate, currentPeriodStart, lotsByTicker);
+    const openEntries = _buildLifespanOpenEntries(
+        snapshot,
+        baselineDate,
+        currentPeriodStart,
+        lotsByTicker
+    );
     const openTable = _buildLifespanOpenTable(openEntries);
 
     const openTickerSet = new Set(
