@@ -36,7 +36,9 @@ cleanups — pick a different target.
       into both — don't. If you spot one, leave it for that routine.
     - `tests/` — bot lanes are append-only there; never delete or shrink a test
       file (`make bot-pr-check` / `scripts/agents/check_bot_pr_hygiene.py`
-      enforces this on every commit in the PR).
+      enforces this on every commit in the PR). Exception: when your dead-code
+      removal deletes production code, that code's tests may shrink or be
+      deleted **in the same commit** (fund#686).
     - Ignore `js/vendor/**` and other third-party code — its TODOs are not ours.
     - Never touch generated `data/` or build/coverage artifacts.
 
@@ -56,9 +58,10 @@ success, not a reason to invent work or reach into another lane.
 - Re-exported public API, worker entry points, CLI `main()`/`argparse` functions,
   and scripts referenced by agent workflows/skills or `bin/` wrappers are not dead
   just because tests or doc workflows are the only in-repo caller.
-- A symbol whose only remaining reference is its **own dedicated test file** is
-  NOT a valid target: removing it requires deleting that test, and bots are
-  append-only in `tests/`. Skip it and pick a different target.
+- A symbol whose only remaining reference is its **own test file** IS a valid
+  target: remove the code and its tests in the **same commit** — the hygiene
+  gate allows test deletions that ride with production deletions (fund#686).
+  Split across two commits, the test-only deletion fails the gate.
 - Commented-out blocks and unreachable branches within application source.
 - A `TODO` is "real" only if it names a concrete, currently-true gap. If resolving
   it requires behaviour change, that change must be covered by a test (CI enforces
@@ -85,6 +88,12 @@ they cannot be fixed by adding more commits. If one fails on your PR, that PR is
 dead: push nothing further, do not revert-and-repush under a different message,
 and end the run. Never push an empty or off-message commit to "make progress" —
 that is itself a gate violation.
+
+Never satisfy a count-based gate with placeholder assertions
+(`expect(true).toBe(true)`) or by re-adding gutted versions of tests you
+deleted — a red check costs one run; fake tests on `main` cost every future
+reader (fund#686, where exactly this happened). If a gate blocks legitimate
+work, end the run and state the blockage plainly in the PR body.
 
 ## Commit and pull request
 
