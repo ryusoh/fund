@@ -96,7 +96,7 @@
   },
   "js/transactions/terminal/stats/analysis.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   },
   "tests/js/transactions/chart_regression.test.js": {
