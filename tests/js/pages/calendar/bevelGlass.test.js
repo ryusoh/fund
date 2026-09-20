@@ -1,8 +1,4 @@
-import {
-    applyBevelGlass,
-    clearBevelGlass,
-    destroyBevelGlass,
-} from '@pages/calendar/bevelGlassPlugin.js';
+import { applyBevelGlass } from '@pages/calendar/bevelGlassPlugin.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -331,16 +327,6 @@ describe('bevelGlassPlugin', () => {
             const bgBlock = calCss.match(/\.bevel-ready\s+\.ch-subdomain-bg\s*\{([^}]+)\}/);
             expect(bgBlock).not.toBeNull();
             expect(bgBlock[1]).toMatch(/url\(#bgl-cell-bevel\)/);
-        });
-    });
-
-    describe('clearBevelGlass / destroyBevelGlass', () => {
-        it('clearBevelGlass is a no-op (strokes live on cells)', () => {
-            expect(() => clearBevelGlass()).not.toThrow();
-        });
-
-        it('destroyBevelGlass is a no-op', () => {
-            expect(() => destroyBevelGlass()).not.toThrow();
         });
     });
 });

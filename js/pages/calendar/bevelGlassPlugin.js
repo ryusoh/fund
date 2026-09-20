@@ -210,7 +210,3 @@ export function applyBevelGlass(d3Instance, selector) {
         heatmapEl.classList.add('bevel-ready');
     }
 }
-
-// No-ops: strokes live on the cell rects — they move/die with the cells.
-export function clearBevelGlass() {}
-export function destroyBevelGlass() {}
