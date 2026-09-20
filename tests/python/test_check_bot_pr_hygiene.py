@@ -182,6 +182,69 @@ def test_bot_mid_branch_dip_below_base_flagged(repo: Path) -> None:
     assert any("reduces test cases (2 -> 1)" in v for v in violations)
 
 
+def _write_and_commit_files(repo: Path, files: dict[str, str | None], message: str) -> None:
+    """Commit multiple file changes as the bot; None deletes the file."""
+    for path, content in files.items():
+        target = repo / path
+        if content is None:
+            target.unlink()
+            _git(repo, "rm", path)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content)
+            _git(repo, "add", path)
+    _commit(repo, message)
+
+
+def test_bot_dead_code_removal_with_tests_allowed(repo: Path) -> None:
+    """fund#686: removing dead prod code deletes its tests in the same commit."""
+    _seed_file_on_main(
+        repo, "js/pages/calendar/dead.js", "export function used() {}\nexport function dead() {}\n"
+    )
+    _seed_file_on_main(
+        repo,
+        "tests/js/pages/calendar/dead.test.js",
+        "it('used', () => expect(1).toBe(1));\nit('dead', () => expect(1).toBe(1));\n",
+    )
+    _write_and_commit_files(
+        repo,
+        {
+            "js/pages/calendar/dead.js": "export function used() {}\n",
+            "tests/js/pages/calendar/dead.test.js": "it('used', () => expect(1).toBe(1));\n",
+        },
+        "chore(calendar): remove dead code",
+    )
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_prod_module_and_test_file_deleted_together_allowed(repo: Path) -> None:
+    _seed_file_on_main(repo, "js/old.js", "export function old() {}\n")
+    _seed_file_on_main(repo, "tests/js/old.test.js", "it('old', () => expect(1).toBe(1));\n")
+    _write_and_commit_files(
+        repo, {"js/old.js": None, "tests/js/old.test.js": None}, "chore: remove old module"
+    )
+    assert find_violations(repo, "main") == []
+
+
+def test_bot_test_deletion_in_separate_commit_still_flagged(repo: Path) -> None:
+    """The exception requires prod deletions in the SAME commit — splitting the
+    test deletion into its own commit does not dodge the gate."""
+    _seed_file_on_main(repo, "js/split.js", "export function used() {}\nexport function dead() {}\n")
+    _seed_file_on_main(
+        repo,
+        "tests/js/split.test.js",
+        "it('used', () => expect(1).toBe(1));\nit('dead', () => expect(1).toBe(1));\n",
+    )
+    _write_and_commit(
+        repo, "tests/js/split.test.js", "it('used', () => expect(1).toBe(1));\n", "drop tests"
+    )
+    _write_and_commit(
+        repo, "js/split.js", "export function used() {}\n", "chore: remove dead code"
+    )
+    violations = find_violations(repo, "main")
+    assert any("reduces test cases (2 -> 1)" in v for v in violations)
+
+
 def test_bot_empty_commit_flagged(repo: Path) -> None:
     _commit(repo, "responding to feedback", allow_empty=True)
     violations = find_violations(repo, "main")

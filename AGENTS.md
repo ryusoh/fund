@@ -73,7 +73,9 @@ ES modules via an import map.
     commits that are empty, add zero-content files, drop a test file below its
     merge-base test/assert/line counts (bot lanes are append-only in `tests/`
     relative to the base ref; reworking tests the bot itself added earlier in
-    the same branch is allowed), commit stray bot artifacts
+    the same branch is allowed, as are test reductions riding in the same
+    commit as production-code deletions — dead code's tests die with it),
+    commit stray bot artifacts
     (`pr_body.txt`, `pr_description.txt`, scratch files), or violate the
     complexity ratchet in `eslint-suppressions.json` (no added suppressions or
     count increases; only Architect may touch it to prune). The gate is

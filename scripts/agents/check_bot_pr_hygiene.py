@@ -14,7 +14,10 @@ questions). This check fails the gate on any bot-authored commit in
    are append-only in tests relative to the base ref (Testpilot owns
    ``tests/``; no other bot lane may touch tests at all). Deleting tests the
    bot itself added earlier in the same branch is allowed: only the net diff
-   lands, and forbidding self-churn produced false positives (fund#685),
+   lands, and forbidding self-churn produced false positives (fund#685).
+   Also allowed: test reductions riding in the same commit as production-code
+   deletions — dead-code removal deletes the dead code's tests (Janitor's
+   lane; fund#686),
 4. commits stray bot artifacts (e.g. ``pr_body.txt``, scratch/temp files),
 5. touches ``eslint-suppressions.json`` from a non-refactor lane or increases
    suppressions (complexity ratchet violation).
@@ -185,10 +188,16 @@ def find_violations(repo: Path, base: str, head: str = "HEAD") -> list[str]:
         if not rows:
             violations.append(f"{sha[:8]} empty commit: changes no files")
             continue
+        prod_deleted = any(
+            deleted not in ("0", "-") and not _is_test_path(path) for _, deleted, path in rows
+        )
         for added, deleted, path in rows:
             if added == "0" and deleted == "0":
                 violations.append(f"{sha[:8]} placeholder change: {path} has zero content lines")
-            if _is_test_path(path) and deleted not in ("0", "-"):
+            # Dead-code exception: when a commit deletes production code, the
+            # tests of that code may shrink with it in the same commit
+            # (Janitor's lane; fund#686). Test-only reductions stay flagged.
+            if not prod_deleted and _is_test_path(path) and deleted not in ("0", "-"):
                 base_content = _file_content(repo, merge_base, path)
                 after_content = _file_content(repo, sha, path)
 
