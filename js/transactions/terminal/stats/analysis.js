@@ -489,44 +489,44 @@ ${detailTable}`;
 ${note}`;
     return result;
 }
-export async function getLifespanStatsText() {
-    const snapshot = await getLatestCompositionSnapshot();
-    if (!snapshot) {
-        return 'Composition snapshot unavailable. Run `plot composition` first to generate this data.';
-    }
-    const { lotsByTicker, currentPeriodStart, closedPeriods } = buildLotSnapshots();
+function _hasLifespanData(currentPeriodStart, closedPeriods) {
     const hasOpenData = currentPeriodStart instanceof Map ? currentPeriodStart.size > 0 : false;
     const hasClosedData = Array.isArray(closedPeriods) && closedPeriods.length > 0;
-    if (!hasOpenData && !hasClosedData) {
-        return 'Transaction history not loaded yet, unable to compute holding lifespans.';
-    }
+    return { hasOpenData, hasClosedData };
+}
 
-    const baselineDate = parseDateStrict(snapshot.dateLabel) || new Date();
-    const openEntries = snapshot.holdings
-        .map((holding) => {
-            const normalizedTicker = normalizeTickerKey(holding.ticker);
-            const startDate = currentPeriodStart?.get(normalizedTicker);
-            if (!(startDate instanceof Date)) {
-                return null;
-            }
-            const lots = lotsByTicker?.get(normalizedTicker) || [];
-            let openShares = 0;
-            for (let i = 0; i < lots.length; i++) {
-                openShares += lots[i].qty;
-            }
-            if (!Number.isFinite(openShares) || openShares <= 0) {
-                return null;
-            }
-            const spanDays = Math.max(0, (baselineDate - startDate) / MS_IN_DAY);
-            return {
-                ticker: formatTicker(holding.ticker),
-                spanDays,
-                openShares,
-            };
-        })
+function _computeOpenEntry(holding, baselineDate, currentPeriodStart, lotsByTicker) {
+    const normalizedTicker = normalizeTickerKey(holding.ticker);
+    const startDate = currentPeriodStart?.get(normalizedTicker);
+    if (!(startDate instanceof Date)) {
+        return null;
+    }
+    const lots = lotsByTicker?.get(normalizedTicker) || [];
+    let openShares = 0;
+    for (let i = 0; i < lots.length; i++) {
+        openShares += lots[i].qty;
+    }
+    if (!Number.isFinite(openShares) || openShares <= 0) {
+        return null;
+    }
+    const spanDays = Math.max(0, (baselineDate - startDate) / MS_IN_DAY);
+    return {
+        ticker: formatTicker(holding.ticker),
+        spanDays,
+        openShares,
+    };
+}
+
+function _buildLifespanOpenEntries(snapshot, baselineDate, currentPeriodStart, lotsByTicker) {
+    return snapshot.holdings
+        .map((holding) =>
+            _computeOpenEntry(holding, baselineDate, currentPeriodStart, lotsByTicker)
+        )
         .filter(Boolean)
         .sort((a, b) => b.spanDays - a.spanDays);
+}
 
+function _buildLifespanOpenTable(openEntries) {
     const openRows = openEntries
         .slice(0, Math.min(openEntries.length, 8))
         .map((entry) => [
@@ -536,7 +536,7 @@ export async function getLifespanStatsText() {
             formatYearsValue(entry.spanDays),
         ]);
 
-    const openTable = openRows.length
+    return openRows.length
         ? renderAsciiTable({
               title: 'POSITION LIFESPAN (OPEN TICKERS)',
               headers: ['Ticker', 'Open Shares', 'Span Days', 'Span Years'],
@@ -544,11 +544,10 @@ export async function getLifespanStatsText() {
               alignments: ['left', 'right', 'right', 'right'],
           })
         : '';
+}
 
-    const openTickerSet = new Set(
-        snapshot.holdings.map((holding) => normalizeTickerKey(holding.ticker))
-    );
-    const closedEntries = (Array.isArray(closedPeriods) ? closedPeriods : [])
+function _buildLifespanClosedEntries(closedPeriods, openTickerSet) {
+    return (Array.isArray(closedPeriods) ? closedPeriods : [])
         .filter((period) => !openTickerSet.has(normalizeTickerKey(period.ticker || '')))
         .map((period) => ({
             ticker: formatTicker(period.ticker),
@@ -560,7 +559,9 @@ export async function getLifespanStatsText() {
         }))
         .filter((entry) => Number.isFinite(entry.spanDays) && entry.spanDays !== null)
         .sort((a, b) => b.spanDays - a.spanDays);
+}
 
+function _buildLifespanClosedTable(closedEntries) {
     const closedRows = closedEntries
         .slice(0, Math.min(closedEntries.length, 8))
         .map((entry) => [
@@ -570,7 +571,7 @@ export async function getLifespanStatsText() {
             formatYearsValue(entry.spanDays),
         ]);
 
-    const closedTable = closedRows.length
+    return closedRows.length
         ? renderAsciiTable({
               title: 'POSITION LIFESPAN (CLOSED TICKERS)',
               headers: ['Ticker', 'Closed Shares', 'Span Days', 'Span Years'],
@@ -578,8 +579,9 @@ export async function getLifespanStatsText() {
               alignments: ['left', 'right', 'right', 'right'],
           })
         : '';
+}
 
-    const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
+function _computeWeightedAverages(openEntries, closedEntries) {
     let openShareSum = 0;
     for (let i = 0; i < openEntries.length; i++) {
         openShareSum += openEntries[i].openShares;
@@ -603,6 +605,16 @@ export async function getLifespanStatsText() {
         combinedDenominator > 0
             ? (openWeightedSpanSum + closedWeightedSpanSum) / combinedDenominator
             : null;
+
+    return { weightedAvgOpen, weightedAvgClosed, weightedAvgAll };
+}
+
+function _buildLifespanSummaryRows(snapshot, openEntries, closedEntries) {
+    const summaryRows = [['Snapshot Date', snapshot.dateLabel || 'Latest']];
+    const { weightedAvgOpen, weightedAvgClosed, weightedAvgAll } = _computeWeightedAverages(
+        openEntries,
+        closedEntries
+    );
 
     if (Number.isFinite(weightedAvgOpen)) {
         summaryRows.push([
@@ -643,6 +655,37 @@ export async function getLifespanStatsText() {
     if (!openEntries.length && !closedEntries.length) {
         summaryRows.push(['Positions', 'No lifespan data available']);
     }
+
+    return summaryRows;
+}
+
+export async function getLifespanStatsText() {
+    const snapshot = await getLatestCompositionSnapshot();
+    if (!snapshot) {
+        return 'Composition snapshot unavailable. Run `plot composition` first to generate this data.';
+    }
+    const { lotsByTicker, currentPeriodStart, closedPeriods } = buildLotSnapshots();
+    const { hasOpenData, hasClosedData } = _hasLifespanData(currentPeriodStart, closedPeriods);
+    if (!hasOpenData && !hasClosedData) {
+        return 'Transaction history not loaded yet, unable to compute holding lifespans.';
+    }
+
+    const baselineDate = parseDateStrict(snapshot.dateLabel) || new Date();
+    const openEntries = _buildLifespanOpenEntries(
+        snapshot,
+        baselineDate,
+        currentPeriodStart,
+        lotsByTicker
+    );
+    const openTable = _buildLifespanOpenTable(openEntries);
+
+    const openTickerSet = new Set(
+        snapshot.holdings.map((holding) => normalizeTickerKey(holding.ticker))
+    );
+    const closedEntries = _buildLifespanClosedEntries(closedPeriods, openTickerSet);
+    const closedTable = _buildLifespanClosedTable(closedEntries);
+
+    const summaryRows = _buildLifespanSummaryRows(snapshot, openEntries, closedEntries);
 
     const summaryTable = renderAsciiTable({
         title: 'HOLDING LIFESPAN',
