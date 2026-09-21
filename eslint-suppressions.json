@@ -91,7 +91,7 @@
   },
   "js/transactions/terminal/snapshots.js": {
     "complexity": {
-      "count": 3
+      "count": 2
     }
   },
   "js/transactions/terminal/stats/analysis.js": {
