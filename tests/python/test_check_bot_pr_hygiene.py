@@ -229,7 +229,9 @@ def test_bot_prod_module_and_test_file_deleted_together_allowed(repo: Path) -> N
 def test_bot_test_deletion_in_separate_commit_still_flagged(repo: Path) -> None:
     """The exception requires prod deletions in the SAME commit — splitting the
     test deletion into its own commit does not dodge the gate."""
-    _seed_file_on_main(repo, "js/split.js", "export function used() {}\nexport function dead() {}\n")
+    _seed_file_on_main(
+        repo, "js/split.js", "export function used() {}\nexport function dead() {}\n"
+    )
     _seed_file_on_main(
         repo,
         "tests/js/split.test.js",
@@ -238,9 +240,7 @@ def test_bot_test_deletion_in_separate_commit_still_flagged(repo: Path) -> None:
     _write_and_commit(
         repo, "tests/js/split.test.js", "it('used', () => expect(1).toBe(1));\n", "drop tests"
     )
-    _write_and_commit(
-        repo, "js/split.js", "export function used() {}\n", "chore: remove dead code"
-    )
+    _write_and_commit(repo, "js/split.js", "export function used() {}\n", "chore: remove dead code")
     violations = find_violations(repo, "main")
     assert any("reduces test cases (2 -> 1)" in v for v in violations)
 
