@@ -429,3 +429,78 @@ describe('getMarketcapSnapshotLine empty result', () => {
         expect(res).toBeNull();
     });
 });
+
+describe('getMarketcapSnapshotLine Helpers', () => {
+    let loadSpy;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        transactionState.activeChart = 'marketcap';
+        transactionState.chartDateRange = null;
+        loadSpy = jest.spyOn(dataLoader, 'loadMarketcapSnapshotData');
+    });
+
+    afterEach(() => {
+        if (loadSpy) {
+            loadSpy.mockRestore();
+        }
+    });
+
+    it('should test branches inside _isDateInRange indirectly', async () => {
+        transactionState.chartDateRange = { from: '2023-01-01', to: '2023-12-31' };
+        loadSpy.mockResolvedValue({
+            dates: ['2023-01-01', '2023-06-01', '2023-12-31'],
+            total_values: [100, 200, 300],
+            series: {
+                Tech: [50, 50, 50],
+            },
+        });
+        const res = await getMarketcapSnapshotLine({ labelPrefix: 'Market Cap' });
+        expect(res).toContain('Market Cap');
+    });
+
+    it('should test branches inside _getMarketcapHint', async () => {
+        transactionState.chartDateRange = { from: '2023-01-01', to: '2023-12-31' };
+        loadSpy.mockResolvedValue({
+            dates: ['2023-01-01', '2023-06-01', '2023-12-31'],
+            total_values: [100, 200, 300],
+            series: {
+                Tech: [50, 50, 50],
+            },
+        });
+        const res1 = await getMarketcapSnapshotLine({ labelPrefix: 'Market Cap Abs' });
+        expect(res1).toContain('Market Cap Abs');
+
+        const res2 = await getMarketcapSnapshotLine({ labelPrefix: 'Unknown' });
+        expect(res2).toContain('Unknown');
+    });
+});
+
+describe('getMarketcapSnapshotLine Error paths', () => {
+    let loadSpy;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        transactionState.activeChart = 'marketcap';
+        transactionState.chartDateRange = null;
+        loadSpy = jest.spyOn(dataLoader, 'loadMarketcapSnapshotData');
+    });
+
+    afterEach(() => {
+        if (loadSpy) {
+            loadSpy.mockRestore();
+        }
+    });
+
+    it('returns null if activeChart is not marketcap', async () => {
+        transactionState.activeChart = 'composition';
+        const res = await getMarketcapSnapshotLine();
+        expect(res).toBeNull();
+    });
+
+    it('returns null if data is null', async () => {
+        loadSpy.mockResolvedValue(null);
+        const res = await getMarketcapSnapshotLine();
+        expect(res).toBeNull();
+    });
+});

@@ -1158,6 +1158,111 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
+function _isDateInRange(date, filterFrom, filterTo) {
+    if (!date) {
+        return false;
+    }
+    if (filterFrom && date < filterFrom) {
+        return false;
+    }
+    if (filterTo && date > filterTo) {
+        return false;
+    }
+    return true;
+}
+
+function _getSnapshotTargetIndex(dates, chartDateRange) {
+    const filterFrom = parseDateSafe(chartDateRange?.from);
+    const filterTo = parseDateSafe(chartDateRange?.to);
+
+    const filteredIndices = [];
+    for (let i = 0; i < dates.length; i++) {
+        const date = parseDateSafe(dates[i]);
+        if (_isDateInRange(date, filterFrom, filterTo)) {
+            filteredIndices.push(i);
+        }
+    }
+
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
+    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+        targetIndex = dates.length - 1;
+    }
+    return targetIndex;
+}
+
+function _extractCategoryData(
+    name,
+    values,
+    targetIndex,
+    totalValueRaw,
+    dateLabel,
+    selectedCurrency
+) {
+    const seriesValues = Array.isArray(values) ? values : [];
+    const percentage = Number(seriesValues[targetIndex] ?? 0);
+    if (!Number.isFinite(percentage) || percentage <= 0.01) {
+        return null;
+    }
+    const baseValue = (totalValueRaw * percentage) / 100;
+    const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
+    return {
+        name,
+        percent: percentage,
+        absolute: convertedValue,
+    };
+}
+
+function _buildSnapshotCategories(data, targetIndex, dateLabel) {
+    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
+    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
+    const selectedCurrency = transactionState.selectedCurrency || 'USD';
+
+    const categorySeries = data.series || {};
+    const categories = [];
+    const categoryEntries = Object.entries(categorySeries);
+    for (let i = 0; i < categoryEntries.length; i += 1) {
+        const [name, values] = categoryEntries[i];
+        const catData = _extractCategoryData(
+            name,
+            values,
+            targetIndex,
+            totalValueRaw,
+            dateLabel,
+            selectedCurrency
+        );
+        if (catData) {
+            categories.push(catData);
+        }
+    }
+    categories.sort((a, b) => b.percent - a.percent);
+    return categories;
+}
+
+function _formatSnapshotLines(categories) {
+    const formatted = categories.map((s) => {
+        const valueText = formatWithSelectedCurrency(s.absolute);
+        const percentText = `${s.percent.toFixed(2)}%`;
+        return `${s.name} ${valueText} (${percentText})`;
+    });
+
+    const lines = [];
+    for (let i = 0; i < formatted.length; i += 3) {
+        lines.push(formatted.slice(i, i + 3).join('   '));
+    }
+    return lines;
+}
+
+function _getMarketcapHint(labelPrefix) {
+    if (labelPrefix === 'Market Cap') {
+        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/geography' to switch charts)";
+    }
+    if (labelPrefix === 'Market Cap Abs') {
+        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/geography' to switch charts)";
+    }
+    return '';
+}
+
 export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = {}) {
     if (
         transactionState.activeChart !== 'marketcap' &&
@@ -1175,74 +1280,16 @@ export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = 
         return null;
     }
 
-    const dates = data.dates;
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
+    const targetIndex = _getSnapshotTargetIndex(data.dates, transactionState.chartDateRange);
+    const dateLabel = data.dates[targetIndex];
 
-    const filteredIndices = [];
-    for (let i = 0; i < dates.length; i++) {
-        const date = parseDateSafe(dates[i]);
-        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
-            filteredIndices.push(i);
-        }
-    }
-
-    let targetIndex =
-        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
-    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
-        targetIndex = dates.length - 1;
-    }
-
-    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
-    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
-    const dateLabel = dates[targetIndex];
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
-    const categorySeries = data.series || {};
-    const categories = [];
-    const categoryEntries = Object.entries(categorySeries);
-    for (let i = 0; i < categoryEntries.length; i += 1) {
-        const [name, values] = categoryEntries[i];
-        const seriesValues = Array.isArray(values) ? values : [];
-        const percentage = Number(seriesValues[targetIndex] ?? 0);
-        if (!Number.isFinite(percentage) || percentage <= 0.01) {
-            continue;
-        }
-        const baseValue = (totalValueRaw * percentage) / 100;
-        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
-        categories.push({
-            name,
-            percent: percentage,
-            absolute: convertedValue,
-        });
-    }
-
+    const categories = _buildSnapshotCategories(data, targetIndex, dateLabel);
     if (!categories.length) {
         return null;
     }
 
-    categories.sort((a, b) => b.percent - a.percent);
-
-    const formatted = categories.map((s) => {
-        const valueText = formatWithSelectedCurrency(s.absolute);
-        const percentText = `${s.percent.toFixed(2)}%`;
-        return `${s.name} ${valueText} (${percentText})`;
-    });
-
-    const lines = [];
-    for (let i = 0; i < formatted.length; i += 3) {
-        lines.push(formatted.slice(i, i + 3).join('   '));
-    }
-
-    let hint = '';
-    if (labelPrefix === 'Market Cap') {
-        hint =
-            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/geography' to switch charts)";
-    } else if (labelPrefix === 'Market Cap Abs') {
-        hint =
-            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/geography' to switch charts)";
-    }
+    const lines = _formatSnapshotLines(categories);
+    const hint = _getMarketcapHint(labelPrefix);
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
