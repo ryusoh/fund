@@ -810,6 +810,27 @@ function parseDataDate(dateString) {
  * @param {Array<{date: string, dailyChange?: number}>} processedData
  * @returns {{firstDataDate: Date, lastDataDate: Date, firstMonthWithLabels: Date}}
  */
+
+/**
+ * Finds the first month with labels from processed data.
+ * @param {Array<{date: string, dailyChange?: number}>} processedData
+ * @returns {Date|null}
+ */
+function _findFirstMonthWithLabels(processedData) {
+    for (const entry of processedData) {
+        if (typeof entry.dailyChange === 'number' && entry.dailyChange !== 0) {
+            const key = entry.date.slice(0, 7);
+            const [yearStr, monthStr] = key.split('-');
+            const year = Number(yearStr);
+            const monthIndex = Number(monthStr) - 1;
+            if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
+                return new Date(Date.UTC(year, monthIndex, 1));
+            }
+        }
+    }
+    return null;
+}
+
 function computeDataBounds(processedData) {
     /* istanbul ignore next: defensive data parsing fallback in calendar init */
     const firstDataDate =
@@ -827,19 +848,7 @@ function computeDataBounds(processedData) {
     // (getNyDate wall time, parseDataDate) via their LOCAL components.
     // Mixing the domains shifts a month at either side of UTC
     // (see docs/testing-notes.md § Timezone).
-    let firstMonthWithLabels = null;
-    for (const entry of processedData) {
-        if (typeof entry.dailyChange === 'number' && entry.dailyChange !== 0) {
-            const key = entry.date.slice(0, 7);
-            const [yearStr, monthStr] = key.split('-');
-            const year = Number(yearStr);
-            const monthIndex = Number(monthStr) - 1;
-            if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
-                firstMonthWithLabels = new Date(Date.UTC(year, monthIndex, 1));
-                break;
-            }
-        }
-    }
+    let firstMonthWithLabels = _findFirstMonthWithLabels(processedData);
 
     /* istanbul ignore next: fallback for missing month labels edge case */
     if (!firstMonthWithLabels) {
