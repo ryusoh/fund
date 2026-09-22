@@ -34,10 +34,30 @@ jobs:
                   python scripts/analysis/sync_configs.py
             - name: Commit changes
               id: autocommit
-              uses: stefanzweifel/git-auto-commit-action@v7
-              with:
-                  commit_message: 'chore(data): 分析構成を自動更新 [skip ci]'
-                  commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add -A
+                  if git diff --cached --quiet; then
+                    echo 'No changes to commit.'
+                  else
+                    git commit -m "chore(data): 分析構成を自動更新 [skip ci]"
+                    # Retry push with rebase in case another workflow pushed in the meantime
+                    pushed=''
+                    for i in 1 2 3; do
+                      if git push; then
+                        pushed=true
+                        echo "changes_detected=true" >> "$GITHUB_OUTPUT"
+                        break
+                      fi
+                      echo "Push failed (attempt $i), rebasing and retrying..."
+                      git pull --rebase
+                    done
+                    if [ -z "$pushed" ]; then
+                      echo 'Push failed after 3 attempts.'
+                      exit 1
+                    fi
+                  fi
 
             # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
             # push-based Pages deploy — dispatch it explicitly.

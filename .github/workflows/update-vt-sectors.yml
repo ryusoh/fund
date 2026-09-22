@@ -22,6 +22,8 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0 # Full history so the rebase-retry push below can find a merge base
 
             - name: Set up Python
               uses: actions/setup-python@v7
@@ -68,11 +70,30 @@ jobs:
 
             - name: Commit and push changes
               id: autocommit
-              uses: stefanzweifel/git-auto-commit-action@v7
-              with:
-                  commit_message: 'chore(data): VT のセクター配分・国別構成・時価総額・HHI・PE を自動更新 [skip ci]'
-                  commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
-                  file_pattern: 'data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json data/output/figures/pe_ratio.json'
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add data/fund_sector_allocations.json data/fund_country_allocations.json data/fund_marketcap_breakdown.json data/etf_hhi.json data/output/figures/composition.json data/output/figures/sectors.json data/output/figures/geography.json data/output/figures/geography_summary.txt data/output/figures/geography_aggregated.json data/output/figures/marketcap.json data/output/figures/pe_ratio.json
+                  if git diff --cached --quiet; then
+                    echo 'No changes to commit.'
+                  else
+                    git commit -m "chore(data): VT のセクター配分・国別構成・時価総額・HHI・PE を自動更新 [skip ci]"
+                    # Retry push with rebase in case another workflow pushed in the meantime
+                    pushed=''
+                    for i in 1 2 3; do
+                      if git push; then
+                        pushed=true
+                        echo "changes_detected=true" >> "$GITHUB_OUTPUT"
+                        break
+                      fi
+                      echo "Push failed (attempt $i), rebasing and retrying..."
+                      git pull --rebase
+                    done
+                    if [ -z "$pushed" ]; then
+                      echo 'Push failed after 3 attempts.'
+                      exit 1
+                    fi
+                  fi
 
             # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
             # push-based Pages deploy — dispatch it explicitly.

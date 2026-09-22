@@ -24,6 +24,8 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0 # Full history so the rebase-retry push below can find a merge base
 
             - name: Set up Python
               uses: actions/setup-python@v7
@@ -38,11 +40,30 @@ jobs:
 
             - name: Commit and push changes
               id: autocommit
-              uses: stefanzweifel/git-auto-commit-action@v7
-              with:
-                  commit_message: 'chore(data): 為替レートを自動更新 [skip ci]'
-                  commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
-                  file_pattern: 'data/fx_data.json data/fx_daily_rates.csv' # Only commit if these files change
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add data/fx_data.json data/fx_daily_rates.csv
+                  if git diff --cached --quiet; then
+                    echo 'No changes to commit.'
+                  else
+                    git commit -m "chore(data): 為替レートを自動更新 [skip ci]"
+                    # Retry push with rebase in case another workflow pushed in the meantime
+                    pushed=''
+                    for i in 1 2 3; do
+                      if git push; then
+                        pushed=true
+                        echo "changes_detected=true" >> "$GITHUB_OUTPUT"
+                        break
+                      fi
+                      echo "Push failed (attempt $i), rebasing and retrying..."
+                      git pull --rebase
+                    done
+                    if [ -z "$pushed" ]; then
+                      echo 'Push failed after 3 attempts.'
+                      exit 1
+                    fi
+                  fi
 
             # Bot pushes use GITHUB_TOKEN + [skip ci], so they never trigger the
             # push-based Pages deploy — dispatch it explicitly.

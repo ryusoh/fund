@@ -25,10 +25,15 @@ marker, so their pushes trigger **no** push workflows — the deploy included.
 Each therefore ends with a "Trigger Pages deploy" step that runs
 `gh workflow run pages.yml --ref main` (requires `actions: write`; the
 `workflow_dispatch` API is exempt from the GITHUB_TOKEN no-retrigger rule),
-gated on a commit actually having been pushed (`changes_detected` output of
-git-auto-commit-action, or the hand-set `pushed` output in `twrr-refresh`).
-Removing that step doesn't fail anything — it silently leaves the live site's
-data stale until the next human push.
+gated on a commit actually having been pushed (`changes_detected` output, or
+`pushed` in `twrr-refresh`). The commit-and-push step is inline shell in all
+four, with a rebase-and-retry push loop: the scripts run for minutes, so
+another bot push (dependabot auto-merge, another data job) can land mid-run
+and a plain push dies non-fast-forward (update-vt-sectors, 2026-09-21). The
+loop rebases onto the new tip and retries; after 3 failed attempts the step
+fails loudly rather than silently dropping the update. Removing the deploy
+step doesn't fail anything — it silently leaves the live site's data stale
+until the next human push.
 
 ## Gotchas that already bit
 
