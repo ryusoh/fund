@@ -1175,15 +1175,16 @@ function _getSnapshotTargetIndex(dates, chartDateRange) {
     const filterFrom = parseDateSafe(chartDateRange?.from);
     const filterTo = parseDateSafe(chartDateRange?.to);
 
-    let lastValidIndex = -1;
+    const filteredIndices = [];
     for (let i = 0; i < dates.length; i++) {
         const date = parseDateSafe(dates[i]);
         if (_isDateInRange(date, filterFrom, filterTo)) {
-            lastValidIndex = i;
+            filteredIndices.push(i);
         }
     }
 
-    let targetIndex = lastValidIndex >= 0 ? lastValidIndex : dates.length - 1;
+    let targetIndex =
+        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
     if (!Number.isFinite(targetIndex) || targetIndex < 0) {
         targetIndex = dates.length - 1;
     }
@@ -1252,6 +1253,16 @@ function _formatSnapshotLines(categories) {
     return lines;
 }
 
+function _getMarketcapHint(labelPrefix) {
+    if (labelPrefix === 'Market Cap') {
+        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/geography' to switch charts)";
+    }
+    if (labelPrefix === 'Market Cap Abs') {
+        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/geography' to switch charts)";
+    }
+    return '';
+}
+
 export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = {}) {
     if (
         transactionState.activeChart !== 'marketcap' &&
@@ -1281,16 +1292,6 @@ export async function getMarketcapSnapshotLine({ labelPrefix = 'Market Cap' } = 
     const hint = _getMarketcapHint(labelPrefix);
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
-}
-
-function _getMarketcapHint(labelPrefix) {
-    if (labelPrefix === 'Market Cap') {
-        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/sectors/geography' to switch charts)";
-    }
-    if (labelPrefix === 'Market Cap Abs') {
-        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/sectors/geography' to switch charts)";
-    }
-    return '';
 }
 
 function normalizeSeriesPoints(series, primaryDateKey, valueKey) {
