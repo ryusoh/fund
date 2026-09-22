@@ -1159,9 +1159,15 @@ export async function getGeographySnapshotLine({ labelPrefix = 'Geography' } = {
 }
 
 function _isDateInRange(date, filterFrom, filterTo) {
-    if (!date) { return false; }
-    if (filterFrom && date < filterFrom) { return false; }
-    if (filterTo && date > filterTo) { return false; }
+    if (!date) {
+        return false;
+    }
+    if (filterFrom && date < filterFrom) {
+        return false;
+    }
+    if (filterTo && date > filterTo) {
+        return false;
+    }
     return true;
 }
 
@@ -1184,7 +1190,14 @@ function _getSnapshotTargetIndex(dates, chartDateRange) {
     return targetIndex;
 }
 
-function _extractCategoryData(name, values, targetIndex, totalValueRaw, dateLabel, selectedCurrency) {
+function _extractCategoryData(
+    name,
+    values,
+    targetIndex,
+    totalValueRaw,
+    dateLabel,
+    selectedCurrency
+) {
     const seriesValues = Array.isArray(values) ? values : [];
     const percentage = Number(seriesValues[targetIndex] ?? 0);
     if (!Number.isFinite(percentage) || percentage <= 0.01) {
@@ -1209,7 +1222,14 @@ function _buildSnapshotCategories(data, targetIndex, dateLabel) {
     const categoryEntries = Object.entries(categorySeries);
     for (let i = 0; i < categoryEntries.length; i += 1) {
         const [name, values] = categoryEntries[i];
-        const catData = _extractCategoryData(name, values, targetIndex, totalValueRaw, dateLabel, selectedCurrency);
+        const catData = _extractCategoryData(
+            name,
+            values,
+            targetIndex,
+            totalValueRaw,
+            dateLabel,
+            selectedCurrency
+        );
         if (catData) {
             categories.push(catData);
         }
