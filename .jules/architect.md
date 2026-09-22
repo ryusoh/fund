@@ -70,6 +70,12 @@ already proposed or previously rejected — pick a different target.
   the target was not in the >20 backlog; do not touch `eslint-suppressions.json`.
 - `make precommit-fix` green (matches the CI gate; verify `bot-pr-check` and
   all pre-commit hooks pass locally), with **coverage preserved**.
+- **`make precommit-fix` must leave the worktree clean.** It fixes first, then
+  checks — if prettier/eslint reformatted anything, that output must be staged
+  and committed _before_ you push. CI re-runs the fixer and fails the PR on a
+  dirty tree ("committed files were not gate-clean"), which is exactly how a
+  PR whose hooks all "Passed" still goes red (PR #688, 2026-09-21). After the
+  fixer run, `git status --porcelain` empty is the bar.
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
   before the run, `check <hash>` before a retry); unchanged means edit something
