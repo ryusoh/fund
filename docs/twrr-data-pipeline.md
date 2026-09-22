@@ -57,11 +57,20 @@ regular-session close per held ticker, written nightly by
 `processAndEnrichHoldings` as a plain `{ticker: price}` map, gated to trading
 days by `isTradingDay`.
 
-- **The fetchers must return the official close, not the latest trade** — the
-  run happens at 21:15 UTC (17:15 ET, mid after-hours), so latest-trade fields
-  carry after-hours drift. yfinance uses daily bars (`interval="1d"`,
-  `auto_adjust=False`), Alpaca `dailyBar.c`, Polygon `day.close`, each falling
-  back to the latest trade when the daily bar is missing.
+- **The fetchers must return the official close of the last _completed_
+  session, never a forming bar or latest trade** — latest-trade fields carry
+  after-hours drift, and a provider's "current daily bar" is only the
+  completed session between the 16:00 ET close and the 20:00 ET overnight
+  open. The scheduled run lands at 21:15 UTC (17:15 ET), but Actions
+  congestion can delay it past 20:00 ET (2026-09-22 incident: a ~3h delay made
+  Alpaca's `dailyBar` the forming _overnight_ bar, and the next trading day
+  diffed live prices against mid-overnight quotes). So each fetcher selects by
+  session date vs. run time instead of position: yfinance drops today's daily
+  bar while the session is still open (`_last_completed_close`), Alpaca picks
+  `dailyBar.c` vs `prevDailyBar.c` (`_select_alpaca_close`), Polygon `day.close`
+  vs `prev_day.close` (`_select_polygon_close`), each falling back to the
+  latest trade when no daily bar is available. A bar dated before today
+  (weekend/holiday run) is always completed and used as-is.
 - After-hours the live quote ≈ the baseline, so the day change reads ~0 / the
   pure after-hours drift by design.
 - The previous `prev_close.json` sidecar was removed (2026-09-09): written

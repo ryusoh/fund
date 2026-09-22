@@ -5,7 +5,15 @@ import pandas as pd
 import pytest
 import pytz
 
-from scripts.data.update_fund_data import get_prices, get_tickers_from_holdings
+from scripts.data.update_fund_data import (
+    _last_completed_close,
+    _select_alpaca_close,
+    _select_polygon_close,
+    get_prices,
+    get_tickers_from_holdings,
+)
+
+ET = pytz.timezone("US/Eastern")
 
 
 @pytest.fixture
@@ -38,6 +46,142 @@ def test_set_tz_cache_location(mock_mkdtemp, mock_set_tz):
 def test_get_tickers_from_holdings(mock_holdings_file):
     tickers = get_tickers_from_holdings(mock_holdings_file)
     assert set(tickers) == {"AAPL", "TSLA"}
+
+
+# --- Session-aware baseline selection ---
+# The baseline must always be the last *completed* regular-session close,
+# regardless of when the run lands (Actions congestion delayed the nightly run
+# past the 20:00 ET overnight open on 2026-09-21 and wrote forming-bar prices).
+
+
+def test_alpaca_overnight_uses_prev_daily_bar():
+    # 20:07 ET Monday: dailyBar has rolled to Tuesday's forming overnight bar
+    now = datetime(2026, 9, 21, 20, 7, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 159.31, "t": "2026-09-22T04:00:00Z"},
+        "prevDailyBar": {"c": 160.89, "t": "2026-09-21T04:00:00Z"},
+        "latestTrade": {"p": 159.40},
+    }
+    assert _select_alpaca_close(snapshot, now) == 160.89
+
+
+def test_alpaca_overnight_after_midnight_uses_prev_daily_bar():
+    # 02:00 ET Tuesday: dailyBar is Tuesday's forming overnight bar
+    now = datetime(2026, 9, 22, 2, 0, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 160.10, "t": "2026-09-22T04:00:00Z"},
+        "prevDailyBar": {"c": 160.89, "t": "2026-09-21T04:00:00Z"},
+    }
+    assert _select_alpaca_close(snapshot, now) == 160.89
+
+
+def test_alpaca_post_close_window_uses_daily_bar():
+    # 17:15 ET (the scheduled run): dailyBar holds the just-completed session
+    now = datetime(2026, 9, 21, 17, 15, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 160.89, "t": "2026-09-21T04:00:00Z"},
+        "prevDailyBar": {"c": 158.55, "t": "2026-09-18T04:00:00Z"},
+    }
+    assert _select_alpaca_close(snapshot, now) == 160.89
+
+
+def test_alpaca_mid_session_uses_prev_daily_bar():
+    # 10:00 ET Tuesday: dailyBar is today's forming bar
+    now = datetime(2026, 9, 22, 10, 0, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 161.20, "t": "2026-09-22T04:00:00Z"},
+        "prevDailyBar": {"c": 160.89, "t": "2026-09-21T04:00:00Z"},
+    }
+    assert _select_alpaca_close(snapshot, now) == 160.89
+
+
+def test_alpaca_weekend_run_uses_last_completed_daily_bar():
+    # Saturday: dailyBar is Friday's completed bar, dated before today
+    now = datetime(2026, 9, 19, 12, 0, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 158.55, "t": "2026-09-18T04:00:00Z"},
+        "prevDailyBar": {"c": 159.22, "t": "2026-09-17T04:00:00Z"},
+    }
+    assert _select_alpaca_close(snapshot, now) == 158.55
+
+
+def test_alpaca_falls_back_when_preferred_bar_missing():
+    # No prevDailyBar at all: fall back to dailyBar, then the latest trade
+    now = datetime(2026, 9, 21, 23, 0, tzinfo=ET)
+    snapshot = {"dailyBar": {"c": 154.0}, "latestTrade": {"p": 155.0}}
+    assert _select_alpaca_close(snapshot, now) == 154.0
+    assert _select_alpaca_close({"latestTrade": {"p": 155.0}}, now) == 155.0
+
+
+def _yf_series(pairs):
+    dates = [pd.Timestamp(d) for d, _ in pairs]
+    return pd.Series([v for _, v in pairs], index=pd.DatetimeIndex(dates))
+
+
+def test_yfinance_mid_session_drops_forming_bar():
+    # 10:00 ET Tuesday: today's bar is still forming — baseline is Monday
+    now = datetime(2026, 9, 22, 10, 0, tzinfo=ET)
+    col = _yf_series([("2026-09-21", 160.89), ("2026-09-22", 161.20)])
+    assert _last_completed_close(col, now) == 160.89
+
+
+def test_yfinance_post_close_keeps_today_bar():
+    # 17:15 ET: today's session is complete — its close is the baseline
+    now = datetime(2026, 9, 22, 17, 15, tzinfo=ET)
+    col = _yf_series([("2026-09-21", 160.89), ("2026-09-22", 162.00)])
+    assert _last_completed_close(col, now) == 162.00
+
+
+def test_yfinance_overnight_keeps_completed_bar():
+    # 20:07 ET: today's bar completed at 16:00 and stays the baseline
+    now = datetime(2026, 9, 21, 20, 7, tzinfo=ET)
+    col = _yf_series([("2026-09-18", 158.55), ("2026-09-21", 160.89)])
+    assert _last_completed_close(col, now) == 160.89
+
+
+def test_yfinance_weekend_keeps_friday_bar():
+    now = datetime(2026, 9, 19, 12, 0, tzinfo=ET)  # Saturday
+    col = _yf_series([("2026-09-17", 159.22), ("2026-09-18", 158.55)])
+    assert _last_completed_close(col, now) == 158.55
+
+
+def test_yfinance_single_forming_bar_returns_none():
+    now = datetime(2026, 9, 22, 10, 0, tzinfo=ET)
+    col = _yf_series([("2026-09-22", 161.20)])
+    assert _last_completed_close(col, now) is None
+    assert _last_completed_close(pd.Series(dtype=float), now) is None
+
+
+def test_polygon_mid_session_uses_prev_day():
+    # 10:00 ET Tuesday: day is the forming bar — prev_day is the baseline
+    now = datetime(2026, 9, 22, 10, 0, tzinfo=ET)
+    snapshot = MagicMock()
+    snapshot.day.close = 165.0
+    snapshot.day.timestamp = None
+    snapshot.prev_day.close = 160.0
+    snapshot.last_trade.price = 164.5
+    assert _select_polygon_close(snapshot, now) == 160.0
+
+
+def test_polygon_post_close_uses_day():
+    now = datetime(2026, 9, 22, 17, 15, tzinfo=ET)
+    snapshot = MagicMock()
+    snapshot.day.close = 165.0
+    snapshot.day.timestamp = None
+    snapshot.prev_day.close = 160.0
+    assert _select_polygon_close(snapshot, now) == 165.0
+
+
+def test_polygon_bar_dated_before_today_is_completed():
+    # Saturday run: day agg is Friday's completed bar (timestamp = session
+    # midnight ET = 04:00 UTC during EDT)
+    now = datetime(2026, 9, 19, 12, 0, tzinfo=ET)  # Saturday
+    friday_04utc_ms = 1_789_704_000_000  # 2026-09-18T04:00:00Z
+    snapshot = MagicMock()
+    snapshot.day.close = 158.55
+    snapshot.day.timestamp = friday_04utc_ms
+    snapshot.prev_day.close = 159.22
+    assert _select_polygon_close(snapshot, now) == 158.55
 
 
 @patch("scripts.data.update_fund_data.datetime")

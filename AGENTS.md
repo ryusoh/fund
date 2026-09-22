@@ -315,8 +315,12 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **Position day-change baseline (`fund_data.json`)** → the baseline section of
   `docs/twrr-data-pipeline.md`. `/position/` diffs live prices against the
   static `fund_data.json`, so `update_fund_data.py` must write the official
-  regular-session close (daily bars / `dailyBar.c` / `day.close`), not a
-  latest-trade quote — the nightly run lands mid after-hours.
+  regular-session close of the last _completed_ session, never a forming bar or
+  latest-trade quote. The fetchers pick the bar by session date vs. run time
+  (`dailyBar` vs `prevDailyBar`, `day` vs `prev_day`, dropping yfinance's
+  forming today-bar), because Actions congestion can delay the nightly run
+  past the 20:00 ET overnight open or into the next session (2026-09-22
+  incident: a ~3h delay wrote forming overnight bars as the baseline).
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
 ## Lanes (keep PRs disjoint to avoid collisions)

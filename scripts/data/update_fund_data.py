@@ -6,7 +6,8 @@ import os
 import shutil
 import sys
 import tempfile
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from datetime import time as dtime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -31,6 +32,101 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 BASE_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_HOLDINGS_PATH = BASE_DIR / "data" / "holdings_details.json"
 DEFAULT_OUTPUT_PATH = BASE_DIR / "data" / "fund_data.json"
+
+ET_TZ = pytz.timezone("US/Eastern")
+# The regular session ends at 16:00 ET; the overnight session opens at 20:00
+# ET. Only between the two is a provider's "current daily bar" guaranteed to
+# hold the just-completed session's official close.
+_POST_CLOSE_START = dtime(16, 0)
+_OVERNIGHT_START = dtime(20, 0)
+
+
+def _in_post_close_window(now_et: datetime) -> bool:
+    return _POST_CLOSE_START <= now_et.time() < _OVERNIGHT_START
+
+
+def _alpaca_bar_session_date(daily_bar: Dict[str, Any]) -> Optional[str]:
+    """Session date (YYYY-MM-DD) of an Alpaca daily bar.
+
+    Daily bars are stamped at session midnight ET, so the date portion of the
+    RFC-3339 timestamp is the session date. During the overnight session the
+    bar has already rolled to the next trading day.
+    """
+    ts = daily_bar.get("t")
+    if isinstance(ts, str) and len(ts) >= 10:
+        return ts[:10]
+    return None
+
+
+def _select_alpaca_close(snapshot: Dict[str, Any], now_et: datetime) -> Optional[float]:
+    """Last completed regular-session close from an Alpaca snapshot.
+
+    dailyBar holds the official close only between 16:00 and 20:00 ET (or when
+    it is dated before today — weekend/holiday runs); during overnight and
+    regular hours it is the forming bar, so prevDailyBar is the baseline.
+    """
+    daily = snapshot.get("dailyBar") or {}
+    prev_daily = snapshot.get("prevDailyBar") or {}
+    bar_session = _alpaca_bar_session_date(daily)
+    today = now_et.date().isoformat()
+    if (bar_session is not None and bar_session < today) or _in_post_close_window(now_et):
+        primary, secondary = daily, prev_daily
+    else:
+        primary, secondary = prev_daily, daily
+    price = primary.get("c") or secondary.get("c")
+    if not price:
+        price = (snapshot.get("latestTrade") or {}).get("p")
+    return price
+
+
+def _polygon_agg_session_date(agg: Any) -> Optional[str]:
+    """Session date (YYYY-MM-DD) of a Polygon aggregate (ms epoch, UTC)."""
+    ts = getattr(agg, "timestamp", None)
+    if not isinstance(ts, (int, float)) or ts <= 0:
+        return None
+    epoch_days = int(ts) // 86_400_000
+    return (date(1970, 1, 1) + timedelta(days=epoch_days)).isoformat()
+
+
+def _agg_close(agg: Any) -> Optional[float]:
+    close = getattr(agg, "close", None)
+    if isinstance(close, (int, float)) and close > 0:
+        return float(close)
+    return None
+
+
+def _select_polygon_close(snapshot: Any, now_et: datetime) -> Optional[float]:
+    """Last completed regular-session close from a Polygon snapshot.
+
+    Same session semantics as _select_alpaca_close: day is the official close
+    only after 16:00 ET (or when dated before today); otherwise prev_day is.
+    """
+    day = getattr(snapshot, "day", None)
+    prev_day = getattr(snapshot, "prev_day", None)
+    day_session = _polygon_agg_session_date(day)
+    today = now_et.date().isoformat()
+    if (day_session is not None and day_session < today) or _in_post_close_window(now_et):
+        primary, secondary = day, prev_day
+    else:
+        primary, secondary = prev_day, day
+    price = _agg_close(primary) or _agg_close(secondary)
+    if not price and getattr(snapshot, "last_trade", None):
+        price = snapshot.last_trade.price
+    return price
+
+
+def _last_completed_close(col: pd.Series, now_et: datetime) -> Optional[float]:
+    """Last daily close, skipping today's bar while the session is still open."""
+    series = col.dropna()
+    if series.empty:
+        return None
+    last_ts = series.index[-1]
+    last_date = last_ts.date() if hasattr(last_ts, "date") else None
+    if last_date is not None and last_date == now_et.date() and now_et.time() < _POST_CLOSE_START:
+        series = series.iloc[:-1]
+        if series.empty:
+            return None
+    return float(series.iloc[-1])
 
 
 def get_tickers_from_holdings(holdings_file_path: Path) -> List[str]:
@@ -79,8 +175,7 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         }
 
         # Determine if we should use the overnight feed (8 PM - 4 AM ET)
-        et_tz = pytz.timezone("US/Eastern")
-        et_now = datetime.now(et_tz)
+        et_now = datetime.now(ET_TZ)
         is_overnight = et_now.hour >= 20 or et_now.hour < 4
 
         params = {"symbols": symbols}
@@ -102,12 +197,9 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             snapshot = snapshots.get(ticker)
             if not snapshot:
                 continue
-            # Prefer the completed daily bar close (the official regular-session
-            # close once the run happens after 16:00 ET); fall back to the
-            # latest trade if the daily bar is missing.
-            price = (snapshot.get("dailyBar") or {}).get("c")
-            if not price:
-                price = (snapshot.get("latestTrade") or {}).get("p")
+            # The baseline must be the last completed regular-session close;
+            # which snapshot field holds it depends on when the run lands.
+            price = _select_alpaca_close(snapshot, et_now)
             if price:
                 data[ticker] = float(price)
                 logging.info(f"Fetched price for {ticker} from Alpaca: {price}")
@@ -132,6 +224,10 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     if not ticker_list:
         return data
 
+    # Determine priority based on US/Eastern time
+    et_now = datetime.now(ET_TZ)
+    is_overnight = et_now.hour >= 20 or et_now.hour < 4
+
     def fetch_from_alpaca(tickers: List[str]):
         logging.info(f"Trying to fetch prices from Alpaca for: {', '.join(tickers)}")
         alpaca_prices = get_alpaca_prices(tickers)
@@ -142,9 +238,10 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
     def fetch_from_yfinance(tickers: List[str]):
         logging.info(f"Trying to fetch prices from yfinance for: {', '.join(tickers)}")
         try:
-            # Daily bars, unadjusted: the last row is the official regular-session
-            # close (no pre/post-market contamination), matching the live-quote
-            # baseline semantics the position page needs.
+            # Daily bars, unadjusted: the baseline is the last completed
+            # regular-session close (no pre/post-market contamination).
+            # Today's bar is skipped while the session is still forming, so a
+            # delayed or manual mid-session run stays correct.
             hist = yf.download(
                 tickers, period="5d", interval="1d", auto_adjust=False, progress=False
             )
@@ -153,23 +250,18 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                 if isinstance(close_data, pd.DataFrame):
                     for t in tickers:
                         if t in close_data.columns:
-                            col = close_data[t].dropna()
-                            if not col.empty:
-                                data[t] = float(col.iloc[-1])
-                                logging.info(f"Fetched price for {t} from yfinance: {data[t]}")
+                            price = _last_completed_close(close_data[t], et_now)
+                            if price is not None:
+                                data[t] = price
+                                logging.info(f"Fetched price for {t} from yfinance: {price}")
                 else:
-                    col = close_data.dropna()
-                    if not col.empty:
+                    price = _last_completed_close(close_data, et_now)
+                    if price is not None:
                         t = tickers[0]
-                        data[t] = float(col.iloc[-1])
-                        logging.info(f"Fetched price for {t} from yfinance: {data[t]}")
+                        data[t] = price
+                        logging.info(f"Fetched price for {t} from yfinance: {price}")
         except Exception as e:
             logging.warning(f"yfinance download failed: {e}")
-
-    # Determine priority based on US/Eastern time
-    et_tz = pytz.timezone("US/Eastern")
-    et_now = datetime.now(et_tz)
-    is_overnight = et_now.hour >= 20 or et_now.hour < 4
 
     if is_overnight:
         logging.info(
@@ -209,11 +301,9 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
                             t = snapshot.ticker
                             if t not in tickers_for_polygon:
                                 continue
-                            # Prefer the daily aggregate close (official close
-                            # after 16:00 ET); fall back to the last trade.
-                            p = getattr(getattr(snapshot, "day", None), "close", None)
-                            if not p and hasattr(snapshot, "last_trade") and snapshot.last_trade:
-                                p = snapshot.last_trade.price
+                            # The baseline must be the last completed
+                            # regular-session close, not a forming bar.
+                            p = _select_polygon_close(snapshot, et_now)
                             if p:
                                 data[t] = float(p)
                                 logging.info(f"Fetched price for {t} from Polygon.io: {p}")
