@@ -29,6 +29,8 @@ describe('Terminal index page', () => {
             setSplitHistory: jest.fn(),
             setPortfolioSeriesMap: jest.fn(),
             setRunningAmountSeriesMap: jest.fn(),
+
+            getActiveFilterTerm: jest.fn().mockReturnValue(''),
             setFxRatesByCurrency: jest.fn(),
             setSelectedCurrency: jest.fn(),
             setPortfolioSeries: jest.fn(),
@@ -43,6 +45,12 @@ describe('Terminal index page', () => {
                 runningAmountSeriesByCurrency: {},
                 portfolioSeriesByCurrency: {},
             },
+        }));
+
+        jest.mock('../../../../js/ui/currencyToggleManager.js', () => ({
+            initCurrencyToggle: jest.fn(),
+            cycleCurrency: jest.fn(),
+            getStoredCurrency: jest.fn().mockReturnValue('USD'),
         }));
 
         jest.mock('../../../../js/transactions/dataLoader.js', () => ({
@@ -373,5 +381,75 @@ describe('buildFxRateMaps coverage', () => {
         expect(result.CAD.map.has('invalid-date')).toBe(true);
         expect(result.CAD.map.get('invalid-date')).toBe(1.4);
         expect(result.USD.map.get('2023-01-01')).toBe(1.0);
+    });
+
+    describe('Event Listeners coverage', () => {
+        let setSelectedCurrency, setRunningAmountSeries, setPortfolioSeries;
+        let cycleCurrency;
+
+        beforeEach(() => {
+            const stateModule = require('../../../../js/transactions/state.js');
+            setSelectedCurrency = stateModule.setSelectedCurrency;
+            setRunningAmountSeries = stateModule.setRunningAmountSeries;
+            setPortfolioSeries = stateModule.setPortfolioSeries;
+
+            stateModule.transactionState.runningAmountSeriesByCurrency = { USD: [{ amount: 100 }] };
+            stateModule.transactionState.portfolioSeriesByCurrency = { USD: [{ value: 200 }] };
+
+            const currencyToggleManager = require('../../../../js/ui/currencyToggleManager.js');
+            cycleCurrency = currencyToggleManager.cycleCurrency;
+        });
+
+        it('should handle currencyChangedGlobal event', () => {
+            document.dispatchEvent(
+                new CustomEvent('currencyChangedGlobal', { detail: { currency: 'EUR' } })
+            );
+
+            expect(setSelectedCurrency).toHaveBeenCalled(); // Since the logic in index.js calls it with normalized currency, and we're just checking coverage
+            expect(setRunningAmountSeries).toHaveBeenCalled();
+            expect(setPortfolioSeries).toHaveBeenCalled();
+        });
+
+        it('should ignore currencyChangedGlobal event without valid currency', () => {
+            setSelectedCurrency.mockClear();
+            document.dispatchEvent(new CustomEvent('currencyChangedGlobal', { detail: {} }));
+            document.dispatchEvent(
+                new CustomEvent('currencyChangedGlobal', { detail: { currency: 'INVALID' } })
+            );
+
+            expect(setSelectedCurrency).not.toHaveBeenCalled();
+        });
+
+        it('should cycle currency on ArrowRight/ArrowLeft', () => {
+            cycleCurrency.mockClear();
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+            expect(cycleCurrency).toHaveBeenCalledWith(1);
+
+            cycleCurrency.mockClear();
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+            expect(cycleCurrency).toHaveBeenCalledWith(-1);
+        });
+
+        it('should ignore other keys', () => {
+            cycleCurrency.mockClear();
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+            expect(cycleCurrency).not.toHaveBeenCalled();
+        });
+
+        it('should ignore cycle currency when input is focused', () => {
+            cycleCurrency.mockClear();
+            const input = document.createElement('input');
+            document.body.appendChild(input);
+            input.focus();
+
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+            expect(cycleCurrency).not.toHaveBeenCalled();
+
+            input.id = 'terminalInput';
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+            expect(cycleCurrency).not.toHaveBeenCalled();
+
+            document.body.removeChild(input);
+        });
     });
 });
