@@ -88,7 +88,7 @@ Conventional Commits per `AGENTS.md`.
 - **Publish exactly one commit.** Commit the finished change once, run the
   verification gate on that exact tree, then push. If anything must change
   after a push, amend or squash (`git reset --soft $(git merge-base
-  origin/main HEAD) && git commit`) and force-push — the branch must always
+origin/main HEAD) && git commit`) and force-push — the branch must always
   end as a single commit. The hygiene gate checks every commit individually,
   so a multi-commit branch makes every intermediate mistake permanent; a
   one-commit branch can only fail on its final content. (fund#693 failed CI
