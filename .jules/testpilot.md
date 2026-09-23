@@ -81,6 +81,19 @@ table. Instead:
 
 Conventional Commits per `AGENTS.md`.
 
+- **Publish exactly one commit.** Commit the finished change once, run the
+  verification gate on that exact tree, then push. If anything must change
+  after a push, amend or squash (`git reset --soft $(git merge-base
+origin/main HEAD) && git commit`) and force-push — the branch must always
+  end as a single commit. The hygiene gate checks every commit individually,
+  so a multi-commit branch makes every intermediate mistake permanent; a
+  one-commit branch can only fail on its final content. (fund#692 failed CI
+  on two empty "finalize" pushes and an intermediate test-deletion commit,
+  though its final tree was clean.)
+- **Stage by name, never `git add -A` / `git add .`.** Add exactly the test
+  files you wrote. Scratch output from verification runs (`verify_output.txt`,
+  logs, coverage dumps) must never be committed — fund#692 shipped a 474-line
+  `verify_output.txt` in its first commit.
 - Title / commit subject: `test(<scope>): cover <area> low-coverage paths`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Testpilot:` prefix**.
 - Body: each target file before → after coverage; any file skipped and why; "no

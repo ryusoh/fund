@@ -83,7 +83,14 @@ ES modules via an import map.
     fails, and pushing revert commits only adds new violations. Recovery is to
     squash the branch into one commit and force-push
     (`git reset --soft $(git merge-base origin/main HEAD) && git commit &&
-git push --force-with-lease`). And never run repo-wide formatters
+git push --force-with-lease`). Better: never need the recovery — **publish
+    as a single commit by default**. Commit the finished change once, run the
+    verification gate on that exact tree, then push; on any revision, amend or
+    squash and force-push so the branch stays one commit. Every per-commit
+    failure mode (empty "finalize" pushes, deletion-rewrite chains, stray
+    artifacts like fund#692's `verify_output.txt`) is impossible on a
+    one-commit branch, and staging by name (`git add <file>`, never
+    `git add -A`) keeps run scratch out of the commit. And never run repo-wide formatters
     (`npm run format`, `prettier --write .`): format only the files you
     touched, and if a gate/fix run dirties unrelated files, revert them —
     don't commit the fixer's output (a phantom reformat of

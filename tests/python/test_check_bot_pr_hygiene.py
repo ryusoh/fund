@@ -263,6 +263,19 @@ def test_bot_stray_artifact_flagged(repo: Path) -> None:
     assert any("stray artifact" in v and "pr_body.txt" in v for v in violations)
 
 
+def test_bot_verify_output_scratch_flagged(repo: Path) -> None:
+    # fund#692: the bot committed its 474-line verification dump
+    _write_and_commit(repo, "verify_output.txt", "make verify output...\n", "test: add coverage")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "verify_output.txt" in v for v in violations)
+
+
+def test_bot_log_file_flagged(repo: Path) -> None:
+    _write_and_commit(repo, "run.log", "log line\n", "test: add coverage")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "run.log" in v for v in violations)
+
+
 def test_bot_suppressions_addition_flagged(repo: Path) -> None:
     _write_and_commit(
         repo,
