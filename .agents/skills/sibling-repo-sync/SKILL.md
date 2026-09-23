@@ -43,7 +43,9 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
   `make precommit` (on macOS the parity gate is `make precommit-docker` —
   raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
-  noise** — judge by exit code, not the log); `Dockerfile.precommit`
+  noise** — judge by exit code, not the log; the cold path is the wall-clock
+  pole: colima start + image build + full in-container Jest/pytest, 10+ min —
+  start Docker first, run it once at the end); `Dockerfile.precommit`
   pip-installs `requirements-dev.txt` and runs `npm ci`; its AGENTS.md
   non-negotiable #6 forbids JULES ROUTINES from adding dependencies or touching
   build/lint/test config (and #5 pins jest to v29) — interactive agents acting
@@ -125,6 +127,14 @@ Delegate one subagent per repo, in parallel. Brief each with:
    any). **Never commit** — leave changes uncommitted and report: violation
    counts, resolution proof, files changed, probe exit codes, gate result,
    skip decisions with evidence.
+
+**Verification budget.** Scoped checks while iterating (the touched test
+file, prettier, sync-check); run the full CI-parity gate exactly once, at the
+end — it is the wall-clock pole, and a containerized one (networking's
+`precommit-docker`) doubly so. Start Docker early so it warms while you work;
+for docs/persona-only changes, decide whether the container run is warranted
+before queueing it. (2026-09 sync: the networking agent's gate run dwarfed
+the rest of its work.)
 
 ## After the sync
 

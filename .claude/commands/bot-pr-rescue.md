@@ -36,7 +36,7 @@ Know the two fast gates that run before the test suite in `ci.yml` `web-ci`
 (a ~36s failure is one of these, not tests):
 
 - **Reject empty pull request** — `git diff --quiet origin/main` at the merge
-  ref. Fires when the PR's *net* diff vs current main is empty, i.e. the work
+  ref. Fires when the PR's _net_ diff vs current main is empty, i.e. the work
   is already on main (duplicate) or the branch is a no-op. Not fixable by the
   bot — close the PR.
 - **Reject bot PR hygiene violations** — `scripts/agents/check_bot_pr_hygiene.py`,
