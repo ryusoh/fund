@@ -1,7 +1,7 @@
 {
   "js/transactions/chart/data/contribution.js": {
     "complexity": {
-      "count": 3
+      "count": 2
     }
   },
   "js/transactions/chart/interaction.js": {
