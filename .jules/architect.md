@@ -85,6 +85,19 @@ already proposed or previously rejected — pick a different target.
 
 Conventional Commits per `AGENTS.md`.
 
+- **Publish exactly one commit.** Commit the finished change once, run the
+  verification gate on that exact tree, then push. If anything must change
+  after a push, amend or squash (`git reset --soft $(git merge-base
+  origin/main HEAD) && git commit`) and force-push — the branch must always
+  end as a single commit. The hygiene gate checks every commit individually,
+  so a multi-commit branch makes every intermediate mistake permanent; a
+  one-commit branch can only fail on its final content. (fund#693 failed CI
+  on an empty commit buried mid-history among five identical-message commits,
+  though its final tree was clean.)
+- **Stage by name, never `git add -A` / `git add .`.** Add exactly the source
+  files you refactored (and `eslint-suppressions.json` only when
+  `--prune-suppressions` changed it). Scratch output from verification runs
+  must never be committed.
 - Title / commit subject: `refactor(<scope>): extract helpers to cut <function> complexity`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Architect:` prefix, no
   conversational greetings**.
