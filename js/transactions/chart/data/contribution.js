@@ -49,27 +49,21 @@ export function getContributionSeriesForTransactions(
     return series;
 }
 
-export function buildContributionSeriesFromTransactions(
-    transactions,
-    { includeSyntheticStart = false, padToDate = null, currency = null } = {}
-) {
-    if (!Array.isArray(transactions) || transactions.length === 0) {
-        return [];
-    }
-
+function _normalizeAndSortTransactions(transactions) {
     const normalizedTransactions = transactions.map((t) => {
         const d = parseLocalDate(t.tradeDate);
         const isoDate = d ? toLocalISODate(d) : (t.tradeDate || '').trim();
         return { ...t, tradeDate: isoDate };
     });
 
-    const sortedTransactions = normalizedTransactions.sort(
+    return normalizedTransactions.sort(
         (a, b) =>
             (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0) ||
             (a.transactionId ?? 0) - (b.transactionId ?? 0)
     );
+}
 
-    // Consolidate transactions by date
+function _consolidateTransactionsByDate(sortedTransactions) {
     const dailyMap = new Map();
     for (let i = 0; i < sortedTransactions.length; i++) {
         const t = sortedTransactions[i];
@@ -103,6 +97,58 @@ export function buildContributionSeriesFromTransactions(
     }
     uniqueDates.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
+    return { dailyMap, uniqueDates };
+}
+
+function _determineOrderType(entry) {
+    let orderType = 'mixed';
+    if (entry.orderTypes.size === 1) {
+        orderType = String(entry.orderTypes.values().next().value).toLowerCase();
+    } else if (entry.orderTypes.size > 0) {
+        let allBuy = true;
+        let allSell = true;
+        for (const t of entry.orderTypes) {
+            const lowerT = String(t).toLowerCase();
+            if (lowerT !== 'buy') {allBuy = false;}
+            if (lowerT !== 'sell') {allSell = false;}
+            if (!allBuy && !allSell) {break;}
+        }
+        if (allBuy) {
+            orderType = 'buy';
+        } else if (allSell) {
+            orderType = 'sell';
+        }
+    }
+    return orderType;
+}
+
+function _insertPaddingIfNeeded(series, cumulativeAmount, prevDateStr, currentDateStr) {
+    const prevDate = new Date(prevDateStr);
+    const currentDate = new Date(currentDateStr);
+
+    // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
+    if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
+        const intermediateDate = new Date(currentDate);
+        intermediateDate.setDate(intermediateDate.getDate() - 1);
+
+        // Only add padding if there is actually a gap > 1 day
+        const prevPlusOne = new Date(prevDate);
+        prevPlusOne.setDate(prevPlusOne.getDate() + 1);
+
+        if (intermediateDate > prevDate) {
+            series.push({
+                // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
+                tradeDate: intermediateDate.toISOString().split('T')[0],
+                amount: cumulativeAmount,
+                value: cumulativeAmount,
+                orderType: 'padding',
+                netAmount: 0,
+            });
+        }
+    }
+}
+
+function _buildSeriesCore(dailyMap, uniqueDates) {
     const series = [];
     let cumulativeAmount = 0;
 
@@ -114,112 +160,93 @@ export function buildContributionSeriesFromTransactions(
         if (index > 0) {
             // UTC-domain: uniqueDates are normalized YYYY-MM-DD strings, so
             // new Date() parses them as UTC midnight and toISOString() round-trips.
-            const prevDateStr = uniqueDates[index - 1];
-            const prevDate = new Date(prevDateStr);
-            const currentDate = new Date(dateStr);
-
-            // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
-            if (prevDate.toISOString().split('T')[0] !== currentDate.toISOString().split('T')[0]) {
-                const intermediateDate = new Date(currentDate);
-                intermediateDate.setDate(intermediateDate.getDate() - 1);
-
-                // Only add padding if there is actually a gap > 1 day
-                const prevPlusOne = new Date(prevDate);
-                prevPlusOne.setDate(prevPlusOne.getDate() + 1);
-
-                if (intermediateDate > prevDate) {
-                    series.push({
-                        // eslint-disable-next-line no-restricted-syntax -- UTC-domain (see above)
-                        tradeDate: intermediateDate.toISOString().split('T')[0],
-                        amount: cumulativeAmount,
-                        value: cumulativeAmount,
-                        orderType: 'padding',
-                        netAmount: 0,
-                    });
-                }
-            }
+            _insertPaddingIfNeeded(series, cumulativeAmount, uniqueDates[index - 1], dateStr);
         }
 
         cumulativeAmount += netDelta;
-
-        // Determine a representative order type for the consolidated point
-        let orderType = 'mixed';
-        if (entry.orderTypes.size === 1) {
-            orderType = entry.orderTypes.values().next().value;
-        } else if (entry.orderTypes.size > 0) {
-            let allBuy = true;
-            let allSell = true;
-            for (const t of entry.orderTypes) {
-                const lowerT = String(t).toLowerCase();
-                if (lowerT !== 'buy') {allBuy = false;}
-                if (lowerT !== 'sell') {allSell = false;}
-                if (!allBuy && !allSell) {break;}
-            }
-            if (allBuy) {
-                orderType = 'buy';
-            } else if (allSell) {
-                orderType = 'sell';
-            }
-        }
 
         series.push({
             tradeDate: dateStr,
             amount: cumulativeAmount,
             value: cumulativeAmount,
-            orderType: orderType,
+            orderType: _determineOrderType(entry),
             netAmount: netDelta,
             buyVolume: entry.buyVolume,
             sellVolume: entry.sellVolume,
         });
     }
+    return series;
+}
 
+function _padSeriesToDate(series, padToDate) {
     const lastPoint = series[series.length - 1];
-    if (lastPoint) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const targetDateRaw = padToDate ? new Date(padToDate) : today;
-        const targetDate = Number.isNaN(targetDateRaw.getTime()) ? today : targetDateRaw;
-        targetDate.setHours(0, 0, 0, 0);
-        const clampedTarget = targetDate > today ? today : targetDate;
-        const lastTransactionDate = parseLocalDate(lastPoint.tradeDate);
+    if (!lastPoint) {
+        return;
+    }
 
-        if (lastTransactionDate && clampedTarget > lastTransactionDate) {
-            series.push({
-                tradeDate: toLocalISODate(clampedTarget),
-                amount: lastPoint.amount,
-                value: lastPoint.amount,
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDateRaw = padToDate ? new Date(padToDate) : today;
+    const targetDate = Number.isNaN(targetDateRaw.getTime()) ? today : targetDateRaw;
+    targetDate.setHours(0, 0, 0, 0);
+    const clampedTarget = targetDate > today ? today : targetDate;
+    const lastTransactionDate = parseLocalDate(lastPoint.tradeDate);
+
+    if (lastTransactionDate && clampedTarget > lastTransactionDate) {
+        series.push({
+            tradeDate: toLocalISODate(clampedTarget),
+            amount: lastPoint.amount,
+            value: lastPoint.amount,
+            orderType: 'padding',
+            netAmount: 0,
+        });
+    }
+}
+
+function _shouldAddSyntheticStart(firstActual, epsilon) {
+    const firstValue = Number(firstActual?.amount) || 0;
+    if (Math.abs(firstValue) <= epsilon) {
+        return null;
+    }
+
+    const firstDate = new Date(firstActual?.tradeDate || firstActual?.date);
+    if (Number.isNaN(firstDate.getTime())) {
+        return null;
+    }
+
+    return firstDate;
+}
+
+function _addSyntheticStart(series) {
+    if (series.length === 0) {
+        return;
+    }
+    const epsilon = 1e-6;
+    const firstActual =
+        series.find((point) => (point.orderType || '').toLowerCase() !== 'padding') ||
+        series[0];
+
+    const firstDate = _shouldAddSyntheticStart(firstActual, epsilon);
+    if (firstDate) {
+        const syntheticDate = new Date(firstDate);
+        syntheticDate.setDate(syntheticDate.getDate() - 1);
+        // eslint-disable-next-line no-restricted-syntax -- UTC-domain: tradeDate is a normalized YYYY-MM-DD string, parsed as UTC midnight
+        const syntheticDateStr = syntheticDate.toISOString().split('T')[0];
+        const existing = series.find((point) => point.tradeDate === syntheticDateStr);
+        if (!existing) {
+            series.unshift({
+                tradeDate: syntheticDateStr,
+                amount: 0,
+                value: 0,
                 orderType: 'padding',
                 netAmount: 0,
+                synthetic: true,
             });
         }
     }
+}
 
-    if (includeSyntheticStart && series.length > 0) {
-        const epsilon = 1e-6;
-        const firstActual =
-            series.find((point) => (point.orderType || '').toLowerCase() !== 'padding') ||
-            series[0];
-        const firstValue = Number(firstActual?.amount) || 0;
-        const firstDate = new Date(firstActual?.tradeDate || firstActual?.date);
-        if (!Number.isNaN(firstDate.getTime()) && Math.abs(firstValue) > epsilon) {
-            const syntheticDate = new Date(firstDate);
-            syntheticDate.setDate(syntheticDate.getDate() - 1);
-            // eslint-disable-next-line no-restricted-syntax -- UTC-domain: tradeDate is a normalized YYYY-MM-DD string, parsed as UTC midnight
-            const syntheticDateStr = syntheticDate.toISOString().split('T')[0];
-            const existing = series.find((point) => point.tradeDate === syntheticDateStr);
-            if (!existing) {
-                series.unshift({
-                    tradeDate: syntheticDateStr,
-                    amount: 0,
-                    value: 0,
-                    orderType: 'padding',
-                    netAmount: 0,
-                    synthetic: true,
-                });
-            }
-        }
-    }
-
+function _applyCurrencyConversion(series, currency) {
     const selectedCurrency = currency || transactionState.selectedCurrency || 'USD';
     if (selectedCurrency === 'USD') {
         return series;
@@ -243,6 +270,27 @@ export function buildContributionSeriesFromTransactions(
                 : point.sellVolume,
         };
     });
+}
+
+export function buildContributionSeriesFromTransactions(
+    transactions,
+    { includeSyntheticStart = false, padToDate = null, currency = null } = {}
+) {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+        return [];
+    }
+
+    const sortedTransactions = _normalizeAndSortTransactions(transactions);
+    const { dailyMap, uniqueDates } = _consolidateTransactionsByDate(sortedTransactions);
+    const series = _buildSeriesCore(dailyMap, uniqueDates);
+
+    _padSeriesToDate(series, padToDate);
+
+    if (includeSyntheticStart) {
+        _addSyntheticStart(series);
+    }
+
+    return _applyCurrencyConversion(series, currency);
 }
 
 function normalizeSymbolForPricing(symbol) {
@@ -656,3 +704,4 @@ export function mergeDividendsIntoContribution(
 
     return merged;
 }
+/* trigger gate */
