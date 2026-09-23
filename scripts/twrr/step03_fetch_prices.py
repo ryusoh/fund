@@ -6,9 +6,11 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from datetime import time as dtime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -52,6 +54,14 @@ TOOL_NAME = 'codex'
 
 YFINANCE_MAX_BATCH = 25
 
+ET_TZ = ZoneInfo('US/Eastern')
+# The regular session closes at 16:00 ET; before that, today's daily bar is
+# still forming and is not an official close.
+MARKET_CLOSE_ET = dtime(16, 0)
+# A price tail this recent that still lags the benchmark tail is a fetch lag
+# worth refetching; a series stopped for longer is a halted/acquired ticker.
+STALE_TAIL_WINDOW_DAYS = 14
+
 # Map normalized tickers (post-cleaning) to vendor-specific symbols
 YFINANCE_ALIASES: Dict[str, str] = {
     'BRKB': 'BRK-B',
@@ -84,9 +94,14 @@ def read_transactions() -> pd.DataFrame:
 
 def determine_date_range(transactions: pd.DataFrame) -> pd.DatetimeIndex:
     start_date = transactions['trade_date'].min().date()
-    today_utc = datetime.now(timezone.utc).date()
+    now_et = datetime.now(ET_TZ)
+    end_date = now_et.date()
+    if now_et.time() < MARKET_CLOSE_ET:
+        # Today's session is still forming — its daily bar is not an official
+        # close, so the series ends at the last completed session.
+        end_date -= timedelta(days=1)
     # yfinance end is exclusive; we add one day later during request
-    full_range = pd.date_range(start=start_date, end=today_utc, freq='D')
+    full_range = pd.date_range(start=start_date, end=end_date, freq='D')
     return full_range
 
 
@@ -246,6 +261,68 @@ def attempt_fallbacks(
     return retrieved
 
 
+def _last_valid_date(series: pd.Series) -> Optional[pd.Timestamp]:
+    valid = series.dropna()
+    if valid.empty:
+        return None
+    return pd.Timestamp(valid.index.max())
+
+
+def refresh_stale_tails(
+    price_df: pd.DataFrame,
+    tickers: List[str],
+    date_index: pd.DatetimeIndex,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> Tuple[pd.DataFrame, List[str]]:
+    """Refetch tickers whose price tail lags the benchmark indices.
+
+    Yahoo occasionally serves equity daily bars that stop before the last
+    completed session while the index bars in the same response are current
+    (2026-09-22 incident: equities stale at Friday's close, ^GSPC current
+    through Monday). The batch counts those as successes, so without a
+    refetch the forward-fill flat-lines held tickers across real trading
+    days. Only recently-active tails are refetched — a series that stopped
+    weeks ago is a halted/acquired ticker, not a fetch lag.
+    """
+    bench_last = None
+    for bench in BENCHMARK_TICKERS:
+        if bench not in price_df.columns:
+            continue
+        last = _last_valid_date(price_df[bench])
+        if last is not None and (bench_last is None or last > bench_last):
+            bench_last = last
+    if bench_last is None:
+        return price_df, []
+
+    staleness_floor = bench_last - pd.Timedelta(days=STALE_TAIL_WINDOW_DAYS)
+    stale = []
+    for ticker in tickers:
+        if ticker in BENCHMARK_TICKERS or ticker not in price_df.columns:
+            continue
+        last = _last_valid_date(price_df[ticker])
+        if last is not None and staleness_floor <= last < bench_last:
+            stale.append(ticker)
+    if not stale:
+        return price_df, []
+
+    print(
+        f'Refetching {len(stale)} tickers whose tail predates the benchmark tail '
+        f'({bench_last.date()}): {stale}'
+    )
+    retrieved = attempt_fallbacks(stale, date_index, start, end)
+    refreshed = []
+    for ticker, series in retrieved.items():
+        new_last = _last_valid_date(series)
+        current_last = _last_valid_date(price_df[ticker])
+        if new_last is not None and (current_last is None or new_last > current_last):
+            price_df[ticker] = price_df[ticker].combine_first(series)
+            refreshed.append(ticker)
+    if refreshed:
+        print(f'Stale-tail refetch updated: {refreshed}')
+    return price_df, stale
+
+
 def load_overrides(date_index: pd.DatetimeIndex) -> pd.DataFrame:
     if not OVERRIDE_PATH.exists():
         return pd.DataFrame(index=date_index)
@@ -403,6 +480,9 @@ def main() -> None:
         print(f'Overrides available for tickers: {override_tickers}')
 
     combined_raw = combine_prices(base_prices, fallback_data, overrides, date_index)
+    combined_raw, _stale_tail = refresh_stale_tails(
+        combined_raw, active_tickers, date_index, start, end
+    )
     write_raw_json_prices(combined_raw)
 
     combined = forward_fill_prices(combined_raw)

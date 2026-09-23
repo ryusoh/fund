@@ -32,7 +32,16 @@ Drift between the two shows up as a jump at the seam.
 2. **`step04` `fillna(0.0)`** — any missing price for a held position is
    silently valued at $0. This is where missing prices become wrong numbers.
 3. **Flat-lining staleness** — `ffill().bfill()` in step03/step04 carries a
-   stopped series at its last price forever, no error.
+   stopped series at its last price forever, no error. Two variants: a ticker
+   that stops trading, and a **stale upstream snapshot** — 2026-09-22: an
+   Actions-congested run hit Yahoo at 20:04 ET while its equity daily bars
+   still ended at Friday, though the index bars in the same response had
+   Monday. All 172 tickers counted as fetch successes and the ffill
+   flat-lined a real trading day. Defenses: step03 ends the date range at
+   the last _completed_ session (a forming today-bar is never a close),
+   `refresh_stale_tails` refetches tickers whose tail lags the benchmark
+   indices (the market-was-open oracle), and the gate's fleet freshness
+   check (below) fails the run when the refetch doesn't cure it.
 4. **`delisted_tickers.csv` ∩ holdings** — a held ticker wrongly on the list
    is skipped by step03 → $0 forever.
 5. **Fractional-share dust** — checkpoints carry tiny negative residues
@@ -87,6 +96,9 @@ run — so nothing is committed — when:
 - any ticker's non-null price count drops vs the committed parquet at `HEAD`
   (full-history wipes, deterministically),
 - a held ticker is on the delisted list (mode 4),
+- the held fleet lags the benchmark indices' (`^GSPC`/`^IXIC`/`^DJI`) last
+  price date — one lagger is a halt or a non-US calendar, a majority means
+  the upstream snapshot was stale (mode 3, second variant),
 - the historical tail and the real-time balance differ by > 10% (seam drift).
 
 Regression tests: `tests/python/test_step_validate.py` (includes a smoke test

@@ -90,6 +90,20 @@ class TestNoCoverageRegression:
         current = _prices({'ANET': None})
         assert step_validate.check_no_coverage_regression(current, None) == []
 
+    def test_extra_trailing_day_in_previous_is_not_a_regression(self):
+        # A mid-session run ends at the last completed session, one calendar
+        # day before the committed data — that must not count as a wipe.
+        previous = _prices({'ANET': [100.0] * 10})
+        current = _prices({'ANET': [100.0] * 10}).iloc[:-1]
+        assert step_validate.check_no_coverage_regression(current, previous) == []
+
+    def test_wipe_is_still_caught_on_the_shared_range(self):
+        previous = _prices({'ANET': [100.0] * 10})
+        wiped = _prices({'ANET': None}).iloc[:-1]
+        violations = step_validate.check_no_coverage_regression(wiped, previous)
+        assert len(violations) == 1
+        assert '9 -> 0' in violations[0]
+
 
 class TestDelistedNotHeld:
     def test_held_delisted_ticker_fails(self):
@@ -139,3 +153,57 @@ def test_main_passes_on_current_repo_data():
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-q']))
+
+
+class TestTailFreshness:
+    """2026-09-22 incident: a delayed run fetched equity bars that stopped at
+    Friday while the index bars in the same response already had Monday —
+    every existing check passed and the stale data was committed."""
+
+    def _frame(self, held_last_by_ticker, bench_last='2026-09-21'):
+        index = pd.date_range('2026-09-14', '2026-09-21', freq='D')
+        days = index.strftime('%Y-%m-%d')
+        frame = pd.DataFrame(index=index)
+        for ticker, last in held_last_by_ticker.items():
+            frame[ticker] = [100.0 if d <= last else float('nan') for d in days]
+        frame['^GSPC'] = [5000.0 if d <= bench_last else float('nan') for d in days]
+        return frame
+
+    def test_fleet_wide_lag_fails(self):
+        frame = self._frame({t: '2026-09-18' for t in ('VT', 'ANET', 'GOOG', 'PDD')})
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        violations = step_validate.check_tail_freshness(frame, held)
+        assert len(violations) == 1
+        assert '4 of 4' in violations[0]
+        assert '2026-09-21' in violations[0]
+
+    def test_single_lagging_ticker_passes(self):
+        frame = self._frame(
+            {'VT': '2026-09-21', 'ANET': '2026-09-21', 'GOOG': '2026-09-21', 'PDD': '2026-09-18'}
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        assert step_validate.check_tail_freshness(frame, held) == []
+
+    def test_half_lagging_passes(self):
+        # Exactly half is not a fleet-wide signal (could be coincident halts).
+        frame = self._frame(
+            {'VT': '2026-09-21', 'ANET': '2026-09-21', 'GOOG': '2026-09-18', 'PDD': '2026-09-18'}
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        assert step_validate.check_tail_freshness(frame, held) == []
+
+    def test_single_held_ticker_never_fails(self):
+        # A one-position portfolio has no fleet; a halt must not block runs.
+        frame = self._frame({'VT': '2026-09-18'})
+        assert step_validate.check_tail_freshness(frame, frozenset({'VT'})) == []
+
+    def test_missing_benchmark_column_skips_check(self):
+        frame = self._frame({'VT': '2026-09-18'}).drop(columns='^GSPC')
+        held = frozenset({'VT', 'ANET'})
+        assert step_validate.check_tail_freshness(frame, held) == []
+
+    def test_ticker_without_column_is_left_to_coverage_check(self):
+        frame = self._frame({'VT': '2026-09-18'})
+        held = frozenset({'VT', 'ANET', 'GOOG'})
+        violations = step_validate.check_tail_freshness(frame, held)
+        assert violations == []

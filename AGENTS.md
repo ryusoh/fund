@@ -309,9 +309,11 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **TWRR price pipeline silent data regressions** → `docs/twrr-data-pipeline.md`.
   `step03` fetch failures and `step04`'s `fillna(0.0)` turn missing prices into
   $0 valuations across all of history with no error (the 2026-09-02 ANET wipe
-  understated the balance chart ~45% at the real-time seam). `make twrr-validate`
-  gates the bot's auto-commit on coverage/regression/seam invariants. Read
-  before touching `scripts/twrr/` or debugging balance/history mismatches.
+  understated the balance chart ~45% at the real-time seam). Stale upstream
+  snapshots also pass as "success" and get flat-lined by ffill (2026-09-22:
+  equities stuck at Friday while indices had Monday). `make twrr-validate`
+  gates the bot's auto-commit on coverage/regression/freshness/seam invariants.
+  Read before touching `scripts/twrr/` or debugging balance/history mismatches.
 - **Position day-change baseline (`fund_data.json`)** → the baseline section of
   `docs/twrr-data-pipeline.md`. `/position/` diffs live prices against the
   static `fund_data.json`, so `update_fund_data.py` must write the official

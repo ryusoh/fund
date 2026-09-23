@@ -125,7 +125,7 @@ class TestFundScripts(unittest.TestCase):
         self, mock_open_file, mock_load_json, mock_calc_values, mock_datetime
     ) -> None:
         # Arrange
-        mock_datetime.now.return_value = datetime(2023, 1, 2)
+        mock_datetime.now.return_value = datetime(2023, 1, 2, 17, 15)  # post-close ET
         mock_load_json.return_value = {"some_data": "value"}
         mock_calc_values.return_value = ({"value_usd": 16000.0}, "2023-01-02")
 

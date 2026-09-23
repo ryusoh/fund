@@ -295,6 +295,17 @@ def main():
     print(f"Latest market data date: {market_data_date}")
     print(f"Last date in CSV: {last_date}")
 
+    # A bar dated today is still forming until the 16:00 ET close; appending
+    # it would bake a mid-session value in as the day's close, and later runs
+    # would skip the date ("Nothing to update"), freezing it permanently.
+    et_now = datetime.now(ZoneInfo("US/Eastern"))
+    if market_data_date == et_now.date().isoformat() and et_now.hour < 16:
+        print(
+            f"Market data for {market_data_date} is still forming (session open). "
+            "Skipping to avoid recording a partial day."
+        )
+        sys.exit(0)
+
     # Check if we already have data for this market data date
     if last_date == market_data_date:
         print(f"Data already exists for {market_data_date}. Nothing to update.")

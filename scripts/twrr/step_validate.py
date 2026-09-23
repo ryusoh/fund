@@ -13,6 +13,9 @@ Invariants:
   2. No regression: no ticker's non-null price count dropped vs HEAD.
   3. Delisted ∩ held = empty.
   4. Seam: pipeline market value ≈ holdings × latest real-time prices.
+  5. Tail freshness: held tickers must not lag the benchmark indices' last
+     price date as a fleet (a stale upstream snapshot flat-lines real
+     trading days — the 2026-09-22 incident).
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, FrozenSet, List, Optional
+from typing import Dict, FrozenSet, List, Optional, Sequence
 
 import pandas as pd
 
@@ -37,6 +40,10 @@ FUND_DATA_PATH = DATA_DIR / 'fund_data.json'
 DELISTED_TICKERS_FILE = DATA_DIR / 'delisted_tickers.csv'
 
 HISTORICAL_PRICES_GIT_PATH = 'data/historical_prices.parquet'
+
+# US index benchmarks: they share the price fetch with everything else, so
+# their tail date proves which sessions the market was open for.
+BENCHMARK_TAIL_TICKERS = ('^GSPC', '^IXIC', '^DJI')
 
 
 def load_delisted_tickers() -> FrozenSet[str]:
@@ -84,12 +91,16 @@ def check_no_coverage_regression(
 
     Catches full-history wipes deterministically: the pipeline regenerates the
     whole series each run, so a vanished ticker shows up as a coverage drop.
+    The comparison is restricted to the shared date range — a mid-session run
+    legitimately ends at the last completed session, one calendar day before
+    the committed data, and must not count as a regression.
     """
     if previous_prices is None or previous_prices.empty:
         return []
     violations = []
     current_counts = prices.notna().sum()
-    previous_counts = previous_prices.notna().sum()
+    previous_trimmed = previous_prices.loc[previous_prices.index <= prices.index.max()]
+    previous_counts = previous_trimmed.notna().sum()
     for ticker in previous_counts.index:
         previous = int(previous_counts[ticker])
         current = int(current_counts.get(ticker, 0))
@@ -101,6 +112,43 @@ def check_no_coverage_regression(
 def check_delisted_not_held(held: FrozenSet[str], delisted: FrozenSet[str]) -> List[str]:
     overlap = sorted(held & delisted)
     return [f'{ticker}: held but listed in delisted_tickers.csv' for ticker in overlap]
+
+
+def check_tail_freshness(
+    prices: pd.DataFrame,
+    held: FrozenSet[str],
+    benchmark_tickers: Sequence[str] = BENCHMARK_TAIL_TICKERS,
+) -> List[str]:
+    """Fail when held tickers lag the benchmark indices' tail as a fleet.
+
+    One lagging ticker is normal (a halt, a suspension, a non-US listing's
+    calendar); a fleet lagging together means the upstream snapshot was stale
+    and the forward-fill is flat-lining real trading days (2026-09-22
+    incident: equities stuck at Friday's close while ^GSPC had Monday). A
+    single held ticker never trips this — the majority rule needs a fleet.
+    """
+    bench_last = None
+    for bench in benchmark_tickers:
+        if bench not in prices.columns:
+            continue
+        valid = prices[bench].dropna()
+        if not valid.empty and (bench_last is None or valid.index.max() > bench_last):
+            bench_last = valid.index.max()
+    if bench_last is None or not held:
+        return []
+    lagging = []
+    for ticker in sorted(held):
+        if ticker not in prices.columns:
+            continue  # the coverage check reports missing columns
+        valid = prices[ticker].dropna()
+        if not valid.empty and valid.index.max() < bench_last:
+            lagging.append(ticker)
+    if len(lagging) >= 2 and len(lagging) * 2 > len(held):
+        return [
+            f'{len(lagging)} of {len(held)} held tickers lag the benchmark tail '
+            f'({bench_last.date()}): {", ".join(lagging)}'
+        ]
+    return []
 
 
 def check_seam_continuity(
@@ -191,6 +239,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         'held-ticker coverage': check_held_ticker_coverage(prices, held, args.coverage_days),
         'no coverage regression': check_no_coverage_regression(prices, load_previous_prices()),
         'delisted not held': check_delisted_not_held(held, delisted),
+        'tail freshness vs benchmarks': check_tail_freshness(prices, held),
         'historical/real-time seam': check_seam_continuity(
             market_value, holdings_details, latest_prices, args.tolerance
         ),

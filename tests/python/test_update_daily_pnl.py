@@ -1178,3 +1178,73 @@ class TestFetchHistoriesBatch(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFormingSessionGuard(unittest.TestCase):
+    """A bar dated today is a forming mid-session value until the 16:00 ET
+    close. Appending it would freeze a partial day permanently — later runs
+    skip a date that already exists — so the script must skip instead."""
+
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        self.holdings_path = self.temp_path / "holdings_details.json"
+        self.holdings_path.write_text(
+            json.dumps({"AAPL": {"shares": "100", "average_price": "150.00"}}),
+            encoding="utf-8",
+        )
+        self.forex_path = self.temp_path / "fx_data.json"
+        self.forex_path.write_text(json.dumps({"rates": {"USD": 1.0}}), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    def test_todays_forming_bar_is_not_appended(self, mock_csv_path) -> None:
+        from datetime import datetime
+        from datetime import time as dtime
+        from zoneinfo import ZoneInfo
+
+        from scripts.pnl import update_daily_pnl
+
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        csv_path.write_text("date,value_usd\n2026-09-21,15000.0\n", encoding="utf-8")
+        original_content = csv_path.read_text(encoding="utf-8")
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        today_et = datetime.now(ZoneInfo("US/Eastern")).date()
+        mock_history = MagicMock()
+        mock_history.empty = False
+        mock_df = pd.DataFrame(
+            {"Close": [150.0, 155.0]},
+            index=pd.to_datetime(["2026-09-21", today_et.isoformat()]),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        mock_history.index = mock_df.index
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        fake_now = datetime.combine(today_et, dtime(10, 0), tzinfo=ZoneInfo("US/Eastern"))
+        with (
+            patch.object(update_daily_pnl, "datetime") as mock_datetime,
+            patch("yfinance.Ticker", return_value=mock_ticker),
+            patch.object(update_daily_pnl, "HOLDINGS_FILE", self.holdings_path),
+            patch.object(update_daily_pnl, "FOREX_FILE", self.forex_path),
+        ):
+            mock_datetime.now.return_value = fake_now
+            with self.assertRaises(SystemExit) as ctx:
+                update_daily_pnl.main()
+
+        self.assertEqual(ctx.exception.code, 0)
+        self.assertEqual(csv_path.read_text(encoding="utf-8"), original_content)
