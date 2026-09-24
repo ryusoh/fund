@@ -38,7 +38,10 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
   rules propagate unchanged. Jest only runs under `review_heatmap/tests/`;
   scoped Python verification is `make test-py SUITE=<addon>/tests` /
   `make test-addon ADDON=<dir>`, and pytest must run from the repo root (the
-  root `conftest.py` mocks `aqt`/`anki`).
+  root `conftest.py` mocks `aqt`/`anki`). Its architect-lane persona is
+  `.jules/refactoring.md` — there is **no** `architect.md` (verified 2026-09);
+  the Refactoring persona carries the eslint/suppressions workflow and the
+  "stage by name, never `git add -A`" + commit-title sections.
 - `~/dev/networking` — JS + Python; **no** `.pre-commit-config.yaml`; gate =
   `make precommit` (on macOS the parity gate is `make precommit-docker` —
   raw-socket tests fail on the host; gate **exits 0 amid alarming-looking
@@ -66,10 +69,17 @@ Propagate an improvement made in this repo (`~/dev/fund`) to the sibling repos:
 Verify these facts against each repo's current AGENTS.md/Makefile before
 relying on them — they drift.
 
-Fund-specific quirks that do NOT exist in any sibling (checked 2026-07):
-none of the three has a pre-push hook (fund's `.husky/pre-push` fast-forward/
-deletion guard is unique — anki's `make hooks` installs only pre-commit), and
-their `.jules/` personas already gate on their own CI-parity gate — the
+Fund-specific quirks that do NOT exist in any sibling (checked 2026-07,
+title-gate verified 2026-09): fund's `.husky/pre-push` fast-forward/deletion
+guard is unique (ryusoh.github.io DOES have a pre-commit-framework pre-push
+hook, but it only runs `pytest -q || [ $? -eq 5 ]`; anki's `make hooks`
+installs only pre-commit). Fund's PR-title gate (`.github/workflows/
+commit-lint.yml` + `scripts/agents/check_commit_message.py` — ≤72 chars,
+scope regex lower-case `[a-z0-9._/-]` only) exists in NO sibling (verified in
+all three 2026-09): when porting fund persona lessons about commit titles
+(e.g. fund#695), keep the ≤72-char / lower-case-scope guidance generic per
+the target's own AGENTS.md and do NOT cite fund's checker command or regex.
+Their `.jules/` personas already gate on their own CI-parity gate — the
 `make verify` vs `make precommit-fix` split that bit fund's Bolt persona is
 fund-specific.
 
