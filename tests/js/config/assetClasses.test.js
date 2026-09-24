@@ -24,5 +24,12 @@ describe('assetClasses', () => {
             expect(isLikelyFundTicker('AXX')).toBe(false);
             expect(isLikelyFundTicker('AAAAA')).toBe(false);
         });
+        it('returns true for strings > 4 chars ending in X (case insensitive)', () => {
+            expect(isLikelyFundTicker('vtsax')).toBe(true);
+        });
+        it('handles inputs with whitespace', () => {
+            expect(isLikelyFundTicker(' VTI ')).toBe(true);
+            expect(isLikelyFundTicker(' AAPL ')).toBe(false);
+        });
     });
 });
