@@ -276,6 +276,19 @@ def test_bot_log_file_flagged(repo: Path) -> None:
     assert any("stray artifact" in v and "run.log" in v for v in violations)
 
 
+def test_bot_eslint_out_json_scratch_flagged(repo: Path) -> None:
+    # fund#695: the bot committed ~6 MB of eslint JSON output
+    _write_and_commit(repo, "eslint_out.json", "[]\n", "refactor: cut complexity")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "eslint_out.json" in v for v in violations)
+
+
+def test_bot_warn_out_json_scratch_flagged(repo: Path) -> None:
+    _write_and_commit(repo, "eslint_warn_out.json", "[]\n", "refactor: cut complexity")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "eslint_warn_out.json" in v for v in violations)
+
+
 def test_bot_suppressions_addition_flagged(repo: Path) -> None:
     _write_and_commit(
         repo,

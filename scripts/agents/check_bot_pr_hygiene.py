@@ -90,8 +90,11 @@ def _is_stray_artifact(path: str) -> bool:
         return True
     if name.endswith((".tmp", ".scratch", ".swp", ".log")):
         return True
-    # Verification-run scratch (fund#692 shipped a 474-line verify_output.txt).
+    # Verification-run scratch (fund#692 shipped a 474-line verify_output.txt;
+    # fund#695 shipped 6 MB of eslint_out.json / eslint_warn_out.json).
     if name == "output.txt" or name.endswith("_output.txt"):
+        return True
+    if name.endswith(("_out.json", "_output.json")):
         return True
     if name.startswith(("temp_", "dummy_")):
         return True

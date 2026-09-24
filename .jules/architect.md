@@ -97,10 +97,21 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
 - **Stage by name, never `git add -A` / `git add .`.** Add exactly the source
   files you refactored (and `eslint-suppressions.json` only when
   `--prune-suppressions` changed it). Scratch output from verification runs
-  must never be committed.
+  must never be committed — and never redirect linter/gate output into a repo
+  file (`npx eslint ... > eslint_out.json`); read it from stdout or write it
+  under `/tmp`. (fund#695 committed ~6 MB of `eslint_out.json` /
+  `eslint_warn_out.json` and went red in CI.)
 - Title / commit subject: `refactor(<scope>): extract helpers to cut <function> complexity`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Architect:` prefix, no
-  conversational greetings**.
+  conversational greetings**. Count the assembled subject's characters: for a
+  long function name this template overflows 72 (fund#695's title was 73 chars
+  and failed the `pr-title` gate) — shorten the verb phrase
+  (`cut <function> complexity via helpers`), never the function name. The scope
+  must be lower-case (`scripts/agents/check_commit_message.py` only accepts
+  `[a-z0-9._/-]`): `dataService` fails the gate, use `data-service`. Validate
+  the exact subject locally with
+  `printf '%s\n' "<subject>" | python3 -m scripts.agents.check_commit_message --stdin`
+  before pushing.
 - Every commit on the branch must be a valid Conventional Commit — never commit
   conversational replies ("Hi Jules here...", "I have refactored...").
 - Never push an empty commit (0 changed files) or dummy files.

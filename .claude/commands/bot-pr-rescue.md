@@ -83,23 +83,37 @@ Decide: net diff vs `origin/main` empty → **close as duplicate**. Content good
 
 ## 5. Salvage
 
+Work in the `/tmp/pr<N>` worktree (detached HEAD). Do **not** `git checkout -b`
+a salvage branch in the main worktree — that hijacks the branch the user's
+checkout is on; squash on the detached HEAD and push it directly:
+
 ```bash
 git fetch origin <pr-branch>:refs/remotes/origin/<pr-branch>   # enables --force-with-lease
-git checkout -b pr<N>-salvage pr<N>-head
+cd /tmp/pr<N>
 git reset --soft $(git merge-base origin/main HEAD)
 git -c core.hooksPath=/dev/null commit -m "<conventional subject>
 
 Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>"
-git push --force-with-lease origin pr<N>-salvage:<pr-branch>
+git push --force-with-lease origin HEAD:<pr-branch>
 gh pr checks <N>                    # wait for web-ci green
 gh pr merge <N> --squash --delete-branch
 git checkout main && git pull --rebase origin main
-git branch -D pr<N>-salvage pr<N>-head
+git branch -D pr<N>-head
 git worktree remove /tmp/pr<N> --force; git worktree remove /tmp/pr<N>-main --force
 ```
 
 The PR title must stay a valid Conventional Commit subject — it becomes the
 squash-merge commit message.
+
+**Gotcha — the `pr-title` check (`commit-lint.yml`) validates the title from the
+event payload, so `gh run rerun` replays the OLD title.** After retitling,
+retrigger with a fresh event (a force-push, or `gh pr close` + `gh pr reopen`).
+Validate the title locally before pushing:
+`printf '%s\n' "<title>" | python3 -m scripts.agents.check_commit_message --stdin`
+— the scope regex is lower-case only (`[a-z0-9._/-]`), so `refactor(dataService)`
+fails; use `refactor(data-service)` (fund#695). When `gh pr edit` fails with
+GraphQL scope errors (`read:org`), use
+`gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -f title="..."` instead.
 
 ## 6. Fix forward (the point of the exercise)
 
