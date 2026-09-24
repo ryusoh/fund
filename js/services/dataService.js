@@ -393,17 +393,15 @@ function formatPerDisplayForTicker(ticker, marketRatiosByTicker = new Map(), cur
     return _formatPeString(trailingValue, forwardValue);
 }
 
-function createHoldingRow(
+function _buildHoldingColumns(
+    row,
     holding,
     totalPortfolioValueUSD,
     currentCurrency,
     exchangeRates,
     currencySymbols,
-    marketRatiosByTicker = new Map()
+    marketRatiosByTicker
 ) {
-    const row = document.createElement('tr');
-    row.dataset.ticker = holding.ticker;
-
     const allocationPercentage =
         totalPortfolioValueUSD > 0 ? (holding.currentValue / totalPortfolioValueUSD) * 100 : 0;
     const perDisplayValue = formatPerDisplayForTicker(
@@ -452,13 +450,13 @@ function createHoldingRow(
         td.textContent = col.text;
         row.appendChild(td);
     }
+}
 
-    const pnlCell = row.querySelector('td.pnl');
-    const pnlPercentageCell = row.querySelector('td.pnl-percentage');
+function _populateDayChangeStacks(row, holding, currentCurrency, exchangeRates, currencySymbols) {
+    if (!Number.isFinite(holding.dayChangePercentage)) {
+        return;
+    }
 
-    // Day change renders as a half-size two-line stack (pct over $) trailing
-    // the main figure — same idiom in the price cell, value cell, and footer.
-    // Price cell shows the per-share change; value cell the position's total.
     const makeDayChangeStack = (pctText, absText, color) => {
         const stack = document.createElement('span');
         stack.className = 'day-change-stack';
@@ -477,68 +475,100 @@ function createHoldingRow(
         return stack;
     };
 
-    if (Number.isFinite(holding.dayChangePercentage)) {
-        const dayColor =
-            holding.dayChangeValue > 0
-                ? COLORS.POSITIVE_PNL
-                : holding.dayChangeValue < 0
-                  ? COLORS.NEGATIVE_PNL
-                  : null;
-        const pctText = `${holding.dayChangePercentage > 0 ? '+' : ''}${holding.dayChangePercentage.toFixed(2)}%`;
+    const dayColor =
+        holding.dayChangeValue > 0
+            ? COLORS.POSITIVE_PNL
+            : holding.dayChangeValue < 0
+              ? COLORS.NEGATIVE_PNL
+              : null;
+    const pctText = `${holding.dayChangePercentage > 0 ? '+' : ''}${holding.dayChangePercentage.toFixed(2)}%`;
 
-        const priceCell = row.querySelector('td.price');
-        if (priceCell && Number.isFinite(holding.dayChangePrice)) {
-            const priceAbsText = `${holding.dayChangePrice >= 0 ? '+' : '-'}${formatCurrency(
-                Math.abs(holding.dayChangePrice),
-                currentCurrency,
-                exchangeRates,
-                currencySymbols
-            )}`;
-            priceCell.appendChild(makeDayChangeStack(pctText, priceAbsText, dayColor));
-        }
-
-        const valueCell = row.querySelector('td.value');
-        if (valueCell) {
-            const valueAbsText = `${holding.dayChangeValue >= 0 ? '+' : '-'}${formatCurrency(
-                Math.abs(holding.dayChangeValue),
-                currentCurrency,
-                exchangeRates,
-                currencySymbols
-            )}`;
-            valueCell.appendChild(makeDayChangeStack(pctText, valueAbsText, dayColor));
-        }
-    }
-
-    if (pnlCell && pnlPercentageCell) {
-        const formattedAbsolutePnlValueWithSymbol = formatCurrency(
-            holding.pnlValue,
+    const priceCell = row.querySelector('td.price');
+    if (priceCell && Number.isFinite(holding.dayChangePrice)) {
+        const priceAbsText = `${holding.dayChangePrice >= 0 ? '+' : '-'}${formatCurrency(
+            Math.abs(holding.dayChangePrice),
             currentCurrency,
             exchangeRates,
             currencySymbols
-        );
-        let displayPnlValue;
-        if (holding.pnlValue >= 0) {
-            displayPnlValue = `+${formattedAbsolutePnlValueWithSymbol}`;
-        } else {
-            displayPnlValue = `-${formattedAbsolutePnlValueWithSymbol}`;
-        }
-        pnlCell.textContent = displayPnlValue;
-
-        const pnlPercentagePrefix = holding.pnlPercentage >= 0 ? '+' : '';
-        const formattedPnlPercentage = holding.pnlPercentage.toFixed(2);
-        pnlPercentageCell.textContent = `${pnlPercentagePrefix}${formattedPnlPercentage}%`;
-
-        if (holding.pnlValue > 0) {
-            pnlCell.style.color = COLORS.POSITIVE_PNL;
-            pnlPercentageCell.style.color = COLORS.POSITIVE_PNL;
-        } else if (holding.pnlValue < 0) {
-            pnlCell.style.color = COLORS.NEGATIVE_PNL;
-            pnlPercentageCell.style.color = COLORS.NEGATIVE_PNL;
-        } else {
-            pnlCell.style.color = '';
-            pnlPercentageCell.style.color = '';
-        }
+        )}`;
+        priceCell.appendChild(makeDayChangeStack(pctText, priceAbsText, dayColor));
     }
+
+    const valueCell = row.querySelector('td.value');
+    if (valueCell) {
+        const valueAbsText = `${holding.dayChangeValue >= 0 ? '+' : '-'}${formatCurrency(
+            Math.abs(holding.dayChangeValue),
+            currentCurrency,
+            exchangeRates,
+            currencySymbols
+        )}`;
+        valueCell.appendChild(makeDayChangeStack(pctText, valueAbsText, dayColor));
+    }
+}
+
+function _populatePnlCells(row, holding, currentCurrency, exchangeRates, currencySymbols) {
+    const pnlCell = row.querySelector('td.pnl');
+    const pnlPercentageCell = row.querySelector('td.pnl-percentage');
+
+    if (!pnlCell || !pnlPercentageCell) {
+        return;
+    }
+
+    const formattedAbsolutePnlValueWithSymbol = formatCurrency(
+        holding.pnlValue,
+        currentCurrency,
+        exchangeRates,
+        currencySymbols
+    );
+    let displayPnlValue;
+    if (holding.pnlValue >= 0) {
+        displayPnlValue = `+${formattedAbsolutePnlValueWithSymbol}`;
+    } else {
+        displayPnlValue = `-${formattedAbsolutePnlValueWithSymbol}`;
+    }
+    pnlCell.textContent = displayPnlValue;
+
+    const pnlPercentagePrefix = holding.pnlPercentage >= 0 ? '+' : '';
+    const formattedPnlPercentage = holding.pnlPercentage.toFixed(2);
+    pnlPercentageCell.textContent = `${pnlPercentagePrefix}${formattedPnlPercentage}%`;
+
+    if (holding.pnlValue > 0) {
+        pnlCell.style.color = COLORS.POSITIVE_PNL;
+        pnlPercentageCell.style.color = COLORS.POSITIVE_PNL;
+    } else if (holding.pnlValue < 0) {
+        pnlCell.style.color = COLORS.NEGATIVE_PNL;
+        pnlPercentageCell.style.color = COLORS.NEGATIVE_PNL;
+    } else {
+        pnlCell.style.color = '';
+        pnlPercentageCell.style.color = '';
+    }
+}
+
+function createHoldingRow(
+    holding,
+    totalPortfolioValueUSD,
+    currentCurrency,
+    exchangeRates,
+    currencySymbols,
+    marketRatiosByTicker = new Map()
+) {
+    const row = document.createElement('tr');
+    row.dataset.ticker = holding.ticker;
+
+    _buildHoldingColumns(
+        row,
+        holding,
+        totalPortfolioValueUSD,
+        currentCurrency,
+        exchangeRates,
+        currencySymbols,
+        marketRatiosByTicker
+    );
+
+    _populateDayChangeStacks(row, holding, currentCurrency, exchangeRates, currencySymbols);
+
+    _populatePnlCells(row, holding, currentCurrency, exchangeRates, currencySymbols);
+
     return row;
 }
 
