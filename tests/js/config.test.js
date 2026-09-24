@@ -190,3 +190,38 @@ describe('Configuration', () => {
         });
     });
 });
+
+describe('getBaseUrl', () => {
+    it('returns empty string if location is null', () => {
+        const { getBaseUrl } = require('@js/config');
+        expect(getBaseUrl(null)).toBe('');
+        expect(getBaseUrl(undefined)).toBe('');
+    });
+
+    it('returns empty string for non-localhost without /fund/ path', () => {
+        const { getBaseUrl } = require('@js/config');
+        const loc = { hostname: 'lyeutsaon.com', pathname: '/about' };
+        expect(getBaseUrl(loc)).toBe('');
+    });
+
+    it('returns /fund for non-localhost with /fund/ path', () => {
+        const { getBaseUrl } = require('@js/config');
+        const loc = { hostname: 'lyeutsaon.com', pathname: '/fund/' };
+        expect(getBaseUrl(loc)).toBe('/fund');
+    });
+
+    it('returns /fund for non-localhost with /fund/something path', () => {
+        const { getBaseUrl } = require('@js/config');
+        const loc = { hostname: 'lyeutsaon.com', pathname: '/fund/terminal' };
+        expect(getBaseUrl(loc)).toBe('/fund');
+    });
+
+    it('returns empty string for localhost even with /fund/ path', () => {
+        const { getBaseUrl } = require('@js/config');
+        const loc = { hostname: 'localhost', pathname: '/fund/' };
+        expect(getBaseUrl(loc)).toBe('');
+
+        const loc2 = { hostname: '127.0.0.1', pathname: '/fund/terminal' };
+        expect(getBaseUrl(loc2)).toBe('/fund');
+    });
+});
