@@ -980,91 +980,52 @@ export async function getCompositionSnapshotLine({ labelPrefix = 'Composition' }
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
 
+export function _getSectorsHint(labelPrefix) {
+    if (labelPrefix === 'Sectors') {
+        return "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/geography/marketcap' to switch charts)";
+    }
+    if (labelPrefix === 'Sectors Abs') {
+        return "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/geography/marketcap' to switch charts)";
+    }
+    return '';
+}
+
+function _isValidSnapshotData(data) {
+    if (!data) {
+        return false;
+    }
+    if (typeof data !== 'object') {
+        return false;
+    }
+    if (!Array.isArray(data.dates)) {
+        return false;
+    }
+    if (data.dates.length === 0) {
+        return false;
+    }
+    return true;
+}
+
 export async function getSectorsSnapshotLine({ labelPrefix = 'Sectors' } = {}) {
-    if (
-        transactionState.activeChart !== 'sectors' &&
-        transactionState.activeChart !== 'sectorsAbs'
-    ) {
+    const active = transactionState.activeChart;
+    if (active !== 'sectors' && active !== 'sectorsAbs') {
         return null;
     }
     const data = await loadSectorsSnapshotData();
-    if (
-        !data ||
-        typeof data !== 'object' ||
-        !Array.isArray(data.dates) ||
-        data.dates.length === 0
-    ) {
+    if (!_isValidSnapshotData(data)) {
         return null;
     }
 
-    const dates = data.dates;
-    const { chartDateRange } = transactionState;
-    const filterFrom = parseDateSafe(chartDateRange?.from);
-    const filterTo = parseDateSafe(chartDateRange?.to);
+    const targetIndex = _getSnapshotTargetIndex(data.dates, transactionState.chartDateRange);
+    const dateLabel = data.dates[targetIndex];
 
-    const filteredIndices = [];
-    for (let i = 0; i < dates.length; i++) {
-        const date = parseDateSafe(dates[i]);
-        if (date && (!filterFrom || date >= filterFrom) && (!filterTo || date <= filterTo)) {
-            filteredIndices.push(i);
-        }
-    }
-
-    let targetIndex =
-        filteredIndices.length > 0 ? filteredIndices[filteredIndices.length - 1] : dates.length - 1;
-    if (!Number.isFinite(targetIndex) || targetIndex < 0) {
-        targetIndex = dates.length - 1;
-    }
-
-    const totalValues = Array.isArray(data.total_values) ? data.total_values : [];
-    const totalValueRaw = Number(totalValues[targetIndex] ?? 0) || 0;
-    const dateLabel = dates[targetIndex];
-    const selectedCurrency = transactionState.selectedCurrency || 'USD';
-
-    const sectorSeries = data.series || {};
-    const sectors = [];
-    const sectorEntries = Object.entries(sectorSeries);
-    for (let i = 0; i < sectorEntries.length; i += 1) {
-        const [name, values] = sectorEntries[i];
-        const seriesValues = Array.isArray(values) ? values : [];
-        const percentage = Number(seriesValues[targetIndex] ?? 0);
-        if (!Number.isFinite(percentage) || percentage <= 0.01) {
-            continue;
-        }
-        const baseValue = (totalValueRaw * percentage) / 100;
-        const convertedValue = convertValueToCurrency(baseValue, dateLabel, selectedCurrency);
-        sectors.push({
-            name,
-            percent: percentage,
-            absolute: convertedValue,
-        });
-    }
-
-    if (!sectors.length) {
+    const categories = _buildSnapshotCategories(data, targetIndex, dateLabel);
+    if (!categories || categories.length === 0) {
         return null;
     }
 
-    sectors.sort((a, b) => b.percent - a.percent);
-
-    const formatted = sectors.map((s) => {
-        const valueText = formatWithSelectedCurrency(s.absolute);
-        const percentText = `${s.percent.toFixed(2)}%`;
-        return `${s.name} ${valueText} (${percentText})`;
-    });
-
-    const lines = [];
-    for (let i = 0; i < formatted.length; i += 3) {
-        lines.push(formatted.slice(i, i + 3).join('   '));
-    }
-
-    let hint = '';
-    if (labelPrefix === 'Sectors') {
-        hint =
-            "\n(Hint: use 'abs' for absolute values, 'per' for percentages, or 'composition/geography/marketcap' to switch charts)";
-    } else if (labelPrefix === 'Sectors Abs') {
-        hint =
-            "\n(Hint: use 'per' for percentages, 'abs' for absolute values, or 'composition/geography/marketcap' to switch charts)";
-    }
+    const lines = _formatSnapshotLines(categories);
+    const hint = _getSectorsHint(labelPrefix);
 
     return `${labelPrefix} (${dateLabel}):\n${lines.join('\n')}${hint}`;
 }
