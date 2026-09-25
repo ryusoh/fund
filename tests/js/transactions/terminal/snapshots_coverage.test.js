@@ -1,6 +1,7 @@
 import {
     getCompositionSnapshotLine,
     getSectorsSnapshotLine,
+    _getSectorsHint,
     getGeographySnapshotLine,
     getMarketcapSnapshotLine,
 } from '../../../../js/transactions/terminal/snapshots.js';
@@ -176,6 +177,26 @@ describe('getSectorsSnapshotLine', () => {
         expect(res).toContain('Sectors');
         expect(res).toContain('Technology');
         expect(res).toContain('2023-02-01');
+    });
+
+    it('returns null if activeChart is not sectors or sectorsAbs', async () => {
+        transactionState.activeChart = 'value';
+        expect(await getSectorsSnapshotLine()).toBeNull();
+    });
+
+    it('returns null if data is not an object', async () => {
+        loadSpy.mockResolvedValueOnce('not-an-object');
+        expect(await getSectorsSnapshotLine()).toBeNull();
+    });
+
+    it('returns null if dates is not an array', async () => {
+        loadSpy.mockResolvedValueOnce({ dates: '2023-01-01' });
+        expect(await getSectorsSnapshotLine()).toBeNull();
+    });
+
+    it('returns null if dates is empty', async () => {
+        loadSpy.mockResolvedValueOnce({ dates: [] });
+        expect(await getSectorsSnapshotLine()).toBeNull();
     });
 });
 
@@ -502,5 +523,19 @@ describe('getMarketcapSnapshotLine Error paths', () => {
         loadSpy.mockResolvedValue(null);
         const res = await getMarketcapSnapshotLine();
         expect(res).toBeNull();
+    });
+});
+
+describe('_getSectorsHint', () => {
+    it('returns hint for Sectors', () => {
+        expect(_getSectorsHint('Sectors')).toContain("use 'abs' for absolute values");
+    });
+
+    it('returns hint for Sectors Abs', () => {
+        expect(_getSectorsHint('Sectors Abs')).toContain("use 'per' for percentages");
+    });
+
+    it('returns empty string for unknown prefix', () => {
+        expect(_getSectorsHint('Unknown')).toBe('');
     });
 });
