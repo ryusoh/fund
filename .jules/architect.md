@@ -116,8 +116,12 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
   conversational replies ("Hi Jules here...", "I have refactored...").
 - Never push an empty commit (0 changed files) or dummy files.
 - Body: function and file; complexity N → M; helpers extracted and why; "behaviour
-  preserved, test expectations unchanged"; pasted `make verify` output (do not
-  put raw subshell commands like `$(make verify...)` in commit text).
+  preserved, test expectations unchanged"; pasted **`make precommit-fix`** output
+  plus the empty `git status --porcelain` after it — never `make verify` output
+  (verify runs no fixer, so a bot that gates on it ships prettier-unclean code:
+  fund#697 went red on "committed files were not gate-clean" hours after the
+  #688 lesson landed). Do not put raw subshell commands like `$(make verify...)`
+  in commit text.
 
 If no suitable target exists, open no PR — an empty run is acceptable; inventing
 work or reaching into another lane is not.

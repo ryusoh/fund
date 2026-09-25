@@ -70,7 +70,11 @@ success, not a reason to invent work or reach into another lane.
 ## Verification gate (before opening a PR)
 
 - State the evidence the removal is safe (the reference search you ran turned up
-  nothing). `make verify` green — full JS + Python suite still passes.
+  nothing). **`make precommit-fix` green** — that is the CI gate; `make verify`
+  is NOT a superset (it skips the pre-commit hooks, so verify-green code can
+  still ship prettier-unclean and fail CI on "committed files were not
+  gate-clean" — fund#697). After the fixer run, `git status --porcelain` must
+  be empty; stage and commit any reformat before pushing.
 - If you resolved a TODO that adds behaviour, a test covers the changed lines.
 - Before **every** push: `git show --stat HEAD` must show a real diff that
   matches the commit message, and
@@ -103,6 +107,6 @@ Conventional Commits per `AGENTS.md`.
   `fix(<scope>): resolve <todo>` as appropriate. Imperative, lower-case, ≤ 72 chars,
   **no emoji, no `Janitor:` prefix**.
 - Body: what was removed/resolved; the evidence it was safe (reference search);
-  `make verify` output.
+  `make precommit-fix` output.
 - Build commit messages with real newlines or multiple `git commit -m` flags —
   never a literal `\n` sequence in the subject or body.

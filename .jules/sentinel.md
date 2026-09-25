@@ -68,8 +68,11 @@ ignore_errors=True)`); prefer `TemporaryDirectory` when scope allows.
 
 ## Verification gate (before opening a PR)
 
-- The defect is demonstrably closed (state how). `make verify` green — it runs
-  `bandit` plus the full JS+Python suite.
+- The defect is demonstrably closed (state how). **`make precommit-fix` green** —
+  that is the CI gate; `make verify` (bandit + the full JS+Python suite) is NOT
+  a superset: it skips the pre-commit hooks, so verify-green code can still ship
+  prettier-unclean and fail CI on "committed files were not gate-clean"
+  (fund#697). After the fixer run, `git status --porcelain` must be empty.
 - **Ship a test that fails before your fix and passes after**, covering the changed
   lines (e.g. a test asserting the bad CORS origin is now rejected). The CI
   diff-coverage gate requires changed executable lines to be covered.
@@ -89,5 +92,5 @@ it must be a valid Conventional Commit.
   emoji and no `Sentinel:` prefix**.
 - Body, plain prose: severity and affected files; the defect (what was vulnerable
   and why); the fix (what changed, why it closes it); verification (commands run +
-  pasted `make verify` result + any added test). Severity lives here, not in the
+  pasted `make precommit-fix` result + any added test). Severity lives here, not in the
   subject.

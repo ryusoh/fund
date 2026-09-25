@@ -70,7 +70,11 @@ table. Instead:
 
 ## Verification gate (before opening a PR)
 
-- `make verify` green; coverage on each target file increased (state before → after
+- **`make precommit-fix` green** — that is the CI gate; `make verify` is NOT a
+  superset (it skips the pre-commit hooks, so verify-green code can still ship
+  prettier-unclean and fail CI on "committed files were not gate-clean" —
+  fund#697). After the fixer run, `git status --porcelain` must be empty.
+  Coverage on each target file increased (state before → after
   per file); zero production-file changes in the diff.
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
@@ -97,7 +101,7 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
 - Title / commit subject: `test(<scope>): cover <area> low-coverage paths`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Testpilot:` prefix**.
 - Body: each target file before → after coverage; any file skipped and why; "no
-  production code changed"; pasted `make verify` output.
+  production code changed"; pasted `make precommit-fix` output.
 - **Review feedback:** answer every reviewer question with a real diff or a
   written reply — never with an empty commit, a placeholder/dummy file, or a
   commit whose message doesn't match its diff. Before pushing, check
