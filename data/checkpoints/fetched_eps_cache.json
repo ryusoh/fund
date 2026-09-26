@@ -159,7 +159,7 @@
             "2026-08-06": 4.4799999999999995
         },
         "currency": "USD",
-        "current_ttm": 2.97
+        "current_ttm": 2.98
     },
     "ADBE": {
         "points": {
@@ -213,7 +213,7 @@
             "2026-09-10": 23.65
         },
         "currency": "USD",
-        "current_ttm": 17.91
+        "current_ttm": 17.92
     },
     "AIG": {
         "points": {
@@ -429,7 +429,7 @@
             "2026-07-30": 12.43
         },
         "currency": "USD",
-        "current_ttm": 12.44
+        "current_ttm": 12.42
     },
     "ANET": {
         "points": {
@@ -537,7 +537,7 @@
             "2026-07-28": 1.4900000000000009
         },
         "currency": "USD",
-        "current_ttm": 2.78
+        "current_ttm": 2.77
     },
     "BABA": {
         "points": {
@@ -699,7 +699,7 @@
             "2026-08-04": 23.82
         },
         "currency": "USD",
-        "current_ttm": 23.22
+        "current_ttm": 23.19
     },
     "CB": {
         "points": {
@@ -753,7 +753,7 @@
             "2026-07-21": 29.09
         },
         "currency": "USD",
-        "current_ttm": 28.22
+        "current_ttm": 28.23
     },
     "CBZ": {
         "points": {
@@ -945,7 +945,7 @@
             "2026-07-30": 31.48
         },
         "currency": "USD",
-        "current_ttm": 24.17
+        "current_ttm": 24.19
     },
     "CME": {
         "points": {
@@ -1107,7 +1107,7 @@
             "2026-07-21": 20.04
         },
         "currency": "USD",
-        "current_ttm": 17.77
+        "current_ttm": 18.21
     },
     "COHR": {
         "points": {
@@ -1161,14 +1161,12 @@
             "2026-08-12": 5.6
         },
         "currency": "USD",
-        "current_ttm": 4.12
+        "current_ttm": 4.13
     },
     "COST": {
         "points": {
             "2026-02-28": 19.259999999999998,
             "2026-05-31": 19.91,
-            "2014-12-10": 4.82,
-            "2015-03-05": 5.120000000000001,
             "2015-05-27": 5.220000000000001,
             "2015-09-29": 5.37,
             "2015-12-08": 5.34,
@@ -1213,7 +1211,8 @@
             "2025-09-25": 18.21,
             "2025-12-11": 18.67,
             "2026-03-05": 19.23,
-            "2026-05-28": 19.88
+            "2026-05-28": 19.88,
+            "2026-09-24": 20.759999999999998
         },
         "currency": "USD",
         "current_ttm": 19.9
@@ -1324,7 +1323,7 @@
             "2026-08-26": 16.84
         },
         "currency": "USD",
-        "current_ttm": 10.93
+        "current_ttm": 10.96
     },
     "CTRA": {
         "points": {},
@@ -1536,7 +1535,7 @@
             "2026-07-21": 8.12
         },
         "currency": "USD",
-        "current_ttm": 5.61
+        "current_ttm": 5.62
     },
     "DIS": {
         "points": {
@@ -1751,7 +1750,7 @@
             "2026-07-28": 4.53
         },
         "currency": "USD",
-        "current_ttm": 4.52
+        "current_ttm": 4.54
     },
     "FE": {
         "points": {
@@ -1805,7 +1804,7 @@
             "2026-07-28": 0.18428571428571425
         },
         "currency": "USD",
-        "current_ttm": 1.87
+        "current_ttm": 1.85
     },
     "FTRE": {
         "points": {
@@ -2106,7 +2105,7 @@
             "2026-07-29": 9.67
         },
         "currency": "USD",
-        "current_ttm": 9.69
+        "current_ttm": 9.68
     },
     "GTLS": {
         "points": {},
@@ -2165,7 +2164,7 @@
             "2026-07-23": 1.5300000000000002
         },
         "currency": "USD",
-        "current_ttm": 1.3
+        "current_ttm": 1.29
     },
     "HE": {
         "points": {
@@ -2219,7 +2218,7 @@
             "2026-08-07": 0.74
         },
         "currency": "USD",
-        "current_ttm": 1.29
+        "current_ttm": 1.28
     },
     "HHH": {
         "points": {
@@ -2327,7 +2326,7 @@
             "2026-07-28": 8.49
         },
         "currency": "USD",
-        "current_ttm": 6.82
+        "current_ttm": 6.8
     },
     "HOLX": {
         "points": {},
@@ -2386,7 +2385,7 @@
             "2026-07-16": 10.23
         },
         "currency": "USD",
-        "current_ttm": 8.72
+        "current_ttm": 8.71
     },
     "JD": {
         "points": {
@@ -2547,7 +2546,7 @@
             "2026-07-14": 21.78
         },
         "currency": "USD",
-        "current_ttm": 23.32
+        "current_ttm": 23.33
     },
     "KKR": {
         "points": {
@@ -2763,7 +2762,7 @@
             "2026-07-30": 17.49
         },
         "currency": "USD",
-        "current_ttm": 11.75
+        "current_ttm": 12.3
     },
     "LILAK": {
         "points": {
@@ -2857,7 +2856,7 @@
             "2026-08-05": 31.490000000000002
         },
         "currency": "USD",
-        "current_ttm": 29.81
+        "current_ttm": 29.78
     },
     "LMT": {
         "points": {
@@ -2965,7 +2964,7 @@
             "2026-08-19": 12.47
         },
         "currency": "USD",
-        "current_ttm": 11.83
+        "current_ttm": 11.84
     },
     "MA": {
         "points": {
@@ -3019,7 +3018,7 @@
             "2026-07-30": 18.78
         },
         "currency": "USD",
-        "current_ttm": 18.2
+        "current_ttm": 18.17
     },
     "MCD": {
         "points": {
@@ -3073,7 +3072,7 @@
             "2026-08-04": 12.55
         },
         "currency": "USD",
-        "current_ttm": 12.32
+        "current_ttm": 12.3
     },
     "META": {
         "points": {
@@ -3127,7 +3126,7 @@
             "2026-07-29": 29.62
         },
         "currency": "USD",
-        "current_ttm": 26.56
+        "current_ttm": 26.52
     },
     "MGM": {
         "points": {
@@ -3269,7 +3268,7 @@
             "2026-07-31": -7.99
         },
         "currency": "USD",
-        "current_ttm": -7.98
+        "current_ttm": -7.99
     },
     "MSFT": {
         "points": {
@@ -3323,7 +3322,7 @@
             "2026-07-29": 17.28
         },
         "currency": "USD",
-        "current_ttm": 17.97
+        "current_ttm": 17.93
     },
     "MSI": {
         "points": {
@@ -3377,7 +3376,7 @@
             "2026-08-05": 16.43
         },
         "currency": "USD",
-        "current_ttm": 12.71
+        "current_ttm": 12.69
     },
     "MU": {
         "points": {
@@ -3431,7 +3430,7 @@
             "2026-06-24": 45.120000000000005
         },
         "currency": "USD",
-        "current_ttm": 44.27
+        "current_ttm": 44.19
     },
     "NFLX": {
         "points": {
@@ -3592,7 +3591,7 @@
             "2022-12-31": 0.4
         },
         "currency": "USD",
-        "current_ttm": 0.27
+        "current_ttm": 0.26
     },
     "NVDA": {
         "points": {
@@ -3646,7 +3645,7 @@
             "2026-08-26": 7.010000000000001
         },
         "currency": "USD",
-        "current_ttm": 7.92
+        "current_ttm": 7.91
     },
     "O": {
         "points": {
@@ -3754,7 +3753,7 @@
             "2026-08-03": 5.87
         },
         "currency": "USD",
-        "current_ttm": 5.79
+        "current_ttm": 5.83
     },
     "ORCL": {
         "points": {
@@ -3988,7 +3987,7 @@
             "2026-08-24": 10.05951471209526
         },
         "currency": "USD",
-        "current_ttm": 9.3
+        "current_ttm": 9.29
     },
     "PEP": {
         "points": {
@@ -4042,7 +4041,7 @@
             "2026-07-09": 8.36
         },
         "currency": "USD",
-        "current_ttm": 7.63
+        "current_ttm": 7.62
     },
     "PFE": {
         "points": {
@@ -4150,7 +4149,7 @@
             "2026-07-29": 6.89
         },
         "currency": "USD",
-        "current_ttm": 6.62
+        "current_ttm": 6.61
     },
     "PSN": {
         "points": {
@@ -4293,7 +4292,7 @@
             "2026-07-29": 11.36
         },
         "currency": "USD",
-        "current_ttm": 8.76
+        "current_ttm": 8.74
     },
     "QSR": {
         "points": {
@@ -4345,7 +4344,7 @@
             "2026-08-06": 3.92
         },
         "currency": "USD",
-        "current_ttm": 3.98
+        "current_ttm": 3.94
     },
     "RBLX": {
         "points": {
@@ -4515,7 +4514,7 @@
             "2026-07-30": 47.03000000000001
         },
         "currency": "USD",
-        "current_ttm": 40.41
+        "current_ttm": 40.44
     },
     "RMBS": {
         "points": {
@@ -4568,7 +4567,7 @@
             "2026-07-27": 2.66
         },
         "currency": "USD",
-        "current_ttm": 2.18
+        "current_ttm": 2.19
     },
     "ROKU": {
         "points": {
@@ -4829,7 +4828,7 @@
             "2026-07-28": 11.870000000000001
         },
         "currency": "USD",
-        "current_ttm": 10.84
+        "current_ttm": 10.83
     },
     "SIG": {
         "points": {
@@ -5206,7 +5205,7 @@
             "2026-07-22": 1.7400000000000002
         },
         "currency": "USD",
-        "current_ttm": 1.06
+        "current_ttm": 1.1
     },
     "TTD": {
         "points": {
@@ -5251,7 +5250,7 @@
             "2026-08-06": 1.6600000000000001
         },
         "currency": "USD",
-        "current_ttm": 0.84
+        "current_ttm": 84.0
     },
     "UNH": {
         "points": {
@@ -5359,7 +5358,7 @@
             "2026-07-23": 12.280000000000001
         },
         "currency": "USD",
-        "current_ttm": 12.34
+        "current_ttm": 12.36
     },
     "URI": {
         "points": {
@@ -5413,7 +5412,7 @@
             "2026-07-22": 45.260000000000005
         },
         "currency": "USD",
-        "current_ttm": 41.59
+        "current_ttm": 41.17
     },
     "V": {
         "points": {
@@ -5467,7 +5466,7 @@
             "2026-07-28": 12.780000000000001
         },
         "currency": "USD",
-        "current_ttm": 11.75
+        "current_ttm": 11.74
     },
     "VERA": {
         "points": {
@@ -5494,7 +5493,7 @@
             "2026-08-10": -5.86
         },
         "currency": "USD",
-        "current_ttm": -5.87
+        "current_ttm": -5.92
     },
     "VRTX": {
         "points": {
@@ -5548,7 +5547,7 @@
             "2026-08-03": 19.03
         },
         "currency": "USD",
-        "current_ttm": 17.19
+        "current_ttm": 17.4
     },
     "WAL": {
         "points": {
@@ -5710,7 +5709,7 @@
             "2026-07-27": 2.1900000000000004
         },
         "currency": "USD",
-        "current_ttm": 2.23
+        "current_ttm": 2.27
     },
     "WFC": {
         "points": {
@@ -5872,7 +5871,7 @@
             "2026-08-20": 2.83
         },
         "currency": "USD",
-        "current_ttm": 2.76
+        "current_ttm": 2.77
     },
     "WRB": {
         "points": {
@@ -5926,7 +5925,7 @@
             "2026-07-20": 4.8
         },
         "currency": "USD",
-        "current_ttm": 4.83
+        "current_ttm": 4.86
     },
     "XOM": {
         "points": {
