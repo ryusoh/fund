@@ -1103,6 +1103,12 @@ function drawAmbientGlow(ctx, centerX, centerY, outerRadius, innerRadius, option
 }
 
 export const glass3dPlugin = {
+    afterDestroy(chart) {
+        if (chart.$glass3d && chart.$glass3d.animationFrame) {
+            cancelAnimationFrame(chart.$glass3d.animationFrame);
+            chart.$glass3d.animationFrame = null;
+        }
+    },
     id: 'glass3d',
     beforeDatasetsDraw(chart, args, pluginOptions) {
         const options = resolveOptions(pluginOptions);
