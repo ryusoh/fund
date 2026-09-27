@@ -625,3 +625,25 @@ describe('glass3dPlugin', () => {
         Math.pow.mockRestore();
     });
 });
+
+describe('afterDestroy hook', () => {
+    it('should cancel animation frame if it exists', () => {
+        const chart = {
+            $glass3d: {
+                animationFrame: 12345,
+            },
+        };
+        const cancelSpy = jest.spyOn(window, 'cancelAnimationFrame');
+
+        glass3dPlugin.afterDestroy(chart);
+
+        expect(cancelSpy).toHaveBeenCalledWith(12345);
+        expect(chart.$glass3d.animationFrame).toBeNull();
+        cancelSpy.mockRestore();
+    });
+
+    it('should not throw if chart.$glass3d is missing', () => {
+        const chart = {};
+        expect(() => glass3dPlugin.afterDestroy(chart)).not.toThrow();
+    });
+});
