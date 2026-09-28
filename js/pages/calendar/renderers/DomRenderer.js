@@ -193,6 +193,40 @@ export class DomRenderer extends CalendarRenderer {
         return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
     }
 
+    #createMonthElement(year, month, todayStr, values, valueField, colorOf) {
+        const monthEl = document.createElement('div');
+        monthEl.className = 'domcal-month';
+
+        const label = document.createElement('div');
+        label.className = 'domcal-month-label';
+        label.textContent = new Date(year, month, 1).toLocaleString('en-US', {
+            month: 'short',
+            year: 'numeric',
+        });
+        monthEl.appendChild(label);
+
+        const grid = document.createElement('div');
+        grid.className = 'domcal-grid';
+
+        const startWeekday = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let b = 0; b < startWeekday; b++) {
+            grid.appendChild(document.createElement('div'));
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${pad2(month + 1)}-${pad2(d)}`;
+            const entry = values.get(dateStr);
+            const value = entry && entry[valueField] != null ? entry[valueField] : 0;
+            const cell = document.createElement('div');
+            cell.className = 'domcal-cell' + (dateStr === todayStr ? ' domcal-cell--today' : '');
+            cell.dataset.date = dateStr;
+            cell.style.backgroundImage = cellBackground(colorOf(value));
+            grid.appendChild(cell);
+        }
+        monthEl.appendChild(grid);
+        return monthEl;
+    }
+
     #render() {
         const root = this.#root();
         if (!root) {
@@ -213,38 +247,14 @@ export class DomRenderer extends CalendarRenderer {
             const mi = this.startIndex + i;
             const year = Math.floor(mi / 12);
             const month = mi % 12;
-
-            const monthEl = document.createElement('div');
-            monthEl.className = 'domcal-month';
-
-            const label = document.createElement('div');
-            label.className = 'domcal-month-label';
-            label.textContent = new Date(year, month, 1).toLocaleString('en-US', {
-                month: 'short',
-                year: 'numeric',
-            });
-            monthEl.appendChild(label);
-
-            const grid = document.createElement('div');
-            grid.className = 'domcal-grid';
-
-            const startWeekday = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let b = 0; b < startWeekday; b++) {
-                grid.appendChild(document.createElement('div'));
-            }
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${pad2(month + 1)}-${pad2(d)}`;
-                const entry = values.get(dateStr);
-                const value = entry && entry[valueField] != null ? entry[valueField] : 0;
-                const cell = document.createElement('div');
-                cell.className =
-                    'domcal-cell' + (dateStr === todayStr ? ' domcal-cell--today' : '');
-                cell.dataset.date = dateStr;
-                cell.style.backgroundImage = cellBackground(colorOf(value));
-                grid.appendChild(cell);
-            }
-            monthEl.appendChild(grid);
+            const monthEl = this.#createMonthElement(
+                year,
+                month,
+                todayStr,
+                values,
+                valueField,
+                colorOf
+            );
             container.appendChild(monthEl);
         }
 
