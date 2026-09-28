@@ -26,3 +26,7 @@ eslint-suppressions.json
 # Vendored upstream source (ported with local modifications) — keep diffs
 # against upstream readable.
 js/ui/cal-heatmap-src/cal-heatmap.scss
+# TeX math doc: prettier >= 3.9.9 escapes `_` before `{` inside `$...$`
+# ($t_{50\%}$ -> $t\_{50\%}$, breaking the subscript when rendered);
+# upstream issue prettier/prettier#16100.
+docs/cursor-performance.md
