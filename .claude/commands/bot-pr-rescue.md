@@ -117,6 +117,16 @@ GraphQL scope errors (`read:org`), use
 
 ## 6. Fix forward (the point of the exercise)
 
+**Dependabot PRs are not Jules PRs — adapt the flow.** A group bump can fail
+the gate without any bad commit: a new tool version (e.g. prettier 3.9.9
+escaping `_` in `$t_{50\%}$` math, fund#700) flags an _existing_ repo file.
+Diagnose by `npm ci`-ing the PR's lockfile in a worktree and running the
+fixer to identify the tool; then either accept the fixer's output or exclude
+the file with a comment citing the upstream issue (`.prettierignore` has
+precedent for both patterns). Do NOT squash dependabot's signed commit —
+push an additive commit to the `dependabot/...` branch instead (the
+Co-authored-by trailer and single-commit rules are Jules-only).
+
 A rescued PR means the harness let the bot produce dirty history. Patch the
 cause, not just the symptom (interactive agents may edit `.jules/` personas and
 gate scripts per AGENTS.md):
