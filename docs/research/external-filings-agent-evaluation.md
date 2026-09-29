@@ -163,7 +163,48 @@ validation, crash recovery with batch journals and file locks
    176k LOC, heavy deps, competing runtime — the improvement cost exceeds a
    clean-room build of the parts we want.
 
-## 7. Open questions / what I could not verify
+## 7. Enhancement with our Anki infrastructure
+
+The candidate composes unusually well with the existing Anki pipeline
+(`docs/research/cross-repo-anki-synergy.md` §1a) because both sides are built
+on evidence-anchored artifacts and "LLM authors, code gates":
+
+1. **Filings are a better coverage-tracker fit than fund docs.** Networking's
+   `unvisited → candidate → imported` coverage state machine assumes a finite
+   corpus (`research/**/*.md` courseware) — which living fund theses aren't,
+   but a filing is. A 10-K's sections can be chunked, coverage-tracked, and
+   systematically card-ified exactly like courseware. The candidate's
+   per-form processors and section navigation produce precisely the metadata
+   (`chunk_id, file_path, heading, locator, content, citation`) that
+   `tools/research/parse_chunks.py`'s manifest format expects — the missing
+   piece is one thin adapter (processed-filing sections → chunks manifest).
+2. **Its evidence anchors satisfy our card citation contract for free.** The
+   金融 card format mandates a final `源码与文档引用` section with anchored
+   citations; the candidate's audit machinery already hard-requires
+   `source | type | date | locator` evidence lines and re-verifies them. The
+   `citation` / `external_sources` fields of the `anki_cards.jsonl` schema get
+   machine-checked provenance — something no other card source we have
+   provides.
+3. **PageRank steers which parts of a filing become cards.** Filings are huge;
+   `anki_graph_bridge.score_chunk_pagerank()` can rank sections by the
+   centrality of the 金融 hub concepts they touch, and `get_related_hubs()`
+   suggests cross-link targets at authoring time (fronts name hub concepts
+   verbatim so edges form on the next graph rebuild).
+4. **The confirm pass is the missing factuality gate.** Today our cards are
+   validated structurally (`anki_card_validator.py`) and for density, but not
+   for truth. The candidate's confirm-scene pattern — re-verify each claim
+   against the source with live tools — extends to cards: re-check each card's
+   claims against the filing before import.
+5. **End-to-end shape**: vendored Fins (filings → section chunks) →
+   PageRank-ranked selection → host code-agent authors `anki_cards.jsonl`
+   (Chinese-primary bilingual contract) → validator → density gate →
+   confirm pass against the filing → AnkiConnect import into 金融 → next
+   `make precommit-fix YOLO=1` in the anki repo rebuilds the graph.
+6. **Speculative reverse direction**: the Q&A loop could query the existing
+   金融 deck via AnkiConnect `findNotes` to inject already-known concepts as
+   prior-knowledge context. Unvalidated; treat as a later experiment.
+
+## 8. Open questions / what I could not verify
 
 1. **Extraction quality on our tickers** — the per-form processors encode
    edge-case lore, but only a real run against ANET/GOOG/PDD filings shows
