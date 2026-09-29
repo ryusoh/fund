@@ -6,7 +6,7 @@
 Most of the machinery already exists — the work is **wiring, not building**:
 
 1. **`~/dev/networking` already contains a complete, tested chat→Anki pipeline**
-   whose *default deck is 金融* and which already reads the PageRank graph from
+   whose _default deck is 金融_ and which already reads the PageRank graph from
    `~/dev/anki`. Its core pattern is "LLM authors, code gates": deterministic
    code selects/validates/imports; the agent writes card prose as JSONL.
 2. **`~/dev/anki` already computes PageRank over the 金融 deck** (15,212 nodes)
@@ -21,8 +21,8 @@ Most of the machinery already exists — the work is **wiring, not building**:
    vocabulary in networking's validator.
 
 State-of-the-art methodology (§4) independently endorses this shape: file-based
-agent memory, human-reviewable card staging, PageRank for *what* to learn and
-FSRS for *when* to review, and multi-agent research orchestration with a
+agent memory, human-reviewable card staging, PageRank for _what_ to learn and
+FSRS for _when_ to review, and multi-agent research orchestration with a
 citation-verification pass.
 
 ## 1. What each repo already has (primary-source inventory)
@@ -101,7 +101,7 @@ test with mocked LLM/AnkiConnect (`test_research_agent_e2e.py`).
 - **Canonical invocation example**: `tools/fix_jp_pinyin_front.py:185-205` —
   a ~20-line `ankiconnect_invoke(action, params)` helper with retry/backoff.
 - **Deck-name gotcha** (`docs/deck-aliases.md`): AnkiConnect/UI use `::`
-  hierarchy separators (`金融::理論`); SQLite/graph data use U+001F. Build
+  hierarchy separators (e.g. `言語::日語`); SQLite/graph data use U+001F. Build
   queries from `deckNames` output, never hand-type CJK paths.
 - **PageRank system** (`graph/`): nodes = notes keyed by Anki `guid`; edges =
   textual cross-references within a deck (note A's front text appearing in note
@@ -114,10 +114,12 @@ test with mocked LLM/AnkiConnect (`test_research_agent_e2e.py`).
   reports in `data/pagerank/`) and a Three.js 3D viz
   (`graph/graph_data.json`: 165,104 nodes / 2,221,170 links).
 - **The 金融 deck exists**: deck id `1734923746259` (`data/anki/decks.json`),
-  ~13,147–15,212 notes depending on the snapshot, with sub-decks **金融理論**
-  (4,514 CFA-style cloze cards) and **金融産研** (8,642 cards; despite the name,
-  top-PageRank cards are networking/infra concepts — the networking repo's
-  card-writing already lands here).
+  ~13,147–15,212 notes depending on the snapshot. It is now **one unified deck
+  with no sub-decks** (verified in `data/anki/decks.json` 2026-09-29); the
+  former **金融理論** (CFA-style theory) and **金融産研** (industry research —
+  largely networking/infra concepts) sub-decks were merged into it. The mix of
+  theory + industry-research cards in one deck means fund cards land alongside
+  both, and the 金融-filtered PageRank bridge ranks across all of them.
 - New cards written via AnkiConnect join the graph on the next fetch+rebuild;
   their PageRank reflects how many existing cards reference their front text —
   so **fronts that reuse existing hub-concept names are what earn priority**.
@@ -148,14 +150,14 @@ test with mocked LLM/AnkiConnect (`test_research_agent_e2e.py`).
 
 ## 2. The gap analysis
 
-| Need | Status |
-| --- | --- |
-| Write a card to 金融 from a chat session | **Works today** — networking's `anki_generator.py --front/--back` ad-hoc path |
-| Rank card candidates by concept importance | **Works today** — `anki_graph_bridge.score_chunk_pagerank()` over the 金融 subgraph |
-| Batch, gated card generation from fund research docs | **Missing** — networking's chunker expects `research/**/*.md` courseware; fund findings/theses aren't chunked |
-| Finance tag vocabulary | **Missing** — `CANONICAL_TAGS` in `tools/research/anki_card_validator.py` is networking-scoped |
-| Fund-side skill that turns a findings doc / thesis update into card candidates | **Missing** — the one new artifact to author |
-| Review scheduling by importance | **Out of scope by design** — FSRS schedules reviews; PageRank should only steer *what to add/emphasize* (see §4.3) |
+| Need                                                                           | Status                                                                                                             |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Write a card to 金融 from a chat session                                       | **Works today** — networking's `anki_generator.py --front/--back` ad-hoc path                                      |
+| Rank card candidates by concept importance                                     | **Works today** — `anki_graph_bridge.score_chunk_pagerank()` over the 金融 subgraph                                |
+| Batch, gated card generation from fund research docs                           | **Missing** — networking's chunker expects `research/**/*.md` courseware; fund findings/theses aren't chunked      |
+| Finance tag vocabulary                                                         | **Missing** — `CANONICAL_TAGS` in `tools/research/anki_card_validator.py` is networking-scoped                     |
+| Fund-side skill that turns a findings doc / thesis update into card candidates | **Missing** — the one new artifact to author                                                                       |
+| Review scheduling by importance                                                | **Out of scope by design** — FSRS schedules reviews; PageRank should only steer _what to add/emphasize_ (see §4.3) |
 
 ## 3. Proposed architecture
 
@@ -193,11 +195,35 @@ Design principles (each justified in §4):
    hard-codes `~/dev/anki` and honors `ANKI_REPO_ROOT`). Port through
    `/sibling-repo-sync` only if a second machine ever needs it.
 
+### Which repo is the question surface?
+
+**Ask in the repo that owns the domain; every repo's research flow funnels
+into the same 金融 deck.** Concretely:
+
+- **Finance questions → fund.** The durable outputs of a finance chat (thesis
+  patches, `data/analysis/<TICKER>.json`, `docs/research/` findings) are
+  governed by fund's gates, deploy, and git-review flow; the agent's cwd
+  determines which skills/state/conventions apply. Asking finance questions in
+  networking would strand the durable artifacts in the wrong repo.
+- **Networking questions → networking**, using its existing `/research-agent`
+  skill as-is. It is corpus-bound: `tools/research/parse_chunks.py` chunks
+  `research/**/*.md` courseware (cs231–cs234), `curriculum_service.py` holds a
+  course prerequisite graph, and `memory_host.py` tracks per-course mastery.
+  Reuse its **architecture, not the skill instance**: port it to fund via
+  `/sibling-repo-sync` ("adapt, don't copy") as a finance-scoped skill that
+  chunks `docs/thesis/**` + `docs/research/**` + `data/analysis/*.json`
+  instead, keeps the citation-engine contract, and ends with the same
+  post-answer Anki export offer (which invokes networking's `anki_generator.py`
+  in place — see principle 5).
+- **anki repo → never a question surface.** It is the execution backend
+  (AnkiConnect + PageRank rebuilds), with no research corpus or findings-doc
+  convention.
+
 ### Phased plan
 
 - **Phase 0 — zero code, usable today.** After any fund research chat, run
   `python3 ~/dev/networking/tools/research/anki_generator.py --front … --back …
-  --deck "金融" --tags research finance --auto-launch` for the 1–3 key facts of
+--deck "金融" --tags research finance --auto-launch` for the 1–3 key facts of
   the session. (Verify exact CLI flags against `--help` before first use.)
 - **Phase 1 — fund `/anki-capture` skill.** A new
   `.agents/skills/anki-capture/SKILL.md` in fund that: reads the session's
@@ -243,7 +269,7 @@ Design principles (each justified in §4):
   (<https://github.com/basicmachines-co/basic-memory>) shows plain Markdown +
   derived graph is sufficient. Recommendation: skip runtimes; repo files + git
   are the memory store.
-- **Compound engineering** (Every): plan → work → review → *compound* loop
+- **Compound engineering** (Every): plan → work → review → _compound_ loop
   where every task writes durable artifacts so future sessions start smarter.
   Practitioner methodology, not academic:
   <https://every.to/guides/compound-engineering>,
@@ -284,9 +310,9 @@ Design principles (each justified in §4):
 - **No peer-reviewed study** compares centrality-weighted vs. pure
   forgetting-curve prioritization. SRS literature optimizes retrievability;
   importance weighting traces to SuperMemo's manual priority queue.
-- Design rule: **keep PageRank and FSRS orthogonal** — PageRank decides *what
-  to add and emphasize* (card-creation priority, hub linking); FSRS decides
-  *when* to review. Do not override FSRS intervals with PageRank.
+- Design rule: **keep PageRank and FSRS orthogonal** — PageRank decides _what
+  to add and emphasize_ (card-creation priority, hub linking); FSRS decides
+  _when_ to review. Do not override FSRS intervals with PageRank.
 
 ### 4.4 Deep-research agents for finance
 
