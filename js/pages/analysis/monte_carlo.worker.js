@@ -23,6 +23,10 @@ if (typeof self !== 'undefined' && typeof window === 'undefined') {
 function runSimulation(config) {
     const { scenarios, volatility, horizon, paths = 10000 } = config;
 
+    if (!scenarios.length || scenarios.some((s) => !s.growth || !s.valuation)) {
+        return { error: 'Scenario data lacks growth/valuation blocks' };
+    }
+
     // const dt = 1 / 252; // Daily steps
     // const steps = Math.floor(horizon * 252);
     const terminalValues = [];

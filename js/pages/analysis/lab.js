@@ -793,11 +793,24 @@ btnRunMonteCarlo.addEventListener('click', () => {
 state.monteCarloWorker.onmessage = function (e) {
     const { type, result } = e.data;
     if (type === 'SIMULATION_COMPLETE') {
-        renderMonteCarloResults(result);
+        if (result && result.error) {
+            riskMetricsEl.replaceChildren(document.createTextNode(result.error));
+        } else {
+            renderMonteCarloResults(result);
+        }
         btnRunMonteCarlo.textContent = 'Run 10k Paths';
         btnRunMonteCarlo.disabled = false;
         btnRunMonteCarlo.removeAttribute('aria-busy');
     }
+};
+
+state.monteCarloWorker.onerror = function () {
+    riskMetricsEl.replaceChildren(
+        document.createTextNode('Monte Carlo simulation failed; see console for details.')
+    );
+    btnRunMonteCarlo.textContent = 'Run 10k Paths';
+    btnRunMonteCarlo.disabled = false;
+    btnRunMonteCarlo.removeAttribute('aria-busy');
 };
 
 function renderMonteCarloResults(result) {

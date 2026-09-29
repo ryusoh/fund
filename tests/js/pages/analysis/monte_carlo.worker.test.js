@@ -70,6 +70,20 @@ describe('monte_carlo.worker', () => {
         expect(typeof arg.result.histogram.binSize).toBe('number');
     });
 
+    it('returns an error for scenarios missing growth/valuation blocks (PORT view)', () => {
+        const payload = {
+            scenarios: [{ prob: 1.0, precomputedCagr: 0.1 }],
+            volatility: 0.2,
+            horizon: 5,
+            paths: 100,
+            eps: 10,
+        };
+        global.self.onmessage({ data: { type: 'RUN_SIMULATION', payload } });
+        const arg = mockPostMessage.mock.calls[0][0];
+        expect(arg.type).toBe('SIMULATION_COMPLETE');
+        expect(arg.result.error).toMatch(/lacks growth\/valuation/);
+    });
+
     it('ignores unsupported message types', () => {
         global.self.onmessage({
             data: {
