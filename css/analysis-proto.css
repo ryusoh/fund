@@ -79,15 +79,6 @@ body {
     backdrop-filter: blur(10px);
 }
 
-.nav-brand {
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--text-main);
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
 .nav-divider {
     width: 1px;
     height: 30px;
@@ -261,39 +252,17 @@ body {
 .risk-sim {
     background: rgba(0, 10, 0, 0.9);
     border: 1px solid var(--border-color);
-    padding: 15px;
-    position: relative;
-    flex-shrink: 0;
-    /* Prevent shrinking */
-}
-
-.scenario-block,
-.value-card,
-.bayes-lab,
-.risk-sim {
-    background: rgba(0, 10, 0, 0.9);
-    border: 1px solid var(--border-color);
     padding: 20px;
     position: relative;
 }
 
-.scenario-block {
-    grid-area: scenarios;
-}
-
-.value-card {
-    grid-area: values;
-}
-
 .bayes-lab {
-    grid-area: bayes;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
 .risk-sim {
-    grid-area: risk;
     display: flex;
     flex-direction: column;
     gap: 10px;
