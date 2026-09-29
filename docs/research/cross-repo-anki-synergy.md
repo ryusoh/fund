@@ -2,6 +2,7 @@
 
 **Status: Findings / Proposal**
 **Date: 2026-09-29**
+**Synthesis: this is a component finding of `docs/research/compounding-research-engine.md`.**
 
 Most of the machinery already exists — the work is **wiring, not building**:
 

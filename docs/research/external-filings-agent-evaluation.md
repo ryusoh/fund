@@ -2,6 +2,7 @@
 
 **Status: Findings / Recommendation**
 **Date: 2026-09-29**
+**Synthesis: this is a component finding of `docs/research/compounding-research-engine.md`.**
 
 **Adopt the pattern and (maybe) a vendored subset — never the whole system.**
 
@@ -15,7 +16,7 @@
    market data but no filings-level fundamentals; our research skills already
    enforce citation contracts but have no machine-checked evidence layer for
    filings).
-3. **The Host/Engine daemon is a poor fit**: it is a *second agent runtime*
+3. **The Host/Engine daemon is a poor fit**: it is a _second agent runtime_
    (SQLite sessions, LLM API runner, WeChat UI) — while our ecosystem's
    deliberate architecture descopes LLM invocation to the interactive
    code-agent (networking's research-agent spec, Layer 4) and uses git/docs as
@@ -28,7 +29,7 @@
 5. **Recommended sequence**: (a) evaluate as an external appliance in a
    throwaway venv against our actual tickers (ANET, GOOG, PDD — all
    SEC-filers, PDD via 20-F); (b) if the filings output proves valuable, vendor
-   only the Fins subset into fund; (c) port the evidence-audit *pattern* into
+   only the Fins subset into fund; (c) port the evidence-audit _pattern_ into
    our existing research/thesis skills rather than importing their LLM
    pipeline. Do not clone-and-improve the whole repo.
 
@@ -75,14 +76,14 @@ and traceable." Verified in code:
   (`services/internal/write_pipeline/audit_rules.py:924-947`).
 - A dedicated **confirm scene** re-verifies each evidence anchor with live
   filings + web tools (up to 20 tool iterations), emitting statuses like
-  `SUPPORTED_BUT_ANCHOR_TOO_COARSE`, followed by *mechanical* anchor rewriting
+  `SUPPORTED_BUT_ANCHOR_TOO_COARSE`, followed by _mechanical_ anchor rewriting
   with re-validation (`audit_evidence_rewriter.py:36-52`).
 - A final source-list chapter is deterministically built by grouping/deduping
   all evidence lines (`source_list_builder.py:119-181`).
 - Full tool-call traces are persisted; compaction exempts `confirmed_facts`
   from truncation (`host/README.md:463-468`).
 
-**One caveat**: there is no *quantitative* confidence — "confidence" in code is
+**One caveat**: there is no _quantitative_ confidence — "confidence" in code is
 free-text `confidence_notes` (`write_pipeline/models.py:45`) plus a
 `low_confidence_extraction` flag. The claim is realized as evidence anchoring +
 a second LLM verification pass (so "verified" remains model-graded), not
@@ -90,11 +91,11 @@ numeric per-datum confidence.
 
 ## 3. Data pipeline — genuinely primary-source
 
-| Market | Source (verified in code) | Format |
-| --- | --- | --- |
-| US | SEC EDGAR direct (submissions API, Archives `index.json`, browse-edgar atom) | HTML filings + XBRL via `edgartools` (`fins/downloaders/sec_downloader.py:53-60`; `fins/processors/sec_xbrl_query.py:14`) |
-| A-share | CNINFO （巨潮） official JSON API + static PDF host | PDF → Docling JSON (`cninfo_downloader.py:14-24`) |
-| HK | HKEXnews （披露易） `titleSearchServlet.do` | PDF → Docling JSON (`hkexnews_downloader.py:36-44`) |
+| Market  | Source (verified in code)                                                    | Format                                                                                                                    |
+| ------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| US      | SEC EDGAR direct (submissions API, Archives `index.json`, browse-edgar atom) | HTML filings + XBRL via `edgartools` (`fins/downloaders/sec_downloader.py:53-60`; `fins/processors/sec_xbrl_query.py:14`) |
+| A-share | CNINFO （巨潮） official JSON API + static PDF host                          | PDF → Docling JSON (`cninfo_downloader.py:14-24`)                                                                         |
+| HK      | HKEXnews （披露易） `titleSearchServlet.do`                                  | PDF → Docling JSON (`hkexnews_downloader.py:36-44`)                                                                       |
 
 The CN/HK downloaders carry serious domain engineering: amended-filing
 precedence, English-version/summary-announcement filtering, PDF magic-byte
@@ -127,14 +128,14 @@ validation, crash recovery with batch journals and file locks
 
 ## 5. Fit against our ecosystem
 
-| Our gap / asset | What the candidate offers | Fit |
-| --- | --- | --- |
-| fund has yfinance market data only; no filings-level fundamentals (`scripts/analysis/sync_configs.py`) | Primary-source filings pipelines + XBRL facts for US/A/HK | **High** — direct gap fill |
-| `/research` skill's citation contract; networking's `citation_engine.py` | Machine-enforced evidence anchors + confirm/repair loop | **High as a pattern** — port the idea, not the pipeline |
-| Phase 3 of `docs/research/cross-repo-anki-synergy.md` (finance deep-research orchestration) | Filings read-tools would be the subagents' data source | **High** (as vendored library) |
-| Our interface: ask questions in the code-agent chat; LLM descoped to the host (networking research-agent spec, Layer 4) | A second, self-contained LLM daemon with its own sessions/UI (CLI/Streamlit/WeChat) | **Poor** — competing runtime, not a complement |
-| Zero-build, vanilla-JS, `venv`-only Python conventions | Heavy deps: Docling ML, Playwright, pandoc, Chrome; Chinese-only docs | **Friction** — another reason to vendor a subset, not adopt wholesale |
-| BLF-style evidence log planned for the analysis-lab revival (`docs/research/analysis-lab-revival.md` §5.2) | Evidence-anchored filings extraction feeds `evidence.jsonl` with primary-source anchors | **High** — the two plans compose |
+| Our gap / asset                                                                                                         | What the candidate offers                                                               | Fit                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| fund has yfinance market data only; no filings-level fundamentals (`scripts/analysis/sync_configs.py`)                  | Primary-source filings pipelines + XBRL facts for US/A/HK                               | **High** — direct gap fill                                            |
+| `/research` skill's citation contract; networking's `citation_engine.py`                                                | Machine-enforced evidence anchors + confirm/repair loop                                 | **High as a pattern** — port the idea, not the pipeline               |
+| Phase 3 of `docs/research/cross-repo-anki-synergy.md` (finance deep-research orchestration)                             | Filings read-tools would be the subagents' data source                                  | **High** (as vendored library)                                        |
+| Our interface: ask questions in the code-agent chat; LLM descoped to the host (networking research-agent spec, Layer 4) | A second, self-contained LLM daemon with its own sessions/UI (CLI/Streamlit/WeChat)     | **Poor** — competing runtime, not a complement                        |
+| Zero-build, vanilla-JS, `venv`-only Python conventions                                                                  | Heavy deps: Docling ML, Playwright, pandoc, Chrome; Chinese-only docs                   | **Friction** — another reason to vendor a subset, not adopt wholesale |
+| BLF-style evidence log planned for the analysis-lab revival (`docs/research/analysis-lab-revival.md` §5.2)              | Evidence-anchored filings extraction feeds `evidence.jsonl` with primary-source anchors | **High** — the two plans compose                                      |
 
 ## 6. Recommended integration path
 

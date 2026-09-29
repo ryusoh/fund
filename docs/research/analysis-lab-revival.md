@@ -2,6 +2,7 @@
 
 **Status: Findings / Proposal**
 **Date: 2026-09-29**
+**Synthesis: this is a component finding of `docs/research/compounding-research-engine.md`.**
 
 1. **It is not obsolete — it is an orphaned, mostly-working cockpit.** The page
    was built in one week (Nov 2025) as the live UI for the Fermat–Pascal +
