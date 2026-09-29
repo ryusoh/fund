@@ -20,6 +20,10 @@
 
     --font-display: 'JetBrains Mono', monospace;
     --font-mono: 'JetBrains Mono', monospace;
+
+    --accent: var(--accent-primary);
+    --border-thin: 1px solid var(--border-color);
+    --ink: var(--text-main);
 }
 
 * {
