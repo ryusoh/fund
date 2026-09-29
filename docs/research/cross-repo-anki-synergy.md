@@ -195,6 +195,37 @@ Design principles (each justified in §4):
    hard-codes `~/dev/anki` and honors `ANKI_REPO_ROOT`). Port through
    `/sibling-repo-sync` only if a second machine ever needs it.
 
+### Domain concentration: the networking/finance overlap
+
+The portfolio is concentrated in data-center networking (thesis: `docs/thesis/ANET.md`,
+Arista / AI networking), and the former 金融産研 deck's top-PageRank cards were
+already networking-industry concepts (LPO, PM fiber, Arista CLB). This makes
+the overlap a **multiplier** for the knowledge system and a **risk** for the
+investment process:
+
+- **Multiplier**: one domain corpus serves both learning and investing.
+  Networking-repo research output (technical fundamentals) and fund-repo
+  research output (industry/company analysis) name the same hub concepts in
+  card fronts, so PageRank edges form between theory and industry cards in the
+  unified 金融 deck. The highest-PageRank hubs are then the concepts
+  load-bearing for both understanding and investment decisions — a built-in
+  "study this deeper" signal.
+- **Risk — correlated information diet**: the same sessions and sources feed
+  both domain understanding and the investment thesis, amplifying confirmation
+  bias. Controls (from `docs/research/analysis-lab-revival.md` §4–5, here
+  promoted from good-practice to load-bearing): mandatory `evidence_against[]`
+  in the belief-state schema, dated falsifiable predictions with Brier scoring,
+  pre-mortems.
+- **Risk — unmodeled industry tail**: the Lab's PORT view assumes zero
+  correlation (`lab.js:1055-1060`), which under industry concentration hides
+  the dominant risk — a single industry-level Bear scenario hits all positions
+  at once. Add an industry-thesis layer (`docs/thesis/industry/<name>.md`)
+  that per-ticker theses reference, and either implement covariance Kelly
+  (`docs/fermat-pascal-kelly-system.md` §7) or apply an explicit industry Bear
+  scenario across positions. Concentration telemetry already exists
+  (`data/etf_hhi.json`, `data/fund_sector_allocations.json`) and should be
+  surfaced next to the Kelly curve on the revived analysis page.
+
 ### Which repo is the question surface?
 
 **Ask in the repo that owns the domain; every repo's research flow funnels
