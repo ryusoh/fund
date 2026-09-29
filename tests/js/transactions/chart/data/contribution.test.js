@@ -1,7 +1,15 @@
 import {
     computeAppreciationSeries,
     buildFilteredBalanceSeries,
-    buildContributionSeriesFromTransactions
+    buildContributionSeriesFromTransactions,
+    _getFromBalanceCache,
+    _setInBalanceCache,
+    _prepareSplitsByDate,
+    _prepareTransactionsByDate,
+    _processDailySplits,
+    _processDailyTransactions,
+    _calculateDailyValue,
+    _adjustSyntheticStartForBalance
 } from '../../../../../js/transactions/chart/data/contribution.js';
 import * as helpers from '../../../../../js/transactions/chart/helpers.js';
 
@@ -427,6 +435,133 @@ describe('Contribution Data Helpers', () => {
                 padToDate: new Date('2024-01-01T12:00:00Z')
             });
             expect(result.length).toBe(1);
+        });
+    });
+});
+
+describe('Helper functions for buildFilteredBalanceSeries', () => {
+    describe('_getFromBalanceCache / _setInBalanceCache', () => {
+        it('should correctly set and retrieve cache', () => {
+            const cache = new Map();
+            const txns = [{ id: 1 }];
+            const prices = {};
+            const splits = [];
+            const series = [{ date: '2023-01-01', value: 100 }];
+
+            _setInBalanceCache(cache, txns, prices, splits, series);
+            const retrieved = _getFromBalanceCache(cache, txns, prices, splits);
+
+            expect(retrieved).toBe(series);
+        });
+
+        it('should return null if not cached', () => {
+            const cache = new Map();
+            const retrieved = _getFromBalanceCache(cache, [], {}, []);
+            expect(retrieved).toBeNull();
+        });
+    });
+
+    describe('_prepareSplitsByDate', () => {
+        it('should structure splits by date correctly', () => {
+            const splits = [{ splitDate: '2023-01-01', splitMultiplier: 2, symbol: 'AAPL' }];
+            const parseLocalDate = jest.fn(d => new Date(d));
+            const toLocalISODate = jest.fn(d => d.toISOString().split('T')[0]);
+            const normalizeSymbolForPricing = jest.fn(s => s.toUpperCase());
+
+            const result = _prepareSplitsByDate(splits, parseLocalDate, toLocalISODate, normalizeSymbolForPricing);
+
+            expect(result.get('2023-01-01')).toEqual([{ symbol: 'AAPL', multiplier: 2 }]);
+        });
+    });
+
+    describe('_prepareTransactionsByDate', () => {
+        it('should group transactions by date', () => {
+            const txns = [
+                { tradeDate: '2023-01-01', security: 'AAPL', quantity: '10', price: '150', orderType: 'buy' }
+            ];
+            const parseLocalDate = jest.fn(d => new Date(d));
+            const toLocalISODate = jest.fn(d => d.toISOString().split('T')[0]);
+
+            const result = _prepareTransactionsByDate(txns, parseLocalDate, toLocalISODate);
+
+            expect(result.get('2023-01-01')).toEqual([txns[0]]);
+        });
+    });
+
+    describe('_processDailySplits', () => {
+        it('should update holdings and lastKnownPrices for valid splits', () => {
+            const holdings = new Map([['AAPL', 10]]);
+            const lastKnownPrices = new Map([['AAPL', 150]]);
+            const splitsToday = [{ symbol: 'AAPL', multiplier: 2 }];
+
+            _processDailySplits(splitsToday, holdings, lastKnownPrices);
+
+            expect(holdings.get('AAPL')).toBe(20);
+            expect(lastKnownPrices.get('AAPL')).toBe(75);
+        });
+
+        it('should ignore invalid splits', () => {
+            const holdings = new Map([['AAPL', 10]]);
+            const lastKnownPrices = new Map([['AAPL', 150]]);
+            const splitsToday = [{ symbol: 'AAPL', multiplier: -1 }, { symbol: 'AAPL', multiplier: NaN }];
+
+            _processDailySplits(splitsToday, holdings, lastKnownPrices);
+
+            expect(holdings.get('AAPL')).toBe(10);
+            expect(lastKnownPrices.get('AAPL')).toBe(150);
+        });
+    });
+
+    describe('_processDailyTransactions', () => {
+        it('should properly apply buy/sell transactions to holdings', () => {
+            const holdings = new Map([['AAPL', 10]]);
+            const lastKnownPrices = new Map();
+            const txns = [
+                { security: 'AAPL', quantity: '5', price: '160', orderType: 'buy' },
+                { security: 'MSFT', quantity: '10', price: '300', orderType: 'buy' },
+                { security: 'AAPL', quantity: '15', price: '165', orderType: 'sell' }
+            ];
+            const normalize = jest.fn(s => s);
+
+            _processDailyTransactions(txns, holdings, lastKnownPrices, normalize);
+
+            expect(holdings.has('AAPL')).toBe(false); // 10 + 5 - 15 = 0
+            expect(holdings.get('MSFT')).toBe(10);
+            expect(lastKnownPrices.get('AAPL')).toBe(165); // Last txn price
+            expect(lastKnownPrices.get('MSFT')).toBe(300);
+        });
+    });
+
+    describe('_calculateDailyValue', () => {
+        it('should correctly calculate total daily value', () => {
+            const holdings = new Map([['AAPL', 10], ['MSFT', 5]]);
+            const lastKnownPrices = new Map();
+
+            const getPrice = jest.fn((hist, sym) => {
+                if (sym === 'AAPL') {return 150;}
+                return null;
+            });
+            const getSplit = jest.fn(() => 1);
+
+            lastKnownPrices.set('MSFT', 300); // AAPL from hist, MSFT from last known
+
+            const total = _calculateDailyValue(holdings, {}, [], '2023-01-01', lastKnownPrices, getPrice, getSplit);
+
+            expect(total).toBe(10 * 150 + 5 * 300); // 1500 + 1500 = 3000
+        });
+    });
+
+    describe('_adjustSyntheticStartForBalance', () => {
+        it('should mark first point as synthetic if followed by zero value', () => {
+            const series = [{ value: 0 }, { value: 100 }];
+            _adjustSyntheticStartForBalance(series);
+            expect(series[0].synthetic).toBe(true);
+        });
+
+        it('should remove first point if value is 0 and keepSyntheticStart is false', () => {
+            const series = [{ value: 0 }, { value: 0 }];
+            _adjustSyntheticStartForBalance(series);
+            expect(series.length).toBe(1);
         });
     });
 });

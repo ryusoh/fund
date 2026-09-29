@@ -338,17 +338,9 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
 
     // Identity-based cache: same (transactions, historicalPrices, splitHistory)
     // objects return the same computed series.
-    if (historicalPrices && splitHistory) {
-        const byPrices = filteredBalanceSeriesCache.get(transactions);
-        if (byPrices) {
-            const bySplits = byPrices.get(historicalPrices);
-            if (bySplits) {
-                const cached = bySplits.get(splitHistory);
-                if (cached) {
-                    return cached;
-                }
-            }
-        }
+    const cachedSeries = _getFromBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory);
+    if (cachedSeries) {
+        return cachedSeries;
     }
 
     const tsCache = new Map();
@@ -376,39 +368,8 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     today.setHours(0, 0, 0, 0);
     const lastDate = today > lastTransactionDate ? today : lastTransactionDate;
 
-    const splitsByDate = new Map();
-    const splitArr = Array.isArray(splitHistory) ? splitHistory : [];
-    for (let i = 0; i < splitArr.length; i++) {
-        const split = splitArr[i];
-        if (!split || !split.splitDate || !split.symbol) {
-            continue;
-        }
-        const splitDate = parseLocalDate(split.splitDate);
-        if (!splitDate) {
-            continue;
-        }
-        const dateKey = toLocalISODate(splitDate);
-        const multiplier = Number(split.splitMultiplier) || Number(split.split_multiplier) || 1;
-        const symbolKey = normalizeSymbolForPricing(split.symbol);
-        if (!splitsByDate.has(dateKey)) {
-            splitsByDate.set(dateKey, []);
-        }
-        splitsByDate.get(dateKey).push({ symbol: symbolKey, multiplier });
-    }
-
-    const transactionsByDate = new Map();
-    for (let i = 0; i < sortedTransactions.length; i++) {
-        const txn = sortedTransactions[i];
-        const txnDate = parseLocalDate(txn.tradeDate);
-        if (!txnDate) {
-            continue;
-        }
-        const dateStr = toLocalISODate(txnDate);
-        if (!transactionsByDate.has(dateStr)) {
-            transactionsByDate.set(dateStr, []);
-        }
-        transactionsByDate.get(dateStr).push(txn);
-    }
+    const splitsByDate = _prepareSplitsByDate(splitHistory, parseLocalDate, toLocalISODate, normalizeSymbolForPricing);
+    const transactionsByDate = _prepareTransactionsByDate(sortedTransactions, parseLocalDate, toLocalISODate);
 
     const holdings = new Map();
     const lastKnownPrices = new Map(); // Track last known price from transactions
@@ -421,100 +382,18 @@ export function buildFilteredBalanceSeries(transactions, historicalPrices, split
     while (iterDate <= lastDate) {
         const dateStr = toLocalISODate(iterDate);
 
-        const splitsToday = splitsByDate.get(dateStr);
-        if (splitsToday) {
-            for (let i = 0; i < splitsToday.length; i++) {
-                const { symbol, multiplier } = splitsToday[i];
-                if (!Number.isFinite(multiplier) || multiplier <= 0) {
-                    continue;
-                }
-                const currentQty = holdings.get(symbol);
-                if (currentQty !== undefined) {
-                    holdings.set(symbol, currentQty * multiplier);
-                }
-                // Adjust last known price for split
-                const lastPrice = lastKnownPrices.get(symbol);
-                if (lastPrice !== undefined && multiplier > 0) {
-                    lastKnownPrices.set(symbol, lastPrice / multiplier);
-                }
-            }
-        }
+        _processDailySplits(splitsByDate.get(dateStr), holdings, lastKnownPrices);
+        _processDailyTransactions(transactionsByDate.get(dateStr) || [], holdings, lastKnownPrices, normalizeSymbolForPricing);
 
-        const todaysTransactions = transactionsByDate.get(dateStr) || [];
-        for (let i = 0; i < todaysTransactions.length; i++) {
-            const txn = todaysTransactions[i];
-            const normalizedSymbol = normalizeSymbolForPricing(txn.security);
-            const quantity = parseFloat(txn.quantity) || 0;
-            const txnPrice = parseFloat(txn.price);
-            if (!Number.isFinite(quantity) || quantity === 0) {
-                continue;
-            }
-            // Update last known price from this transaction
-            if (Number.isFinite(txnPrice) && txnPrice > 0) {
-                lastKnownPrices.set(normalizedSymbol, txnPrice);
-            }
-            const isBuy = String(txn.orderType).toLowerCase() === 'buy';
-            const currentQty = holdings.get(normalizedSymbol) || 0;
-            const updatedQty = currentQty + (isBuy ? quantity : -quantity);
-            if (Math.abs(updatedQty) < 1e-8) {
-                holdings.delete(normalizedSymbol);
-            } else {
-                holdings.set(normalizedSymbol, updatedQty);
-            }
-        }
-
-        let totalValue = 0;
-        for (const [symbol, qty] of holdings.entries()) {
-            if (!Number.isFinite(qty) || Math.abs(qty) < 1e-8) {
-                continue;
-            }
-            let price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
-            // Fallback to last known transaction price if historical price unavailable
-            if (price === null) {
-                price = lastKnownPrices.get(symbol) ?? null;
-            }
-            if (price === null) {
-                continue;
-            }
-            const adjustment = getSplitAdjustment(splitHistory, symbol, dateStr);
-            totalValue += qty * price * adjustment;
-        }
+        const totalValue = _calculateDailyValue(holdings, historicalPrices, splitHistory, dateStr, lastKnownPrices, getPriceFromHistoricalData, getSplitAdjustment);
 
         series.push({ date: dateStr, value: totalValue });
         iterDate.setDate(iterDate.getDate() + 1);
     }
 
-    const epsilon = 1e-6;
-    let keepSyntheticStart = false;
-    for (let i = 0; i < series.length; i += 1) {
-        const point = series[i];
-        if (!point || !Number.isFinite(point.value)) {
-            continue;
-        }
-        if (Math.abs(point.value) > epsilon) {
-            if (i > 0 && Math.abs(series[i - 1]?.value || 0) <= epsilon) {
-                keepSyntheticStart = true;
-            }
-            break;
-        }
-    }
+    _adjustSyntheticStartForBalance(series);
 
-    if (keepSyntheticStart && series.length > 0) {
-        series[0].synthetic = true;
-    } else if (series.length > 0 && Math.abs(series[0].value || 0) <= epsilon) {
-        series.shift();
-    }
-
-    if (historicalPrices && splitHistory) {
-        if (!filteredBalanceSeriesCache.has(transactions)) {
-            filteredBalanceSeriesCache.set(transactions, new WeakMap());
-        }
-        const byPrices = filteredBalanceSeriesCache.get(transactions);
-        if (!byPrices.has(historicalPrices)) {
-            byPrices.set(historicalPrices, new WeakMap());
-        }
-        byPrices.get(historicalPrices).set(splitHistory, series);
-    }
+    _setInBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory, series);
 
     return series;
 }
@@ -705,3 +584,160 @@ export function mergeDividendsIntoContribution(
     return merged;
 }
 /* trigger gate */
+
+export function _getFromBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory) {
+    if (historicalPrices && splitHistory) {
+        const byPrices = filteredBalanceSeriesCache.get(transactions);
+        if (byPrices) {
+            const bySplits = byPrices.get(historicalPrices);
+            if (bySplits) {
+                const cached = bySplits.get(splitHistory);
+                if (cached) {
+                    return cached;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+export function _setInBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory, series) {
+    if (historicalPrices && splitHistory) {
+        if (!filteredBalanceSeriesCache.has(transactions)) {
+            filteredBalanceSeriesCache.set(transactions, new WeakMap());
+        }
+        const byPrices = filteredBalanceSeriesCache.get(transactions);
+        if (!byPrices.has(historicalPrices)) {
+            byPrices.set(historicalPrices, new WeakMap());
+        }
+        byPrices.get(historicalPrices).set(splitHistory, series);
+    }
+}
+
+export function _prepareSplitsByDate(splitHistory, parseLocalDate, toLocalISODate, normalizeSymbolForPricing) {
+    const splitsByDate = new Map();
+    const splitArr = Array.isArray(splitHistory) ? splitHistory : [];
+    for (let i = 0; i < splitArr.length; i++) {
+        const split = splitArr[i];
+        if (!split || !split.splitDate || !split.symbol) {
+            continue;
+        }
+        const splitDate = parseLocalDate(split.splitDate);
+        if (!splitDate) {
+            continue;
+        }
+        const dateKey = toLocalISODate(splitDate);
+        const multiplier = Number(split.splitMultiplier) || Number(split.split_multiplier) || 1;
+        const symbolKey = normalizeSymbolForPricing(split.symbol);
+        if (!splitsByDate.has(dateKey)) {
+            splitsByDate.set(dateKey, []);
+        }
+        splitsByDate.get(dateKey).push({ symbol: symbolKey, multiplier });
+    }
+    return splitsByDate;
+}
+
+export function _prepareTransactionsByDate(sortedTransactions, parseLocalDate, toLocalISODate) {
+    const transactionsByDate = new Map();
+    for (let i = 0; i < sortedTransactions.length; i++) {
+        const txn = sortedTransactions[i];
+        const txnDate = parseLocalDate(txn.tradeDate);
+        if (!txnDate) {
+            continue;
+        }
+        const dateStr = toLocalISODate(txnDate);
+        if (!transactionsByDate.has(dateStr)) {
+            transactionsByDate.set(dateStr, []);
+        }
+        transactionsByDate.get(dateStr).push(txn);
+    }
+    return transactionsByDate;
+}
+
+export function _processDailySplits(splitsToday, holdings, lastKnownPrices) {
+    if (!splitsToday) {
+        return;
+    }
+    for (let i = 0; i < splitsToday.length; i++) {
+        const { symbol, multiplier } = splitsToday[i];
+        if (!Number.isFinite(multiplier) || multiplier <= 0) {
+            continue;
+        }
+        const currentQty = holdings.get(symbol);
+        if (currentQty !== undefined) {
+            holdings.set(symbol, currentQty * multiplier);
+        }
+        // Adjust last known price for split
+        const lastPrice = lastKnownPrices.get(symbol);
+        if (lastPrice !== undefined && multiplier > 0) {
+            lastKnownPrices.set(symbol, lastPrice / multiplier);
+        }
+    }
+}
+
+export function _processDailyTransactions(todaysTransactions, holdings, lastKnownPrices, normalizeSymbolForPricing) {
+    for (let i = 0; i < todaysTransactions.length; i++) {
+        const txn = todaysTransactions[i];
+        const normalizedSymbol = normalizeSymbolForPricing(txn.security);
+        const quantity = parseFloat(txn.quantity) || 0;
+        const txnPrice = parseFloat(txn.price);
+        if (!Number.isFinite(quantity) || quantity === 0) {
+            continue;
+        }
+        // Update last known price from this transaction
+        if (Number.isFinite(txnPrice) && txnPrice > 0) {
+            lastKnownPrices.set(normalizedSymbol, txnPrice);
+        }
+        const isBuy = String(txn.orderType).toLowerCase() === 'buy';
+        const currentQty = holdings.get(normalizedSymbol) || 0;
+        const updatedQty = currentQty + (isBuy ? quantity : -quantity);
+        if (Math.abs(updatedQty) < 1e-8) {
+            holdings.delete(normalizedSymbol);
+        } else {
+            holdings.set(normalizedSymbol, updatedQty);
+        }
+    }
+}
+
+export function _calculateDailyValue(holdings, historicalPrices, splitHistory, dateStr, lastKnownPrices, getPriceFromHistoricalData, getSplitAdjustment) {
+    let totalValue = 0;
+    for (const [symbol, qty] of holdings.entries()) {
+        if (!Number.isFinite(qty) || Math.abs(qty) < 1e-8) {
+            continue;
+        }
+        let price = getPriceFromHistoricalData(historicalPrices, symbol, dateStr);
+        // Fallback to last known transaction price if historical price unavailable
+        if (price === null) {
+            price = lastKnownPrices.get(symbol) ?? null;
+        }
+        if (price === null) {
+            continue;
+        }
+        const adjustment = getSplitAdjustment(splitHistory, symbol, dateStr);
+        totalValue += qty * price * adjustment;
+    }
+    return totalValue;
+}
+
+export function _adjustSyntheticStartForBalance(series) {
+    const epsilon = 1e-6;
+    let keepSyntheticStart = false;
+    for (let i = 0; i < series.length; i += 1) {
+        const point = series[i];
+        if (!point || !Number.isFinite(point.value)) {
+            continue;
+        }
+        if (Math.abs(point.value) > epsilon) {
+            if (i > 0 && Math.abs(series[i - 1]?.value || 0) <= epsilon) {
+                keepSyntheticStart = true;
+            }
+            break;
+        }
+    }
+
+    if (keepSyntheticStart && series.length > 0) {
+        series[0].synthetic = true;
+    } else if (series.length > 0 && Math.abs(series[0].value || 0) <= epsilon) {
+        series.shift();
+    }
+}
