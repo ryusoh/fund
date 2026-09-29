@@ -374,25 +374,50 @@ into the same 金融 deck.** Concretely:
   learning-outcome evidence. Agent-written explicit links double as the
   PageRank edge set — embeddings at most suggest, never assert.
 
-## 5. Open questions / what I could not verify
+## 5. Open questions — resolutions (2026-09-29)
 
-1. **Whether networking's pipeline CLIs run cleanly from outside its repo
-   root.** `anki_generator.py` paths (`research/.anki_coverage.json`, baselines)
-   appear repo-relative; invoking from fund may need `cwd=~/dev/networking` or
-   small patches. Test before writing the `/anki-capture` skill.
-2. **金融 deck note type.** Card content lives only in the private Anki
-   collection; the exact note type/fields fund cards should use (cloze vs.
-   basic bilingual) needs one `modelNames`/`modelFieldNames` query against the
-   live collection.
-3. **Coverage-state semantics for fund content.** Networking's coverage tracker
-   assumes a finite corpus (`research/**/*.md` courseware). Fund theses are
-   living documents — decide whether fund cards skip the coverage state machine
-   (ad-hoc path) or get a separate manifest.
-4. **Graph rebuild cadence.** New cards earn PageRank only after a fetch +
-   rebuild of `graph/graph_data.json` (10k+ notes ≈ 30s+ per
-   `docs/graph-analysis-guide.md`); how often to rebuild is an open workflow
-   choice.
-5. **LLM card quality** rests on small, domain-specific studies; expect to
-   tune the card-format contract empirically against the density gate.
-6. **AlphaAgents/FinRobot return claims** are self-reported preprints — only
-   the role-split architecture is recommended for adoption.
+1. **Do networking's pipeline CLIs run cleanly from outside its repo root?
+   — Yes, tested.** `REPO_ROOT = Path(__file__).resolve().parent.parent.parent`
+   (`anki_generator.py:27-29`), so every default state path (`--manifest`,
+   `--coverage`, candidates/cards JSONL, review log, verdicts — defaults at
+   `anki_generator.py:1453-1544`) anchors inside `~/dev/networking/research/`
+   regardless of cwd; `--help` runs clean from `/tmp`. Two consequences: state
+   always lands in the networking repo (fine — it's the pipeline's home), and
+   fund-authored card files should be passed explicitly via `--cards <path>`.
+2. **金融 deck note type — checked live via AnkiConnect.** The deck holds
+   15,548 notes; a 3,000-note sample shows **クローズ (Cloze, Text/Extra) 47%**
+   and **ベーシック (Basic, Front/Back) 37%** as the dominant types, with シングル
+   16% (a language note type — legacy residue from the merged sub-decks) and
+   ダブル/トリプル negligible. So: fund prose Q&A cards → ベーシック (the
+   pipeline's `resolve_model_name` already handles the localized name);
+   definition-style facts → クローズ, matching the CFA-style legacy cards.
+3. **Could networking's research-agent be the single entry for all research?**
+   — Split answer. For **pure domain-study questions** whose only durable
+   artifact is cards (e.g. "explain LPO vs CPO economics"), yes — run it in
+   networking today, zero changes; the card lands in 金融 and nothing is owed
+   to fund. For **thesis-affecting research** (anything that should patch
+   `docs/thesis/`, `data/analysis/`, or fund docs), no — running with
+   `cwd=networking` loads networking's AGENTS.md/skills/gates, the findings
+   doc lands in the wrong repo, and fund's pipeline context (terminal commands,
+   `data/analysis/*.json`) isn't in scope. Making it the single entry for both
+   would require generalizing it into shared tooling (corpus-root + output
+   routing parameters) — possible, but it concentrates cross-domain state in
+   one repo, against the per-repo ownership convention. Recommendation stands:
+   port the architecture to fund as a finance-scoped skill; use networking's
+   research-agent directly only for pure-learning questions. (This also settles
+   the coverage-tracker question: the `unvisited → candidate → imported` state
+   machine is networking-corpus-scoped by design, so fund cards bypass it via
+   the ad-hoc `--front/--back` / explicit `--cards` path.)
+4. **Graph rebuild cadence — already implemented.** The anki repo's
+   `make precommit-fix YOLO=1` already backgrounds the graph exports
+   (`graph-local`/`graph-push`) alongside the gate (`Makefile:554-562`,
+   `docs/precommit-speed.md` §4/§9). New cards written via AnkiConnect earn
+   PageRank at the next anki-repo `precommit-fix YOLO=1` run — no new
+   automation needed.
+5. **Density gate — keep the single 金融-pinned baseline, unchanged.** Same
+   author, same review loop → same quality bar; fund cards inherit the existing
+   baseline. Revisit only if density verdicts on fund-authored cards diverge
+   empirically from networking-authored ones.
+
+**Still open:** AlphaAgents/FinRobot return claims are self-reported preprints
+— only the role-split architecture is recommended for adoption (§4.4).
