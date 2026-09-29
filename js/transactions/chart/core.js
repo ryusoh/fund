@@ -582,13 +582,12 @@ function getSharedCanvas(ctx, width, height) {
         return null;
     }
 
-    if (offscreen.width !== width) {
+    if (offscreen.width !== width || offscreen.height !== height) {
         offscreen.width = width;
-    }
-    if (offscreen.height !== height) {
         offscreen.height = height;
+    } else {
+        offCtx.clearRect(0, 0, width, height);
     }
-    offCtx.clearRect(0, 0, width, height);
     return { offscreen, offCtx };
 }
 
