@@ -583,7 +583,6 @@ export function mergeDividendsIntoContribution(
 
     return merged;
 }
-/* trigger gate */
 
 export function _getFromBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory) {
     if (historicalPrices && splitHistory) {
