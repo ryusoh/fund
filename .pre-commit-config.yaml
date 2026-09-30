@@ -3,6 +3,7 @@ exclude: |
     ^fund/|
     ^assets/vendor/|
     ^js/vendor/|
+    ^scripts/vendor/filings/|
     ^node_modules/|
     ^venv/|
     ^.mypy_cache/|

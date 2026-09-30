@@ -23,8 +23,17 @@ from pathlib import Path
 SCAN_EXTENSIONS = ('.py', '.js', '.cjs', '.mjs', '.ts', '.css')
 
 # Third-party and pipeline-generated trees are not ours to police (AGENTS.md
-# non-negotiable #4). scripts/vendor/ is first-party tooling — not excluded.
-EXCLUDED_PARTS = ('assets/vendor/', 'js/vendor/', 'tests/js/vendor/', 'node_modules/', 'data/')
+# non-negotiable #4). scripts/vendor/filings/ is vendored third-party code and
+# is excluded alongside assets/vendor; the rest of scripts/vendor/ is
+# first-party tooling — not excluded.
+EXCLUDED_PARTS = (
+    'assets/vendor/',
+    'js/vendor/',
+    'tests/js/vendor/',
+    'node_modules/',
+    'data/',
+    'scripts/vendor/filings/',
+)
 
 # Anchored-at-start patterns match the comment text after the marker is
 # stripped; unanchored ones may appear anywhere in the comment.

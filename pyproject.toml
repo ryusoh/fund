@@ -5,12 +5,13 @@ line-length = 100
 target-version = ["py311"]
 skip-string-normalization = true
 # Mutation-testing scratch copy trees (mutmut / Stryker) — never reformat them.
-extend-exclude = "(mutants|\\.stryker-tmp)/"
+# scripts/vendor/filings is vendored third-party code — never reformat it.
+extend-exclude = "(mutants|\\.stryker-tmp)/|scripts/vendor/filings/"
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["venv", ".venv", ".mypy_cache", ".ruff_cache"]
+extend-exclude = ["venv", ".venv", ".mypy_cache", ".ruff_cache", "scripts/vendor/filings"]
 
 [tool.ruff.lint]
 select = [
@@ -60,6 +61,10 @@ pytest_add_cli_args = [
   "--ignore=tests/python/test_update_vt_hhi.py",
   "--ignore=tests/python/test_update_vt_sectors.py",
 ]
+
+[tool.coverage.run]
+# Vendored third-party code (scripts/vendor/filings) is not ours to cover.
+omit = ["scripts/vendor/filings/*"]
 
 [build-system]
 requires = ["setuptools>=84.0.0", "wheel"]

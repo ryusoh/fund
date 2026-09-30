@@ -144,13 +144,18 @@ validation, crash recovery with batch journals and file locks
    extraction quality (see §8.1): hierarchical section refs, evidence-carrying
    search, financial-table inventory, exact XBRL facts, full citations —
    clearly beyond plain `edgartools` for agent research use. Proceed to step 2.
-2. **If the data proves valuable, vendor the Fins subset into fund** (e.g.
+2. ~~**If the data proves valuable, vendor the Fins subset into fund** (e.g.
    `scripts/vendor/fins/`): downloaders, per-form processors, XBRL query,
    section/table readers. Drop Docling/PDF processing initially (SEC HTML/XBRL
    covers the current portfolio; CN/HK PDFs matter later for supply-chain
    research). Retain LICENSE + NOTICE per Apache-2.0; add a `VENDORED.md`
    noting origin, version, and local modifications. Import-linter and gates
-   apply as for any `scripts/` code.
+   apply as for any `scripts/` code.~~
+   **DONE 2026-09-30 — vendored & cleanroomed.** Vendored SEC download + read path
+   under `scripts/vendor/filings/`, translated all Chinese docstrings/comments to
+   English, preserved Apache-2.0 LICENSE and NOTICE, configured tooling exclusions,
+   and verified via import smoke tests and offline ANET 10-K extraction. Ready for
+   first-party integration in future steps. Proceed to step 3.
 3. **Port the evidence-audit pattern into our skills** rather than importing
    their write pipeline: the thesis-update flow (`docs/ai_update_flow.md`) and
    the future fund research skill gain a machine-checkable evidence-anchor

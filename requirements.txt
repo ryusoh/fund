@@ -8,3 +8,7 @@ argcomplete>=3.7.2
 lxml>=6.1.3
 pytz
 Pillow>=12.3.0
+# Vendored SEC filings toolkit (scripts/vendor/filings)
+httpx
+beautifulsoup4
+edgartools>=5.30.0
