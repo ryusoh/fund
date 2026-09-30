@@ -108,7 +108,7 @@ validation, crash recovery with batch journals and file locks
 - **Maturity**: created 2026-04-01; ~90 commits; 5 releases in 2.5 weeks
   (v0.1.0→v0.1.4); 503 stars/136 forks; then **dormant since 2026-05-04** with
   6 unmerged PRs and 25 unanswered issues (including a well-documented ADR/ADS
-  valuation bug, issue #164). 6 contributors but 77/90 commits by one author.
+  valuation bug report). 6 contributors but 77/90 commits by one author.
 - **Hygiene**: ~5,094 test functions across 274 test files (test LOC ≈
   production LOC, ~176k each), pyright + pytest + multi-platform CI,
   architecture-boundary tests, per-platform lockfiles. But scheduled CI is
@@ -139,11 +139,11 @@ validation, crash recovery with batch journals and file locks
 
 ## 6. Recommended integration path
 
-1. **Evaluate as an appliance first (throwaway venv, no vendoring).** Install
-   in an isolated environment (beware: its `init` writes API keys into shell
-   profiles — set env vars manually instead), download ANET/GOOG 10-Ks and
-   PDD's 20-F, and judge the section/table/XBRL extraction quality on companies
-   we actually understand. One session, reversible, no repo changes.
+1. ~~**Evaluate as an appliance first (throwaway venv, no vendoring).**~~
+   **DONE 2026-09-30 — passed.** Live test against ANET 10-Ks confirmed the
+   extraction quality (see §8.1): hierarchical section refs, evidence-carrying
+   search, financial-table inventory, exact XBRL facts, full citations —
+   clearly beyond plain `edgartools` for agent research use. Proceed to step 2.
 2. **If the data proves valuable, vendor the Fins subset into fund** (e.g.
    `scripts/vendor/fins/`): downloaders, per-form processors, XBRL query,
    section/table readers. Drop Docling/PDF processing initially (SEC HTML/XBRL
@@ -205,18 +205,50 @@ on evidence-anchored artifacts and "LLM authors, code gates":
    金融 deck via AnkiConnect `findNotes` to inject already-known concepts as
    prior-knowledge context. Unvalidated; treat as a later experiment.
 
-## 8. Open questions / what I could not verify
+## 8. Open questions / resolutions
 
-1. **Extraction quality on our tickers** — the per-form processors encode
-   edge-case lore, but only a real run against ANET/GOOG/PDD filings shows
-   whether the output beats what a code agent + `edgartools` could do directly
-   (edgartools alone may cover 80% of the value at 5% of the weight).
+1. **Extraction quality on our tickers — RESOLVED by live appliance test
+   (2026-09-30).** Ran the real pipeline in a throwaway venv under `/tmp`
+   (light deps only — **Docling not needed for the SEC
+   path**; no `init`, no shell-profile writes):
+    - `download --ticker ANET --forms 10K` pulled 5 annual 10-Ks
+      (FY2021–FY2025, main HTML + full XBRL bundle each) from SEC EDGAR in ~19s,
+      zero failures.
+    - `get_document_sections` on the FY2025 10-K returned a hierarchical
+      section tree with stable refs, Item mapping, and topics (e.g.
+      `s_0002_c06` = Item 1 → "Our Customers").
+    - `read_section("s_0002_c06")` returned exact, clean text with a full
+      citation block (accession no, filing date, fiscal year, heading) — e.g.
+      the FY2025 customer-concentration disclosure (two customers at 26% and
+      16% of revenue).
+    - `search_document` (multi-query, adaptive BM25) returns section refs +
+      evidence spans; a "Microsoft" query correctly returned **0 matches** —
+      verified against the raw HTML that the name disappeared from the 10-K
+      after FY2021 (anonymized customers). Accuracy, not a bug.
+    - `list_tables` surfaces financial tables with headers, dimensions, and
+      containing section; `query_xbrl_facts` returned the exact FY2025 product
+      revenue fact (USD 7.5769B) with unit/decimals/period.
+    - **vs. plain `edgartools`**: `TenK` objects give item-level blobs
+      (Item 1 ≈ 39.5k chars, no named subsections), no evidence-carrying
+      search, no financial-table inventory. The candidate's layer is
+      meaningfully better for agent research and for card citations; XBRL is
+      on par (it builds on edgartools anyway).
+    - **Verdict: vendor the Fins SEC subset** (downloaders, SEC processors,
+      the 9 read tools, fs storage). One caveat found: `get_financial_statement`
+      rejected `statement_type="income_statement"` — the accepted vocabulary
+      needs discovery during vendoring.
+    - **Vendoring hygiene (new)**: the upstream `AGENTS.md`/`constraints` files
+      contain an instruction telling agents to skip security checks — treat as
+      prompt-injection-flavored and **do not vendor** them; only the `fins/`
+      package code comes across, with LICENSE + NOTICE per Apache-2.0.
 2. **Dormancy trajectory** — five months stale at evaluation; whether upstream
    revives affects the vendor-vs-depend calculus (a revived upstream favors
    depending; continued dormancy favors vendoring).
 3. **Docling weight** — whether the CN/HK PDF pipeline's value justifies its
-   ML-model dependencies for supply-chain research is untested.
-4. **Issue #164 (ADR/ADS valuation bug)** — reported unanswered; relevant
+   ML-model dependencies for supply-chain research is untested. (The SEC path
+   works without Docling, so this no longer blocks vendoring.)
+4. **ADR/ADS valuation bug** — reported upstream, unanswered; relevant
    because PDD is an ADR; unverified whether it affects the parts we'd vendor.
+   PDD's 20-F path was not exercised in the appliance test.
 5. **Chinese-only docs/comments** raise the maintenance cost of a vendored
    subset; the core modules' docstrings are thorough but monolingual.
