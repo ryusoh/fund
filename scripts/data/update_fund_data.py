@@ -116,13 +116,23 @@ def _select_polygon_close(snapshot: Any, now_et: datetime) -> Optional[float]:
 
 
 def _last_completed_close(col: pd.Series, now_et: datetime) -> Optional[float]:
-    """Last daily close, skipping today's bar while the session is still open."""
+    """Last daily close, skipping the bar whose session has not completed.
+
+    Two forming-bar shapes: a bar dated today before 16:00 ET (regular session
+    still open), and a bar dated *tomorrow* during the 20:00-24:00 ET overnight
+    window — Yahoo rolls the daily bar to the next trading day at the overnight
+    open, so the forming bar escapes a plain today-comparison (2026-09-30
+    incident: the 20:27 ET run wrote overnight quotes as the baseline).
+    """
     series = col.dropna()
     if series.empty:
         return None
     last_ts = series.index[-1]
     last_date = last_ts.date() if hasattr(last_ts, "date") else None
-    if last_date is not None and last_date == now_et.date() and now_et.time() < _POST_CLOSE_START:
+    if last_date is not None and (
+        last_date > now_et.date()
+        or (last_date == now_et.date() and now_et.time() < _POST_CLOSE_START)
+    ):
         series = series.iloc[:-1]
         if series.empty:
             return None

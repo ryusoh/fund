@@ -139,6 +139,18 @@ def test_yfinance_overnight_keeps_completed_bar():
     assert _last_completed_close(col, now) == 160.89
 
 
+def test_yfinance_overnight_drops_next_day_forming_bar():
+    # Regression (2026-09-30): at 20:27 ET Yahoo has rolled the daily bar to
+    # the next trading day — the forming overnight bar. A same-day comparison
+    # does not catch it; the baseline must stay the just-completed close.
+    now = datetime(2026, 9, 29, 20, 27, tzinfo=ET)
+    col = _yf_series([("2026-09-28", 158.81), ("2026-09-29", 158.45), ("2026-09-30", 159.75)])
+    assert _last_completed_close(col, now) == 158.45
+    # Same shape one hour before midnight is equally forming.
+    now = datetime(2026, 9, 29, 23, 59, tzinfo=ET)
+    assert _last_completed_close(col, now) == 158.45
+
+
 def test_yfinance_weekend_keeps_friday_bar():
     now = datetime(2026, 9, 19, 12, 0, tzinfo=ET)  # Saturday
     col = _yf_series([("2026-09-17", 159.22), ("2026-09-18", 158.55)])

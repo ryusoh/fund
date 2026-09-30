@@ -80,6 +80,15 @@ days by `isTradingDay`.
   vs `prev_day.close` (`_select_polygon_close`), each falling back to the
   latest trade when no daily bar is available. A bar dated before today
   (weekend/holiday run) is always completed and used as-is.
+  **Yahoo rolls its daily bar to the _next_ trading day at the 20:00 ET
+  overnight open**, so during the 20:00-24:00 ET window the forming bar is
+  dated _tomorrow_ and a same-day comparison does not catch it (2026-09-30
+  incident: a run at 20:27 ET wrote overnight quotes as the baseline — VT's
+  baseline landed 0.8% high and flipped the next session's day-change sign —
+  and PDD's fetch failed outright, so `main()`'s retain-on-failure kept the
+  previous night's forming-bar value for a second day).
+  `_last_completed_close` therefore drops the last bar whenever it is dated
+  _after_ ET-today, not only when dated today before 16:00 ET.
 - After-hours the live quote ≈ the baseline, so the day change reads ~0 / the
   pure after-hours drift by design.
 - The previous `prev_close.json` sidecar was removed (2026-09-09): written
