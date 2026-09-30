@@ -614,51 +614,100 @@ export function buildRangeSummary(layout, rawStart, rawEnd) {
     };
 }
 
-function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, holding) {
-    if (!holding) {
-        return;
-    }
-    const dateLabel = formatCrosshairDateLabel(time);
-    const bounds = layout.chartBounds;
-    if (!bounds || !dateLabel) {
-        return;
-    }
-
+function getHoverPanelBaseConfig() {
     const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const fontFamily = getMonoFontFamily();
     const lineFontSize = isMobile ? 10 : 11;
+    return { isMobile, fontFamily, lineFontSize, dotRadius: 4, dotGap: 6 };
+}
+
+function getHoverPanelPaddingX(isMobile, paddingConfig) {
+    if (isMobile) {
+        return paddingConfig.mobile?.x ?? 10;
+    }
+    return paddingConfig.desktop?.x ?? 12;
+}
+
+function getHoverPanelPaddingY(isMobile, paddingConfig) {
+    if (isMobile) {
+        return paddingConfig.mobile?.y ?? 8;
+    }
+    return paddingConfig.desktop?.y ?? 10;
+}
+
+function getHoverPanelPaddingConfig(isMobile) {
     const paddingConfig = CROSSHAIR_SETTINGS.compositionHoverPadding || {};
-    const paddingX = isMobile ? (paddingConfig.mobile?.x ?? 10) : (paddingConfig.desktop?.x ?? 12);
-    const paddingY = isMobile ? (paddingConfig.mobile?.y ?? 8) : (paddingConfig.desktop?.y ?? 10);
+    const paddingX = getHoverPanelPaddingX(isMobile, paddingConfig);
+    const paddingY = getHoverPanelPaddingY(isMobile, paddingConfig);
+    return { paddingX, paddingY };
+}
+
+function getHoverPanelGapConfig(isMobile) {
     const lineGapConfig = CROSSHAIR_SETTINGS.compositionHoverLineGap || {};
     const lineGap = isMobile ? (lineGapConfig.mobile ?? 4) : (lineGapConfig.desktop ?? 6);
-    const dotRadius = 4;
-    const dotGap = 6;
-    const markerOffset = dotRadius * 2 + dotGap;
+    return { lineGap };
+}
 
-    ctx.save();
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
+function getHoverPanelConfig() {
+    const base = getHoverPanelBaseConfig();
+    const pad = getHoverPanelPaddingConfig(base.isMobile);
+    const gap = getHoverPanelGapConfig(base.isMobile);
+    return {
+        fontFamily: base.fontFamily,
+        lineFontSize: base.lineFontSize,
+        dotRadius: base.dotRadius,
+        dotGap: base.dotGap,
+        paddingX: pad.paddingX,
+        paddingY: pad.paddingY,
+        lineGap: gap.lineGap,
+        markerOffset: base.dotRadius * 2 + base.dotGap,
+    };
+}
 
-    ctx.font = `${lineFontSize}px ${fontFamily}`;
-    let contentWidth = ctx.measureText(dateLabel).width;
+function getHoldingLabel(holding) {
+    return holding.label || holding.key || '';
+}
 
-    const label = holding.label || holding.key || '';
-    const percentText = holding.formattedPercent || `${holding.percent?.toFixed?.(2) ?? 0}%`;
-
-    ctx.font = `${lineFontSize}px ${fontFamily}`;
-    let absoluteText = holding.formattedValue || null;
-    if (!absoluteText || !absoluteText.trim()) {
-        const rawValue = Number.isFinite(holding.absoluteValue) ? holding.absoluteValue : null;
-        absoluteText = formatCurrencyInline(rawValue);
+function getHoldingPercentText(holding) {
+    if (holding.formattedPercent) {
+        return holding.formattedPercent;
     }
-    const detailLine = `${label} ${absoluteText} (${percentText})`;
-    const detailLineWidth = markerOffset + ctx.measureText(detailLine).width;
-    contentWidth = Math.max(contentWidth, detailLineWidth);
+    if (holding.percent != null && typeof holding.percent.toFixed === 'function') {
+        return `${holding.percent.toFixed(2)}%`;
+    }
+    return '0%';
+}
 
-    const boxWidth = paddingX * 2 + contentWidth;
-    const boxHeight = paddingY * 2 + lineFontSize * 2 + lineGap;
+function getHoldingAbsoluteText(holding) {
+    if (holding.formattedValue && holding.formattedValue.trim()) {
+        return holding.formattedValue;
+    }
+    const rawValue = Number.isFinite(holding.absoluteValue) ? holding.absoluteValue : null;
+    return formatCurrencyInline(rawValue);
+}
 
+function getHoldingText(holding) {
+    const label = getHoldingLabel(holding);
+    const percentText = getHoldingPercentText(holding);
+    const absoluteText = getHoldingAbsoluteText(holding);
+    return `${label} ${absoluteText} (${percentText})`;
+}
+
+function calculateHoverPanelDimensions(ctx, config, dateLabel, detailLine) {
+    const { fontFamily, lineFontSize, paddingX, paddingY, lineGap, markerOffset } = config;
+    ctx.font = `${lineFontSize}px ${fontFamily}`;
+
+    const dateWidth = ctx.measureText(dateLabel).width;
+    const detailWidth = markerOffset + ctx.measureText(detailLine).width;
+    const contentWidth = Math.max(dateWidth, detailWidth);
+
+    return {
+        boxWidth: paddingX * 2 + contentWidth,
+        boxHeight: paddingY * 2 + lineFontSize * 2 + lineGap,
+    };
+}
+
+function calculateHoverPanelPosition(bounds, crosshairX, crosshairY, boxWidth, boxHeight) {
     const preferRight = crosshairX < bounds.left + (bounds.right - bounds.left) / 2;
     let boxX = preferRight ? crosshairX + 12 : crosshairX - boxWidth - 12;
     boxX = Math.max(bounds.left + 4, Math.min(boxX, bounds.right - boxWidth - 4));
@@ -668,13 +717,16 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     const maxY = bounds.bottom - boxHeight - 6;
     boxY = Math.max(minY, Math.min(boxY, maxY));
 
-    const backgroundColor = CROSSHAIR_SETTINGS.compositionHoverBackground || 'rgba(6, 9, 22, 0.8)';
-    const borderColor = CROSSHAIR_SETTINGS.compositionHoverBorder || 'rgba(255,255,255,0.08)';
+    return { boxX, boxY };
+}
+
+function drawHoverPanelBackground(ctx, boxX, boxY, boxWidth, boxHeight) {
+    ctx.fillStyle = CROSSHAIR_SETTINGS.compositionHoverBackground || 'rgba(6, 9, 22, 0.8)';
+    ctx.strokeStyle = CROSSHAIR_SETTINGS.compositionHoverBorder || 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+
     const cornerRadius = CROSSHAIR_SETTINGS.compositionHoverCornerRadius ?? 6;
 
-    ctx.fillStyle = backgroundColor;
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 1;
     if (typeof ctx.roundRect === 'function') {
         ctx.beginPath();
         ctx.roundRect(boxX, boxY, boxWidth, boxHeight, cornerRadius);
@@ -684,6 +736,10 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
         ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
         ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
     }
+}
+
+function drawHoverPanelContent(ctx, config, boxX, boxY, dateLabel, detailLine, holdingColor) {
+    const { fontFamily, lineFontSize, paddingX, paddingY, lineGap, dotRadius, dotGap } = config;
 
     ctx.font = `${lineFontSize}px ${fontFamily}`;
     ctx.fillStyle = 'rgba(248, 250, 252, 0.78)';
@@ -694,8 +750,9 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
     const lineY = headerY + lineFontSize / 2 + lineGap + lineFontSize / 2;
     const dotX = boxX + paddingX + dotRadius;
+
     ctx.beginPath();
-    ctx.fillStyle = holding.color || '#ffffff';
+    ctx.fillStyle = holdingColor || '#ffffff';
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.lineWidth = 1.5;
     ctx.arc(dotX, lineY, dotRadius, 0, Math.PI * 2);
@@ -705,6 +762,41 @@ function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, ho
     ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
     const textX = dotX + dotRadius + dotGap;
     ctx.fillText(detailLine, textX, lineY);
+}
+
+export function drawCompositionHoverPanel(ctx, layout, crosshairX, crosshairY, time, holding) {
+    if (!holding) {
+        return;
+    }
+    const dateLabel = formatCrosshairDateLabel(time);
+    const bounds = layout.chartBounds;
+    if (!bounds || !dateLabel) {
+        return;
+    }
+
+    const config = getHoverPanelConfig();
+
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const detailLine = getHoldingText(holding);
+    const { boxWidth, boxHeight } = calculateHoverPanelDimensions(
+        ctx,
+        config,
+        dateLabel,
+        detailLine
+    );
+    const { boxX, boxY } = calculateHoverPanelPosition(
+        bounds,
+        crosshairX,
+        crosshairY,
+        boxWidth,
+        boxHeight
+    );
+
+    drawHoverPanelBackground(ctx, boxX, boxY, boxWidth, boxHeight);
+    drawHoverPanelContent(ctx, config, boxX, boxY, dateLabel, detailLine, holding.color);
 
     ctx.restore();
 }
