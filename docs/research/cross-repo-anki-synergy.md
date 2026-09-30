@@ -229,6 +229,14 @@ investment process:
 
 ### Which repo is the question surface?
 
+**Research style note (user, 2026-09-30):** financial-concept questions are
+rare — the user's finance fundamentals are strong (and the legacy CFA-style
+theory cards already cover them). Research here is **first-principles industry
+and company research**, so card-worthy output is industry mechanics, company
+structural variables, and quantitative anchors with derivations — not
+finance-term definitions. This is consistent with the deck itself: its
+top-PageRank hubs are networking/infra concepts, not finance theory.
+
 **Ask in the repo that owns the domain; every repo's research flow funnels
 into the same 金融 deck.** Concretely:
 
