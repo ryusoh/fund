@@ -391,6 +391,45 @@ BENCHMARK_PE_TICKERS: Dict[str, str] = {
 
 FX_CACHE: Dict[str, pd.Series] = {}
 
+# Max tolerated relative divergence between an earnings-dates TTM anchor and
+# the GAAP quarterly income-statement TTM for the same quarter. Yahoo's
+# get_earnings_dates() "Reported EPS" is not guaranteed to be GAAP: on
+# 2026-09-29 it began serving adjusted EPS for GOOG Q1/Q2 2026 (2.76/2.85,
+# excluding the unrealized investment gains that dominate GAAP EPS 5.11/9.11),
+# halving the TTM anchors and restating ~2 quarters of the PE curve (17 → 30).
+# The quarterly income statement is the authoritative GAAP source (same
+# precedence as the BRKB annual-anchor rule below).
+EARNINGS_DATES_TTM_MAX_DIVERGENCE = 0.10
+
+
+def reconcile_ttm_with_quarterly(
+    symbol: str,
+    report_date: pd.Timestamp,
+    ttm: float,
+    quarterly_ttm_by_qend: Dict[pd.Timestamp, float],
+) -> float:
+    """Prefer the GAAP quarterly-statement TTM when the earnings-dates TTM diverges.
+
+    Both anchor series describe the same trailing twelve months, so they should
+    differ only by diluted-vs-basic noise. Past EARNINGS_DATES_TTM_MAX_DIVERGENCE
+    the earnings-dates feed is serving a different EPS definition (e.g. adjusted
+    EPS excluding unrealized gains — GOOG Q1/Q2 2026), and the GAAP income
+    statement wins. The quarter's TTM is keyed at quarter-end; match it to a
+    report date up to ~4 months later.
+    """
+    candidates = [qd for qd in quarterly_ttm_by_qend if 0 <= (report_date - qd).days <= 120]
+    if not candidates:
+        return ttm
+    ref = quarterly_ttm_by_qend[max(candidates)]
+    if ref > 0 and abs(ttm - ref) / ref > EARNINGS_DATES_TTM_MAX_DIVERGENCE:
+        print(
+            f"Warning: {symbol} earnings-dates TTM {ttm:.2f} (report {report_date.date()}) "
+            f"diverges {abs(ttm - ref) / ref:.0%} from the GAAP quarterly-statement TTM "
+            f"{ref:.2f} — using the income-statement value."
+        )
+        return ref
+    return ttm
+
 
 def is_etf(ticker: str) -> bool:
     normalized = ticker.strip().upper()
@@ -600,6 +639,7 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 quarterly = pd.DataFrame()
 
             quarterly_anchors = {}
+            quarterly_ttm_by_qend: Dict[pd.Timestamp, float] = {}
             if quarterly is not None and not quarterly.empty and "Basic EPS" in quarterly.index:
                 q_series = quarterly.loc["Basic EPS"].dropna().sort_index()
                 for d_val, v in q_series.items():
@@ -608,6 +648,9 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                 if len(q_series) >= 4:
                     q_ttm = q_series.rolling(4).sum().dropna()
                     for d_val, ttm_v in q_ttm.items():
+                        quarterly_ttm_by_qend[pd.Timestamp(d_val).normalize().tz_localize(None)] = (
+                            float(ttm_v)
+                        )
                         add_point(
                             pd.Timestamp(d_val).strftime("%Y-%m-%d"),
                             float(ttm_v),
@@ -669,9 +712,12 @@ def fetch_stock_eps_data(tickers: List[str]) -> Dict[str, Any]:
                     if len(q_eps_series) >= 4:
                         q_ttm = q_eps_series.rolling(4).sum().dropna()
                         for d_val, ttm_v in q_ttm.items():
+                            d_ts = pd.Timestamp(str(d_val)).normalize().tz_localize(None)
                             add_point(
-                                pd.Timestamp(str(d_val)).strftime("%Y-%m-%d"),
-                                float(ttm_v),
+                                d_ts.strftime("%Y-%m-%d"),
+                                reconcile_ttm_with_quarterly(
+                                    symbol, d_ts, float(ttm_v), quarterly_ttm_by_qend
+                                ),
                                 fx_series,
                                 currency,
                                 fin_curr,

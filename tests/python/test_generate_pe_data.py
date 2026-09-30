@@ -289,6 +289,68 @@ class TestGeneratePEData(unittest.TestCase):
     @patch("scripts.generate_pe_data.load_eps_cache")
     @patch("scripts.generate_pe_data.load_manual_patch")
     @patch("scripts.generate_pe_data.save_eps_cache")
+    def test_fetch_eps_earnings_dates_divergence_prefers_gaap_quarterly(
+        self, mock_save, mock_patch, mock_cache, mock_ticker
+    ) -> None:
+        """Regression (GOOG 2026-09-29): Yahoo's earnings-dates feed served
+        adjusted EPS for Q1/Q2 2026 (2.76/2.85 — excluding the unrealized
+        investment gains that dominate GAAP EPS 5.11/9.11) while the quarterly
+        income statement stayed GAAP. The report-date anchors sort after the
+        quarter-end anchors, so the step function adopted the adjusted TTM
+        (11.30 instead of 19.91) and restated ~2 quarters of GOOG's PE curve
+        from ~17 to ~30. A divergent earnings-dates TTM must yield to the GAAP
+        quarterly-statement TTM for the same quarter."""
+        mock_cache.return_value = {}
+        mock_patch.return_value = {}
+
+        mock_stock = MagicMock()
+        mock_stock.info = {"currency": "USD", "trailingEps": 19.94}
+        mock_stock.splits = pd.Series(dtype=float)
+        mock_stock.income_stmt = pd.DataFrame()  # no annual → no calibration interference
+        q_ends = ["2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30"]
+        q_eps = [2.31, 2.87, 2.82, 5.11, 9.11]  # GAAP quarterly
+        mock_stock.quarterly_income_stmt = pd.DataFrame(
+            {d: [v] for d, v in zip(q_ends, q_eps, strict=True)}, index=["Basic EPS"]
+        )
+        ed_dates = ["2025-07-23", "2025-10-29", "2026-02-04", "2026-04-29", "2026-07-22"]
+        ed_eps = [2.31, 2.87, 2.82, 2.76, 2.85]  # last two: adjusted, not GAAP
+        mock_stock.get_earnings_dates.return_value = pd.DataFrame(
+            {"Reported EPS": ed_eps}, index=pd.to_datetime(ed_dates)
+        )
+        mock_ticker.return_value = mock_stock
+
+        results = fetch_stock_eps_data(["GOOG"])
+        points = {p["date"].strftime("%Y-%m-%d"): p["eps"] for p in results["GOOG"]["points"]}
+
+        # Raw earnings-dates TTM would be 10.76 / 11.30; both diverge >10% from
+        # the GAAP quarterly TTM and must be replaced by it.
+        self.assertAlmostEqual(points["2026-04-29"], 2.31 + 2.87 + 2.82 + 5.11)
+        self.assertAlmostEqual(points["2026-07-22"], 2.87 + 2.82 + 5.11 + 9.11)
+
+    def test_reconcile_ttm_with_quarterly(self) -> None:
+        from scripts.generate_pe_data import reconcile_ttm_with_quarterly
+
+        qmap = {pd.Timestamp("2026-06-30"): 20.0}
+        # Within tolerance (diluted-vs-basic noise) → keep the earnings-dates value.
+        self.assertEqual(
+            reconcile_ttm_with_quarterly("X", pd.Timestamp("2026-07-22"), 19.0, qmap), 19.0
+        )
+        # No quarterly-statement coverage for the quarter → keep, never crash.
+        self.assertEqual(
+            reconcile_ttm_with_quarterly("X", pd.Timestamp("2020-07-22"), 19.0, qmap), 19.0
+        )
+        self.assertEqual(
+            reconcile_ttm_with_quarterly("X", pd.Timestamp("2026-07-22"), 19.0, {}), 19.0
+        )
+        # Past the divergence threshold → the GAAP quarterly-statement TTM wins.
+        self.assertEqual(
+            reconcile_ttm_with_quarterly("X", pd.Timestamp("2026-07-22"), 11.3, qmap), 20.0
+        )
+
+    @patch("scripts.generate_pe_data.yf.Ticker")
+    @patch("scripts.generate_pe_data.load_eps_cache")
+    @patch("scripts.generate_pe_data.load_manual_patch")
+    @patch("scripts.generate_pe_data.save_eps_cache")
     def test_fetch_eps_manual_patch(self, mock_save, mock_patch, mock_cache, mock_ticker) -> None:
         """Test that manual patch overrides/augments fetched data."""
         # Setup Mocks

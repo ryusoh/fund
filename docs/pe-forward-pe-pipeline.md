@@ -119,6 +119,19 @@ The trailing PE history in `pe_ratio.json` is built so past dates stay frozen:
   anchors) is the only fix mechanism. VT is the big one.
 - Residual: `quarterly_income_stmt` TTM anchors are keyed at quarter-end, a
   ~3-week look-ahead at quarter boundaries vs. the actual report date.
+- **The earnings-dates feed can contradict the GAAP income statement.** On
+  2026-09-29 Yahoo's `get_earnings_dates()` started serving _adjusted_ EPS for
+  GOOG Q1/Q2 2026 (2.76/2.85 — excluding the unrealized investment gains that
+  dominate GAAP EPS 5.11/9.11, while `quarterly_income_stmt` and
+  `info.trailingEps` stayed GAAP). Because report-date anchors sort after
+  quarter-end anchors, the step function adopted the adjusted TTM (11.30
+  instead of 19.91) and restated ~2 quarters of GOOG (PE 17 → 30), lifting
+  the portfolio curve ~2 points. `reconcile_ttm_with_quarterly` now replaces
+  any earnings-dates TTM that diverges >10%
+  (`EARNINGS_DATES_TTM_MAX_DIVERGENCE`) from the quarterly-statement TTM for
+  the same quarter — the income statement is the authoritative GAAP source,
+  same precedence as the BRKB annual-anchor rule. The two affected GOOG
+  anchors are also pinned in `data/manual_eps_patch.json`.
 
 ## Gotcha: repairing pe_ratio.json by hand
 
