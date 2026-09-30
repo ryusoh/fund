@@ -66,7 +66,7 @@ Sortino/Omega (§3.3). The `useMonteCarlo`/`useBayesianUpdate` flags in
   deletes sold tickers, creates defaults for new ones
   (`.github/workflows/analysis-sync.yml`, weekdays 07:45 UTC).
 - Scenarios and `derived` are hand/LLM-authored via
-  `scripts/thesis_update_gemini.py` + `docs/thesis_update_prompt.md`.
+  the chat-native `/thesis-update` skill + `docs/thesis_update_prompt.md`.
 - Deploy reachability is fine: `[skip ci]` in the sync workflow is compensated
   by an explicit `pages.yml` dispatch (`analysis-sync.yml:62-68`, per
   `docs/pages-deploy.md`); the whole repo (including `analysis/`) is deployed.

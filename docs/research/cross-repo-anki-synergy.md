@@ -136,8 +136,8 @@ test with mocked LLM/AnkiConnect (`test_research_agent_e2e.py`).
   `docs/thesis/`): raw material → inbox → classify Bull/Base/Bear → patch-style
   diffs to `docs/thesis/<TICKER>.md` + `data/analysis/<TICKER>.json` (single
   source of truth for scenario numbers) → human git-diff review. Currently 4
-  tickers (ANET, GOOG, PDD, VT). `scripts/thesis_update_gemini.py` is the
-  existing precedent for an LLM-in-the-loop research digest CLI.
+  tickers (ANET, GOOG, PDD, VT). The `/thesis-update` skill provides
+  the chat-native LLM-in-the-loop research digest workflow without external API keys.
 - **Machine-refreshed fundamentals** (`data/analysis/<TICKER>.json`):
   price/EPS/P-E/forward P-E/EV-EBITDA/market cap/PEG/beta, refreshed by
   `scripts/analysis/sync_configs.py`; P/E pipeline in
