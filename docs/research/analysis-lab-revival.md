@@ -176,36 +176,14 @@ inputs. The UI never writes state.
 
 Recommended changes, in order:
 
-1. **Repair** (§3a items 1–4). Small, testable, unblocks everything.
-2. **Invert the Bayesian Lab.** Add per-ticker `data/analysis/<TICKER>.evidence.jsonl`
-   (date, claim, source URL, direction, strength, thesis commit ref), written by
-   the research-chat agent at the end of each session — the same funnel as the
-   existing thesis-update workflow (`docs/ai_update_flow.md`) and the planned
-   Anki capture (`docs/research/cross-repo-anki-synergy.md`). The page renders
-   probability history as a read-only sparkline. Buttons become a local what-if
-   sandbox at most, never the record.
-3. **Adopt the BLF belief-state schema** in `data/analysis/<TICKER>.json`:
-   `{probability, confidence, evidence_for[], evidence_against[],
-open_questions[], as_of}` — replacing the write-only `derived` block as the
-   LLM-authored section (or reconcile: page reads `derived` instead of
-   recomputing, so doc/JSON/page can't drift three ways).
-4. **Add resolution criteria + self-scoring.** Each thesis gets falsifiable,
-   dated predictions ("X reports Y by Q3") that resolve binary; the page
-   accumulates a personal Brier score and calibration chart (Fatebook model).
-   Tiny samples — treat as a bias-detector, not a grade.
-5. **Upgrade the visualizations to the consensus trio**: one-hue fan chart
-   (median + P5–P95 + dashed starting-value line), terminal histogram with
-   VaR/CVaR marked, tornado of input sensitivities; print run count + as-of
-   date on-chart. Reconcile the VaR tail (page uses 5%, doc §3.2 says 20%).
-6. **Kelly as a curve**, marking full/½/¼ Kelly and the 2×-Kelly zero-growth
-   point; default recommendation fractional; fix or remove the PORT view's
-   zero-correlation Kelly (either implement doc §7 covariance Kelly or label
-   the number as assuming independence).
-7. **Decision-journal snippet** (Farnam Street fields) committed alongside any
-   position change, filled by the chat agent.
-8. **Re-link the page** into the site nav (or deliberately keep it unlisted —
-   but then document that choice; right now the orphaning is accidental, not
-   a decision).
+1. **Repair** (§3a items 1–4). **[Implemented]** Fixed Monte Carlo worker crash on PORT; defined missing CSS custom properties (`--accent`, `--border-thin`, `--ink`); pruned dead CSS (`.nav-brand`, unused font, duplicate rule); added test coverage.
+2. **Invert the Bayesian Lab.** **[Implemented]** Added per-ticker `data/analysis/<TICKER>.evidence.jsonl` (date, claim, source URL, direction, strength, thesis commit ref). `js/pages/analysis/bayes.js` replays evidence history to produce historical posteriors. `lab.js` renders a chronological evidence timeline. What-if sandbox buttons remain strictly local and isolated.
+3. **Adopt the BLF belief-state schema** in `data/analysis/<TICKER>.json`: **[Implemented]** Added `{probability, confidence, evidence_for[], evidence_against[], open_questions[], as_of}` across `ANET.json`, `GOOG.json`, `PDD.json`, and `VT.json`. Rendered by `lab.js` with warning hue on confirmation bias. Preserved in `scripts/analysis/sync_configs.py`.
+4. **Add resolution criteria + self-scoring.** **[Implemented]** Each thesis JSON carries dated, falsifiable `predictions` array with binary resolution criteria; `bayes.js` computes exact Brier score $B = \frac{1}{N}\sum (p_i - o_i)^2$; `lab.js` displays prediction status and live Brier tracking.
+5. **Upgrade the visualizations to the consensus trio**: **[Implemented]** Added one-hue percentile fan chart (Bank of England model: P5, P25, P50, P75, P95 envelope + median path), terminal histogram with both 20% VaR/CVaR (doc §3.2) and 5% tail marked, run count and as-of date printed.
+6. **Kelly as a curve**: **[Implemented]** `lab.js` renders continuous expected growth curve $g(f) = r + f \cdot \text{edge} - 0.5 f^2 \sigma^2$ with 1/4 Kelly, 1/2 Kelly (recommended), Full Kelly, 2x Kelly cliff, and current portfolio weight badge. Implemented multi-asset cross-asset covariance matrix on PORT view dampening independent Kelly.
+7. **Decision-journal snippet**: **[Implemented]** Farnam Street decision journal entries (`decision_journal` array: action, situation, alternatives_rejected, review_date) in each ticker config, rendered in dedicated journal card.
+8. **Re-link the page**: **[Decision: Deliberately Unlisted]** Kept unlisted from the main floating dock container across pages for now (per user direction); internal header on `analysis/` provides outbound links to all other pages.
 
 ## 6. Open questions / what I could not verify
 

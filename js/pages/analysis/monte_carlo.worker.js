@@ -67,29 +67,90 @@ function runSimulation(config) {
 
     terminalValues.sort((a, b) => a - b);
 
-    // Compute Metrics
-    // Bolt: Optimize chained slice and reduce with a single inline for loop
-    const cvarIndex = Math.floor(paths * 0.05);
+    // Compute Metrics: 5% tail (95% confidence) and 20% tail (80% confidence, per doc §3.2)
+    const cvarIndex95 = Math.max(1, Math.floor(paths * 0.05));
+    const cvarIndex80 = Math.max(1, Math.floor(paths * 0.2));
     let sum = 0;
-    let cvarSum = 0;
+    let cvarSum95 = 0;
+    let cvarSum80 = 0;
     for (let i = 0; i < paths; i++) {
         const val = terminalValues[i];
         sum += val;
-        if (i < cvarIndex) {
-            cvarSum += val;
+        if (i < cvarIndex95) {
+            cvarSum95 += val;
+        }
+        if (i < cvarIndex80) {
+            cvarSum80 += val;
         }
     }
     const mean = sum / paths;
-    const VaR_95 = terminalValues[cvarIndex];
-    const CVaR_95 = cvarSum / cvarIndex;
+    const median = terminalValues[Math.floor(paths * 0.5)];
+    const VaR_95 = terminalValues[cvarIndex95];
+    const CVaR_95 = cvarSum95 / cvarIndex95;
+    const VaR_80 = terminalValues[cvarIndex80];
+    const CVaR_80 = cvarSum80 / cvarIndex80;
+
+    // Percentile trajectory fan chart across horizon years t = 0..horizon
+    const initialPrice =
+        typeof config.price === 'number' && config.price > 0 ? config.price : config.eps * 20;
+    const fanSteps = Math.max(1, Math.min(10, Math.floor(horizon)));
+    const fanChart = [];
+    for (let step = 0; step <= fanSteps; step++) {
+        const t = (step / fanSteps) * horizon;
+        if (t === 0) {
+            fanChart.push({
+                t: 0,
+                year: 0,
+                median: initialPrice,
+                p5: initialPrice,
+                p25: initialPrice,
+                p75: initialPrice,
+                p95: initialPrice,
+            });
+        } else if (step === fanSteps) {
+            fanChart.push({
+                t,
+                year: Number(t.toFixed(1)),
+                median,
+                p5: terminalValues[Math.floor(paths * 0.05)],
+                p25: terminalValues[Math.floor(paths * 0.25)],
+                p75: terminalValues[Math.floor(paths * 0.75)],
+                p95: terminalValues[Math.floor(paths * 0.95)],
+            });
+        } else {
+            // Interpolate distribution across trajectory
+            const fraction = t / horizon;
+            const stepValues = new Array(paths);
+            for (let i = 0; i < paths; i++) {
+                stepValues[i] = initialPrice * Math.pow(terminalValues[i] / initialPrice, fraction);
+            }
+            stepValues.sort((a, b) => a - b);
+            fanChart.push({
+                t,
+                year: Number(t.toFixed(1)),
+                median: stepValues[Math.floor(paths * 0.5)],
+                p5: stepValues[Math.floor(paths * 0.05)],
+                p25: stepValues[Math.floor(paths * 0.25)],
+                p75: stepValues[Math.floor(paths * 0.75)],
+                p95: stepValues[Math.floor(paths * 0.95)],
+            });
+        }
+    }
 
     // Create Histogram Data
     const histogram = createHistogram(terminalValues, 50);
 
     return {
         mean,
+        median,
         VaR_95,
         CVaR_95,
+        VaR_80,
+        CVaR_80,
+        runCount: paths,
+        asOf: new Date().toISOString(),
+        initialPrice,
+        fanChart,
         histogram,
         paths: terminalValues, // Optional: send back all paths if needed for scatter plot
     };

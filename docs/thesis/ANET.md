@@ -10,6 +10,7 @@
 - **Time Horizon**: 5 years
 - **Benchmark (annual)**: 6.5%
 - **Target CAGR (Hurdle)**: 12%
+- **Industry Layer**: [AI Data Center Networking](industry/ai-networking.md)
 
 - **Model Settings**
     - Engine: fermat-pascal-v1

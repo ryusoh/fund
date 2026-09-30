@@ -109,5 +109,48 @@
             "fullKelly": null,
             "scaledKelly": null
         }
-    }
+    },
+    "belief_state": {
+        "probability": 0.50,
+        "confidence": 0.90,
+        "evidence_for": [
+            "Global diversification across >9,000 holdings across developed and emerging equity markets.",
+            "Ultra-low expense ratio (0.07%) eliminating managerial friction."
+        ],
+        "evidence_against": [
+            "High concentration in US megacap technology (~65% US equity weight).",
+            "Broad equity risk premium sensitive to global central bank interest rate trajectory."
+        ],
+        "open_questions": [
+            "Will ex-US developed and emerging equities begin outperforming US large-cap equities?"
+        ],
+        "as_of": "2026-09-30T10:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "vt-global-cagr-5y",
+            "claim": "VT annualized 5-year total return matches or exceeds 6.5% benchmark",
+            "target_date": "2029-12-31",
+            "probability": 0.70,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Tests global equity risk premium baseline."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-09-29",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "VT held as core portfolio risk anchor and beta baseline.",
+            "alternatives_rejected": [
+                "Reallocate to single-stock ideas (rejected: baseline index allocation protects against idiosyncratic failures)."
+            ],
+            "expected_outcomes": {
+                "long-term global compound growth ~6-8%": 0.85
+            },
+            "review_date": "2026-12-31"
+        }
+    ]
 }

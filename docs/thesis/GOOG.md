@@ -10,6 +10,7 @@
 - **Time Horizon**: 10 years
 - **Benchmark (annual)**: 6.5% (approx. long-run equity market return)
 - **Target CAGR (Hurdle)**: 12%
+- **Industry Layer**: [Cloud AI & Hyperscale Infrastructure](industry/cloud-ai-ecosystem.md)
 
 - **Model Settings**
     - Engine: fermat-pascal-kelly

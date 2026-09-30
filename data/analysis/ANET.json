@@ -119,5 +119,64 @@
             "fullKelly": 0.06,
             "scaledKelly": 0.03
         }
-    }
+    },
+    "industry_thesis": "docs/thesis/industry/ai-networking.md",
+    "belief_state": {
+        "probability": 0.40,
+        "confidence": 0.70,
+        "evidence_for": [
+            "Arista AI revenue target $750M exceeded; guidance raised to $1.5B for FY2025/2026.",
+            "EOS NetDL software stickiness demonstrated across top tier-1 cloud titans.",
+            "Ultra Ethernet Consortium (UEC) standardization solidifies multi-vendor Ethernet fabric traction."
+        ],
+        "evidence_against": [
+            "Customer concentration remains high: top two hyperscalers represent ~42% of revenue in 10-K.",
+            "Nvidia Spectrum-X bundling aggressively pushes full-stack networking alongside GPUs.",
+            "High trailing P/E multiple (~64x) limits margin of safety on capex digestion shocks."
+        ],
+        "open_questions": [
+            "What is the pace of optical migration from 800G DSP to 1.6T LPO/CPO?",
+            "Will enterprise/campus segment revenue diversify total revenue beyond 40% non-cloud?"
+        ],
+        "as_of": "2026-09-30T10:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "anet-ai-rev-fy25",
+            "claim": "Arista reports AI-related revenue >= $1.5B in FY2025/2026 filings",
+            "target_date": "2026-11-15",
+            "probability": 0.75,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Milestone for Ethernet capturing market share in scale-out backend AI clusters."
+        },
+        {
+            "id": "anet-top2-cust-conc-fy25",
+            "claim": "Combined revenue share of top 2 customers drops below 38% in FY2025 10-K",
+            "target_date": "2026-12-31",
+            "probability": 0.40,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Tests customer base diversification into enterprise and neocloud tiers."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-09-29",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "ANET trading at ~64x trailing P/E ($203.44) with forward P/E ~39x amid strong hyperscaler capex commitments.",
+            "alternatives_rejected": [
+                "Trim position to under 2% portfolio weight due to high valuation multiples (rejected: operational momentum and backlog intact; Kelly scaled target still accommodates ~3% position).",
+                "Aggressive buy on recent dip (rejected: risk-reward margin of safety narrower above $200)."
+            ],
+            "expected_outcomes": {
+                "multi-year AI Ethernet dominance sustaining 20%+ EPS growth": 0.70,
+                "hyperscaler capex digestion causing multiple contraction below 30x": 0.30
+            },
+            "review_date": "2026-12-15"
+        }
+    ]
 }

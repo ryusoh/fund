@@ -498,6 +498,27 @@ def ensure_structure(symbol: str, config: dict) -> dict:
         'fairValueRange': derived.get('fairValueRange'),
         'kelly': kelly,
     }
+
+    if 'industry_thesis' in config and config['industry_thesis'] is not None:
+        config['industry_thesis'] = str(config['industry_thesis'])
+
+    belief_state = config.get('belief_state')
+    if isinstance(belief_state, dict):
+        config['belief_state'] = {
+            'probability': float(belief_state.get('probability', 0.5) or 0.5),
+            'confidence': float(belief_state.get('confidence', 0.5) or 0.5),
+            'evidence_for': list(belief_state.get('evidence_for', [])),
+            'evidence_against': list(belief_state.get('evidence_against', [])),
+            'open_questions': list(belief_state.get('open_questions', [])),
+            'as_of': str(belief_state.get('as_of', datetime.now(timezone.utc).isoformat())),
+        }
+
+    if 'predictions' in config and isinstance(config['predictions'], list):
+        config['predictions'] = config['predictions']
+
+    if 'decision_journal' in config and isinstance(config['decision_journal'], list):
+        config['decision_journal'] = config['decision_journal']
+
     return config
 
 

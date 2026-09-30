@@ -24,6 +24,22 @@
         <canvas id="holo-bg"></canvas>
 
         <nav class="top-nav">
+            <div class="site-nav-links" aria-label="Global Navigation">
+                <a href="../" aria-label="Home"><i class="fa fa-home" aria-hidden="true"></i></a>
+                <a href="../position/" aria-label="Position"
+                    ><i class="fa fa-pie-chart" aria-hidden="true"></i
+                ></a>
+                <a href="../calendar/" aria-label="Calendar"
+                    ><i class="fa fa-calendar" aria-hidden="true"></i
+                ></a>
+                <a href="../terminal/" aria-label="Terminal"
+                    ><i class="fa fa-code" aria-hidden="true"></i
+                ></a>
+                <a href="./" class="active" aria-label="Lab"
+                    ><i class="fa fa-flask" aria-hidden="true"></i
+                ></a>
+            </div>
+            <div class="nav-divider"></div>
             <div class="ticker-list" id="tickerList" tabindex="0"></div>
             <div class="nav-divider"></div>
             <div class="summary-stats" id="summaryStats" tabindex="0" aria-live="polite"></div>
@@ -33,8 +49,6 @@
             <!-- Analysis Stage -->
             <section class="analysis-stage">
                 <section class="panel output-panel">
-                    <!-- The header and summary stats grid have been moved to the top-nav -->
-
                     <div class="output-grid">
                         <div class="left-col">
                             <article class="scenario-block">
@@ -48,14 +62,45 @@
                                 <h3>Value Bands</h3>
                                 <dl id="valueBands" aria-live="polite"></dl>
                             </article>
-                        </div>
 
-                        <div class="right-col">
-                            <article class="risk-sim">
+                            <article class="kelly-card">
                                 <div class="block-header">
+                                    <h3>Kelly Growth Curve & Sizing</h3>
+                                </div>
+                                <canvas
+                                    id="kellyCurveCanvas"
+                                    width="600"
+                                    height="200"
+                                    style="width: 100%; border: var(--border-thin)"
+                                    role="img"
+                                    aria-label="Kelly Growth Rate Curve vs Allocation"
+                                ></canvas>
+                                <div
+                                    id="kellyMetrics"
+                                    style="display: flex; gap: 10px; flex-wrap: wrap"
+                                    aria-live="polite"
+                                ></div>
+                            </article>
+
+                            <article class="risk-sim">
+                                <div
+                                    class="block-header"
+                                    style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                    "
+                                >
                                     <h3>Monte Carlo Risk Simulation</h3>
                                 </div>
-                                <div style="margin-bottom: 15px">
+                                <div
+                                    style="
+                                        display: flex;
+                                        gap: 10px;
+                                        margin-bottom: 15px;
+                                        flex-wrap: wrap;
+                                    "
+                                >
                                     <button class="ticker-btn" id="btnRunMonteCarlo">
                                         Run 10k Paths
                                     </button>
@@ -83,39 +128,89 @@
                                     </div>
                                 </div>
                             </article>
+                        </div>
 
+                        <div class="right-col">
                             <article class="bayes-lab">
                                 <div class="block-header">
-                                    <h3>Bayesian Lab</h3>
+                                    <h3>Belief State & Bayesian Record</h3>
                                 </div>
                                 <div
-                                    style="
-                                        display: flex;
-                                        gap: 10px;
-                                        align-items: center;
-                                        margin-bottom: 15px;
-                                        flex-wrap: wrap;
-                                    "
-                                >
-                                    <button class="ticker-btn" id="btnBayesBull">
-                                        Bull Signal
-                                    </button>
-                                    <button class="ticker-btn" id="btnBayesBear">
-                                        Bear Signal
-                                    </button>
-                                    <button
-                                        class="ticker-btn"
-                                        id="btnBayesReset"
-                                        style="border-color: var(--accent)"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
-                                <div
-                                    id="bayesOutput"
-                                    style="font-family: var(--font-mono); color: var(--ink)"
+                                    class="belief-card"
+                                    id="beliefStateCard"
                                     aria-live="polite"
                                 ></div>
+
+                                <div class="block-header" style="margin-top: 10px">
+                                    <h4
+                                        style="
+                                            margin: 0;
+                                            font-size: 0.85rem;
+                                            text-transform: uppercase;
+                                            color: var(--text-muted);
+                                        "
+                                    >
+                                        Verified Evidence Log (.jsonl)
+                                    </h4>
+                                </div>
+                                <div
+                                    class="timeline-container"
+                                    id="evidenceTimeline"
+                                    aria-live="polite"
+                                ></div>
+
+                                <div
+                                    class="prediction-box"
+                                    id="predictionsCard"
+                                    aria-live="polite"
+                                ></div>
+
+                                <div
+                                    class="decision-box"
+                                    id="decisionJournalCard"
+                                    aria-live="polite"
+                                ></div>
+
+                                <div class="sandbox-card" id="sandboxCard">
+                                    <div
+                                        style="
+                                            display: flex;
+                                            justify-content: space-between;
+                                            align-items: center;
+                                        "
+                                    >
+                                        <span class="sandbox-tag"
+                                            >What-If Sandbox (Local Only)</span
+                                        >
+                                    </div>
+                                    <div
+                                        style="
+                                            display: flex;
+                                            gap: 10px;
+                                            align-items: center;
+                                            flex-wrap: wrap;
+                                        "
+                                    >
+                                        <button class="ticker-btn" id="btnBayesBull">
+                                            Bull Signal
+                                        </button>
+                                        <button class="ticker-btn" id="btnBayesBear">
+                                            Bear Signal
+                                        </button>
+                                        <button
+                                            class="ticker-btn"
+                                            id="btnBayesReset"
+                                            style="border-color: var(--accent)"
+                                        >
+                                            Reset
+                                        </button>
+                                    </div>
+                                    <div
+                                        id="bayesOutput"
+                                        style="font-family: var(--font-mono); color: var(--ink)"
+                                        aria-live="polite"
+                                    ></div>
+                                </div>
                             </article>
                         </div>
                     </div>

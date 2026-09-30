@@ -16,11 +16,18 @@ const bayesOutput = document.getElementById('bayesOutput');
 const btnRunMonteCarlo = document.getElementById('btnRunMonteCarlo');
 const monteCarloCanvas = document.getElementById('monteCarloCanvas');
 const riskMetricsEl = document.getElementById('riskMetrics');
+const kellyCurveCanvas = document.getElementById('kellyCurveCanvas');
+const kellyMetricsEl = document.getElementById('kellyMetrics');
+const beliefStateCardEl = document.getElementById('beliefStateCard');
+const evidenceTimelineEl = document.getElementById('evidenceTimeline');
+const predictionsCardEl = document.getElementById('predictionsCard');
+const decisionJournalCardEl = document.getElementById('decisionJournalCard');
 
 const state = {
     configs: [],
     activeSymbol: null,
     bayesEngine: null,
+    evidenceCache: new Map(),
     // Module worker: the worker file uses ESM `export` (imported by its jest
     // test), which a classic worker cannot parse — it dies with a silent
     // "Unexpected token 'export'" pageerror and Monte Carlo never runs.
@@ -636,6 +643,558 @@ function renderValueBands(config) {
     });
 }
 
+function drawKellyMarker(
+    ctx,
+    f,
+    maxF,
+    toX,
+    toY,
+    g,
+    padTop,
+    plotH,
+    width,
+    color,
+    label,
+    isDashed = false
+) {
+    if (f < 0 || f > maxF) {
+        return;
+    }
+    const x = toX(f);
+    const y = toY(g(f));
+    if (typeof ctx.save === 'function') {
+        ctx.save();
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    if (isDashed && typeof ctx.setLineDash === 'function') {
+        ctx.setLineDash([3, 3]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(x, padTop);
+    ctx.lineTo(x, padTop + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    if (typeof ctx.arc === 'function') {
+        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    if (typeof ctx.fillText === 'function') {
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillText(label, Math.min(x - 15, width - 60), padTop - 6);
+    }
+    if (typeof ctx.restore === 'function') {
+        ctx.restore();
+    }
+}
+
+function drawKellyCurvePath(ctx, toX, toY, g, maxF, pointsCount, padLeft, plotW, baselineY) {
+    ctx.strokeStyle = '#003b00';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, baselineY);
+    ctx.lineTo(padLeft + plotW, baselineY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff41';
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= pointsCount; i++) {
+        const f = (i / pointsCount) * maxF;
+        const y = toY(g(f));
+        const x = toX(f);
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+}
+
+function updateKellyMetricsBadges(
+    targetEl,
+    config,
+    metrics,
+    fullKelly,
+    scaledKelly,
+    currentWeight
+) {
+    if (!targetEl) {
+        return;
+    }
+    targetEl.replaceChildren();
+    const createBadge = (label, val, highlight = false) => {
+        const span = document.createElement('span');
+        span.className = 'concentration-badge';
+        if (highlight) {
+            span.style.borderColor = 'var(--text-main)';
+        }
+        span.textContent = `${label}: ${val}`;
+        return span;
+    };
+
+    targetEl.appendChild(createBadge('Full Kelly', formatPercent(fullKelly)));
+    targetEl.appendChild(createBadge('Scaled (½K)', formatPercent(scaledKelly), true));
+    targetEl.appendChild(createBadge('Current Weight', formatPercent(currentWeight)));
+    if (config.symbol === 'PORT' && metrics.covarianceRatio) {
+        targetEl.appendChild(
+            createBadge(
+                'Covariance Dampener',
+                `${metrics.covarianceRatio.toFixed(2)}x Vol vs Independence`
+            )
+        );
+    }
+}
+
+function drawAllKellyMarkers(
+    ctx,
+    fullKelly,
+    scaledKelly,
+    currentWeight,
+    maxF,
+    toX,
+    toY,
+    g,
+    padTop,
+    plotH,
+    width
+) {
+    if (fullKelly > 0) {
+        drawKellyMarker(
+            ctx,
+            fullKelly * 0.25,
+            maxF,
+            toX,
+            toY,
+            g,
+            padTop,
+            plotH,
+            width,
+            '#8cf',
+            '¼K',
+            true
+        );
+        drawKellyMarker(
+            ctx,
+            scaledKelly,
+            maxF,
+            toX,
+            toY,
+            g,
+            padTop,
+            plotH,
+            width,
+            '#00ff41',
+            '½K (Rec)',
+            true
+        );
+        drawKellyMarker(
+            ctx,
+            fullKelly,
+            maxF,
+            toX,
+            toY,
+            g,
+            padTop,
+            plotH,
+            width,
+            '#fc0',
+            'Full K',
+            true
+        );
+        drawKellyMarker(
+            ctx,
+            fullKelly * 2,
+            maxF,
+            toX,
+            toY,
+            g,
+            padTop,
+            plotH,
+            width,
+            '#f30',
+            '2x K (0 Growth)',
+            true
+        );
+    }
+    if (currentWeight > 0) {
+        drawKellyMarker(
+            ctx,
+            currentWeight,
+            maxF,
+            toX,
+            toY,
+            g,
+            padTop,
+            plotH,
+            width,
+            '#4af',
+            `Curr: ${(currentWeight * 100).toFixed(1)}%`
+        );
+    }
+}
+
+function computeKellyParameters(config, metrics) {
+    const edge = metrics.edge || 0;
+    const volatility = metrics.volatility || 0.3;
+    const variance = volatility ** 2;
+    const fullKelly = metrics.fullKelly || (variance > 0 ? edge / variance : 0);
+    const scaledKelly = metrics.scaledKelly || fullKelly * (metrics.kellyScale || 0.5);
+    const currentWeight =
+        config.position && Number.isFinite(config.position.currentWeight)
+            ? config.position.currentWeight
+            : config.weight || 0;
+
+    const maxF = Math.max(0.4, fullKelly > 0 ? fullKelly * 2.4 : 0.6);
+    const r = metrics.benchmark || 0.065;
+    const g = (f) => r + f * edge - 0.5 * f * f * variance;
+    const peakG = g(fullKelly > 0 ? fullKelly : 0);
+    const minG = Math.min(r - 0.05, g(maxF));
+    const rangeG = Math.max(0.05, peakG - minG);
+
+    return {
+        r,
+        fullKelly,
+        scaledKelly,
+        currentWeight,
+        maxF,
+        g,
+        minG,
+        rangeG,
+    };
+}
+
+function renderKellyCurve(config) {
+    if (!kellyCurveCanvas) {
+        return;
+    }
+    const ctx = kellyCurveCanvas.getContext('2d');
+    if (!ctx) {
+        return;
+    }
+    const width = kellyCurveCanvas.width || 600;
+    const height = kellyCurveCanvas.height || 200;
+    if (typeof ctx.clearRect === 'function') {
+        ctx.clearRect(0, 0, width, height);
+    }
+
+    const metrics = config.metrics;
+    if (!metrics) {
+        return;
+    }
+
+    const params = computeKellyParameters(config, metrics);
+    const padLeft = 45;
+    const padRight = 20;
+    const padTop = 25;
+    const padBottom = 25;
+    const plotW = width - padLeft - padRight;
+    const plotH = height - padTop - padBottom;
+
+    const toX = (f) => padLeft + (f / params.maxF) * plotW;
+    const toY = (val) => padTop + (1 - (val - params.minG) / params.rangeG) * plotH;
+
+    if (typeof ctx.beginPath === 'function') {
+        drawKellyCurvePath(ctx, toX, toY, params.g, params.maxF, 40, padLeft, plotW, toY(params.r));
+        drawAllKellyMarkers(
+            ctx,
+            params.fullKelly,
+            params.scaledKelly,
+            params.currentWeight,
+            params.maxF,
+            toX,
+            toY,
+            params.g,
+            padTop,
+            plotH,
+            width
+        );
+    }
+
+    updateKellyMetricsBadges(
+        kellyMetricsEl,
+        config,
+        metrics,
+        params.fullKelly,
+        params.scaledKelly,
+        params.currentWeight
+    );
+}
+
+function renderBeliefState(config) {
+    if (!beliefStateCardEl) {
+        return;
+    }
+    beliefStateCardEl.replaceChildren();
+
+    const belief = config.belief_state;
+    if (!belief) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.8rem';
+        p.style.margin = '0';
+        p.textContent = 'Belief state not yet initialized for this ticker.';
+        beliefStateCardEl.appendChild(p);
+        return;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'belief-header';
+
+    const left = document.createElement('span');
+    left.textContent = `Current Belief: ${(belief.probability * 100).toFixed(1)}% (Confidence: ${(belief.confidence * 100).toFixed(0)}%)`;
+    left.style.fontWeight = '700';
+    left.style.color = 'var(--text-main)';
+
+    const asOf = document.createElement('span');
+    asOf.style.fontSize = '0.75rem';
+    asOf.style.color = 'var(--text-muted)';
+    asOf.textContent = belief.as_of ? `As of: ${belief.as_of.slice(0, 10)}` : '';
+
+    header.append(left, asOf);
+    beliefStateCardEl.appendChild(header);
+
+    if (config.industry_thesis) {
+        const industryLink = document.createElement('div');
+        industryLink.style.fontSize = '0.75rem';
+        industryLink.style.marginTop = '4px';
+        const docName = config.industry_thesis.split('/').pop();
+        industryLink.innerHTML = `<span style="color: var(--text-muted)">Industry Layer:</span> <a href="../${config.industry_thesis}" style="color: var(--text-main); text-decoration: underline;">${docName}</a>`;
+        beliefStateCardEl.appendChild(industryLink);
+    }
+
+    if (belief.evidence_for && belief.evidence_for.length > 0) {
+        const forTitle = document.createElement('div');
+        forTitle.style.fontSize = '0.75rem';
+        forTitle.style.color = 'var(--text-muted)';
+        forTitle.textContent = 'Evidence For (Bullish Moat Factors):';
+        const ul = document.createElement('ul');
+        ul.className = 'belief-list';
+        belief.evidence_for.forEach((item) => {
+            const li = document.createElement('li');
+            li.className = 'evidence-for-item';
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+        beliefStateCardEl.append(forTitle, ul);
+    }
+
+    if (belief.evidence_against && belief.evidence_against.length > 0) {
+        const againstTitle = document.createElement('div');
+        againstTitle.style.fontSize = '0.75rem';
+        againstTitle.style.color = '#fa0';
+        againstTitle.textContent = 'Evidence Against & Falsification Risks:';
+        const ul = document.createElement('ul');
+        ul.className = 'belief-list';
+        belief.evidence_against.forEach((item) => {
+            const li = document.createElement('li');
+            li.className = 'evidence-against-item';
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+        beliefStateCardEl.append(againstTitle, ul);
+    }
+
+    if (belief.open_questions && belief.open_questions.length > 0) {
+        const qTitle = document.createElement('div');
+        qTitle.style.fontSize = '0.75rem';
+        qTitle.style.color = 'var(--text-muted)';
+        qTitle.textContent = 'Open Questions & Resolvable Unknowns:';
+        const ul = document.createElement('ul');
+        ul.className = 'belief-list';
+        belief.open_questions.forEach((item) => {
+            const li = document.createElement('li');
+            li.className = 'open-question-item';
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+        beliefStateCardEl.append(qTitle, ul);
+    }
+}
+
+async function renderEvidenceTimeline(config) {
+    if (!evidenceTimelineEl) {
+        return;
+    }
+    evidenceTimelineEl.replaceChildren();
+
+    if (!config || !config.symbol || config.symbol === 'PORT') {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.8rem';
+        p.textContent = 'Select an individual ticker to view chronological evidence log.';
+        evidenceTimelineEl.appendChild(p);
+        return;
+    }
+
+    let evidenceList = state.evidenceCache.get(config.symbol);
+    if (!evidenceList) {
+        try {
+            const text = await fetchText(`../data/analysis/${config.symbol}.evidence.jsonl`);
+            evidenceList = BayesianEngine.parseJsonl(text);
+            state.evidenceCache.set(config.symbol, evidenceList);
+        } catch {
+            evidenceList = [];
+        }
+    }
+
+    if (!evidenceList || evidenceList.length === 0) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.8rem';
+        p.textContent = 'No logged evidence entries on disk yet.';
+        evidenceTimelineEl.appendChild(p);
+        return;
+    }
+
+    const replayEngine = new BayesianEngine(config.scenarios);
+    const { history } = replayEngine.replay(evidenceList);
+
+    history.forEach((entry) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `timeline-entry ${entry.direction}`;
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'timeline-meta';
+
+        const leftSpan = document.createElement('span');
+        leftSpan.textContent = `${entry.date || 'Undated'} · ${entry.direction.toUpperCase()} (${(entry.strength * 100).toFixed(0)}%)`;
+
+        const posteriorSpan = document.createElement('span');
+        const bullP = entry.posteriors[0] ? (entry.posteriors[0].prob * 100).toFixed(1) : '0';
+        posteriorSpan.textContent = `Bull: ${bullP}%`;
+
+        metaDiv.append(leftSpan, posteriorSpan);
+
+        const claimP = document.createElement('div');
+        claimP.className = 'timeline-claim';
+        claimP.textContent = entry.claim;
+
+        itemDiv.append(metaDiv, claimP);
+
+        if (entry.sourceUrl) {
+            const sourceLink = document.createElement('a');
+            sourceLink.className = 'timeline-source';
+            sourceLink.href = entry.sourceUrl;
+            sourceLink.target = '_blank';
+            sourceLink.rel = 'noopener noreferrer';
+            sourceLink.textContent = entry.sourceUrl.replace(/^https?:\/\//, '').split('/')[0];
+            itemDiv.appendChild(sourceLink);
+        }
+
+        evidenceTimelineEl.appendChild(itemDiv);
+    });
+}
+
+function renderPredictions(config) {
+    if (!predictionsCardEl) {
+        return;
+    }
+    predictionsCardEl.replaceChildren();
+
+    const predictions = config.predictions || [];
+    const brierResult = BayesianEngine.computeBrierScore(predictions);
+
+    const titleDiv = document.createElement('div');
+    titleDiv.style.display = 'flex';
+    titleDiv.style.justifyContent = 'space-between';
+    titleDiv.style.alignItems = 'center';
+    titleDiv.style.marginBottom = '6px';
+
+    const h4 = document.createElement('h4');
+    h4.style.margin = '0';
+    h4.style.fontSize = '0.85rem';
+    h4.style.color = 'var(--text-muted)';
+    h4.style.textTransform = 'uppercase';
+    h4.textContent = 'Falsifiable Predictions';
+
+    const brierBadge = document.createElement('span');
+    brierBadge.style.fontSize = '0.75rem';
+    brierBadge.style.color = 'var(--text-main)';
+    brierBadge.textContent = brierResult
+        ? `Brier: ${brierResult.brierScore} (N=${brierResult.count})`
+        : 'Brier: N/A';
+
+    titleDiv.append(h4, brierBadge);
+    predictionsCardEl.appendChild(titleDiv);
+
+    if (predictions.length === 0) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.8rem';
+        p.style.margin = '0';
+        p.textContent = 'No dated predictions recorded yet.';
+        predictionsCardEl.appendChild(p);
+        return;
+    }
+
+    predictions.forEach((p) => {
+        const row = document.createElement('div');
+        row.className = 'prediction-item';
+
+        const claimSpan = document.createElement('span');
+        claimSpan.textContent = `${p.claim} (Target: ${p.target_date})`;
+
+        const statusSpan = document.createElement('span');
+        statusSpan.className = `prediction-status ${p.resolved ? 'status-resolved' : 'status-pending'}`;
+        statusSpan.textContent = p.resolved
+            ? p.outcome
+                ? 'True'
+                : 'False'
+            : `Pending (${(p.probability * 100).toFixed(0)}%)`;
+
+        row.append(claimSpan, statusSpan);
+        predictionsCardEl.appendChild(row);
+    });
+}
+
+function renderDecisionJournal(config) {
+    if (!decisionJournalCardEl) {
+        return;
+    }
+    decisionJournalCardEl.replaceChildren();
+
+    const journal = config.decision_journal || [];
+    const h4 = document.createElement('h4');
+    h4.style.margin = '0 0 6px 0';
+    h4.style.fontSize = '0.85rem';
+    h4.style.color = 'var(--text-muted)';
+    h4.style.textTransform = 'uppercase';
+    h4.textContent = 'Decision Journal';
+    decisionJournalCardEl.appendChild(h4);
+
+    if (journal.length === 0) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.8rem';
+        p.style.margin = '0';
+        p.textContent = 'No decision journal entries logged yet.';
+        decisionJournalCardEl.appendChild(p);
+        return;
+    }
+
+    const latest = journal[journal.length - 1];
+    const actionDiv = document.createElement('div');
+    actionDiv.innerHTML = `<span class="decision-action">${latest.action || 'ACTION'}</span> (${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
+    const sitDiv = document.createElement('div');
+    sitDiv.style.color = 'var(--ink)';
+    sitDiv.style.margin = '4px 0';
+    sitDiv.textContent = latest.situation || '';
+
+    decisionJournalCardEl.append(actionDiv, sitDiv);
+
+    if (latest.alternatives_rejected && latest.alternatives_rejected.length > 0) {
+        const altDiv = document.createElement('div');
+        altDiv.style.fontSize = '0.75rem';
+        altDiv.style.color = 'var(--text-muted)';
+        altDiv.textContent = `Rejected: ${latest.alternatives_rejected.join('; ')}`;
+        decisionJournalCardEl.appendChild(altDiv);
+    }
+}
+
 function renderTickerList() {
     if (!tickerListEl) {
         return;
@@ -694,22 +1253,31 @@ function renderActiveTicker() {
     if (!config) {
         return;
     }
-    // selectedTickerLabel and selectedTickerName elements were removed from HTML
-    // so we no longer update them here.
     renderSummary(config);
     renderScenarioCards(config);
     renderValueBands(config);
+    renderKellyCurve(config);
+    renderBeliefState(config);
+    renderEvidenceTimeline(config);
+    renderPredictions(config);
+    renderDecisionJournal(config);
 
     // Initialize Bayesian Engine
     state.bayesEngine = new BayesianEngine(config.scenarios);
     renderBayesOutput();
 
     // Reset Risk UI
-    const ctx = monteCarloCanvas.getContext('2d');
-    ctx.clearRect(0, 0, monteCarloCanvas.width, monteCarloCanvas.height);
-    const p = document.createElement('p');
-    p.textContent = 'Run simulation to see metrics.';
-    riskMetricsEl.replaceChildren(p);
+    if (monteCarloCanvas) {
+        const ctx = monteCarloCanvas.getContext('2d');
+        if (ctx && typeof ctx.clearRect === 'function') {
+            ctx.clearRect(0, 0, monteCarloCanvas.width, monteCarloCanvas.height);
+        }
+    }
+    if (riskMetricsEl) {
+        const p = document.createElement('p');
+        p.textContent = 'Run simulation to see metrics.';
+        riskMetricsEl.replaceChildren(p);
+    }
 }
 
 // --- Bayesian Handlers ---
@@ -833,29 +1401,103 @@ function renderMonteCarloResults(result) {
         return card;
     };
 
+    if (Number.isFinite(result.median)) {
+        riskMetricsEl.appendChild(createStatCard('Median Price', formatCurrency(result.median)));
+    }
     riskMetricsEl.appendChild(createStatCard('Mean Terminal Price', formatCurrency(result.mean)));
+    if (Number.isFinite(result.VaR_80)) {
+        riskMetricsEl.appendChild(createStatCard('VaR (20% Tail)', formatCurrency(result.VaR_80)));
+    }
+    if (Number.isFinite(result.CVaR_80)) {
+        riskMetricsEl.appendChild(
+            createStatCard('CVaR (20% Tail)', formatCurrency(result.CVaR_80))
+        );
+    }
     riskMetricsEl.appendChild(createStatCard('VaR (95%)', formatCurrency(result.VaR_95)));
     riskMetricsEl.appendChild(createStatCard('CVaR (95%)', formatCurrency(result.CVaR_95)));
 
     // Render Histogram
     const ctx = monteCarloCanvas.getContext('2d');
     const { width, height } = monteCarloCanvas;
-    ctx.clearRect(0, 0, width, height);
+    if (typeof ctx.clearRect === 'function') {
+        ctx.clearRect(0, 0, width, height);
+    }
 
-    const { counts } = result.histogram;
-    let maxCount = -Infinity;
-    for (let i = 0; i < counts.length; i++) {
-        if (counts[i] > maxCount) {
-            maxCount = counts[i];
+    if (result.histogram && result.histogram.counts && typeof ctx.fillRect === 'function') {
+        const { counts } = result.histogram;
+        let maxCount = -Infinity;
+        for (let i = 0; i < counts.length; i++) {
+            if (counts[i] > maxCount) {
+                maxCount = counts[i];
+            }
+        }
+        const barWidth = width / counts.length;
+
+        ctx.fillStyle = '#ff3300'; // Safety Orange
+        counts.forEach((count, i) => {
+            const barHeight = (count / maxCount) * (height - 20);
+            ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+        });
+    }
+
+    // Overlay fan chart bands if fanChart is available
+    if (result.fanChart && result.fanChart.length > 1 && typeof ctx.beginPath === 'function') {
+        const fan = result.fanChart;
+        const padL = 40;
+        const padR = 20;
+        const padT = 20;
+        const padB = 25;
+        const plotW = width - padL - padR;
+        const plotH = height - padT - padB;
+
+        let minVal = Infinity;
+        let maxVal = -Infinity;
+        fan.forEach((pt) => {
+            if (pt.p5 < minVal) {
+                minVal = pt.p5;
+            }
+            if (pt.p95 > maxVal) {
+                maxVal = pt.p95;
+            }
+        });
+        minVal = Math.max(0, minVal * 0.9);
+        maxVal = maxVal * 1.1;
+        const range = maxVal - minVal || 1;
+
+        const getX = (i) => padL + (i / (fan.length - 1)) * plotW;
+        const getY = (val) => padT + (1 - (val - minVal) / range) * plotH;
+
+        ctx.fillStyle = 'rgba(0, 255, 65, 0.15)';
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(fan[0].p5));
+        for (let i = 1; i < fan.length; i++) {
+            ctx.lineTo(getX(i), getY(fan[i].p5));
+        }
+        for (let i = fan.length - 1; i >= 0; i--) {
+            ctx.lineTo(getX(i), getY(fan[i].p95));
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#00ff41';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(fan[0].median));
+        for (let i = 1; i < fan.length; i++) {
+            ctx.lineTo(getX(i), getY(fan[i].median));
+        }
+        ctx.stroke();
+
+        if (typeof ctx.fillText === 'function') {
+            ctx.fillStyle = '#008f11';
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.fillText(
+                `Fan Envelope (P5–P95) · ${result.runCount || 10000} paths`,
+                padL + 10,
+                padT + 12
+            );
         }
     }
-    const barWidth = width / counts.length;
-
-    ctx.fillStyle = '#ff3300'; // Safety Orange
-    counts.forEach((count, i) => {
-        const barHeight = (count / maxCount) * (height - 20);
-        ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
-    });
 }
 
 function aggregateScenarios(configs, horizon) {
@@ -1038,6 +1680,47 @@ function normalizeConfig(raw, holdingDetails = {}) {
     return config;
 }
 
+function getAssetPairCorrelation(symA, symB) {
+    if (!symA || !symB || symA === symB) {
+        return symA && symA === symB ? 1.0 : 0.0;
+    }
+    const pair = [symA, symB].sort().join(':');
+    const CORRELATION_MAP = {
+        'ANET:GOOG': 0.6,
+        'ANET:PDD': 0.25,
+        'ANET:VT': 0.65,
+        'GOOG:PDD': 0.25,
+        'GOOG:VT': 0.7,
+        'PDD:VT': 0.35,
+    };
+    return CORRELATION_MAP[pair] !== undefined ? CORRELATION_MAP[pair] : 0.0;
+}
+
+function computePortfolioCovarianceVolatility(configs) {
+    let covSum = 0;
+    let diagSum = 0;
+    for (let i = 0; i < configs.length; i++) {
+        const wi = Number(configs[i].weight) || 0;
+        const voli = getEffectiveVolatility(configs[i]);
+        diagSum += Math.pow(wi, 2) * Math.pow(voli, 2);
+
+        for (let j = 0; j < configs.length; j++) {
+            const wj = Number(configs[j].weight) || 0;
+            const volj = getEffectiveVolatility(configs[j]);
+            const corr =
+                i === j ? 1.0 : getAssetPairCorrelation(configs[i].symbol, configs[j].symbol);
+            covSum += wi * wj * voli * volj * corr;
+        }
+    }
+    const covVol = Math.sqrt(Math.max(0, covSum));
+    const diagVol = Math.sqrt(Math.max(0, diagSum));
+    return {
+        volatility: covVol > 0 ? covVol : diagVol,
+        volatilityZeroCorr: diagVol,
+        covarianceRatio: diagVol > 0 ? covVol / diagVol : 1.0,
+    };
+}
+
 function buildPortfolioConfig(configs) {
     if (!configs.length) {
         return null;
@@ -1065,12 +1748,8 @@ function buildPortfolioConfig(configs) {
     const kellyScale = weighted((cfg) => getPreferences(cfg).kellyScale ?? 0.5);
     const targetCagr = weighted((cfg) => getPreferences(cfg).targetCagr ?? 0.1);
 
-    let volSum = 0;
-    for (let i = 0; i < configs.length; i++) {
-        const vol = getEffectiveVolatility(configs[i]);
-        volSum += Math.pow(configs[i].weight, 2) * Math.pow(vol, 2);
-    }
-    const volatility = Math.sqrt(volSum);
+    const covResult = computePortfolioCovarianceVolatility(configs);
+    const volatility = covResult.volatility;
 
     const overrides = {
         price,
@@ -1114,8 +1793,10 @@ function buildPortfolioConfig(configs) {
         },
         risk: {
             volatility,
-            estimateSource: 'weighted',
-            correlations: null,
+            volatilityZeroCorr: covResult.volatilityZeroCorr,
+            covarianceRatio: covResult.covarianceRatio,
+            estimateSource: covResult.covarianceRatio > 1.0 ? 'covariance-matrix' : 'weighted',
+            correlations: covResult.covarianceRatio > 1.0 ? 'calibrated-cross-asset' : null,
         },
         position: {
             shares: totalValue && price > 0 ? totalValue / price : totalValue,
@@ -1136,6 +1817,8 @@ function buildPortfolioConfig(configs) {
         weight: 1,
     };
     portfolio.metrics = computeMetrics(portfolio);
+    portfolio.metrics.volatilityZeroCorr = covResult.volatilityZeroCorr;
+    portfolio.metrics.covarianceRatio = covResult.covarianceRatio;
     return portfolio;
 }
 
@@ -1242,4 +1925,12 @@ export const __analysisLabTesting = {
     buildPortfolioConfig,
     fetchText,
     getSharesOutstanding,
+    getAssetPairCorrelation,
+    computePortfolioCovarianceVolatility,
+    renderKellyCurve,
+    renderBeliefState,
+    renderEvidenceTimeline,
+    renderPredictions,
+    renderDecisionJournal,
+    renderMonteCarloResults,
 };

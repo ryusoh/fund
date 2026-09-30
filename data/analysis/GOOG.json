@@ -117,5 +117,64 @@
             "fullKelly": null,
             "scaledKelly": null
         }
-    }
+    },
+    "industry_thesis": "docs/thesis/industry/cloud-ai-ecosystem.md",
+    "belief_state": {
+        "probability": 0.50,
+        "confidence": 0.75,
+        "evidence_for": [
+            "Google Cloud operating margins expanding consistently above 10%.",
+            "Custom TPU v5p/v6 Trillium infrastructure delivering cost leadership vs merchant GPU clouds.",
+            "Gemini integration across Google Workspace and Android providing broad consumer/enterprise distribution."
+        ],
+        "evidence_against": [
+            "DOJ antitrust search remedies create uncertainty around default distribution agreements.",
+            "AI search answers increase inference compute cost relative to traditional ad clicks.",
+            "Rising datacenter depreciation schedule putting pressure on near-term gross margins."
+        ],
+        "open_questions": [
+            "Will Search ad query volume and monetisation hold steady as AI Overviews scale?",
+            "Can GCP capture incremental enterprise generative AI workloads relative to Azure?"
+        ],
+        "as_of": "2026-09-30T10:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "goog-cloud-margin-fy25",
+            "claim": "Google Cloud reports annual operating margin > 12% in FY2025/2026",
+            "target_date": "2026-11-15",
+            "probability": 0.80,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Tests structural profitability and scale leverage of GCP and TPU fleet."
+        },
+        {
+            "id": "goog-search-rev-growth-fy25",
+            "claim": "Google Search & Other revenue growth remains positive YoY throughout 2026",
+            "target_date": "2026-12-31",
+            "probability": 0.70,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Validates resilience of core search moat against standalone AI agents."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-09-29",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "Alphabet trading at ~24x forward P/E, reasonable valuation relative to hyperscaler peer group with high net cash.",
+            "alternatives_rejected": [
+                "Increase allocation to max 25% (rejected: antitrust regulatory overhang warrants keeping dry powder).",
+                "Trim on DOJ headlines (rejected: underlying free cash flow generation and TPU advantage are durable)."
+            ],
+            "expected_outcomes": {
+                "core search resilience + cloud expansion": 0.65,
+                "regulatory remedy disruption": 0.35
+            },
+            "review_date": "2026-12-15"
+        }
+    ]
 }

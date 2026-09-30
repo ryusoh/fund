@@ -116,5 +116,53 @@
             "fullKelly": null,
             "scaledKelly": null
         }
-    }
+    },
+    "belief_state": {
+        "probability": 0.45,
+        "confidence": 0.65,
+        "evidence_for": [
+            "Extremely strong domestic cash flow with forward P/E < 12x and net cash ~30% of market cap.",
+            "Temu semi-managed model successfully lowering cross-border logistics friction and de minimis risks.",
+            "Agricultural supply chain digitization creating deep buyer frequency stickiness in tier 2-4 cities."
+        ],
+        "evidence_against": [
+            "Management intentional guidance lowering profit expectations and increasing merchant support spend.",
+            "Cross-border geopolitical friction, US/EU de minimis customs revision risks.",
+            "Domestic competitive intensity from Taobao/Tmall price-matching initiatives."
+        ],
+        "open_questions": [
+            "What is the steady-state operating margin of Temu as subsidies normalize?",
+            "Will shareholder capital return (dividends/buybacks) materialize or remain on balance sheet?"
+        ],
+        "as_of": "2026-09-30T10:00:00Z"
+    },
+    "predictions": [
+        {
+            "id": "pdd-temu-profitability-2026",
+            "claim": "Temu achieves EBITDA breakeven across major developed markets by end of 2026",
+            "target_date": "2026-12-31",
+            "probability": 0.55,
+            "resolved": false,
+            "outcome": null,
+            "resolved_date": null,
+            "notes": "Key catalyst for unlocking multiple re-rating from single-digit P/E."
+        }
+    ],
+    "decision_journal": [
+        {
+            "date": "2026-09-29",
+            "action": "HOLD",
+            "shares_changed": 0,
+            "situation": "PDD trades at deep value multiples (~10x P/E) reflecting China country risk and capex redeployment.",
+            "alternatives_rejected": [
+                "Exit position (rejected: cash generation and Temu optionality offer asymmetric upside).",
+                "Increase to overweight (rejected: macro volatility and capital allocation opacity justify controlled sizing)."
+            ],
+            "expected_outcomes": {
+                "domestic cash flow stability + international contribution": 0.60,
+                "regulatory/tariff compression": 0.40
+            },
+            "review_date": "2026-12-15"
+        }
+    ]
 }

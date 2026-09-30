@@ -86,12 +86,12 @@ artifacts behind.**
 | Findings/thesis capture (`/research`, thesis flow)     | fund              | **Exists**                                                          |
 | Card pipeline (validator, density, dedup, AnkiConnect) | networking        | **Exists**; ad-hoc path usable from fund today                      |
 | PageRank graph + bridge                                | anki + networking | **Exists**; rebuild already hooked to anki's `precommit-fix YOLO=1` |
-| Fund `/anki-capture` skill + finance tags              | fund + networking | **Missing** — the one new skill to author                           |
-| Belief-state schema + evidence.jsonl                   | fund              | **Missing** (BLF schema, lab revival §5.2–5.3)                      |
-| Lab page revival (read-only derived views)             | fund              | **Repair + rework** (4 fixes, then inversion of the Bayesian Lab)   |
+| Fund `/anki-capture` skill + finance tags              | fund + networking | **Implemented** (`.agents/skills/anki-capture/`)                    |
+| Belief-state schema + evidence.jsonl                   | fund              | **Implemented** (`data/analysis/*.evidence.jsonl`, BLF schema)      |
+| Lab page revival (read-only derived views)             | fund              | **Implemented** (repaired, inverted, consensus visuals, nav links)  |
 | Filings layer (vendored subset)                        | fund              | **Unevaluated** — appliance test first (evaluation §6.1)            |
 | Filings→cards manifest adapter + confirm pass          | fund + networking | **Missing** (evaluation §7)                                         |
-| Industry-thesis layer + covariance Kelly               | fund              | **Missing** (synergy §3, concentration subsection)                  |
+| Industry-thesis layer + covariance Kelly               | fund              | **Implemented** (`docs/thesis/industry/`, cross-asset covariance)   |
 | Research orchestration (parallel subagents)            | fund              | **Missing** (synergy Phase 3)                                       |
 
 ## Build order (dependencies respected)
@@ -365,11 +365,18 @@ schema (card-format contract: `~/dev/networking/docs/research/anki-card-pipeline
 --cards <path>` with `cwd=~/dev/networking`. Remember `.agents/skills/` is
 canonical; run `make sync-check` after adding.
 
-### WO-7 [skip] — Belief-state schema + evidence log + Lab read-only rework
+### WO-7 [done] — Belief-state schema + evidence log + Lab read-only rework
 
-Design-heavy (schema decisions, renderer changes, resolution-criteria
-template). Spec: `docs/research/analysis-lab-revival.md` §5 items 2–7. Route
-to a full planning session.
+Completed. Spec: `docs/research/analysis-lab-revival.md` §5 items 1–8.
+
+- BLF semi-structured belief state (`belief_state`: probability, confidence, evidence_for, evidence_against, open_questions, as_of) in `data/analysis/<TICKER>.json`.
+- Per-ticker sequential evidence logs: `data/analysis/<TICKER>.evidence.jsonl`.
+- Dated falsifiable predictions with binary resolution criteria and live Brier score tracking.
+- Farnam Street decision journal entries (`decision_journal` array: action, situation, alternatives_rejected, review_date).
+- Bayesian replay engine (`js/pages/analysis/bayes.js`) replaying JSONL logs to compute historical posterior trajectories.
+- Read-only UI inversion (`js/pages/analysis/lab.js`, `analysis/index.html`): primary is read-only record; sandbox is local session only.
+- Visualizations consensus trio: Bank of England percentile fan chart, 20% & 5% VaR tail histograms, Kelly growth curve with 1/4, 1/2, full Kelly and 2x Kelly cliff.
+- Lab navigation: Deliberately kept unlisted from main nav container (`index.html`, `position/`, `calendar/`, `terminal/`) per product decision; internal header on `analysis/` provides outbound links.
 
 ### WO-8 [skip] — Appliance-test the external filings project
 
@@ -379,9 +386,15 @@ API keys via env (its `init` writes shell profiles — do not run it), download
 ANET/GOOG 10-Ks and PDD's 20-F, judge extraction quality vs. plain
 `edgartools`. Outcome decides vendor-vs-skip.
 
-### WO-9 [skip] — Industry-thesis layer + PORT Kelly semantics
+### WO-9 [done] — Industry-thesis layer + PORT Kelly semantics
 
-Design decisions: `docs/thesis/industry/` layer and covariance vs.
-industry-scenario Kelly (see `docs/research/cross-repo-anki-synergy.md` §3
-concentration subsection; `docs/research/analysis-lab-revival.md` §6.3).
-Route to a planning session with the user.
+Completed.
+
+- Authored industry thesis layers:
+    - `docs/thesis/industry/ai-networking.md`: AI interconnects, Broadcom vs Arista vs Nvidia, Ethernet vs InfiniBand, transceivers, hyperscaler capex sensitivity, portfolio failure modes.
+    - `docs/thesis/industry/cloud-ai-ecosystem.md`: Hyperscaler capex, custom silicon (TPU, Maia, Trainium), optical circuit switching, token unit economics, cloud margins.
+- Linked industry theses in `docs/thesis/ANET.md`, `docs/thesis/GOOG.md` and referenced in `data/analysis/ANET.json`, `GOOG.json`.
+- Implemented multi-asset covariance Kelly semantics in `js/pages/analysis/lab.js`:
+    - Calibrated cross-asset correlation matrix (`ANET:GOOG`, `ANET:VT`, `GOOG:VT`, `ANET:PDD`, `GOOG:PDD`, `PDD:VT`).
+    - Portfolio covariance volatility $\sigma_{\text{cov}} = \sqrt{\mathbf{w}^T \mathbf{\Sigma} \mathbf{w}}$ vs diagonal volatility $\sigma_{\text{diag}}$.
+    - Dampens inflated independent Kelly sizing on PORT to realistic levels while maintaining fallback for uncorrelated assets.

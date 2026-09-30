@@ -169,4 +169,93 @@ describe('BayesianEngine', () => {
         const result3 = engine.update('bullish', -1.0); // clamped to 0
         expect(result3).toBeDefined();
     });
+
+    describe('replay', () => {
+        it('handles empty or missing evidence list', () => {
+            const scenarios = [
+                { id: 'bull', prob: 0.3, name: 'Bull Case' },
+                { id: 'base', prob: 0.4, name: 'Base Case' },
+                { id: 'bear', prob: 0.3, name: 'Bear Case' },
+            ];
+            const engine = new BayesianEngine(scenarios);
+            const { history, currentPosteriors } = engine.replay([]);
+            expect(history).toEqual([]);
+            expect(currentPosteriors[0].prob).toBeCloseTo(0.3);
+        });
+
+        it('replays sequential evidence and tracks history', () => {
+            const scenarios = [
+                { id: 'bull', prob: 0.3, name: 'Bull Case' },
+                { id: 'base', prob: 0.4, name: 'Base Case' },
+                { id: 'bear', prob: 0.3, name: 'Bear Case' },
+            ];
+            const engine = new BayesianEngine(scenarios);
+            const evidence = [
+                {
+                    date: '2026-05-01',
+                    claim: 'AI revenue acceleration',
+                    direction: 'bullish',
+                    strength: 0.8,
+                    source_url: 'https://example.com/1',
+                },
+                {
+                    date: '2026-07-01',
+                    claim: 'Hyperscaler capex pause',
+                    direction: 'bearish',
+                    strength: 0.6,
+                    source_url: 'https://example.com/2',
+                },
+            ];
+
+            const { history, currentPosteriors } = engine.replay(evidence);
+            expect(history.length).toBe(2);
+            expect(history[0].claim).toBe('AI revenue acceleration');
+            expect(history[0].posteriors[0].prob).toBeGreaterThan(0.3); // bull increased
+            expect(history[1].posteriors[2].prob).toBeGreaterThan(history[0].posteriors[2].prob); // bear increased after bearish signal
+            expect(currentPosteriors[0].prob).toBe(history[1].posteriors[0].prob);
+        });
+    });
+
+    describe('computeBrierScore', () => {
+        it('returns null when no predictions or none resolved', () => {
+            expect(BayesianEngine.computeBrierScore([])).toBeNull();
+            expect(
+                BayesianEngine.computeBrierScore([
+                    { probability: 0.7, resolved: false, outcome: null },
+                ])
+            ).toBeNull();
+        });
+
+        it('calculates exact Brier score for resolved predictions', () => {
+            const predictions = [
+                { probability: 0.8, resolved: true, outcome: 1 }, // (0.8 - 1)^2 = 0.04
+                { probability: 0.3, resolved: true, outcome: 0 }, // (0.3 - 0)^2 = 0.09
+                { probability: 0.6, resolved: false, outcome: null }, // ignored
+            ];
+            // Average = (0.04 + 0.09) / 2 = 0.13 / 2 = 0.065
+            const result = BayesianEngine.computeBrierScore(predictions);
+            expect(result).not.toBeNull();
+            expect(result.count).toBe(2);
+            expect(result.brierScore).toBeCloseTo(0.065);
+        });
+    });
+
+    describe('parseJsonl', () => {
+        it('parses valid jsonl and ignores empty lines/comments', () => {
+            const jsonl = `
+                {"date": "2026-01-01", "claim": "First"}
+                # comment
+                {"date": "2026-02-01", "claim": "Second"}
+            `;
+            const parsed = BayesianEngine.parseJsonl(jsonl);
+            expect(parsed.length).toBe(2);
+            expect(parsed[0].claim).toBe('First');
+            expect(parsed[1].claim).toBe('Second');
+        });
+
+        it('handles empty or non-string input', () => {
+            expect(BayesianEngine.parseJsonl('')).toEqual([]);
+            expect(BayesianEngine.parseJsonl(null)).toEqual([]);
+        });
+    });
 });

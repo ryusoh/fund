@@ -85,4 +85,102 @@ export class BayesianEngine {
             name: s.name,
         }));
     }
+
+    /**
+     * Replay a sequential list of evidence items against priors.
+     *
+     * @param {Array<Object>} evidenceList - List of evidence objects
+     * @returns {Object} { history: Array<Object>, currentPosteriors: Array<Object> }
+     */
+    replay(evidenceList = []) {
+        const history = [];
+        if (!Array.isArray(evidenceList) || evidenceList.length === 0) {
+            return {
+                history: [],
+                currentPosteriors: this.priors.map((p) => ({ ...p })),
+            };
+        }
+
+        for (let i = 0; i < evidenceList.length; i++) {
+            const item = evidenceList[i];
+            const direction = item.direction || 'neutral';
+            const strength = typeof item.strength === 'number' ? item.strength : 0.5;
+            const updated = this.update(direction, strength);
+            history.push({
+                index: i,
+                date: item.date || null,
+                claim: item.claim || '',
+                sourceUrl: item.source_url || item.sourceUrl || '',
+                direction,
+                strength,
+                thesisCommitRef: item.thesis_commit_ref || item.thesisCommitRef || null,
+                posteriors: updated.map((p) => ({ ...p })),
+            });
+        }
+
+        return {
+            history,
+            currentPosteriors: this.priors.map((p) => ({ ...p })),
+        };
+    }
+
+    /**
+     * Compute Brier score for resolved predictions.
+     * Score = (1/N) * sum((probability - outcome)^2)
+     * Lower is better: 0 is perfect calibration, 0.25 is random chance on 50/50.
+     *
+     * @param {Array<Object>} predictions - Array of prediction objects
+     * @returns {Object|null}
+     */
+    static computeBrierScore(predictions = []) {
+        if (!Array.isArray(predictions) || predictions.length === 0) {
+            return null;
+        }
+
+        const resolved = predictions.filter(
+            (p) => p && p.resolved === true && p.outcome !== null && p.outcome !== undefined
+        );
+        if (resolved.length === 0) {
+            return null;
+        }
+
+        let sumSquaredErrors = 0;
+        for (const item of resolved) {
+            const prob = typeof item.probability === 'number' ? item.probability : 0.5;
+            const outcome = item.outcome === true || item.outcome === 1 ? 1 : 0;
+            const error = prob - outcome;
+            sumSquaredErrors += error * error;
+        }
+
+        const brierScore = sumSquaredErrors / resolved.length;
+        return {
+            count: resolved.length,
+            brierScore: Number(brierScore.toFixed(4)),
+            resolved,
+        };
+    }
+
+    /**
+     * Parse JSONL text into array of objects.
+     *
+     * @param {string} text - JSONL string
+     * @returns {Array<Object>}
+     */
+    static parseJsonl(text = '') {
+        if (!text || typeof text !== 'string') {
+            return [];
+        }
+        return text
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0 && !line.startsWith('#'))
+            .map((line) => {
+                try {
+                    return JSON.parse(line);
+                } catch {
+                    return null;
+                }
+            })
+            .filter((item) => item !== null);
+    }
 }
