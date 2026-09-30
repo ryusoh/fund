@@ -70,6 +70,10 @@ already proposed or previously rejected — pick a different target.
   the target was not in the >20 backlog; do not touch `eslint-suppressions.json`.
 - `make precommit-fix` green (matches the CI gate; verify `bot-pr-check` and
   all pre-commit hooks pass locally), with **coverage preserved**.
+- **Check diff coverage locally before pushing:**
+  `venv/bin/diff-cover coverage/lcov.info --compare-branch origin/main --fail-under 90`.
+  If extracted helpers from legacy uncovered code drop diff coverage below 90%,
+  append companion unit tests to satisfy the gate (fund#703).
 - **`make precommit-fix` must leave the worktree clean.** It fixes first, then
   checks — if prettier/eslint reformatted anything, that output must be staged
   and committed _before_ you push. CI re-runs the fixer and fails the PR on a
@@ -91,9 +95,10 @@ Conventional Commits per `AGENTS.md`.
 origin/main HEAD) && git commit`) and force-push — the branch must always
   end as a single commit. The hygiene gate checks every commit individually,
   so a multi-commit branch makes every intermediate mistake permanent; a
-  one-commit branch can only fail on its final content. (fund#693 failed CI
-  on an empty commit buried mid-history among five identical-message commits,
-  though its final tree was clean.)
+  one-commit branch can only fail on its final content. (fund#693 and fund#703
+  failed CI on an empty commit buried mid-history among identical-message commits,
+  though their final tree was clean; fund#703 also attempted committing a root-level
+  scratch script `test_hover_coverage.js`.)
 - **Stage by name, never `git add -A` / `git add .`.** Add exactly the source
   files you refactored (and `eslint-suppressions.json` only when
   `--prune-suppressions` changed it). Scratch output from verification runs

@@ -98,6 +98,9 @@ def _is_stray_artifact(path: str) -> bool:
         return True
     if name.startswith(("temp_", "dummy_")):
         return True
+    # Root-level test/scratch scripts (fund#703 committed test_hover_coverage.js in root).
+    if len(parts) == 1 and name.startswith("test_") and name.endswith((".js", ".ts", ".py", ".sh")):
+        return True
     return False
 
 

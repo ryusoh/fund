@@ -289,6 +289,13 @@ def test_bot_warn_out_json_scratch_flagged(repo: Path) -> None:
     assert any("stray artifact" in v and "eslint_warn_out.json" in v for v in violations)
 
 
+def test_bot_root_test_scratch_flagged(repo: Path) -> None:
+    # fund#703: the bot committed a root-level test scratch script test_hover_coverage.js
+    _write_and_commit(repo, "test_hover_coverage.js", "console.log(1);\n", "refactor: cut complexity")
+    violations = find_violations(repo, "main")
+    assert any("stray artifact" in v and "test_hover_coverage.js" in v for v in violations)
+
+
 def test_bot_suppressions_addition_flagged(repo: Path) -> None:
     _write_and_commit(
         repo,
