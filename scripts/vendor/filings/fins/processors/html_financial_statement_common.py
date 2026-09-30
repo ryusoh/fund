@@ -435,9 +435,9 @@ def _dataframe_to_matrix(dataframe: pd.DataFrame) -> list[list[str]]:
     """
 
     matrix: list[list[str]] = []
-    for _, row in dataframe.iterrows():
+    for row in dataframe.itertuples(index=False, name=None):
         current_row: list[str] = []
-        for value in row.tolist():
+        for value in row:
             if pd.isna(value):
                 current_row.append("")
                 continue
