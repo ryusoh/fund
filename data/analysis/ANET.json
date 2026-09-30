@@ -3,7 +3,7 @@
     "name": "Arista Networks",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-09-29T14:22:16.591572+00:00",
+        "asOf": "2026-09-30T14:14:51.880688+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -29,27 +29,27 @@
     },
     "market": {
         "forwardEps": 5.1874,
-        "pe": 64.5841,
-        "forwardPe": 39.218,
+        "pe": 64.8905,
+        "forwardPe": 39.404,
         "beta": 1.617,
-        "marketCap": 256583548928.0,
-        "enterpriseValue": 245106851840.0,
+        "marketCap": 257800634368.0,
+        "enterpriseValue": 242508726272.0,
         "ebitda": 4639600128.0,
         "currency": "USD",
         "fiftyTwoWeekHigh": 214.89,
         "fiftyTwoWeekLow": 114.52,
-        "marketDataUpdatedAt": "2026-09-29T14:22:16.467402+00:00",
-        "evToEbitda": 52.8293,
+        "marketDataUpdatedAt": "2026-09-30T14:14:51.768385+00:00",
+        "evToEbitda": 52.2693,
         "eps": 3.15,
-        "price": 203.44,
-        "fiftyDayAverage": 190.9592,
-        "twoHundredDayAverage": 157.4135,
-        "averageVolume": 6725439.0,
-        "averageDailyVolume10Day": 5220210.0,
-        "pegRatio": 1.55
+        "price": 204.405,
+        "fiftyDayAverage": 191.6294,
+        "twoHundredDayAverage": 157.766,
+        "averageVolume": 6634696.0,
+        "averageDailyVolume10Day": 5185750.0,
+        "pegRatio": 1.52
     },
     "risk": {
-        "volatility": 0.5417,
+        "volatility": 0.5416,
         "estimateSource": "historical",
         "correlations": null
     },
@@ -122,8 +122,8 @@
     },
     "industry_thesis": "docs/thesis/industry/ai-networking.md",
     "belief_state": {
-        "probability": 0.40,
-        "confidence": 0.70,
+        "probability": 0.4,
+        "confidence": 0.7,
         "evidence_for": [
             "Arista AI revenue target $750M exceeded; guidance raised to $1.5B for FY2025/2026.",
             "EOS NetDL software stickiness demonstrated across top tier-1 cloud titans.",
@@ -155,7 +155,7 @@
             "id": "anet-top2-cust-conc-fy25",
             "claim": "Combined revenue share of top 2 customers drops below 38% in FY2025 10-K",
             "target_date": "2026-12-31",
-            "probability": 0.40,
+            "probability": 0.4,
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
@@ -173,8 +173,8 @@
                 "Aggressive buy on recent dip (rejected: risk-reward margin of safety narrower above $200)."
             ],
             "expected_outcomes": {
-                "multi-year AI Ethernet dominance sustaining 20%+ EPS growth": 0.70,
-                "hyperscaler capex digestion causing multiple contraction below 30x": 0.30
+                "multi-year AI Ethernet dominance sustaining 20%+ EPS growth": 0.7,
+                "hyperscaler capex digestion causing multiple contraction below 30x": 0.3
             },
             "review_date": "2026-12-15"
         }

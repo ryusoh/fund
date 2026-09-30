@@ -3,7 +3,7 @@
     "name": "Vanguard Total World Index Fund",
     "meta": {
         "schemaVersion": "1.1.0",
-        "asOf": "2026-09-29T14:22:17.453670+00:00",
+        "asOf": "2026-09-30T14:14:52.967222+00:00",
         "timezone": "UTC",
         "source": "analysis-sync"
     },
@@ -28,18 +28,18 @@
         }
     },
     "market": {
-        "pe": 20.4897,
+        "pe": 20.5454,
         "dividendYield": 1.55,
         "currency": "USD",
         "fiftyTwoWeekHigh": 162.71,
         "fiftyTwoWeekLow": 133.65,
-        "marketDataUpdatedAt": "2026-09-29T14:22:17.332157+00:00",
-        "price": 158.56,
+        "marketDataUpdatedAt": "2026-09-30T14:14:52.837774+00:00",
+        "price": 158.991,
         "eps": 6.22,
-        "fiftyDayAverage": 159.1312,
-        "twoHundredDayAverage": 150.9442,
-        "averageVolume": 2379152.0,
-        "averageDailyVolume10Day": 2732820.0
+        "fiftyDayAverage": 159.2144,
+        "twoHundredDayAverage": 151.0255,
+        "averageVolume": 2385347.0,
+        "averageDailyVolume10Day": 2886190.0
     },
     "risk": {
         "volatility": 0.1418,
@@ -111,8 +111,8 @@
         }
     },
     "belief_state": {
-        "probability": 0.50,
-        "confidence": 0.90,
+        "probability": 0.5,
+        "confidence": 0.9,
         "evidence_for": [
             "Global diversification across >9,000 holdings across developed and emerging equity markets.",
             "Ultra-low expense ratio (0.07%) eliminating managerial friction."
@@ -131,7 +131,7 @@
             "id": "vt-global-cagr-5y",
             "claim": "VT annualized 5-year total return matches or exceeds 6.5% benchmark",
             "target_date": "2029-12-31",
-            "probability": 0.70,
+            "probability": 0.7,
             "resolved": false,
             "outcome": null,
             "resolved_date": null,
