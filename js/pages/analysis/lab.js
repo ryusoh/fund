@@ -962,7 +962,11 @@ function renderBeliefState(config) {
         industryLink.style.fontSize = '0.75rem';
         industryLink.style.marginTop = '4px';
         const docName = config.industry_thesis.split('/').pop();
-        industryLink.innerHTML = `<span style="color: var(--text-muted)">Industry Layer:</span> <a href="../${config.industry_thesis}" style="color: var(--text-main); text-decoration: underline;">${docName}</a>`;
+        // security: remediate DOM-based XSS sink
+        industryLink.innerHTML =
+            '<span style="color: var(--text-muted)">Industry Layer:</span> <a style="color: var(--text-main); text-decoration: underline;"></a>';
+        industryLink.querySelector('a').href = '../' + config.industry_thesis;
+        industryLink.querySelector('a').textContent = docName;
         beliefStateCardEl.appendChild(industryLink);
     }
 
@@ -1178,7 +1182,11 @@ function renderDecisionJournal(config) {
 
     const latest = journal[journal.length - 1];
     const actionDiv = document.createElement('div');
-    actionDiv.innerHTML = `<span class="decision-action">${latest.action || 'ACTION'}</span> (${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
+    // security: remediate DOM-based XSS sink
+    actionDiv.innerHTML = '<span class="decision-action"></span> <span class="action-meta"></span>';
+    actionDiv.querySelector('.decision-action').textContent = latest.action || 'ACTION';
+    actionDiv.querySelector('.action-meta').textContent =
+        `(${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
     const sitDiv = document.createElement('div');
     sitDiv.style.color = 'var(--ink)';
     sitDiv.style.margin = '4px 0';
