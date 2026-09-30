@@ -316,3 +316,52 @@ Respond in **five sections**:
 - Skim for:
     - Unexpected changes to horizon, hurdle rate, benchmark, Kelly scale, section headings.
 - If something looks off, revert the offending hunk and re-run the update with a tighter prompt (e.g., “do not touch preferences.horizon or preferences.benchmark”).
+
+---
+
+## 10. Compounding Evidence Pipeline: Filings, Sequential Logs & Anki Capture
+
+To close the loop from primary filings to living theses and long-term memory:
+
+1. **Extract & Confirm against Primary Filings**:
+
+    - Use `scripts.analysis.filings_adapter` to inspect filings, extract evidence candidates, or run a **Confirm Pass**:
+
+        ```bash
+        # List available filings
+        python3 -m scripts.analysis.filings_adapter list --ticker <TICKER>
+
+        # Extract evidence candidates
+        python3 -m scripts.analysis.filings_adapter candidates --ticker <TICKER>
+
+        # Confirm pass: verify claim groundedness in filing text
+        python3 -m scripts.analysis.filings_adapter verify --ticker <TICKER> --claim "<CLAIM TEXT>"
+        ```
+
+2. **Append to Sequential Evidence Log (`data/analysis/<TICKER>.evidence.jsonl`)**:
+
+    - When a filing or event alters thesis probabilities, append a new line to `data/analysis/<TICKER>.evidence.jsonl`:
+
+        ```json
+        {
+            "date": "YYYY-MM-DD",
+            "claim": "...",
+            "source_url": "https://www.sec.gov/edgar",
+            "direction": "bullish|bearish|neutral",
+            "strength": 0.6,
+            "thesis_commit_ref": "<HEAD_HASH>"
+        }
+        ```
+
+    - The Lab page re-plays these lines via `js/pages/analysis/bayes.js` to compute historical posterior trajectories.
+
+3. **Capture Durable Insights to Anki**:
+
+    - After updating the thesis, invoke the `/anki-capture` skill to generate structured Chinese-primary bilingual cards for the Anki 金融 deck.
+    - For complete filing chunks, export the chunks manifest:
+
+        ```bash
+        python3 -m scripts.analysis.filings_adapter export-manifest --ticker <TICKER> --out .cache/<TICKER>_chunks.json
+        ```
+
+    - Courseware chunk indexers and PageRank graph bridges prioritize load-bearing concepts across the fund portfolio.
