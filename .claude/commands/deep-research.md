@@ -17,31 +17,31 @@ Anthropic production multi-agent research architecture patterns.
 For the given research question `$ARGUMENTS`:
 
 1. **Parallel subagent fan-out:** Launch specialized read-only subagents:
-   - **Filings subagent:** Queries SEC filings via `venv/bin/python scripts/analysis/filings_adapter.py`
-     (`sections`, `read`, `verify`). Extracts hard financial numbers, risk disclosures,
-     customer concentration, and management commentary.
-   - **Internal state subagent:** Audits `data/analysis/<TICKER>.json`, `*.evidence.jsonl`,
-     and `docs/thesis/**`. Tracks prior beliefs, falsifiable prediction track records,
-     and open questions.
-   - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
-     investor relations presentations, earnings call transcripts, and industry standards bodies.
-     Secondary blog posts and unverified aggregators are excluded.
+    - **Filings subagent:** Queries SEC filings via `venv/bin/python scripts/analysis/filings_adapter.py`
+      (`sections`, `read`, `verify`). Extracts hard financial numbers, risk disclosures,
+      customer concentration, and management commentary.
+    - **Internal state subagent:** Audits `data/analysis/<TICKER>.json`, `*.evidence.jsonl`,
+      and `docs/thesis/**`. Tracks prior beliefs, falsifiable prediction track records,
+      and open questions.
+    - **Web subagent:** Investigates primary external sources only: regulatory disclosures,
+      investor relations presentations, earnings call transcripts, and industry standards bodies.
+      Secondary blog posts and unverified aggregators are excluded.
 
 2. **Synthesis pass:** Consolidate subagent outputs into a coherent claim-to-source mapping.
    Every quantitative claim or thesis assertion must carry its exact locator or cited URL.
 
 3. **Confirm pass:**
-   - Verify every quantitative claim against SEC filings using
-     `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`.
-     Enforce confidence ≥ 0.60.
-   - Re-verify critical web claims by direct source inspection.
+    - Verify every quantitative claim against SEC filings using
+      `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`.
+      Enforce confidence ≥ 0.60.
+    - Re-verify critical web claims by direct source inspection.
 
 4. **Persist findings:**
-   - Write the cited findings doc to `docs/research/<topic>.md`.
-   - Structure: executive summary, baseline vs new evidence, claim-by-claim breakdown with
-     source anchors, open questions / unverified claims, and action items.
-   - Only after findings are committed may `docs/thesis/<TICKER>.md` or `data/analysis/*.json`
-     be updated.
+    - Write the cited findings doc to `docs/research/<topic>.md`.
+    - Structure: executive summary, baseline vs new evidence, claim-by-claim breakdown with
+      source anchors, open questions / unverified claims, and action items.
+    - Only after findings are committed may `docs/thesis/<TICKER>.md` or `data/analysis/*.json`
+      be updated.
 
 ## Guardrails
 

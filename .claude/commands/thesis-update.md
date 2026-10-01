@@ -76,7 +76,7 @@ Synthesize the incremental findings in the chat response:
     - Make surgical edits to specific numbered sections (e.g. §4.2, §8.2 dated log).
     - Link any industry layer docs (`docs/thesis/industry/`) if relevant.
 3. **Append to `data/analysis/<TICKER>.evidence.jsonl`**:
-    - Add a single JSON line recording the dated evidence with direction, strength, and citation locator.
+    - Add a single JSON line recording the dated evidence with direction, strength, and citation locator. Include valid_from (when the fact became true; defaults to the record's date) and valid_to (null while the fact holds; set it when later evidence supersedes or refutes the claim — never delete the old record).
 
 ### Step 5: Verify & Gate
 
