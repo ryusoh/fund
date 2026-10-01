@@ -308,6 +308,53 @@ describe('Analysis Lab Revival (WO-7 & WO-9)', () => {
             expect(card.textContent).toContain('True');
             expect(card.textContent).toContain('Pending (40%)');
         });
+
+        it('renders stale-prediction badge when predictions are overdue and hides when zero stale', async () => {
+            const { renderPredictions, computeStalePredictions } = (
+                await import('@pages/analysis/lab.js')
+            ).__analysisLabTesting;
+
+            const testList = [
+                { id: 'stale1', target_date: '2025-01-01', resolved: false },
+                { id: 'stale2', target_date: '2025-02-01', resolved: false },
+                { id: 'resolved', target_date: '2025-01-01', resolved: true },
+                { id: 'future', target_date: '2030-01-01', resolved: false },
+            ];
+            const stale = computeStalePredictions(testList, '2026-01-01');
+            expect(stale.map((p) => p.id)).toEqual(['stale1', 'stale2']);
+            expect(computeStalePredictions(null)).toEqual([]);
+
+            const configWithStale = {
+                predictions: [
+                    {
+                        id: 'p-overdue',
+                        claim: 'Overdue milestone',
+                        target_date: '2020-01-01',
+                        probability: 0.7,
+                        resolved: false,
+                    },
+                ],
+            };
+            renderPredictions(configWithStale);
+            const card = document.getElementById('predictionsCard');
+            const badge = card.querySelector('.prediction-stale-badge');
+            expect(badge).not.toBeNull();
+            expect(badge.textContent).toBe('1 Overdue');
+
+            const configNoStale = {
+                predictions: [
+                    {
+                        id: 'p-future',
+                        claim: 'Future milestone',
+                        target_date: '2099-01-01',
+                        probability: 0.5,
+                        resolved: false,
+                    },
+                ],
+            };
+            renderPredictions(configNoStale);
+            expect(card.querySelector('.prediction-stale-badge')).toBeNull();
+        });
     });
 
     describe('Decision Journal (WO-7 Item 7)', () => {

@@ -549,6 +549,17 @@ button:focus-visible {
     color: var(--text-main);
 }
 
+.prediction-stale-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: rgba(255, 80, 80, 0.2);
+    border: 1px solid #f66;
+    color: #f88;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
 /* Decision Journal */
 .decision-box {
     background: rgba(0, 15, 0, 0.7);

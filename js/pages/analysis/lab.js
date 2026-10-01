@@ -1093,6 +1093,19 @@ async function renderEvidenceTimeline(config) {
     });
 }
 
+function computeStalePredictions(predictions, asOf) {
+    if (!Array.isArray(predictions)) {
+        return [];
+    }
+    const today = asOf || new Date().toISOString().slice(0, 10);
+    return predictions.filter((p) => {
+        if (!p || p.resolved === true) {
+            return false;
+        }
+        return p.target_date && p.target_date < today;
+    });
+}
+
 function renderPredictions(config) {
     if (!predictionsCardEl) {
         return;
@@ -1101,6 +1114,7 @@ function renderPredictions(config) {
 
     const predictions = config.predictions || [];
     const brierResult = BayesianEngine.computeBrierScore(predictions);
+    const stalePredictions = computeStalePredictions(predictions);
 
     const titleDiv = document.createElement('div');
     titleDiv.style.display = 'flex';
@@ -1115,14 +1129,27 @@ function renderPredictions(config) {
     h4.style.textTransform = 'uppercase';
     h4.textContent = 'Falsifiable Predictions';
 
+    const badgesContainer = document.createElement('div');
+    badgesContainer.style.display = 'flex';
+    badgesContainer.style.alignItems = 'center';
+    badgesContainer.style.gap = '8px';
+
     const brierBadge = document.createElement('span');
     brierBadge.style.fontSize = '0.75rem';
     brierBadge.style.color = 'var(--text-main)';
     brierBadge.textContent = brierResult
         ? `Brier: ${brierResult.brierScore} (N=${brierResult.count})`
         : 'Brier: N/A';
+    badgesContainer.appendChild(brierBadge);
 
-    titleDiv.append(h4, brierBadge);
+    if (stalePredictions.length > 0) {
+        const staleBadge = document.createElement('span');
+        staleBadge.className = 'prediction-stale-badge';
+        staleBadge.textContent = `${stalePredictions.length} Overdue`;
+        badgesContainer.appendChild(staleBadge);
+    }
+
+    titleDiv.append(h4, badgesContainer);
     predictionsCardEl.appendChild(titleDiv);
 
     if (predictions.length === 0) {
@@ -1939,6 +1966,7 @@ export const __analysisLabTesting = {
     renderBeliefState,
     renderEvidenceTimeline,
     renderPredictions,
+    computeStalePredictions,
     renderDecisionJournal,
     renderMonteCarloResults,
 };
