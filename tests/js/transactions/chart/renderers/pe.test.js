@@ -241,6 +241,80 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         }
     });
 
+    it('handles empty series correctly', async () => {
+        const { updateCrosshairUI } =
+            await import('../../../../../js/transactions/chart/interaction.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
+
+        const peData = {
+            dates: ['2023-01-01'],
+            portfolio_pe: [15],
+            ticker_pe: {},
+            ticker_weights: {},
+        };
+
+        jest.spyOn(global, 'fetch').mockImplementation(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(peData),
+            })
+        );
+
+        // Filter out all data
+        mockTransactionState.chartDateRange = { from: '2024-01-01', to: '2024-01-02' };
+
+        const emptyStateEl = { style: {} };
+        if (typeof document !== 'undefined') {
+            jest.spyOn(document, 'getElementById').mockReturnValue(emptyStateEl);
+        }
+
+        const ctx = createMockCtx();
+        const chartManager = { redraw: jest.fn() };
+
+        peModule.drawPEChart(ctx, chartManager, 0);
+        await new Promise((r) => setTimeout(r, 0));
+        peModule.drawPEChart(ctx, chartManager, 0);
+
+        expect(mockChartLayouts.pe).toBeNull();
+        expect(updateCrosshairUI).toHaveBeenCalledWith(null, null);
+        expect(emptyStateEl.style.display).toBe('block');
+    });
+
+    it('handles zero area canvas correctly', async () => {
+        const { updateCrosshairUI } =
+            await import('../../../../../js/transactions/chart/interaction.js');
+        const peModule = await import('../../../../../js/transactions/chart/renderers/pe.js');
+
+        const peData = {
+            dates: ['2023-01-01'],
+            portfolio_pe: [15],
+            ticker_pe: {},
+            ticker_weights: {},
+        };
+
+        jest.spyOn(global, 'fetch').mockImplementation(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(peData),
+            })
+        );
+
+        mockTransactionState.chartDateRange = { from: null, to: null };
+
+        const ctx = createMockCtx();
+        ctx.canvas.offsetWidth = 0;
+        ctx.canvas.offsetHeight = 0;
+
+        const chartManager = { redraw: jest.fn() };
+
+        peModule.drawPEChart(ctx, chartManager, 0);
+        await new Promise((r) => setTimeout(r, 0));
+        peModule.drawPEChart(ctx, chartManager, 0);
+
+        expect(mockChartLayouts.pe).toBeNull();
+        expect(updateCrosshairUI).toHaveBeenCalledWith(null, null);
+    });
+
     it('shows GSPC benchmark even when chartVisibility has it disabled', async () => {
         // Simulate: user selected ^IXIC in performance chart, so ^GSPC visibility is false
         mockTransactionState.chartVisibility = { '^GSPC': false, '^IXIC': true };
@@ -262,7 +336,7 @@ describe('drawPEChart GSPC benchmark visibility', () => {
         // we trigger it via loadPEData mock. Instead, call drawPEChart after
         // priming the cache by calling loadPEData first.
         // Mock fetch to return our data and call drawPEChart twice.
-        global.fetch = jest.fn(() =>
+        jest.spyOn(global, 'fetch').mockImplementation(() =>
             Promise.resolve({
                 ok: true,
                 json: () => Promise.resolve(peData),
@@ -305,7 +379,7 @@ describe('drawPEChart GSPC benchmark visibility', () => {
             },
         };
 
-        global.fetch = jest.fn(() =>
+        jest.spyOn(global, 'fetch').mockImplementation(() =>
             Promise.resolve({
                 ok: true,
                 json: () => Promise.resolve(peData),
@@ -368,6 +442,20 @@ describe('getPESnapshotText', () => {
         jest.mock('../../../../../js/transactions/chart/state.js', () => ({
             chartLayouts: mockState.chartLayouts,
         }));
+    });
+
+    it('returns "No PE data in range" if no points are visible in range', async () => {
+        mockState.transactionState.chartDateRange = { from: '2024-01-01', to: '2024-01-02' };
+        mockState.chartLayouts.pe = {
+            rawSeries: [
+                { date: new Date(2023, 0, 1), pe: 15 },
+                { date: new Date(2023, 0, 2), pe: 20 },
+                { date: new Date(2023, 0, 3), pe: 10 },
+            ],
+        };
+        const { getPESnapshotText } =
+            await import('../../../../../js/transactions/chart/renderers/pe.js');
+        expect(getPESnapshotText()).toBe('No PE data in range');
     });
 
     it('returns loading state if series is empty', async () => {
