@@ -4,6 +4,7 @@ import atexit
 import json
 import logging
 import shutil
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -650,6 +651,32 @@ def main() -> None:
         ]
     }
     save_json(INDEX_FILE, index_payload)
+
+    # Build and write theme_timeline.json
+    try:
+        from scripts.analysis.theme_timeline import build_theme_timeline
+
+        evidence_cache: dict[str, list[dict]] = {}
+        for symbol in holding_symbols:
+            ev_file = ANALYSIS_DIR / f"{symbol}.evidence.jsonl"
+            if ev_file.exists():
+                records = []
+                for line in ev_file.read_text(encoding="utf-8").splitlines():
+                    line_s = line.strip()
+                    if line_s:
+                        try:
+                            records.append(json.loads(line_s))
+                        except json.JSONDecodeError:
+                            continue
+                evidence_cache[symbol] = records
+            else:
+                evidence_cache[symbol] = []
+
+        timeline_data = build_theme_timeline(configs_cache, evidence_cache)
+        save_json(ANALYSIS_DIR / "theme_timeline.json", timeline_data)
+        print("Generated theme timeline index")
+    except Exception as e:
+        sys.stderr.write(f"Warning: could not generate theme timeline: {e}\n")
 
 
 if __name__ == "__main__":
