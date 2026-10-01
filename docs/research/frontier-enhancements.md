@@ -513,29 +513,259 @@ verified against the working tree on 2026-10-01.
 - **Guardrail:** the judge is the same model family as the author (correlated
   blind spots) — human review (step 4) stays mandatory; do not remove it.
 
-### WO-4 [skip] — FSRS-state-aware retention-gap bridge (A2)
+### WO-4 — Review-state retention-gap bridge (A2) — HLD
 
-Needs Anki API verification + new tests; route to a stronger model. Pointer:
-add a read-only function to `~/dev/networking/tools/research/anki_graph_bridge.py`
-joining graph hub labels with per-card FSRS D/S/R state via AnkiConnect, reusing
-the `_invoke` pattern at `~/dev/networking/tools/research/anki_generator.py:812`.
-Verify `cardsInfo` field names against the installed Anki version before writing
-code; tests live in `~/dev/networking/tools/research/__tests__/`. Then surface a
-"retention-gap hubs" note in step 0 of fund's `.agents/skills/anki-capture/SKILL.md`.
-FSRS state steers **authoring** only — never overrides review scheduling.
+Split into 4a (networking module, `[low]`) and 4b (fund skill line,
+`[trivial]`). Facts verified 2026-10-01 against the live repos:
 
-### WO-5 [skip] — Automated resolution sweeps for dated predictions (A4)
+- **FSRS D/S/R is NOT available.** The local AnkiConnect plugin
+  (`~/dev/anki/anki_connect/__init__.py:1520-1561`) `cardsInfo` returns only
+  SM-2 fields: `reps`, `lapses`, `ivl`, `factor`, `due`. Design on those;
+  FSRS fields are a future upgrade if the plugin adds them.
+- **guid↔nid join is broken offline.** `graph_data.json` node `id` is the Anki
+  note **guid** (`~/dev/anki/graph/builder.py:41,55-63`), but
+  `~/dev/anki/data/cloudflare/collection/notes.json.gz` has `id` in **0 of
+  165,104** notes (the architecture doc `~/dev/anki/docs/anki-knowledge-graph-architecture.md`
+  says it should) and the dump is ~2.5 weeks stale. Do not build on the dump.
+- **Join strategy: normalized front text.** Graph node `label` is the
+  plaintext front (e.g. `"fire truck"`); AnkiConnect `notesInfo` returns the
+  raw HTML Front field. Strip HTML/whitespace on both sides and match. 3
+  batched AnkiConnect calls total, no per-hub queries.
 
-New script + scheduled workflow + UI badge; needs design. Pointer: scanner in
-fund `scripts/analysis/` reading `predictions[]` in `data/analysis/<TICKER>.json`
-(fields verified present: `id`, `claim`, `target_date`, `probability`,
-`resolved`, `resolved_date`), flagging unresolved entries past `target_date`;
-weekly GitHub Action or `/ship`-adjacent chore; staleness badge in
-`js/pages/analysis/lab.js` `[visual]`. Resolution itself stays human-confirmed
-— the script **reads** `data/` but never writes it.
+#### WO-4a [low] — new module `~/dev/networking/tools/research/anki_retention.py`
 
-### WO-6 [skip] — Tier B builds (B1 filings→cards adapter, B2 multi-agent orchestration, B3 bi-temporal thesis graph)
+- **File (new):** `/Users/lz/dev/networking/tools/research/anki_retention.py`
+- **Design:**
 
-Each is a design session with the user, not a mechanical edit. Specs are the
-"Tier B" section above plus `docs/research/external-filings-agent-evaluation.md`
-§7 (B1 scope). Do not start from a work order; schedule the design discussion.
+  ```python
+  class AnkiRetentionBridge:
+      def __init__(self, deck: str = "金融",
+                   repo_root: Path = ANKI_REPO_ROOT,
+                   url: str = "http://127.0.0.1:8765") -> None: ...
+      def get_retention_gaps(self, top_n: int = 10,
+                             min_pagerank_quantile: float = 0.75
+                             ) -> list[dict]: ...
+      # each dict: {label, pagerank, cards, reps, lapses, max_ivl_days}
+      def get_stable_hubs(self, top_n: int = 10, min_reps: int = 5
+                          ) -> list[dict]: ...
+
+  def main(argv: list[str] | None = None) -> int: ...
+  # CLI: --deck --top --gaps/--stable --json
+  ```
+
+  1. Load deck-filtered graph nodes via
+     `AnkiGraphBridge(target_deck=deck, repo_root=repo_root)` — its
+     `.nodes` is a **list of raw node dicts**; read `label`/`l` and
+     `pagerank`/`p` with the same short-key fallbacks
+     (`anki_graph_bridge.py:131-143`).
+  2. AnkiConnect calls, reusing the verified invoke pattern
+     (`anki_generator.py:812-826`, `{"action","version":6,"params"}`, urllib,
+     timeout 5.0, raise `RuntimeError` on `res["error"]` — import
+     `AnkiConnectChecker` from `tools.research.anki_generator` and use its
+     `_invoke`; do not write a second HTTP client):
+     `findNotes("deck:\"金融\"")` → `notesInfo(nids)` → collect `cards` lists →
+     `cardsInfo(all_cids)`.
+  3. Normalize + join: strip HTML tags (`re.sub(r"<[^>]+>", "", s)`) and
+     collapse whitespace on both the graph label and the note's Front field
+     value; duplicate fronts join to all matching nodes (aggregate stats).
+  4. Gap predicate: node pagerank ≥ the deck's 75th percentile AND total
+     `lapses` ≥ 1 across the note's cards; sort by pagerank desc. Stable
+     predicate: `lapses` == 0 AND total `reps` ≥ 5.
+  5. **Fail-open:** AnkiConnect unreachable or graph missing → print one
+     warning to stderr, output empty list, exit 0 (this is optional
+     enrichment in the capture skill, never a hard gate).
+  6. Read-only: never call mutating actions. Review state steers **authoring
+     only**, never scheduling.
+
+- **Tests (new):** `~/dev/networking/tools/research/__tests__/test_anki_retention.py` —
+  follow `test_anki_graph_bridge.py` conventions: `tmp_path` graph fixture
+  with short-key schema (`{"id","l","d","p"}` / links `{"s","t"}`),
+  `monkeypatch.setattr(AnkiConnectChecker, "_invoke", ...)` returning canned
+  `findNotes`/`notesInfo`/`cardsInfo` payloads. Cover: gap predicate,
+  HTML-stripping join, duplicate fronts, fail-open on `RuntimeError`.
+- **Verify:** `cd ~/dev/networking && python3 -m pytest tools/research/__tests__/test_anki_retention.py -p no:cacheprovider`
+- **Guardrail:** `anki_generator.py` is 1594 lines — import only
+  `AnkiConnectChecker`; do not touch any other function in it.
+
+#### WO-4b [trivial] — surface gaps in fund `/anki-capture` step 0
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/anki-capture/SKILL.md`
+- **Find:** `python3 ~/dev/anki/graph/analyze.py --deck F --top 20 --hubs`
+- **Change:** insert immediately after that line:
+
+  ```text
+  # 0b. Optional: retention-gap hubs (high-PageRank concepts whose cards keep
+  #    lapsing) — prefer authoring better/denser cards for these over new
+  #    topics. Fails open if Anki is not running.
+  python3 ~/dev/networking/tools/research/anki_retention.py --gaps --top 10
+  ```
+
+- **Verify:** `make sync-check` (twice; second green). Do WO-4b only after
+  WO-4a is merged in the networking repo.
+- **Follow-up (anki repo, not this WO):** the collection exporter should
+  include note `id` in `notes.json.gz` (doc says it does; the dump doesn't);
+  that unlocks a fully offline guid→nid join later.
+
+### WO-5 — Automated resolution sweeps for dated predictions (A4) — HLD
+
+Split into 5a (scanner `[low]`), 5b (weekly workflow `[trivial]`), 5c (Lab
+staleness badge `[visual]`). Verified facts:
+
+- Prediction schema in `data/analysis/<TICKER>.json`: `id`, `claim`,
+  `target_date` (ISO), `probability`, `resolved`, `outcome`,
+  `resolved_date`, `notes`. `sync_configs.py:516-520` passes `predictions`
+  through untouched, so agent/human edits survive the nightly sync.
+- No resolution tooling exists anywhere; `resolved` is only read
+  (`lab.js:1146-1151`, `bayes.js:135-161`). Resolution stays
+  human/agent-confirmed edits — the scanner **reads** `data/`, never writes.
+
+#### WO-5a [low] — new script `scripts/analysis/prediction_sweeper.py`
+
+- **File (new):** `/Users/lz/dev/fund/scripts/analysis/prediction_sweeper.py`
+- **Design:** stdlib only (`json`, `glob`, `datetime`, `argparse`,
+  `pathlib`). Scan `data/analysis/*.json`, skipping `index.json`; for each
+  `predictions[]` entry compute stale := `p.get("resolved") is not True and
+  p.get("target_date") and p["target_date"] < date.today().isoformat()`
+  (string compare is safe — ISO dates). Print one line per stale prediction:
+  `<TICKER> <id> due <target_date> (N days overdue): <claim>`, then a summary
+  line. Flags: `--fail-on-stale` (exit 1 when any stale, else 0),
+  `--warn-days N` (also list predictions due within N days, never failing on
+  those). Default exit 0.
+- **Tests (new):** `tests/python/test_prediction_sweeper.py` — follow
+  `test_filings_adapter.py` conventions (`tmp_path` fixture with synthetic
+  `<TICKER>.json` files, `monkeypatch.setattr("sys.argv", ...)`, `capsys`).
+  Cover: stale found / none / missing `predictions` key / malformed
+  `target_date` skipped with warning / `--fail-on-stale` exit codes.
+- **Verify:** `venv/bin/pytest tests/python/test_prediction_sweeper.py -q`
+- **Guardrail:** the scanner reads `data/` only; any auto-resolution from
+  non-primary sources is explicitly out of scope (Paleka leakage warning).
+
+#### WO-5b [trivial] — weekly workflow `.github/workflows/prediction-sweep.yml`
+
+- **File (new):** `/Users/lz/dev/fund/.github/workflows/prediction-sweep.yml`
+- **Change:** paste-ready, modeled on `analysis-sync.yml` conventions (cron,
+  concurrency group, explicit minimal permissions — this one needs read-only):
+
+  ```yaml
+  name: prediction-sweep
+  on:
+      workflow_dispatch:
+      schedule:
+          - cron: '17 7 * * 1'
+
+  concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: true
+
+  permissions:
+      contents: read
+
+  jobs:
+      sweep:
+          runs-on: ubuntu-latest
+          steps:
+              - uses: actions/checkout@v4
+              - uses: actions/setup-python@v5
+                with:
+                    python-version: '3.13'
+              - name: Flag stale unresolved predictions
+                run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
+  ```
+
+  A red scheduled run emails the repo owner — that is the notification
+  channel; no issues API, no commit step, no `pages.yml` dispatch.
+- **Verify:** `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/prediction-sweep.yml'))"`;
+  then `venv/bin/python scripts/analysis/prediction_sweeper.py --fail-on-stale; echo exit:$?`
+  locally (exit 1 with a stale list is the *correct* signal once predictions
+  go stale).
+
+#### WO-5c [visual] — stale-prediction badge in the Lab
+
+- **File:** `/Users/lz/dev/fund/js/pages/analysis/lab.js`
+- **Find:** `renderPredictions(config)` at `lab.js:1096`; the header row with
+  `brierBadge` at `lab.js:1118-1126` is the anchor — add the badge beside it.
+- **Change:** add a pure helper `computeStalePredictions(predictions)`
+  (same predicate as 5a, using the page's current date) and render a
+  `span.prediction-stale-badge` with the stale count next to `brierBadge`
+  when > 0. Export the helper via `__analysisLabTesting` (lab.js:1925-1944).
+  Add the badge style next to the existing brier styles (locate with
+  `grep -rn brier css/` and co-locate).
+- **Verify:** `npx jest tests/js/pages/analysis` (add cases to
+  `lab_dom_render.test.js` or a sibling: stale count rendering, zero-stale
+  hides badge). **Visual — human review of `/analysis/` required after.**
+- **Guardrail:** `lab.js` renders per active ticker; the badge must recompute
+  on ticker switch (it lives inside `renderPredictions`, which already
+  re-runs per ticker — do not hoist it to page scope).
+
+### WO-6 — Tier B builds — HLD
+
+Recon changed the picture: much of B1/B2 already exists, so 6a/6b are
+skill-authoring tasks (`[low]`), not infrastructure builds. 6c stays `[skip]`.
+
+#### WO-6a [low] — B1: `/filings-capture` skill (fund)
+
+Already built: `scripts/analysis/filings_adapter.py` exports
+networking-compatible chunk manifests (`export_chunks_manifest`, chunk
+fields: `chunk_id` = `sec:{ticker}:{doc_id}:{ref}`, `file_path`, `heading`,
+`locator`, `content`, `token_count`, `citation`, `metadata`) and a confirm
+pass (`verify_claim_against_filing` → confidence 0/0.60/0.80/0.95 +
+evidence spans). Missing: the orchestrating skill.
+
+- **File (new):** `/Users/lz/dev/fund/.agents/skills/filings-capture/SKILL.md`
+- **Design (skill outline):**
+  1. `venv/bin/python scripts/analysis/filings_adapter.py export-manifest --ticker <T> --out .agents/state/filings_chunks.json`
+  2. Pick high-signal chunks (business / risk_factors /
+     financial_statements topics — the adapter already filters these in
+     `extract_evidence_candidates`).
+  3. Author 1–5 cards to `.agents/state/anki_cards.jsonl` using the
+     `sec:...` chunk_id. Citation contract difference: the back's
+     `源码与文档引用` section needs a fund-repo `file://` link, so first
+     persist the claims you card-ify into a committed artifact (thesis or
+     findings doc — the existing "cards are downstream of docs" rule), and
+     carry the SEC URL in the JSONL `external_sources` field
+     (`[{url, retrieved, claim}]` — shape-checked by the validator).
+  4. **Confirm pass:** for every quantitative claim,
+     `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`
+     — keep only confidence ≥ 0.60, rewrite or drop the rest.
+  5. Then the standard gates: validator → density → judge pre-screen
+     (step 3.5) → human review → import (identical to `/anki-capture`).
+- **Verify:** `make sync-check` (twice); `tests/python/test_skills.py` via
+  `make test` (schema/frontmatter checks on the new skill).
+- **Guardrail:** never import cards whose only anchor is the live filing —
+  the committed doc is the citation target; the filing is the evidence.
+
+#### WO-6b [low] — B2: `/deep-research` orchestration skill (fund)
+
+No new code — the agent harness is the infra.
+
+- **File (new):** `/Users/lz/dev/fund/.agents/skills/deep-research/SKILL.md`
+- **Design (skill outline):** fan the question to parallel subagents
+  (Agent tool), each read-only with a narrow brief: (1) filings — via
+  `filings_adapter.py` CLI (`sections`/`read`/`verify`); (2) internal state —
+  `data/analysis/<T>.json`, `*.evidence.jsonl`, `docs/thesis/**`; (3) web —
+  primary sources only (filings, investor relations, standards bodies).
+  Synthesis pass merges with claim→source mapping; confirm pass re-verifies
+  each load-bearing claim (filings claims via `verify`, web claims by
+  re-fetch); output lands as a `docs/research/` findings doc, and only then
+  may `docs/thesis/` be touched.
+- **Guardrail (bake into the skill):** reserve for thesis-affecting
+  questions — multi-agent costs ~15× tokens (Anthropic's production numbers);
+  never self-evaluate forecast quality (Paleka).
+- **Verify:** `make sync-check` (twice); `make test` (skill schema tests).
+
+#### WO-6c [skip] — B3: bi-temporal thesis layer (phased mini-project)
+
+Not a work order; schedule a design session. Phasing for that session:
+
+1. **Schema:** optional `valid_from`/`valid_to` on evidence records and
+   belief-state entries. **Trap to check first:** `sync_configs.py:505-514`
+   *normalizes* `belief_state` — verify it preserves unknown keys before
+   adding fields, or the nightly sync silently strips them. (`predictions`
+   passes through untouched at `:516-520`; `belief_state` may not.)
+2. **Indexer:** new `scripts/analysis/thesis_graph.py` over `docs/thesis/**`,
+   `data/analysis/*.json`, and `*.evidence.jsonl`, emitting a temporal claim
+   graph (reuse `~/dev/anki/graph/builder.py` idioms); output is a generated
+   artifact under `data/` — written by the script, never by hand.
+3. **Render:** theme/community summary on the Lab page (`[visual]`).
+   GraphRAG-style community summaries add LLM cost — decide whether the
+   theme view justifies it.
