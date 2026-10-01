@@ -431,3 +431,43 @@ describe('buildRangeSummary helpers logic', () => {
         expect(buildRangeSummary(layout, 10, 20)).toBeNull(); // Both clamp to 100
     });
 });
+
+describe('interaction extracted helpers', () => {
+    it('isRangeSelectionDisabled correctly identifies disabled layout keys', () => {
+        const {
+            isRangeSelectionDisabled,
+        } = require('../../../../js/transactions/chart/interaction.js');
+        expect(isRangeSelectionDisabled('composition')).toBe(true);
+        expect(isRangeSelectionDisabled('sectors')).toBe(true);
+        expect(isRangeSelectionDisabled('beta')).toBe(true);
+        expect(isRangeSelectionDisabled('marketcapAbs')).toBe(true);
+        expect(isRangeSelectionDisabled('performance')).toBe(false);
+        expect(isRangeSelectionDisabled('contribution')).toBe(false);
+    });
+
+    it('isPointerInsideChart correctly checks boundaries', () => {
+        const {
+            isPointerInsideChart,
+        } = require('../../../../js/transactions/chart/interaction.js');
+        const layout = { chartBounds: { left: 10, right: 100, top: 10, bottom: 100 } };
+        expect(isPointerInsideChart(50, 50, layout)).toBe(true); // Inside
+        expect(isPointerInsideChart(10, 10, layout)).toBe(true); // Edge top-left
+        expect(isPointerInsideChart(100, 100, layout)).toBe(true); // Edge bottom-right
+        expect(isPointerInsideChart(5, 50, layout)).toBe(false); // Outside left
+        expect(isPointerInsideChart(105, 50, layout)).toBe(false); // Outside right
+        expect(isPointerInsideChart(50, 5, layout)).toBe(false); // Outside top
+        expect(isPointerInsideChart(50, 105, layout)).toBe(false); // Outside bottom
+    });
+
+    it('hasValidRangeSelection correctly evaluates valid range selections', () => {
+        const {
+            hasValidRangeSelection,
+        } = require('../../../../js/transactions/chart/interaction.js');
+        expect(hasValidRangeSelection(100, 200)).toBe(true);
+        expect(hasValidRangeSelection(200, 100)).toBe(true);
+        expect(hasValidRangeSelection(100, 100.5)).toBe(false); // absolute diff < 1
+        expect(hasValidRangeSelection(100, NaN)).toBe(false);
+        expect(hasValidRangeSelection(NaN, 100)).toBe(false);
+        expect(hasValidRangeSelection(null, 100)).toBe(false);
+    });
+});

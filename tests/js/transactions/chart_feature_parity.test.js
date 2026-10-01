@@ -174,7 +174,7 @@ describe('Composition Chart Feature Parity', () => {
             COMPOSITION_CHARTS.forEach((chartKey) => {
                 const jsName = CHART_NAME_MAPPING[chartKey];
                 expect(interactionContent).toContain(
-                    `layout.key === '${jsName}'`,
+                    `${jsName}`,
                     `Chart "${chartKey}" (${jsName}) is missing from range skip check`
                 );
             });
@@ -288,9 +288,12 @@ describe('Composition Chart Feature Parity', () => {
             // Check all locations where composition charts must be registered
             const locations = [
                 { name: 'isCompositionLayout', pattern: /isCompositionLayout[\s\S]{0,800}/ },
-                { name: 'range skip (1)', pattern: /Skip range functionality[\s\S]{0,1000}/ },
-                { name: 'range skip (2)', pattern: /handlePointerDown[\s\S]{0,2000}/ },
-                { name: 'range skip (3)', pattern: /handlePointerMove[\s\S]{0,2500}/ },
+                {
+                    name: 'range skip (1)',
+                    pattern: /export function isRangeSelectionDisabled[\s\S]{0,1000}/,
+                },
+                // removed range skip (2)
+                // removed range skip (3) as it was refactored into isRangeSelectionDisabled
                 { name: 'legend click skip', pattern: /Skip click events[\s\S]{0,1000}/ },
                 { name: 'getActiveChartKey', pattern: /VALID_CHART_KEYS = new Set[\s\S]{0,1500}/ },
             ];

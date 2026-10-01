@@ -1,6 +1,7 @@
 import { transactionState } from '../state.js';
 import { chartLayouts } from './state.js';
 import { CHART_LINE_WIDTHS, CROSSHAIR_SETTINGS } from '../../config.js';
+
 import {
     getMonoFontFamily,
     formatPercentInline,
@@ -10,6 +11,34 @@ import {
 } from './helpers.js';
 import { formatCurrencyInline, convertValueToCurrency } from '../utils.js';
 import { logger } from '../../utils/logger.js';
+
+export function isPointerInsideChart(x, y, layout) {
+    return (
+        x >= layout.chartBounds.left &&
+        x <= layout.chartBounds.right &&
+        y >= layout.chartBounds.top &&
+        y <= layout.chartBounds.bottom
+    );
+}
+
+export function hasValidRangeSelection(start, end) {
+    return Number.isFinite(start) && Number.isFinite(end) && Math.abs(end - start) >= 1;
+}
+
+export function isRangeSelectionDisabled(layoutKey) {
+    return (
+        layoutKey === 'composition' ||
+        layoutKey === 'compositionAbs' ||
+        layoutKey === 'sectors' ||
+        layoutKey === 'sectorsAbs' ||
+        layoutKey === 'geography' ||
+        layoutKey === 'geographyAbs' ||
+        layoutKey === 'marketcap' ||
+        layoutKey === 'marketcapAbs' ||
+        layoutKey === 'beta' ||
+        layoutKey === 'yield'
+    );
+}
 
 export const crosshairState = {
     active: false,
@@ -1048,18 +1077,7 @@ function handlePointerMove(event) {
             );
 
             // Skip range functionality for composition/sector/beta/yield/marketcap charts
-            if (
-                layout.key === 'composition' ||
-                layout.key === 'compositionAbs' ||
-                layout.key === 'sectors' ||
-                layout.key === 'sectorsAbs' ||
-                layout.key === 'geography' ||
-                layout.key === 'geographyAbs' ||
-                layout.key === 'marketcap' ||
-                layout.key === 'marketcapAbs' ||
-                layout.key === 'beta' ||
-                layout.key === 'yield'
-            ) {
+            if (isRangeSelectionDisabled(layout.key)) {
                 crosshairState.dragging = false;
                 crosshairState.rangeStart = null;
                 crosshairState.rangeEnd = null;
@@ -1096,9 +1114,7 @@ function handlePointerDown(event) {
     const rect = pointerCanvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const insideX = x >= layout.chartBounds.left && x <= layout.chartBounds.right;
-    const insideY = y >= layout.chartBounds.top && y <= layout.chartBounds.bottom;
-    if (!insideX || !insideY) {
+    if (!isPointerInsideChart(x, y, layout)) {
         return;
     }
     const time = layout.invertX ? layout.invertX(x) : null;
@@ -1107,18 +1123,7 @@ function handlePointerDown(event) {
     }
 
     // Skip range functionality for composition/sector/beta/yield/marketcap charts
-    if (
-        layout.key === 'composition' ||
-        layout.key === 'compositionAbs' ||
-        layout.key === 'sectors' ||
-        layout.key === 'sectorsAbs' ||
-        layout.key === 'geography' ||
-        layout.key === 'geographyAbs' ||
-        layout.key === 'marketcap' ||
-        layout.key === 'marketcapAbs' ||
-        layout.key === 'beta' ||
-        layout.key === 'yield'
-    ) {
+    if (isRangeSelectionDisabled(layout.key)) {
         crosshairState.pointerId = event.pointerId;
         crosshairState.active = true;
         crosshairState.hoverTime = time;
@@ -1170,28 +1175,16 @@ function handlePointerUp(event) {
     }
 
     // Skip range functionality for composition/sector/beta/yield/marketcap charts
-    if (
-        layout &&
-        (layout.key === 'composition' ||
-            layout.key === 'compositionAbs' ||
-            layout.key === 'sectors' ||
-            layout.key === 'sectorsAbs' ||
-            layout.key === 'geography' ||
-            layout.key === 'geographyAbs' ||
-            layout.key === 'marketcap' ||
-            layout.key === 'marketcapAbs' ||
-            layout.key === 'beta' ||
-            layout.key === 'yield')
-    ) {
+    if (layout && isRangeSelectionDisabled(layout.key)) {
         crosshairState.dragging = false;
         crosshairState.rangeStart = null;
         crosshairState.rangeEnd = null;
     } else {
         crosshairState.dragging = false;
-        const hasRangeSelection =
-            Number.isFinite(crosshairState.rangeStart) &&
-            Number.isFinite(crosshairState.rangeEnd) &&
-            Math.abs(crosshairState.rangeEnd - crosshairState.rangeStart) >= 1;
+        const hasRangeSelection = hasValidRangeSelection(
+            crosshairState.rangeStart,
+            crosshairState.rangeEnd
+        );
         if (!hasRangeSelection) {
             crosshairState.rangeStart = null;
             crosshairState.rangeEnd = null;
