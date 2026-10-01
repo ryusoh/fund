@@ -492,6 +492,11 @@ button:focus-visible {
     border-left-color: #fc0;
 }
 
+.timeline-entry.superseded {
+    opacity: 0.55;
+    border-left-style: dashed;
+}
+
 .timeline-meta {
     display: flex;
     justify-content: space-between;

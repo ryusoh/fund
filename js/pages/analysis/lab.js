@@ -1057,9 +1057,55 @@ async function renderEvidenceTimeline(config) {
     const replayEngine = new BayesianEngine(config.scenarios);
     const { history } = replayEngine.replay(evidenceList);
 
+    const today = new Date().toISOString().slice(0, 10);
+    let validCount = 0;
+    let supersededCount = 0;
+
     history.forEach((entry) => {
+        const raw = evidenceList[entry.index] || {};
+        const validTo = entry.valid_to || raw.valid_to || entry.validTo || raw.validTo;
+        if (validTo && validTo < today) {
+            supersededCount++;
+        } else {
+            validCount++;
+        }
+    });
+
+    const headerEl =
+        document.getElementById('evidenceTimelineHeader') ||
+        (evidenceTimelineEl.previousElementSibling &&
+        evidenceTimelineEl.previousElementSibling.classList.contains('block-header')
+            ? evidenceTimelineEl.previousElementSibling
+            : null);
+
+    if (headerEl) {
+        let countSpan = headerEl.querySelector('.timeline-count-badge');
+        if (!countSpan) {
+            countSpan = document.createElement('span');
+            countSpan.className = 'timeline-count-badge';
+            countSpan.style.fontSize = '0.75rem';
+            countSpan.style.color = 'var(--text-muted)';
+            countSpan.style.fontWeight = 'normal';
+            headerEl.appendChild(countSpan);
+        }
+        countSpan.textContent = `${validCount} valid / ${supersededCount} superseded`;
+    } else {
+        const countDiv = document.createElement('div');
+        countDiv.className = 'timeline-count-badge';
+        countDiv.style.fontSize = '0.75rem';
+        countDiv.style.color = 'var(--text-muted)';
+        countDiv.style.marginBottom = '6px';
+        countDiv.textContent = `${validCount} valid / ${supersededCount} superseded`;
+        evidenceTimelineEl.appendChild(countDiv);
+    }
+
+    history.forEach((entry) => {
+        const raw = evidenceList[entry.index] || {};
+        const validTo = entry.valid_to || raw.valid_to || entry.validTo || raw.validTo;
+        const isSuperseded = Boolean(validTo && validTo < today);
+
         const itemDiv = document.createElement('div');
-        itemDiv.className = `timeline-entry ${entry.direction}`;
+        itemDiv.className = `timeline-entry ${entry.direction}${isSuperseded ? ' superseded' : ''}`;
 
         const metaDiv = document.createElement('div');
         metaDiv.className = 'timeline-meta';

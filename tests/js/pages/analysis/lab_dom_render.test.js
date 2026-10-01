@@ -10,6 +10,8 @@ const domSetup = `
     <button id="btnRunMonteCarlo"></button>
     <div id="riskMetrics"></div>
     <canvas id="monteCarloCanvas"></canvas>
+    <div class="block-header" id="evidenceTimelineHeader"><h4>Verified Evidence Log (.jsonl)</h4></div>
+    <div id="evidenceTimeline"></div>
 `;
 
 describe('DOM render coverage explicitly testing internal render functions', () => {
@@ -175,5 +177,51 @@ describe('DOM render coverage explicitly testing internal render functions', () 
         expect(summaryStatsEl.appendChild).toHaveBeenCalled();
         // Since replaceChildren is missing, the init fallback clears textContent then calls appendChild.
         expect(summaryStatsEl.textContent).toBe('');
+    });
+
+    it('renders evidence timeline marking superseded entries and displaying valid/superseded count', async () => {
+        const { renderEvidenceTimeline, state } =
+            require('../../../../js/pages/analysis/lab.js').__analysisLabTesting;
+
+        const fakeEvidence = [
+            {
+                date: '2026-02-15',
+                claim: 'Active valid observation',
+                direction: 'bullish',
+                strength: 0.7,
+                valid_to: null,
+            },
+            {
+                date: '2026-05-10',
+                claim: 'Superseded historical fact',
+                direction: 'bearish',
+                strength: 0.6,
+                valid_to: '2026-08-01',
+            },
+        ];
+
+        state.evidenceCache.set('ANET', fakeEvidence);
+
+        const config = {
+            symbol: 'ANET',
+            scenarios: [
+                { id: 'bull', name: 'Bull Case', prob: 0.5 },
+                { id: 'base', name: 'Base Case', prob: 0.5 },
+            ],
+        };
+
+        await renderEvidenceTimeline(config);
+
+        const timeline = document.getElementById('evidenceTimeline');
+        const header = document.getElementById('evidenceTimelineHeader');
+
+        // Check header count badge
+        expect(header.textContent).toContain('1 valid / 1 superseded');
+
+        // Check timeline entry classes
+        const entries = timeline.querySelectorAll('.timeline-entry');
+        expect(entries.length).toBe(2);
+        expect(entries[0].classList.contains('superseded')).toBe(false);
+        expect(entries[1].classList.contains('superseded')).toBe(true);
     });
 });

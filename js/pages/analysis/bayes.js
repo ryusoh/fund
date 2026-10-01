@@ -114,6 +114,8 @@ export class BayesianEngine {
                 direction,
                 strength,
                 thesisCommitRef: item.thesis_commit_ref || item.thesisCommitRef || null,
+                valid_to: item.valid_to || item.validTo || null,
+                valid_from: item.valid_from || item.validFrom || null,
                 posteriors: updated.map((p) => ({ ...p })),
             });
         }
@@ -183,4 +185,47 @@ export class BayesianEngine {
             })
             .filter((item) => item !== null);
     }
+
+    /**
+     * Filter evidence records to only those valid as of the given date.
+     * An item is considered superseded if valid_to is set and valid_to < asOf.
+     *
+     * @param {Array<Object>} evidenceList - List of evidence objects
+     * @param {string|Date} [asOf] - ISO date string or Date object
+     * @returns {Array<Object>}
+     */
+    static filterValidEvidence(evidenceList, asOf) {
+        return filterValidEvidence(evidenceList, asOf);
+    }
+}
+
+/**
+ * Filter evidence records to only those valid as of the given date.
+ * An item is considered superseded if valid_to is set and valid_to < asOf.
+ *
+ * @param {Array<Object>} evidenceList - List of evidence objects
+ * @param {string|Date} [asOf] - ISO date string or Date object
+ * @returns {Array<Object>}
+ */
+export function filterValidEvidence(evidenceList, asOf) {
+    if (!Array.isArray(evidenceList)) {
+        return [];
+    }
+    const today =
+        typeof asOf === 'string'
+            ? asOf
+            : asOf instanceof Date
+              ? asOf.toISOString().slice(0, 10)
+              : new Date().toISOString().slice(0, 10);
+
+    return evidenceList.filter((item) => {
+        if (!item || typeof item !== 'object') {
+            return false;
+        }
+        const validTo = item.valid_to || item.validTo;
+        if (validTo && validTo < today) {
+            return false;
+        }
+        return true;
+    });
 }

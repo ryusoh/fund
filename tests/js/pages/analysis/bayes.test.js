@@ -1,4 +1,4 @@
-import { BayesianEngine } from '../../../../js/pages/analysis/bayes.js';
+import { BayesianEngine, filterValidEvidence } from '../../../../js/pages/analysis/bayes.js';
 
 describe('BayesianEngine', () => {
     it('initializes with correct priors', () => {
@@ -256,6 +256,25 @@ describe('BayesianEngine', () => {
         it('handles empty or non-string input', () => {
             expect(BayesianEngine.parseJsonl('')).toEqual([]);
             expect(BayesianEngine.parseJsonl(null)).toEqual([]);
+        });
+    });
+
+    describe('filterValidEvidence', () => {
+        it('filters out superseded evidence records based on asOf date', () => {
+            const list = [
+                { id: 'e1', date: '2026-01-01', valid_to: null },
+                { id: 'e2', date: '2026-02-01', valid_to: '2026-05-01' },
+                { id: 'e3', date: '2026-03-01', valid_to: '2026-12-31' },
+            ];
+
+            const filtered = filterValidEvidence(list, '2026-06-01');
+            expect(filtered.map((e) => e.id)).toEqual(['e1', 'e3']);
+            expect(BayesianEngine.filterValidEvidence(list, '2026-06-01')).toEqual(filtered);
+        });
+
+        it('handles missing or non-array inputs gracefully', () => {
+            expect(filterValidEvidence(null)).toEqual([]);
+            expect(filterValidEvidence([])).toEqual([]);
         });
     });
 });
