@@ -65,7 +65,7 @@ memory outside the context window, resumed per session)
   success on Mind2Web/WebArena, works offline and online
   ([arXiv:2409.07429](https://arxiv.org/abs/2409.07429), Sep 2024).
   **[preprint, two public benchmarks]**.
-- **ACE (Agentic Context Engineering)** — contexts as evolving *playbooks*:
+- **ACE (Agentic Context Engineering)** — contexts as evolving _playbooks_:
   incremental, structured delta updates instead of wholesale rewrites, to
   avoid "brevity bias" and "context collapse"; +10.6% on agent benchmarks and
   **+8.6% on finance tasks** vs strong baselines; adapts from execution
@@ -103,7 +103,7 @@ memory outside the context window, resumed per session)
   **[community benchmark, large-N, not peer-reviewed]**.
 - **LLM-in-the-loop scheduling is simulated-only so far.** LECTOR uses LLM
   semantic similarity to de-interfere confusable items; 90.2% vs 88.4% success
-  vs the best baseline — over 100 *simulated* learners
+  vs the best baseline — over 100 _simulated_ learners
   ([arXiv:2508.03275](https://arxiv.org/abs/2508.03275), Aug 2025).
   **[preprint, simulation only — hype-adjacent]**.
 - **LLM-generated card quality**: a Brown medical-school case study of
@@ -185,7 +185,7 @@ memory outside the context window, resumed per session)
 ### 5. Knowledge graphs + personal knowledge bases
 
 - **GraphRAG (Microsoft Research)** — LLM-built entity knowledge graph +
-  hierarchical community summaries; beats vanilla RAG on *global sensemaking*
+  hierarchical community summaries; beats vanilla RAG on _global sensemaking_
   questions ("what are the main themes in this corpus?") in the ~1M-token
   regime ([arXiv:2404.16130](https://arxiv.org/abs/2404.16130), Apr 2024).
   **[preprint + shipped OSS library; evaluation is QFS-style, not decision
@@ -247,39 +247,39 @@ what already exists.
 
 **A1. Session→skill distillation pass (ACE/AWM applied to `.agents/skills/`)**
 The highest-leverage gap: sessions already produce docs/cards, but not
-*procedures*. AWM (24.6–51.1% relative gains) and Voyager show agents compound
+_procedures_. AWM (24.6–51.1% relative gains) and Voyager show agents compound
 by distilling trajectories into reusable routines; ACE shows the mechanics
 matter — incremental delta edits to an evolving playbook, not rewrites, to
 avoid context collapse. ACE's +8.6% was specifically on a **finance**
 benchmark.
-*Plug-in:* extend fund's `.agents/skills/retro/SKILL.md` (and its
+_Plug-in:_ extend fund's `.agents/skills/retro/SKILL.md` (and its
 `~/dev/networking` analog) with an explicit "what did this session teach about
-*how* to do X?" step whose output is a small diff to an existing SKILL.md or
+_how_ to do X?" step whose output is a small diff to an existing SKILL.md or
 AGENTS.md — delta-edit, never rewrite. No new code.
-*Payoff:* the skill corpus becomes the Voyager-style skill library; every
+_Payoff:_ the skill corpus becomes the Voyager-style skill library; every
 repeated failure mode becomes a one-time cost.
-*Cost/risk:* prompt-only change. Risk is skill bloat / staleness (networking's
+_Cost/risk:_ prompt-only change. Risk is skill bloat / staleness (networking's
 AGENTS.md already documents the stale-scheduled-prompt failure mode); mitigate
-by making the distillation step *edit existing skills* preferentially.
-*Maturity:* [preprint] mechanics; pattern is established.
+by making the distillation step _edit existing skills_ preferentially.
+_Maturity:_ [preprint] mechanics; pattern is established.
 
 **A2. FSRS-state-aware card authoring (close the retention loop)**
 FSRS-7's per-card D/S/R state already exists inside Anki; the SRS benchmark
 shows optimized-per-user FSRS is meaningfully better than defaults. Today the
-system uses PageRank to decide *what to add* but has no signal about *what was
-actually retained*. AnkiConnect exposes per-card data, so a read-only bridge
+system uses PageRank to decide _what to add_ but has no signal about _what was
+actually retained_. AnkiConnect exposes per-card data, so a read-only bridge
 can flag: high-PageRank hubs whose cards keep lapsing (author a better/denser
 card), vs stable concepts (stop carding them).
-*Plug-in:* new read-only verb in `~/dev/networking/tools/research/anki_graph_bridge.py`
+_Plug-in:_ new read-only verb in `~/dev/networking/tools/research/anki_graph_bridge.py`
 (or a sibling script) joining `graph_data.json` hub labels with card review
 state via AnkiConnect; surfaced as a "retention-gap hubs" section in
 `/anki-capture` step 0 (fund `.agents/skills/anki-capture/SKILL.md`).
-*Payoff:* card effort flows to the concepts that are both load-bearing
-*and* not yet retained — the actual objective the deck serves.
-*Cost/risk:* small Python, read-only, zero schema change. Keep the
-PageRank ⊥ FSRS rule: FSRS state steers *authoring*, never overrides review
+_Payoff:_ card effort flows to the concepts that are both load-bearing
+_and_ not yet retained — the actual objective the deck serves.
+_Cost/risk:_ small Python, read-only, zero schema change. Keep the
+PageRank ⊥ FSRS rule: FSRS state steers _authoring_, never overrides review
 scheduling.
-*Maturity:* [established] FSRS internals; the joining is novel but trivial.
+_Maturity:_ [established] FSRS internals; the joining is novel but trivial.
 
 **A3. LLM-as-judge pre-screen for staged cards**
 The Brown med-ed study measured ~1 hallucination per 21 LLM-authored
@@ -287,31 +287,31 @@ flashcards even with careful prompting — our confirm pass exists for filings
 anchors but not for card truth in general. Anthropic reports a single
 LLM-as-judge with a rubric (accuracy, citation match, completeness, source
 quality) as their most consistent scalable eval.
-*Plug-in:* an optional review step in `/anki-capture` between validator and
+_Plug-in:_ an optional review step in `/anki-capture` between validator and
 human review: the host agent re-reads each staged card against its cited
 source lines and scores the rubric; failures are rewritten before the human
 sees the batch. No new code — the harness is the judge.
-*Payoff:* fewer bad cards reach the human; the review step the pipeline
+_Payoff:_ fewer bad cards reach the human; the review step the pipeline
 already mandates gets pre-filtered.
-*Cost/risk:* one skill edit. Risk: judge = same model family as author
+_Cost/risk:_ one skill edit. Risk: judge = same model family as author
 (correlated blind spots); mitigated by the existing hard gates + human review.
-*Maturity:* [vendor-reported] technique; [preprint] efficacy evidence.
+_Maturity:_ [vendor-reported] technique; [preprint] efficacy evidence.
 
 **A4. Automated resolution sweeps for dated predictions (tournament discipline)**
-ForecastBench/Metaculus/BLF all treat *prospective, dated, scored* questions
+ForecastBench/Metaculus/BLF all treat _prospective, dated, scored_ questions
 as the only trustworthy signal. Our `predictions` arrays have binary
 resolution criteria and live Brier, but resolution is manual. Paleka et al.
 warn that leakage and lax resolution inflate forecasting claims.
-*Plug-in:* a small scheduled check (fund `scripts/analysis/`, e.g. a weekly
+_Plug-in:_ a small scheduled check (fund `scripts/analysis/`, e.g. a weekly
 GitHub Action or a `/ship`-adjacent chore) that scans unresolved predictions
 in `data/analysis/<TICKER>.json` past their resolution date and opens a chat
 task to resolve them against primary sources; rendered staleness badge in
 `js/pages/analysis/lab.js`.
-*Payoff:* the Brier track record stops depending on the human remembering to
+_Payoff:_ the Brier track record stops depending on the human remembering to
 score; the Lab's calibration view becomes honest.
-*Cost/risk:* small Python + workflow; beware auto-resolution from non-primary
+_Cost/risk:_ small Python + workflow; beware auto-resolution from non-primary
 sources — keep resolution human-confirmed.
-*Maturity:* [established] as tournament practice.
+_Maturity:_ [established] as tournament practice.
 
 ### Tier B — would require new infrastructure
 
@@ -322,14 +322,14 @@ retrieval over filings is the external proof that grounded extraction +
 verified anchors are the whole game. The vendored layer
 (`scripts/vendor/filings/`, adapter `scripts/analysis/filings_adapter.py`)
 produces exactly the chunk metadata networking's manifest format expects.
-*Plug-in:* adapter emitting `research/`-compatible chunk manifests from
+_Plug-in:_ adapter emitting `research/`-compatible chunk manifests from
 processed filings (fund) → existing validator/density/import gates
 (networking) → confirm pass re-verifying each card claim against the filing
 section via the vendored read tools (host agent).
-*Payoff:* a finite, coverage-trackable primary-source corpus feeding cards
+_Payoff:_ a finite, coverage-trackable primary-source corpus feeding cards
 with machine-checked provenance — the densest compounding surface available.
-*Cost/risk:* the evaluation doc's §7 scope; a real build, not a prompt edit.
-*Maturity:* [established] need; [preprint] tooling quality.
+_Cost/risk:_ the evaluation doc's §7 scope; a real build, not a prompt edit.
+_Maturity:_ [established] need; [preprint] tooling quality.
 
 **B2. Multi-agent deep-research orchestration with a citation pass (Phase 3)**
 The last "Missing" row in the component table. Anthropic's production evidence
@@ -338,32 +338,32 @@ AlphaAgents role split (fundamentals/sentiment/valuation debate) give the
 architecture; PaperQA2 shows what rigorous citation-grounded output looks
 like; OpenAI's own listed weaknesses (calibration, rumor discrimination) argue
 for keeping our evidence-anchor gates.
-*Plug-in:* new fund skill under `.agents/skills/` fanning a question to
+_Plug-in:_ new fund skill under `.agents/skills/` fanning a question to
 parallel subagents over the vendored filings layer + `data/analysis/*.json`,
 with the confirm pass before anything lands in `docs/thesis/`.
-*Payoff:* breadth-first research (the case multi-agent actually wins) becomes
+_Payoff:_ breadth-first research (the case multi-agent actually wins) becomes
 routine instead of heroic.
-*Cost/risk:* ~15× token cost per Anthropic's numbers — reserve for
+_Cost/risk:_ ~15× token cost per Anthropic's numbers — reserve for
 thesis-affecting questions; per Paleka, distrust any self-evaluation of
 forecast quality.
-*Maturity:* [vendor production] architecture; [preprint] finance specifics.
+_Maturity:_ [vendor production] architecture; [preprint] finance specifics.
 
 **B3. Bi-temporal thesis layer (Graphiti idea over git)**
-Zep/Graphiti's transferable insight is temporal edges: facts have *valid
-time* (when true) and *transaction time* (when we learned it). Our theses
+Zep/Graphiti's transferable insight is temporal edges: facts have _valid
+time_ (when true) and _transaction time_ (when we learned it). Our theses
 evolve; git history gives transaction time for free, but the schema doesn't
 mark when a claim stopped being true. GraphRAG shows community summaries
 answer "what are the main themes" questions our per-ticker docs can't.
-*Plug-in:* extend the belief-state schema in `data/analysis/<TICKER>.json` with
+_Plug-in:_ extend the belief-state schema in `data/analysis/<TICKER>.json` with
 `valid_from`/`valid_to` on evidence items; a read-only indexer over
 `docs/thesis/**` + `data/analysis/*.json` building a temporal claim graph
 (could reuse `~/dev/anki/graph/builder.py` idioms); rendered as theme/
 community summaries on the Lab page.
-*Payoff:* "what did we believe, when, and when did it stop being true" becomes
+_Payoff:_ "what did we believe, when, and when did it stop being true" becomes
 a query, not an archaeology dig; theme-level views for the industry layer.
-*Cost/risk:* schema migration + new index pipeline; GraphRAG community
+_Cost/risk:_ schema migration + new index pipeline; GraphRAG community
 summaries add LLM cost; vendor claims on Graphiti are self-reported.
-*Maturity:* [vendor preprint]; conceptually sound, thin independent evidence.
+_Maturity:_ [vendor preprint]; conceptually sound, thin independent evidence.
 
 ### Tier C — bleeding-edge / unproven (watch, don't build)
 
@@ -436,29 +436,29 @@ verified against the working tree on 2026-10-01.
 - **File:** `/Users/lz/dev/fund/.agents/skills/retro/SKILL.md`
 - **Find:**
 
-  ```text
-     Do not commit unless explicitly asked.
+    ```text
+       Do not commit unless explicitly asked.
 
-  Guiding test (§17A): _a correction given today should be impossible to need next
-  ```
+    Guiding test (§17A): _a correction given today should be impossible to need next
+    ```
 
 - **Change:** insert this new step between the two anchored blocks (after the
   `Do not commit` line's blank line, before `Guiding test`):
 
-  ```text
-  7. **Distill the session into a skill delta (ACE step).** Ask: "what did this
-     session teach about *how* to do X?" If the answer generalizes beyond this
-     task, apply a **delta edit to an existing `.agents/skills/*/SKILL.md` or
-     `AGENTS.md`** — add or tighten a line, never rewrite the file, and never
-     spawn a near-duplicate skill. Prefer editing an existing skill over creating
-     one; skill bloat and stale guidance are the failure modes. Run
-     `make sync-check` after any skill edit.
+    ```text
+    7. **Distill the session into a skill delta (ACE step).** Ask: "what did this
+       session teach about *how* to do X?" If the answer generalizes beyond this
+       task, apply a **delta edit to an existing `.agents/skills/*/SKILL.md` or
+       `AGENTS.md`** — add or tighten a line, never rewrite the file, and never
+       spawn a near-duplicate skill. Prefer editing an existing skill over creating
+       one; skill bloat and stale guidance are the failure modes. Run
+       `make sync-check` after any skill edit.
 
-  ```
+    ```
 
 - **Verify:** `make sync-check` (twice; second run green);
   `npm exec -- markdownlint-cli2 ".agents/skills/retro/SKILL.md"`.
-- **Guardrail:** keep it a *delta-edit* instruction — the whole point is
+- **Guardrail:** keep it a _delta-edit_ instruction — the whole point is
   avoiding full-file rewrites (context collapse, per ACE).
 
 ### WO-2 [trivial] — Same ACE step in networking `/retro` (runs in `~/dev/networking`)
@@ -466,22 +466,22 @@ verified against the working tree on 2026-10-01.
 - **File:** `/Users/lz/dev/networking/.agents/skills/retro/SKILL.md`
 - **Find:**
 
-  ```text
-  Nothing is committed by these edits — leave committing to the user.
+    ```text
+    Nothing is committed by these edits — leave committing to the user.
 
-  Guiding test: a correction you had to give today should be impossible to need next month.
-  ```
+    Guiding test: a correction you had to give today should be impossible to need next month.
+    ```
 
 - **Change:** insert between those two blocks:
 
-  ```text
-  8. **Distill the session into a skill delta (ACE step).** Ask: "what did this
-     session teach about *how* to do X?" If it generalizes, delta-edit the
-     existing `.agents/skills/<name>/SKILL.md` or `AGENTS.md` — tighten a line,
-     never rewrite, never create a near-duplicate skill. Skill bloat is the
-     failure mode; editing beats adding.
+    ```text
+    8. **Distill the session into a skill delta (ACE step).** Ask: "what did this
+       session teach about *how* to do X?" If it generalizes, delta-edit the
+       existing `.agents/skills/<name>/SKILL.md` or `AGENTS.md` — tighten a line,
+       never rewrite, never create a near-duplicate skill. Skill bloat is the
+       failure mode; editing beats adding.
 
-  ```
+    ```
 
 - **Verify:** `cd ~/dev/networking && npm run fmt:check`;
   `npm exec -- markdownlint-cli2 ".agents/skills/retro/SKILL.md"`.
@@ -494,16 +494,16 @@ verified against the working tree on 2026-10-01.
 - **Find:** `# 4. Human review: show the user the JSONL diff before importing.`
 - **Change:** insert immediately before that line, inside the same bash block:
 
-  ```text
-  # 3.5. LLM-as-judge pre-screen (you, the agent — no code): for each staged
-  #    card, re-read the source lines its citation points to and score a
-  #    4-point rubric: accuracy (claim matches source), citation match (those
-  #    lines actually support it), completeness (no load-bearing omission),
-  #    format (contract below). Rewrite any failing card, then re-run gates
-  #    2-3. (~1 hallucination per 21 LLM-authored cards is measured in the
-  #    literature; this pass catches them before human review.)
+    ```text
+    # 3.5. LLM-as-judge pre-screen (you, the agent — no code): for each staged
+    #    card, re-read the source lines its citation points to and score a
+    #    4-point rubric: accuracy (claim matches source), citation match (those
+    #    lines actually support it), completeness (no load-bearing omission),
+    #    format (contract below). Rewrite any failing card, then re-run gates
+    #    2-3. (~1 hallucination per 21 LLM-authored cards is measured in the
+    #    literature; this pass catches them before human review.)
 
-  ```
+    ```
 
 - **Verify:** `make sync-check` (twice; second green);
   `npm exec -- markdownlint-cli2 ".agents/skills/anki-capture/SKILL.md"`.
@@ -534,45 +534,45 @@ Split into 4a (networking module, `[low]`) and 4b (fund skill line,
 - **File (new):** `/Users/lz/dev/networking/tools/research/anki_retention.py`
 - **Design:**
 
-  ```python
-  class AnkiRetentionBridge:
-      def __init__(self, deck: str = "金融",
-                   repo_root: Path = ANKI_REPO_ROOT,
-                   url: str = "http://127.0.0.1:8765") -> None: ...
-      def get_retention_gaps(self, top_n: int = 10,
-                             min_pagerank_quantile: float = 0.75
-                             ) -> list[dict]: ...
-      # each dict: {label, pagerank, cards, reps, lapses, max_ivl_days}
-      def get_stable_hubs(self, top_n: int = 10, min_reps: int = 5
-                          ) -> list[dict]: ...
+    ```python
+    class AnkiRetentionBridge:
+        def __init__(self, deck: str = "金融",
+                     repo_root: Path = ANKI_REPO_ROOT,
+                     url: str = "http://127.0.0.1:8765") -> None: ...
+        def get_retention_gaps(self, top_n: int = 10,
+                               min_pagerank_quantile: float = 0.75
+                               ) -> list[dict]: ...
+        # each dict: {label, pagerank, cards, reps, lapses, max_ivl_days}
+        def get_stable_hubs(self, top_n: int = 10, min_reps: int = 5
+                            ) -> list[dict]: ...
 
-  def main(argv: list[str] | None = None) -> int: ...
-  # CLI: --deck --top --gaps/--stable --json
-  ```
+    def main(argv: list[str] | None = None) -> int: ...
+    # CLI: --deck --top --gaps/--stable --json
+    ```
 
-  1. Load deck-filtered graph nodes via
-     `AnkiGraphBridge(target_deck=deck, repo_root=repo_root)` — its
-     `.nodes` is a **list of raw node dicts**; read `label`/`l` and
-     `pagerank`/`p` with the same short-key fallbacks
-     (`anki_graph_bridge.py:131-143`).
-  2. AnkiConnect calls, reusing the verified invoke pattern
-     (`anki_generator.py:812-826`, `{"action","version":6,"params"}`, urllib,
-     timeout 5.0, raise `RuntimeError` on `res["error"]` — import
-     `AnkiConnectChecker` from `tools.research.anki_generator` and use its
-     `_invoke`; do not write a second HTTP client):
-     `findNotes("deck:\"金融\"")` → `notesInfo(nids)` → collect `cards` lists →
-     `cardsInfo(all_cids)`.
-  3. Normalize + join: strip HTML tags (`re.sub(r"<[^>]+>", "", s)`) and
-     collapse whitespace on both the graph label and the note's Front field
-     value; duplicate fronts join to all matching nodes (aggregate stats).
-  4. Gap predicate: node pagerank ≥ the deck's 75th percentile AND total
-     `lapses` ≥ 1 across the note's cards; sort by pagerank desc. Stable
-     predicate: `lapses` == 0 AND total `reps` ≥ 5.
-  5. **Fail-open:** AnkiConnect unreachable or graph missing → print one
-     warning to stderr, output empty list, exit 0 (this is optional
-     enrichment in the capture skill, never a hard gate).
-  6. Read-only: never call mutating actions. Review state steers **authoring
-     only**, never scheduling.
+    1. Load deck-filtered graph nodes via
+       `AnkiGraphBridge(target_deck=deck, repo_root=repo_root)` — its
+       `.nodes` is a **list of raw node dicts**; read `label`/`l` and
+       `pagerank`/`p` with the same short-key fallbacks
+       (`anki_graph_bridge.py:131-143`).
+    2. AnkiConnect calls, reusing the verified invoke pattern
+       (`anki_generator.py:812-826`, `{"action","version":6,"params"}`, urllib,
+       timeout 5.0, raise `RuntimeError` on `res["error"]` — import
+       `AnkiConnectChecker` from `tools.research.anki_generator` and use its
+       `_invoke`; do not write a second HTTP client):
+       `findNotes("deck:\"金融\"")` → `notesInfo(nids)` → collect `cards` lists →
+       `cardsInfo(all_cids)`.
+    3. Normalize + join: strip HTML tags (`re.sub(r"<[^>]+>", "", s)`) and
+       collapse whitespace on both the graph label and the note's Front field
+       value; duplicate fronts join to all matching nodes (aggregate stats).
+    4. Gap predicate: node pagerank ≥ the deck's 75th percentile AND total
+       `lapses` ≥ 1 across the note's cards; sort by pagerank desc. Stable
+       predicate: `lapses` == 0 AND total `reps` ≥ 5.
+    5. **Fail-open:** AnkiConnect unreachable or graph missing → print one
+       warning to stderr, output empty list, exit 0 (this is optional
+       enrichment in the capture skill, never a hard gate).
+    6. Read-only: never call mutating actions. Review state steers **authoring
+       only**, never scheduling.
 
 - **Tests (new):** `~/dev/networking/tools/research/__tests__/test_anki_retention.py` —
   follow `test_anki_graph_bridge.py` conventions: `tmp_path` graph fixture
@@ -590,12 +590,12 @@ Split into 4a (networking module, `[low]`) and 4b (fund skill line,
 - **Find:** `python3 ~/dev/anki/graph/analyze.py --deck F --top 20 --hubs`
 - **Change:** insert immediately after that line:
 
-  ```text
-  # 0b. Optional: retention-gap hubs (high-PageRank concepts whose cards keep
-  #    lapsing) — prefer authoring better/denser cards for these over new
-  #    topics. Fails open if Anki is not running.
-  python3 ~/dev/networking/tools/research/anki_retention.py --gaps --top 10
-  ```
+    ```text
+    # 0b. Optional: retention-gap hubs (high-PageRank concepts whose cards keep
+    #    lapsing) — prefer authoring better/denser cards for these over new
+    #    topics. Fails open if Anki is not running.
+    python3 ~/dev/networking/tools/research/anki_retention.py --gaps --top 10
+    ```
 
 - **Verify:** `make sync-check` (twice; second green). Do WO-4b only after
   WO-4a is merged in the networking repo.
@@ -622,7 +622,7 @@ staleness badge `[visual]`). Verified facts:
 - **Design:** stdlib only (`json`, `glob`, `datetime`, `argparse`,
   `pathlib`). Scan `data/analysis/*.json`, skipping `index.json`; for each
   `predictions[]` entry compute stale := `p.get("resolved") is not True and
-  p.get("target_date") and p["target_date"] < date.today().isoformat()`
+p.get("target_date") and p["target_date"] < date.today().isoformat()`
   (string compare is safe — ISO dates). Print one line per stale prediction:
   `<TICKER> <id> due <target_date> (N days overdue): <claim>`, then a summary
   line. Flags: `--fail-on-stale` (exit 1 when any stale, else 0),
@@ -643,37 +643,38 @@ staleness badge `[visual]`). Verified facts:
 - **Change:** paste-ready, modeled on `analysis-sync.yml` conventions (cron,
   concurrency group, explicit minimal permissions — this one needs read-only):
 
-  ```yaml
-  name: prediction-sweep
-  on:
-      workflow_dispatch:
-      schedule:
-          - cron: '17 7 * * 1'
+    ```yaml
+    name: prediction-sweep
+    on:
+        workflow_dispatch:
+        schedule:
+            - cron: '17 7 * * 1'
 
-  concurrency:
-      group: ${{ github.workflow }}
-      cancel-in-progress: true
+    concurrency:
+        group: ${{ github.workflow }}
+        cancel-in-progress: true
 
-  permissions:
-      contents: read
+    permissions:
+        contents: read
 
-  jobs:
-      sweep:
-          runs-on: ubuntu-latest
-          steps:
-              - uses: actions/checkout@v4
-              - uses: actions/setup-python@v5
-                with:
-                    python-version: '3.13'
-              - name: Flag stale unresolved predictions
-                run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
-  ```
+    jobs:
+        sweep:
+            runs-on: ubuntu-latest
+            steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-python@v5
+                  with:
+                      python-version: '3.13'
+                - name: Flag stale unresolved predictions
+                  run: python3 scripts/analysis/prediction_sweeper.py --fail-on-stale
+    ```
 
-  A red scheduled run emails the repo owner — that is the notification
-  channel; no issues API, no commit step, no `pages.yml` dispatch.
+    A red scheduled run emails the repo owner — that is the notification
+    channel; no issues API, no commit step, no `pages.yml` dispatch.
+
 - **Verify:** `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/prediction-sweep.yml'))"`;
   then `venv/bin/python scripts/analysis/prediction_sweeper.py --fail-on-stale; echo exit:$?`
-  locally (exit 1 with a stale list is the *correct* signal once predictions
+  locally (exit 1 with a stale list is the _correct_ signal once predictions
   go stale).
 
 #### WO-5c [visual] — stale-prediction badge in the Lab
@@ -710,22 +711,22 @@ evidence spans). Missing: the orchestrating skill.
 
 - **File (new):** `/Users/lz/dev/fund/.agents/skills/filings-capture/SKILL.md`
 - **Design (skill outline):**
-  1. `venv/bin/python scripts/analysis/filings_adapter.py export-manifest --ticker <T> --out .agents/state/filings_chunks.json`
-  2. Pick high-signal chunks (business / risk_factors /
-     financial_statements topics — the adapter already filters these in
-     `extract_evidence_candidates`).
-  3. Author 1–5 cards to `.agents/state/anki_cards.jsonl` using the
-     `sec:...` chunk_id. Citation contract difference: the back's
-     `源码与文档引用` section needs a fund-repo `file://` link, so first
-     persist the claims you card-ify into a committed artifact (thesis or
-     findings doc — the existing "cards are downstream of docs" rule), and
-     carry the SEC URL in the JSONL `external_sources` field
-     (`[{url, retrieved, claim}]` — shape-checked by the validator).
-  4. **Confirm pass:** for every quantitative claim,
-     `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`
-     — keep only confidence ≥ 0.60, rewrite or drop the rest.
-  5. Then the standard gates: validator → density → judge pre-screen
-     (step 3.5) → human review → import (identical to `/anki-capture`).
+    1. `venv/bin/python scripts/analysis/filings_adapter.py export-manifest --ticker <T> --out .agents/state/filings_chunks.json`
+    2. Pick high-signal chunks (business / risk_factors /
+       financial_statements topics — the adapter already filters these in
+       `extract_evidence_candidates`).
+    3. Author 1–5 cards to `.agents/state/anki_cards.jsonl` using the
+       `sec:...` chunk_id. Citation contract difference: the back's
+       `源码与文档引用` section needs a fund-repo `file://` link, so first
+       persist the claims you card-ify into a committed artifact (thesis or
+       findings doc — the existing "cards are downstream of docs" rule), and
+       carry the SEC URL in the JSONL `external_sources` field
+       (`[{url, retrieved, claim}]` — shape-checked by the validator).
+    4. **Confirm pass:** for every quantitative claim,
+       `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`
+       — keep only confidence ≥ 0.60, rewrite or drop the rest.
+    5. Then the standard gates: validator → density → judge pre-screen
+       (step 3.5) → human review → import (identical to `/anki-capture`).
 - **Verify:** `make sync-check` (twice); `tests/python/test_skills.py` via
   `make test` (schema/frontmatter checks on the new skill).
 - **Guardrail:** never import cards whose only anchor is the live filing —
@@ -772,11 +773,11 @@ Verified facts that shape v1:
 - **Find:** `- Add a single JSON line recording the dated evidence with direction, strength, and citation locator.`
 - **Change:** append to that bullet:
 
-  ```text
-  Include valid_from (when the fact became true; defaults to the record's
-  date) and valid_to (null while the fact holds; set it when later evidence
-  supersedes or refutes the claim — never delete the old record).
-  ```
+    ```text
+    Include valid_from (when the fact became true; defaults to the record's
+    date) and valid_to (null while the fact holds; set it when later evidence
+    supersedes or refutes the claim — never delete the old record).
+    ```
 
 - **Verify:** `make sync-check` (twice; second green);
   `npm exec -- markdownlint-cli2 ".agents/skills/thesis-update/SKILL.md"`.
@@ -787,7 +788,7 @@ Verified facts that shape v1:
 
 - **File (new):** `/Users/lz/dev/fund/scripts/analysis/theme_timeline.py`
 - **Design:** pure function `build_theme_timeline(configs: dict, evidence:
-  dict) -> dict` — per ticker: its evidence records annotated
+dict) -> dict` — per ticker: its evidence records annotated
   `status: open|superseded` (superseded := `valid_to` set and < today), plus a
   cross-ticker section grouping tickers by shared `industry_thesis` value.
   Called from `sync_configs.main()` immediately after the `index.json` write
