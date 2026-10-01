@@ -753,19 +753,67 @@ No new code — the agent harness is the infra.
   never self-evaluate forecast quality (Paleka).
 - **Verify:** `make sync-check` (twice); `make test` (skill schema tests).
 
-#### WO-6c [skip] — B3: bi-temporal thesis layer (phased mini-project)
+#### WO-6c — B3: bi-temporal thesis layer — HLD (v1 descoped, implementable)
 
-Not a work order; schedule a design session. Phasing for that session:
+Recon removed the two blockers; v1 is structured-data only. Deferred (needs a
+design session): prose claim extraction from `docs/thesis/**`, LLM community
+summaries (GraphRAG-style cost), graph machinery beyond a flat temporal index.
 
-1. **Schema:** optional `valid_from`/`valid_to` on evidence records and
-   belief-state entries. **Trap to check first:** `sync_configs.py:505-514`
-   *normalizes* `belief_state` — verify it preserves unknown keys before
-   adding fields, or the nightly sync silently strips them. (`predictions`
-   passes through untouched at `:516-520`; `belief_state` may not.)
-2. **Indexer:** new `scripts/analysis/thesis_graph.py` over `docs/thesis/**`,
-   `data/analysis/*.json`, and `*.evidence.jsonl`, emitting a temporal claim
-   graph (reuse `~/dev/anki/graph/builder.py` idioms); output is a generated
-   artifact under `data/` — written by the script, never by hand.
-3. **Render:** theme/community summary on the Lab page (`[visual]`).
-   GraphRAG-style community summaries add LLM cost — decide whether the
-   theme view justifies it.
+Verified facts that shape v1:
+
+- `sync_configs.py:505-514` rebuilds `belief_state` from a **whitelist** — new
+  top-level keys are silently stripped by the nightly sync, but
+  `evidence_for`/`evidence_against` are copied with `list(...)`, so **per-item
+  keys survive**. Put validity on evidence items, never new top-level keys.
+- `*.evidence.jsonl` is untouched by the sync; `bayes.js:169` `parseJsonl`
+  preserves unknown fields. Optional `valid_from`/`valid_to` are backward
+  compatible everywhere.
+
+##### WO-6c-1 [trivial] — adopt validity fields in the evidence convention
+
+- **File:** `/Users/lz/dev/fund/.agents/skills/thesis-update/SKILL.md`
+- **Find:** `- Add a single JSON line recording the dated evidence with direction, strength, and citation locator.`
+- **Change:** append to that bullet:
+
+  ```text
+  Include valid_from (when the fact became true; defaults to the record's
+  date) and valid_to (null while the fact holds; set it when later evidence
+  supersedes or refutes the claim — never delete the old record).
+  ```
+
+- **Verify:** `make sync-check` (twice; second green);
+  `npm exec -- markdownlint-cli2 ".agents/skills/thesis-update/SKILL.md"`.
+- **Guardrail:** validity fields live on evidence items only — a new
+  top-level `belief_state` key would be stripped by `sync_configs.py:505-514`.
+
+##### WO-6c-2 [low] — temporal index `scripts/analysis/theme_timeline.py`
+
+- **File (new):** `/Users/lz/dev/fund/scripts/analysis/theme_timeline.py`
+- **Design:** pure function `build_theme_timeline(configs: dict, evidence:
+  dict) -> dict` — per ticker: its evidence records annotated
+  `status: open|superseded` (superseded := `valid_to` set and < today), plus a
+  cross-ticker section grouping tickers by shared `industry_thesis` value.
+  Called from `sync_configs.main()` immediately after the `index.json` write
+  (`sync_configs.py:642-652`), writing `data/analysis/theme_timeline.json`
+  (pipeline-written, never hand-edited). Stdlib only.
+- **Tests (new):** `tests/python/test_theme_timeline.py` — tmp_path fixtures,
+  `test_filings_adapter.py` conventions. Cover: open/superseded classification,
+  missing `valid_to`, malformed dates skipped with warning, industry grouping.
+- **Verify:** `venv/bin/pytest tests/python/test_theme_timeline.py tests/python/test_sync_configs_currency.py -q`
+- **Guardrail:** the sync runs nightly via `analysis-sync.yml` — a hard
+  failure in the new call breaks the whole sync; wrap in the same error
+  style the surrounding code uses, and never let it skip the index write.
+
+##### WO-6c-3 [visual] — superseded-evidence marking in the Lab timeline
+
+- **Files:** `/Users/lz/dev/fund/js/pages/analysis/bayes.js`,
+  `js/pages/analysis/lab.js`
+- **Design:** add pure helper `filterValidEvidence(evidenceList, asOf)` to
+  `bayes.js` (exported for tests); in `renderEvidenceTimeline` (`lab.js:1040`,
+  replay at `:1057-1058`) add class `superseded` to timeline entries whose
+  record has `valid_to` < today, and a header count line "N valid / M
+  superseded" beside the timeline title. Historical `replay()` semantics are
+  **unchanged** (it answers "what did we believe then" — do not filter it).
+- **Verify:** `npx jest tests/js/pages/analysis` (add `filterValidEvidence`
+  cases to `bayes.test.js`; rendering case in `lab_dom_render.test.js`).
+  **Visual — human review of `/analysis/` required after.**
