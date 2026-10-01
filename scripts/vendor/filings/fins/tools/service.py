@@ -530,8 +530,10 @@ class FinsToolService:
                 ref = sec.get("ref")
                 if ref:
                     ref_to_topic[ref] = sec.get("topic")
-        except Exception:
-            pass
+        except Exception as exc:
+            # Security concern: silent catch block hides failures
+            import logging
+            logging.warning("Failed to load topics: %s", exc)
 
         is_multi = len(resolved_queries) > 1
 
