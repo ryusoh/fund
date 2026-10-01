@@ -66,6 +66,14 @@ python3 ~/dev/networking/tools/research/anki_density_gate.py \
     --cards /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
 #    Re-author any card flagged enrich/consolidate, then re-run 2 and 3.
 
+# 3.5. LLM-as-judge pre-screen (you, the agent — no code): for each staged
+#    card, re-read the source lines its citation points to and score a
+#    4-point rubric: accuracy (claim matches source), citation match (those
+#    lines actually support it), completeness (no load-bearing omission),
+#    format (contract below). Rewrite any failing card, then re-run gates
+#    2-3. (~1 hallucination per 21 LLM-authored cards is measured in the
+#    literature; this pass catches them before human review.)
+
 # 4. Human review: show the user the JSONL diff before importing.
 
 # 5. Import (validator re-runs internally; refuses on any issue)

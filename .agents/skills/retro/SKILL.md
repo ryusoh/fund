@@ -43,5 +43,13 @@ Work through these steps:
    green, and summarize what you changed and exactly how it pays off next time.
    Do not commit unless explicitly asked.
 
+7. **Distill the session into a skill delta (ACE step).** Ask: "what did this
+   session teach about _how_ to do X?" If the answer generalizes beyond this
+   task, apply a **delta edit to an existing `.agents/skills/*/SKILL.md` or
+   `AGENTS.md`** — add or tighten a line, never rewrite the file, and never
+   spawn a near-duplicate skill. Prefer editing an existing skill over creating
+   one; skill bloat and stale guidance are the failure modes. Run
+   `make sync-check` after any skill edit.
+
 Guiding test (§17A): _a correction given today should be impossible to need next
 month_ — because it now lives in the repo, not in this conversation.
