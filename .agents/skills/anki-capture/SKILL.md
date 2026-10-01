@@ -53,6 +53,11 @@ never append — each run; stale lines re-import as duplicates).
 #    graph rebuild).
 python3 ~/dev/anki/graph/analyze.py --deck F --top 20 --hubs
 
+# 0b. Optional: retention-gap hubs (high-PageRank concepts whose cards keep
+#    lapsing) — prefer authoring better/denser cards for these over new
+#    topics. Fails open if Anki is not running.
+python3 ~/dev/networking/tools/research/anki_retention.py --gaps --top 10
+
 # 1. Author cards (you, the agent) → /Users/lz/dev/fund/.agents/state/anki_cards.jsonl
 #    One JSON object per line: {chunk_id, front, back, tags, citation}
 #    chunk_id := "fund/<relpath>:card-<n>"   (e.g. "fund/docs/thesis/ANET.md:card-1")
