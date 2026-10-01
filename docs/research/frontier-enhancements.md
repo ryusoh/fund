@@ -422,9 +422,6 @@ verified against the working tree on 2026-10-01.
   report the mismatch — do not improvise an alternative anchor.**
 - Line numbers are dated (2026-10-01) and may drift; trust the `Find` string,
   not the line number.
-- **This user requires explicit permission before any commit: do NOT commit,
-  do NOT push.** Leave each item's changes in the working tree and report.
-  (This overrides the default per-item commit contract.)
 - Never edit `data/` (pipeline-generated). Never edit
   `~/dev/networking/research/.anki_coverage.json` by hand.
 - Fund skill edits (`WO-1`, `WO-3`) must pass `make sync-check` afterwards
