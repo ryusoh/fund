@@ -97,7 +97,9 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
 - **Stage by name, never `git add -A` / `git add .`.** Add exactly the test
   files you wrote. Scratch output from verification runs (`verify_output.txt`,
   logs, coverage dumps) must never be committed — fund#692 shipped a 474-line
-  `verify_output.txt` in its first commit.
+  `verify_output.txt` in its first commit. If a gate or fixer dirties unrelated files
+  outside `tests/`, discard them (`git checkout -- <file>`) — never commit non-test
+  files into your lane (fund#707 committed a reformat of `docs/research/`).
 - Title / commit subject: `test(<scope>): cover <area> low-coverage paths`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Testpilot:` prefix**.
 - Body: each target file before → after coverage; any file skipped and why; "no
