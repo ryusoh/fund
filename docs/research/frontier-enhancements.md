@@ -757,6 +757,19 @@ Recon removed the two blockers; v1 is structured-data only. Deferred (needs a
 design session): prose claim extraction from `docs/thesis/**`, LLM community
 summaries (GraphRAG-style cost), graph machinery beyond a flat temporal index.
 
+**Deferral rationale (2026-10-02):** those three are scale-dependent tools,
+and the thesis corpus is small and high-curation — ~4 ticker files plus 2
+industry theses, with the load-bearing claims already structured at write
+time in `belief_state`/`predictions`/`*.evidence.jsonl`. Prose extraction
+would mostly duplicate what is already machine-readable; community summaries
+answer "what are the themes" for a corpus one person can read in 20 minutes;
+graph math pays on the 15k-note Anki deck, not on 6 thesis docs. Every piece
+of infra is a maintenance liability — these would be the least-used,
+highest-maintenance parts of the system. **Revisit triggers:** ticker
+coverage expands well beyond current holdings, evidence volume outgrows
+manual reviewability, or cross-thesis questions arise that the flat temporal
+index cannot answer.
+
 Verified facts that shape v1:
 
 - `sync_configs.py:505-514` rebuilds `belief_state` from a **whitelist** — new
