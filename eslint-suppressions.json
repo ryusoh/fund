@@ -79,11 +79,6 @@
       "count": 2
     }
   },
-  "js/transactions/terminal/commands.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "js/transactions/terminal/snapshots.js": {
     "complexity": {
       "count": 1

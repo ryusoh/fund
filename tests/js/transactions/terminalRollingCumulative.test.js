@@ -95,13 +95,13 @@ describe('rolling/cumulative command handlers exist', () => {
     test('commands.js has case for rolling', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
-        expect(commandsCode).toContain("case 'rolling':");
+        expect(commandsCode).toMatch(/rolling:\s*handleRollingCommand/);
     });
 
     test('commands.js has case for cumulative', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
-        expect(commandsCode).toContain("case 'cumulative':");
+        expect(commandsCode).toMatch(/cumulative:\s*handleCumulativeCommand/);
     });
 });
 
@@ -197,18 +197,18 @@ describe('composition/sectors command handlers exist', () => {
     test('commands.js has case for composition', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
-        expect(commandsCode).toContain("case 'composition':");
+        expect(commandsCode).toMatch(/composition:\s*handleCompositionCommand/);
     });
 
     test('commands.js has case for sectors', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
-        expect(commandsCode).toContain("case 'sectors':");
+        expect(commandsCode).toMatch(/sectors:\s*handleSectorsCommand/);
     });
 
     test('commands.js has case for geography', async () => {
         const fs = await import('fs');
         const commandsCode = fs.readFileSync('./js/transactions/terminal/commands.js', 'utf8');
-        expect(commandsCode).toContain("case 'geography':");
+        expect(commandsCode).toMatch(/geography:\s*handleGeographyCommand/);
     });
 });
