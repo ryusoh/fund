@@ -963,10 +963,16 @@ function renderBeliefState(config) {
         industryLink.style.marginTop = '4px';
         const docName = config.industry_thesis.split('/').pop();
         // security: remediate DOM-based XSS sink
-        industryLink.innerHTML =
-            '<span style="color: var(--text-muted)">Industry Layer:</span> <a style="color: var(--text-main); text-decoration: underline;"></a>';
-        industryLink.querySelector('a').href = '../' + config.industry_thesis;
-        industryLink.querySelector('a').textContent = docName;
+        const span = document.createElement('span');
+        span.style.color = 'var(--text-muted)';
+        span.textContent = 'Industry Layer: ';
+        const a = document.createElement('a');
+        a.style.color = 'var(--text-main)';
+        a.style.textDecoration = 'underline';
+        a.href = '../' + config.industry_thesis;
+        a.textContent = docName;
+        industryLink.appendChild(span);
+        industryLink.appendChild(a);
         beliefStateCardEl.appendChild(industryLink);
     }
 
@@ -1256,10 +1262,15 @@ function renderDecisionJournal(config) {
     const latest = journal[journal.length - 1];
     const actionDiv = document.createElement('div');
     // security: remediate DOM-based XSS sink
-    actionDiv.innerHTML = '<span class="decision-action"></span> <span class="action-meta"></span>';
-    actionDiv.querySelector('.decision-action').textContent = latest.action || 'ACTION';
-    actionDiv.querySelector('.action-meta').textContent =
-        `(${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
+    const actionSpan = document.createElement('span');
+    actionSpan.className = 'decision-action';
+    actionSpan.textContent = latest.action || 'ACTION';
+    const metaSpan = document.createElement('span');
+    metaSpan.className = 'action-meta';
+    metaSpan.textContent = `(${latest.date}) · Review: ${latest.review_date || 'TBD'}`;
+    actionDiv.appendChild(actionSpan);
+    actionDiv.appendChild(document.createTextNode(' '));
+    actionDiv.appendChild(metaSpan);
     const sitDiv = document.createElement('div');
     sitDiv.style.color = 'var(--ink)';
     sitDiv.style.margin = '4px 0';
