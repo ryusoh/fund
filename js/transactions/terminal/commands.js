@@ -23,6 +23,39 @@ import {
 
 import { setFadePreserveSecondLast } from '../fade.js';
 
+const commandMap = {
+    h: handleHelpCommand,
+    help: handleHelpCommand,
+    all: handleAllCommand,
+    alltime: handleAllTimeCommand,
+    allstock: handleAllStockCommand,
+    reset: handleResetCommand,
+    clear: handleClearCommand,
+    zoom: handleZoomCommand,
+    z: handleZoomCommand,
+    stats: handleStatsCommand,
+    s: handleStatsCommand,
+    label: handleLabelCommand,
+    l: handleLabelCommand,
+    transaction: handleTransactionCommand,
+    t: handleTransactionCommand,
+    plot: handlePlotCommand,
+    p: handlePlotCommand,
+    abs: handleAbsCommand,
+    absolute: handleAbsCommand,
+    a: handleAbsCommand,
+    percentage: handlePercentageCommand,
+    percent: handlePercentageCommand,
+    per: handlePercentageCommand,
+    rolling: handleRollingCommand,
+    cumulative: handleCumulativeCommand,
+    composition: handleCompositionCommand,
+    sectors: handleSectorsCommand,
+    geography: handleGeographyCommand,
+    marketcap: handleMarketcapCommand,
+    summary: handleSummaryCommand,
+};
+
 export async function executeCommand(command, context) {
     const { onCommandExecuted } = context;
 
@@ -38,100 +71,14 @@ export async function executeCommand(command, context) {
 
     setFadePreserveSecondLast(false);
 
-    switch (cmd.toLowerCase()) {
-        case 'h':
-        case 'help':
-            handleHelpCommand(args, enhancedContext);
-            break;
-
-        case 'all':
-            await handleAllCommand(args, enhancedContext);
-            break;
-
-        case 'alltime':
-            await handleAllTimeCommand(args, enhancedContext);
-            break;
-
-        case 'allstock':
-            await handleAllStockCommand(args, enhancedContext);
-            break;
-
-        case 'reset':
-            await handleResetCommand(args, enhancedContext);
-            break;
-
-        case 'clear':
-            handleClearCommand(args, enhancedContext);
-            break;
-
-        case 'zoom':
-        case 'z':
-            await handleZoomCommand(args, enhancedContext);
-            break;
-
-        case 'stats':
-        case 's':
-            await handleStatsCommand(args, enhancedContext);
-            break;
-
-        case 'label':
-        case 'l':
-            handleLabelCommand(args, enhancedContext);
-            break;
-
-        case 'transaction':
-        case 't':
-            await handleTransactionCommand(args, enhancedContext);
-            break;
-
-        case 'plot':
-        case 'p':
-            await handlePlotCommand(args, enhancedContext);
-            break;
-
-        case 'abs':
-        case 'absolute':
-        case 'a':
-            await handleAbsCommand(args, enhancedContext);
-            break;
-
-        case 'percentage':
-        case 'percent':
-        case 'per':
-            await handlePercentageCommand(args, enhancedContext);
-            break;
-
-        case 'rolling':
-            await handleRollingCommand(args, enhancedContext);
-            break;
-
-        case 'cumulative':
-            await handleCumulativeCommand(args, enhancedContext);
-            break;
-
-        case 'composition':
-            await handleCompositionCommand(args, enhancedContext);
-            break;
-
-        case 'sectors':
-            await handleSectorsCommand(args, enhancedContext);
-            break;
-
-        case 'geography':
-            await handleGeographyCommand(args, enhancedContext);
-            break;
-
-        case 'marketcap':
-            await handleMarketcapCommand(args, enhancedContext);
-            break;
-
-        case 'summary':
-            await handleSummaryCommand(args, enhancedContext);
-            break;
-
-        default:
-            await handleDefaultCommand(command, enhancedContext);
-            break;
+    const cmdLower = cmd ? cmd.toLowerCase() : '';
+    const handler = Object.prototype.hasOwnProperty.call(commandMap, cmdLower)
+        ? commandMap[cmdLower]
+        : undefined;
+    if (handler) {
+        await handler(args, enhancedContext);
+    } else {
+        await handleDefaultCommand(command, enhancedContext);
     }
 
     if (typeof onCommandExecuted === 'function') {
