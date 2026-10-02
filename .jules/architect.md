@@ -98,14 +98,18 @@ origin/main HEAD) && git commit`) and force-push — the branch must always
   one-commit branch can only fail on its final content. (fund#693 and fund#703
   failed CI on an empty commit buried mid-history among identical-message commits,
   though their final tree was clean; fund#703 also attempted committing a root-level
-  scratch script `test_hover_coverage.js`.)
+  scratch script `test_hover_coverage.js`; fund#709 pushed four commits — two empty,
+  two carrying `eslint_out.json` — under one repeated message and needed a manual
+  squash-rescue.)
 - **Stage by name, never `git add -A` / `git add .`.** Add exactly the source
   files you refactored (and `eslint-suppressions.json` only when
   `--prune-suppressions` changed it). Scratch output from verification runs
   must never be committed — and never redirect linter/gate output into a repo
   file (`npx eslint ... > eslint_out.json`); read it from stdout or write it
   under `/tmp`. (fund#695 committed ~6 MB of `eslint_out.json` /
-  `eslint_warn_out.json` and went red in CI.)
+  `eslint_warn_out.json` and went red in CI; fund#709 committed `eslint_out.json`
+  again in two separate commits — check `git status` for untracked scratch before
+  every push, especially after a gate/fix run.)
 - Title / commit subject: `refactor(<scope>): extract helpers to cut <function> complexity`.
   Imperative, lower-case, ≤ 72 chars, **no emoji, no `Architect:` prefix, no
   conversational greetings**. Count the assembled subject's characters: for a
