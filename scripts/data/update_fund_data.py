@@ -184,16 +184,14 @@ def get_alpaca_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
             "Accept": "application/json",
         }
 
-        # Determine if we should use the overnight feed (8 PM - 4 AM ET)
+        # Never pass feed=overnight: with the overnight feed Alpaca's
+        # dailyBar/prevDailyBar become overnight-SESSION bars (20:00-04:00 ET),
+        # so _select_alpaca_close would return an overnight-session close, not
+        # the regular-session baseline (2026-10-01 incident: VT 158.75 / GOOG
+        # 348.48 written vs. true closes 157.80 / 334.93). The default feed
+        # keeps the daily bars regular-session, which the selection handles.
         et_now = datetime.now(ET_TZ)
-        is_overnight = et_now.hour >= 20 or et_now.hour < 4
-
         params = {"symbols": symbols}
-        if is_overnight:
-            params["feed"] = "overnight"
-            logging.info(
-                f"Using 'overnight' feed for Alpaca 24/5 data (ET time: {et_now.strftime('%H:%M')})"
-            )
 
         # Using Alpaca Snapshots endpoint for multiple tickers
         url = "https://data.alpaca.markets/v2/stocks/snapshots"

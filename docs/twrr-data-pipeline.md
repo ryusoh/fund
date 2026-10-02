@@ -89,6 +89,16 @@ days by `isTradingDay`.
   previous night's forming-bar value for a second day).
   `_last_completed_close` therefore drops the last bar whenever it is dated
   _after_ ET-today, not only when dated today before 16:00 ET.
+- **Never pass `feed=overnight` to the Alpaca snapshots call.** With the
+  overnight feed, `dailyBar`/`prevDailyBar` are overnight-_session_ bars
+  (20:00-04:00 ET), not regular-session bars, so `_select_alpaca_close`
+  returns an overnight-session close as the baseline (2026-10-01 incident:
+  the 20:45 ET run wrote VT 158.75 / GOOG 348.48 vs. true closes 157.80 /
+  334.93; the prior night Alpaca 403'd and the yfinance fallback wrote
+  correct values). The feed parameter dates from when this script fetched
+  _live_ prices via `latestTrade`; for a completed-session baseline it is
+  pure poison. The default feed keeps the daily bars regular-session, which
+  the session-date selection handles in every window.
 - After-hours the live quote ≈ the baseline, so the day change reads ~0 / the
   pure after-hours drift by design.
 - The previous `prev_close.json` sidecar was removed (2026-09-09): written

@@ -9,6 +9,7 @@ from scripts.data.update_fund_data import (
     _last_completed_close,
     _select_alpaca_close,
     _select_polygon_close,
+    get_alpaca_prices,
     get_prices,
     get_tickers_from_holdings,
 )
@@ -229,6 +230,31 @@ def test_get_prices_overnight_priority(
     assert mock_requests_get.called
     # yfinance SHOULD NOT be called initially
     mock_yf_download.assert_not_called()
+
+
+@patch("scripts.data.update_fund_data.datetime")
+@patch("scripts.data.update_fund_data.requests.get")
+@patch.dict(
+    "os.environ",
+    {"ALPACA_API_KEY": "test_alpaca_key", "ALPACA_API_SECRET": "test_alpaca_secret"},
+    clear=True,
+)
+def test_alpaca_never_requests_overnight_feed(mock_requests_get, mock_datetime):
+    # Regression (2026-10-01): with feed=overnight, Alpaca's dailyBar /
+    # prevDailyBar are overnight-SESSION bars (20:00-04:00 ET), so the
+    # baseline became an overnight-session close (GOOG 348.48) instead of the
+    # regular-session close (334.93). The request must always use the default
+    # regular-session feed, even during overnight hours.
+    mock_datetime.now.return_value = datetime(2026, 10, 1, 20, 45, tzinfo=ET)
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {}
+    mock_resp.status_code = 200
+    mock_requests_get.return_value = mock_resp
+
+    get_alpaca_prices(["AAPL"])
+
+    _, kwargs = mock_requests_get.call_args
+    assert "feed" not in kwargs["params"]
 
 
 @patch("scripts.data.update_fund_data.datetime")
