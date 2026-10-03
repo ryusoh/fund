@@ -206,10 +206,20 @@ def _build_statement_rows(
     """
 
     rows: list[dict[str, Any]] = []
-    for _, row in statement_df.iterrows():
-        concept = _normalize_optional_string(row.get("concept")) or ""
-        label = _normalize_optional_string(row.get("label")) or concept
-        values = [_to_optional_float(row.get(period)) for period in period_columns]
+    columns = statement_df.columns
+    concept_idx = columns.get_loc("concept") if "concept" in columns else -1
+    label_idx = columns.get_loc("label") if "label" in columns else -1
+    period_idxs = [columns.get_loc(p) if p in columns else -1 for p in period_columns]
+
+    for row in statement_df.itertuples(index=False, name=None):
+        raw_concept = row[concept_idx] if concept_idx != -1 else None
+        concept = _normalize_optional_string(raw_concept) or ""
+
+        raw_label = row[label_idx] if label_idx != -1 else None
+        label = _normalize_optional_string(raw_label) or concept
+
+        values = [_to_optional_float(row[p_idx]) if p_idx != -1 else None for p_idx in period_idxs]
+
         if not concept and not label:
             continue
         rows.append(

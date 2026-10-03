@@ -2112,10 +2112,11 @@ def _dataframe_to_records(dataframe: pd.DataFrame) -> list[dict[str, Any]]:
     """
 
     records: list[dict[str, Any]] = []
-    for _, row in dataframe.iterrows():
+    columns = dataframe.columns
+    for row in dataframe.itertuples(index=False, name=None):
         normalized_row: dict[str, Any] = {}
-        for column in dataframe.columns:
-            normalized_row[str(column)] = _normalize_table_cell_value(row[column])
+        for i, column in enumerate(columns):
+            normalized_row[str(column)] = _normalize_table_cell_value(row[i])
         records.append(normalized_row)
     return records
 
