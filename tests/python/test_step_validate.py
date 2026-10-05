@@ -207,3 +207,76 @@ class TestTailFreshness:
         held = frozenset({'VT', 'ANET', 'GOOG'})
         violations = step_validate.check_tail_freshness(frame, held)
         assert violations == []
+
+
+class TestTailFlatline:
+    """2026-10-02 incident: a delayed Friday-night run forward-filled the
+    equity tail — the 2026-10-02 rows were bit-identical to 2026-10-01 while
+    the benchmarks had real Friday values. The date-based freshness check
+    passed (dates reached the benchmark tail) and the flat-lined data was
+    committed; Monday's live P&L then diffed against Thursday."""
+
+    def _frame(self, columns_by_ticker):
+        days = len(next(iter(columns_by_ticker.values())))
+        index = pd.date_range('2026-09-30', periods=days, freq='D')
+        return pd.DataFrame(columns_by_ticker, index=index)
+
+    def test_fleet_wide_flatline_fails(self):
+        frame = self._frame(
+            {
+                'VT': [157.85, 157.80, 157.80],
+                'ANET': [203.59, 204.49, 204.49],
+                'GOOG': [340.74, 334.93, 334.93],
+                'PDD': [77.94, 76.50, 76.50],
+                '^GSPC': [7651.54, 7666.45, 7722.72],
+            }
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        violations = step_validate.check_tail_freshness(frame, held)
+        assert len(violations) == 1
+        assert '4 of 4' in violations[0]
+        assert 'forward-fill' in violations[0]
+
+    def test_single_flatlined_ticker_passes(self):
+        # One unchanged close is a legitimate coincidence, not a fleet signal.
+        frame = self._frame(
+            {
+                'VT': [157.85, 157.80, 157.80],
+                'ANET': [203.59, 204.49, 207.35],
+                'GOOG': [340.74, 334.93, 340.35],
+                'PDD': [77.94, 76.50, 75.38],
+                '^GSPC': [7651.54, 7666.45, 7722.72],
+            }
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        assert step_validate.check_tail_freshness(frame, held) == []
+
+    def test_flatline_with_static_benchmark_passes(self):
+        # Benchmarks also unchanged: no proof a real session happened (e.g. a
+        # holiday), so identical closes cannot be called a forward-fill.
+        frame = self._frame(
+            {
+                'VT': [157.85, 157.80, 157.80],
+                'ANET': [203.59, 204.49, 204.49],
+                'GOOG': [340.74, 334.93, 334.93],
+                'PDD': [77.94, 76.50, 76.50],
+                '^GSPC': [7651.54, 7666.45, 7666.45],
+            }
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        assert step_validate.check_tail_freshness(frame, held) == []
+
+    def test_stale_dated_flat_ticker_is_left_to_date_check(self):
+        # A ticker whose tail predates the benchmark tail belongs to the
+        # date-lag branch; the flatline branch must not double-report it.
+        frame = self._frame(
+            {
+                'VT': [157.85, 157.80, float('nan')],
+                'ANET': [203.59, 204.49, 207.35],
+                'GOOG': [340.74, 334.93, 340.35],
+                'PDD': [77.94, 76.50, 75.38],
+                '^GSPC': [7651.54, 7666.45, 7722.72],
+            }
+        )
+        held = frozenset({'VT', 'ANET', 'GOOG', 'PDD'})
+        assert step_validate.check_tail_freshness(frame, held) == []

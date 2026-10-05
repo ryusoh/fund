@@ -15,7 +15,9 @@ Invariants:
   4. Seam: pipeline market value ≈ holdings × latest real-time prices.
   5. Tail freshness: held tickers must not lag the benchmark indices' last
      price date as a fleet (a stale upstream snapshot flat-lines real
-     trading days — the 2026-09-22 incident).
+     trading days — the 2026-09-22 incident), and must not repeat the prior
+     close as a fleet on a day the benchmarks moved (a forward-fill writes
+     the right date with stale values — the 2026-10-02 incident).
 """
 
 from __future__ import annotations
@@ -119,23 +121,35 @@ def check_tail_freshness(
     held: FrozenSet[str],
     benchmark_tickers: Sequence[str] = BENCHMARK_TAIL_TICKERS,
 ) -> List[str]:
-    """Fail when held tickers lag the benchmark indices' tail as a fleet.
+    """Fail when held tickers lag or flat-line the benchmark tail as a fleet.
 
     One lagging ticker is normal (a halt, a suspension, a non-US listing's
     calendar); a fleet lagging together means the upstream snapshot was stale
     and the forward-fill is flat-lining real trading days (2026-09-22
     incident: equities stuck at Friday's close while ^GSPC had Monday). A
     single held ticker never trips this — the majority rule needs a fleet.
+
+    Dates alone are not enough: a forward-fill also writes the right DATE
+    with stale VALUES (2026-10-02 incident: every held ticker's Friday row was
+    bit-identical to Thursday while the benchmarks had real Friday values,
+    and the date-based check passed). So when a benchmark's last value moved,
+    a held ticker whose tail value is bit-identical to its prior close is a
+    forward-fill signature, and a fleet of those fails too.
     """
+    bench_series = []
     bench_last = None
     for bench in benchmark_tickers:
         if bench not in prices.columns:
             continue
         valid = prices[bench].dropna()
-        if not valid.empty and (bench_last is None or valid.index.max() > bench_last):
+        if valid.empty:
+            continue
+        bench_series.append(valid)
+        if bench_last is None or valid.index.max() > bench_last:
             bench_last = valid.index.max()
     if bench_last is None or not held:
         return []
+    violations = []
     lagging = []
     for ticker in sorted(held):
         if ticker not in prices.columns:
@@ -144,11 +158,39 @@ def check_tail_freshness(
         if not valid.empty and valid.index.max() < bench_last:
             lagging.append(ticker)
     if len(lagging) >= 2 and len(lagging) * 2 > len(held):
-        return [
+        violations.append(
             f'{len(lagging)} of {len(held)} held tickers lag the benchmark tail '
             f'({bench_last.date()}): {", ".join(lagging)}'
-        ]
-    return []
+        )
+    # A benchmark whose tail value moved proves the tail date was a real
+    # trading session; a held ticker closing bit-identically on that date is
+    # a forward-fill, not a close. Exact equality is the right test: ffill
+    # copies bits, and a real close repeating to full float precision is a
+    # coincidence the fleet-majority rule absorbs.
+    bench_moved = any(
+        len(valid) >= 2 and valid.iloc[-1] != valid.iloc[-2]
+        for valid in bench_series
+        if valid.index.max() == bench_last
+    )
+    if bench_moved:
+        flat = []
+        for ticker in sorted(held):
+            if ticker not in prices.columns:
+                continue  # the coverage check reports missing columns
+            valid = prices[ticker].dropna()
+            if (
+                len(valid) >= 2
+                and valid.index.max() == bench_last
+                and valid.iloc[-1] == valid.iloc[-2]
+            ):
+                flat.append(ticker)
+        if len(flat) >= 2 and len(flat) * 2 > len(held):
+            violations.append(
+                f'{len(flat)} of {len(held)} held tickers repeat the prior close on the '
+                f'benchmark tail ({bench_last.date()}) — forward-fill signature: '
+                f'{", ".join(flat)}'
+            )
+    return violations
 
 
 def check_seam_continuity(
