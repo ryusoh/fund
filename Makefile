@@ -35,7 +35,10 @@ TWRR_STEPS := scripts/twrr/step01_load_transactions.py \
 	 scripts/ratios/calculate_ratios.py \
 	 scripts/twrr/step07_plot_twrr.py
 
-PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.cjs' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' 2>/dev/null | grep -v '^assets/' | grep -v '^js/vendor/' | grep -v '^data/' | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
+PRETTIER_FILE_LIST := $(shell git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.cjs' '*.css' '*.json' '*.md' '*.html' '*.yml' '*.yaml' \
+	':!assets/**' ':!js/vendor/**' ':!data/**' ':!.claude/**' \
+	':!package-lock.json' ':!pnpm-lock.yaml' ':!eslint-suppressions.json' \
+	':!docs/cursor-performance.md' ':!docs/reference/**' ':!**/*.min.js' ':!ai/status/**' 2>/dev/null | while read -r file; do if [ -f "$$file" ]; then printf '%s ' "$$file"; fi; done)
 
 help:
 	@echo "Targets:"
@@ -115,7 +118,7 @@ _fmt-black:
 
 _fmt-prettier:
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes -q prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -154,7 +157,7 @@ depcheck:
 fmt:
 	$(PY) -m black .
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes -q prettier --write --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
@@ -162,7 +165,7 @@ fmt:
 fmt-check:
 	@echo "Checking formatting..."
 	@if [ -n "$(strip $(PRETTIER_FILE_LIST))" ]; then \
-		npx --yes prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
+		npx --yes -q prettier --check --log-level warn --ignore-path .prettierignore $(PRETTIER_FILE_LIST); \
 	else \
 		echo "No Prettier targets"; \
 	fi
