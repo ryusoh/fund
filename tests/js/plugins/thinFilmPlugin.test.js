@@ -174,7 +174,7 @@ describe('thinFilmPlugin', () => {
         expect(document.createElement.mock.calls.length).toBe(createCount);
     });
 
-    it('should clean up on destroy', () => {
+    it('should clean up on afterDestroy', () => {
         chart.hoveredSliceIndex = 0;
         thinFilmPlugin.afterDatasetsDraw(chart);
 
@@ -184,7 +184,7 @@ describe('thinFilmPlugin', () => {
         // Simulate overlay having a parent
         state.overlay.parentElement = { removeChild: jest.fn() };
 
-        thinFilmPlugin.destroy(chart);
+        thinFilmPlugin.afterDestroy(chart);
         expect(chart._thinFilmState).toBeNull();
         expect(state.overlay.parentElement.removeChild).toHaveBeenCalled();
     });

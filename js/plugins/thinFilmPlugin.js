@@ -784,7 +784,7 @@ export const thinFilmPlugin = {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
 
-    destroy(chart) {
+    afterDestroy(chart) {
         if (chart._thinFilmState) {
             const { gl, overlay } = chart._thinFilmState;
             const ext = gl.getExtension('WEBGL_lose_context');
