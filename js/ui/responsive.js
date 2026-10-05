@@ -24,13 +24,6 @@ export function alignToggleWithChartMobile() {
     toggleContainer.style.removeProperty('transform');
 }
 
-export function setupResizeListener() {
-    window.addEventListener('resize', () => {
-        checkAndToggleVerticalScroll();
-        alignToggleWithChartMobile();
-    });
-}
-
 export function initCalendarResponsiveHandlers() {
     const toggleContainer = document.querySelector(CALENDAR_SELECTORS.currencyToggle);
     if (toggleContainer) {

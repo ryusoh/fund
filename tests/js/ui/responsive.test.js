@@ -107,22 +107,6 @@ describe('Responsive Utilities', () => {
         });
     });
 
-    describe('setupResizeListener', () => {
-        it('should add a resize event listener to window', () => {
-            responsive.setupResizeListener();
-            expect(window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
-        });
-
-        it('should execute resize callback on resize event', () => {
-            window.addEventListener.mockClear();
-            responsive.setupResizeListener();
-            expect(window.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
-            const resizeCallback = window.addEventListener.mock.calls[0][1];
-            expect(typeof resizeCallback).toBe('function');
-            resizeCallback();
-        });
-    });
-
     describe('initCalendarResponsiveHandlers', () => {
         it('should clear inline positioning styles on calendar currency toggle', () => {
             toggleContainer.style.position = 'fixed';
