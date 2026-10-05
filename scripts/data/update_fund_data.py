@@ -61,15 +61,23 @@ def _alpaca_bar_session_date(daily_bar: Dict[str, Any]) -> Optional[str]:
 def _select_alpaca_close(snapshot: Dict[str, Any], now_et: datetime) -> Optional[float]:
     """Last completed regular-session close from an Alpaca snapshot.
 
-    dailyBar holds the official close only between 16:00 and 20:00 ET (or when
-    it is dated before today — weekend/holiday runs); during overnight and
+    dailyBar holds the official close when it is dated before today
+    (weekend/holiday runs), when it is dated today and the regular session has
+    ended (≥16:00 ET — including Friday night, when the bar does NOT roll to
+    the next trading day because there is no overnight session; the 2026-10-02
+    incident wrote Thursday's prevDailyBar as the baseline), or between 16:00
+    and 20:00 ET when the date is unavailable. During overnight (Mon–Thu) and
     regular hours it is the forming bar, so prevDailyBar is the baseline.
     """
     daily = snapshot.get("dailyBar") or {}
     prev_daily = snapshot.get("prevDailyBar") or {}
     bar_session = _alpaca_bar_session_date(daily)
     today = now_et.date().isoformat()
-    if (bar_session is not None and bar_session < today) or _in_post_close_window(now_et):
+    if (
+        (bar_session is not None and bar_session < today)
+        or _in_post_close_window(now_et)
+        or (bar_session == today and now_et.time() >= _POST_CLOSE_START)
+    ):
         primary, secondary = daily, prev_daily
     else:
         primary, secondary = prev_daily, daily
@@ -99,13 +107,19 @@ def _select_polygon_close(snapshot: Any, now_et: datetime) -> Optional[float]:
     """Last completed regular-session close from a Polygon snapshot.
 
     Same session semantics as _select_alpaca_close: day is the official close
-    only after 16:00 ET (or when dated before today); otherwise prev_day is.
+    when dated before today, when dated today after 16:00 ET (including Friday
+    night, when the agg does not roll to the next trading day), or between
+    16:00 and 20:00 ET when the timestamp is unavailable; otherwise prev_day is.
     """
     day = getattr(snapshot, "day", None)
     prev_day = getattr(snapshot, "prev_day", None)
     day_session = _polygon_agg_session_date(day)
     today = now_et.date().isoformat()
-    if (day_session is not None and day_session < today) or _in_post_close_window(now_et):
+    if (
+        (day_session is not None and day_session < today)
+        or _in_post_close_window(now_et)
+        or (day_session == today and now_et.time() >= _POST_CLOSE_START)
+    ):
         primary, secondary = day, prev_day
     else:
         primary, secondary = prev_day, day

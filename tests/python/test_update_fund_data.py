@@ -106,6 +106,22 @@ def test_alpaca_weekend_run_uses_last_completed_daily_bar():
     assert _select_alpaca_close(snapshot, now) == 158.55
 
 
+def test_alpaca_friday_night_uses_completed_daily_bar():
+    # Regression (2026-10-02): at 20:27 ET Friday there is no overnight
+    # session, so dailyBar has NOT rolled — it is still Friday's completed bar,
+    # dated today. Selecting prevDailyBar here wrote Thursday's close as the
+    # baseline (VT 157.825 vs Friday's actual 159.13).
+    now = datetime(2026, 10, 2, 20, 27, tzinfo=ET)
+    snapshot = {
+        "dailyBar": {"c": 159.13, "t": "2026-10-02T04:00:00Z"},
+        "prevDailyBar": {"c": 157.80, "t": "2026-10-01T04:00:00Z"},
+    }
+    assert _select_alpaca_close(snapshot, now) == 159.13
+    # Late Friday night is the same situation.
+    now = datetime(2026, 10, 2, 23, 45, tzinfo=ET)
+    assert _select_alpaca_close(snapshot, now) == 159.13
+
+
 def test_alpaca_falls_back_when_preferred_bar_missing():
     # No prevDailyBar at all: fall back to dailyBar, then the latest trade
     now = datetime(2026, 9, 21, 23, 0, tzinfo=ET)
@@ -195,6 +211,18 @@ def test_polygon_bar_dated_before_today_is_completed():
     snapshot.day.timestamp = friday_04utc_ms
     snapshot.prev_day.close = 159.22
     assert _select_polygon_close(snapshot, now) == 158.55
+
+
+def test_polygon_friday_night_uses_day():
+    # Friday 20:27 ET: the day agg has not rolled (no overnight session on
+    # Friday), so it holds Friday's completed close — not prev_day (Thursday).
+    now = datetime(2026, 10, 2, 20, 27, tzinfo=ET)
+    friday_04utc_ms = 1_790_913_600_000  # 2026-10-02T04:00:00Z
+    snapshot = MagicMock()
+    snapshot.day.close = 159.13
+    snapshot.day.timestamp = friday_04utc_ms
+    snapshot.prev_day.close = 157.80
+    assert _select_polygon_close(snapshot, now) == 159.13
 
 
 @patch("scripts.data.update_fund_data.datetime")
