@@ -1,4 +1,4 @@
-import { mergeDividendsIntoContribution } from '../../../../../js/transactions/chart/data/contribution.js';
+import { mergeDividendsIntoContribution, _buildDividendMap, _mergeDividendMapIntoSeries } from '../../../../../js/transactions/chart/data/contribution.js';
 
 jest.mock('../../../../../js/transactions/state.js', () => ({
     transactionState: {
@@ -265,5 +265,50 @@ describe('mergeDividendsIntoContribution', () => {
         expect(result.find((p) => p.tradeDate === '2020-01-15').amount).toBe(1850);
         // Jan 20: +1000 buy => 1850 + 1000 = 2850
         expect(result.find((p) => p.tradeDate === '2020-01-20').amount).toBe(2850);
+    });
+});
+
+describe('_buildDividendMap', () => {
+    it('builds a map of dividends', () => {
+        const yieldData = [
+            { date: '2020-01-01', daily_dividend: 50 },
+            { date: '2020-01-02', daily_dividend: 0 },
+            { date: '2020-01-03', daily_dividend: 100 }
+        ];
+        const map = _buildDividendMap(yieldData, null);
+        expect(map.size).toBe(2);
+        expect(map.get('2020-01-01')).toBe(50);
+        expect(map.get('2020-01-03')).toBe(100);
+    });
+
+    it('filters by ticker', () => {
+        const yieldData = [
+            {
+                date: '2020-01-01',
+                daily_dividend: 50,
+                daily_dividends_by_ticker: { 'AAPL': 30, 'TSLA': 20 }
+            }
+        ];
+        const map = _buildDividendMap(yieldData, ['AAPL']);
+        expect(map.size).toBe(1);
+        expect(map.get('2020-01-01')).toBe(30);
+    });
+});
+
+describe('_mergeDividendMapIntoSeries', () => {
+    const mockConvertValueToCurrency = jest.fn((val) => val);
+
+    it('merges a dividend map into an existing series', () => {
+        const series = [
+            { tradeDate: '2020-01-01', amount: 1000, value: 1000, orderType: 'buy', netAmount: 1000, buyVolume: 1000, sellVolume: 0 }
+        ];
+        const dividendMap = new Map();
+        dividendMap.set('2020-01-02', 50);
+
+        const result = _mergeDividendMapIntoSeries(series, dividendMap, 'USD', mockConvertValueToCurrency);
+        expect(result.length).toBe(2);
+        expect(result[1].tradeDate).toBe('2020-01-02');
+        expect(result[1].amount).toBe(950);
+        expect(result[1].sellVolume).toBe(50);
     });
 });
