@@ -2162,8 +2162,13 @@ def _parse_browse_edgar_atom(payload: bytes) -> list[BrowseEdgarFiling]:
         RuntimeError: raised when XML parsing fails.
     """
 
+    # Defend against XML External Entity (XXE) and billion laughs by explicitly
+    # rejecting payloads containing '<!DOCTYPE' or '<!ENTITY' before parsing.
+    if b"<!DOCTYPE" in payload or b"<!ENTITY" in payload:
+        raise RuntimeError("browse-edgar XML parse failed: untrusted entity detected")
+
     try:
-        root = ET.fromstring(payload)
+        root = ET.fromstring(payload)  # nosec B314
     except ET.ParseError as exc:  # noqa: BLE001
         raise RuntimeError("browse-edgar XML parse failed") from exc
     ns = {"a": "http://www.w3.org/2005/Atom"}
