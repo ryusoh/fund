@@ -151,6 +151,22 @@ def test_stale_tail_refetch_without_improvement_keeps_original():
     assert updated['VT'].dropna().index.max() == pd.Timestamp('2026-09-18')
 
 
+def test_stale_tail_refetch_reports_unrefreshed_tickers(capsys):
+    # 2026-10-06 incident: the refetch no-op'd for every laggard (Yahoo kept
+    # serving stale bars) with zero log lines; only step_validate caught the
+    # resulting flat-line. A no-op refetch must announce itself.
+    frame = _stale_tail_frame()
+    with patch.object(step03, 'attempt_fallbacks', return_value={}):
+        step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
+        )
+
+    out = capsys.readouterr().out
+    assert 'could not refresh 2 of 2' in out
+    assert 'VT' in out and 'ANET' in out
+    assert '2026-09-22' in out
+
+
 def test_long_stopped_ticker_is_not_refetched():
     # A series that stopped weeks ago is a halted/acquired ticker, not a lag.
     index = pd.date_range('2026-07-15', '2026-09-22', freq='D')
@@ -194,6 +210,25 @@ def test_no_benchmark_column_disables_refetch():
 
 def _transactions_df():
     return pd.DataFrame({'trade_date': [pd.Timestamp('2020-06-25')]})
+
+
+def test_attempt_fallbacks_warns_when_no_data(caplog):
+    # An empty yfinance history and an empty stooq response were previously
+    # silent; the fallback path must say when it produced nothing.
+    import logging
+
+    empty_history = pd.DataFrame()
+    with (
+        patch.object(step03.yf, 'Ticker') as mock_ticker,
+        patch.object(step03, 'fetch_stooq_price', return_value=None),
+        caplog.at_level(logging.WARNING),
+    ):
+        mock_ticker.return_value.history.return_value = empty_history
+        retrieved = step03.attempt_fallbacks(['VT'], DATE_INDEX, DATE_INDEX[0], DATE_INDEX[-1])
+
+    assert retrieved == {}
+    assert 'no usable rows for VT' in caplog.text
+    assert 'No fallback prices available for VT' in caplog.text
 
 
 def test_date_range_excludes_today_while_session_is_forming():

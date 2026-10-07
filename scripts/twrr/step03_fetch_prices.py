@@ -249,12 +249,15 @@ def attempt_fallbacks(
                 series.name = ticker
                 retrieved[ticker] = series
                 continue
+            logging.warning(f'yfinance history returned no usable rows for {ticker}')
         except Exception as e:
             logging.warning(f"Failed to fetch {ticker} from primary source: {e}")
 
         stooq_series = fetch_stooq_price(fetch_symbol, start=start, end=end)
         if stooq_series is not None:
             retrieved[ticker] = stooq_series.rename(ticker)
+        else:
+            logging.warning(f'No fallback prices available for {ticker}')
 
     for ticker in list(retrieved):
         retrieved[ticker] = retrieved[ticker].reindex(date_index)
@@ -320,6 +323,16 @@ def refresh_stale_tails(
             refreshed.append(ticker)
     if refreshed:
         print(f'Stale-tail refetch updated: {refreshed}')
+    still_stale = sorted(set(stale) - set(refreshed))
+    if still_stale:
+        # 2026-10-06 incident: the refetch returned stale-or-empty data for
+        # all 39 laggards with no log line — the flat-fill was only caught
+        # downstream by step_validate. Make a no-op refetch visible here.
+        print(
+            f'Stale-tail refetch could not refresh {len(still_stale)} of {len(stale)} '
+            f'tickers; their tails still predate the benchmark tail '
+            f'({bench_last.date()}): {still_stale}'
+        )
     return price_df, stale
 
 
