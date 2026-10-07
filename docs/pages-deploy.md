@@ -56,6 +56,16 @@ until the next human push.
 - **Re-running only the failed deploy job** fails with `Multiple artifacts
 named "github-pages"` — every attempt uploads another artifact into the
   same run. Re-run _all_ jobs, or just push again.
+- **Concurrent pages runs race at activation, not at checkout.** The
+  concurrency group cancels an older in-flight run when a newer one starts,
+  but a run whose `deploy-pages` step has already fired still activates its
+  deployment — and Pages activates whichever deployment COMPLETES last, not
+  the newest commit (2026-10-07: a push-triggered deploy of a code-only commit
+  completed after the TWRR-dispatched deploy of the data commit pushed 6s
+  later, so the live site served the pre-data-commit content; both runs
+  showed green). Symptom: the deployed files are one commit behind `main`
+  right after a green deploy. Fix: re-dispatch `pages.yml` once the race
+  settles; verify with `curl` against the live file, not the run status.
 - "Deployment failed, try again later." (annotation on the deploy job) is a
   generic GitHub-backend rejection, not a repo problem — it hit both the
   legacy and Actions pipelines repeatedly in early July 2026 with a 33 MB
