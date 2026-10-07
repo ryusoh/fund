@@ -489,6 +489,77 @@ export function computeAppreciationSeries(balanceData, contributionData) {
  * @param {Array|null} filterTickers - optional array of ticker symbols to filter by
  * @returns {Array} merged series with dividends subtracted
  */
+export function _buildDividendMap(yieldData, filterTickers) {
+    const dividendMap = new Map();
+    for (let i = 0; i < yieldData.length; i++) {
+        const item = yieldData[i];
+        let dividend = 0;
+
+        if (filterTickers && filterTickers.length > 0) {
+            if (item.daily_dividends_by_ticker) {
+                for (let j = 0; j < filterTickers.length; j++) {
+                    const ticker = filterTickers[j];
+                    if (item.daily_dividends_by_ticker[ticker]) {
+                        dividend += item.daily_dividends_by_ticker[ticker];
+                    }
+                }
+            }
+        } else if (item.daily_dividend) {
+            dividend = item.daily_dividend;
+        }
+
+        const dividendNum = Number(dividend) || 0;
+        if (dividendNum !== 0) {
+            dividendMap.set(item.date, dividendNum);
+        }
+    }
+    return dividendMap;
+}
+
+export function _mergeDividendMapIntoSeries(contributionSeries, dividendMap, currency, convertValueToCurrency) {
+    const merged = new Array(contributionSeries.length);
+    const seriesMap = new Map();
+    for (let i = 0; i < contributionSeries.length; i++) {
+        merged[i] = { ...contributionSeries[i] };
+        seriesMap.set(merged[i].tradeDate, i);
+    }
+
+    for (const [dateStr, dividend] of dividendMap.entries()) {
+        const convertedDividend =
+            currency && currency !== 'USD'
+                ? convertValueToCurrency(dividend, dateStr, currency)
+                : dividend;
+
+        if (seriesMap.has(dateStr)) {
+            const idx = seriesMap.get(dateStr);
+            merged[idx].sellVolume = (merged[idx].sellVolume || 0) + convertedDividend;
+            merged[idx].netAmount = (merged[idx].netAmount || 0) - convertedDividend;
+        } else {
+            merged.push({
+                tradeDate: dateStr,
+                amount: 0,
+                value: 0,
+                orderType: 'sell',
+                netAmount: -convertedDividend,
+                buyVolume: 0,
+                sellVolume: convertedDividend,
+            });
+        }
+    }
+
+    merged.sort((a, b) => (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0));
+
+    let cumulative = 0;
+    for (let i = 0; i < merged.length; i++) {
+        const point = merged[i];
+        cumulative += point.netAmount;
+        point.amount = cumulative;
+        point.value = cumulative;
+    }
+
+    return merged;
+}
+
 export function mergeDividendsIntoContribution(
     contributionSeries,
     yieldData,
@@ -499,89 +570,12 @@ export function mergeDividendsIntoContribution(
         return contributionSeries;
     }
 
-    // Build a Map of dateStr → daily_dividend from yieldData (only non-zero entries)
-    const dividendMap = new Map();
-    for (let i = 0; i < yieldData.length; i++) {
-        const item = yieldData[i];
-        let dividend = 0;
-
-        if (filterTickers && filterTickers.length > 0) {
-            // If filtering is active, only include dividends for the filtered tickers
-            if (item.daily_dividends_by_ticker) {
-                for (let j = 0; j < filterTickers.length; j++) {
-                    const ticker = filterTickers[j];
-                    if (item.daily_dividends_by_ticker[ticker]) {
-                        dividend += item.daily_dividends_by_ticker[ticker];
-                    }
-                }
-            }
-            // If item.daily_dividends_by_ticker is missing, dividend remains 0. We DO NOT fall back!
-        } else if (item.daily_dividend) {
-            // No filtering active: use the aggregate daily_dividend
-            dividend = item.daily_dividend;
-        }
-
-        const dividendNum = Number(dividend) || 0;
-        if (dividendNum !== 0) {
-            dividendMap.set(item.date, dividendNum);
-        }
-    }
-
+    const dividendMap = _buildDividendMap(yieldData, filterTickers);
     if (dividendMap.size === 0) {
         return contributionSeries;
     }
 
-    // Clone the series so we don't mutate the original
-    const merged = new Array(contributionSeries.length);
-    for (let i = 0; i < contributionSeries.length; i++) {
-        merged[i] = { ...contributionSeries[i] };
-    }
-
-    // Build a Map of dateStr → index from contributionSeries for quick lookup
-    const seriesMap = new Map();
-    for (let i = 0; i < merged.length; i++) {
-        seriesMap.set(merged[i].tradeDate, i);
-    }
-
-    // Process each dividend entry
-    for (const [dateStr, dividend] of dividendMap.entries()) {
-        const convertedDividend =
-            currency && currency !== 'USD'
-                ? convertValueToCurrency(dividend, dateStr, currency)
-                : dividend;
-
-        if (seriesMap.has(dateStr)) {
-            // Date already exists in contribution series: add sellVolume, mark dividend delta
-            const idx = seriesMap.get(dateStr);
-            merged[idx].sellVolume = (merged[idx].sellVolume || 0) + convertedDividend;
-            merged[idx].netAmount = (merged[idx].netAmount || 0) - convertedDividend;
-        } else {
-            // Insert a new point for this dividend date
-            merged.push({
-                tradeDate: dateStr,
-                amount: 0, // will be recalculated
-                value: 0,
-                orderType: 'sell',
-                netAmount: -convertedDividend,
-                buyVolume: 0,
-                sellVolume: convertedDividend,
-            });
-        }
-    }
-
-    // Re-sort by date
-    merged.sort((a, b) => (a.tradeDate < b.tradeDate ? -1 : a.tradeDate > b.tradeDate ? 1 : 0));
-
-    // Recalculate cumulative amounts
-    let cumulative = 0;
-    for (let i = 0; i < merged.length; i++) {
-        const point = merged[i];
-        cumulative += point.netAmount;
-        point.amount = cumulative;
-        point.value = cumulative;
-    }
-
-    return merged;
+    return _mergeDividendMapIntoSeries(contributionSeries, dividendMap, currency, convertValueToCurrency);
 }
 
 export function _getFromBalanceCache(filteredBalanceSeriesCache, transactions, historicalPrices, splitHistory) {
