@@ -39,10 +39,7 @@ def resolve_workspace(override: Optional[Path | str] = None) -> Path:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    fallback_tmp = Path("/tmp/dayu-workspace")
-    if fallback_tmp.exists():
-        return fallback_tmp
-
+    # Secure default: avoid predictable /tmp directory fallbacks to prevent symlink/race condition vulnerabilities.
     default_cache = Path.home() / ".cache" / "filings"
     default_cache.mkdir(parents=True, exist_ok=True)
     return default_cache
