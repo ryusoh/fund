@@ -199,31 +199,6 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     return values
 
 
-def _get_latest_trading_day() -> str:
-    """Get the most recent trading day's date (YYYY-MM-DD format).
-
-    Uses yfinance to fetch SPY history and find the latest date with data.
-    Falls back to previous business day if market data is not available.
-    """
-    try:
-        spy = yf.Ticker("SPY")
-        hist = spy.history(period="2d")
-        if not hist.empty:
-            latest_date = hist.index[-1].date()
-            return str(latest_date.strftime("%Y-%m-%d"))
-    except Exception as e:
-        import logging
-
-        logging.warning(f"Failed to fetch SPY for fallback date: {e}")
-
-    # Fallback: use previous business day
-    today = datetime.now(ZoneInfo("America/New_York"))
-    prev_day = today - pd.Timedelta(days=1)
-    while prev_day.weekday() >= 5:  # Skip weekends
-        prev_day -= pd.Timedelta(days=1)
-    return str(prev_day.strftime("%Y-%m-%d"))
-
-
 def main():
     print("Starting daily portfolio value update...")
 

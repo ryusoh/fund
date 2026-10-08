@@ -27,7 +27,6 @@ sys.path.insert(0, str(project_root))
 
 from scripts.pnl.update_daily_pnl import (  # noqa: E402
     _fetch_histories_batch,
-    _get_latest_trading_day,
     calculate_daily_values,
     calculate_daily_values_with_date,
 )
@@ -237,49 +236,6 @@ class TestUpdateDailyPnlRegression(unittest.TestCase):
         self.assertAlmostEqual(result["value_cny"], expected_usd * 7.2, places=2)
         self.assertAlmostEqual(result["value_jpy"], expected_usd * 145.0, places=2)
         self.assertAlmostEqual(result["value_krw"], expected_usd * 1300.0, places=2)
-
-
-class TestGetLatestTradingDay(unittest.TestCase):
-    """Tests for _get_latest_trading_day helper function."""
-
-    def setUp(self) -> None:
-        self.download_patcher = patch(
-            "yfinance.download", side_effect=Exception("batch disabled in this test")
-        )
-        self.download_patcher.start()
-        self.addCleanup(self.download_patcher.stop)
-
-    @patch("yfinance.Ticker")
-    def test_returns_latest_trading_day_from_market_data(self, mock_ticker_class) -> None:
-        """Test that _get_latest_trading_day returns the most recent trading day from SPY data."""
-        # Mock SPY history with trading days
-        mock_spy = MagicMock()
-        mock_spy.history.return_value = pd.DataFrame(
-            {"Close": [450.0, 452.0]},
-            index=pd.to_datetime(["2026-02-23", "2026-02-24"]),
-        )
-        mock_ticker_class.return_value = mock_spy
-
-        result = _get_latest_trading_day()
-
-        # Should return the most recent trading day from the mock data
-        self.assertEqual(result, "2026-02-24")
-        mock_ticker_class.assert_called_with("SPY")
-        mock_spy.history.assert_called_with(period="2d")
-
-    @patch("yfinance.Ticker")
-    def test_falls_back_to_business_day_on_error(self, mock_ticker_class) -> None:
-        """Test fallback to previous business day when market data fails."""
-        # Simulate yfinance error
-        mock_spy = MagicMock()
-        mock_spy.history.side_effect = Exception("Network error")
-        mock_ticker_class.return_value = mock_spy
-
-        result = _get_latest_trading_day()
-
-        # Should fall back to previous business day calculation
-        self.assertIsInstance(result, str)
-        self.assertRegex(result, r"^\d{4}-\d{2}-\d{2}$")
 
 
 class TestCalculateDailyValuesEdgeCases(unittest.TestCase):
