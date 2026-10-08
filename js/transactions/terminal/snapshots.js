@@ -116,6 +116,18 @@ function formatFxInline(value) {
     return value.toFixed(4);
 }
 
+export function formatFxSnapshotPoint(series, baseCurrency) {
+    const data = Array.isArray(series.data) ? series.data : [];
+    if (data.length === 0) {
+        return null;
+    }
+    const latestPoint = data[data.length - 1];
+    if (!latestPoint || !Number.isFinite(latestPoint.value)) {
+        return null;
+    }
+    return `${baseCurrency}/${series.quote} ${formatFxInline(latestPoint.value)}`;
+}
+
 export function getFxSnapshotLine() {
     if (transactionState.activeChart !== 'fx') {
         return null;
@@ -132,15 +144,10 @@ export function getFxSnapshotLine() {
         if (visibility[series.key] === false) {
             continue;
         }
-        const data = Array.isArray(series.data) ? series.data : [];
-        if (data.length === 0) {
-            continue;
+        const formatted = formatFxSnapshotPoint(series, baseCurrency);
+        if (formatted) {
+            snapshots.push(formatted);
         }
-        const latestPoint = data[data.length - 1];
-        if (!latestPoint || !Number.isFinite(latestPoint.value)) {
-            continue;
-        }
-        snapshots.push(`${baseCurrency}/${series.quote} ${formatFxInline(latestPoint.value)}`);
     }
     if (!snapshots.length) {
         return null;

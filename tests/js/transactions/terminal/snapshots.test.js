@@ -1030,3 +1030,26 @@ describe('getDrawdownSnapshotLine remaining coverage 2', () => {
         expect(result).toBeNull();
     });
 });
+
+describe('formatFxSnapshotPoint', () => {
+    let formatFxSnapshotPoint;
+    beforeAll(async () => {
+        formatFxSnapshotPoint = (await import('../../../../js/transactions/terminal/snapshots.js')).formatFxSnapshotPoint;
+    });
+
+    it('returns null if series data is empty', () => {
+        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [] }, 'USD')).toBeNull();
+    });
+
+    it('returns null if latest point is missing', () => {
+        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [{}] }, 'USD')).toBeNull();
+    });
+
+    it('returns null if latest point value is not finite', () => {
+        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [{ value: NaN }] }, 'USD')).toBeNull();
+    });
+
+    it('returns formatted point if latest point is valid', () => {
+        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [{ value: 0.95 }] }, 'USD')).toBe('USD/EUR 0.9500');
+    });
+});
