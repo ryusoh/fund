@@ -1034,7 +1034,8 @@ describe('getDrawdownSnapshotLine remaining coverage 2', () => {
 describe('formatFxSnapshotPoint', () => {
     let formatFxSnapshotPoint;
     beforeAll(async () => {
-        formatFxSnapshotPoint = (await import('../../../../js/transactions/terminal/snapshots.js')).formatFxSnapshotPoint;
+        formatFxSnapshotPoint = (await import('../../../../js/transactions/terminal/snapshots.js'))
+            .formatFxSnapshotPoint;
     });
 
     it('returns null if series data is empty', () => {
@@ -1050,6 +1051,8 @@ describe('formatFxSnapshotPoint', () => {
     });
 
     it('returns formatted point if latest point is valid', () => {
-        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [{ value: 0.95 }] }, 'USD')).toBe('USD/EUR 0.9500');
+        expect(formatFxSnapshotPoint({ quote: 'EUR', data: [{ value: 0.95 }] }, 'USD')).toBe(
+            'USD/EUR 0.9500'
+        );
     });
 });
