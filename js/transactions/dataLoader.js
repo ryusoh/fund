@@ -263,6 +263,73 @@ export async function loadContributionSeries() {
     }
 }
 
+export function _parsePerformancePayload(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return {};
+    }
+    const seriesMap = {};
+    for (const [rawKey, points] of Object.entries(payload)) {
+        if (!Array.isArray(points) || points.length === 0) {
+            continue;
+        }
+
+        const normalizedPoints = [];
+        for (let i = 0; i < points.length; i++) {
+            const point = points[i];
+            if (typeof point.date === 'string' && Number.isFinite(Number(point.value))) {
+                normalizedPoints.push({
+                    date: point.date,
+                    value: Number(point.value),
+                });
+            }
+        }
+
+        if (normalizedPoints.length === 0) {
+            continue;
+        }
+
+        const key = normalizeSeriesKey(rawKey, rawKey);
+        seriesMap[key] = normalizedPoints;
+    }
+    return seriesMap;
+}
+
+export async function _estimateRealtimePerformance(seriesMap, realtime) {
+    if (!realtime || !seriesMap['^LZ'] || seriesMap['^LZ'].length === 0) {
+        return;
+    }
+    try {
+        const balPayload = await loadBalanceSeriesPayload();
+        const usdOpen = Array.isArray(balPayload)
+            ? balPayload[balPayload.length - 1]
+            : balPayload.USD
+              ? balPayload.USD[balPayload.USD.length - 1]
+              : null;
+
+        if (usdOpen && usdOpen.value > 0) {
+            const lastTwrrPoint = seriesMap['^LZ'][seriesMap['^LZ'].length - 1];
+            const dailyReturn = realtime.balance / usdOpen.value; // e.g. 1.01
+
+            // If dates match, update the last point
+            if (lastTwrrPoint.date === realtime.date) {
+                // This implies the series already has today's data (maybe from batch job).
+                // We probably shouldn't overwrite it with a simple estimate unless we are sure.
+                // But for "live" feel, maybe we do?
+                // Let's only append if date is new.
+            } else {
+                const newTwrrValue = lastTwrrPoint.value * dailyReturn;
+                seriesMap['^LZ'].push({
+                    date: realtime.date,
+                    value: newTwrrValue,
+                });
+            }
+        }
+    } catch (error) {
+        logger.warn('Data loading failed:', error);
+        // Ignore complexity if balance fetch fails
+    }
+}
+
 export async function loadPerformanceSeries() {
     try {
         const [response, realtime] = await Promise.all([
@@ -279,76 +346,9 @@ export async function loadPerformanceSeries() {
         }
 
         const payload = await response.json();
-        if (!payload || typeof payload !== 'object') {
-            return {};
-        }
+        const seriesMap = _parsePerformancePayload(payload);
 
-        const seriesMap = {};
-        // Bolt: Replaced Object.entries().forEach with standard for...of loop
-        for (const [rawKey, points] of Object.entries(payload)) {
-            if (!Array.isArray(points) || points.length === 0) {
-                continue;
-            }
-
-            // Bolt: Pre-allocate array and use for loop instead of chained .map().filter()
-            const normalizedPoints = [];
-            for (let i = 0; i < points.length; i++) {
-                const point = points[i];
-                if (typeof point.date === 'string' && Number.isFinite(Number(point.value))) {
-                    normalizedPoints.push({
-                        date: point.date,
-                        value: Number(point.value),
-                    });
-                }
-            }
-
-            if (normalizedPoints.length === 0) {
-                continue;
-            }
-
-            const key = normalizeSeriesKey(rawKey, rawKey);
-            seriesMap[key] = normalizedPoints;
-        }
-
-        // Estimate real-time performance for LZ fund
-        // Logic: (TodayBalance / LastBalance) - 1 + LastTWRR?
-        // Or rather: NewTWRR = LastTWRR * (CurrentBalance / PreviousBalance) (assuming no flows)
-        if (realtime && seriesMap['^LZ'] && seriesMap['^LZ'].length > 0) {
-            // We need the previous balance value to calculate return
-            // We can re-fetch balance series or assume we can get it.
-            // Getting it from loadPortfolioSeries is circular or messy.
-            // Simplified approach: fetch balance series here locally just to find the last point.
-            try {
-                const balPayload = await loadBalanceSeriesPayload();
-                const usdOpen = Array.isArray(balPayload)
-                    ? balPayload[balPayload.length - 1]
-                    : balPayload.USD
-                      ? balPayload.USD[balPayload.USD.length - 1]
-                      : null;
-
-                if (usdOpen && usdOpen.value > 0) {
-                    const lastTwrrPoint = seriesMap['^LZ'][seriesMap['^LZ'].length - 1];
-                    const dailyReturn = realtime.balance / usdOpen.value; // e.g. 1.01
-
-                    // If dates match, update the last point
-                    if (lastTwrrPoint.date === realtime.date) {
-                        // This implies the series already has today's data (maybe from batch job).
-                        // We probably shouldn't overwrite it with a simple estimate unless we are sure.
-                        // But for "live" feel, maybe we do?
-                        // Let's only append if date is new.
-                    } else {
-                        const newTwrrValue = lastTwrrPoint.value * dailyReturn;
-                        seriesMap['^LZ'].push({
-                            date: realtime.date,
-                            value: newTwrrValue,
-                        });
-                    }
-                }
-            } catch (error) {
-                logger.warn('Data loading failed:', error);
-                // Ignore complexity if balance fetch fails
-            }
-        }
+        await _estimateRealtimePerformance(seriesMap, realtime);
 
         return seriesMap;
     } catch (error) {
