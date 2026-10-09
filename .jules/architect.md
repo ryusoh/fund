@@ -80,6 +80,17 @@ already proposed or previously rejected — pick a different target.
   dirty tree ("committed files were not gate-clean"), which is exactly how a
   PR whose hooks all "Passed" still goes red (PR #688, 2026-09-21). After the
   fixer run, `git status --porcelain` empty is the bar.
+- **Warn-level eslint rules fail CI.** The pre-commit eslint hook runs with
+  `--max-warnings=0`, so a `no-unused-vars` _warning_ (e.g. an unused
+  `const mod = await import(...)` left in a companion test) fails
+  `make precommit-fix` even though bare `npx eslint` exits 0. Check eslint
+  output for warnings, not just errors, before pushing (fund#725, 2026-10:
+  four unused `mod` bindings in `dataLoader.test.js` went red in web-ci).
+- **Don't carry stream-of-consciousness comments into extracted helpers.**
+  When you move a code block, drop any thinking-out-loud comments inside it
+  ("This implies...", "We probably shouldn't...", "Let's only...") instead of
+  moving them verbatim — `make thinking-check` scans the moved text too
+  (fund#725 moved four such comments into `_estimateRealtimePerformance`).
 - Don't rerun a failed gate on an unchanged tree — a red gate over an untouched
   worktree cannot go green. `python3 -m scripts.agents.gate_guard` (`snapshot`
   before the run, `check <hash>` before a retry); unchanged means edit something

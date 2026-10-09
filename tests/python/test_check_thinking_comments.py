@@ -37,6 +37,11 @@ FLAGGED_COMMENTS = [
     'This is tricky without a full color parser.',
     'To hit line 238, core must be empty',
     'blocks to reach line 746.',  # mid-comment coverage note
+    "This implies the series already has today's data",
+    "We probably shouldn't overwrite it",
+    'for "live" feel, maybe we do?',
+    "Let's only append if date is new",
+    'not sure this handles DST',
 ]
 
 CLEAN_COMMENTS = [

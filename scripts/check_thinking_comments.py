@@ -51,6 +51,11 @@ THINKING_RE = re.compile(
     r'|^how about\b'
     r"|^let'?s (?:check|see|try|look)\b"
     r"|\blet'?s (?:assume|rely)\b"
+    r"|^let'?s only\b"
+    r'|^this implies\b'
+    r'|\bwe probably\b'
+    r'|\bmaybe we\b'
+    r'|\bnot sure\b'
     r'|\bmight be (?:easier|better|simpler|cleaner)\b'
     r'|^this is (?:tricky|hard|hacky)\b'
     r'|^let me think\b'
