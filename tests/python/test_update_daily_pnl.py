@@ -623,6 +623,88 @@ class TestNaNRowCleanup(unittest.TestCase):
         self.assertAlmostEqual(float(rows[1]["value_usd"]), 15500.0, places=2)
 
 
+class TestInteriorGapBackfill(unittest.TestCase):
+    """The 2026-10-07 hole: two nightly runs failed validation, so no commit
+    landed; the next successful run appended only the latest date (10-08),
+    leaving 10-07 permanently missing from the CSV. The script must backfill
+    interior gaps, not just append the newest date."""
+
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+
+        self.holdings_path = self.temp_path / "holdings_details.json"
+        self.holdings_data = {
+            "AAPL": {"shares": "100", "average_price": "150.00"},
+        }
+        self.holdings_path.write_text(json.dumps(self.holdings_data), encoding="utf-8")
+
+        self.forex_path = self.temp_path / "fx_data.json"
+        self.forex_data = {"rates": {"USD": 1.0}}
+        self.forex_path.write_text(json.dumps(self.forex_data), encoding="utf-8")
+
+        self.download_patcher = patch(
+            "yfinance.download", side_effect=Exception("batch disabled in this test")
+        )
+        self.download_patcher.start()
+        self.addCleanup(self.download_patcher.stop)
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def _create_mock_history_response(self, dates: List[str], closes: List[float]) -> MagicMock:
+        mock_history = MagicMock()
+        mock_history.empty = False
+        mock_df = pd.DataFrame(
+            {"Close": closes},
+            index=pd.to_datetime(dates),
+        )
+        mock_history.__getitem__ = lambda self, key: mock_df[key]
+        mock_history.get = lambda key: mock_df.get(key)
+        mock_history.index = mock_df.index
+        return mock_history
+
+    @patch("scripts.pnl.update_daily_pnl.HISTORICAL_CSV")
+    @patch("scripts.pnl.update_daily_pnl.pd.read_csv")
+    def test_interior_gap_is_backfilled(self, mock_read_csv, mock_csv_path) -> None:
+        from scripts.pnl.update_daily_pnl import main
+
+        csv_path = self.temp_path / "historical_portfolio_values.csv"
+        csv_path.write_text(
+            "date,value_usd\n2026-10-06,15000.0\n2026-10-08,15800.0\n",
+            encoding="utf-8",
+        )
+
+        mock_csv_path.__truediv__ = lambda self, key: self.temp_path / key
+        mock_csv_path.exists.return_value = True
+        mock_csv_path.open = csv_path.open
+
+        mock_df = MagicMock()
+        mock_df.tail.return_value = "mock output"
+        mock_read_csv.return_value = mock_df
+
+        mock_history = self._create_mock_history_response(
+            dates=["2026-10-06", "2026-10-07", "2026-10-08"],
+            closes=[150.0, 155.0, 158.0],
+        )
+        mock_ticker = MagicMock()
+        mock_ticker.history.return_value = mock_history
+
+        with patch("yfinance.Ticker", return_value=mock_ticker):
+            with (
+                patch("scripts.pnl.update_daily_pnl.HOLDINGS_FILE", self.holdings_path),
+                patch("scripts.pnl.update_daily_pnl.FOREX_FILE", self.forex_path),
+            ):
+                main()
+
+        with csv_path.open("r", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+
+        self.assertEqual([row["date"] for row in rows], ["2026-10-06", "2026-10-07", "2026-10-08"])
+        # 100 shares * $155 close on the backfilled day
+        self.assertAlmostEqual(float(rows[1]["value_usd"]), 15500.0, places=2)
+
+
 class TestStaleDataDetection(unittest.TestCase):
     """Integration tests for stale data detection and correction."""
 

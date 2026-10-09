@@ -114,6 +114,7 @@ class TestFundScripts(unittest.TestCase):
 
     # Test for update_daily_pnl.py
     @patch("scripts.pnl.update_daily_pnl.datetime")
+    @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_by_date")
     @patch("scripts.pnl.update_daily_pnl.calculate_daily_values_with_date")
     @patch("scripts.pnl.update_daily_pnl.load_json_data")
     @patch(
@@ -122,12 +123,14 @@ class TestFundScripts(unittest.TestCase):
         read_data="date,value_usd\n2023-01-01,15000.0",
     )
     def test_update_daily_pnl(
-        self, mock_open_file, mock_load_json, mock_calc_values, mock_datetime
+        self, mock_open_file, mock_load_json, mock_calc_values, mock_calc_by_date, mock_datetime
     ) -> None:
         # Arrange
         mock_datetime.now.return_value = datetime(2023, 1, 2, 17, 15)  # post-close ET
+        mock_datetime.fromisoformat = datetime.fromisoformat
         mock_load_json.return_value = {"some_data": "value"}
         mock_calc_values.return_value = ({"value_usd": 16000.0}, "2023-01-02")
+        mock_calc_by_date.return_value = {}
 
         # Act
         update_daily_pnl()

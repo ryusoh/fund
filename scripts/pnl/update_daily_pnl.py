@@ -50,8 +50,8 @@ def load_json_data(file_path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _fetch_histories_batch(tickers: List[str]) -> Dict[str, Any]:
-    """Fetch 5-day history for all tickers in one yf.download call.
+def _fetch_histories_batch(tickers: List[str], period: str = "5d") -> Dict[str, Any]:
+    """Fetch history for all tickers in one yf.download call.
 
     Returns a mapping of ticker -> per-ticker history DataFrame. Tickers
     missing from the batch response are absent; the caller falls back to a
@@ -62,7 +62,7 @@ def _fetch_histories_batch(tickers: List[str]) -> Dict[str, Any]:
     try:
         data = yf.download(
             tickers,
-            period="5d",
+            period=period,
             group_by="ticker",
             auto_adjust=False,
             progress=False,
@@ -199,6 +199,73 @@ def calculate_daily_values(holdings: Dict, forex: Dict) -> Dict[str, Any]:
     return values
 
 
+def calculate_daily_values_by_date(
+    holdings: Dict, forex: Dict, period: str = "1mo"
+) -> Dict[str, Dict[str, Any]]:
+    """Portfolio values for every trading day in the recent window.
+
+    Returns {'YYYY-MM-DD': daily_values}. The nightly append alone never
+    recovers days lost to failed runs (the 2026-10-07 hole: the 10-06 and
+    10-08 rows landed but 10-07 was never written); this fills any gap
+    inside the window, interior or tail. A ticker without a bar on a date
+    carries its last close within the window (pipeline ffill semantics).
+    """
+    fx_rates = forex.get("rates", {}).copy()
+    fx_rates["USD"] = 1.0
+
+    histories = _fetch_histories_batch(list(holdings.keys()), period=period)
+    closes_by_ticker: Dict[str, Dict[str, float]] = {}
+    shares_by_ticker: Dict[str, float] = {}
+    for ticker, holding_details in holdings.items():
+        try:
+            shares = float(holding_details["shares"])
+            hist = histories.get(ticker)
+            if hist is None or hist.empty:
+                hist = yf.Ticker(ticker).history(period=period)
+            if hist.empty:
+                print(
+                    f"Warning: Could not get historical data for {ticker}. Skipping.",
+                    file=sys.stderr,
+                )
+                continue
+            closes = hist["Close"].dropna()
+            if closes.empty:
+                print(
+                    f"Warning: No valid close price found for {ticker}. Skipping.",
+                    file=sys.stderr,
+                )
+                continue
+            closes_by_ticker[ticker] = {
+                idx.strftime("%Y-%m-%d"): float(price) for idx, price in closes.items()
+            }
+            shares_by_ticker[ticker] = shares
+        except (ValueError, TypeError) as e:
+            print(
+                f"Warning: Could not process ticker {ticker}. Details: {e}",
+                file=sys.stderr,
+            )
+        except Exception as e:
+            print(
+                f"Warning: An error occurred while fetching data for {ticker}: {e}",
+                file=sys.stderr,
+            )
+
+    values_by_date: Dict[str, Dict[str, Any]] = {}
+    all_dates = sorted({day for closes in closes_by_ticker.values() for day in closes})
+    last_known: Dict[str, float] = {}
+    for day in all_dates:
+        for ticker, closes in closes_by_ticker.items():
+            if day in closes:
+                last_known[ticker] = closes[day]
+        if len(last_known) < len(closes_by_ticker):
+            continue  # some ticker has no bar yet inside the window
+        total_usd = sum(shares_by_ticker[t] * last_known[t] for t in closes_by_ticker)
+        values_by_date[day] = {
+            f"value_{ccy.lower()}": total_usd * rate for ccy, rate in fx_rates.items()
+        }
+    return values_by_date
+
+
 def main():
     print("Starting daily portfolio value update...")
 
@@ -281,19 +348,6 @@ def main():
         )
         sys.exit(0)
 
-    # Check if we already have data for this market data date
-    if last_date == market_data_date:
-        print(f"Data already exists for {market_data_date}. Nothing to update.")
-        df_display = pd.read_csv(HISTORICAL_CSV)
-        print("\nLatest data:")
-        print(df_display.tail())
-        sys.exit(0)
-
-    # Check if the last row has stale data (older than market data date)
-    if last_date and last_date < market_data_date:
-        print(f"Last entry ({last_date}) is older than market data date ({market_data_date}).")
-        # We'll update the stale row below when we append new data
-
     # If last_date exists but is different from market_data_date,
     # we need to determine if we should update last_date or append market_data_date
     if last_date and last_date > market_data_date:
@@ -307,30 +361,47 @@ def main():
         print(df_display.tail())
         sys.exit(0)
 
-    # If last_date exists and is stale, recalculate it
-    if last_date and last_date < market_data_date:
-        # We need to fetch data for the last_date specifically
-        # For simplicity, we'll use the current market data (which is the best available)
-        # and label it with the market_data_date
-        print(f"Updating stale data: will add {market_data_date} data")
+    # Append only the latest date never recovers days lost to failed runs
+    # (the 2026-10-07 hole: validation failures blocked two nightly commits,
+    # and the next successful run wrote 10-08 without filling 10-07). Backfill
+    # every missing trading day in the recent window, interior or tail.
+    existing_dates = {row[0] for row in all_rows}
+    values_by_date: Dict[str, Dict[str, Any]] = {}
+    if last_date:
+        gap_span = (
+            datetime.fromisoformat(market_data_date) - datetime.fromisoformat(last_date)
+        ).days
+        period = "5d" if gap_span <= 5 else "1mo" if gap_span <= 31 else "3mo"
+        values_by_date = calculate_daily_values_by_date(
+            all_data["holdings"], all_data["forex"], period=period
+        )
+    # The latest date keeps calculate_daily_values_with_date's resolution —
+    # its regularMarketPrice fallback covers a NaN last bar.
+    values_by_date[market_data_date] = current_values
+    missing_dates = [
+        day
+        for day in sorted(values_by_date)
+        if day <= market_data_date and day not in existing_dates
+    ]
+    if not missing_dates:
+        print(f"Data already exists through {market_data_date}. Nothing to update.")
+        df_display = pd.read_csv(HISTORICAL_CSV)
+        print("\nLatest data:")
+        print(df_display.tail())
+        sys.exit(0)
 
-    # Append new row for market_data_date
-    new_row = [market_data_date] + [current_values.get(col, "") for col in header[1:]]
+    print(f"Backfilling {len(missing_dates)} missing date(s): {missing_dates}")
+    for day in missing_dates:
+        all_rows.append([day] + [values_by_date[day].get(col, "") for col in header[1:]])
+    all_rows.sort(key=lambda row: row[0])
 
-    if not file_content.endswith("\n"):
-        file_content += "\n"
-
-    from io import StringIO
-
-    output = StringIO()
-    writer = csv.writer(output)
-    writer.writerow(new_row)
-    file_content += output.getvalue()
-
+    lines = [",".join(header)]
+    for row in all_rows:
+        lines.append(",".join(str(cell) for cell in row))
     with HISTORICAL_CSV.open("w", encoding="utf-8") as f:
-        f.write(file_content)
+        f.write("\n".join(lines) + "\n")
 
-    print(f"Successfully appended data for {market_data_date} to {HISTORICAL_CSV}")
+    print(f"Successfully wrote {len(missing_dates)} row(s) to {HISTORICAL_CSV}")
     df_display = pd.read_csv(HISTORICAL_CSV)
     print("\nLatest data:")
     print(df_display.tail())
