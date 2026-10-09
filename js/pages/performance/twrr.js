@@ -1,5 +1,7 @@
+/** @type {string} */
 const DATA_PATH = '../data/output/figures/twrr.json';
 
+/** @type {unknown} */
 const LAYOUT = {
     title: { text: 'Portfolio Time-Weighted Performance (TWRR)' },
     xaxis: { title: 'Date' },
@@ -10,6 +12,7 @@ const LAYOUT = {
     legend: { orientation: 'h', x: 0, y: 1.05 },
 };
 
+/** @type {unknown} */
 const CONFIG = {
     displayModeBar: true,
     displaylogo: false,
@@ -25,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+/**
+ * @returns {Promise<void>}
+ */
 async function renderTwrrChart() {
     const payload = await loadPayload();
     const chartElement = document.getElementById('twrr-chart');
@@ -36,6 +42,14 @@ async function renderTwrrChart() {
     await window.Plotly.react(chartElement, data, LAYOUT, CONFIG);
 }
 
+/**
+ * @typedef {Object} TwrrPayload
+ * @property {unknown[]} data
+ */
+
+/**
+ * @returns {Promise<TwrrPayload>}
+ */
 async function loadPayload() {
     const response = await fetch(DATA_PATH, { cache: 'no-store' });
     if (!response.ok) {

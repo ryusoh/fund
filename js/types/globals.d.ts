@@ -6,3 +6,14 @@
 declare const process: {
     env: Record<string, string | undefined>;
 };
+
+interface Window {
+    Plotly: {
+        react: (
+            element: HTMLElement,
+            data: unknown[],
+            layout: unknown,
+            config: unknown
+        ) => Promise<void>;
+    };
+}
