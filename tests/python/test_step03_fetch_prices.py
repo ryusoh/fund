@@ -364,3 +364,83 @@ def test_date_range_includes_today_after_close():
         mock_datetime.now.return_value = fake_now
         date_index = step03.determine_date_range(_transactions_df())
     assert date_index[-1].date() == date(2026, 9, 22)
+
+
+# --- Yahoo evening rollover window retry ---
+# 2026-10-07/08: runs delayed to 20:58/21:12 ET found the whole equity fleet
+# one session stale (Yahoo's daily-bar rollover) and failed validation two
+# nights running; a 21:57 ET run was clean. The pipeline must poll through
+# the window instead of flat-lining or failing.
+
+
+def _fleet_frame(equity_tail, bench_last='2026-09-22', n_equities=8):
+    tickers = tuple(f'T{i}' for i in range(n_equities))
+    return _stale_tail_frame(held_last=equity_tail, bench_last=bench_last, tickers=tickers)
+
+
+def _run_main(fetch_results, now_et):
+    transactions = pd.DataFrame(
+        {
+            'trade_date': [pd.Timestamp('2020-06-25')] * 8,
+            'security': [f'T{i}' for i in range(8)],
+        }
+    )
+    with (
+        patch.object(step03, 'read_transactions', return_value=transactions),
+        patch.object(step03, 'fetch_yfinance_prices', side_effect=fetch_results) as mock_fetch,
+        patch.object(step03, 'attempt_fallbacks', return_value={}),
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+        patch.object(step03, 'load_overrides', return_value=pd.DataFrame()),
+        patch.object(step03, 'write_raw_json_prices'),
+        patch.object(step03, 'write_prices'),
+        patch.object(step03, 'append_changelog_entry'),
+        patch.object(step03, 'time') as mock_time,
+        patch.object(step03, 'datetime') as mock_datetime,
+    ):
+        mock_datetime.now.return_value = now_et
+        step03.main()
+    return mock_fetch, mock_time
+
+
+def test_rollover_window_retries_until_fresh():
+    stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
+    fresh = (_fleet_frame('2026-09-22'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([stale, stale, fresh], now)
+
+    assert mock_fetch.call_count == 3
+    assert mock_time.sleep.call_count == 2
+    mock_time.sleep.assert_called_with(step03.ROLLOVER_RETRY_SLEEP_SECONDS)
+
+
+def test_rollover_window_gives_up_after_max_attempts():
+    stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([stale] * 6, now)
+
+    assert mock_fetch.call_count == step03.ROLLOVER_MAX_ATTEMPTS
+    assert mock_time.sleep.call_count == step03.ROLLOVER_MAX_ATTEMPTS - 1
+
+
+def test_no_retry_outside_rollover_window():
+    # 17:15 ET (the scheduled slot): a stale fleet is real staleness, not the
+    # rollover window — fail fast and let the gate block the commit.
+    stale = (_fleet_frame('2026-09-18'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 17, 15, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([stale], now)
+
+    assert mock_fetch.call_count == 1
+    mock_time.sleep.assert_not_called()
+
+
+def test_no_retry_when_fleet_is_fresh():
+    fresh = (_fleet_frame('2026-09-22'), [f'T{i}' for i in range(8)], [])
+    now = datetime(2026, 9, 22, 21, 0, tzinfo=ZoneInfo('US/Eastern'))
+
+    mock_fetch, mock_time = _run_main([fresh], now)
+
+    assert mock_fetch.call_count == 1
+    mock_time.sleep.assert_not_called()

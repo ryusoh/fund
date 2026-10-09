@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from datetime import time as dtime
 from pathlib import Path
@@ -62,6 +63,28 @@ MARKET_CLOSE_ET = dtime(16, 0)
 # A price tail this recent that still lags the benchmark tail is a fetch lag
 # worth refetching; a series stopped for longer is a halted/acquired ticker.
 STALE_TAIL_WINDOW_DAYS = 14
+
+# Yahoo's equity daily bars go through a rollover at the 20:00 ET overnight
+# open: the just-completed session's bar goes missing until roughly 22:00 ET
+# (indices have no overnight session, so they stay current). A run delayed
+# into this window sees the whole equity fleet one session stale (2026-10-07/08:
+# 165 of 165 at 20:58/21:12 ET; a 21:57 ET run was clean). Poll through the
+# window rather than flat-lining the night or failing the validation gate.
+ROLLOVER_WINDOW_START = dtime(20, 0)
+ROLLOVER_WINDOW_END = dtime(23, 30)
+ROLLOVER_MAX_ATTEMPTS = 4
+ROLLOVER_RETRY_SLEEP_SECONDS = 900
+
+
+def _in_rollover_window(now_et: datetime) -> bool:
+    return ROLLOVER_WINDOW_START <= now_et.time() <= ROLLOVER_WINDOW_END
+
+
+def _fleet_stale(stale: List[str], tickers: List[str]) -> bool:
+    """Fleet-majority staleness is the rollover signature; a few laggards are
+    ordinary per-ticker gaps that the fallbacks handle."""
+    return len(stale) >= 2 and len(stale) * 2 > len(tickers)
+
 
 # Map normalized tickers (post-cleaning) to vendor-specific symbols
 YFINANCE_ALIASES: Dict[str, str] = {
@@ -340,11 +363,10 @@ def fetch_polygon_daily_closes(
         series = pd.Series(points).sort_index()
         series.name = ticker
         retrieved[ticker] = series.reindex(date_index)
-    if retrieved:
-        print(
-            f'Polygon stale-tail backstop retrieved {len(retrieved)} tickers '
-            f'across {len(dates)} date(s)'
-        )
+    print(
+        f'Polygon stale-tail backstop retrieved {len(retrieved)} of {len(tickers)} tickers '
+        f'across {len(dates)} date(s)'
+    )
     return retrieved
 
 
@@ -559,12 +581,38 @@ def main() -> None:
     if delisted_in_portfolio:
         print(f'Skipping network fetch for {len(delisted_in_portfolio)} known delisted tickers.')
 
-    base_prices, successes, failures = fetch_yfinance_prices(active_tickers, date_index)
-    print(f'yfinance success: {len(successes)} tickers, failures: {len(failures)} tickers')
-
+    base_prices = pd.DataFrame(index=date_index)
+    failures: List[str] = []
+    fallback_data: Dict[str, pd.Series] = {}
     start = date_index[0]
     end = date_index[-1]
-    fallback_data = attempt_fallbacks(failures, date_index, start, end)
+    overrides = load_overrides(date_index)
+    override_tickers = list(overrides.columns) if not overrides.empty else []
+
+    for attempt in range(1, ROLLOVER_MAX_ATTEMPTS + 1):
+        base_prices, successes, failures = fetch_yfinance_prices(active_tickers, date_index)
+        print(f'yfinance success: {len(successes)} tickers, failures: {len(failures)} tickers')
+        fallback_data = attempt_fallbacks(failures, date_index, start, end)
+        combined_raw = combine_prices(base_prices, fallback_data, overrides, date_index)
+        combined_raw, stale_tail = refresh_stale_tails(
+            combined_raw, active_tickers, date_index, start, end
+        )
+        # A fleet-wide stale tail inside Yahoo's evening rollover window means
+        # the just-completed session's equity bars are temporarily missing;
+        # they settle by ~22:00 ET, so wait and refetch rather than failing.
+        if not (
+            _fleet_stale(stale_tail, active_tickers) and _in_rollover_window(datetime.now(ET_TZ))
+        ):
+            break
+        if attempt < ROLLOVER_MAX_ATTEMPTS:
+            print(
+                f'Fleet-wide staleness ({len(stale_tail)} of {len(active_tickers)} tickers) '
+                f"during Yahoo's daily-bar rollover window; retrying in "
+                f'{ROLLOVER_RETRY_SLEEP_SECONDS // 60} min '
+                f'(attempt {attempt + 1}/{ROLLOVER_MAX_ATTEMPTS})'
+            )
+            time.sleep(ROLLOVER_RETRY_SLEEP_SECONDS)
+
     fallback_tickers = list(fallback_data.keys())
     unresolved = sorted(set(failures) - set(fallback_tickers))
     if fallback_tickers:
@@ -572,9 +620,6 @@ def main() -> None:
 
     # Delisted tickers count as failures for the purpose of unresolved reporting, UNLESS they have overrides.
     unresolved = sorted(set(failures + delisted_in_portfolio) - set(fallback_tickers))
-
-    overrides = load_overrides(date_index)
-    override_tickers = list(overrides.columns) if not overrides.empty else []
 
     # Remove tickers that have overrides from the unresolved list
     unresolved = sorted(set(unresolved) - set(override_tickers))
@@ -585,10 +630,6 @@ def main() -> None:
     if override_tickers:
         print(f'Overrides available for tickers: {override_tickers}')
 
-    combined_raw = combine_prices(base_prices, fallback_data, overrides, date_index)
-    combined_raw, _stale_tail = refresh_stale_tails(
-        combined_raw, active_tickers, date_index, start, end
-    )
     write_raw_json_prices(combined_raw)
 
     combined = forward_fill_prices(combined_raw)
