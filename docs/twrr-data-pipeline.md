@@ -48,11 +48,15 @@ Drift between the two shows up as a jump at the seam.
    vanishes (indices don't trade overnight, so they stay current). Actions
    congestion regularly delays the 21:15 UTC run into this window —
    2026-10-07/08: all 165 equities missing the just-completed session and
-   the yfinance/stooq refetch no-opped for every one. Defense added
-   2026-10-09: `fetch_polygon_daily_closes` backstops still-stale tails with
-   Polygon grouped daily bars (one call per missing date covers all US
-   tickers; immune to Yahoo's rollover), which needs `POLYGON_KEY` in the
-   "Run TWRR pipeline" step env of `twrr-refresh.yaml`.
+   the yfinance/stooq refetch no-opped for every one (a 21:57 ET run was
+   clean, so the window settles by ~22:00 ET). Defenses added 2026-10-09:
+   (1) when a majority of the fleet is stale and the run is inside
+   20:00-23:30 ET, step03 waits 15 minutes and refetches, up to 4 attempts
+   — the primary, yfinance-only mechanism; (2) `fetch_polygon_daily_closes`
+   backstops still-stale tails with Polygon grouped daily bars (one call per
+   missing date covers all US tickers) as a fail-open extra layer — needs
+   `POLYGON_KEY` in the "Run TWRR pipeline" step env of
+   `twrr-refresh.yaml`, but nothing depends on it succeeding.
 4. **`delisted_tickers.csv` ∩ holdings** — a held ticker wrongly on the list
    is skipped by step03 → $0 forever.
 5. **Fractional-share dust** — checkpoints carry tiny negative residues
