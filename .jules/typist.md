@@ -98,6 +98,15 @@ Conventional Commits per `AGENTS.md`. Diff = TARGET + `js/types/*.d.ts` (+
   `build(types): check all first-party js strictly` on finalize). Imperative,
   lower-case, ≤ 72 chars, **no emoji, no `Typist:` prefix, no conversational titles**.
 - Never open an empty PR or push empty commits (AGENTS.md non-negotiable #10).
+- **Publish exactly one commit** (fund#724: the branch carried four commits —
+  two stale "validated no-op run" attempts plus an empty one — and the hygiene
+  gate fails per-commit, so a reverted violation still sinks the PR). Commit the
+  finished change once, run the verification gate on that exact tree, then push;
+  on any revision, `git commit --amend` or squash and force-push so the branch
+  stays one commit. Stage by name (`git add <file>`, never `git add -A`).
+- The title and body must describe the FINAL diff, not the run's history — the
+  squash-merge uses them as the commit message (fund#724's body claimed a
+  "no-op run" while the diff annotated a file and grew the whitelist).
 - Body: mode (fix / expand / finalize); TARGET; strict error count N → M; any
   logic bug fixed and why; pasted verification output; "no runtime behavior
   change."
