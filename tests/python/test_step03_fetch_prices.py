@@ -9,9 +9,10 @@ step 04 then silently valued at $0 via fillna(0.0).
 """
 
 import importlib.util
+import logging
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
@@ -126,7 +127,10 @@ def test_stale_tail_is_refetched_and_merged():
     fresh = pd.Series(101.0, index=STALE_INDEX)
     fresh.loc[:'2026-09-18'] = float('nan')
     fresh.loc['2026-09-19':'2026-09-22'] = [100.5, 100.5, 101.0, 101.0]
-    with patch.object(step03, 'attempt_fallbacks', return_value={'VT': fresh}) as mock_fallbacks:
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={'VT': fresh}) as mock_fallbacks,
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+    ):
         updated, stale = step03.refresh_stale_tails(
             frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
         )
@@ -142,7 +146,10 @@ def test_stale_tail_refetch_without_improvement_keeps_original():
     frame = _stale_tail_frame()
     still_stale = pd.Series(100.0, index=STALE_INDEX)
     still_stale.loc['2026-09-19':] = float('nan')
-    with patch.object(step03, 'attempt_fallbacks', return_value={'VT': still_stale}):
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={'VT': still_stale}),
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+    ):
         updated, stale = step03.refresh_stale_tails(
             frame.copy(), ['VT'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
         )
@@ -156,7 +163,10 @@ def test_stale_tail_refetch_reports_unrefreshed_tickers(capsys):
     # serving stale bars) with zero log lines; only step_validate caught the
     # resulting flat-line. A no-op refetch must announce itself.
     frame = _stale_tail_frame()
-    with patch.object(step03, 'attempt_fallbacks', return_value={}):
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={}),
+        patch.object(step03, 'fetch_polygon_daily_closes', return_value={}),
+    ):
         step03.refresh_stale_tails(
             frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
         )
@@ -165,6 +175,115 @@ def test_stale_tail_refetch_reports_unrefreshed_tickers(capsys):
     assert 'could not refresh 2 of 2' in out
     assert 'VT' in out and 'ANET' in out
     assert '2026-09-22' in out
+
+
+def test_polygon_backstop_merges_when_yfinance_refetch_fails():
+    # 2026-10-07/08 failures: delayed runs landed in Yahoo's evening rollover
+    # window, the whole equity fleet was missing the last completed session,
+    # and the yfinance refetch no-opped. The Polygon grouped-daily backstop
+    # must rescue the tails.
+    frame = _stale_tail_frame()
+    polygon_fresh = pd.Series(float('nan'), index=STALE_INDEX)
+    polygon_fresh.loc['2026-09-21':'2026-09-22'] = [160.11, 160.70]
+    with (
+        patch.object(step03, 'attempt_fallbacks', return_value={}),
+        patch.object(
+            step03,
+            'fetch_polygon_daily_closes',
+            return_value={'VT': polygon_fresh, 'ANET': polygon_fresh},
+        ) as mock_polygon,
+    ):
+        updated, stale = step03.refresh_stale_tails(
+            frame.copy(), ['VT', 'ANET'], STALE_INDEX, STALE_INDEX[0], STALE_INDEX[-1]
+        )
+
+    assert stale == ['VT', 'ANET']
+    mock_polygon.assert_called_once()
+    # Only the dates actually requested: weekdays between the stale tail and
+    # the benchmark tail.
+    requested_dates = mock_polygon.call_args[0][1]
+    assert requested_dates == [pd.Timestamp('2026-09-21'), pd.Timestamp('2026-09-22')]
+    assert updated['VT'].loc['2026-09-22'] == 160.70
+    assert updated['ANET'].loc['2026-09-22'] == 160.70
+
+
+def _polygon_agg(ticker, close):
+    agg = MagicMock()
+    agg.ticker = ticker
+    agg.close = close
+    return agg
+
+
+def test_fetch_polygon_daily_closes_maps_and_filters():
+    index = pd.date_range('2026-10-06', '2026-10-08', freq='D')
+    client = MagicMock()
+    client.get_grouped_daily_aggs.return_value = [
+        _polygon_agg('VT', 160.70),
+        _polygon_agg('BRK.B', 490.12),  # Polygon spelling of our BRKB
+        _polygon_agg('UNWANTED', 12.34),
+        _polygon_agg('ZERO', 0),
+    ]
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
+        patch.object(step03, 'RESTClient') as mock_client_cls,
+    ):
+        mock_client_cls.return_value.__enter__.return_value = client
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-10-08')], index
+        )
+
+    client.get_grouped_daily_aggs.assert_called_once_with('2026-10-08', adjusted=True)
+    assert set(retrieved) == {'VT', 'BRKB'}
+    assert retrieved['VT'].loc['2026-10-08'] == 160.70
+    assert retrieved['BRKB'].loc['2026-10-08'] == 490.12
+    assert pd.isna(retrieved['VT'].loc['2026-10-06'])
+
+
+def test_fetch_polygon_daily_closes_accumulates_dates():
+    client = MagicMock()
+    client.get_grouped_daily_aggs.side_effect = [
+        [_polygon_agg('VT', 160.11)],
+        [_polygon_agg('VT', 160.70)],
+    ]
+    index = pd.date_range('2026-10-05', '2026-10-06', freq='D')
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
+        patch.object(step03, 'RESTClient') as mock_client_cls,
+    ):
+        mock_client_cls.return_value.__enter__.return_value = client
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT'], [pd.Timestamp('2026-10-05'), pd.Timestamp('2026-10-06')], index
+        )
+
+    assert retrieved['VT'].dropna().to_dict() == {
+        pd.Timestamp('2026-10-05'): 160.11,
+        pd.Timestamp('2026-10-06'): 160.70,
+    }
+
+
+def test_fetch_polygon_daily_closes_without_key_skips():
+    with patch.dict('os.environ', {}, clear=True):
+        assert (
+            step03.fetch_polygon_daily_closes(['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX)
+            == {}
+        )
+
+
+def test_fetch_polygon_daily_closes_api_failure_returns_empty(caplog):
+    client = MagicMock()
+    client.get_grouped_daily_aggs.side_effect = RuntimeError('boom')
+    with (
+        patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
+        patch.object(step03, 'RESTClient') as mock_client_cls,
+        caplog.at_level(logging.WARNING),
+    ):
+        mock_client_cls.return_value.__enter__.return_value = client
+        retrieved = step03.fetch_polygon_daily_closes(
+            ['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX
+        )
+
+    assert retrieved == {}
+    assert 'Polygon grouped daily failed for 2026-10-08' in caplog.text
 
 
 def test_long_stopped_ticker_is_not_refetched():

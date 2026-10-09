@@ -13,6 +13,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+from polygon import RESTClient
 
 sys.path.append(str(Path(__file__).parent))
 from utils import append_changelog_entry, load_delisted_tickers
@@ -271,6 +272,81 @@ def _last_valid_date(series: pd.Series) -> Optional[pd.Timestamp]:
     return pd.Timestamp(valid.index.max())
 
 
+def _merge_fresher(price_df: pd.DataFrame, retrieved: Dict[str, pd.Series]) -> List[str]:
+    """Merge retrieved series that extend a ticker's tail; return merged tickers."""
+    merged = []
+    for ticker, series in retrieved.items():
+        new_last = _last_valid_date(series)
+        current_last = _last_valid_date(price_df[ticker]) if ticker in price_df.columns else None
+        if new_last is not None and (current_last is None or new_last > current_last):
+            if ticker in price_df.columns:
+                price_df[ticker] = price_df[ticker].combine_first(series)
+            else:
+                price_df[ticker] = series
+            merged.append(ticker)
+    return merged
+
+
+def fetch_polygon_daily_closes(
+    tickers: List[str], dates: List[pd.Timestamp], date_index: pd.DatetimeIndex
+) -> Dict[str, pd.Series]:
+    """Official daily closes from Polygon grouped aggregates for the given dates.
+
+    One API call per date covers every US-listed ticker, and Polygon's
+    completed-session bars are unaffected by Yahoo's ~20:00-22:00 ET daily-bar
+    rollover window (the 2026-10-07/08 failures: delayed runs found all 165
+    equities missing the just-completed session and the yfinance refetch
+    no-opped for every one). Requires POLYGON_KEY; without it, returns {} and
+    the stale-tail log line still reports the laggards.
+    """
+    import os
+
+    if not dates:
+        return {}
+    api_key = os.environ.get('POLYGON_KEY')
+    if not api_key:
+        print('POLYGON_KEY not set; skipping Polygon stale-tail backstop')
+        return {}
+    # Map every symbol Polygon might report back to our normalized ticker
+    # (we store e.g. BRKB; Yahoo uses BRK-B; Polygon uses BRK.B).
+    wanted: Dict[str, str] = {}
+    for raw in tickers:
+        normalized = raw.upper()
+        wanted[normalized] = normalized
+        wanted[YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').upper()] = normalized
+    closes: Dict[str, Dict[pd.Timestamp, float]] = {}
+    try:
+        with RESTClient(api_key) as client:
+            for day in dates:
+                date_str = day.strftime('%Y-%m-%d')
+                try:
+                    aggs = client.get_grouped_daily_aggs(date_str, adjusted=True)
+                except Exception as exc:
+                    logging.warning(f'Polygon grouped daily failed for {date_str}: {exc}')
+                    continue
+                for agg in aggs or []:
+                    symbol = str(getattr(agg, 'ticker', '') or '').upper()
+                    ticker = wanted.get(symbol)
+                    close = getattr(agg, 'close', None)
+                    if ticker is None or not isinstance(close, (int, float)) or close <= 0:
+                        continue
+                    closes.setdefault(ticker, {})[day] = float(close)
+    except Exception as exc:
+        logging.warning(f'Polygon stale-tail backstop unavailable: {exc}')
+        return {}
+    retrieved = {}
+    for ticker, points in closes.items():
+        series = pd.Series(points).sort_index()
+        series.name = ticker
+        retrieved[ticker] = series.reindex(date_index)
+    if retrieved:
+        print(
+            f'Polygon stale-tail backstop retrieved {len(retrieved)} tickers '
+            f'across {len(dates)} date(s)'
+        )
+    return retrieved
+
+
 def refresh_stale_tails(
     price_df: pd.DataFrame,
     tickers: List[str],
@@ -287,6 +363,11 @@ def refresh_stale_tails(
     refetch the forward-fill flat-lines held tickers across real trading
     days. Only recently-active tails are refetched — a series that stopped
     weeks ago is a halted/acquired ticker, not a fetch lag.
+
+    Two refetch layers: yfinance single-ticker + stooq (attempt_fallbacks),
+    then a Polygon grouped-daily backstop (fetch_polygon_daily_closes) for
+    whatever is still stale — Polygon's completed-session bars are unaffected
+    by Yahoo's evening rollover window.
     """
     bench_last = None
     for bench in BENCHMARK_TICKERS:
@@ -313,17 +394,28 @@ def refresh_stale_tails(
         f'Refetching {len(stale)} tickers whose tail predates the benchmark tail '
         f'({bench_last.date()}): {stale}'
     )
-    retrieved = attempt_fallbacks(stale, date_index, start, end)
-    refreshed = []
-    for ticker, series in retrieved.items():
-        new_last = _last_valid_date(series)
-        current_last = _last_valid_date(price_df[ticker])
-        if new_last is not None and (current_last is None or new_last > current_last):
-            price_df[ticker] = price_df[ticker].combine_first(series)
-            refreshed.append(ticker)
+    refreshed = _merge_fresher(price_df, attempt_fallbacks(stale, date_index, start, end))
     if refreshed:
         print(f'Stale-tail refetch updated: {refreshed}')
     still_stale = sorted(set(stale) - set(refreshed))
+    if still_stale:
+        # Yahoo's equity daily bars are unreliable in the ~20:00-22:00 ET
+        # rollover window (the just-completed session's bar vanishes while the
+        # forming overnight bar takes over), which is exactly when delayed
+        # runs land — the yfinance refetch then no-ops for the whole fleet.
+        # Backstop with Polygon grouped daily bars, which are immune to it.
+        earliest_tail = min(
+            last for t in still_stale if (last := _last_valid_date(price_df[t])) is not None
+        )
+        missing_days = [
+            day for day in date_index if earliest_tail < day <= bench_last and day.weekday() < 5
+        ][-5:]
+        polygon_retrieved = fetch_polygon_daily_closes(still_stale, missing_days, date_index)
+        polygon_refreshed = _merge_fresher(price_df, polygon_retrieved)
+        if polygon_refreshed:
+            print(f'Polygon backstop updated: {sorted(polygon_refreshed)}')
+            refreshed.extend(polygon_refreshed)
+            still_stale = sorted(set(stale) - set(refreshed))
     if still_stale:
         # 2026-10-06 incident: the refetch returned stale-or-empty data for
         # all 39 laggards with no log line — the flat-fill was only caught
