@@ -200,6 +200,105 @@ describe('dataLoader basic history loaders', () => {
         });
     });
 
+    describe('_parsePerformancePayload', () => {
+        let _parsePerformancePayload;
+        beforeEach(async () => {
+            const mod = await import('../../../js/transactions/dataLoader.js');
+            _parsePerformancePayload = mod._parsePerformancePayload;
+        });
+
+        it('returns empty object for non-object payload', () => {
+            expect(_parsePerformancePayload(null)).toEqual({});
+            expect(_parsePerformancePayload([])).toEqual({});
+        });
+
+        it('ignores key if normalizedPoints is empty', () => {
+            const payload = {
+                KEY_1: [{ date: 'invalid', value: 'invalid' }],
+            };
+            const result = _parsePerformancePayload(payload);
+            expect(result).toEqual({});
+        });
+
+        it('parses valid payload correctly', () => {
+            const payload = {
+                '^LZ': [
+                    { date: '2024-12-03', value: '1.05' },
+                    { date: '2024-12-04', value: 1.06 },
+                    { invalid: 'point' },
+                ],
+                EMPTY: [],
+            };
+            const result = _parsePerformancePayload(payload);
+            expect(result['^LZ']).toHaveLength(2);
+            expect(result['^LZ'][0].value).toBe(1.05);
+            expect(result['EMPTY']).toBeUndefined();
+        });
+    });
+
+    describe('_estimateRealtimePerformance', () => {
+        let _estimateRealtimePerformance;
+        beforeEach(async () => {
+            const mod = await import('../../../js/transactions/dataLoader.js');
+            _estimateRealtimePerformance = mod._estimateRealtimePerformance;
+        });
+
+        it('updates series if fetch succeeds and dates do not match', async () => {
+            const seriesMap = { '^LZ': [{ date: '2024-12-03', value: 1.0 }] };
+            const realtime = { balance: 105, date: '2024-12-04' };
+
+            mockFetch.mockResolvedValueOnce(createMockResponse([{ value: 100 }]));
+
+            await _estimateRealtimePerformance(seriesMap, realtime);
+
+            expect(seriesMap['^LZ']).toHaveLength(2);
+            expect(seriesMap['^LZ'][1].value).toBe(1.05);
+        });
+
+        it('does not append if dates match', async () => {
+            const seriesMap = { '^LZ': [{ date: '2024-12-04', value: 1.0 }] };
+            const realtime = { balance: 105, date: '2024-12-04' };
+
+            mockFetch.mockResolvedValueOnce(createMockResponse([{ value: 100 }]));
+
+            await _estimateRealtimePerformance(seriesMap, realtime);
+
+            expect(seriesMap['^LZ']).toHaveLength(1);
+        });
+
+        it('catches and logs error if balance series fetch fails', async () => {
+            const seriesMap = { '^LZ': [{ date: '2024-12-03', value: 1.0 }] };
+            const realtime = { balance: 105, date: '2024-12-04' };
+
+            mockFetch.mockRejectedValueOnce(new Error('Test Error'));
+
+            const { logger } = await import('../../../js/utils/logger.js');
+            const mockWarn = jest.spyOn(logger, 'warn');
+
+            await _estimateRealtimePerformance(seriesMap, realtime);
+
+            expect(mockWarn).toHaveBeenCalledWith('Data loading failed:', expect.any(Error));
+        });
+
+        it('handles usdOpen as object with USD property', async () => {
+            const seriesMap = { '^LZ': [{ date: '2024-12-03', value: 1.0 }] };
+            const realtime = { balance: 105, date: '2024-12-04' };
+
+            mockFetch.mockResolvedValueOnce(createMockResponse({ USD: [{ value: 100 }] }));
+
+            await _estimateRealtimePerformance(seriesMap, realtime);
+
+            expect(seriesMap['^LZ']).toHaveLength(2);
+            expect(seriesMap['^LZ'][1].value).toBe(1.05);
+        });
+
+        it('does nothing if no realtime or no ^LZ series', async () => {
+            const seriesMap = {};
+            await _estimateRealtimePerformance(seriesMap, null);
+            expect(seriesMap).toEqual({});
+        });
+    });
+
     describe('loadSplitHistory', () => {
         it('should correctly fetch and parse split history CSV', async () => {
             const csvData = `Symbol,SplitDate,Ratio,Multiplier
