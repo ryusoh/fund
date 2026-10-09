@@ -71,7 +71,7 @@
   },
   "js/transactions/dataLoader.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   },
   "js/transactions/terminal/snapshots.js": {
