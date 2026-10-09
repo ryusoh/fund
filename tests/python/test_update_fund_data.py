@@ -420,7 +420,7 @@ def test_get_prices_polygon_fallback(
 
     # Mock Polygon to return data: AAPL has a daily aggregate close (preferred),
     # TSLA only a last trade (fallback)
-    mock_client_instance = mock_rest_client.return_value.__enter__.return_value
+    mock_client_instance = mock_rest_client.return_value
     mock_snapshot1 = MagicMock()
     mock_snapshot1.ticker = "AAPL"
     mock_snapshot1.day.close = 165.0

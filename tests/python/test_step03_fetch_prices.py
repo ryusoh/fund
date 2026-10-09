@@ -227,7 +227,7 @@ def test_fetch_polygon_daily_closes_maps_and_filters():
         patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
         patch.object(step03, 'RESTClient') as mock_client_cls,
     ):
-        mock_client_cls.return_value.__enter__.return_value = client
+        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT', 'BRKB', 'ANET'], [pd.Timestamp('2026-10-08')], index
         )
@@ -250,7 +250,7 @@ def test_fetch_polygon_daily_closes_accumulates_dates():
         patch.dict('os.environ', {'POLYGON_KEY': 'key'}, clear=True),
         patch.object(step03, 'RESTClient') as mock_client_cls,
     ):
-        mock_client_cls.return_value.__enter__.return_value = client
+        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT'], [pd.Timestamp('2026-10-05'), pd.Timestamp('2026-10-06')], index
         )
@@ -277,7 +277,7 @@ def test_fetch_polygon_daily_closes_api_failure_returns_empty(caplog):
         patch.object(step03, 'RESTClient') as mock_client_cls,
         caplog.at_level(logging.WARNING),
     ):
-        mock_client_cls.return_value.__enter__.return_value = client
+        mock_client_cls.return_value = client
         retrieved = step03.fetch_polygon_daily_closes(
             ['VT'], [pd.Timestamp('2026-10-08')], DATE_INDEX
         )

@@ -316,21 +316,22 @@ def fetch_polygon_daily_closes(
         wanted[YFINANCE_ALIASES.get(normalized, normalized).replace('-', '.').upper()] = normalized
     closes: Dict[str, Dict[pd.Timestamp, float]] = {}
     try:
-        with RESTClient(api_key) as client:
-            for day in dates:
-                date_str = day.strftime('%Y-%m-%d')
-                try:
-                    aggs = client.get_grouped_daily_aggs(date_str, adjusted=True)
-                except Exception as exc:
-                    logging.warning(f'Polygon grouped daily failed for {date_str}: {exc}')
+        # RESTClient (polygon-api-client >=1.x) has no context manager.
+        client = RESTClient(api_key)
+        for day in dates:
+            date_str = day.strftime('%Y-%m-%d')
+            try:
+                aggs = client.get_grouped_daily_aggs(date_str, adjusted=True)
+            except Exception as exc:
+                logging.warning(f'Polygon grouped daily failed for {date_str}: {exc}')
+                continue
+            for agg in aggs or []:
+                symbol = str(getattr(agg, 'ticker', '') or '').upper()
+                ticker = wanted.get(symbol)
+                close = getattr(agg, 'close', None)
+                if ticker is None or not isinstance(close, (int, float)) or close <= 0:
                     continue
-                for agg in aggs or []:
-                    symbol = str(getattr(agg, 'ticker', '') or '').upper()
-                    ticker = wanted.get(symbol)
-                    close = getattr(agg, 'close', None)
-                    if ticker is None or not isinstance(close, (int, float)) or close <= 0:
-                        continue
-                    closes.setdefault(ticker, {})[day] = float(close)
+                closes.setdefault(ticker, {})[day] = float(close)
     except Exception as exc:
         logging.warning(f'Polygon stale-tail backstop unavailable: {exc}')
         return {}

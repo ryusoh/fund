@@ -313,27 +313,28 @@ def get_prices(ticker_list: List[str]) -> Dict[str, Optional[float]]:
         safe_api_key = os.environ.get("POLYGON_KEY")
         try:
             api_key = os.environ["POLYGON_KEY"]
-            with RESTClient(api_key) as client:
-                try:
-                    snapshots = client.get_snapshot_all(
-                        market_type="stocks", tickers=tickers_for_polygon
-                    )
-                    if snapshots:
-                        for snapshot in snapshots:
-                            t = snapshot.ticker
-                            if t not in tickers_for_polygon:
-                                continue
-                            # The baseline must be the last completed
-                            # regular-session close, not a forming bar.
-                            p = _select_polygon_close(snapshot, et_now)
-                            if p:
-                                data[t] = float(p)
-                                logging.info(f"Fetched price for {t} from Polygon.io: {p}")
-                except Exception as e:
-                    error_msg = str(e)
-                    if safe_api_key:
-                        error_msg = scrub_secrets(error_msg, [safe_api_key])
-                    logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
+            # RESTClient (polygon-api-client >=1.x) has no context manager.
+            client = RESTClient(api_key)
+            try:
+                snapshots = client.get_snapshot_all(
+                    market_type="stocks", tickers=tickers_for_polygon
+                )
+                if snapshots:
+                    for snapshot in snapshots:
+                        t = snapshot.ticker
+                        if t not in tickers_for_polygon:
+                            continue
+                        # The baseline must be the last completed
+                        # regular-session close, not a forming bar.
+                        p = _select_polygon_close(snapshot, et_now)
+                        if p:
+                            data[t] = float(p)
+                            logging.info(f"Fetched price for {t} from Polygon.io: {p}")
+            except Exception as e:
+                error_msg = str(e)
+                if safe_api_key:
+                    error_msg = scrub_secrets(error_msg, [safe_api_key])
+                logging.error(f"Error fetching snapshots from Polygon.io: {error_msg}")
         except KeyError:
             logging.error(
                 "Missing environment variable: POLYGON_KEY. Cannot fetch from Polygon.io."
