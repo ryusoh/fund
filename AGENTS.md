@@ -95,6 +95,14 @@ git push --force-with-lease`). Better: never need the recovery — **publish
     touched, and if a gate/fix run dirties unrelated files, revert them —
     don't commit the fixer's output (a phantom reformat of
     `eslint-suppressions.json` is an instant Architect-lane violation).
+11. **Absolute ban on destructive git commands.** Never run `git checkout -- <file>`,
+    `git restore <file>`, `git reset --hard`, or `git clean` without explicit user
+    confirmation. Multiple agents, background routines, and the human share this
+    repository concurrently. Uncommitted modifications in the working tree or index
+    often belong to a concurrent agent or user session in another window. Discarding
+    changes or assuming diffs outside your immediate task scope are "stray debris"
+    destroys active work. Stage only files you own (`git add <file>`), never revert
+    foreign files, and never assume exclusive ownership of the working tree.
 
 ## You cannot see the rendered page
 
@@ -414,6 +422,9 @@ files as the only source of truth.
 - **Concurrent agents sharing one worktree.** When you run parallel subagents
   (swarms, background agents) in this checkout: stage only files you changed
   (`git add <specific-files>`, never `git add -A`), never `git stash`,
-  `git reset --hard`, or `git commit --no-verify` — a sibling agent's work may be
-  sitting in the same tree. Keep concurrent agents on disjoint file sets; if a
+  `git reset --hard`, `git checkout -- <file>`, `git restore <file>`, or
+  `git commit --no-verify` — a sibling agent's work may be sitting in the same
+  tree. Never discard changes on files outside your assigned task scope;
+  uncommitted edits in other directories belong to concurrent work streams or
+  the user in another window. Keep concurrent agents on disjoint file sets; if a
   rebase/conflict lands mid-run, resolve only files your task owns.
