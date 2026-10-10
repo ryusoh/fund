@@ -213,6 +213,26 @@ describe('TableGlassWebGL', () => {
         expect(webgl.gl.drawArrays).toHaveBeenCalledWith(webgl.gl.TRIANGLES, 0, 6);
     });
 
+    test('pins the time uniform to 0 when oilSpotlight.drift is false', () => {
+        const webgl = new TableGlassWebGL(mockParentEffect);
+        const state = {
+            spotlightAlpha: 1.0,
+            hoveredRowIndex: 0,
+            pointerSmoothed: { x: 0, y: 0 },
+            continuousPhase: 10.5,
+        };
+        const options = {
+            rowHoverEffect: { enabled: true },
+            oilSpotlight: { drift: false },
+        };
+        const rows = [{ top: 10, height: 20, left: 5, width: 100 }];
+
+        webgl.draw(state, options, 800, 600, 1, rows);
+
+        expect(webgl.gl.uniform1f).toHaveBeenCalledWith(webgl.uniforms.time, 0);
+        expect(webgl.gl.uniform1f).not.toHaveBeenCalledWith(webgl.uniforms.time, 10.5);
+    });
+
     test('uses mobile rim/spotlight variants at mobile viewport', () => {
         Object.defineProperty(window, 'innerWidth', {
             writable: true,

@@ -826,7 +826,10 @@ export class TableGlassEffect {
 
     drawAmbientGlow(radius) {
         const glow = this.options.threeD?.ambientGlow || {};
-        const pulse = 0.5 + 0.5 * Math.sin(this.state.ambientPhase * Math.PI * 2);
+        const pulse =
+            glow.pulse === false
+                ? 0.5
+                : 0.5 + 0.5 * Math.sin(this.state.ambientPhase * Math.PI * 2);
 
         this.ctx.save();
         this.drawPath(this.ctx, radius);

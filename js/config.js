@@ -672,6 +672,7 @@ export const TABLE_GLASS_EFFECT = {
         // finger needs a bigger spotlight footprint than a mouse cursor.
         mobileRadius: 560,
         mobileRimThickness: 14,
+        drift: false, // Film pattern moves only with the pointer, not on a clock
     },
     chromaticAberration: {
         enabled: true, // Disabled for cleaner look
@@ -694,6 +695,10 @@ export const TABLE_GLASS_EFFECT = {
                 tertiary: 'rgba(255, 255, 255, 0.05)',
                 quaternary: 'rgba(255, 255, 255, 0.0)',
             },
+        },
+        ambientGlow: {
+            ...PIE_CHART_GLASS_EFFECT.threeD.ambientGlow,
+            pulse: false, // Steady glow at mid-pulse brightness
         },
         reflection: {
             enabled: false, // Idle diagonal sweep off: motion at rest reads as decorative

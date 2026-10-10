@@ -405,7 +405,7 @@ export class TableGlassWebGL {
         gl.uniform2f(this.uniforms.resolution, width, height);
         // We pass logical pixels to shader, it handles its own coordinates
         gl.uniform2f(this.uniforms.pointer, mouseX, mouseY);
-        gl.uniform1f(this.uniforms.time, state.continuousPhase);
+        gl.uniform1f(this.uniforms.time, oil.drift === false ? 0 : state.continuousPhase);
         gl.uniform1f(
             this.uniforms.spotlightRadius,
             isMobile && oil.mobileRadius !== undefined

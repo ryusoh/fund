@@ -403,6 +403,23 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should hold the ambient glow at mid-pulse opacity if ambientGlow.pulse is false', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { ambientGlow: { pulse: false, innerOpacity: 0.2 } },
+        });
+
+        const alphas = [0, 0.25, 0.75].map((phase) => {
+            effect.state.ambientPhase = phase;
+            effect.drawAmbientGlow(8);
+            return effect.ctx.globalAlpha;
+        });
+
+        for (const alpha of alphas) {
+            expect(alpha).toBeCloseTo(0.2 * 0.9);
+        }
+        effect.dispose();
+    });
+
     it('should draw electric trails with default palette fallback if palette is empty', () => {
         const effect = new TableGlassEffect('.table-responsive-container', {
             threeD: { electric: { colors: {} } },
