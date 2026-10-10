@@ -83,40 +83,52 @@ function deepMerge(target, source) {
     return output;
 }
 
+const applyAlphaCache = new Map();
+const MAX_CACHE_SIZE = 512;
+const RGBA_REGEX = /^rgba?\(([^)]+)\)$/i;
+
 function applyAlpha(color, alpha) {
     const normalizedAlpha = Math.max(0, Math.min(1, alpha));
-    if (typeof color !== 'string' || color.length === 0) {
-        return `rgba(255, 255, 255, ${normalizedAlpha})`;
+    const cacheKey = color + '|' + normalizedAlpha;
+
+    const cached = applyAlphaCache.get(cacheKey);
+    if (cached !== undefined) {
+        return cached;
     }
-    const trimmed = color.trim();
-    const rgbaMatch = trimmed.match(/^rgba?\(([^)]+)\)$/i);
-    if (rgbaMatch) {
-        const parts = rgbaMatch[1]
-            .split(',')
-            .map((segment) => segment.trim())
-            .filter(Boolean);
-        const [r = '255', g = '255', b = '255'] = parts;
-        return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
-    }
-    if (trimmed.startsWith('#')) {
-        let hex = trimmed.slice(1);
-        if (hex.length === 3) {
-            hex = hex
-                .split('')
-                .map((c) => c + c)
-                .join('');
-        }
-        if (hex.length === 6) {
-            const r = parseInt(hex.slice(0, 2), 16);
-            const g = parseInt(hex.slice(2, 4), 16);
-            const b = parseInt(hex.slice(4, 6), 16);
-            if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
-                return `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+
+    let result = `rgba(255, 255, 255, ${normalizedAlpha})`;
+    if (typeof color === 'string' && color.length > 0) {
+        const trimmed = color.trim();
+        if (trimmed[0] === '#') {
+            const hex =
+                trimmed.length === 4
+                    ? trimmed[1] + trimmed[1] + trimmed[2] + trimmed[2] + trimmed[3] + trimmed[3]
+                    : trimmed.slice(1);
+
+            if (hex.length === 6) {
+                const r = parseInt(hex.slice(0, 2), 16);
+                const g = parseInt(hex.slice(2, 4), 16);
+                const b = parseInt(hex.slice(4, 6), 16);
+                if (r === r && g === g && b === b) {
+                    result = `rgba(${r}, ${g}, ${b}, ${normalizedAlpha})`;
+                }
+            }
+        } else {
+            const rgbaMatch = trimmed.match(RGBA_REGEX);
+            if (rgbaMatch) {
+                const parts = rgbaMatch[1].split(',');
+                result = `rgba(${parts[0] ? parts[0].trim() : '255'}, ${parts[1] ? parts[1].trim() : '255'}, ${parts[2] ? parts[2].trim() : '255'}, ${normalizedAlpha})`;
             }
         }
     }
-    // Fallback: rely on CSS color with injected alpha via rgba
-    return `rgba(255, 255, 255, ${normalizedAlpha})`;
+
+    if (applyAlphaCache.size > MAX_CACHE_SIZE) {
+        const firstKey = applyAlphaCache.keys().next().value;
+        applyAlphaCache.delete(firstKey);
+    }
+
+    applyAlphaCache.set(cacheKey, result);
+    return result;
 }
 
 function resolveResponsive(value) {
