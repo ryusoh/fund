@@ -696,7 +696,7 @@ export const TABLE_GLASS_EFFECT = {
             },
         },
         reflection: {
-            enabled: true,
+            enabled: false, // Idle diagonal sweep off: motion at rest reads as decorative
             speed: 0.05,
             intensity: 0.1, // Subtle
             width: 0.5, // Wider, softer band

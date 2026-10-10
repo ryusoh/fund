@@ -955,6 +955,9 @@ export class TableGlassEffect {
 
     drawReflection(radius) {
         const reflection = this.options.threeD?.reflection || {};
+        if (reflection.enabled === false) {
+            return;
+        }
         const intensity = reflection.intensity || 0.5;
         const color = reflection.color || 'rgba(255,255,255,1)';
         const width = reflection.width || 0.2;

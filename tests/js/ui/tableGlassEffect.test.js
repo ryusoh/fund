@@ -387,6 +387,22 @@ describe('TableGlassEffect', () => {
         effect.dispose();
     });
 
+    it('should not draw the diagonal reflection sweep if reflection.enabled is false', () => {
+        const effect = new TableGlassEffect('.table-responsive-container', {
+            threeD: { reflection: { enabled: false } },
+        });
+
+        const mockCtx = effect.ctx;
+        mockCtx.createLinearGradient = jest.fn(() => ({ addColorStop: jest.fn() }));
+        mockCtx.fill = jest.fn();
+
+        effect.drawReflection(8);
+
+        expect(mockCtx.createLinearGradient).not.toHaveBeenCalled();
+        expect(mockCtx.fill).not.toHaveBeenCalled();
+        effect.dispose();
+    });
+
     it('should draw electric trails with default palette fallback if palette is empty', () => {
         const effect = new TableGlassEffect('.table-responsive-container', {
             threeD: { electric: { colors: {} } },
