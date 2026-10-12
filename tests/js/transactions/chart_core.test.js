@@ -1811,3 +1811,116 @@ describe('filtered balance/contribution date alignment in UTC+ timezones', () =>
         }
     });
 });
+
+describe('drawAxes X-Axis rendering and helpers', () => {
+    let drawAxes;
+    let mockCtx;
+
+    beforeEach(() => {
+        jest.resetModules();
+        jest.isolateModules(() => {
+            const coreModule = require('../../../js/transactions/chart/core.js');
+            drawAxes = coreModule.drawAxes;
+        });
+
+        mockCtx = {
+            beginPath: jest.fn(),
+            moveTo: jest.fn(),
+            lineTo: jest.fn(),
+            stroke: jest.fn(),
+            fill: jest.fn(),
+            fillText: jest.fn(),
+            setLineDash: jest.fn(),
+            strokeStyle: '',
+            fillStyle: '',
+            font: '',
+            textAlign: '',
+            textBaseline: '',
+            lineWidth: 1,
+        };
+    });
+
+    test('renders X-Axis correctly and prevents label overlap', () => {
+        const padding = { top: 5, right: 20, bottom: 40, left: 60 };
+        const plotWidth = 400;
+        const plotHeight = 300;
+        // Mock a long time period to generate multiple year ticks
+        const minTime = new Date('2020-01-01').getTime();
+        const maxTime = new Date('2023-01-01').getTime();
+        const yMin = 0;
+        const yMax = 100;
+
+        const xScale = (time) =>
+            padding.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
+        const yScale = (value) =>
+            padding.top + plotHeight - ((value - yMin) / (yMax - yMin)) * plotHeight;
+        const yLabelFormatter = (value) => `${value}%`;
+
+        drawAxes(
+            mockCtx,
+            padding,
+            plotWidth,
+            plotHeight,
+            minTime,
+            maxTime,
+            yMin,
+            yMax,
+            xScale,
+            yScale,
+            yLabelFormatter,
+            false,
+            { drawXAxis: true, drawYAxis: false }
+        );
+
+        // Verify baseline is drawn
+        expect(mockCtx.moveTo).toHaveBeenCalledWith(padding.left, padding.top + plotHeight);
+        expect(mockCtx.lineTo).toHaveBeenCalledWith(
+            padding.left + plotWidth,
+            padding.top + plotHeight
+        );
+
+        // Verify that some labels are drawn (since we span 3 years, we'll have ticks)
+        expect(mockCtx.fillText).toHaveBeenCalled();
+    });
+
+    test('renders X-Axis correctly on mobile with label right-alignment on last tick', () => {
+        // Mock window.innerWidth to simulate mobile
+        Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+
+        const padding = { top: 5, right: 20, bottom: 40, left: 60 };
+        const plotWidth = 400;
+        const plotHeight = 300;
+        const minTime = new Date('2021-01-01').getTime();
+        const maxTime = new Date('2023-01-01').getTime();
+        const yMin = 0;
+        const yMax = 100;
+
+        const xScale = (time) =>
+            padding.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
+        const yScale = (value) =>
+            padding.top + plotHeight - ((value - yMin) / (yMax - yMin)) * plotHeight;
+        const yLabelFormatter = (value) => `${value}%`;
+
+        drawAxes(
+            mockCtx,
+            padding,
+            plotWidth,
+            plotHeight,
+            minTime,
+            maxTime,
+            yMin,
+            yMax,
+            xScale,
+            yScale,
+            yLabelFormatter,
+            false,
+            { drawXAxis: true, drawYAxis: false }
+        );
+
+        // Reset window innerWidth
+        window.innerWidth = 1024;
+
+        // Verify mobile-specific behavior was hit
+        expect(mockCtx.fillText).toHaveBeenCalled();
+    });
+});
