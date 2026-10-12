@@ -338,6 +338,11 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
   forming today-bar), because Actions congestion can delay the nightly run
   past the 20:00 ET overnight open or into the next session (2026-09-22
   incident: a ~3h delay wrote forming overnight bars as the baseline).
+- **SEC filings adapter** (`scripts/analysis/filings_adapter.py`, vendored
+  `scripts/vendor/filings/`) → `docs/filings-adapter.md`. Invoke via
+  `venv/bin/python -m scripts.analysis.filings_adapter` (the direct script path
+  fails); new tickers need ingestion into the workspace before `list`/`verify`
+  work; XBRL value extraction returns nulls — read numbers from section HTML.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
 ## Lanes (keep PRs disjoint to avoid collisions)

@@ -31,14 +31,14 @@ All paths are repo-relative or absolute. The staging file is
 
 ```bash
 # 1. Export SEC chunks manifest for target ticker
-venv/bin/python scripts/analysis/filings_adapter.py export-manifest \
+venv/bin/python -m scripts.analysis.filings_adapter export-manifest \
     --ticker $ARGUMENTS --out .agents/state/filings_chunks.json
 
 # 2. Pick high-signal chunks from business, risk_factors, or financial_statements.
 #    The adapter inspects Item 1, Item 1A, and Item 7 sections.
 
 # 3. Confirm pass: verify each quantitative claim against the filing
-venv/bin/python scripts/analysis/filings_adapter.py verify \
+venv/bin/python -m scripts.analysis.filings_adapter verify \
     --ticker $ARGUMENTS --claim "<claim to verify>"
 #    Keep only claims with confidence >= 0.60; rewrite or drop the rest.
 

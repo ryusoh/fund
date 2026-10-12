@@ -17,8 +17,11 @@ Anthropic production multi-agent research architecture patterns.
 For the given research question `$ARGUMENTS`:
 
 1. **Parallel subagent fan-out:** Launch specialized read-only subagents:
-    - **Filings subagent:** Queries SEC filings via `venv/bin/python scripts/analysis/filings_adapter.py`
-      (`sections`, `read`, `verify`). Extracts hard financial numbers, risk disclosures,
+    - **Filings subagent:** Queries SEC filings via `venv/bin/python -m scripts.analysis.filings_adapter`
+      (`sections`, `read`, `verify` — the direct script path fails with `ModuleNotFoundError`;
+      the `-m` form is required). If the ticker is not yet in the filings workspace
+      (`list` raises "do not have this company"), ingest it first per
+      `docs/filings-adapter.md`. Extracts hard financial numbers, risk disclosures,
       customer concentration, and management commentary.
     - **Internal state subagent:** Audits `data/analysis/<TICKER>.json`, `*.evidence.jsonl`,
       and `docs/thesis/**`. Tracks prior beliefs, falsifiable prediction track records,
@@ -32,7 +35,7 @@ For the given research question `$ARGUMENTS`:
 
 3. **Confirm pass:**
     - Verify every quantitative claim against SEC filings using
-      `venv/bin/python scripts/analysis/filings_adapter.py verify --ticker <T> --claim "<claim>"`.
+      `venv/bin/python -m scripts.analysis.filings_adapter verify --ticker <T> --claim "<claim>"`.
       Enforce confidence ≥ 0.60.
     - Re-verify critical web claims by direct source inspection.
 
