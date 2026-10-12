@@ -28,6 +28,7 @@ INDEX_FILE = ANALYSIS_DIR / "index.json"
 FUND_FILE = DATA_DIR / "fund_data.json"
 HOLDINGS_FILE = DATA_DIR / "holdings_details.json"
 FX_FILE = DATA_DIR / "fx_data.json"
+WATCHLIST_FILE = ANALYSIS_DIR / "watchlist.json"
 
 # Tickers where financial data is reported in local currency but trades in USD
 # These are typically Chinese ADRs incorporated offshore but operating in China
@@ -109,6 +110,19 @@ DEFAULT_SCENARIOS = [
 def load_json(path: Path) -> Dict[str, Any]:
     with path.open('r', encoding='utf-8') as fh:
         return cast(Dict[str, Any], json.load(fh))
+
+
+def load_watchlist(path: Path = WATCHLIST_FILE) -> list[str]:
+    """Load watchlist symbols tracked in the analysis lab without a current position.
+
+    Watchlist configs (`data/analysis/<TICKER>.json` for symbols in
+    `watchlist.json`) are normalized and indexed like holdings but are exempt
+    from the orphan-config deletion and carry no `position.shares`.
+    """
+    if not path.exists():
+        return []
+    tickers = load_json(path).get("tickers", [])
+    return sorted({str(t).strip().upper() for t in tickers if str(t).strip()})
 
 
 def save_json(path: Path, payload: dict) -> None:
@@ -532,17 +546,19 @@ def main() -> None:
     fund_prices = load_json(FUND_FILE)
     holdings = load_json(HOLDINGS_FILE)
     holding_symbols = sorted(holdings.keys())
+    watchlist_symbols = load_watchlist(WATCHLIST_FILE)
+    tracked_symbols = sorted(set(holding_symbols) | set(watchlist_symbols))
 
     for path in ANALYSIS_DIR.glob('*.json'):
-        if path.name == 'index.json':
+        if path.name in ('index.json', 'watchlist.json'):
             continue
-        if path.stem not in holding_symbols:
+        if path.stem not in tracked_symbols:
             path.unlink()
 
     updated = 0
     configs_cache: Dict[str, dict] = {}
 
-    for symbol in holding_symbols:
+    for symbol in tracked_symbols:
         config_path = ANALYSIS_DIR / f"{symbol}.json"
         if not config_path.exists():
             default_config = {
@@ -647,7 +663,7 @@ def main() -> None:
                 'name': configs_cache.get(symbol, {}).get('name', symbol),
                 'path': f"../data/analysis/{symbol}.json",
             }
-            for symbol in holding_symbols
+            for symbol in tracked_symbols
         ]
     }
     save_json(INDEX_FILE, index_payload)
@@ -657,7 +673,7 @@ def main() -> None:
         from scripts.analysis.theme_timeline import build_theme_timeline
 
         evidence_cache: dict[str, list[dict]] = {}
-        for symbol in holding_symbols:
+        for symbol in tracked_symbols:
             ev_file = ANALYSIS_DIR / f"{symbol}.evidence.jsonl"
             if ev_file.exists():
                 records = []

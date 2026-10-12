@@ -83,7 +83,7 @@ Synthesize the incremental findings in the chat response:
 Run tests to verify that math, schema, and page smoke pass:
 
 ```bash
-npx jest tests/js/pages/analysis/ && venv/bin/pytest tests/python/test_sync_configs.py
+npx jest tests/js/pages/analysis/ && venv/bin/pytest tests/python/test_sync_configs_currency.py tests/python/test_sync_configs_watchlist.py
 ```
 
 ### Step 6: Compounding Handoff
