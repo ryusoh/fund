@@ -72,7 +72,12 @@ Synthesize the incremental findings in the chat response:
 
 1. **Update `data/analysis/<TICKER>.json`**:
     - Apply any numerical or belief-state changes.
+    - If `<TICKER>` is not a current holding (watchlist/initial coverage), register it in
+      `data/analysis/watchlist.json` first — `sync_configs` deletes configs outside
+      holdings ∪ watchlist as orphans. See `docs/ai_update_flow.md` §1.1.
     - Run `python3 -m scripts.analysis.sync_configs` to normalize and validate the JSON schema.
+      This also refreshes the `market` block of every tracked ticker — commit those
+      incidental refreshes separately as `chore(data)` or leave them for the nightly bot.
 2. **Update `docs/thesis/<TICKER>.md`**:
     - Make surgical edits to specific numbered sections (e.g. §4.2, §8.2 dated log).
     - Link any industry layer docs (`docs/thesis/industry/`) if relevant.

@@ -17,6 +17,19 @@ When new source material arrives (e.g., an interview transcript or trade publica
     - or directly into `...-bull-evidence.md`, `...-base-evidence.md`, or `...-bear-evidence.md`
 2. Keep `docs/thesis/<TICKER>.md` polished—never drop full articles into it.
 
+### 1.1 `data/analysis/` universe semantics
+
+- The tracked universe is `data/holdings_details.json` (positions) **plus**
+  `data/analysis/watchlist.json` (no-position tickers, `{"tickers": ["AEHR"]}`).
+  `sync_configs.py` **deletes** any `data/analysis/<TICKER>.json` outside that
+  union — a watchlist ticker must be registered in `watchlist.json` first.
+- Running `sync_configs.py` also refreshes the `market` block of **every**
+  tracked ticker from yfinance, dirtying configs you didn't touch. Commit those
+  separately as `chore(data)` or leave them for the nightly `analysis-sync.yml`
+  bot (it regenerates and auto-commits the same files).
+- `data/analysis/theme_timeline.json` is generated, gitignored, and has no
+  committed consumer yet — don't commit it.
+
 ## 2. Standard AI prompt
 
 Use a consistent prompt whenever you want the assistant to digest new material. Update paths for the relevant ticker.
