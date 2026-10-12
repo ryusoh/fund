@@ -57,3 +57,7 @@ For the given research question `{{args}}`:
   dated resolution.
 - **Authoritative sources only:** Rely on primary sources with verified locators; speculative
   rumors or ungrounded claims must be flagged explicitly as unverified.
+- **Repro reported tool failures before acting on them:** a subagent's "tool X is broken"
+  claim needs a minimal direct repro by the orchestrator before it becomes an action item —
+  field misreads present as defects (2026-10-12: `query_xbrl_facts` reported as returning
+  null values was healthy; the null lived in `get_financial_statement`'s period columns).

@@ -434,3 +434,11 @@ files as the only source of truth.
   uncommitted edits in other directories belong to concurrent work streams or
   the user in another window. Keep concurrent agents on disjoint file sets; if a
   rebase/conflict lands mid-run, resolve only files your task owns.
+  **Branch state is volatile in a shared worktree**: another agent can switch
+  the checked-out branch mid-task, so run `git branch --show-current`
+  immediately before every stage/commit — branch knowledge from earlier in the
+  session is stale the moment you learned it (2026-10-12 incident: a commit
+  landed on a sibling's branch because they switched back between
+  `git switch main` and `git commit`; recovered by cherry-picking to main, and
+  the working tree was left on the sibling's branch with their dirty files
+  untouched).
