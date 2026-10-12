@@ -16,6 +16,10 @@ unmodified, as the license requires). It became first-party code under
 
 ## Modifications relative to upstream
 
+- `fins/processors/sec_xbrl_query.py` (2026-10-12): accept edgartools' suffixed
+  period columns ("2026-05-29 (FY)") in `_extract_period_columns` /
+  `_build_period_summary` — previously no period column matched, so
+  `get_financial_statement` returned correct row labels with empty values.
 - Package namespace rewritten twice: to `scripts.vendor.filings.*` at vendoring,
   then to `scripts.filings.*` in the 2026-10-12 first-party move (all absolute
   imports; relative imports unchanged).

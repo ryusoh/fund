@@ -3,6 +3,11 @@
 This module extracts the XBRL-related query, inference, and formatting functions
 from ``sec_processor``, including statement-type mapping, taxonomy inference,
 facts querying, value extraction, and normalization.
+
+Local modifications (Apache-2.0 §4(b)) — see scripts/filings/PROVENANCE.md:
+- 2026-10-12: accept edgartools' suffixed period columns ("2026-05-29 (FY)") in
+  ``_extract_period_columns`` / ``_build_period_summary``; previously no period
+  column matched, so every statement row returned empty values.
 """
 
 from __future__ import annotations
@@ -20,6 +25,8 @@ from scripts.filings.engine.processors.text_utils import (
 from scripts.filings.engine.processors.text_utils import (
     normalize_whitespace as _normalize_whitespace,
 )
+
+_PERIOD_COLUMN_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:\s*\((FY|Q[1-4])\))?$")
 
 _STATEMENT_METHODS = {
     "income": "income_statement",
@@ -184,7 +191,7 @@ def _extract_period_columns(columns: Any) -> list[str]:
     period_columns: list[str] = []
     for column in columns:
         column_str = str(column)
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", column_str):
+        if _PERIOD_COLUMN_RE.match(column_str):
             period_columns.append(column_str)
     return period_columns
 
@@ -236,7 +243,8 @@ def _build_period_summary(period_end: str) -> dict[str, Any]:
     """Build the period summary.
 
     Args:
-        period_end: period-end date (YYYY-MM-DD).
+        period_end: period-end column label (YYYY-MM-DD, optionally suffixed
+            with a fiscal-period marker like "2026-05-29 (FY)").
 
     Returns:
         period summary dict.
@@ -245,11 +253,17 @@ def _build_period_summary(period_end: str) -> dict[str, Any]:
         ValueError: raised when the date is invalid.
     """
 
-    fiscal_year = int(period_end[:4]) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", period_end) else None
+    match = _PERIOD_COLUMN_RE.match(period_end)
+    if match:
+        date_part, suffix = match.group(1), match.group(2)
+        fiscal_year = int(date_part[:4])
+        fiscal_period = suffix or "FY"
+    else:
+        date_part, fiscal_year, fiscal_period = period_end, None, None
     return {
-        "period_end": period_end,
+        "period_end": date_part,
         "fiscal_year": fiscal_year,
-        "fiscal_period": "FY" if fiscal_year is not None else None,
+        "fiscal_period": fiscal_period,
     }
 
 
