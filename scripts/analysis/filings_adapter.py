@@ -393,6 +393,23 @@ def _extract_clean_search_keywords(text: str) -> str:
     return " ".join(keywords[:10])
 
 
+_CLAIM_NUMBER_RE = re.compile(r"\d+(?:\.\d+)?%?")
+
+
+def _extract_claim_numbers(claim: str) -> list[str]:
+    """Extract numeric tokens from a claim (e.g. "80.6", "70%", "2026")."""
+    return _CLAIM_NUMBER_RE.findall(claim)
+
+
+def _match_text_blob(match: dict[str, Any]) -> str:
+    evidence = match.get("evidence", {})
+    return f"{evidence.get('matched_text') or ''} {evidence.get('context') or ''}"
+
+
+def _numeric_overlap(text: str, numbers: list[str]) -> int:
+    return sum(1 for n in numbers if n in text)
+
+
 def verify_claim_against_filing(
     service: FinsToolService,
     ticker: str,
@@ -418,10 +435,35 @@ def verify_claim_against_filing(
     matches = search_res.get("matches", [])
     total_matches = search_res.get("total_matches", len(matches))
 
+    claim_numbers = _extract_claim_numbers(claim)
+    pool = matches[:10]
+
+    # Re-rank the raw BM25 order for display: spans containing the claim's
+    # numbers first, exact phrases next, cover-page sections demoted. Without
+    # this, boilerplate-heavy fragments crowd out the load-bearing paragraph.
+    def rank_key(m: dict[str, Any]) -> tuple[int, int, int]:
+        title = str(m.get("section", {}).get("title") or "")
+        return (
+            _numeric_overlap(_match_text_blob(m), claim_numbers),
+            1 if m.get("is_exact_phrase") else 0,
+            0 if "cover" in title.lower() else 1,
+        )
+
+    ranked = sorted(pool, key=rank_key, reverse=True)
+
+    # A number-bearing claim is anchored only if some matched span actually
+    # contains one of its numbers; otherwise boilerplate matches inflate the
+    # count-based confidence without touching the authoritative figure.
+    numbers_anchored = True
+    if claim_numbers:
+        numbers_anchored = any(
+            _numeric_overlap(_match_text_blob(m), claim_numbers) > 0 for m in pool
+        )
+
     evidence_spans: list[dict[str, Any]] = []
     has_exact = False
 
-    for m in matches[:5]:
+    for m in ranked[:5]:
         section = m.get("section", {})
         evidence = m.get("evidence", {})
         if m.get("is_exact_phrase"):
@@ -442,12 +484,15 @@ def verify_claim_against_filing(
         confidence = 0.80
     elif total_matches >= 1:
         confidence = 0.60
+    if claim_numbers and not numbers_anchored:
+        confidence = min(confidence, 0.60)
 
     return {
         "verified": total_matches > 0,
         "confidence": confidence,
         "query": query,
         "total_matches": total_matches,
+        "numbers_anchored": numbers_anchored,
         "document_id": target_doc_id,
         "evidence_spans": evidence_spans,
         "citation": search_res.get("citation"),

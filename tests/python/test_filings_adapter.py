@@ -278,6 +278,58 @@ def test_verify_claim_against_filing() -> None:
     assert res_no_doc["verified"] is False
 
 
+def _verify_with_matches(matches: list, total: int) -> dict:
+    mock_service = MagicMock()
+    mock_service.list_documents.return_value = {
+        "documents": [{"document_id": "doc1", "document_type": "annual_report"}]
+    }
+    mock_service.search_document.return_value = {"total_matches": total, "matches": matches}
+    return verify_claim_against_filing(
+        mock_service, "ANET", "Backlog was $80.6 million at May 29, 2026"
+    )
+
+
+def _span(ref: str, title: str, context: str, exact: bool = False) -> dict:
+    return {
+        "section": {"ref": ref, "title": title},
+        "is_exact_phrase": exact,
+        "evidence": {"matched_text": "backlog", "context": context},
+    }
+
+
+def test_verify_reranks_numeric_span_first() -> None:
+    matches = [
+        _span("s_cover", "Cover Page", "Backlog discussion and annual report highlights."),
+        _span("s_backlog", "BACKLOG", "Backlog was $80.6 million as of the fiscal year end."),
+    ]
+    res = _verify_with_matches(matches, total=6)
+    assert res["evidence_spans"][0]["section_ref"] == "s_backlog"
+    assert res["numbers_anchored"] is True
+    assert res["confidence"] == 0.80
+
+
+def test_verify_caps_confidence_when_numbers_unanchored() -> None:
+    matches = [
+        _span(f"s_{i}", f"Topic {i}", "Backlog is discussed in general terms.") for i in range(6)
+    ]
+    res = _verify_with_matches(matches, total=6)
+    assert res["verified"] is True
+    assert res["numbers_anchored"] is False
+    assert res["confidence"] == 0.60  # would be 0.80 on count alone
+
+
+def test_verify_non_numeric_claim_unchanged() -> None:
+    mock_service = MagicMock()
+    mock_service.list_documents.return_value = {
+        "documents": [{"document_id": "doc1", "document_type": "annual_report"}]
+    }
+    matches = [_span(f"s_{i}", f"Topic {i}", "Demand softness discussion.") for i in range(6)]
+    mock_service.search_document.return_value = {"total_matches": 6, "matches": matches}
+    res = verify_claim_against_filing(mock_service, "ANET", "demand softness in electric vehicles")
+    assert res["confidence"] == 0.80
+    assert res["numbers_anchored"] is True
+
+
 def test_extract_evidence_candidates() -> None:
     mock_service = MagicMock()
     mock_service.list_documents.return_value = {

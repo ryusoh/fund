@@ -341,8 +341,9 @@ your "verified" claim is false. Confirm both jest **and** pytest run.
 - **SEC filings adapter** (`scripts/analysis/filings_adapter.py`, toolkit
   `scripts/filings/`) → `docs/filings-adapter.md`. Invoke via
   `venv/bin/python -m scripts.analysis.filings_adapter` (the direct script path
-  fails); new tickers need ingestion into the workspace before `list`/`verify`
-  work; XBRL value extraction returns nulls — read numbers from section HTML.
+  fails); new tickers need `ingest` into the workspace before `list`/`verify`
+  work; `verify` confidence is numeric-anchored, not proof — confirm claims by
+  reading the cited section.
 - Portfolio math → `docs/fermat-pascal-kelly-system.md`.
 
 ## Lanes (keep PRs disjoint to avoid collisions)

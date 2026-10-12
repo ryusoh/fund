@@ -50,15 +50,15 @@ SEC_USER_AGENT="Your Name contact@example.com" \
 ## Confirm pass semantics
 
 `verify --ticker <T> --claim "<text>"` returns PASS/FAIL with a confidence score;
-the skills enforce **≥ 0.60**. Treat it as coarse grounding, not proof — see gaps below.
+the skills enforce **≥ 0.60**. Confidence is count/exactness-based (0.60/0.80/0.95),
+but displayed spans are re-ranked so number-bearing matches lead, cover-page
+sections are demoted, and a claim containing numerals is capped at 0.60 unless a
+matched span actually contains one of its numbers (`numbers_anchored` field).
+Treat it as coarse grounding, not proof.
 
 ## Known gaps (found in the 2026-10-12 AEHR appliance test)
 
-- **XBRL value extraction returns nulls** — `get_financial_statement` returns correct
-  row labels with empty `values`; `query_xbrl_facts` finds facts but `value: None`.
-  The XBRL instance/linkbase files are ingested on disk, so this is an extraction
-  gap in `scripts/filings/` (fixable as first-party code — record per
-  `scripts/filings/PROVENANCE.md`). Read numbers from the section HTML text
-  (`read`) instead, or cross-check via the SEC company-facts API.
-- **`verify` BM25 evidence spans are noisy** — top hits are often cover-page fragments
-  rather than the load-bearing paragraph; the PASS/FAIL + confidence is still usable.
+- None currently open. Fixed since the appliance test: `list` showed
+  `form_type: N/A` (adapter now maps `document_type`); XBRL statement values
+  returned empty (period-column suffix parsing, fixed 2026-10-12); `verify`
+  spans were raw BM25 order (now numeric-anchored, see above).
