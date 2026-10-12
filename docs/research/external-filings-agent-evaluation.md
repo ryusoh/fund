@@ -151,7 +151,7 @@ validation, crash recovery with batch journals and file locks
    research). Retain LICENSE + NOTICE per Apache-2.0; add a `VENDORED.md`
    noting origin, version, and local modifications. Import-linter and gates
    apply as for any `scripts/` code.~~
-   **DONE 2026-09-30 — vendored & cleanroomed.** Vendored SEC download + read path
+   **DONE 2026-09-30 — vendored & translated.** Vendored SEC download + read path
    under `scripts/vendor/filings/`, translated all Chinese docstrings/comments to
    English, preserved Apache-2.0 LICENSE and NOTICE, configured tooling exclusions,
    and verified via import smoke tests and offline ANET 10-K extraction. Ready for

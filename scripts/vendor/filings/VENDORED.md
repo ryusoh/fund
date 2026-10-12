@@ -29,7 +29,7 @@ directory — both are reproduced unmodified, as the license requires).
 - Package `__init__.py` files pruned so importing the package never pulls in
   omitted modules.
 - No upstream docs/AGENTS/constraints files are vendored.
-- **Cleanroom English Translation:** All Chinese docstrings, comments, and log messages
+- **English translation:** all Chinese docstrings, comments, and log messages
   across the vendored tree have been translated to English. Machine-consumed
   lookup dictionaries (`_search_synonyms.json` and `_financial_labels.json`)
   retain their bilingual terminology mappings for functional matching.
@@ -52,7 +52,19 @@ passes.
 
 ## Tooling
 
-This tree is third-party code: it is excluded from ruff/black (`pyproject.toml`),
-mypy (`mypy.ini`), coverage (`[tool.coverage.run]` omit), pre-commit hooks
+This tree is excluded from automated gates: ruff/black (`pyproject.toml`), mypy
+(`mypy.ini`), coverage (`[tool.coverage.run]` omit), pre-commit hooks
 (`.pre-commit-config.yaml`), and the thinking-comment gate
-(`scripts/check_thinking_comments.py`). Do not reformat or "fix" it.
+(`scripts/check_thinking_comments.py`). Formatters and auto-fixers must never
+rewrite it.
+
+Deliberate, hand-reviewed modifications **are** allowed: Apache-2.0 §4 permits
+derivative works, and this tree is slated for first-party integration (see the
+roadmap above). When you change a vendored file:
+
+1. Add a brief change notice at the top of the modified file (Apache-2.0 §4(b)).
+2. Record the change under "Modifications relative to upstream".
+
+Note that each divergence from upstream raises the cost of pulling future
+upstream fixes — prefer adapter-layer workarounds for anything cosmetic, and
+modify vendored code only for real defects.
