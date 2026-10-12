@@ -31,7 +31,7 @@ jobs:
               run: pip install yfinance
             - name: Run sync script
               run: |
-                  python scripts/analysis/sync_configs.py
+                  python -m scripts.analysis.sync_configs
             - name: Commit changes
               id: autocommit
               run: |
