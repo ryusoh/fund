@@ -21,7 +21,7 @@ The bull case rests on hard numbers: **$80.6M backlog (5.3× YoY), $100.6M effec
 
 ## Claim-by-claim breakdown (confirm-pass verified)
 
-All six load-bearing quantitative claims **PASSED** `filings_adapter verify` at 80% confidence (threshold 60%) against the FY2026 10-K (accession 0001654954-26-006919, filed 2026-07-27; https://www.sec.gov/Archives/edgar/data/1040470/000165495426006919/aehr_10k.htm).
+All six load-bearing quantitative claims **PASSED** `filings_adapter verify` at 80% confidence (threshold 60%) against the FY2026 10-K (accession 0001654954-26-006919, filed 2026-07-27; <https://www.sec.gov/Archives/edgar/data/1040470/000165495426006919/aehr_10k.htm>).
 
 ### Financials (10-K FY2026, Item 8; $ thousands)
 
@@ -65,7 +65,7 @@ Customers are never named (letters only). The onsemi identification is widely re
 - New silicon photonics customer win 2026-03-31 ("global leader in networking"); follow-on SiPh orders Jun/Jul/Aug 2026.
 - WLBI benchmark with a "major supplier of AI accelerators, CPUs, and network processors" exceeded expectations; pilot production interest expressed [Q4 FY2026 release].
 
-### Industry context (PCIM/Mesago 2026-07-29, citing TrendForce/Yole: https://news.pcim.mesago.com/sic-vs-gan-in-2026-and-beyond-a-947d5edd20f5b5a7f22b8fbecd6f9ec3/)
+### Industry context (PCIM/Mesago 2026-07-29, citing TrendForce/Yole: <https://news.pcim.mesago.com/sic-vs-gan-in-2026-and-beyond-a-947d5edd20f5b5a7f22b8fbecd6f9ec3/>)
 
 - SiC recovering: 1.17M EV traction inverters in Q1 2026 (17.2% attach); 800V vehicles +21% YoY.
 - But SiC overcapacity persists until **2027–2028** (Yole: ~~50% substrate utilization 2025); Chinese substrate price war (~~$400/6-inch).
