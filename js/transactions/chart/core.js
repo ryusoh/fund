@@ -454,6 +454,42 @@ function renderXAxisGrid(ctx, tick, x, padding, plotHeight, plotWidth) {
     }
 }
 
+export function _drawXAxisBaseline(ctx, padding, plotWidth, plotHeight, isMobile, monoFont) {
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top + plotHeight);
+    ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
+}
+
+export function _shouldDrawTickLabel(index, x, yearTicks, xScale, isMobile) {
+    if (index === 0) {
+        return true;
+    }
+    const minSpacing = isMobile ? 30 : 40;
+    const prevTickX = xScale(yearTicks[index - 1].time);
+    return x - prevTickX >= minSpacing;
+}
+
+export function _drawXAxisTickLabel(ctx, tick, index, x, yearTicks, padding, plotHeight, isMobile) {
+    if (isMobile && index === yearTicks.length - 1) {
+        ctx.textAlign = 'right';
+    } else {
+        ctx.textAlign = 'center';
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top + plotHeight);
+    ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
+    ctx.stroke();
+
+    ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
+}
+
 function renderXAxis(
     ctx,
     yearTicks,
@@ -466,47 +502,56 @@ function renderXAxis(
     drawXAxis
 ) {
     if (drawXAxis) {
-        ctx.beginPath();
-        ctx.moveTo(padding.left, padding.top + plotHeight);
-        ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.font = isMobile ? `9px ${monoFont}` : `11px ${monoFont}`;
+        _drawXAxisBaseline(ctx, padding, plotWidth, plotHeight, isMobile, monoFont);
     }
 
-    const minSpacing = isMobile ? 30 : 40;
     for (let index = 0; index < yearTicks.length; index++) {
         const tick = yearTicks[index];
         const x = xScale(tick.time);
 
-        let shouldDrawLabel = true;
-        if (index > 0) {
-            const prevTickX = xScale(yearTicks[index - 1].time);
-            if (x - prevTickX < minSpacing) {
-                shouldDrawLabel = false;
-            }
-        }
+        const shouldDrawLabel = _shouldDrawTickLabel(index, x, yearTicks, xScale, isMobile);
 
         if (drawXAxis && shouldDrawLabel) {
-            if (isMobile && index === yearTicks.length - 1) {
-                ctx.textAlign = 'right';
-            } else {
-                ctx.textAlign = 'center';
-            }
-
-            ctx.beginPath();
-            ctx.moveTo(x, padding.top + plotHeight);
-            ctx.lineTo(x, padding.top + plotHeight + (isMobile ? 4 : 6));
-            ctx.stroke();
-
-            ctx.fillText(tick.label, x, padding.top + plotHeight + (isMobile ? 8 : 10));
+            _drawXAxisTickLabel(ctx, tick, index, x, yearTicks, padding, plotHeight, isMobile);
         }
 
         renderXAxisGrid(ctx, tick, x, padding, plotHeight, plotWidth);
     }
+}
+
+export function _renderYAxisSection(
+    ctx,
+    ticks,
+    yScale,
+    padding,
+    plotWidth,
+    isMobile,
+    monoFont,
+    yMin,
+    yMax,
+    avoidY,
+    yLabelFormatter
+) {
+    const fontSize = isMobile ? 9 : 11;
+    const selectedTicks = selectYAxisTicks(ticks, yScale, fontSize, isMobile, yMin, yMax, avoidY);
+    renderYAxis(
+        ctx,
+        selectedTicks,
+        padding,
+        plotWidth,
+        fontSize,
+        monoFont,
+        isMobile,
+        yLabelFormatter
+    );
+    return selectedTicks;
+}
+
+export function _resolveDrawAxesOptions(isPerformanceChart, forcePercent, axisOptions) {
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const { drawXAxis = true, drawYAxis = true, maxTicks = null, avoidY = [] } = axisOptions || {};
+    const usePercent = Boolean(isPerformanceChart || forcePercent);
+    return { isMobile, drawXAxis, drawYAxis, maxTicks, avoidY, usePercent };
 }
 
 export function drawAxes(
@@ -526,26 +571,25 @@ export function drawAxes(
     currency = 'USD',
     forcePercent = false
 ) {
-    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const { isMobile, drawXAxis, drawYAxis, maxTicks, avoidY, usePercent } =
+        _resolveDrawAxesOptions(isPerformanceChart, forcePercent, axisOptions);
     const monoFont = getMonoFontFamily();
-    const { drawXAxis = true, drawYAxis = true, maxTicks = null, avoidY = [] } = axisOptions;
 
-    const ticks = generateConcreteTicks(yMin, yMax, isPerformanceChart || forcePercent, currency, {
-        maxTicks,
-    });
+    const ticks = generateConcreteTicks(yMin, yMax, usePercent, currency, { maxTicks });
 
     let selectedTicks = [];
     if (drawYAxis) {
-        const fontSize = isMobile ? 9 : 11;
-        selectedTicks = selectYAxisTicks(ticks, yScale, fontSize, isMobile, yMin, yMax, avoidY);
-        renderYAxis(
+        selectedTicks = _renderYAxisSection(
             ctx,
-            selectedTicks,
+            ticks,
+            yScale,
             padding,
             plotWidth,
-            fontSize,
-            monoFont,
             isMobile,
+            monoFont,
+            yMin,
+            yMax,
+            avoidY,
             yLabelFormatter
         );
     }
