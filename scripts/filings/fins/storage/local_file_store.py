@@ -205,7 +205,9 @@ class LocalFileStore(FileStore):
             raise ValueError("key must not be empty")
         path = (self._root / Path(*normalized.split("/"))).resolve()
         if self._root not in path.parents and path != self._root:
-            raise ValueError("key escapes the root; accessing paths outside the root directory is forbidden")
+            raise ValueError(
+                "key escapes the root; accessing paths outside the root directory is forbidden"
+            )
         return path
 
     def _build_uri(self, key: str) -> str:

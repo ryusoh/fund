@@ -590,7 +590,9 @@ class _FsSourceDocumentMixin(_FsStorageInfra):
             normalized_ticker, document_id, normalized_source_kind
         )
         if not meta_path.exists():
-            raise FileNotFoundError(f"document_id={document_id} does not exist in {normalized_source_kind}")
+            raise FileNotFoundError(
+                f"document_id={document_id} does not exist in {normalized_source_kind}"
+            )
         return SourceHandle(
             ticker=normalized_ticker,
             document_id=document_id,
@@ -616,7 +618,9 @@ class _FsSourceDocumentMixin(_FsStorageInfra):
         if not isinstance(files, list):
             raise ValueError("meta.files must be a list")
         if not files:
-            raise FileNotFoundError("source document has no bound file; cannot locate the primary file")
+            raise FileNotFoundError(
+                "source document has no bound file; cannot locate the primary file"
+            )
         primary_name = str(meta.get("primary_document", "")).strip()
         if primary_name:
             for item in files:

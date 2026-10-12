@@ -533,6 +533,7 @@ class FinsToolService:
         except Exception as exc:
             # Security concern: silent catch block hides failures
             import logging
+
             logging.warning("Failed to load topics: %s", exc)
 
         is_multi = len(resolved_queries) > 1

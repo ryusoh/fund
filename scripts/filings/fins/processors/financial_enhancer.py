@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import json
 import unicodedata
-from pathlib import Path
 from collections.abc import Iterable, Mapping
+from pathlib import Path
 from typing import Any, Optional, Protocol
 
 from scripts.filings.engine.processors.text_utils import (
@@ -48,7 +48,9 @@ _FINANCIAL_LABEL_DATA = json.loads(
 _FINANCIAL_KEYWORDS = tuple(_FINANCIAL_LABEL_DATA["financial_keywords"])
 _FINANCIAL_STATEMENT_EVIDENCE_GROUPS = tuple(
     (label, tuple(keywords), minimum_hits)
-    for label, keywords, minimum_hits in _FINANCIAL_LABEL_DATA["financial_statement_evidence_groups"]
+    for label, keywords, minimum_hits in _FINANCIAL_LABEL_DATA[
+        "financial_statement_evidence_groups"
+    ]
 )
 
 _MAX_TABLE_BODY_EVIDENCE_CHARS = 6000

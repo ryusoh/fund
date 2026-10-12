@@ -204,7 +204,9 @@ class ToolRegistry:
 
         schema_name = function.get("name")
         if not isinstance(schema_name, str) or not schema_name:
-            raise ConfigError("tool_schema", None, "schema.function.name must be a non-empty string")
+            raise ConfigError(
+                "tool_schema", None, "schema.function.name must be a non-empty string"
+            )
         if schema_name != name:
             raise ConfigError(
                 "tool_registration",
@@ -237,7 +239,9 @@ class ToolRegistry:
                 not isinstance(item, str) for item in required
             ):
                 raise ConfigError(
-                    "tool_schema", None, "schema.function.parameters.required must be an array of strings"
+                    "tool_schema",
+                    None,
+                    "schema.function.parameters.required must be an array of strings",
                 )
 
         additional_props = parameters.get("additionalProperties")
@@ -334,7 +338,9 @@ class ToolRegistry:
             # verify the path exists
             if not path_obj.exists():
                 raise ConfigError(
-                    "register_allowed_paths", None, f"path does not exist: {path} (resolved to {path_obj})"
+                    "register_allowed_paths",
+                    None,
+                    f"path does not exist: {path} (resolved to {path_obj})",
                 )
 
             # add to the whitelist
@@ -603,7 +609,9 @@ class ToolRegistry:
             return build_error("file_not_found", "file does not exist", hint=str(e))
         except (PermissionError, FileAccessError) as e:
             Log.warn(f"tool {name} execution failed: permission denied - {e}", module=MODULE)
-            return build_error("permission_denied", "permission denied or path outside the safe range", hint=str(e))
+            return build_error(
+                "permission_denied", "permission denied or path outside the safe range", hint=str(e)
+            )
 
         except TypeError as e:
             Log.error(f"tool {name} execution failed: argument error - {e}", module=MODULE)

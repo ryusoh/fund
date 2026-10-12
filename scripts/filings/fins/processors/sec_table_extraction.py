@@ -1638,7 +1638,9 @@ def _collapse_ghost_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- Step 1: identify adjacent same-base-name column groups ---
     col_names = [str(c) for c in df.columns]
-    groups: list[list[int]] = []  # each group is the index list of adjacent columns with the same base name
+    groups: list[list[int]] = (
+        []
+    )  # each group is the index list of adjacent columns with the same base name
     current_group: list[int] = [0]
     base_name_0 = _ghost_column_base_name(col_names[0])
 
@@ -2240,7 +2242,9 @@ def _render_markdown_table(table_obj: Any, fallback_text: str) -> str:
                 return markdown
             raise RuntimeError("SEC table markdown render produced empty output")
         except ModuleNotFoundError as exc:
-            raise RuntimeError("the tabulate dependency is missing; cannot render SEC table markdown") from exc
+            raise RuntimeError(
+                "the tabulate dependency is missing; cannot render SEC table markdown"
+            ) from exc
         except Exception as exc:
             raise RuntimeError(f"SEC table markdown render failed: {exc}") from exc
     if fallback_text:

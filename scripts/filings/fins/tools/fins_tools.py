@@ -821,12 +821,18 @@ def _create_query_xbrl_facts_tool(
                 "type": "string",
                 "description": "Optional statement-type filter. Fill only when you want to narrow results to a specific statement type.",
             },
-            "period_end": {"type": "string", "description": "Optional period-end date filter, format YYYY-MM-DD."},
+            "period_end": {
+                "type": "string",
+                "description": "Optional period-end date filter, format YYYY-MM-DD.",
+            },
             "fiscal_year": {
                 "type": "integer",
                 "description": "Optional fiscal-year filter. Fill only when you know the year.",
             },
-            "fiscal_period": {"type": "string", "description": "Optional fiscal-period filter, e.g. FY, Q1, Q2."},
+            "fiscal_period": {
+                "type": "string",
+                "description": "Optional fiscal-period filter, e.g. FY, Q1, Q2.",
+            },
             "min_value": {
                 "type": "number",
                 "description": "Optional minimum-value filter. Fill only when you want to exclude overly small values.",

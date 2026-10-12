@@ -294,7 +294,9 @@ def build_toolset_config_snapshot(
             for key, value in payload.items()
         }
     else:
-        raise TypeError(f"cannot build a toolset config snapshot from type {type(payload).__name__}")
+        raise TypeError(
+            f"cannot build a toolset config snapshot from type {type(payload).__name__}"
+        )
     return ToolsetConfigSnapshot(
         toolset_name=normalized_name,
         version=str(version or "1").strip() or "1",

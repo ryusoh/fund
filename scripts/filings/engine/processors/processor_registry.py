@@ -268,7 +268,9 @@ class ProcessorRegistry:
                 continue
 
         error_text = "; ".join(errors)
-        raise RuntimeError(f"processor creation failed with no usable fallback: source={source} errors={error_text}")
+        raise RuntimeError(
+            f"processor creation failed with no usable fallback: source={source} errors={error_text}"
+        )
 
     def _find(self, name: str) -> Optional[ProcessorRegistration]:
         """Look up a registration record.

@@ -23,17 +23,13 @@ from pathlib import Path
 SCAN_EXTENSIONS = ('.py', '.js', '.cjs', '.mjs', '.ts', '.css')
 
 # Third-party and pipeline-generated trees are not ours to police (AGENTS.md
-# non-negotiable #4). scripts/filings/ originates from third-party code
-# (Apache-2.0) and is excluded alongside assets/vendor until its modules are
-# adopted first-party; the rest of scripts/vendor/ is first-party tooling —
-# not excluded.
+# non-negotiable #4).
 EXCLUDED_PARTS = (
     'assets/vendor/',
     'js/vendor/',
     'tests/js/vendor/',
     'node_modules/',
     'data/',
-    'scripts/filings/',
 )
 
 # Anchored-at-start patterns match the comment text after the marker is

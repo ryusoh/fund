@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Search strategy constants
@@ -77,7 +77,9 @@ _TOKEN_STOP_WORDS = frozenset(
 # English-only.
 _SEARCH_SYNONYM_GROUPS: tuple[tuple[str, ...], ...] = tuple(
     tuple(group)
-    for group in json.loads((Path(__file__).with_name("_search_synonyms.json")).read_text(encoding="utf-8"))
+    for group in json.loads(
+        (Path(__file__).with_name("_search_synonyms.json")).read_text(encoding="utf-8")
+    )
 )
 
 # ---------------------------------------------------------------------------

@@ -250,7 +250,8 @@ class _FsStorageInfra:
             else:
                 self._write_batch_journal(token, _PHASE_ROLLED_BACK)
                 Log.warn(
-                    f"commit_batch failed; backup restored: ticker={token.ticker}", module=self.MODULE
+                    f"commit_batch failed; backup restored: ticker={token.ticker}",
+                    module=self.MODULE,
                 )
             raise
         finally:
@@ -455,7 +456,9 @@ class _FsStorageInfra:
         except OSError as exc:
             stream.close()
             if not blocking and file_lock_module.is_lock_contention_error(exc):
-                raise RuntimeError(f"ticker={lock_path.stem} already has an active cross-process batch") from exc
+                raise RuntimeError(
+                    f"ticker={lock_path.stem} already has an active cross-process batch"
+                ) from exc
             raise
         return stream
 
@@ -798,7 +801,9 @@ class _FsStorageInfra:
         try:
             candidate.relative_to(base_dir.resolve())
         except ValueError as exc:
-            raise ValueError("entry name escapes the root; accessing paths outside the document directory is forbidden") from exc
+            raise ValueError(
+                "entry name escapes the root; accessing paths outside the document directory is forbidden"
+            ) from exc
         return candidate
 
     def _get_handle_meta(self, handle: SourceHandle | ProcessedHandle) -> dict[str, Any]:
@@ -1620,5 +1625,7 @@ class _FsStorageInfra:
         try:
             candidate.relative_to(base_dir.resolve())
         except ValueError as exc:
-            raise ValueError("entry name escapes the root; accessing paths outside the document directory is forbidden") from exc
+            raise ValueError(
+                "entry name escapes the root; accessing paths outside the document directory is forbidden"
+            ) from exc
         return candidate

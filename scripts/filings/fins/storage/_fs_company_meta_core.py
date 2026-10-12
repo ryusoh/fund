@@ -220,7 +220,9 @@ class _FsCompanyMetaMixin(_FsStorageInfra):
         for candidate in normalized_candidates:
             matched_tickers = alias_to_tickers.get(candidate, [])
             if len(matched_tickers) > 1:
-                raise ValueError(f"ticker alias={candidate} matches multiple company directories: {matched_tickers}")
+                raise ValueError(
+                    f"ticker alias={candidate} matches multiple company directories: {matched_tickers}"
+                )
             if len(matched_tickers) == 1:
                 return matched_tickers[0]
         return None
