@@ -4,22 +4,41 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from scripts.analysis.filings_adapter import (
     _extract_clean_search_keywords,
+    _infer_fiscal_context,
     build_filings_service,
     estimate_token_count,
     export_chunks_manifest,
     extract_evidence_candidates,
     get_document_sections_tree,
     get_latest_annual_report,
+    ingest_ticker,
     list_ticker_filings,
     main,
     read_filing_section,
     resolve_workspace,
     verify_claim_against_filing,
 )
+
+
+def test_infer_fiscal_context_annual() -> None:
+    assert _infer_fiscal_context("2026-05-29", 5, "10-K") == (2026, "FY")
+
+
+def test_infer_fiscal_context_quarters() -> None:
+    # AEHR: FY ends ~May; Q3 FY2026 report dated 2026-02-27
+    assert _infer_fiscal_context("2026-02-27", 5, "10-Q") == (2026, "Q3")
+    # Calendar-year company: Q1 report dated March
+    assert _infer_fiscal_context("2026-03-31", 12, "10-Q") == (2026, "Q1")
+    # June year-end company: September report is Q1 of the next fiscal year
+    assert _infer_fiscal_context("2026-09-30", 6, "10-Q") == (2027, "Q1")
+
+
+def test_infer_fiscal_context_empty_date() -> None:
+    assert _infer_fiscal_context("", 12, "10-Q") == (None, None)
 
 
 def test_resolve_workspace(tmp_path: Path, monkeypatch) -> None:
@@ -407,3 +426,135 @@ def test_cli_subcommands(capsys, monkeypatch, tmp_path: Path) -> None:
         main()
         out = capsys.readouterr().out
         assert "evidence candidates" in out
+
+
+def _build_ingest_mocks() -> tuple[MagicMock, MagicMock]:
+    downloader = MagicMock()
+    downloader.normalize_ticker.side_effect = lambda t: t.strip().upper()
+    downloader.resolve_company = AsyncMock(
+        return_value=("1040470", "AEHR TEST SYSTEMS", "0001040470")
+    )
+    downloader.fetch_submissions = AsyncMock(
+        return_value={
+            "filings": {
+                "recent": {
+                    "form": ["10-Q", "10-K", "8-K"],
+                    "accessionNumber": [
+                        "0001654954-26-003348",
+                        "0001654954-26-006919",
+                        "0001654954-26-009999",
+                    ],
+                    "primaryDocument": ["aehr_10q.htm", "aehr_10k.htm", "aehr_8k.htm"],
+                    "filingDate": ["2026-04-08", "2026-07-27", "2026-09-01"],
+                    "reportDate": ["2026-02-27", "2026-05-29", "2026-08-31"],
+                }
+            }
+        }
+    )
+    downloader.list_filing_files = AsyncMock(return_value=[MagicMock(name="descriptor")])
+
+    async def _fake_download(remote_files, overwrite, store_file, primary_document):
+        store_file("aehr_10k.htm", b"<html/>")
+        return []
+
+    downloader.download_files = AsyncMock(side_effect=_fake_download)
+    downloader.close = AsyncMock()
+    file_store = MagicMock()
+    file_store.put_object.side_effect = lambda key, stream: {"key": key}
+    return downloader, file_store
+
+
+def test_ingest_ticker(tmp_path: Path) -> None:
+    downloader, file_store = _build_ingest_mocks()
+    with (
+        patch("scripts.analysis.filings_adapter.SecDownloader", return_value=downloader),
+        patch("scripts.analysis.filings_adapter.LocalFileStore", return_value=file_store),
+        patch("scripts.analysis.filings_adapter.FsCompanyMetaRepository"),
+        patch("scripts.analysis.filings_adapter.FsSourceDocumentRepository") as mock_source_repo,
+    ):
+        mock_source_repo.return_value.list_source_document_ids.return_value = []
+        ingested = ingest_ticker("aehr", workspace_root=tmp_path)
+
+    assert [d["form_type"] for d in ingested] == ["10-Q", "10-K"]
+    ten_k = next(d for d in ingested if d["form_type"] == "10-K")
+    assert ten_k["document_id"] == "fil_0001654954-26-006919"
+    assert ten_k["fiscal_year"] == 2026
+    assert ten_k["fiscal_period"] == "FY"
+    assert ten_k["action"] == "created"
+    ten_q = next(d for d in ingested if d["form_type"] == "10-Q")
+    assert ten_q["fiscal_period"] == "Q3"
+    downloader.close.assert_awaited_once()
+    assert mock_source_repo.return_value.create_source_document.call_count == 2
+
+
+def test_ingest_ticker_updates_existing(tmp_path: Path) -> None:
+    downloader, file_store = _build_ingest_mocks()
+    with (
+        patch("scripts.analysis.filings_adapter.SecDownloader", return_value=downloader),
+        patch("scripts.analysis.filings_adapter.LocalFileStore", return_value=file_store),
+        patch("scripts.analysis.filings_adapter.FsCompanyMetaRepository"),
+        patch("scripts.analysis.filings_adapter.FsSourceDocumentRepository") as mock_source_repo,
+    ):
+        mock_source_repo.return_value.list_source_document_ids.return_value = [
+            "fil_0001654954-26-006919"
+        ]
+        ingested = ingest_ticker("aehr", workspace_root=tmp_path)
+
+    actions = {d["form_type"]: d["action"] for d in ingested}
+    assert actions == {"10-Q": "created", "10-K": "updated"}
+    repo = mock_source_repo.return_value
+    assert repo.create_source_document.call_count == 1
+    assert repo.update_source_document.call_count == 1
+
+
+def test_ingest_ticker_no_matching_forms(tmp_path: Path) -> None:
+    downloader, file_store = _build_ingest_mocks()
+    with (
+        patch("scripts.analysis.filings_adapter.SecDownloader", return_value=downloader),
+        patch("scripts.analysis.filings_adapter.LocalFileStore", return_value=file_store),
+        patch("scripts.analysis.filings_adapter.FsCompanyMetaRepository"),
+        patch("scripts.analysis.filings_adapter.FsSourceDocumentRepository"),
+    ):
+        assert ingest_ticker("aehr", forms=("20-F",), workspace_root=tmp_path) == []
+    downloader.close.assert_awaited_once()
+
+
+def test_cli_list_shows_document_type(capsys, monkeypatch) -> None:
+    mock_service = MagicMock()
+    mock_service.list_documents.return_value = {
+        "documents": [
+            {
+                "document_id": "doc1",
+                "document_type": "annual_report",
+                "fiscal_year": 2025,
+                "filing_date": "2026-02-17",
+            }
+        ]
+    }
+    with patch("scripts.analysis.filings_adapter.build_filings_service", return_value=mock_service):
+        monkeypatch.setattr("sys.argv", ["filings_adapter", "list", "--ticker", "ANET"])
+        main()
+    out = capsys.readouterr().out
+    assert "annual" in out
+    assert "N/A" not in out
+
+
+def test_cli_ingest_dispatch(capsys, monkeypatch, tmp_path: Path) -> None:
+    with patch(
+        "scripts.analysis.filings_adapter.ingest_ticker",
+        return_value=[
+            {
+                "form_type": "10-K",
+                "document_id": "fil_1",
+                "filing_date": "2026-07-27",
+                "report_date": "2026-05-29",
+                "fiscal_year": 2026,
+                "fiscal_period": "FY",
+            }
+        ],
+    ) as mock_ingest:
+        monkeypatch.setattr("sys.argv", ["filings_adapter", "ingest", "--ticker", "AEHR"])
+        main()
+    out = capsys.readouterr().out
+    assert "Ingested 1 filing(s) for AEHR" in out
+    mock_ingest.assert_called_once()

@@ -20,9 +20,10 @@ For the given research question `$ARGUMENTS`:
     - **Filings subagent:** Queries SEC filings via `venv/bin/python -m scripts.analysis.filings_adapter`
       (`sections`, `read`, `verify` — the direct script path fails with `ModuleNotFoundError`;
       the `-m` form is required). If the ticker is not yet in the filings workspace
-      (`list` raises "do not have this company"), ingest it first per
-      `docs/filings-adapter.md`. Extracts hard financial numbers, risk disclosures,
-      customer concentration, and management commentary.
+      (`list` raises "do not have this company"), ingest it first:
+      `venv/bin/python -m scripts.analysis.filings_adapter ingest --ticker <T>`
+      (idempotent; see `docs/filings-adapter.md`). Extracts hard financial numbers,
+      risk disclosures, customer concentration, and management commentary.
     - **Internal state subagent:** Audits `data/analysis/<TICKER>.json`, `*.evidence.jsonl`,
       and `docs/thesis/**`. Tracks prior beliefs, falsifiable prediction track records,
       and open questions.

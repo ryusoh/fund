@@ -9,12 +9,20 @@ Bridges the vendored SEC filings toolkit (`scripts.vendor.filings`) with:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import re
 from pathlib import Path
 from typing import Any, Optional
 
+from scripts.vendor.filings.fins.domain.document_models import (
+    CompanyMeta,
+    SourceDocumentUpsertRequest,
+    now_iso8601,
+)
+from scripts.vendor.filings.fins.domain.enums import SourceKind
+from scripts.vendor.filings.fins.downloaders.sec_downloader import SecDownloader
 from scripts.vendor.filings.fins.processors.registry import build_fins_processor_registry
 from scripts.vendor.filings.fins.storage.fs_company_meta_repository import FsCompanyMetaRepository
 from scripts.vendor.filings.fins.storage.fs_processed_document_repository import (
@@ -23,7 +31,10 @@ from scripts.vendor.filings.fins.storage.fs_processed_document_repository import
 from scripts.vendor.filings.fins.storage.fs_source_document_repository import (
     FsSourceDocumentRepository,
 )
+from scripts.vendor.filings.fins.storage.local_file_store import LocalFileStore
 from scripts.vendor.filings.fins.tools.service import FinsToolService
+
+DEFAULT_INGEST_FORMS = ("10-K", "10-Q")
 
 
 def resolve_workspace(override: Optional[Path | str] = None) -> Path:
@@ -70,6 +81,154 @@ def list_ticker_filings(service: FinsToolService, ticker: str) -> list[dict[str,
         key=lambda d: str(d.get("filing_date") or d.get("report_date") or ""),
         reverse=True,
     )
+
+
+def _infer_fiscal_context(
+    report_date: str, fy_end_month: int, form_type: str
+) -> tuple[Optional[int], Optional[str]]:
+    """Infer (fiscal_year, fiscal_period) from a report date and fiscal year-end month.
+
+    Heuristic: the fiscal year is named by the calendar year of its end month,
+    so a report dated after the year-end month belongs to the next fiscal year
+    (unless the year ends in December). Quarters are counted in 3-month steps
+    from the year-end month; a 10-K is always FY.
+    """
+    if not report_date:
+        return None, None
+    year = int(report_date[:4])
+    month = int(report_date[5:7])
+    if form_type == "10-K":
+        return year, "FY"
+    months_since_fy_end = (month - fy_end_month) % 12
+    quarter = 4 if months_since_fy_end == 0 else min(4, (months_since_fy_end + 2) // 3)
+    fiscal_year = year + (1 if fy_end_month < 12 and month > fy_end_month else 0)
+    return fiscal_year, f"Q{quarter}"
+
+
+async def _ingest_filings_async(
+    ticker: str, forms: tuple[str, ...], workspace: Path
+) -> list[dict[str, Any]]:
+    """Download the latest filing per form from SEC EDGAR into the workspace.
+
+    Requires the SEC_USER_AGENT env var (SEC fair-access policy). Registers the
+    company so the read tools (`list`/`sections`/`read`/`verify`) resolve the
+    ticker afterwards.
+    """
+    downloader = SecDownloader(workspace)
+    try:
+        ticker = downloader.normalize_ticker(ticker)
+        cik, company_name, cik10 = await downloader.resolve_company(ticker)
+        submissions = await downloader.fetch_submissions(cik10)
+        recent = submissions.get("filings", {}).get("recent", {})
+
+        picked: dict[str, int] = {}
+        for idx, form in enumerate(recent.get("form", [])):
+            if form in forms and form not in picked:
+                picked[form] = idx
+        if not picked:
+            return []
+
+        ten_k_idx = picked.get("10-K")
+        fy_end_month = 12
+        if ten_k_idx is not None and recent["reportDate"][ten_k_idx]:
+            fy_end_month = int(recent["reportDate"][ten_k_idx][5:7])
+
+        FsCompanyMetaRepository(workspace).upsert_company_meta(
+            CompanyMeta(
+                company_id=cik,
+                company_name=company_name,
+                ticker=ticker,
+                market="US",
+                resolver_version="cli-ingest-1",
+                updated_at=now_iso8601(),
+                ticker_aliases=[],
+            )
+        )
+        file_store = LocalFileStore(root=workspace / "portfolio", scheme="local")
+        source_repo = FsSourceDocumentRepository(workspace)
+        existing_ids = set(source_repo.list_source_document_ids(ticker, SourceKind.FILING))
+
+        ingested: list[dict[str, Any]] = []
+        for form, idx in picked.items():
+            accession = recent["accessionNumber"][idx]
+            primary = recent["primaryDocument"][idx]
+            filing_date = recent["filingDate"][idx]
+            report_date = recent["reportDate"][idx]
+            document_id = f"fil_{accession}"
+            fiscal_year, fiscal_period = _infer_fiscal_context(report_date, fy_end_month, form)
+
+            descriptors = await downloader.list_filing_files(
+                cik=cik,
+                accession_no_dash=accession.replace("-", ""),
+                primary_document=primary,
+                form_type=form,
+            )
+            stored: list[Any] = []
+
+            def store_file(
+                name: str, stream: Any, _document_id: str = document_id, _stored: list = stored
+            ) -> Any:
+                meta = file_store.put_object(f"{ticker}/filings/{_document_id}/{name}", stream)
+                _stored.append(meta)
+                return meta
+
+            await downloader.download_files(
+                remote_files=descriptors,
+                overwrite=True,
+                store_file=store_file,
+                primary_document=primary,
+            )
+            request = SourceDocumentUpsertRequest(
+                ticker=ticker,
+                document_id=document_id,
+                internal_document_id=accession,
+                form_type=form,
+                primary_document=primary,
+                meta={
+                    "accession_number": accession,
+                    "company_id": cik,
+                    "filing_date": filing_date,
+                    "report_date": report_date,
+                    "fiscal_year": fiscal_year,
+                    "fiscal_period": fiscal_period,
+                    "ingest_method": "download",
+                    "ingest_complete": True,
+                    "source_url": (
+                        f"https://www.sec.gov/Archives/edgar/data/"
+                        f"{cik}/{accession.replace('-', '')}/"
+                    ),
+                },
+                files=list(stored),
+            )
+            action = "updated" if document_id in existing_ids else "created"
+            if document_id in existing_ids:
+                source_repo.update_source_document(request, SourceKind.FILING)
+            else:
+                source_repo.create_source_document(request, SourceKind.FILING)
+            ingested.append(
+                {
+                    "form_type": form,
+                    "document_id": document_id,
+                    "filing_date": filing_date,
+                    "report_date": report_date,
+                    "fiscal_year": fiscal_year,
+                    "fiscal_period": fiscal_period,
+                    "action": action,
+                }
+            )
+        return ingested
+    finally:
+        await downloader.close()
+
+
+def ingest_ticker(
+    ticker: str,
+    forms: Optional[tuple[str, ...]] = None,
+    workspace_root: Optional[Path | str] = None,
+) -> list[dict[str, Any]]:
+    """Ingest the latest filings for a ticker (sync wrapper for CLI use)."""
+    workspace = resolve_workspace(workspace_root)
+    return asyncio.run(_ingest_filings_async(ticker, forms or DEFAULT_INGEST_FORMS, workspace))
 
 
 def get_latest_annual_report(service: FinsToolService, ticker: str) -> Optional[dict[str, Any]]:
@@ -401,15 +560,39 @@ def main() -> None:
     cand_p.add_argument("--doc", default=None)
     cand_p.add_argument("--workspace", default=None)
 
+    # ingest
+    ing_p = subparsers.add_parser(
+        "ingest", help="Download latest filings for a ticker from SEC EDGAR"
+    )
+    ing_p.add_argument("--ticker", required=True)
+    ing_p.add_argument(
+        "--forms",
+        default=",".join(DEFAULT_INGEST_FORMS),
+        help="Comma-separated SEC forms, latest filing each (default: 10-K,10-Q)",
+    )
+    ing_p.add_argument("--workspace", default=None)
+
     args = parser.parse_args()
+
+    if args.command == "ingest":
+        forms = tuple(f.strip() for f in args.forms.split(",") if f.strip())
+        ingested = ingest_ticker(args.ticker, forms=forms, workspace_root=args.workspace)
+        print(f"Ingested {len(ingested)} filing(s) for {args.ticker.upper()}:")
+        for d in ingested:
+            print(
+                f"  {d['document_id']} | {d['form_type']:<5} | FY{d.get('fiscal_year', '----')} {d.get('fiscal_period') or ''} | filed {d.get('filing_date', 'N/A')} | {d.get('action', '')}"
+            )
+        return
+
     service = build_filings_service(args.workspace)
 
     if args.command == "list":
         docs = list_ticker_filings(service, args.ticker)
         print(f"Filings for {args.ticker.upper()} ({len(docs)} found):")
         for d in docs:
+            doc_type = str(d.get("document_type") or "N/A").replace("_report", "")
             print(
-                f"  {d.get('document_id')} | {d.get('form_type', 'N/A'):<6} | FY{d.get('fiscal_year', '----')} | {d.get('filing_date', 'N/A')}"
+                f"  {d.get('document_id')} | {doc_type:<10} | FY{d.get('fiscal_year', '----')} | {d.get('filing_date', 'N/A')}"
             )
 
     elif args.command == "sections":

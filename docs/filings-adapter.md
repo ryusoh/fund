@@ -11,7 +11,7 @@ Always use the module form — the direct script path fails with
 `ModuleNotFoundError: No module named 'scripts'`:
 
 ```bash
-venv/bin/python -m scripts.analysis.filings_adapter {list,sections,read,export-manifest,verify,candidates} --ticker <T>
+venv/bin/python -m scripts.analysis.filings_adapter {ingest,list,sections,read,export-manifest,verify,candidates} --ticker <T>
 ```
 
 ## Workspace resolution
@@ -29,28 +29,22 @@ The workspace is **not** in the repo; ingested filings live under
 ## Ingesting a new ticker
 
 `list --ticker <T>` fails with `Financial Document Tools do not have this company`
-until the ticker is ingested. The CLI has **no download command** — the upstream
-ingestion/host layer was deliberately not vendored (`scripts/vendor/filings/VENDORED.md`).
-Ingestion means driving the vendored pieces directly (verified working 2026-10-12
-with AEHR; SEC requires a User-Agent via the `SEC_USER_AGENT` env var):
+until the ticker is ingested. Ingestion downloads the latest filing per form from
+SEC EDGAR and registers the company:
 
-1. `SecDownloader(workspace_root)` → `resolve_company(ticker)` gives `(cik, name, cik10)`.
-2. `fetch_submissions(cik10)` → pick filings from `filings.recent` (match `form`,
-   take `accessionNumber`, `primaryDocument`, `filingDate`, `reportDate`).
-3. `FsCompanyMetaRepository(workspace).upsert_company_meta(CompanyMeta(...))` —
-   registers the ticker so `list`/`verify` resolve it.
-4. Per filing: `list_filing_files(...)` → `download_files(...)` with a `store_file`
-   callback that persists via `LocalFileStore(root=workspace / "portfolio", scheme="local").put_object(f"{TICKER}/filings/fil_{accession}/{name}", stream)`.
-5. `FsSourceDocumentRepository(workspace).create_source_document(SourceDocumentUpsertRequest(...), SourceKind.FILING)`
-   with meta keys: `accession_number`, `company_id`, `filing_date`, `report_date`,
-   `fiscal_year`, `fiscal_period`, `ingest_method="download"`, `ingest_complete=True`,
-   `source_url`.
-6. Fiscal-period mapping is per-company: derive `fiscal_period` (Q1–Q3/FY) from
-   `report_date` against the company's fiscal calendar — AEHR's FY ends the Friday
-   nearest May 31 (June 30 from FY2027), so the naive calendar-quarter mapping was wrong.
+```bash
+SEC_USER_AGENT="Your Name contact@example.com" \
+    venv/bin/python -m scripts.analysis.filings_adapter ingest --ticker <T>
+# subset of forms: --forms 10-K
+```
 
-A proper `ingest` subcommand in `filings_adapter.py` would replace this recipe;
-until then, copy this sequence (the working AEHR version was ~125 lines).
+- SEC fair-access policy requires a real User-Agent; without `SEC_USER_AGENT` the
+  downloader falls back with a warning and risks throttling.
+- Ingest is **idempotent**: filings already in the workspace are updated in place,
+  so re-running `ingest` is how you pick up a new 10-K/10-Q.
+- Fiscal-year/period are inferred from `reportDate` against the year-end month of
+  the latest 10-K — per-company fiscal calendars differ (AEHR's FY ends the Friday
+  nearest May 31, June 30 from FY2027), so never assume calendar quarters.
 
 ## Confirm pass semantics
 
@@ -61,8 +55,9 @@ the skills enforce **≥ 0.60**. Treat it as coarse grounding, not proof — see
 
 - **XBRL value extraction returns nulls** — `get_financial_statement` returns correct
   row labels with empty `values`; `query_xbrl_facts` finds facts but `value: None`.
-  Read numbers from the section HTML text (`read`) instead.
-- **`list` CLI prints `form_type` as N/A** — the service strips `form_type` from list
-  output and the adapter doesn't map `document_type` back.
+  The XBRL instance/linkbase files are ingested on disk, so this is a vendored
+  extraction gap (vendored tree is do-not-modify; revisit at first-party
+  integration). Read numbers from the section HTML text (`read`) instead, or
+  cross-check via the SEC company-facts API.
 - **`verify` BM25 evidence spans are noisy** — top hits are often cover-page fragments
   rather than the load-bearing paragraph; the PASS/FAIL + confidence is still usable.
