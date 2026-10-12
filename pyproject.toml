@@ -5,13 +5,14 @@ line-length = 100
 target-version = ["py311"]
 skip-string-normalization = true
 # Mutation-testing scratch copy trees (mutmut / Stryker) — never reformat them.
-# scripts/vendor/filings is vendored third-party code — never reformat it.
-extend-exclude = "(mutants|\\.stryker-tmp)/|scripts/vendor/filings/"
+# scripts/filings originates from third-party code (Apache-2.0) — gates stay off
+# until its modules are adopted first-party.
+extend-exclude = "(mutants|\\.stryker-tmp)/|scripts/filings/"
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["venv", ".venv", ".mypy_cache", ".ruff_cache", "scripts/vendor/filings"]
+extend-exclude = ["venv", ".venv", ".mypy_cache", ".ruff_cache", "scripts/filings"]
 
 [tool.ruff.lint]
 select = [
@@ -63,8 +64,8 @@ pytest_add_cli_args = [
 ]
 
 [tool.coverage.run]
-# Vendored third-party code (scripts/vendor/filings) is not ours to cover.
-omit = ["scripts/vendor/filings/*"]
+# Third-party-origin code (scripts/filings, Apache-2.0) is not ours to cover.
+omit = ["scripts/filings/*"]
 
 [build-system]
 requires = ["setuptools>=84.0.0", "wheel"]

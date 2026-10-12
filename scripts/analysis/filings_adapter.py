@@ -1,6 +1,7 @@
 """Fins SEC filings adapter module.
 
-Bridges the vendored SEC filings toolkit (`scripts.vendor.filings`) with:
+Bridges the SEC filings toolkit (`scripts.filings`, Apache-2.0 — see its
+PROVENANCE.md) with:
 1. The Anki card-generation chunks manifest (`parse_chunks.py` contract).
 2. The portfolio research evidence log (`data/analysis/<TICKER>.evidence.jsonl`).
 3. Factuality verification / confirm-pass tool queries against primary filing text.
@@ -16,23 +17,23 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-from scripts.vendor.filings.fins.domain.document_models import (
+from scripts.filings.fins.domain.document_models import (
     CompanyMeta,
     SourceDocumentUpsertRequest,
     now_iso8601,
 )
-from scripts.vendor.filings.fins.domain.enums import SourceKind
-from scripts.vendor.filings.fins.downloaders.sec_downloader import SecDownloader
-from scripts.vendor.filings.fins.processors.registry import build_fins_processor_registry
-from scripts.vendor.filings.fins.storage.fs_company_meta_repository import FsCompanyMetaRepository
-from scripts.vendor.filings.fins.storage.fs_processed_document_repository import (
+from scripts.filings.fins.domain.enums import SourceKind
+from scripts.filings.fins.downloaders.sec_downloader import SecDownloader
+from scripts.filings.fins.processors.registry import build_fins_processor_registry
+from scripts.filings.fins.storage.fs_company_meta_repository import FsCompanyMetaRepository
+from scripts.filings.fins.storage.fs_processed_document_repository import (
     FsProcessedDocumentRepository,
 )
-from scripts.vendor.filings.fins.storage.fs_source_document_repository import (
+from scripts.filings.fins.storage.fs_source_document_repository import (
     FsSourceDocumentRepository,
 )
-from scripts.vendor.filings.fins.storage.local_file_store import LocalFileStore
-from scripts.vendor.filings.fins.tools.service import FinsToolService
+from scripts.filings.fins.storage.local_file_store import LocalFileStore
+from scripts.filings.fins.tools.service import FinsToolService
 
 DEFAULT_INGEST_FORMS = ("10-K", "10-Q")
 

@@ -1,6 +1,7 @@
 # Filings adapter — operational guide
 
-How to drive the vendored SEC filings stack (`scripts/vendor/filings/`) from this repo.
+How to drive the SEC filings stack (`scripts/filings/`, Apache-2.0 — see its
+`PROVENANCE.md`) from this repo.
 Design/evaluation context: `docs/research/external-filings-agent-evaluation.md`;
 first appliance-test results: `docs/research/aehr-initial-thesis.md` (§Filings-layer
 evaluation, 2026-10-12).
@@ -55,9 +56,9 @@ the skills enforce **≥ 0.60**. Treat it as coarse grounding, not proof — see
 
 - **XBRL value extraction returns nulls** — `get_financial_statement` returns correct
   row labels with empty `values`; `query_xbrl_facts` finds facts but `value: None`.
-  The XBRL instance/linkbase files are ingested on disk, so this is a vendored
-  extraction gap (vendored tree is do-not-modify; revisit at first-party
-  integration). Read numbers from the section HTML text (`read`) instead, or
-  cross-check via the SEC company-facts API.
+  The XBRL instance/linkbase files are ingested on disk, so this is an extraction
+  gap in `scripts/filings/` (fixable as first-party code — record per
+  `scripts/filings/PROVENANCE.md`). Read numbers from the section HTML text
+  (`read`) instead, or cross-check via the SEC company-facts API.
 - **`verify` BM25 evidence spans are noisy** — top hits are often cover-page fragments
   rather than the load-bearing paragraph; the PASS/FAIL + confidence is still usable.
